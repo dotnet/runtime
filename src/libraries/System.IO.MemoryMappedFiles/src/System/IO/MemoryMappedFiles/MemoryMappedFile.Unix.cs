@@ -19,7 +19,6 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileOptions options, long capacity)
         {
             bool isSpecial = false;
-
             if (fileStream != null)
             {
                 if (fileStream.Length == 0)
@@ -28,17 +27,13 @@ namespace System.IO.MemoryMappedFiles
                     Interop.Sys.FileStatus status;
                     if (Interop.Sys.FStat(fileStream.SafeFileHandle, out status) == 0)
                     {
-                        if ((status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0)
-                        {
-                            isSpecial = true;
-                        }
+                        isSpecial = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0;
                     }
                 }
 
                 // perform deferred argument check.
                 if (!isSpecial)
                 {
-                    // perform defered argument check.
                     if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
                     {
                         throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);

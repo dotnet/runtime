@@ -277,6 +277,11 @@ namespace System.IO.MemoryMappedFiles
                 throw new ArgumentOutOfRangeException(nameof(access));
             }
 
+            if (access == MemoryMappedFileAccess.Write)
+            {
+                throw new ArgumentException(SR.Argument_NewMMFWriteAccessNotAllowed, nameof(access));
+            }
+
             if (((int)options & ~((int)(MemoryMappedFileOptions.DelayAllocatePages))) != 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(options));
