@@ -93,7 +93,7 @@ while [[ $# > 0 ]]; do
       elif [ "$val" == "netfx" ]; then
         val=net472
       fi
-      arguments="$arguments /p:TargetGroup=$val"
+      arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
      -os)

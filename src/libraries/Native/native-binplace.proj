@@ -1,7 +1,4 @@
 <Project DefaultTargets="Build">
-  <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-  </PropertyGroup>
 
   <Import Project="..\Directory.Build.props" />
   <Target Name="Build" DependsOnTargets="BinPlace" />
