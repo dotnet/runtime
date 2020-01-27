@@ -24,7 +24,7 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR has been approved by at least one reviewer and any other objections are addressed.
  * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
- * You can trigger a rebuild by commenting `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps tab.
+ * You can trigger a rebuild by adding a comment like `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps tab.
  * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
  * In rare cases the pull request can be merged with failing tests if the person merging it also creates tracking issue for flaky tests.
 
