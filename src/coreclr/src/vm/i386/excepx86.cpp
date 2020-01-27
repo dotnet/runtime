@@ -1875,9 +1875,9 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
         // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from
         // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
         // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
-        // ICF is not linked at the method prolog and unlined at the epilog when running R2R code. Since the
+        // ICF is not linked at the method prolog and unlinked at the epilog when running R2R code. Since the
         // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
-        // has another pinovoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called
+        // has another pinvoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called
 
         if (ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pThread->m_pFrame)->m_pCallerReturnAddress))
         {
