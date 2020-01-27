@@ -530,7 +530,7 @@ const unsigned callCommonDelta[4] = { 6,8,10,12 };
  *
  *  Note that ARG_MASK is the mask of pushed args that contain GC pointers
  *   since the first two arguments are always passed in registers it is
- *   a fairly rare occurance to push a GC pointer as an argument, since it
+ *   a fairly rare occurrence to push a GC pointer as an argument, since it
  *   only occurs for nested calls, when the third or later argument for the
  *   outer call contains a GC ref.
  *

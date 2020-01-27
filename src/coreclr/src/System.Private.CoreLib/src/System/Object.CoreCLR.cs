@@ -16,6 +16,7 @@ namespace System
     public partial class Object
     {
         // Returns a Type object which represent this object instance.
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern Type GetType();
 

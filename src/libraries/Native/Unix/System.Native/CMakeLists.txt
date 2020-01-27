@@ -29,6 +29,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL Linux)
     if (!HAVE_LINUX_RTNETLINK_H)
         message(FATAL_ERROR "Could not find linux/rtnetlink.h")
     endif ()
+elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
+
+    if (!HAVE_RT_MSGHDR)
+        message(FATAL_ERROR "Could not find net/route.h")
+    endif ()
 endif ()
 
 if (GEN_SHARED_LIB)

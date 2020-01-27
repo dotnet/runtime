@@ -4443,8 +4443,6 @@ public:
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
-    void fgMorph();
-
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     void fgSimpleLowering();
@@ -6153,9 +6151,9 @@ protected:
         unsigned csdDefWtCnt; // weighted def count
         unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-        GenTree*    csdTree;  // treenode containing the 1st occurance
-        Statement*  csdStmt;  // stmt containing the 1st occurance
-        BasicBlock* csdBlock; // block containing the 1st occurance
+        GenTree*    csdTree;  // treenode containing the 1st occurrence
+        Statement*  csdStmt;  // stmt containing the 1st occurrence
+        BasicBlock* csdBlock; // block containing the 1st occurrence
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
@@ -6492,6 +6490,7 @@ public:
             struct IntVal
             {
                 ssize_t  iconVal;   // integer
+                unsigned padding;   // unused; ensures iconFlags does not overlap lconVal
                 unsigned iconFlags; // gtFlags
             };
             struct Range // integer subrange

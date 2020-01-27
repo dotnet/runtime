@@ -275,13 +275,13 @@ namespace Internal.Cryptography.Pal
                 otherOid == null || otherOid == Oids.UserPrincipalName,
                 $"otherOid ({otherOid}) is not supported");
 
-            AsnReader reader = new AsnReader(extensionBytes, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            AsnValueReader reader = new AsnValueReader(extensionBytes, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 
             while (sequenceReader.HasData)
             {
-                GeneralNameAsn.Decode(sequenceReader, out GeneralNameAsn generalName);
+                GeneralNameAsn.Decode(ref sequenceReader, extensionBytes, out GeneralNameAsn generalName);
 
                 switch (matchType)
                 {

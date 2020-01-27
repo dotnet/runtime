@@ -8,7 +8,7 @@ Details on test metadata can be found in [test-configuration.md](test-configurat
     * [Unix](../../building/coreclr/linux-instructions.md)
     * [macOS](../../building/coreclr/osx-instructions.md)
     * [Windows](../../building/coreclr/README.md)
-2) [Build the libraries](../../building/libraries/README.md) in Release configuration. Pass the configuration of CoreCLR you just built to the build script (e.g. `-coreclrConfiguration Debug`).
+2) [Build the libraries](../../building/libraries/README.md) in Release configuration. Pass the configuration of CoreCLR you just built to the build script (e.g. `-runtimeconfiguration debug`).
 3) From the src/coreclr directory run the following command:
     * Non-Windows - `./build-test.sh`
     * Windows - `build-test.cmd`

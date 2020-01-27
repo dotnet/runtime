@@ -20,12 +20,6 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    // TODO-REFACTOR: rename this
-    public interface IEETypeNode
-    {
-        TypeDesc Type { get; }
-    }
-
     public struct NodeCache<TKey, TValue>
     {
         private Func<TKey, TValue> _creator;
@@ -87,8 +81,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
-            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateNecessaryTypeNode);
-            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateConstructedTypeNode);
             _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
             _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
             _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
@@ -103,27 +95,9 @@ namespace ILCompiler.DependencyAnalysis
 
         protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
 
-        protected abstract IEETypeNode CreateNecessaryTypeNode(TypeDesc type);
-
-        protected abstract IEETypeNode CreateConstructedTypeNode(TypeDesc type);
-
         protected abstract ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey);
 
         protected abstract ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey);
-
-        private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
-
-        public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
-        {
-            return _typeSymbols.GetOrAdd(type);
-        }
-
-        private NodeCache<TypeDesc, IEETypeNode> _constructedTypeSymbols;
-
-        public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
-        {
-            return _constructedTypeSymbols.GetOrAdd(type);
-        }
 
         protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
 
@@ -704,33 +678,6 @@ namespace ILCompiler.DependencyAnalysis
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph);
-        }
-
-        protected override IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
-        {
-            if (CompilationModuleGroup.ContainsType(type))
-            {
-                return new AvailableType(this, type);
-            }
-            else
-            {
-                return new ExternalTypeNode(this, type);
-            }
-        }
-
-        protected override IEETypeNode CreateConstructedTypeNode(TypeDesc type)
-        {
-            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
-            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-
-            if (CompilationModuleGroup.ContainsType(type))
-            {
-                return new AvailableType(this, type);
-            }
-            else
-            {
-                return new ExternalTypeNode(this, type);
-            }
         }
 
         protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)

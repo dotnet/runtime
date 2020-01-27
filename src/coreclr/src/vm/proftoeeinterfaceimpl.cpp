@@ -8386,7 +8386,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
         if ((pParam->pData->infoFlags & COR_PRF_SNAPSHOT_X86_OPTIMIZED) != 0)
         {
 #ifndef _TARGET_X86_
-            // If check in the begining of DoStackSnapshot (to return E_INVALIDARG) should
+            // If check in the beginning of DoStackSnapshot (to return E_INVALIDARG) should
             // make this unreachable
             _ASSERTE(!"COR_PRF_SNAPSHOT_X86_OPTIMIZED on non-X86 should be unreachable!");
 #else

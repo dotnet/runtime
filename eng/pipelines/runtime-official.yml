@@ -80,7 +80,7 @@ stages:
       - Windows_NT_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
 
   #
   # Build libraries AllConfigurations for packages
@@ -95,7 +95,7 @@ stages:
         framework: allConfigurations
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         isOfficialAllConfigurations: true
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
 
   #
   # Installer Build
@@ -103,7 +103,7 @@ stages:
   - template: /eng/pipelines/installer/installer-matrix.yml
     parameters:
       jobParameters:
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         useOfficialAllConfigurations: true

@@ -46,22 +46,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fieldArgument = fieldArgument;
             _methodContext = methodContext;
             _signatureContext = signatureContext;
-
-            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            if (typeArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeArgument);
-            }
-            if (fieldArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldArgument.OwningType);
-            }
-            if (methodArgument != null)
-            {
-                signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(methodArgument.Method);
-                if (methodArgument.ConstrainedType != null)
-                    signatureContext.Resolver.CompilerContext.EnsureLoadableType(methodArgument.ConstrainedType);
-            }
         }
 
         public override int ClassCode => 258608008;
@@ -237,16 +221,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            if (_typeArgument != null && !_typeArgument.IsRuntimeDeterminedSubtype)
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(_typeArgument), "Type referenced in a generic lookup signature");
-            }
-            return dependencies;
         }
     }
 }

@@ -131,7 +131,7 @@ namespace R2RDump
 
         public IEnumerable<ReadyToRunMethod> NormalizedMethods()
         {
-            IEnumerable<ReadyToRunMethod> methods = _r2r.R2RMethods;
+            IEnumerable<ReadyToRunMethod> methods = _r2r.Methods;
             if (_options.Normalize)
             {
                 methods = methods.OrderBy((m) => m.SignatureString);
@@ -161,13 +161,19 @@ namespace R2RDump
         abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(ReadyToRunSection section);
         abstract internal void DumpQueryCount(string q, string title, int count);
+
+        public TextWriter Writer => _writer;
+
+        public DumpOptions Options => _options;
+
+        public ReadyToRunReader Reader => _r2r;
     }
 
     class R2RDump
     {
         private readonly DumpOptions _options;
-        private readonly TextWriter _writer;
         private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
+        private TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
@@ -180,16 +186,6 @@ namespace R2RDump
                 _options.Unwind = true;
                 _options.GC = true;
                 _options.SectionContents = true;
-            }
-
-            // open output stream
-            if (_options.Out != null)
-            {
-                _writer = new StreamWriter(_options.Out.FullName, append: false, encoding: Encoding.ASCII);
-            }
-            else
-            {
-                _writer = Console.Out;
             }
         }
 
@@ -411,7 +407,7 @@ namespace R2RDump
         public IList<ReadyToRunMethod> FindMethod(ReadyToRunReader r2r, string query, bool exact)
         {
             List<ReadyToRunMethod> res = new List<ReadyToRunMethod>();
-            foreach (ReadyToRunMethod method in r2r.R2RMethods)
+            foreach (ReadyToRunMethod method in r2r.Methods)
             {
                 if (Match(method, query, exact))
                 {
@@ -448,7 +444,7 @@ namespace R2RDump
         /// <param name="rtfQuery">The name or value to search for</param>
         public RuntimeFunction FindRuntimeFunction(ReadyToRunReader r2r, int rtfQuery)
         {
-            foreach (ReadyToRunMethod m in r2r.R2RMethods)
+            foreach (ReadyToRunMethod m in r2r.Methods)
             {
                 foreach (RuntimeFunction rtf in m.RuntimeFunctions)
                 {
@@ -478,7 +474,12 @@ namespace R2RDump
                     throw new ArgumentException("The option '--naked' is incompatible with '--raw'");
                 }
 
-                ReadyToRunReader previousReader = null;
+                Dumper previousDumper = null;
+                TextWriter globalWriter = null;
+                if (_options.Out != null)
+                {
+                    globalWriter = new StreamWriter(_options.Out.FullName);
+                }
 
                 foreach (FileInfo filename in _options.In)
                 {
@@ -497,6 +498,15 @@ namespace R2RDump
                         }
                     }
 
+                    if (!_options.Diff && globalWriter != null)
+                    {
+                        _writer = globalWriter;
+                    }
+                    else
+                    {
+                        string outFile = r2r.Filename + ".r2rdump";
+                        _writer = new StreamWriter(outFile, append: false, encoding: Encoding.ASCII);
+                    }
                     _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
@@ -504,12 +514,12 @@ namespace R2RDump
                         // output the ReadyToRun info
                         Dump(r2r);
                     }
-                    else if (previousReader != null)
+                    else if (previousDumper != null)
                     {
-                        new R2RDiff(previousReader, r2r, _writer).Run();
+                        new R2RDiff(previousDumper, _dumper, globalWriter).Run();
                     }
 
-                    previousReader = r2r;
+                    previousDumper = _dumper;
                 }
             }
             catch (Exception e)

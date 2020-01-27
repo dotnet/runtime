@@ -557,7 +557,7 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
 
 set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
@@ -644,6 +644,10 @@ list(APPEND VM_HEADERS_DAC
     clrprivbinderwinrt.h
     clrprivtypecachewinrt.h
 )
+
+endif(CLR_CMAKE_TARGET_WIN32)
+
+if(WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_WKS_ARCH_ASM
@@ -850,18 +854,18 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
         ${ARCH_SOURCES_DIR}/profiler.cpp
     )
 
-    if(CLR_CMAKE_PLATFORM_UNIX)
+    if(CLR_CMAKE_HOST_UNIX)
         list(APPEND VM_SOURCES_DAC_AND_WKS_ARCH
             ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
         )
-    endif(CLR_CMAKE_PLATFORM_UNIX)
+    endif(CLR_CMAKE_HOST_UNIX)
 endif()
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     list(APPEND VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/unixstubs.cpp
     )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
     exceptionhandling.cpp
