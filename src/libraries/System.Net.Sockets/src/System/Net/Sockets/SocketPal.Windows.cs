@@ -40,9 +40,6 @@ namespace System.Net.Sockets
             return (SocketError)win32Error;
         }
 
-        [DllImport("kernel32.dll")]
-        private static extern bool GetHandleInformation(SafeHandle hObject, out Interop.Kernel32.HandleFlags flags);
-
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
             IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
