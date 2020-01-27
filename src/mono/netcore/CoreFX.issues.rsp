@@ -247,29 +247,6 @@
 # Invalid IL - IL_00bc: castclass 0x0100000d
 -nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
 
-# Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt32:Read1_int (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15174
--nomethod System.Data.Tests.SqlTypes.SqlInt32Test.ReadWriteXmlTest
-
-# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt64:Read1_long (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15175
--nomethod System.Data.Tests.SqlTypes.SqlInt64Test.ReadWriteXmlTest
-
-# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlDouble:Read1_double (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15176
--nomethod System.Data.Tests.SqlTypes.SqlDoubleTest.ReadWriteXmlTest
-
-# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt16:Read1_short (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15177
--nomethod System.Data.Tests.SqlTypes.SqlInt16Test.ReadWriteXmlTest
-
-# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlDecimal:Read1_decimal (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15178
--nomethod System.Data.Tests.SqlTypes.SqlDecimalTest.ReadWriteXmlTest
-
-# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlString:Read1_string (): IL_00bc: castclass 0x0100000d
-# https://github.com/mono/mono/issues/15179
--nomethod System.Data.Tests.SqlTypes.SqlStringTest.ReadWriteXmlTest
 
 # Assert IsNotNull failure
 # https://github.com/mono/mono/issues/15180
