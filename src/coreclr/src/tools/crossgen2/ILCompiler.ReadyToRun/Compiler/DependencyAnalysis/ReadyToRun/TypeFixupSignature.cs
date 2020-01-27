@@ -75,13 +75,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition)
             {
-                foreach (MethodDesc method in _typeDesc.GetAllMethods())
-                {
-                    if (!method.IsGenericMethodDefinition && factory.CompilationModuleGroup.VersionsWithMethodBody(method))
-                    {
-                        dependencies.Add(factory.MethodEntrypoint(method), "Method on generic type instantiation");
-                    }
-                }
+                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
             return dependencies;
         }
