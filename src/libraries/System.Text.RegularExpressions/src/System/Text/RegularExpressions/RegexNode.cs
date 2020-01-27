@@ -227,6 +227,7 @@ namespace System.Text.RegularExpressions
                                     case Alternate:
                                     case Loop:
                                     case Lazyloop:
+                                        // Make the node atomic if it isn't already (as conferred by a parent node being atomic).
                                         if (!existingChild.IsAtomicByParent())
                                         {
                                             var atomic = new RegexNode(Atomic, Options);
@@ -639,10 +640,10 @@ namespace System.Text.RegularExpressions
 
                             if (at.Type == Set)
                             {
-                                if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str))
+                                if (!wasLastSet || optionsLast != optionsAt || lastNodeCannotMerge || !RegexCharClass.IsMergeable(at.Str!))
                                 {
                                     wasLastSet = true;
-                                    lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str);
+                                    lastNodeCannotMerge = !RegexCharClass.IsMergeable(at.Str!);
                                     optionsLast = optionsAt;
                                     break;
                                 }
@@ -716,6 +717,7 @@ namespace System.Text.RegularExpressions
             {
                 // To keep things relatively simple, we currently only handle:
                 // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
+                // - All branches having the same options.
                 // - Text, rather than also trying to combine identical sets that start each branch.
 
                 Debug.Assert(Children is List<RegexNode>);
@@ -729,6 +731,7 @@ namespace System.Text.RegularExpressions
                     return this;
                 }
 
+                RegexOptions startingNodeOptions = startingNode.Options;
                 string? originalStartingString = startingNode.Str;
                 ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : (ReadOnlySpan<char>)originalStartingString;
                 Debug.Assert(startingSpan.Length > 0);
@@ -738,7 +741,7 @@ namespace System.Text.RegularExpressions
                 {
                     // Get the starting node of the next branch.
                     startingNode = FindBranchOneMultiStart(children[i]);
-                    if (startingNode is null)
+                    if (startingNode is null || startingNode.Options != startingNodeOptions)
                     {
                         return this;
                     }
@@ -862,10 +865,10 @@ namespace System.Text.RegularExpressions
                     break;
                 }
 
-                var concat = new RegexNode(Concatenate, Options);
-                concat.AddChild(startingSpan.Length == 1 ?
-                    new RegexNode(One, Options) { Ch = startingSpan[0] } :
-                    new RegexNode(Multi, Options) { Str = originalStartingString?.Length == startingSpan.Length ? originalStartingString : startingSpan.ToString() });
+                var concat = new RegexNode(Concatenate, Options); // use same options as the Alternate
+                concat.AddChild(startingSpan.Length == 1 ? // use same options as the branches
+                    new RegexNode(One, startingNodeOptions) { Ch = startingSpan[0] } :
+                    new RegexNode(Multi, startingNodeOptions) { Str = originalStartingString?.Length == startingSpan.Length ? originalStartingString : startingSpan.ToString() });
                 concat.AddChild(this); // this will re-reduce the node, allowing for newly exposed possible optimizations in what came after the prefix
                 return concat;
 
@@ -1552,7 +1555,7 @@ namespace System.Text.RegularExpressions
                 _ => $"(unknown {Type})"
             };
 
-            var sb = new StringBuilder().Append(typeStr);
+            var sb = new StringBuilder(typeStr);
 
             if ((Options & RegexOptions.ExplicitCapture) != 0) sb.Append("-C");
             if ((Options & RegexOptions.IgnoreCase) != 0) sb.Append("-I");

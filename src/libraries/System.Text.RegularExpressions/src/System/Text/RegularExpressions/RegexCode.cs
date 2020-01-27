@@ -285,7 +285,7 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int opcode = Codes[offset];
 
             sb.AppendFormat("{0:D6} ", offset);
