@@ -16,6 +16,5 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Text.Encoding" />
   </ItemGroup>
 </Project>
