@@ -247,11 +247,6 @@
 # Invalid IL - IL_00bc: castclass 0x0100000d
 -nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
 
-
-# Assert IsNotNull failure
-# https://github.com/mono/mono/issues/15180
--nomethod System.Data.Common.Tests.DbConnectionTests.ProviderFactoryTest
-
 ####################################################################
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################

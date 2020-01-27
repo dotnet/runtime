@@ -146,6 +146,7 @@ namespace System.Data.Common.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15180", TargetFrameworkMonikers.Mono)]
         public void ProviderFactoryTest()
         {
             DbProviderFactoryConnection con = new DbProviderFactoryConnection();
