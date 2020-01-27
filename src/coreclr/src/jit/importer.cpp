@@ -3632,7 +3632,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }
             else
@@ -13063,7 +13063,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 if (tiVerificationNeeded)
                 {
-                    // Dup could start the begining of delegate creation sequence, remember that
+                    // Dup could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 1;
                     impStackTop(0);
                 }
@@ -13384,7 +13384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    // LDFTN could start the begining of delegate creation sequence, remember that
+                    // LDFTN could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 2;
 
                     // check any constraints on the callee's class and type parameters
@@ -16014,14 +16014,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
-
-                    /* Mark the block as containing a length expression */
-
-                    if (op1->gtOper == GT_LCL_VAR)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
 
                     op1 = arrLen;
                 }

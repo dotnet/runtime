@@ -154,7 +154,6 @@ namespace System.Net.Http.Functional.Tests
 
         // We have tests that validate with SslStream, but that's limited by what the current OS supports.
         // This tests provides additional validation against an external server.
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/26186")]
         [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(SupportedSSLVersionServers))]

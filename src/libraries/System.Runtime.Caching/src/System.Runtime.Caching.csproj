@@ -55,8 +55,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

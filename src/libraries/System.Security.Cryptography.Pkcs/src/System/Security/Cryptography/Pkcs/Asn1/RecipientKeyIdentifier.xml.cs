@@ -16,16 +16,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal ReadOnlyMemory<byte> SubjectKeyIdentifier;
         internal DateTimeOffset? Date;
         internal System.Security.Cryptography.Pkcs.Asn1.OtherKeyAttributeAsn? Other;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteOctetString(SubjectKeyIdentifier.Span);
 
             if (Date.HasValue)
@@ -46,36 +46,33 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static RecipientKeyIdentifier Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out RecipientKeyIdentifier decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out RecipientKeyIdentifier decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out RecipientKeyIdentifier decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out RecipientKeyIdentifier decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out RecipientKeyIdentifier decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out RecipientKeyIdentifier decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
 
-            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSubjectKeyIdentifier))
+
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
             {
-                decoded.SubjectKeyIdentifier = tmpSubjectKeyIdentifier;
+                decoded.SubjectKeyIdentifier = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {
@@ -92,7 +89,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Pkcs.Asn1.OtherKeyAttributeAsn tmpOther;
-                System.Security.Cryptography.Pkcs.Asn1.OtherKeyAttributeAsn.Decode(sequenceReader, out tmpOther);
+                System.Security.Cryptography.Pkcs.Asn1.OtherKeyAttributeAsn.Decode(ref sequenceReader, rebind, out tmpOther);
                 decoded.Other = tmpOther;
 
             }

@@ -1041,7 +1041,7 @@ DWORD LCM(DWORD u, DWORD v)
     CONTRACTL_END;
 
     // CPUGroupInfo needs to be initialized only once. This could happen in three cases
-    // 1. CLR initialization at begining of EEStartup, or
+    // 1. CLR initialization at beginning of EEStartup, or
     // 2. Sometimes, when hosted by ASP.NET, the hosting process may initialize ThreadPool
     //    before initializing CLR, thus require CPUGroupInfo to be initialized to determine
     //    if CPU group support should/could be enabled.

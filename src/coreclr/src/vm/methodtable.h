@@ -1949,17 +1949,6 @@ public:
     bool NativeRequiresAlign8();
 #endif // FEATURE_64BIT_ALIGNMENT
 
-    // True if interface casts for an object having this type require more
-    // than a simple scan of the interface map
-    // See JIT_IsInstanceOfInterface
-    inline BOOL InstanceRequiresNonTrivialInterfaceCast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GetFlag(enum_flag_NonTrivialInterfaceCast);
-    }
-
-
     //-------------------------------------------------------------------
     // PARENT INTERFACES
     //
@@ -3838,14 +3827,6 @@ private:
     {
         return (m_wFlags2 & (DWORD)mask) == (DWORD)flag;
     }
-
-    // Just exposing a couple of these for x86 asm versions of JIT_IsInstanceOfClass and JIT_IsInstanceOfInterface
-public:
-    enum
-    {
-        public_enum_flag_HasTypeEquivalence = enum_flag_HasTypeEquivalence,
-        public_enum_flag_NonTrivialInterfaceCast = enum_flag_NonTrivialInterfaceCast,
-    };
 
 private:
     /*

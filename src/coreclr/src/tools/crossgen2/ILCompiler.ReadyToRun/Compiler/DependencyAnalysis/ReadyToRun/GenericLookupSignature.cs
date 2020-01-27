@@ -222,15 +222,5 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
         }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            if (_typeArgument != null && !_typeArgument.IsRuntimeDeterminedSubtype)
-            {
-                dependencies.Add(factory.NecessaryTypeSymbol(_typeArgument), "Type referenced in a generic lookup signature");
-            }
-            return dependencies;
-        }
     }
 }

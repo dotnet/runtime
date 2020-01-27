@@ -54,5 +54,5 @@ Each test project can potentially have multiple build configurations. There are 
 
 ```cmd
 cd src\libraries\System.Runtime\tests
-dotnet msbuild System.Runtime.Tests.csproj /p:TargetGroup=netfx
+dotnet msbuild System.Runtime.Tests.csproj /p:TargetGroup=net472
 ```

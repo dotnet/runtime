@@ -567,14 +567,6 @@ void GetResourceCultureCallbacks(
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
 );
 
-#if !defined(DACCESS_COMPILE)
-// Get the MUI ID, on downlevel platforms where MUI is not supported it
-// returns the default system ID.
-extern int GetMUILanguageID(LocaleIDValue* pResult);
-extern HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames);
-
-#endif // !defined(DACCESS_COMPILE)
-
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
 // your class.
@@ -727,8 +719,6 @@ public:
         return m_bUseFallback;
     };
 
-    static void SetIsMscoree() {s_bIsMscoree = TRUE;}
-
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
     HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
 
@@ -742,13 +732,10 @@ public:
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
     );
 
-    HRESULT LoadMUILibrary(HRESOURCEDLL * pHInst);
-
     // Get the default resource location (mscorrc.dll for desktop, mscorrc.debug.dll for CoreCLR)
     static CCompRC* GetDefaultResourceDll();
     // Get the generic messages dll (Silverlight only, mscorrc.dll)
     static CCompRC* GetFallbackResourceDll();
-    static void ShutdownDefaultResourceDll();
     static void GetDefaultCallbacks(
                     FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
                     FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
@@ -775,24 +762,7 @@ public:
         m_FallbackResourceDll.SetResourceCultureCallbacks(
                 fpGetThreadUICultureNames,
                 fpGetThreadUICultureId);
-
     }
-
-#ifdef USE_FORMATMESSAGE_WRAPPER
-
-DWORD
-PALAPI
-static
-FormatMessage(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBuffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-#endif // USE_FORMATMESSAGE_WRAPPER
-
 
 private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
@@ -839,7 +809,6 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 
     BOOL m_bUseFallback;
-    static BOOL s_bIsMscoree;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax);

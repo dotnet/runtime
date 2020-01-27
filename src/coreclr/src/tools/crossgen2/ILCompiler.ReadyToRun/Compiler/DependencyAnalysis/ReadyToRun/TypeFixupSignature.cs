@@ -72,7 +72,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.NecessaryTypeSymbol(_typeDesc), "Type referenced in a fixup signature");
+
+            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition)
+            {
+                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+            }
             return dependencies;
         }
     }

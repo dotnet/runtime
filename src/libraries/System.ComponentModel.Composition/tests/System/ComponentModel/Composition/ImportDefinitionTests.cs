@@ -195,20 +195,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/738535")]
-        public void ContractName_ShouldBeIncludedInConstraintAutomatically()
-        {
-            string testContractName = "TestContractName";
-            var contractImportDefinition = new ImportDefinition(ed => true, testContractName, ImportCardinality.ZeroOrMore, false, false);
-
-            var shouldMatch = new ExportDefinition(testContractName, null);
-            var shouldNotMatch = new ExportDefinition(testContractName + testContractName, null);
-
-            Assert.True(contractImportDefinition.IsConstraintSatisfiedBy(shouldMatch));
-            Assert.False(contractImportDefinition.IsConstraintSatisfiedBy(shouldNotMatch));
-        }
-
-        [Fact]
         public void EmptyContractName_ShouldMatchAllContractNames()
         {
             var importDefinition = new ImportDefinition(ed => true, string.Empty, ImportCardinality.ZeroOrMore, false, false);

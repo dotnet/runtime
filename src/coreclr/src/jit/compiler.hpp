@@ -1225,15 +1225,21 @@ inline GenTree* Compiler::gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree
 //    typ      -  Type of the node
 //    arrayOp  -  Array node
 //    lenOffset - Offset of the length field
+//    block     - Basic block that will contain the result
 //
 // Return Value:
 //    New GT_ARR_LENGTH node
 
-inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
 {
     GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
+    if (block != nullptr)
+    {
+        block->bbFlags |= BBF_HAS_IDX_LEN;
+    }
+    optMethodFlags |= OMF_HAS_ARRAYREF;
     return arrLen;
 }
 

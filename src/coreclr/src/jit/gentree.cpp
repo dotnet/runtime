@@ -7318,7 +7318,7 @@ GenTree* Compiler::gtCloneExpr(
             break;
 
             case GT_ARR_LENGTH:
-                copy = gtNewArrLen(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsArrLen()->ArrLenOffset());
+                copy = gtNewArrLen(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsArrLen()->ArrLenOffset(), nullptr);
                 break;
 
             case GT_ARR_INDEX:

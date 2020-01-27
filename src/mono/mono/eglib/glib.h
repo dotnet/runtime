@@ -770,7 +770,7 @@ typedef enum {
 
 G_ENUM_FUNCTIONS (GLogLevelFlags)
 
-void           g_printv               (const gchar *format, va_list args);
+gint           g_printv               (const gchar *format, va_list args);
 void           g_print                (const gchar *format, ...);
 void           g_printerr             (const gchar *format, ...);
 GLogLevelFlags g_log_set_always_fatal (GLogLevelFlags fatal_mask);

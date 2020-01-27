@@ -17,6 +17,10 @@
     <MonoArtifactsPath Condition="'$(MonoOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(MonoOverridePath)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesOverridePath)'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsOverridePath)'))</LibrariesAllConfigurationsArtifactsPath>
+
+    <!-- Honor the RuntimeArtifactsPath property. -->
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</MonoArtifactsPath>
   </PropertyGroup>
 
   <!--
