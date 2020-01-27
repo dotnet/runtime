@@ -36,7 +36,7 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -runtimeConfiguration ${{ parameters.runtimeConfig }} -arch ${{ parameters.archType }} -bl -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -runtimeConfiguration ${{ parameters.runtimeConfig }} -arch ${{ parameters.archType }} -ci
       displayName: Build product
 
     - task: PublishBuildArtifacts@1
