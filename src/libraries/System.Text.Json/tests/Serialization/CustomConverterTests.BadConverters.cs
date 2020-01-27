@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(expectedSubStr, ex.Message.Substring(pos + expectedSubStr.Length));
         }
 
-        private class ConverterThatReturnsNull : JsonConverterFactory
+        private class ConverterFactoryThatReturnsNull : JsonConverterFactory
         {
             public override bool CanConvert(Type typeToConvert)
             {
@@ -149,10 +149,14 @@ namespace System.Text.Json.Serialization.Tests
         public static void ConverterThatReturnsNullFail()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new ConverterThatReturnsNull());
+            options.Converters.Add(new ConverterFactoryThatReturnsNull());
 
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize(0, options));
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Deserialize<int>("0", options));
+            // A null return value from CreateConverter() will generate a NotSupportedException with the type name.
+            NotSupportedException ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(0, options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
+
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
         }
 
         private class Level1
@@ -232,8 +236,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 
@@ -252,8 +256,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
-                Assert.Equal("$.Level2.Level3s[1]", ex.Path);
+                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
+                Assert.Equal("$.Level2.Level3s[0]", ex.Path);
             }
         }
 

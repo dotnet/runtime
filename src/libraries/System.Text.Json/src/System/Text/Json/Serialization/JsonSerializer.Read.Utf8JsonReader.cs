@@ -5,12 +5,26 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
+        /// <summary>
+        /// Internal version that allows re-entry with preserving ReadStack so that JsonPath works correctly.
+        /// </summary>
+        internal static T Deserialize<T>(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state, string? propertyName = null)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            state.Current.InitializeReEntry(typeof(T), options, propertyName);
+
+            return (T)ReadCoreReEntry(options, ref reader, ref state)!;
+        }
+
         /// <summary>
         /// Reads one JSON value (including objects or arrays) from the provided reader into a <typeparamref name="TValue"/>.
         /// </summary>
@@ -111,16 +125,12 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            ReadStack readStack = default;
-            if (options.ReferenceHandling.ShouldReadPreservedReferences())
-            {
-                readStack.ReferenceResolver = new DefaultReferenceResolver(writing: false);
-            }
-            readStack.Current.Initialize(returnType, options);
+            ReadStack state = default;
+            state.InitializeRoot(returnType, options);
 
-            ReadValueCore(options, ref reader, ref readStack);
+            ReadValueCore(options, ref reader, ref state);
 
-            return readStack.Current.ReturnValue;
+            return state.Current.ReturnValue;
         }
 
         private static void CheckSupportedOptions(JsonReaderOptions readerOptions, string paramName)
@@ -131,10 +141,10 @@ namespace System.Text.Json
             }
         }
 
-        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack readStack)
+        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            JsonReaderState state = reader.CurrentState;
-            CheckSupportedOptions(state.Options, nameof(reader));
+            JsonReaderState readerState = reader.CurrentState;
+            CheckSupportedOptions(readerState.Options, nameof(reader));
 
             // Value copy to overwrite the ref on an exception and undo the destructive reads.
             Utf8JsonReader restore = reader;
@@ -288,7 +298,7 @@ namespace System.Text.Json
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(readStack, ex);
+                ThrowHelper.ReThrowWithPath(state, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
@@ -310,7 +320,7 @@ namespace System.Text.Json
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                ReadCore(options, ref newReader, ref readStack);
+                ReadCore(options, ref newReader, ref state);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

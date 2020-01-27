@@ -6,7 +6,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
-using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Converters;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -20,13 +21,18 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
+
         private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
-        private JavaScriptEncoder? _encoder;
+        private JavaScriptEncoder? _encoder = null;
+
+        // Cache common converters.
+        private static JsonConverter<object> s_objectConverter = null!;
+        private static JsonConverter<JsonElement> s_jsonElementConverter = null!;
+
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -307,6 +313,7 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
+
                 _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
@@ -317,12 +324,14 @@ namespace System.Text.Json
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if BUILDING_INBOX_LIBRARY
-                    _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
-#else
-                    // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
-                    _memberAccessorStrategy = new ReflectionMemberAccessor();
-#endif
+                    if (RuntimeFeature.IsDynamicCodeSupported)
+                    {
+                        _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
+                    }
+                    else
+                    {
+                        _memberAccessorStrategy = new ReflectionMemberAccessor();
+                    }
                 }
 
                 return _memberAccessorStrategy;
@@ -364,21 +373,6 @@ namespace System.Text.Json
             };
         }
 
-        internal bool CreateRangeDelegatesContainsKey(string key)
-        {
-            return s_createRangeDelegates.ContainsKey(key);
-        }
-
-        internal bool TryGetCreateRangeDelegate(string delegateKey, [NotNullWhen(true)] out ImmutableCollectionCreator? createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
-        }
-
-        internal bool TryAddCreateRangeDelegate(string key, ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
-        }
-
         internal void VerifyMutable()
         {
             // The default options are hidden and thus should be immutable.
@@ -388,6 +382,26 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
             }
+        }
+
+        internal static JsonConverter<JsonElement> GetJsonElementConverter()
+        {
+            if (s_jsonElementConverter == null)
+            {
+                s_jsonElementConverter = new JsonConverterJsonElement();
+            }
+
+            return s_jsonElementConverter;
+        }
+
+        internal static JsonConverter<object> GetObjectConverter()
+        {
+            if (s_objectConverter == null)
+            {
+                s_objectConverter = new JsonConverterObject();
+            }
+
+            return s_objectConverter;
         }
     }
 }

@@ -653,8 +653,9 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
+            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated

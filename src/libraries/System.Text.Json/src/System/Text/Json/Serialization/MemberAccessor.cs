@@ -50,8 +50,8 @@ namespace System.Text.Json
             return null!;
         }
 
-        public abstract Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo);
 
-        public abstract Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
+        public abstract Action<object, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo);
     }
 }

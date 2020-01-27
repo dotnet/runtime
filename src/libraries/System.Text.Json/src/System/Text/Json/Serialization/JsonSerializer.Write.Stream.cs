@@ -71,21 +71,23 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
-                {
-                    state.ReferenceResolver = new DefaultReferenceResolver(writing: true);
-                }
-                state.Current.Initialize(inputType, options);
-                state.Current.CurrentValue = value;
+                state.InitializeRoot(inputType, options);
+
+                // Ensures converters support contination due to having to re-populate the buffer from a Stream.
+                state.SupportContinuation = true;
 
                 bool isFinalBlock;
-                int flushThreshold;
 
                 do
                 {
-                    flushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    isFinalBlock = WriteCore(
+                        writer,
+                        value,
+                        options,
+                        ref state,
+                        state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
 
-                    isFinalBlock = Write(writer, originalWriterDepth: 0, flushThreshold, options, ref state);
                     writer.Flush();
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);

@@ -19,10 +19,12 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        internal override sealed ClassType ClassType
         {
-            Debug.Assert(CanConvert(typeToConvert));
-            return CreateConverter(typeToConvert, options);
+            get
+            {
+                return ClassType.Invalid;
+            }
         }
 
         /// <summary>
@@ -32,7 +34,38 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
+        /// If <see langword="null"/> is returned, a <see cref="NotSupportedException"/> will be thrown.
         /// </returns>
-        public abstract JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options);
+        public abstract JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options);
+
+        internal override JsonPropertyInfo CreateJsonPropertyInfo()
+        {
+            throw new NotSupportedException();
+        }
+
+        internal sealed override Type? ElementType => null;
+
+        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        {
+            Debug.Assert(CanConvert(typeToConvert));
+            return CreateConverter(typeToConvert, options)!;
+        }
+
+        internal override sealed bool TryReadAsObject(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            out object? value)
+        {
+            throw new NotSupportedException();
+        }
+
+        internal override sealed bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        {
+            throw new NotSupportedException();
+        }
+
+        internal override sealed Type TypeToConvert => null!;
     }
 }

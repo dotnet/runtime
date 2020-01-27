@@ -40,17 +40,23 @@ namespace System.Text.Json
             return converters;
         }
 
+        // Get the list for converters that implement CanConvert().
         private static List<JsonConverter> GetDefaultConverters()
         {
-            const int NumberOfConverters = 2;
+            const int NumberOfConverters = 5;
 
             var converters = new List<JsonConverter>(NumberOfConverters);
 
-            // Use a list for converters that implement CanConvert().
+            // Nullable converter should always be first since it forwards to any nullable type.
+            converters.Add(new JsonValueConverterNullableFactory());
+
             converters.Add(new JsonConverterEnum());
             converters.Add(new JsonKeyValuePairConverter());
 
-            // We will likely add collection converters here in the future.
+            // Enumerable and Object converters should always be last since they can convert any IEnumerable
+            // or non-IEnumerable.
+            converters.Add(new JsonIEnumerableConverterFactory());
+            converters.Add(new JsonObjectFactoryConverter());
 
             Debug.Assert(NumberOfConverters == converters.Count);
 
@@ -65,7 +71,7 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonConverter> Converters { get; }
 
-        internal JsonConverter? DetermineConverterForProperty(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
+        internal JsonConverter? DetermineConverter(Type parentClassType, Type runtimePropertyType, PropertyInfo? propertyInfo)
         {
             JsonConverter? converter = null;
 
@@ -155,10 +161,8 @@ namespace System.Text.Json
             if (converter is JsonConverterFactory factory)
             {
                 converter = factory.GetConverterInternal(typeToConvert, this);
-                if (converter == null || converter.TypeToConvert == null)
-                {
-                    throw new ArgumentNullException(nameof(typeToConvert));
-                }
+                // Allow null converters from the factory. This will result in a NotSupportedException later
+                // and with a nice exception that indicates the parent type.
             }
 
             if (converter != null)
@@ -184,10 +188,6 @@ namespace System.Text.Json
             return converter;
         }
 
-        internal bool HasConverter(Type typeToConvert)
-        {
-            return GetConverter(typeToConvert) != null;
-        }
 
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
         {

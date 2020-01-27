@@ -141,10 +141,10 @@ namespace System.Text.Json
             return creator;
         }
 
-        public override Func<object?, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Func<object?, TProperty>)CreatePropertyGetter(propertyInfo, typeof(TClass));
+        public override Func<object?, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
+            (Func<object?, TProperty>)CreatePropertyGetter(propertyInfo, propertyInfo.DeclaringType!, typeof(TProperty));
 
-        private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType)
+        private static Delegate CreatePropertyGetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetGetMethod();
             Type objectType = typeof(object);
@@ -152,7 +152,7 @@ namespace System.Text.Json
             Debug.Assert(realMethod != null);
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
-                propertyInfo.PropertyType,
+                propertyType,
                 new[] { objectType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
@@ -174,13 +174,13 @@ namespace System.Text.Json
 
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(objectType, propertyInfo.PropertyType));
+            return dynamicMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(objectType, propertyType));
         }
 
-        public override Action<object?, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo) =>
-            (Action<object?, TProperty>)CreatePropertySetter(propertyInfo, typeof(TClass));
+        public override Action<object?, TProperty> CreatePropertySetter<TProperty>(PropertyInfo propertyInfo) =>
+            (Action<object?, TProperty>)CreatePropertySetter(propertyInfo, propertyInfo.DeclaringType!, typeof(TProperty));
 
-        private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType)
+        private static Delegate CreatePropertySetter(PropertyInfo propertyInfo, Type classType, Type propertyType)
         {
             MethodInfo? realMethod = propertyInfo.GetSetMethod();
             Type objectType = typeof(object);
@@ -189,7 +189,7 @@ namespace System.Text.Json
             var dynamicMethod = new DynamicMethod(
                 realMethod.Name,
                 typeof(void),
-                new[] { objectType, propertyInfo.PropertyType },
+                new[] { objectType, propertyType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
@@ -212,7 +212,7 @@ namespace System.Text.Json
 
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(objectType, propertyInfo.PropertyType));
+            return dynamicMethod.CreateDelegate(typeof(Action<,>).MakeGenericType(objectType, propertyType));
         }
     }
 }
