@@ -95,11 +95,10 @@ namespace System
             {
                 return string.Create(bytes.Length * 2, (Ptr: (IntPtr)bytesPtr, bytes.Length, casing), (chars, args) =>
                 {
-                    int pos = 0;
-                    foreach (byte b in new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length))
+                    var ros = new ReadOnlySpan<byte>((byte*)args.Ptr, args.Length);
+                    for (int pos = 0; pos < ros.Length; ++pos)
                     {
-                        ToCharsBuffer(b, chars, pos, args.casing);
-                        pos += 2;
+                        ToCharsBuffer(ros[pos], chars, pos * 2, args.casing);
                     }
                 });
             }
