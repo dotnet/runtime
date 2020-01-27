@@ -949,11 +949,22 @@ namespace System.Text.Json.Serialization.Tests
 
             public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
             {
-                return new MyStuffConverter();
+                if (typeToConvert == typeof(IClass))
+                {
+                    return new MyStuffConverterForIClass();
+                }
+                else if (typeToConvert == typeof(MyClass))
+                {
+                    return new MyStuffConverterForMyClass();
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
             }
         }
 
-        private class MyStuffConverter : JsonConverter<IClass>
+        private class MyStuffConverterForIClass : JsonConverter<IClass>
         {
             public override IClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
@@ -961,6 +972,19 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             public override void Write(Utf8JsonWriter writer, IClass value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(1);
+            }
+        }
+
+        private class MyStuffConverterForMyClass : JsonConverter<MyClass>
+        {
+            public override MyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new MyClass();
+            }
+
+            public override void Write(Utf8JsonWriter writer, MyClass value, JsonSerializerOptions options)
             {
                 writer.WriteNumberValue(1);
             }

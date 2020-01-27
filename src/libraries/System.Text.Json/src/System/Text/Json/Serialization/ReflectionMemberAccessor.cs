@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -28,54 +29,32 @@ namespace System.Text.Json
             return () => Activator.CreateInstance(type);
         }
 
-        public override Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target)
+        public override Action<TCollection, object> CreateAddMethodDelegate<TCollection>()
         {
-            Debug.Assert(addMethod != null && target != null);
-            return (Action<TProperty>)addMethod.CreateDelegate(typeof(Action<TProperty>), target);
-        }
+            Type collectionType = typeof(TCollection);
+            Type elementType = typeof(object);
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
-        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
-        {
-            MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
+            // We verified this won't be null when we created the converter for the collection type.
+            MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
 
-            Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
-            ConstructorInfo constructor = creatorType.GetConstructor(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance, binder: null,
-                Type.EmptyTypes,
-                modifiers: null)!;
-
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
-        }
-
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
-        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
-        {
-            Debug.Assert(collectionType.IsGenericType);
-
-            // Only string keys are allowed.
-            if (collectionType.GetGenericArguments()[0] != typeof(string))
+            return delegate (TCollection collection, object element)
             {
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(collectionType, parentType: null, memberInfo: null);
-            }
+                addMethod.Invoke(collection, new object[] { element! });
+            };
+        }
 
-            MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
+        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>()
+        {
+            MethodInfo createRange = typeof(TCollection).GetImmutableEnumerableCreateRangeMethod(typeof(TElement));
+            return (Func<IEnumerable<TElement>, TCollection>)createRange.CreateDelegate(
+                typeof(Func<IEnumerable<TElement>, TCollection>));
+        }
 
-            Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
-            ConstructorInfo constructor = creatorType.GetConstructor(
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.Instance, binder: null,
-                Type.EmptyTypes,
-                modifiers: null)!;
-
-            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor.Invoke(Array.Empty<object>());
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
+        public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>()
+        {
+            MethodInfo createRange = typeof(TCollection).GetImmutableDictionaryCreateRangeMethod(typeof(TElement));
+            return (Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>)createRange.CreateDelegate(
+                typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
         }
 
         public override Func<object, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo)

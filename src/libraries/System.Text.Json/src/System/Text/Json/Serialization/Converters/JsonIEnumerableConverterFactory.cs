@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -25,13 +26,23 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonArrayConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonConcurrentQueueOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonConcurrentStackOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonDefaultArrayConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonDictionaryOfStringTValueConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonICollectionOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIDictionaryOfStringTValueConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIEnumerableOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIEnumerableWithAddMethodConverter`1")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIListConverter`1")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIListOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonImmutableDictionaryOfStringTValueConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonImmutableEnumerableOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonIReadOnlyDictionaryOfStringTValueConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonISetOfTConverter`2")]
         [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonListOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonQueueOfTConverter`2")]
+        [PreserveDependency(".ctor", "System.Text.Json.Serialization.Converters.JsonStackOfTConverter`2")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter? converter = null;
@@ -51,13 +62,13 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(JsonArrayConverter<,>);
                 elementType = typeToConvert.GetElementType();
             }
-            // List<>
+            // List<> or deriving from List<>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(List<>))) != null)
             {
                 converterType = typeof(JsonListOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
-            // Dictionary<string,>
+            // Dictionary<string,> or deriving from Dictionary<string,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Dictionary<,>))) != null)
             {
                 if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
@@ -70,7 +81,20 @@ namespace System.Text.Json.Serialization.Converters
                     return null;
                 }
             }
-            // IDictionary<string,>
+            // Immutable dictionaries from System.Collections.Immutable, e.g. ImmutableDictionary<string, TValue>
+            else if (typeToConvert.IsImmutableDictionaryType())
+            {
+                if (typeToConvert.GetGenericArguments()[0] == typeof(string))
+                {
+                    converterType = typeof(JsonImmutableDictionaryOfStringTValueConverter<,>);
+                    elementType = typeToConvert.GetGenericArguments()[1];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            // IDictionary<string,> or deriving from IDictionary<string,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IDictionary<,>))) != null)
             {
                 if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
@@ -83,10 +107,35 @@ namespace System.Text.Json.Serialization.Converters
                     return null;
                 }
             }
+            // IReadOnlyDictionary<string,> or deriving from IReadOnlyDictionary<string,>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))) != null)
+            {
+                if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
+                {
+                    converterType = typeof(JsonIReadOnlyDictionaryOfStringTValueConverter<,>);
+                    elementType = actualTypeToConvert.GetGenericArguments()[1];
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            // Immutable non-dictionaries from System.Collections.Immutable, e.g. ImmutableStack<T>
+            else if (typeToConvert.IsImmutableEnumerableType())
+            {
+                converterType = typeof(JsonImmutableEnumerableOfTConverter<,>);
+                elementType = typeToConvert.GetGenericArguments()[0];
+            }
             // IList<>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IList<>))) != null)
             {
                 converterType = typeof(JsonIListOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+            // ISet<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(ISet<>))) != null)
+            {
+                converterType = typeof(JsonISetOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
             // ICollection<>
@@ -95,9 +144,32 @@ namespace System.Text.Json.Serialization.Converters
                 converterType = typeof(JsonICollectionOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
             }
-            // IEnumerable<>
-            else if (typeToConvert.IsInterface &&
-                (actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IEnumerable<>))) != null)
+            // Stack<> or deriving from Stack<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Stack<>))) != null)
+            {
+                converterType = typeof(JsonStackOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+            // Queue<> or deriving from Queue<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Queue<>))) != null)
+            {
+                converterType = typeof(JsonQueueOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+            // ConcurrentStack<> or deriving from ConcurrentStack<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(ConcurrentStack<>))) != null)
+            {
+                converterType = typeof(JsonConcurrentStackOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+            // ConcurrentQueue<> or deriving from ConcurrentQueue<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(ConcurrentQueue<>))) != null)
+            {
+                converterType = typeof(JsonConcurrentQueueOfTConverter<,>);
+                elementType = actualTypeToConvert.GetGenericArguments()[0];
+            }
+            // IEnumerable<>, types assignable from List<>
+            else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IEnumerable<>))) != null)
             {
                 converterType = typeof(JsonIEnumerableOfTConverter<,>);
                 elementType = actualTypeToConvert.GetGenericArguments()[0];
@@ -105,7 +177,7 @@ namespace System.Text.Json.Serialization.Converters
             // Check for non-generics after checking for generics.
             else if (typeof(IDictionary).IsAssignableFrom(typeToConvert))
             {
-                if (typeToConvert.IsAbstract || typeToConvert.IsInterface)
+                if (typeToConvert == typeof(IDictionary))
                 {
                     return s_IDictionaryConverter;
                 }
@@ -114,12 +186,16 @@ namespace System.Text.Json.Serialization.Converters
             }
             else if (typeof(IList).IsAssignableFrom(typeToConvert))
             {
-                if (typeToConvert.IsAbstract || typeToConvert.IsInterface)
+                if (typeToConvert == typeof(IList))
                 {
                     return s_IListConverter;
                 }
 
                 converterType = typeof(JsonIListConverter<>);
+            }
+            else if (typeToConvert.IsNonGenericStackOrQueue())
+            {
+                converterType = typeof(JsonIEnumerableWithAddMethodConverter<>);
             }
             else
             {

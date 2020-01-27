@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 #if BUILDING_INBOX_LIBRARY
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -55,90 +56,71 @@ namespace System.Text.Json
             return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
         }
 
-        public override Action<TProperty> CreateAddDelegate<TProperty>(MethodInfo addMethod, object target)
+        public override Action<TCollection, object> CreateAddMethodDelegate<TCollection>()
         {
-            Debug.Assert(addMethod != null && target != null);
-            return (Action<TProperty>)addMethod.CreateDelegate(typeof(Action<TProperty>), target);
-        }
+            Type collectionType = typeof(TCollection);
+            Type elementType = typeof(object);
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableEnumerableCreator`2")]
-        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
-        {
-            MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
-
-            Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
-
-            ConstructorInfo? realMethod = creatorType.GetConstructor(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                binder: null,
-                Type.EmptyTypes,
-                modifiers: null);
-
-            Debug.Assert(realMethod != null);
+            // We verified this won't be null when a created the converter that calls this method.
+            MethodInfo realMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
 
             var dynamicMethod = new DynamicMethod(
-                ConstructorInfo.ConstructorName,
-                typeof(object),
-                Type.EmptyTypes,
+                realMethod.Name,
+                typeof(void),
+                new[] { collectionType, elementType },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            generator.Emit(OpCodes.Newobj, realMethod);
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Ldarg_1);
+            generator.Emit(OpCodes.Callvirt, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
-                typeof(JsonClassInfo.ConstructorDelegate));
-
-            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
-
-            Debug.Assert(creator != null);
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
+            return (Action<TCollection, object>)dynamicMethod.CreateDelegate(typeof(Action<TCollection, object>));
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.ImmutableDictionaryCreator`2")]
-        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
+        public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>()
         {
-            Debug.Assert(collectionType.IsGenericType);
-
-            // Only string keys are allowed.
-            if (collectionType.GetGenericArguments()[0] != typeof(string))
-            {
-                throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(collectionType, parentType: null, memberInfo: null);
-            }
-
-            MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
-
-            Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
-
-            ConstructorInfo? realMethod = creatorType.GetConstructor(
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
-                binder: null,
-                Type.EmptyTypes,
-                modifiers: null);
-
-            Debug.Assert(realMethod != null);
+            Type collectionType = typeof(TCollection);
+            MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(typeof(TElement));
 
             var dynamicMethod = new DynamicMethod(
-                ConstructorInfo.ConstructorName,
-                typeof(object),
-                Type.EmptyTypes,
+                realMethod.Name,
+                collectionType,
+                new[] { typeof(IEnumerable<TElement>) },
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
             ILGenerator generator = dynamicMethod.GetILGenerator();
-            generator.Emit(OpCodes.Newobj, realMethod);
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Call, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
-                typeof(JsonClassInfo.ConstructorDelegate));
+            return (Func<IEnumerable<TElement>, TCollection>)dynamicMethod.CreateDelegate(typeof(Func<IEnumerable<TElement>, TCollection>));
+        }
 
-            ImmutableCollectionCreator? creator = (ImmutableCollectionCreator?)constructor();
+        public override Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TElement, TCollection>()
+        {
+            Type collectionType = typeof(TCollection);
+            MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(typeof(TElement));
 
-            Debug.Assert(creator != null);
-            creator.RegisterCreatorDelegateFromMethod(createRange);
-            return creator;
+            var dynamicMethod = new DynamicMethod(
+                realMethod.Name,
+                collectionType,
+                new[] { typeof(IEnumerable<KeyValuePair<string, TElement>>) },
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+
+            generator.Emit(OpCodes.Ldarg_0);
+            generator.Emit(OpCodes.Call, realMethod);
+            generator.Emit(OpCodes.Ret);
+
+            return (Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>)dynamicMethod.CreateDelegate(typeof(Func<IEnumerable<KeyValuePair<string, TElement>>, TCollection>));
         }
 
         public override Func<object?, TProperty> CreatePropertyGetter<TProperty>(PropertyInfo propertyInfo) =>
