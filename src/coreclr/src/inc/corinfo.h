@@ -2307,6 +2307,8 @@ public:
             unsigned                    metaTOK     /* IN  */
             ) = 0;
 
+    // Returns string length and content (can be null for dynamic context)
+    // for given metaTOK and module, length `-1` means input is incorrect
     virtual LPCWSTR getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
