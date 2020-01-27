@@ -2206,7 +2206,6 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
     case SystemVClassificationTypeIntegerReference:     return "IntegerReference";
     case SystemVClassificationTypeIntegerByRef:         return "IntegerByReference";
     case SystemVClassificationTypeSSE:                  return "SSE";
-    case SystemVClassificationTypeTypedReference:       return "TypedReference";
     default:                                            return "ERROR";
     }
 };
@@ -2436,64 +2435,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             }
 
             continue;
-        }
-
-        if (fieldClassificationType == SystemVClassificationTypeTypedReference ||
-            CorInfoType2UnixAmd64Classification(GetClass_NoLogging()->GetInternalCorElementType()) == SystemVClassificationTypeTypedReference)
-        {
-            // The TypedReference is a very special type.
-            // In source/metadata it has two fields - Type and Value and both are defined of type IntPtr.
-            // When the VM creates a layout of the type it changes the type of the Value to ByRef type and the
-            // type of the Type field is left to IntPtr (TYPE_I internally - native int type.)
-            // This requires a special treatment of this type. The code below handles the both fields (and this entire type).
-
-            for (unsigned i = 0; i < 2; i++)
-            {
-                fieldSize = 8;
-                fieldOffset = (i == 0 ? 0 : 8);
-                normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
-                fieldClassificationType = (i == 0 ? SystemVClassificationTypeIntegerByRef : SystemVClassificationTypeInteger);
-                if ((normalizedFieldOffset % fieldSize) != 0)
-                {
-                    // The spec requires that struct values on the stack from register passed fields expects
-                    // those fields to be at their natural alignment.
-
-                    LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
-                    return false;
-                }
-
-                helperPtr->largestFieldOffset = (int)normalizedFieldOffset;
-
-                // Set the data for a new field.
-
-                // The new field classification must not have been initialized yet.
-                _ASSERTE(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] == SystemVClassificationTypeNoClass);
-
-                // There are only a few field classifications that are allowed.
-                _ASSERTE((fieldClassificationType == SystemVClassificationTypeInteger) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerReference) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerByRef) ||
-                    (fieldClassificationType == SystemVClassificationTypeSSE));
-
-                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = fieldClassificationType;
-                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = fieldSize;
-                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
-
-                LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-                    nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
-                    GetSystemVClassificationTypeName(fieldClassificationType),
-                    GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
-
-                helperPtr->currentUniqueOffsetField++;
-#ifdef _DEBUG
-                ++fieldIndex;
-#endif // _DEBUG
-            }
-
-            // Both fields of the special TypedReference struct are handled.
-            // Done classifying the System.TypedReference struct fields.
-            break;
         }
 
         if ((normalizedFieldOffset % fieldSize) != 0)

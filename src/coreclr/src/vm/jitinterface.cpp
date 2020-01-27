@@ -2309,8 +2309,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     // Make sure this is a value type.
     if (th.IsValueType())
     {
-        _ASSERTE((CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct) ||
-                 (CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeTypedReference));
+        _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
 
         // The useNativeLayout in this case tracks whether the classification
         // is for a native layout of the struct or not.
