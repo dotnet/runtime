@@ -251,26 +251,6 @@
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
-# Expected -1, but got 0
-# https://github.com/mono/mono/issues/15183
--nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames
-
-# Assertion differences 
-# https://github.com/mono/mono/issues/15184
--nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_Filename_LineNumber_ColNumber
-
-# A little off 
-# Assert.Equal() Failure
-#                ↓ (pos 0)
-#      Expected: MoveNext at offset 90 in file:line:column···
-#      Actual:   .ctor at offset 90 in file:line:column Fi···
-# https://github.com/mono/mono/issues/15186
--nomethod System.Diagnostics.Tests.StackFrameTests.ToString_Invoke_ReturnsExpected
-
-# Assertion differences.  Expects -1, got 0
-# https://github.com/mono/mono/issues/15187
--nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
-
 # JIT should not inline custom throw helpers
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
