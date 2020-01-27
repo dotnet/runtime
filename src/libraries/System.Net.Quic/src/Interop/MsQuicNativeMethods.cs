@@ -183,7 +183,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataShutdownBeginPeer
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -264,7 +264,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal bool EarlyDataAccepted => Data.Connected.EarlyDataAccepted;
             internal ulong NumBytes => Data.IdealSendBuffer.NumBytes;
             internal uint ShutdownBeginStatus => Data.ShutdownBegin.Status;
-            internal ushort ShutdownBeginPeerStatus => Data.ShutdownBeginPeer.ErrorCode;
+            internal long ShutdownBeginPeerStatus => Data.ShutdownBeginPeer.ErrorCode;
             internal bool ShutdownTimedOut => Data.ShutdownComplete.TimedOut;
             internal ushort BiDirectionalCount => Data.StreamsAvailable.BiDirectionalCount;
             internal ushort UniDirectionalCount => Data.StreamsAvailable.UniDirectionalCount;
@@ -324,13 +324,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerSendAbort
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerRecvAbort
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]

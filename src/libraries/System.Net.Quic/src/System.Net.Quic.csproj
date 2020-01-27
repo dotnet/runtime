@@ -32,6 +32,7 @@
     <Compile Include="System\Net\Quic\QuicConnection.cs" />
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
+    <Compile Include="System\Net\Quic\QuicOperationAbortedException.cs" />
     <Compile Include="System\Net\Quic\QuicStream.cs" />
     <Compile Include="System\Net\Quic\QuicException.cs" />
     <Compile Include="System\Net\Quic\QuicConnectionAbortedException.cs" />

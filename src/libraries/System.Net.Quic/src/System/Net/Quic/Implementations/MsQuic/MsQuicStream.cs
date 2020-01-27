@@ -48,10 +48,12 @@ namespace System.Net.Quic.Implementations.MsQuic
         private StartState _started;
 
         private ReadState _readState;
+        private long _readErrorCode = -1;
 
         private ShutdownWriteState _shutdownState;
 
         private SendState _sendState;
+        private long _sendErrorCode = -1;
 
         // Used by the class to indicate that the stream is m_Readable.
         private readonly bool _canRead;
@@ -245,7 +247,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else if (_readState == ReadState.Aborted)
                 {
-                    throw new IOException("Reading has been aborted by the peer.");
+                    throw _readErrorCode switch
+                    {
+                        -1 => new QuicOperationAbortedException(),
+                        long err => new QuicStreamAbortedException(err)
+                    };
                 }
             }
 
@@ -402,6 +408,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
+            // TODO: optimize this.
             WriteAsync(buffer.ToArray()).GetAwaiter().GetResult();
         }
 
@@ -532,14 +539,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Peer has told us to abort the reading side of the stream.
                     case QUIC_STREAM_EVENT.PEER_SEND_ABORTED:
                         {
-                            status = HandleEventPeerSendAborted();
+                            status = HandleEventPeerSendAborted(ref evt);
                         }
                         break;
                     // Peer has stopped receiving data, don't send anymore.
-                    // Potentially throw when WriteAsync/FlushAsync.
                     case QUIC_STREAM_EVENT.PEER_RECEIVE_ABORTED:
                         {
-                            status = HandleEventPeerRecvAbort();
+                            status = HandleEventPeerRecvAborted(ref evt);
                         }
                         break;
                     // Occurs when shutdown is completed for the send side.
@@ -598,9 +604,26 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Pending;
         }
 
-        private uint HandleEventPeerRecvAbort()
+        private uint HandleEventPeerRecvAborted(ref StreamEvent evt)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            bool shouldComplete = false;
+            lock (_sync)
+            {
+                if (_sendState == SendState.None)
+                {
+                    shouldComplete = true;
+                }
+                _sendState = SendState.Aborted;
+                _sendErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+            }
+
+            if (shouldComplete)
+            {
+                _sendResettableCompletionSource.CompleteException(new QuicStreamAbortedException(_sendErrorCode));
+            }
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicStatusCodes.Success;
@@ -696,7 +719,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private uint HandleEventPeerSendAborted()
+        private uint HandleEventPeerSendAborted(ref StreamEvent evt)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -708,11 +731,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _readState = ReadState.Aborted;
+                _readErrorCode = evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)
             {
-                _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
+                _receiveResettableCompletionSource.CompleteException(new QuicStreamAbortedException(_readErrorCode));
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);

@@ -1,18 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Net.Security;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
 {
-    public class MsQuicTestBase : IDisposable
+    public class MsQuicTestBase
     {
-        public MsQuicTestBase()
-        {
-            IPEndPoint endpoint = new IPEndPoint(IPAddress.Loopback, 8000);
-            DefaultListener = CreateQuicListener(endpoint);
-        }
-
-        public QuicListener DefaultListener { get; }
-
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
@@ -34,6 +27,11 @@ namespace System.Net.Quic.Tests
             return new QuicConnection(QuicImplementationProviders.MsQuic, endpoint, GetSslClientAuthenticationOptions());
         }
 
+        public QuicListener CreateQuicListener()
+        {
+            return CreateQuicListener(new IPEndPoint(IPAddress.Loopback, 0));
+        }
+
         public QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
             QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
@@ -41,9 +39,24 @@ namespace System.Net.Quic.Tests
             return listener;
         }
 
-        public void Dispose()
+        public async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
         {
-            DefaultListener.Dispose();
+            using QuicListener listener = CreateQuicListener();
+
+            await new[]
+            {
+                Task.Run(async () =>
+                {
+                    using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                    await serverFunction(serverConnection);
+                }),
+                Task.Run(async () =>
+                {
+                    using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                    await clientConnection.ConnectAsync();
+                    await clientFunction(clientConnection);
+                })
+            }.WhenAllOrAnyFailed(millisecondsTimeout);
         }
     }
 }
