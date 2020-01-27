@@ -20,8 +20,8 @@
     <Platforms>x64;x86;arm;arm64;wasm32</Platforms>
 
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>$(BclSourcesRoot)\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly> <!-- TODO: reenable this -->
+    <ILLinkTrimXml>$(MSBuildThisFileDirectory)src\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
