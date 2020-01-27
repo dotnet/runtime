@@ -137,11 +137,7 @@
 // winbase.h
 #define WszGetEnvironmentStrings   GetEnvironmentStringsW
 #define WszFreeEnvironmentStrings   FreeEnvironmentStringsW
-#ifndef USE_FORMATMESSAGE_WRAPPER
 #define WszFormatMessage   FormatMessageW
-#else
-#define WszFormatMessage   CCompRC::FormatMessage
-#endif
 #define Wszlstrcmp   lstrcmpW
 #define Wszlstrcmpi   lstrcmpiW
 #define WszCreateMutex CreateMutexW

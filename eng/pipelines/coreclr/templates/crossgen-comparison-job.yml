@@ -75,9 +75,7 @@ jobs:
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
-
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 150 # 2.5 hrs
+    timeoutInMinutes: 90 # 1.5 hrs
 
     steps:
 
@@ -150,7 +148,7 @@ jobs:
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
-        WorkItemTimeout: 2:00 # 2 hours
+        WorkItemTimeout: 1:30 # 1:30 hours
         WorkItemDirectory: '$(artifactsDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:

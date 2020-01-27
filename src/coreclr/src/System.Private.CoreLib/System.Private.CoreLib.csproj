@@ -24,7 +24,7 @@
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
@@ -261,7 +261,6 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\SR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />

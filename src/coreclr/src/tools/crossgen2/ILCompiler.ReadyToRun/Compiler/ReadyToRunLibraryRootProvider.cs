@@ -83,16 +83,6 @@ namespace ILCompiler
             {
                 foreach (MetadataType type in _module.GetAllTypes())
                 {
-                    try
-                    {
-                        rootProvider.AddCompilationRoot(type, "Library module type");
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // Swallow type load exceptions while rooting
-                        continue;
-                    }
-
                     MetadataType typeWithMethods = type;
                     if (type.HasInstantiation)
                     {

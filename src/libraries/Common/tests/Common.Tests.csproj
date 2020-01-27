@@ -87,8 +87,8 @@
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>

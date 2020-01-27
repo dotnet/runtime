@@ -677,7 +677,7 @@ AC_PROG_LD_GNU
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h sys/sysctl.h libproc.h sys/prctl.h copyfile.h gnu/lib-names.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h sys/inotify.h arpa/inet.h complex.h unwind.h)
 
-# zlib/configure checks for unistd.h existance and defines HAVE_UNISTD_H on the compiler
+# zlib/configure checks for unistd.h existence and defines HAVE_UNISTD_H on the compiler
 # command line (not config.h) if it is present.
 AC_CHECK_HEADER(unistd.h,
     [HAVE_UNISTD_H=1
@@ -4465,8 +4465,21 @@ case "$host" in
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 			TARGET=POWERPC64;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
+			# mono#18554 - be more robust in testing for -mminimal-toc
+			AC_MSG_NOTICE([Checking PowerPC ABI])
 			if ! (echo $CC | grep -q -- 'clang'); then
-				CFLAGS="$CFLAGS -mminimal-toc"
+				if ! (echo | cc -dM -E - | awk '/_CALL_ELF/ {print $NF}'); then
+					AX_CHECK_COMPILE_FLAG(
+						[-mminimal-toc],
+						[CFLAGS="$CFLAGS -mminimal-toc"],
+						[CFLAGS="$CFLAGS"]
+					)
+					AC_DEFINE([POWERPC_ELF], 1, [PowerPC ELFv1])
+				else
+					# Do not set -mminimal-toc on ELFv2 systems
+					AC_DEFINE([POWERPC_ELFV2], 1, [PowerPC ELFv2])
+					CFLAGS="$CFLAGS"
+				fi
 			fi
 		else
 			TARGET=POWERPC;
@@ -4479,6 +4492,10 @@ case "$host" in
 			BTLS_PLATFORM=powerpc
 			;;
 		  linux*)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=powerpc
+			;;
+		  freebsd*)
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=powerpc
 			;;

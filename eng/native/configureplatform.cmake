@@ -13,6 +13,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
 #     - for windows we use the passed in parameter to CMAKE to determine build arch
 #----------------------------------------
+set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     set(CLR_CMAKE_HOST_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD)
@@ -67,8 +68,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     if(DEFINED CLR_CMAKE_LINUX_ID)
         if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
             set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
+            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
+            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -112,6 +115,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
   endif()
   set(CLR_CMAKE_HOST_SUNOS 1)
 endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+
+if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+  set(CLR_CMAKE_HOST_OS Windows_NT)
+endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
+
 
 #--------------------------------------------
 # This repo builds two set of binaries
@@ -174,9 +182,88 @@ if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
     clr_unknown_arch()
 endif()
 
-# check if host & target arch combination are valid
-if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
-    if(NOT((CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM)))
-        message(FATAL_ERROR "Invalid host and target arch combination")
+# Set TARGET architecture variables
+# Target os will be a cmake param (optional) for both windows as well as non-windows build
+# if target os is not specified then host & target os are same
+if (NOT DEFINED CLR_CMAKE_TARGET_OS OR CLR_CMAKE_TARGET_OS STREQUAL "" )
+  set(CLR_CMAKE_TARGET_OS ${CLR_CMAKE_HOST_OS})
+endif()
+
+if(CLR_CMAKE_TARGET_OS STREQUAL Linux)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Linux)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL tizen)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL tizen)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_DARWIN 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL FreeBSD)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_FREEBSD 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL FreeBSD)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL OpenBSD)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_OPENBSD 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL OpenBSD)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL NetBSD)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_NETBSD 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL NetBSD)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_SUNOS 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL SunOS)
+
+if(CLR_CMAKE_TARGET_UNIX)
+    if(CLR_CMAKE_TARGET_ARCH STREQUAL x64)
+        set(CLR_CMAKE_TARGET_UNIX_AMD64 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL armel)
+        set(CLR_CMAKE_TARGET_UNIX_ARM 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm)
+        set(CLR_CMAKE_TARGET_UNIX_ARM 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm64)
+        set(CLR_CMAKE_TARGET_UNIX_ARM64 1)
+    elseif(CLR_CMAKE_TARGET_ARCH STREQUAL x86)
+        set(CLR_CMAKE_TARGET_UNIX_X86 1)
+    else()
+        clr_unknown_arch()
+    endif()
+else()
+    set(CLR_CMAKE_TARGET_WIN32 1)
+endif(CLR_CMAKE_TARGET_UNIX)
+
+# check if host & target os/arch combination are valid
+if (CLR_CMAKE_TARGET_OS STREQUAL CLR_CMAKE_HOST_OS)
+    if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
+        if(NOT((CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM)))
+            message(FATAL_ERROR "Invalid platform and target arch combination")
+        endif()
+    endif()
+else()
+    if(NOT (CLR_CMAKE_HOST_OS STREQUAL Windows_NT))
+        message(FATAL_ERROR "Invalid host and target os/arch combination. Host OS: ${CLR_CMAKE_HOST_OS}")
+    endif()
+    if(NOT (CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_ALPINE_LINUX))
+        message(FATAL_ERROR "Invalid host and target os/arch combination. Target OS: ${CLR_CMAKE_TARGET_OS}")
+    endif()
+    if(NOT ((CLR_CMAKE_HOST_ARCH_AMD64 AND (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM)))
+        message(FATAL_ERROR "Invalid host and target os/arch combination. Host Arch: ${CLR_CMAKE_HOST_ARCH} Target Arch: ${CLR_CMAKE_TARGET_ARCH}")
     endif()
 endif()

@@ -771,6 +771,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Byte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.T.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SR.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Comparison.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Manipulation.cs" />
@@ -1127,11 +1128,15 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompletionPort.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'">
       <Link>Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.FILE_TIME.cs</Link>
     </Compile>
@@ -1180,7 +1185,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
     </Compile>
@@ -1196,7 +1203,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessMemoryInfo.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetProcessTimes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
@@ -1227,7 +1236,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Globalization.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Globalization.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
     </Compile>
@@ -1239,6 +1250,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.MemOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFORMATION.cs</Link>
@@ -1312,11 +1326,15 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.VirtualAlloc.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.VirtualAlloc_Ptr.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualFree.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.VirtualFree.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.VirtualQuery.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.VirtualQuery_Ptr.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
@@ -1338,7 +1356,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationFile.cs</Link>
     </Compile>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.SYSTEM_LEAP_SECOND_INFORMATION.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoCreateGuid.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
     </Compile>

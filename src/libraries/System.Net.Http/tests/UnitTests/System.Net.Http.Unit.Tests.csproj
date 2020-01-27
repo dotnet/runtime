@@ -110,6 +110,12 @@
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs">
       <Link>ProductionCode\System\Net\Http\FormUrlEncodedContent.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\AltSvcHeaderParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderValue.cs">
+      <Link>ProductionCode\System\Net\Http\Headers\AltSvcHeaderValue.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Headers\AuthenticationHeaderValue.cs">
       <Link>ProductionCode\System\Net\Http\Headers\AuthenticationHeaderValue.cs</Link>
     </Compile>
@@ -335,6 +341,7 @@
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Fakes\MacProxy.cs" Condition=" '$(TargetsOSX)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
+    <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />
     <Compile Include="Headers\CacheControlHeaderParserTest.cs" />
@@ -485,11 +492,26 @@
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\H3StaticTable.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\H3StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\HeaderField.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackEncoder.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackEncodingException.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
       <Link>WinHttpHandler\UnitTests\FakeInterop.cs</Link>

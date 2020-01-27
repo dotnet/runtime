@@ -7026,22 +7026,45 @@ size_t card_bundle_cardw (size_t cardb)
 // Clear the specified card bundle
 void gc_heap::card_bundle_clear (size_t cardb)
 {
-#ifdef FEATURE_CARD_MARKING_STEALING
-    // with card marking stealing, we may have multiple threads trying to clear bits in the same card bundle word
-    Interlocked::And((volatile uint32_t*)& card_bundle_table[card_bundle_word(cardb)], (uint32_t)~(1 << card_bundle_bit(cardb)));
+    uint32_t bit = (uint32_t)(1 << card_bundle_bit (cardb));
+    uint32_t* bundle = &card_bundle_table[card_bundle_word (cardb)];
+#ifdef MULTIPLE_HEAPS
+    // card bundles may straddle segments and heaps, thus bits may be cleared concurrently
+    if ((*bundle & bit) != 0)
+    {
+        Interlocked::And (bundle, ~bit);
+    }
 #else
-    card_bundle_table[card_bundle_word(cardb)] &= ~(1 << card_bundle_bit(cardb));
+    *bundle &= ~bit;
 #endif
+
+    // check for races
+    assert ((*bundle & bit) == 0);
+
     dprintf (2, ("Cleared card bundle %Ix [%Ix, %Ix[", cardb, (size_t)card_bundle_cardw (cardb),
               (size_t)card_bundle_cardw (cardb+1)));
 }
 
+inline void set_bundle_bits (uint32_t* bundle, uint32_t bits)
+{
+#ifdef MULTIPLE_HEAPS
+    // card bundles may straddle segments and heaps, thus bits may be set concurrently
+    if ((*bundle & bits) != bits)
+    {
+        Interlocked::Or (bundle, bits);
+    }
+#else
+    *bundle |= bits;
+#endif
+
+    // check for races
+    assert ((*bundle & bits) == bits);
+}
+
 void gc_heap::card_bundle_set (size_t cardb)
 {
-    if (!card_bundle_set_p (cardb))
-    {
-        card_bundle_table [card_bundle_word (cardb)] |= (1 << card_bundle_bit (cardb));
-    }
+    uint32_t bits = (1 << card_bundle_bit (cardb));
+    set_bundle_bits (&card_bundle_table [card_bundle_word (cardb)], bits);
 }
 
 // Set the card bundle bits between start_cardb and end_cardb
@@ -7059,19 +7082,26 @@ void gc_heap::card_bundles_set (size_t start_cardb, size_t end_cardb)
     if (start_word < end_word)
     {
         // Set the partial words
-        card_bundle_table [start_word] |= highbits (~0u, card_bundle_bit (start_cardb));
+        uint32_t bits = highbits (~0u, card_bundle_bit (start_cardb));
+        set_bundle_bits (&card_bundle_table [start_word], bits);
 
         if (card_bundle_bit (end_cardb))
-            card_bundle_table [end_word] |= lowbits (~0u, card_bundle_bit (end_cardb));
+        {
+            bits = lowbits (~0u, card_bundle_bit (end_cardb));
+            set_bundle_bits (&card_bundle_table [end_word], bits);
+        }
 
         // Set the full words
         for (size_t i = start_word + 1; i < end_word; i++)
+        {
             card_bundle_table [i] = ~0u;
+        }
     }
     else
     {
-        card_bundle_table [start_word] |= (highbits (~0u, card_bundle_bit (start_cardb)) &
-                                            lowbits (~0u, card_bundle_bit (end_cardb)));
+        uint32_t bits = (highbits (~0u, card_bundle_bit (start_cardb)) &
+                          lowbits (~0u, card_bundle_bit (end_cardb)));
+        set_bundle_bits (&card_bundle_table [start_word], bits);
     }
 }
 
@@ -7267,7 +7297,6 @@ void gc_heap::set_card (size_t card)
     card_bundle_set(bundle_to_set);
 
     dprintf (3,("Set card %Ix [%Ix, %Ix[ and bundle %Ix", card, (size_t)card_address (card), (size_t)card_address (card+1), bundle_to_set));
-    assert(card_bundle_set_p(bundle_to_set) != 0);
 #endif
 }
 
@@ -30239,6 +30268,9 @@ gc_heap::mark_through_cards_helper (uint8_t** poo, size_t& n_gen,
     int thread = hpt->heap_number;
 #else
     THREAD_FROM_HEAP;
+#if defined (MULTIPLE_HEAPS)
+    gc_heap* hpt = this;
+#endif
 #endif
     if ((gc_low <= *poo) && (gc_high > *poo))
     {

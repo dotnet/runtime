@@ -132,6 +132,7 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.DefaultProxyCredentials.cs</Link>
     </Compile>
+    <Compile Include="HttpClientHandlerTest.AltSvc.cs" />
     <Compile Include="HttpClientHandlerTest.Finalization.cs" />
     <Compile Include="HttpClientHandlerTest.Headers.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.MaxConnectionsPerServer.cs">
@@ -143,6 +144,8 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.Proxy.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.Proxy.cs</Link>
     </Compile>
+    <Compile Include="HttpClientHandlerTest.Http3.cs" />
+
     <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs">
       <Link>Common\System\Net\Http\HttpClientHandlerTest.ServerCertificates.cs</Link>
@@ -221,11 +224,26 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs">
       <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackDecoder.cs">
+      <Link>Common\System\Net\Http\QPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackEncoder.cs">
+      <Link>Common\System\Net\Http\QPackEncoder.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs">
       <Link>Common\System\Net\Http\Http2LoopbackServer.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackConnection.cs">
       <Link>Common\System\Net\Http\Http2LoopbackConnection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http3LoopbackServer.cs">
+      <Link>Common\System\Net\Http\Http3LoopbackServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http3LoopbackConnection.cs">
+      <Link>Common\System\Net\Http\Http3LoopbackConnection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Http\Http3LoopbackStream.cs">
+      <Link>Common\System\Net\Http\Http3LoopbackStream.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\HuffmanDecoder.cs">
       <Link>Common\System\Net\Http\HuffmanDecoder.cs</Link>
