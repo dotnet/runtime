@@ -199,31 +199,6 @@
 ##  System.Threading.Tests
 ####################################################################
 
-# Process hangs and test fails with [ERROR] FATAL UNHANDLED EXCEPTION: System.Threading.WaitHandleCannotBeOpenedException: No handle of the given name exists.
-# https://github.com/mono/mono/issues/15157
--nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic
-
-# Fails with typeof(System.Threading.WaitHandleCannotBeOpenedException): A WaitHandle with system-wide name '' cannot be created. A WaitHandle of a different type might have the same name.
-# Expects an ArgumentException
-# https://github.com/mono/mono/issues/15158
--nomethod System.Threading.Tests.MutexTests.OpenExisting_InvalidNames
-
-# Expects ArgumentException but none is thrown
-# https://github.com/mono/mono/issues/15159
--nomethod System.Threading.Tests.MutexTests.Ctor_InvalidNames_Unix
-
-# Expects PlatformNotSupportedException, but we give an ArgumentNullException
-# https://github.com/mono/mono/issues/15160
--nomethod System.Threading.Tests.SemaphoreTests.OpenExisting_NotSupported_Unix
-
-# Expects PlatformNotSupportedException but none thrown
-# https://github.com/mono/mono/issues/15161
--nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
-
-####################################################################
-##  System.Threading.Tests
-####################################################################
-
 # Requires precise GC (should be ignored in dotnet/corefx for mono)
 -nomethod System.Threading.Tasks.Tests.ExecutionContextFlowTest.TaskCompletionSourceDoesntCaptureExecutionContext
 
