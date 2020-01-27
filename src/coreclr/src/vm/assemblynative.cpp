@@ -70,21 +70,19 @@ void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyN
     {
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
     }
-    else
+
+    // Compute parent assembly
+    if (requestingAssembly.Get() != NULL)
     {
-        // Compute parent assembly
-        if (requestingAssembly.Get() != NULL)
-        {
-            pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
-        }
-        else if (pBinderContext == NULL)
-        {
-            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-        }
-        if (pRefAssembly)
-        {
-            pParentAssembly = pRefAssembly->GetDomainAssembly();
-        }
+        pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
+    }
+    else if (pBinderContext == NULL)
+    {
+        pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
+    }
+    if (pRefAssembly)
+    {
+        pParentAssembly = pRefAssembly->GetDomainAssembly();
     }
 
     // Initialize spec
