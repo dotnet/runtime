@@ -30,7 +30,7 @@
   .field static assembly int32 s_Zero
   .field static assembly int32 s_i
   .field private static class cs1 s_obj
-  .field private static bool modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) s_timeUp
+  .field private static bool s_timeUp
   .field private object m_obj
   .field private object modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) m_objVolatile
   .field private object[] m_objs
@@ -123,7 +123,7 @@
     IL_006b:  xor
     IL_006c:  stloc.0
     IL_006d:  volatile.
-              ldsfld     bool modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::s_timeUp
+              ldsfld     bool cs1::s_timeUp
     IL_0072:  ldc.i4.0
     IL_0073:  ceq
     IL_0075:  stloc.2
@@ -187,7 +187,7 @@
 
     IL_0050:  stloc.0
     IL_0051:  volatile.
-              ldsfld     bool modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::s_timeUp
+              ldsfld     bool cs1::s_timeUp
     IL_0056:  ldc.i4.0
     IL_0057:  ceq
     IL_0059:  stloc.2
@@ -203,7 +203,7 @@
     IL_0000:  nop
     IL_0001:  ldc.i4.1
     IL_0002:  volatile.
-              stsfld     bool modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::s_timeUp
+              stsfld     bool cs1::s_timeUp
     IL_0007:  ret
   }
 
@@ -285,7 +285,8 @@
     IL_000c:  newobj     instance void cs1::.ctor()
     IL_0011:  stsfld     class cs1 cs1::s_obj
     IL_0016:  ldc.i4.0
-    IL_0017:  stsfld     bool modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) cs1::s_timeUp
+    IL_0017:  volatile.
+              stsfld     bool cs1::s_timeUp
     IL_001c:  ret
   }
 
