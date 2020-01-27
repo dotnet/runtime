@@ -94,22 +94,23 @@ namespace System.Text.RegularExpressions
         public const int Back2 = 256; // bit to indicate that we're backtracking on a second branch.
         public const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
-        public readonly RegexTree Tree;              // the optimized parse tree
-        public readonly int[] Codes;                 // the code
-        public readonly string[] Strings;            // the string/set table
-        public readonly int[]?[] StringsAsciiLookup; // the ASCII lookup table optimization for the sets in Strings
-        public readonly int TrackCount;              // how many instructions use backtracking
-        public readonly Hashtable? Caps;             // mapping of user group numbers -> impl group slots
-        public readonly int CapSize;                 // number of impl group slots
-        public readonly RegexPrefix? FCPrefix;       // the set of candidate first characters, if available
-        public int[]? FCPrefixAsciiLookup;           // the ASCII lookup table optimization for FCPrefix if it exists; only used by the interpreter
-        public readonly RegexBoyerMoore? BMPrefix;   // the fixed prefix string as a Boyer-Moore machine, if available
-        public readonly int Anchors;                 // the set of zero-length start anchors (RegexFCD.Bol, etc)
-        public readonly bool RightToLeft;            // true if right to left
+        public readonly RegexTree Tree;                    // the optimized parse tree
+        public readonly int[] Codes;                       // the code
+        public readonly string[] Strings;                  // the string/set table
+        public readonly int[]?[] StringsAsciiLookup;       // the ASCII lookup table optimization for the sets in Strings
+        public readonly int TrackCount;                    // how many instructions use backtracking
+        public readonly Hashtable? Caps;                   // mapping of user group numbers -> impl group slots
+        public readonly int CapSize;                       // number of impl group slots
+        public readonly RegexPrefix[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
+        public int[]? LeadingCharClassAsciiLookup;         // the ASCII lookup table optimization for FCPrefix[0], if it exists; only used by the interpreter
+        public readonly RegexBoyerMoore? BoyerMoorePrefix; // the fixed prefix string as a Boyer-Moore machine, if available
+        public readonly int Anchors;                       // the set of zero-length start anchors (RegexFCD.Bol, etc)
+        public readonly bool RightToLeft;                  // true if right to left
 
         public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
                          Hashtable? caps, int capsize,
-                         RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
+                         RegexBoyerMoore? boyerMoorePrefix,
+                         RegexPrefix[]? leadingCharClasses,
                          int anchors, bool rightToLeft)
         {
             Tree = tree;
@@ -119,8 +120,8 @@ namespace System.Text.RegularExpressions
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
-            BMPrefix = bmPrefix;
-            FCPrefix = fcPrefix;
+            BoyerMoorePrefix = boyerMoorePrefix;
+            LeadingCharClasses = leadingCharClasses;
             Anchors = anchors;
             RightToLeft = rightToLeft;
         }
@@ -394,25 +395,36 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public void Dump()
         {
-            int i;
+            var sb = new StringBuilder();
 
-            Debug.WriteLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            Debug.WriteLine("Firstchars: " + (FCPrefix == null ? "n/a" : RegexCharClass.SetDescription(FCPrefix.GetValueOrDefault().Prefix)));
-            Debug.WriteLine("Prefix:     " + (BMPrefix == null ? "n/a" : Regex.Escape(BMPrefix.ToString())));
-            Debug.WriteLine("Anchors:    " + RegexFCD.AnchorDescription(Anchors));
-            Debug.WriteLine("");
-            if (BMPrefix != null)
+            sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
+            sb.AppendLine("Anchors:    " + RegexPrefixAnalyzer.AnchorDescription(Anchors));
+            sb.AppendLine("");
+
+            if (BoyerMoorePrefix != null)
             {
-                Debug.WriteLine("BoyerMoore:");
-                Debug.WriteLine(BMPrefix.Dump("    "));
-            }
-            for (i = 0; i < Codes.Length;)
-            {
-                Debug.WriteLine(OpcodeDescription(i));
-                i += OpcodeSize(Codes[i]);
+                sb.AppendLine("Boyer-Moore:");
+                sb.AppendLine(BoyerMoorePrefix.Dump("    "));
+                sb.AppendLine();
             }
 
-            Debug.WriteLine("");
+            if (LeadingCharClasses != null)
+            {
+                sb.AppendLine("First Chars:");
+                for (int i = 0; i < LeadingCharClasses.Length; i++)
+                {
+                    sb.AppendLine($"{i}: {RegexCharClass.SetDescription(LeadingCharClasses[i].Value)}");
+                }
+                sb.AppendLine();
+            }
+
+            for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
+            {
+                sb.AppendLine(OpcodeDescription(i));
+            }
+            sb.AppendLine();
+
+            Debug.WriteLine(sb.ToString());
         }
 #endif
     }

@@ -46,8 +46,8 @@ namespace System.Text.RegularExpressions
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
-            _fcPrefix = code.FCPrefix;
-            _bmPrefix = code.BMPrefix;
+            _leadingCharClasses = code.LeadingCharClasses;
+            _boyerMoorePrefix = code.BoyerMoorePrefix;
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
 

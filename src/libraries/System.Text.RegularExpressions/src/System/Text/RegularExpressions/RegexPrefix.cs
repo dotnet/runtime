@@ -6,16 +6,16 @@ namespace System.Text.RegularExpressions
 {
     internal readonly struct RegexPrefix
     {
-        internal static RegexPrefix Empty { get; } = new RegexPrefix(string.Empty, false);
+        internal static RegexPrefix Empty => new RegexPrefix(string.Empty, caseInsensitive: false);
 
-        internal RegexPrefix(string prefix, bool ci)
+        internal RegexPrefix(string prefix, bool caseInsensitive)
         {
-            Prefix = prefix;
-            CaseInsensitive = ci;
+            Value = prefix;
+            CaseInsensitive = caseInsensitive;
         }
 
-        internal bool CaseInsensitive { get; }
+        internal string Value { get; }
 
-        internal string Prefix { get; }
+        internal bool CaseInsensitive { get; }
     }
 }
