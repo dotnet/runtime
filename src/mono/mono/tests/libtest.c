@@ -1834,6 +1834,9 @@ mono_test_asany (void *ptr, int what)
 			return 1;
 		}
 	}
+	case 5: {
+		return (*(intptr_t*)ptr == 5) ? 0 : 1;
+	}
 	default:
 		g_assert_not_reached ();
 	}
