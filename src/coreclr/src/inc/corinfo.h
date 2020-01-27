@@ -252,10 +252,6 @@ enum SystemVClassificationType : unsigned __int8
     // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-    // Internal flags - never returned outside of the classification implementation.
-
-    SystemVClassificationTypeMAX                = 9,
 };
 
 // Represents classification information for a struct.
