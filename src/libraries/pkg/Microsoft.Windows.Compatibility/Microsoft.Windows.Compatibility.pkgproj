@@ -22,7 +22,6 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.OleDb" />
-    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
@@ -58,6 +57,9 @@
     </LibraryPackage>
     <LibraryPackage Include="System.Data.DataSetExtensions">
       <Version>4.5.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Data.SqlClient">
+      <Version>4.8.0</Version>
     </LibraryPackage>
 
     <!-- Service model packages -->

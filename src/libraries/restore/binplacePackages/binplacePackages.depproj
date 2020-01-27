@@ -37,6 +37,7 @@
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.8.0" Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>
