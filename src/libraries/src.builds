@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build">
+<Project DefaultTargets="Build" TreatAsLocalProperty="AdditionalBuildTargetFrameworks">
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
   <PropertyGroup>
