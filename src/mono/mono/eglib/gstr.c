@@ -611,19 +611,6 @@ g_strchomp (gchar *str)
 }
 
 gint
-g_printf(gchar const *format, ...)
-{
-	va_list args;
-	gint ret;
-
-	va_start(args, format);
-	ret = vprintf(format, args);
-	va_end(args);
-
-	return ret;
-}
-
-gint
 g_fprintf(FILE *file, gchar const *format, ...)
 {
 	va_list args;
