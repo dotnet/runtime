@@ -11,23 +11,43 @@ namespace System.Text.RegularExpressions.Tests
     {
         // These tests depend on using reflection to access internals of Regex in order to validate
         // if, when, and how various optimizations are being employed.  As implementation details
-        // change, these tests will need to be updated as well.  Note that Compiled Regexes
+        // change, these tests will need to be updated as well.  Note, too, that Compiled Regexes
         // null out the _code field being accessed here, so this mechanism won't work to validate
         // Compiled, which also means it won't work to validate optimizations only enabled
         // when using Compiled, such as auto-atomicity for the last node in a regex.
 
+        private static readonly FieldInfo s_regexCode;
+        private static readonly FieldInfo s_regexCodeCodes;
+        private static readonly FieldInfo s_regexCodeTree;
+        private static readonly FieldInfo s_regexCodeTreeMinRequiredLength;
+
+        static RegexReductionTests()
+        {
+            if (PlatformDetection.IsNetFramework)
+            {
+                // These members may not exist, and the tests won't run.
+                return;
+            }
+
+            s_regexCode = typeof(Regex).GetField("_code", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCode);
+
+            s_regexCodeCodes = s_regexCode.FieldType.GetField("Codes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCodeCodes);
+
+            s_regexCodeTree = s_regexCode.FieldType.GetField("Tree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCodeTree);
+
+            s_regexCodeTreeMinRequiredLength = s_regexCodeTree.FieldType.GetField("MinRequiredLength", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(s_regexCodeTreeMinRequiredLength);
+        }
+
         private static int[] GetRegexCodes(Regex r)
         {
-            FieldInfo codeField = typeof(Regex).GetField("_code", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(codeField);
-
-            object code = codeField.GetValue(r);
+            object code = s_regexCode.GetValue(r);
             Assert.NotNull(code);
 
-            FieldInfo codesField = code.GetType().GetField("Codes", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(codesField);
-
-            int[] codes = codesField.GetValue(code) as int[];
+            int[] codes = s_regexCodeCodes.GetValue(code) as int[];
             Assert.NotNull(codes);
 
             return codes;
@@ -35,22 +55,13 @@ namespace System.Text.RegularExpressions.Tests
 
         private static int GetMinRequiredLength(Regex r)
         {
-            FieldInfo codeField = typeof(Regex).GetField("_code", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(codeField);
-
-            object code = codeField.GetValue(r);
+            object code = s_regexCode.GetValue(r);
             Assert.NotNull(code);
 
-            FieldInfo treeField = code.GetType().GetField("Tree", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(treeField);
-
-            object tree = treeField.GetValue(code);
+            object tree = s_regexCodeTree.GetValue(code);
             Assert.NotNull(tree);
 
-            FieldInfo minRequiredLengthField = tree.GetType().GetField("MinRequiredLength", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            Assert.NotNull(minRequiredLengthField);
-
-            object minRequiredLength = minRequiredLengthField.GetValue(tree);
+            object minRequiredLength = s_regexCodeTreeMinRequiredLength.GetValue(tree);
             Assert.IsType<int>(minRequiredLength);
 
             return (int)minRequiredLength;

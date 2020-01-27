@@ -40,6 +40,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs" Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_BASIC_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_BASIC_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindClose.cs" Link="Interop\Windows\Interop.FindClose.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindFirstFileEx.cs" Link="Interop\Windows\Interop.FindFirstFileEx.cs" />
@@ -76,9 +77,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CopyFileEx.cs" Link="Common\Interop\Windows\Interop.CopyFileEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile_IntPtr.cs" Link="Common\Interop\Windows\Interop.CreateFile_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteFile.cs" Link="Common\Interop\Windows\Interop.DeleteFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeleteVolumeMountPoint.cs" Link="Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Interop.FileOperations.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FindNextFile.cs" Link="Common\Interop\Windows\Interop.FindNextFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetVolumeInformation.cs" Link="Common\Interop\Windows\Interop.GetVolumeInformation.cs" />

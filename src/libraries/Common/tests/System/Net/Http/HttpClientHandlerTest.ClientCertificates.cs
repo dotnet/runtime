@@ -197,7 +197,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await LoopbackServer.CreateServerAsync(async server =>
                 {
-                    Task clientTask = client.GetStringAsync(server.Uri);
+                    Task clientTask = client.GetStringAsync(server.Address);
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         SslStream sslStream = Assert.IsType<SslStream>(connection.Stream);

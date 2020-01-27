@@ -10,16 +10,13 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => true;
 
-        protected WinHttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseHttp2);
-
-        protected static WinHttpClientHandler CreateHttpClientHandler(string useHttp2LoopbackServerString) =>
-            CreateHttpClientHandler(bool.Parse(useHttp2LoopbackServerString));
-
-        protected static WinHttpClientHandler CreateHttpClientHandler(bool useHttp2LoopbackServer = false)
+        protected static WinHttpClientHandler CreateHttpClientHandler(Version useVersion = null)
         {
+            useVersion ??= HttpVersion.Version11;
+
             WinHttpClientHandler handler = new WinHttpClientHandler();
 
-            if (useHttp2LoopbackServer)
+            if (useVersion >= HttpVersion.Version20)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }

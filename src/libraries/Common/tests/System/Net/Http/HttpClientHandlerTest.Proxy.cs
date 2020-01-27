@@ -111,14 +111,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            RemoteExecutor.Invoke(async (useHttp2String) =>
+            RemoteExecutor.Invoke(async (useVersionString) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
-                    using (HttpClient client = CreateHttpClient(useHttp2String))
+                    using (HttpClient client = CreateHttpClient(useVersionString))
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -126,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
                 }
-            }, UseHttp2.ToString()).Dispose();
+            }, UseVersion.ToString()).Dispose();
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/32809")]

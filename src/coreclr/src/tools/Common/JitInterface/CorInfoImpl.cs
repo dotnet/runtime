@@ -44,7 +44,7 @@ namespace Internal.JitInterface
             ARM64 = 0xaa64,
         }
 
-        private const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -109,29 +109,11 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private static JitConfigProvider s_jitConfig;
-
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
-        public static void RegisterJITModule(JitConfigProvider jitConfig)
+        public static void Startup()
         {
-            s_jitConfig = jitConfig;
-            if (jitConfig.JitPath != null)
-            {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
-        }
-
-        private static IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libHandle = IntPtr.Zero;
-            if (libraryName == JitLibrary)
-            {
-                libHandle = NativeLibrary.Load(s_jitConfig.JitPath, assembly, searchPath);
-            }
-            return libHandle;
+            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl()
@@ -243,7 +225,7 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = s_jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -3038,7 +3020,7 @@ namespace Internal.JitInterface
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
-            foreach (var flag in s_jitConfig.Flags)
+            foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
             // Set the rest of the flags that don't make sense to expose publically.

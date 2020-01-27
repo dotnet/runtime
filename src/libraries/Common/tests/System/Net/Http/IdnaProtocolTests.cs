@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = UseVersion };
                     request.Headers.Host = hostname;
                     request.Headers.Referrer = uri;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
