@@ -511,7 +511,12 @@ namespace System.Net.Http
                     {
                         var state = (TimeoutState)s;
                         state.IsFired = true;
-                        state.CancellationSource.Cancel();
+                        try
+                        {
+                            state.CancellationSource.Cancel();
+                        }
+                        catch (ObjectDisposedException) // ObjectDisposedException is expected when the timer fires just after the CTS has been disposed
+                        { }
                     }, timeoutState, timeoutMilliseconds, Threading.Timeout.Infinite);
                 }
             }
@@ -527,21 +532,15 @@ namespace System.Net.Http
             {
                 sendTask = base.SendAsync(request, cts.Token);
             }
-            catch (TaskCanceledException e)
+            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, cancellationToken))
             {
-                bool isTimedout = TimeoutFired(timeoutState, cancellationToken);
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
-
-                if (isTimedout)
-                {
-                    ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
-                }
-
+                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
+                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
                 throw;
             }
             catch
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
                 throw;
             }
 
@@ -572,16 +571,10 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (TaskCanceledException e)
+            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
             {
-                bool isTimedout = TimeoutFired(timeoutState, callerToken);
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
-
-                if (isTimedout)
-                {
-                    ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
-                }
-
+                response?.Dispose();
+                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
                 throw;
             }
             catch (Exception e)
@@ -592,8 +585,7 @@ namespace System.Net.Http
             }
             finally
             {
-                timer?.Dispose();
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
             }
         }
 
@@ -611,16 +603,9 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (TaskCanceledException e)
+            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
             {
-                bool isTimedout = TimeoutFired(timeoutState, callerToken);
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
-
-                if (isTimedout)
-                {
-                    ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
-                }
-
+                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
                 throw;
             }
             catch (Exception e)
@@ -630,8 +615,7 @@ namespace System.Net.Http
             }
             finally
             {
-                timer?.Dispose();
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
             }
         }
 
@@ -659,7 +643,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleFinishSendAsyncCleanup(CancellationTokenSource cts, bool disposeCts)
+        private void HandleFinishSendAsyncCleanup(CancellationTokenSource cts, bool disposeCts, Timer timer)
         {
             // Dispose of the CancellationTokenSource if it was created specially for this request
             // rather than being used across multiple requests.
@@ -667,6 +651,8 @@ namespace System.Net.Http
             {
                 cts.Dispose();
             }
+
+            timer?.Dispose();
 
             // This method used to also dispose of the request content, e.g.:
             //     request.Content?.Dispose();

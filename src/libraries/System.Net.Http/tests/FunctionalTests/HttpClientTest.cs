@@ -621,6 +621,21 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public async Task Timeout_TimeoutTriggeredOnBufferedResponse_ThrowsNestedTimeoutException(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromMilliseconds(50);
+                TaskCanceledException e = await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(CreateFakeUri(), completionOption));
+                TimeoutException timeoutException = (TimeoutException) e.InnerException;
+                Assert.NotNull(timeoutException);
+                Assert.NotNull(timeoutException.InnerException);
+            }
+        }
+
         [Fact]
         public void DefaultProxy_SetNull_Throws()
         {
