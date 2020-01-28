@@ -437,6 +437,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         if (trustResult == kSecTrustResultRecoverableTrustFailure && osStatus == noErr && certificateCount > 1)
         {
             // If we get recoverable failure, let's try it again with full anchor list.
+            // We already stored just the first certificate into anchors; now we store the rest.
             for (CFIndex i = 1; i < certificateCount; i++)
             {
                 CFArrayAppendValue(anchors, SecTrustGetCertificateAtIndex(existingTrust, i));

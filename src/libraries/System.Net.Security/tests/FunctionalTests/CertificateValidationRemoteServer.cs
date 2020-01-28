@@ -6,7 +6,7 @@ using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -32,6 +32,34 @@ namespace System.Net.Security.Tests
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
                     await sslStream.AuthenticateAsClientAsync(Configuration.Security.TlsServer.IdnHost);
+                }
+            }
+        }
+
+        // MacOS has has special validation rules for apple.com and icloud.com
+        [ConditionalTheory]
+        [OuterLoop("Uses external servers")]
+        [InlineData("www.apple.com")]
+        [InlineData("www.icloud.com")]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task CertificateValidationApple_EndToEnd_Ok(string host)
+        {
+            using (var client = new TcpClient())
+            {
+                try
+                {
+                    await client.ConnectAsync(host, 443);
+                }
+                catch (Exception ex)
+                {
+                    // if we cannot connect skip the test instead of failing.
+                    new SkipTestException($"Unable to connect to '{host}': {ex.Message}");
+                }
+
+
+                using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
+                {
+                    await sslStream.AuthenticateAsClientAsync(host);
                 }
             }
         }
