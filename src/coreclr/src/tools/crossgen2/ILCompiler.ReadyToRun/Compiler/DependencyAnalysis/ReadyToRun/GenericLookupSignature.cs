@@ -57,8 +57,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), null, 1, null);
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-
             // Determine the need for module override
             EcmaModule targetModule;
             if (_methodArgument != null)
@@ -103,7 +101,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupToEmit, targetModule, _signatureContext);
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupToEmit, targetModule, _signatureContext);
             if (contextTypeToEmit != null)
             {
                 dataBuilder.EmitTypeSignature(contextTypeToEmit, innerContext);
