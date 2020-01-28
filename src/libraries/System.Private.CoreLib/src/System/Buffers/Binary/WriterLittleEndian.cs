@@ -10,6 +10,19 @@ namespace System.Buffers.Binary
     public static partial class BinaryPrimitives
     {
         /// <summary>
+        /// Writes a Double into a span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteDoubleLittleEndian(Span<byte> destination, double value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            MemoryMarshal.Write(destination, ref value);
+        }
+
+        /// <summary>
         /// Writes an Int16 into a span of bytes as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,6 +53,19 @@ namespace System.Buffers.Binary
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteInt64LittleEndian(Span<byte> destination, long value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            MemoryMarshal.Write(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes a Single into a span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteSingleLittleEndian(Span<byte> destination, float value)
         {
             if (!BitConverter.IsLittleEndian)
             {
@@ -91,9 +117,23 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes an Int16 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// Writes a Double into a span of bytes as little endian.
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteDoubleLittleEndian(Span<byte> destination, double value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Writes an Int16 into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt16LittleEndian(Span<byte> destination, short value)
         {
@@ -106,8 +146,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Writes an Int32 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt32LittleEndian(Span<byte> destination, int value)
         {
@@ -120,8 +160,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Writes an Int64 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteInt64LittleEndian(Span<byte> destination, long value)
         {
@@ -133,9 +173,23 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Write a UInt16 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// Writes a Single into a span of bytes as little endian.
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryWriteSingleLittleEndian(Span<byte> destination, float value)
+        {
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            return MemoryMarshal.TryWrite(destination, ref value);
+        }
+
+        /// <summary>
+        /// Write a UInt16 into a span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt16LittleEndian(Span<byte> destination, ushort value)
@@ -149,8 +203,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Write a UInt32 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt32LittleEndian(Span<byte> destination, uint value)
@@ -164,8 +218,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Write a UInt64 into a span of bytes as little endian.
-        /// <returns>If the span is too small to contain the value, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the value, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteUInt64LittleEndian(Span<byte> destination, ulong value)

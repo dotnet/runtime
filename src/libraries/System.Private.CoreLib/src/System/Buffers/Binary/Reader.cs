@@ -23,10 +23,7 @@ namespace System.Buffers.Binary
         /// </summary>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static sbyte ReverseEndianness(sbyte value)
-        {
-            return value;
-        }
+        public static sbyte ReverseEndianness(sbyte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
@@ -55,10 +52,7 @@ namespace System.Buffers.Binary
         /// rather than having to skip byte fields.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static byte ReverseEndianness(byte value)
-        {
-            return value;
-        }
+        public static byte ReverseEndianness(byte value) => value;
 
         /// <summary>
         /// Reverses a primitive value - performs an endianness swap
@@ -123,6 +117,24 @@ namespace System.Buffers.Binary
 
             return ((ulong)ReverseEndianness((uint)value) << 32)
                 + ReverseEndianness((uint)(value >> 32));
+        }
+
+        // Note: ReverseEndianness(float) and ReverseEndianness(double)
+        // are not intended to be public APIs as these would produce invalid
+        // floating point numbers.
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float ReverseEndianness(float value)
+        {
+            return BitConverter.Int32BitsToSingle(
+                ReverseEndianness(BitConverter.SingleToInt32Bits(value)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double ReverseEndianness(double value)
+        {
+            return BitConverter.Int64BitsToDouble(
+                ReverseEndianness(BitConverter.DoubleToInt64Bits(value)));
         }
     }
 }

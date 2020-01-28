@@ -10,6 +10,20 @@ namespace System.Buffers.Binary
     public static partial class BinaryPrimitives
     {
         /// <summary>
+        /// Reads a Double out of a read-only span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double ReadDoubleLittleEndian(ReadOnlySpan<byte> source)
+        {
+            double result = MemoryMarshal.Read<double>(source);
+            if (!BitConverter.IsLittleEndian)
+            {
+                result = ReverseEndianness(result);
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Reads an Int16 out of a read-only span of bytes as little endian.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -44,6 +58,20 @@ namespace System.Buffers.Binary
         public static long ReadInt64LittleEndian(ReadOnlySpan<byte> source)
         {
             long result = MemoryMarshal.Read<long>(source);
+            if (!BitConverter.IsLittleEndian)
+            {
+                result = ReverseEndianness(result);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Reads a Single out of a read-only span of bytes as little endian.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float ReadSingleLittleEndian(ReadOnlySpan<byte> source)
+        {
+            float result = MemoryMarshal.Read<float>(source);
             if (!BitConverter.IsLittleEndian)
             {
                 result = ReverseEndianness(result);
@@ -97,9 +125,24 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads an Int16 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain an Int16, return false.</returns>
+        /// Reads a Double out of a read-only span of bytes as little endian.
         /// </summary>
+        /// <returns>If the span is too small to contain a Double, return false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryReadDoubleLittleEndian(ReadOnlySpan<byte> source, out double value)
+        {
+            bool success = MemoryMarshal.TryRead(source, out value);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            return success;
+        }
+
+        /// <summary>
+        /// Reads an Int16 out of a read-only span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain an Int16, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt16LittleEndian(ReadOnlySpan<byte> source, out short value)
         {
@@ -115,8 +158,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Reads an Int32 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain an Int32, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain an Int32, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt32LittleEndian(ReadOnlySpan<byte> source, out int value)
         {
@@ -132,8 +175,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Reads an Int64 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain an Int64, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain an Int64, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt64LittleEndian(ReadOnlySpan<byte> source, out long value)
         {
@@ -148,9 +191,23 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Reads a UInt16 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain a UInt16, return false.</returns>
+        /// Reads a Single out of a read-only span of bytes as little endian.
         /// </summary>
+        /// <returns>If the span is too small to contain a Single, return false.</returns>
+        public static bool TryReadSingleLittleEndian(ReadOnlySpan<byte> source, out float value)
+        {
+            bool success = MemoryMarshal.TryRead(source, out value);
+            if (!BitConverter.IsLittleEndian)
+            {
+                value = ReverseEndianness(value);
+            }
+            return success;
+        }
+
+        /// <summary>
+        /// Reads a UInt16 out of a read-only span of bytes as little endian.
+        /// </summary>
+        /// <returns>If the span is too small to contain a UInt16, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16LittleEndian(ReadOnlySpan<byte> source, out ushort value)
@@ -167,8 +224,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Reads a UInt32 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain a UInt32, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain a UInt32, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32LittleEndian(ReadOnlySpan<byte> source, out uint value)
@@ -185,8 +242,8 @@ namespace System.Buffers.Binary
 
         /// <summary>
         /// Reads a UInt64 out of a read-only span of bytes as little endian.
-        /// <returns>If the span is too small to contain a UInt64, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain a UInt64, return false.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64LittleEndian(ReadOnlySpan<byte> source, out ulong value)
