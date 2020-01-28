@@ -96,6 +96,7 @@ namespace System.Net.Tests
             yield return new object[] { "PUT {path} HTTP/1.1", null, null, null, "Length Required" };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2284", TargetFrameworkMonikers.Mono)]
         [Fact]
         public async Task GetContext_InvalidRequest_DoesNotGetContext()
         {
