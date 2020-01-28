@@ -480,6 +480,10 @@ namespace R2RDump
                 {
                     globalWriter = new StreamWriter(_options.Out.FullName);
                 }
+                else
+                {
+                    globalWriter = Console.Out;
+                }
 
                 foreach (FileInfo filename in _options.In)
                 {
@@ -498,7 +502,7 @@ namespace R2RDump
                         }
                     }
 
-                    if (!_options.Diff && globalWriter != null)
+                    if (!_options.Diff)
                     {
                         _writer = globalWriter;
                     }
