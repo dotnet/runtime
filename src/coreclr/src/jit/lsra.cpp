@@ -6566,7 +6566,6 @@ void LinearScan::insertUpperVectorSave(GenTree*     tree,
 
     LclVarDsc* varDsc = compiler->lvaTable + lclVarInterval->varNum;
     assert(varTypeNeedsPartialCalleeSave(varDsc->lvType));
-    assert((genRegMask(lclVarReg) & RBM_FLT_CALLEE_SAVED) != RBM_NONE);
 
     // On Arm64, we must always have a register to save the upper half,
     // while on x86 we can spill directly to memory.
@@ -7104,9 +7103,9 @@ void LinearScan::resolveRegisters()
                     Interval* localVarInterval = interval->relatedInterval;
                     if ((localVarInterval->physReg != REG_NA) && !localVarInterval->isPartiallySpilled)
                     {
-                        // If the localVar is in a register, it must be a callee-save register (otherwise it would have
-                        // already been spilled).
-                        assert(localVarInterval->assignedReg->isCalleeSave);
+                        // If the localVar is in a register, it must be in a register that is not trashed by
+                        // the current node (otherwise it would have already been spilled).
+                        assert((genRegMask(localVarInterval->physReg) & getKillSetForNode(treeNode)) == RBM_NONE);
                         // If we have allocated a register to spill it to, we will use that; otherwise, we will spill it
                         // to the stack.  We can use as a temp register any non-arg caller-save register.
                         currentRefPosition->referent->recentRefPosition = currentRefPosition;
