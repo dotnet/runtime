@@ -16,6 +16,7 @@ namespace System.Tests
         static string s_stackTrace;
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15315", TargetFrameworkMonikers.Mono)]
         public void StackTraceTest()
         {
             //arrange

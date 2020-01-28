@@ -271,17 +271,6 @@
 ##  System.Runtime.Extensions.Tests
 ####################################################################
 
-# Mono expands generic Types in stacktraces unlike the .NET Core (sounds more like a feature: https://gist.github.com/EgorBo/3abb37d2ff4fc904bc7472c62498f933)
-# https://github.com/mono/mono/issues/15315
--nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
-
-# These events are not wired up in mono
-# https://github.com/mono/mono/issues/16246
--nomethod System.Tests.AppDomainTests.ResourceResolve
--nomethod System.Tests.AppDomainTests.FirstChanceException_Called
--nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
--nomethod System.Tests.AppDomainTests.AssemblyResolve_IsNotCalledForCoreLibResources
-
 # AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
 
