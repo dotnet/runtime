@@ -288,32 +288,33 @@ namespace System.Text.Json.Serialization.Tests
 
         public class CustomClassToExceedMaxBufferSize
         {
-            public CustomClassToExceedMaxBufferSize Internal1 { get; set; }
-            public CustomClassToExceedMaxBufferSize Internal2 { get; set; }
-
-            static string name = new string('a', 53687091);
-            public string GetName1 { get { return name; } }
-            public string GetName2 { get { return name; } }
-            public string GetName3 { get { return name; } }
-            public string GetName4 { get { return name; } }
-            public string GetName5 { get { return name; } }
-            public string GetName6 { get { return name; } }
-            public string GetName7 { get { return name; } }
-            public string GetName8 { get { return name; } }
-            public string GetName9 { get { return name; } }
-            public string GetName10 { get { return name; } }
+            private static readonly string s_name = new string('a', 100_000_000);//Large enough value to cause integer overflow exception when allocating buffer and small enought to not cause a "The JSON value of length X is too large and not supported."
+            public string GetName1 => s_name;
+            public string GetName2 => s_name;
+            public string GetName3 => s_name;
+            public string GetName4 => s_name;
+            public string GetName5 => s_name;
+            public string GetName6 => s_name;
+            public string GetName7 => s_name;
+            public string GetName8 => s_name;
+            public string GetName9 => s_name;
+            public string GetName10 => s_name;
+            public string GetName11 => s_name;
+            public string GetName12 => s_name;
+            public string GetName13 => s_name;
+            public string GetName14 => s_name;
+            public string GetName15 => s_name;
+            public string GetName16 => s_name;
+            public string GetName17 => s_name;
+            public string GetName18 => s_name;
+            public string GetName19 => s_name;
+            public string GetName20 => s_name;
         }
 
-        [Fact]
+        [Fact, OuterLoop]
         public static void SerializeExceedMaximumBufferSize()
         {
             CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
-
-            for (int i = 0; i < 2; i++)
-            {
-                CustomClassToExceedMaxBufferSize temp2 = new CustomClassToExceedMaxBufferSize() { Internal1 = temp, Internal2 = temp };
-                temp = temp2;
-            }
 
             Assert.Throws<OutOfMemoryException>(() => JsonSerializer.Serialize(temp, typeof(CustomClassToExceedMaxBufferSize)));
         }
