@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
     public class AttributedModelCompositionTests
     {
         [Fact]
