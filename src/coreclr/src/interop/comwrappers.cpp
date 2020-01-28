@@ -5,6 +5,8 @@
 #include "comwrappers.h"
 #include <interoplibimports.h>
 
+using AllocScenario = InteropLibImports::AllocScenario;
+
 namespace ABI
 {
     //---------------------------------------------------------------------------------
@@ -207,34 +209,6 @@ namespace
     static_assert(sizeof(ManagedObjectWrapper_IUnknownImpl) == (3 * sizeof(void*)), "Unexpected vtable size");
 }
 
-namespace InteropLib
-{
-    void GetIUnknownImpl(
-        _Out_ void** fpQueryInterface,
-        _Out_ void** fpAddRef,
-        _Out_ void** fpRelease)
-    {
-        _ASSERTE(fpQueryInterface != nullptr
-                && fpAddRef != nullptr
-                && fpRelease != nullptr);
-
-        *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
-        *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
-        *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
-    }
-
-    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) // [TODO]
-    {
-        static OBJECTHANDLE g_objectHandle = nullptr;
-
-        if (g_objectHandle != nullptr)
-            return false;
-
-        g_objectHandle = objectHandle;
-        return true;
-    }
-}
-
 namespace
 {
     const int32_t TrackerRefShift = 32;
@@ -325,13 +299,13 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     _In_ ComInterfaceEntry* userDefined)
 {
     // Maximum number of runtime supplied vtables
-    ComInterfaceEntry runtimeDefined[4];
+    ComInterfaceEntry runtimeDefinedLocal[4];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table
     if ((flags & CreateComInterfaceFlags::CallerDefinedIUnknown) == CreateComInterfaceFlags::None)
     {
-        ComInterfaceEntry& curr = runtimeDefined[runtimeDefinedCount++];
+        ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IUnknown);
         curr.Vtable = &ManagedObjectWrapper_IUnknownImpl;
     }
@@ -339,12 +313,12 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     // Check if the caller wants tracker support
     if ((flags & CreateComInterfaceFlags::TrackerSupport) == CreateComInterfaceFlags::TrackerSupport)
     {
-        ComInterfaceEntry& curr = runtimeDefined[runtimeDefinedCount++];
+        ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IReferenceTrackerTarget);
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
 
-    _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefined));
+    _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ComInterfaceEntry);
@@ -355,14 +329,20 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     const size_t totalDispatchSectionSize = totalDispatchSectionCount * sizeof(void*);
 
     // Allocate memory for the ManagedObjectWrapper
-    char* wrapperMem = (char*)InteropLibImports::MemAlloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding);
+    char* wrapperMem = (char*)InteropLibImports::MemAlloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding, AllocScenario::ManagedObjectWrapper);
+    if (wrapperMem == nullptr)
+        return nullptr; // OOM
 
     // Compute Runtime defined offset
     char* runtimeDefinedOffset = wrapperMem + sizeof(ManagedObjectWrapper);
 
     // Copy in runtime supplied COM interface entries
+    ComInterfaceEntry* runtimeDefined = nullptr;
     if (0 < runtimeDefinedCount)
-        std::memcpy(runtimeDefinedOffset, runtimeDefined, totalRuntimeDefinedSize);
+    {
+        std::memcpy(runtimeDefinedOffset, runtimeDefinedLocal, totalRuntimeDefinedSize);
+        runtimeDefined = reinterpret_cast<ComInterfaceEntry*>(runtimeDefinedOffset);
+    }
 
     // Compute the dispatch section offset and ensure it is aligned
     char* dispatchSectionOffset = runtimeDefinedOffset + totalRuntimeDefinedSize;
@@ -410,7 +390,8 @@ ManagedObjectWrapper::ManagedObjectWrapper(
 
 ManagedObjectWrapper::~ManagedObjectWrapper()
 {
-    // rt::ReleaseGCHandle(Target); [TODO]
+    // Tell the runtime to separate the managed object from this wrapper.
+    InteropLibImports::SeparateObjectInstanceFromWrapper(Target, As(IID_IUnknown));
 }
 
 void* ManagedObjectWrapper::As(_In_ REFIID riid)
@@ -515,8 +496,60 @@ ULONG ManagedObjectWrapper::Release(void)
         // Manually trigger the destructor since placement
         // new was used to allocate object.
         this->~ManagedObjectWrapper();
-        InteropLibImports::MemFree(this);
+        InteropLibImports::MemFree(this, AllocScenario::ManagedObjectWrapper);
     }
 
     return refCount;
+}
+
+namespace InteropLib
+{
+    HRESULT CreateComInterfaceForObject(
+        _In_ OBJECTHANDLE instance,
+        _In_ INT32 vtableCount,
+        _In_ void* vtablesRaw,
+        _In_ INT32 flagsRaw,
+        _Outptr_ IUnknown** comObject)
+    {
+        if (instance == nullptr || vtablesRaw == nullptr || vtableCount < 0)
+            return E_INVALIDARG;
+
+        if (comObject == nullptr)
+            return E_POINTER;
+
+        // Convert inputs to appropriate types.
+        auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
+        auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
+        ManagedObjectWrapper* mow = ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables);
+        if (mow == nullptr)
+            return E_OUTOFMEMORY;
+
+        *comObject = static_cast<IUnknown*>(mow->As(IID_IUnknown));
+        return S_OK;
+    }
+
+    void GetIUnknownImpl(
+        _Out_ void** fpQueryInterface,
+        _Out_ void** fpAddRef,
+        _Out_ void** fpRelease)
+    {
+        _ASSERTE(fpQueryInterface != nullptr
+                && fpAddRef != nullptr
+                && fpRelease != nullptr);
+
+        *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
+        *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
+        *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
+    }
+
+    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) // [TODO]
+    {
+        static OBJECTHANDLE g_objectHandle = nullptr;
+
+        if (g_objectHandle != nullptr)
+            return false;
+
+        g_objectHandle = objectHandle;
+        return true;
+    }
 }

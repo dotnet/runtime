@@ -12,20 +12,23 @@ namespace InteropLib
 
 #ifdef _WIN32
 
-    // Get internal interop IUnknown dispatch pointers.
-    void GetIUnknownImpl(
-        _Out_ void** fpQueryInterface,
-        _Out_ void** fpAddRef,
-        _Out_ void** fpRelease);
+    // Create an IUnknown instance that represents the supplied managed object instance.
+    HRESULT CreateComInterfaceForObject(
+        _In_ OBJECTHANDLE instance,
+        _In_ INT32 vtableCount,
+        _In_ void* vtables,
+        _In_ INT32 flags,
+        _Outptr_ IUnknown** comObject);
 
     // Register the default callback in the Reference Tracker Host scenario.
     // Returns true if registration succeeded, otherwise false.
     bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle);
 
-    IUnknown* GetOrCreateComInterfaceForObject(
-        _In_ QCall::ObjectHandleOnStack comWrappersImpl,
-        _In_ QCall::ObjectHandleOnStack instance,
-        _In_ INT32 flags);
+    // Get internal interop IUnknown dispatch pointers.
+    void GetIUnknownImpl(
+        _Out_ void** fpQueryInterface,
+        _Out_ void** fpAddRef,
+        _Out_ void** fpRelease);
 
 #endif // _WIN32
 

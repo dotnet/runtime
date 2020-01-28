@@ -6,9 +6,9 @@
 #define _INTEROP_COMWRAPPERS_H_
 
 #include "platform.h"
+#include <objidl.h> // COM interfaces
 #include <interoplib.h>
 #include "referencetrackertypes.h"
-#include <objidl.h> // COM interfaces
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 

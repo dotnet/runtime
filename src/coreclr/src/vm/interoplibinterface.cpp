@@ -25,6 +25,8 @@
 
 namespace
 {
+    const HandleType InstanceHandleType{ HNDTYPE_STRONG };
+
     void* CallComputeVTables(
         _In_ OBJECTREF impl,
         _In_ OBJECTREF instance,
@@ -43,13 +45,26 @@ namespace
 
         void* vtables = NULL;
 
+        struct
+        {
+            OBJECTREF implRef;
+            OBJECTREF instRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+        GCPROTECT_BEGIN(gc);
+
+        gc.implRef = impl;
+        gc.instRef = instance;
+
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__COMPUTE_VTABLES);
         DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(impl);
-        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(instance);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(gc.implRef);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(gc.instRef);
         args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
         args[ARGNUM_3]  = PTR_TO_ARGHOLDER(vtableCount);
         CALL_MANAGED_METHOD(vtables, void*, args);
+
+        GCPROTECT_END();
 
         return vtables;
     }
@@ -68,14 +83,25 @@ namespace
         }
         CONTRACTL_END;
 
-        OBJECTREF retObjRef = NULL;
+        OBJECTREF retObjRef;
+
+        struct
+        {
+            OBJECTREF implRef;
+        } gc;
+        ::ZeroMemory(&gc, sizeof(gc));
+        GCPROTECT_BEGIN(gc);
+
+        gc.implRef = impl;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
         DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(impl);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(gc.implRef);
         args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
         args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
         CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+
+        GCPROTECT_END();
 
         return retObjRef;
     }
@@ -83,19 +109,78 @@ namespace
 
 namespace InteropLibImports
 {
-    void* MemAlloc(_In_ size_t sizeInBytes)
+    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(sizeInBytes != 0);
+        }
+        CONTRACTL_END;
 
-        _ASSERTE(0 != sizeInBytes);
         return ::malloc(sizeInBytes);
     }
 
-    void MemFree(_In_ void* mem)
+    void MemFree(_In_ void* mem, _In_ AllocScenario scenario)
     {
-        STANDARD_VM_CONTRACT;
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(mem != NULL);
+        }
+        CONTRACTL_END;
 
         ::free(mem);
+    }
+
+    void SeparateObjectInstanceFromWrapper(_In_ InteropLib::OBJECTHANDLE handle, _In_ void* wrapper)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+            PRECONDITION(handle != NULL);
+            PRECONDITION(wrapper != NULL);
+        }
+        CONTRACTL_END;
+
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        {
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF instObjRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            gc.instObjRef = ObjectFromHandle(objectHandle);
+            _ASSERTE(gc.instObjRef != NULL);
+
+            // Get access to the SyncBlock and InteropSyncBlockInfo.
+            // Ideally these checks wouldn't be needed because at this point
+            // the data structures should have already been created.
+            SyncBlock* syncBlock = gc.instObjRef->PassiveGetSyncBlock();
+            if (syncBlock != NULL)
+            {
+                InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+                if (interopInfo != NULL)
+                {
+                    // Separate the managed object from the supplied wrapper. If this
+                    // separation fails, the object handle shouldn't be destroyed.
+                    bool wasSeparated = interopInfo->TrySeparateFromManagedObjectComWrapper(wrapper);
+                    _ASSERTE(wasSeparated);
+                    if (wasSeparated)
+                        DestroyHandleCommon(objectHandle, InstanceHandleType);
+                }
+            }
+
+            GCPROTECT_END();
+        }
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(
@@ -107,8 +192,8 @@ namespace InteropLibImports
     {
         CONTRACTL
         {
-            NOTHROWS;
-            MODE_ANY;
+            NOTHROW;
+            MODE_PREEMPTIVE;
             PRECONDITION(impl != NULL);
             PRECONDITION(externalComObject != NULL);
             PRECONDITION(trackerTarget != NULL);
@@ -148,24 +233,6 @@ namespace InteropLibImports
 
 #ifdef FEATURE_COMINTEROP
 
-void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
-        _Out_ void** fpQueryInterface,
-        _Out_ void** fpAddRef,
-        _Out_ void** fpRelease)
-{
-    QCALL_CONTRACT;
-
-    _ASSERTE(fpQueryInterface != NULL);
-    _ASSERTE(fpAddRef != NULL);
-    _ASSERTE(fpRelease != NULL);
-
-    BEGIN_QCALL;
-
-    InteropLib::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
-
-    END_QCALL;
-}
-
 void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
     _In_ QCall::ObjectHandleOnStack comWrappersImpl,
     _In_ QCall::ObjectHandleOnStack instance,
@@ -173,6 +240,9 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
 {
     QCALL_CONTRACT;
 
+    HRESULT hr;
+
+    SafeComHolder<IUnknown> newWrapper;
     void* wrapper = NULL;
 
     BEGIN_QCALL;
@@ -190,32 +260,73 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
-        gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
-        _ASSERTE(gc.implRef != NULL);
-
-        //
-        // Check the objects SyncBlock for an existing COM object
-        //
-
         gc.instRef = ObjectToOBJECTREF(*instance.m_ppObject);
         _ASSERTE(gc.instRef != NULL);
 
-        //
-        // Compute VTables for the new existing COM object
-        //
+        // Check the object's SyncBlock for a managed object wrapper.
+        SyncBlock* syncBlock = gc.instRef->GetSyncBlock();
+        InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
 
-        DWORD vtableCount;
-        void* vtables = CallComputeVTables(gc.implRef, gc.instRef, flags, &vtableCount);
+        // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
+        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+        {
+            // Get the supplied COM Wrappers implementation to request VTable computation.
+            gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+            _ASSERTE(gc.implRef != NULL);
 
-        //
-        // 
-        //
+            // Compute VTables for the new existing COM object
+            //
+            // N.B. Calling to compute the associated VTables is perhaps early since no lock
+            // is taken. However, a key assumption here is that the returned memory will be
+            // idempotent for the same object.
+            DWORD vtableCount;
+            void* vtables = CallComputeVTables(gc.implRef, gc.instRef, flags, &vtableCount);
+
+            // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
+            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+            {
+                OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
+
+                // Call the InteropLib and create the associated managed object wrapper.
+                hr = InteropLib::CreateComInterfaceForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
+                if (FAILED(hr))
+                {
+                    DestroyHandleCommon(instHandle, InstanceHandleType);
+                    COMPlusThrowHR(hr);
+                }
+                _ASSERTE(!newWrapper.IsNull());
+
+                // Try setting the newly created managed object wrapper on the InteropSyncBlockInfo.
+                if (!interopInfo->TrySetManagedObjectComWrapper(newWrapper))
+                {
+                    // If the managed object wrapper couldn't be set, then
+                    // it should be possible to get the current one.
+                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+                        UNREACHABLE();
+                }
+            }
+        }
+
+        // Determine what to return.
+        if (!newWrapper.IsNull())
+        {
+            // A new managed object wrapper was created, remove the object from the holder.
+            // No AddRef() here since the wrapper should be created with a reference.
+            wrapper = newWrapper.Extract();
+        }
+        else
+        {
+            // An existing wrapper should have an AddRef() performed.
+            _ASSERTE(wrapper != NULL);
+            (void)static_cast<IUnknown *>(wrapper)->AddRef();
+        }
 
         GCPROTECT_END();
     }
 
     END_QCALL;
 
+    _ASSERTE(wrapper != NULL);
     return wrapper;
 }
 
@@ -235,7 +346,7 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
 
     // Determine the true identity of the object
-    SafeComHolder<IUnknown> identity = NULL;
+    SafeComHolder<IUnknown> identity;
     hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
     _ASSERTE(hr == S_OK);
 
@@ -255,10 +366,10 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
         _ASSERTE(gc.implRef != NULL);
 
-        gc.newObjectRef = CallGetObject(gc.implRef, identity, flags);
+        gc.newObjRef = CallGetObject(gc.implRef, identity, flags);
 
         // Set the return value
-        retValue.Set(gc.newObjectRef);
+        retValue.Set(gc.newObjRef);
 
         GCPROTECT_END();
     }
@@ -297,6 +408,24 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
 
         GCPROTECT_END();
     }
+
+    END_QCALL;
+}
+
+void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
+        _Out_ void** fpQueryInterface,
+        _Out_ void** fpAddRef,
+        _Out_ void** fpRelease)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(fpQueryInterface != NULL);
+    _ASSERTE(fpAddRef != NULL);
+    _ASSERTE(fpRelease != NULL);
+
+    BEGIN_QCALL;
+
+    InteropLib::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
 
     END_QCALL;
 }
