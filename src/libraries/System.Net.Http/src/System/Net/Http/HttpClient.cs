@@ -613,7 +613,7 @@ namespace System.Net.Http
         }
 
         private bool TimeoutFired(TimeoutState timeoutState, CancellationToken callerToken)
-            => !callerToken.IsCancellationRequested && !_pendingRequestsCts.IsCancellationRequested && timeoutState != null && timeoutState.IsFired;
+            => !callerToken.IsCancellationRequested && timeoutState != null && timeoutState.IsFired;
 
         private static void ThrowTimeoutException(TaskCanceledException originalException)
         {

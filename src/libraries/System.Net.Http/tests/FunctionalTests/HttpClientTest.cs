@@ -6,6 +6,7 @@ using Microsoft.DotNet.RemoteExecutor;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -593,14 +594,44 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
-        public void Timeout_TooShort_AllPendingOperationsCanceled()
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
                 client.Timeout = TimeSpan.FromMilliseconds(1);
-                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri())).ToArray();
-                Assert.All(tasks, task => Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult()));
+                Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
+                Assert.All(tasks, task => {
+                    TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                    TimeoutException timeoutException = (TimeoutException)e.InnerException;
+                    Assert.NotNull(timeoutException);
+                    Assert.NotNull(timeoutException.InnerException);
+                });
+            }
+        }
+
+
+
+        [Theory]
+        [OuterLoop("Two second delay to ensure Full GC can finish before timer fires")]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_TimeoutTriggeredAfterFullGC_Success(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromSeconds(2);
+                Task<TaskCanceledException> task = Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(CreateFakeUri(), completionOption));
+                Runtime.GCSettings.LargeObjectHeapCompactionMode = Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+                GC.WaitForPendingFinalizers();
+                Assert.True(task.Wait(TimeSpan.FromSeconds(4)));
+                TaskCanceledException e = task.Result;
+                TimeoutException timeoutException = (TimeoutException)e.InnerException;
+                Assert.NotNull(timeoutException);
+                Assert.NotNull(timeoutException.InnerException);
             }
         }
 
@@ -618,21 +649,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
                 await client.GetAsync(CreateFakeUri());
-            }
-        }
-
-        [Theory]
-        [InlineData(HttpCompletionOption.ResponseContentRead)]
-        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
-        public async Task Timeout_TimeoutTriggeredOnBufferedResponse_ThrowsNestedTimeoutException(HttpCompletionOption completionOption)
-        {
-            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
-            {
-                client.Timeout = TimeSpan.FromMilliseconds(50);
-                TaskCanceledException e = await Assert.ThrowsAsync<TaskCanceledException>(async () => await client.GetAsync(CreateFakeUri(), completionOption));
-                TimeoutException timeoutException = (TimeoutException) e.InnerException;
-                Assert.NotNull(timeoutException);
-                Assert.NotNull(timeoutException.InnerException);
             }
         }
 
