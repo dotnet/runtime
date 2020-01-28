@@ -47,6 +47,7 @@ jobs:
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
         - _extraHelixArguments: ''
+        - _crossBuildPropertyArg: ''
 
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
