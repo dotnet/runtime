@@ -395,10 +395,4 @@
 ##  System.Security.Cryptography.Encoding.Tests
 ####################################################################
 
-# Broken array copying (https://github.com/mono/mono/issues/16686)
--nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Method_InverseCase
--nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByValue_Ctor
--nomethod System.Security.Cryptography.Encoding.Tests.OidTests.Oid_StringString_NullFriendlyName
--nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
-
 -nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
