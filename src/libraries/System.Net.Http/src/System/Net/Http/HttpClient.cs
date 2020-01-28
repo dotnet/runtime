@@ -491,7 +491,7 @@ namespace System.Net.Http
             CancellationTokenSource cts;
             bool disposeCts;
             bool hasTimeout = _timeout != s_infiniteTimeout;
-            TimeoutState timeoutState = null; // Lazy initialization to avoid unnecessary alocation when timeout is not set
+            TimeoutState timeoutState = null; // Lazy initialization to avoid unnecessary allocation when timeout is not set
             Timer timer = null;
             if (hasTimeout || cancellationToken.CanBeCanceled)
             {
