@@ -155,14 +155,14 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 
-            int hashCode = 0;
+            HashCode hashCode = default;
 
             for (int i = 0; i < Count; i++)
             {
-                hashCode = HashCode.Combine(hashCode, this.GetElement(i).GetHashCode());
+                hashCode.Add(this.GetElement(i).GetHashCode());
             }
 
-            return hashCode;
+            return hashCode.ToHashCode();
         }
 
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
