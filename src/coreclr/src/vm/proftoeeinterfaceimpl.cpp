@@ -7098,7 +7098,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         return E_INVALIDARG;
     }
 
-    if (pParamDescs == NULL && cParamDescs <= 0)
+    if (pParamDescs == NULL && cParamDescs > 0)
     {
         return E_INVALIDARG;
     }
@@ -7106,12 +7106,12 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        _ASSERTE(offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, szName));
+        static_assert(offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name), 
+            "Layouts of EventPipe parameter desc type and Profiler parameter desc type do not match!");
         EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
-        // TODO: should I check that keywords, version, etc are semantically valid? Probably, 
-        // also probably should check that the params are valid
+        
         size_t metadataLength;
-        BYTE *pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
+        NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
             eventID,
             szName,
             keywords,
@@ -7130,10 +7130,6 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             needStack,
             pMetadata,
             (unsigned int)metadataLength);
-
-        // Delete the metadata after the event is created.
-        // The metadata blob will be copied into EventPipe-owned memory.
-        delete [] pMetadata;
 
         *pEventID = reinterpret_cast<EVENTPIPE_EVENTID>(pEvent);
     }
@@ -10842,4 +10838,3 @@ LExit:
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
-

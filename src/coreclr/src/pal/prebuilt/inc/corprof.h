@@ -622,10 +622,10 @@ typedef UINT64 EVENTPIPE_SESSIONID;
 
 typedef /* [public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0013
     {
-    const WCHAR *szproviderName;
-    UINT64 m_keywords;
-    UINT32 m_loggingLevel;
-    const WCHAR *m_filterData;
+    const WCHAR *providerName;
+    UINT64 keywords;
+    UINT32 loggingLevel;
+    const WCHAR *filterData;
     }   COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
 
 typedef /* [public] */ 
@@ -662,8 +662,8 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0015
 
 typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0016
     {
-    UINT32 dwtype;
-    const WCHAR *szName;
+    UINT32 type;
+    const WCHAR *name;
     }   COR_PRF_EVENTPIPE_PARAM_DESC;
 
 
