@@ -189,8 +189,8 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? 11 : 32);
-            string indentString = new string(' ', indent);
+            int indent = (_options.Naked ? _options.HideOffsets ? 8 : 11 : 32);
+            string indentString = new string('\t', indent / 8) + new string(' ', indent % 8);
             int rtfOffset = 0;
             int codeOffset = rtf.CodeOffset;
             while (rtfOffset < rtf.Size)
@@ -225,7 +225,6 @@ namespace R2RDump
                  */
                 _writer.Write(instr);
 
-                CoreDisTools.ClearOutputBuffer();
                 rtfOffset += instrSize;
                 codeOffset += instrSize;
             }
