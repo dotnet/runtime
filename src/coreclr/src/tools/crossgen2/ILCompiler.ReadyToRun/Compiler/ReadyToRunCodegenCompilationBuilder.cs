@@ -77,7 +77,7 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public override CompilationBuilder UseJitPath(string jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
             _jitPath = jitPath;
             return this;
@@ -141,7 +141,7 @@ namespace ILCompiler
                 return true;
             });
 
-            ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
+            NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
@@ -179,7 +179,7 @@ namespace ILCompiler
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
             corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions, _jitPath);
+            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -188,7 +188,6 @@ namespace ILCompiler
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
-                jitConfig,
                 _inputFilePath,
                 new ModuleDesc[] { _inputModule },
                 _resilient,

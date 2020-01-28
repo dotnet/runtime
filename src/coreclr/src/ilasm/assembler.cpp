@@ -2452,7 +2452,6 @@ void Assembler::RecordTypeConstraints(GenericParamConstraintList* pGPCList, int 
                 }
             }
         }
-        m_pCustomDescrList = NULL;
     }
 }
 

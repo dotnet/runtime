@@ -68,7 +68,7 @@ function(set_common_libs TargetType)
     endif()
 
     # Specify the import library to link against for Arm32 build since the default set is minimal
-    if (CLI_CMAKE_PLATFORM_ARCH_ARM)
+    if (CLR_CMAKE_HOST_ARCH_ARM)
         if (WIN32)
             target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
         else()

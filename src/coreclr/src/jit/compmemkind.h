@@ -57,6 +57,7 @@ CompMemKindMacro(ObjectAllocator)
 CompMemKindMacro(VariableLiveRanges)
 CompMemKindMacro(ClassLayout)
 CompMemKindMacro(TailMergeThrows)
+CompMemKindMacro(EarlyProp)
 //clang-format on
 
 #undef CompMemKindMacro

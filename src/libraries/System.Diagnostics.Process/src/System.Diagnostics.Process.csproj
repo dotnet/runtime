@@ -55,6 +55,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.PROCESS_BASIC_INFORMATION.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.PROCESS_BASIC_INFORMATION.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.SYSTEM_PROCESS_INFORMATION.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.SYSTEM_PROCESS_INFORMATION.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.EnumWindows.cs">
       <Link>Common\Interop\Windows\User32\Interop.EnumWindows.cs</Link>
     </Compile>

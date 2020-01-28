@@ -3632,7 +3632,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }
             else
@@ -5891,7 +5891,9 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                         if (treeToNullcheck != nullptr)
                         {
                             GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, treeToNullcheck);
-                            result             = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
+                            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+                            optMethodFlags |= OMF_HAS_NULLCHECK;
+                            result = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
                         }
 
                         impPushOnStack(result, typeInfo(TI_INT));
@@ -13017,6 +13019,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
                                 op1->ChangeOper(GT_NULLCHECK);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
                                 op1->gtType = TYP_BYTE;
                             }
                             else
@@ -13059,7 +13063,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 if (tiVerificationNeeded)
                 {
-                    // Dup could start the begining of delegate creation sequence, remember that
+                    // Dup could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 1;
                     impStackTop(0);
                 }
@@ -13380,7 +13384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    // LDFTN could start the begining of delegate creation sequence, remember that
+                    // LDFTN could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 2;
 
                     // check any constraints on the callee's class and type parameters
@@ -15229,7 +15233,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
                                 GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
-                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
+                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
@@ -16008,14 +16014,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
-
-                    /* Mark the block as containing a length expression */
-
-                    if (op1->gtOper == GT_LCL_VAR)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
 
                     op1 = arrLen;
                 }

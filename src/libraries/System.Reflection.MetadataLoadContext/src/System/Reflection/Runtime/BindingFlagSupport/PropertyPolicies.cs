@@ -55,7 +55,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         //
-        // Desktop compat: Properties hide properties in base types if they share the same vtable slot, or
+        // .NET Framework compat: Properties hide properties in base types if they share the same vtable slot, or
         // have the same name, return type, signature and hasThis value.
         //
         public sealed override bool IsSuppressedByMoreDerivedMember(PropertyInfo member, PropertyInfo[] priorMembers, int startIndex, int endIndex)

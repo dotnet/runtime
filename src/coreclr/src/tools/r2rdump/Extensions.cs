@@ -222,7 +222,7 @@ namespace R2RDump
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.EHInfoRVA:X4}, #clauses = {theThis.EHInfo.EHClauses.Length}");
+                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
                 theThis.EHInfo.WriteTo(writer);
                 writer.WriteLine();
             }

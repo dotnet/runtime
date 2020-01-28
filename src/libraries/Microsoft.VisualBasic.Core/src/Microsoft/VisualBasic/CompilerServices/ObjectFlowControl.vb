@@ -25,7 +25,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Public Shared Sub CheckForSyncLockOnValueType(ByVal Expression As Object)
             If Expression IsNot Nothing AndAlso Expression.GetType.IsValueType() Then
                 Throw New ArgumentException(
-                    GetResourceString(SR.SyncLockRequiresReferenceType1, VBFriendlyName(Expression.GetType)))
+                    SR.Format(SR.SyncLockRequiresReferenceType1, VBFriendlyName(Expression.GetType)))
             End If
         End Sub
 
@@ -84,7 +84,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Catch ex As OutOfMemoryException
                     Throw ex
                 Catch
-                    Throw New ArgumentException(GetResourceString(SR.ForLoop_ConvertToType3, elementName, VBFriendlyName(sourceType), VBFriendlyName(targetType)))
+                    Throw New ArgumentException(SR.Format(SR.ForLoop_ConvertToType3, elementName, VBFriendlyName(sourceType), VBFriendlyName(targetType)))
                 End Try
             End Function
 
@@ -96,7 +96,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Dim operatorMethod As Method = Operators.GetCallableUserDefinedOperator(op, forLoopArgument, forLoopArgument)
 
                 If operatorMethod Is Nothing Then
-                    Throw New ArgumentException(GetResourceString(
+                    Throw New ArgumentException(SR.Format(
                         SR.ForLoop_OperatorRequired2,
                         VBFriendlyNameOfType(forLoopArgumentType, fullName:=True),
                         Symbols.OperatorNames(op)))
@@ -112,7 +112,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             parameters(0).ParameterType IsNot forLoopArgumentType OrElse
                             parameters(1).ParameterType IsNot forLoopArgumentType OrElse
                             operatorInfo.ReturnType IsNot forLoopArgumentType Then
-                            Throw New ArgumentException(GetResourceString(
+                            Throw New ArgumentException(SR.Format(
                                 SR.ForLoop_UnacceptableOperator2,
                                 operatorMethod.ToString,
                                 VBFriendlyNameOfType(forLoopArgumentType, fullName:=True)))
@@ -122,7 +122,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                         If parameters.Length <> 2 OrElse
                             parameters(0).ParameterType IsNot forLoopArgumentType OrElse
                             parameters(1).ParameterType IsNot forLoopArgumentType Then
-                            Throw New ArgumentException(GetResourceString(
+                            Throw New ArgumentException(SR.Format(
                                 SR.ForLoop_UnacceptableRelOperator2,
                                 operatorMethod.ToString,
                                 VBFriendlyNameOfType(forLoopArgumentType, fullName:=True)))
@@ -136,11 +136,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Dim loopFor As ForLoopControl
 
                 If (Start Is Nothing) Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Start"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNullValue1, "Start"))
                 ElseIf (Limit Is Nothing) Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Limit"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNullValue1, "Limit"))
                 ElseIf (StepValue Is Nothing) Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidNullValue1, "Step"))
+                    Throw New ArgumentException(SR.Format(SR.Argument_InvalidNullValue1, "Step"))
                 End If
 
                 Dim startType As Type = Start.GetType()
@@ -150,7 +150,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Dim widestType As Type = GetWidestType(stepType, startType, limitType)
 
                 If widestType Is Nothing Then
-                    Throw New ArgumentException(GetResourceString(SR.ForLoop_CommonType3, VBFriendlyName(startType), VBFriendlyName(limitType), VBFriendlyName(StepValue)))
+                    Throw New ArgumentException(SR.Format(SR.ForLoop_CommonType3, VBFriendlyName(startType), VBFriendlyName(limitType), VBFriendlyName(StepValue)))
                 End If
 
                 loopFor = New ForLoopControl
@@ -247,7 +247,7 @@ NotEnumType:
                 End If
 
                 If Counter Is Nothing Then
-                    Throw New NullReferenceException(GetResourceString(SR.Argument_InvalidNullValue1, "Counter"))
+                    Throw New NullReferenceException(SR.Format(SR.Argument_InvalidNullValue1, "Counter"))
                 End If
 
                 loopFor = CType(LoopObj, ForLoopControl)
@@ -260,7 +260,7 @@ NotEnumType:
 
                     If counterTypeCode <> loopFor._widestTypeCode OrElse counterTypeCode = TypeCode.String Then
                         If counterTypeCode = TypeCode.Object Then
-                            Throw New ArgumentException(GetResourceString(SR.ForLoop_CommonType2, VBFriendlyName(MapTypeCodeToType(counterTypeCode)), VBFriendlyName(loopFor._widestType)))
+                            Throw New ArgumentException(SR.Format(SR.ForLoop_CommonType2, VBFriendlyName(MapTypeCodeToType(counterTypeCode)), VBFriendlyName(loopFor._widestType)))
                         Else
                             Dim widestType As Type = GetWidestType(MapTypeCodeToType(counterTypeCode), loopFor._widestType)
                             Dim widestTypeCode As TypeCode = GetTypeCode(widestType)
@@ -365,7 +365,7 @@ NotEnumType:
                         End If
 
                     Catch ex As InvalidCastException
-                        Throw New ArgumentException(GetResourceString(SR.Argument_IComparable2, "loop control variable", VBFriendlyName(loopFor._counter)))
+                        Throw New ArgumentException(SR.Format(SR.Argument_IComparable2, "loop control variable", VBFriendlyName(loopFor._counter)))
                     End Try
                 Else
                     If loopFor._positiveStep Then

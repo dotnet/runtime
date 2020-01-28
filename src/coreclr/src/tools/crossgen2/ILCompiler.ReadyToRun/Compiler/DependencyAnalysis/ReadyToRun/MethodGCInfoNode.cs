@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void OnMarked(NodeFactory factory)
         {
-            ((ReadyToRunCodegenNodeFactory)factory).RuntimeFunctionsGCInfo.AddEmbeddedObject(this);
+            factory.RuntimeFunctionsGCInfo.AddEmbeddedObject(this);
         }
 
         public int[] CalculateFuncletOffsets(NodeFactory factory)
@@ -82,8 +82,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (factory.Target.Architecture != Internal.TypeSystem.TargetArchitecture.X86)
                 {
                     bool isFilterFunclet = (_methodNode.FrameInfos[frameInfoIndex].Flags & FrameInfoFlags.Filter) != 0;
-                    ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-                    ISymbolNode personalityRoutine = (isFilterFunclet ? r2rFactory.FilterFuncletPersonalityRoutine : r2rFactory.PersonalityRoutine);
+                    ISymbolNode personalityRoutine = (isFilterFunclet ? factory.FilterFuncletPersonalityRoutine : factory.PersonalityRoutine);
                     dataBuilder.EmitReloc(personalityRoutine, RelocType.IMAGE_REL_BASED_ADDR32NB);
                 }
 

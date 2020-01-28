@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
-// It provides operator constants for use by the Builder and the Machine.
 
 // Implementation notes:
 //
@@ -95,18 +94,18 @@ namespace System.Text.RegularExpressions
         public const int Back2 = 256; // bit to indicate that we're backtracking on a second branch.
         public const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
-        public readonly RegexTree Tree;                  // the optimized parse tree
-        public readonly int[] Codes;                     // the code
-        public readonly string[] Strings;                // the string/set table
-        public readonly int[]?[] StringsAsciiLookup;     // the ASCII lookup table optimization for the sets in Strings
-        public readonly int TrackCount;                  // how many instructions use backtracking
-        public readonly Hashtable? Caps;                 // mapping of user group numbers -> impl group slots
-        public readonly int CapSize;                     // number of impl group slots
-        public readonly RegexPrefix? FCPrefix;           // the set of candidate first characters (may be null)
-        public int[]? FCPrefixAsciiLookup;               // the ASCII lookup table optimization for the set of candidate first characters if there are any
-        public readonly RegexBoyerMoore? BMPrefix;       // the fixed prefix string as a Boyer-Moore machine (may be null)
-        public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
-        public readonly bool RightToLeft;                // true if right to left
+        public readonly RegexTree Tree;              // the optimized parse tree
+        public readonly int[] Codes;                 // the code
+        public readonly string[] Strings;            // the string/set table
+        public readonly int[]?[] StringsAsciiLookup; // the ASCII lookup table optimization for the sets in Strings
+        public readonly int TrackCount;              // how many instructions use backtracking
+        public readonly Hashtable? Caps;             // mapping of user group numbers -> impl group slots
+        public readonly int CapSize;                 // number of impl group slots
+        public readonly RegexPrefix? FCPrefix;       // the set of candidate first characters, if available
+        public int[]? FCPrefixAsciiLookup;           // the ASCII lookup table optimization for FCPrefix if it exists; only used by the interpreter
+        public readonly RegexBoyerMoore? BMPrefix;   // the fixed prefix string as a Boyer-Moore machine, if available
+        public readonly int Anchors;                 // the set of zero-length start anchors (RegexFCD.Bol, etc)
+        public readonly bool RightToLeft;            // true if right to left
 
         public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
                          Hashtable? caps, int capsize,
@@ -286,13 +285,13 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int opcode = Codes[offset];
 
             sb.AppendFormat("{0:D6} ", offset);
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
-            sb.Append('(');
+            sb.Append(Indent());
 
             opcode &= Mask;
 
@@ -308,8 +307,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("Ch = ");
-                    sb.Append(RegexCharClass.CharDescription((char)Codes[offset + 1]));
+                    sb.Append("'").Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append("'");
                     break;
 
                 case Set:
@@ -317,34 +315,32 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
                     break;
 
                 case Multi:
-                    sb.Append("String = ");
-                    sb.Append(Strings[Codes[offset + 1]]);
+                    sb.Append('"').Append(Strings[Codes[offset + 1]]).Append('"');
                     break;
 
                 case Ref:
                 case Testref:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
                 case Capturemark:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     if (Codes[offset + 2] != -1)
                     {
-                        sb.Append(", Unindex = ");
+                        sb.Append(", unindex = ");
                         sb.Append(Codes[offset + 2]);
                     }
                     break;
 
                 case Nullcount:
                 case Setcount:
-                    sb.Append("Value = ");
+                    sb.Append("value = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
@@ -354,7 +350,7 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append("Addr = ");
+                    sb.Append("addr = ");
                     sb.Append(Codes[offset + 1]);
                     break;
             }
@@ -373,7 +369,7 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append(", Rep = ");
+                    sb.Append(", rep = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -382,7 +378,7 @@ namespace System.Text.RegularExpressions
 
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append(", Limit = ");
+                    sb.Append(", limit = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -390,7 +386,7 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            sb.Append(')');
+            string Indent() => new string(' ', Math.Max(1, 25 - sb.Length));
 
             return sb.ToString();
         }

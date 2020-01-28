@@ -8448,17 +8448,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule());
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule()->GetClassLoader());
 
-    // If the caller is the static constructor (.cctor) of a class which has a ComImport base class
-    // somewhere up the class hierarchy, then we cannot make the call into a tailcall.  See
-    // RegisterObjectCreationCallback() in ExtensibleClassFactory.cpp for more information.
-    if (pCaller->IsClassConstructor() &&
-        pCaller->GetMethodTable()->IsComObjectType())
-    {
-        result = false;
-        szFailReason = "Caller is  ComImport .cctor";
-        goto exit;
-    }
-
     if (!fIsTailPrefix)
     {
         mdMethodDef callerToken = pCaller->GetMemberDef();

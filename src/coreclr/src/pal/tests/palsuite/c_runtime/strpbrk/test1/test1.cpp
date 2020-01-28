@@ -8,7 +8,7 @@
 **
 ** Purpose:
 ** Search a string for characters in a given character set and ensure the 
-** pointer returned points to the first occurance.  Check to see that the
+** pointer returned points to the first occurrence.  Check to see that the
 ** function returns NULL if the character is not found.
 **
 **

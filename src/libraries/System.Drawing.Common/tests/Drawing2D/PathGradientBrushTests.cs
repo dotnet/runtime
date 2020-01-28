@@ -36,7 +36,7 @@ namespace System.Drawing.Drawing2D.Tests
         private readonly PointF[] _defaultFloatPoints = new PointF[2] { new PointF(1, 2), new PointF(20, 30) };
         private readonly RectangleF _defaultRectangle = new RectangleF(1, 2, 19, 28);
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Points_ReturnsExpected()
         {
@@ -59,7 +59,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { WrapMode.TileFlipY };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(WrapMode_TestData))]
         public void Ctor_PointsWrapMode_ReturnsExpected(WrapMode wrapMode)
@@ -102,7 +102,7 @@ namespace System.Drawing.Drawing2D.Tests
                 new PathGradientBrush(_defaultFloatPoints, (WrapMode)int.MaxValue));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Path_ReturnsExpected()
         {
@@ -131,7 +131,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_ReturnsExpected()
         {
@@ -175,7 +175,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.CenterColor = Color.Blue);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SurroundColors_ReturnsExpected()
         {
@@ -280,7 +280,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new float[1] { 1 }, new float[3] { 0, 3, 1 } };
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Blend_FactorsPositions_TestData))]
         public void Blend_ReturnsExpected(float[] factors, float[] positions)
@@ -603,7 +603,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void InterpolationColors_CannotChange()
         {

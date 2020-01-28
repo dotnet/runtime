@@ -56,9 +56,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs">
       <Link>Common\Interop\Interop.RevertToSelf.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Interop.LocalFree.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ConvertSdToStringSd.cs">
       <Link>Common\Interop\Interop.ConvertSdToStringSd.cs</Link>
     </Compile>

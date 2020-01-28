@@ -8,13 +8,16 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other *Provider classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from the abstract HashAlgorithm class,
+    // preexisting contract from the .NET Framework locks all of these into deriving directly from the abstract HashAlgorithm class,
     // it can't be helped.
     //
 
     public abstract class SHA1 : HashAlgorithm
     {
-        protected SHA1() { }
+        protected SHA1()
+        {
+            HashSizeValue = 160;
+        }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();

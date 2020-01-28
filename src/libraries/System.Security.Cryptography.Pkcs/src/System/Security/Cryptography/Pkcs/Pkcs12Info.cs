@@ -101,13 +101,13 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             List<ContentInfoAsn> authSafeData = new List<ContentInfoAsn>();
-            AsnReader authSafeReader = new AsnReader(authSafeBytes, AsnEncodingRules.BER);
-            AsnReader sequenceReader = authSafeReader.ReadSequence();
+            AsnValueReader authSafeReader = new AsnValueReader(authSafeBytes.Span, AsnEncodingRules.BER);
+            AsnValueReader sequenceReader = authSafeReader.ReadSequence();
 
             authSafeReader.ThrowIfNotEmpty();
             while (sequenceReader.HasData)
             {
-                ContentInfoAsn.Decode(sequenceReader, out ContentInfoAsn contentInfo);
+                ContentInfoAsn.Decode(ref sequenceReader, authSafeBytes, out ContentInfoAsn contentInfo);
                 authSafeData.Add(contentInfo);
             }
 

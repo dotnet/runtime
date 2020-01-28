@@ -407,7 +407,7 @@ namespace System.Drawing.Imaging
         public void SetOutputChannelColorProfile(string colorProfileFilename,
                                                  ColorAdjustType type)
         {
-            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            // Called in order to emulate exception behavior from .NET Framework related to invalid file paths.
             Path.GetFullPath(colorProfileFilename);
 
             int status = Gdip.GdipSetImageAttributesOutputChannelColorProfile(

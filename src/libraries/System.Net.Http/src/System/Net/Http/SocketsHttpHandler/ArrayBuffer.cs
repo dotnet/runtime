@@ -39,16 +39,17 @@ namespace System.Net.Http
 
         public void Dispose()
         {
+            _activeStart = 0;
+            _availableStart = 0;
+
             if (_usePool)
             {
-                _activeStart = _availableStart = 0;
-
                 byte[] array = _bytes;
                 _bytes = null;
 
                 if (array != null)
                 {
-                    ArrayPool<byte>.Shared.Return(array);
+                    ArrayPool<byte>.Shared.Return(array, true);
                 }
             }
         }
@@ -127,6 +128,11 @@ namespace System.Net.Http
             }
 
             Debug.Assert(byteCount <= AvailableLength);
+        }
+
+        public void Grow()
+        {
+            EnsureAvailableSpace(AvailableLength + 1);
         }
     }
 }

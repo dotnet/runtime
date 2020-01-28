@@ -809,6 +809,15 @@ private:
             return;
         }
 
+#ifdef _TARGET_X86_
+        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
+        {
+            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
+            // fgMorphStackArgForVarArgs does not handle LCL_VAR|FLD_ADDR nodes.
+            return;
+        }
+#endif
+
         GenTree* addr = val.Node();
 
         if (val.Offset() > UINT16_MAX)
@@ -890,6 +899,15 @@ private:
             // (e.g. fgMorphImplicitByRefArgs does not handle LCL_FLD nodes).
             return;
         }
+
+#ifdef _TARGET_X86_
+        if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
+        {
+            // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
+            // fgMorphStackArgForVarArgs does not handle LCL_FLD nodes.
+            return;
+        }
+#endif
 
         ClassLayout*  structLayout = nullptr;
         FieldSeqNode* fieldSeq     = val.FieldSeq();

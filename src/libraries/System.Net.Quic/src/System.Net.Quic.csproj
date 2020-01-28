@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Quic</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <ItemGroup>
@@ -12,7 +12,7 @@
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicParameterHelpers.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSecurityConfig.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicSession.cs" />
-    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\MsQuicStatusException.cs" />
+    <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\QuicExceptionHelpers.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Internal\ResettableCompletionSource.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicConnection.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\MsQuicImplementationProvider.cs" />
@@ -33,6 +33,9 @@
     <Compile Include="System\Net\Quic\QuicListener.cs" />
     <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
     <Compile Include="System\Net\Quic\QuicStream.cs" />
+    <Compile Include="System\Net\Quic\QuicException.cs" />
+    <Compile Include="System\Net\Quic\QuicConnectionAbortedException.cs" />
+    <Compile Include="System\Net\Quic\QuicStreamAbortedException.cs" />
     <Compile Include="Interop\Interop.MsQuic.cs" />
     <Compile Include="Interop\MsQuicEnums.cs" />
     <Compile Include="Interop\MsQuicNativeMethods.cs" />

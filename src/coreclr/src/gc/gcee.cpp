@@ -397,17 +397,6 @@ uint32_t gc_heap::background_gc_wait (alloc_wait_reason awr, int time_out_ms)
     return dwRet;
 }
 
-// Wait for background gc to finish sweeping large objects
-void gc_heap::background_gc_wait_lh (alloc_wait_reason awr)
-{
-    dprintf(2, ("Waiting end of background large sweep"));
-    assert (gc_lh_block_event.IsValid());
-    fire_alloc_wait_event_begin (awr);
-    user_thread_wait (&gc_lh_block_event, FALSE);
-    fire_alloc_wait_event_end (awr);
-    dprintf(2, ("Waiting end of background large sweep is done"));
-}
-
 #endif //BACKGROUND_GC
 
 

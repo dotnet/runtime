@@ -48,4 +48,4 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     variables: ${{ parameters.variables }}
     pool: ${{ parameters.pool }}
-    liveCoreClrBuildConfig: ${{ parameters.buildConfig }}
+    liveRuntimeBuildConfig: ${{ parameters.buildConfig }}

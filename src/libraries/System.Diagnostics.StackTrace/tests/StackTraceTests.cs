@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tests
             var stackTrace = new StackTrace(ex, skipFrames);
             Assert.Equal(exceptionStackTrace.FrameCount - skipFrames, stackTrace.FrameCount);
 
-            // Netfx has null Frames if skipping frames in Release mode.
+            // .NET Framework has null Frames if skipping frames in Release mode.
             StackFrame[] frames = stackTrace.GetFrames();
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
             if (frames != null)
@@ -193,7 +193,7 @@ namespace System.Diagnostics.Tests
 
             var stackTrace = new StackTrace(ex, skipFrames, fNeedFileInfo);
 
-            // Netfx has null Frames if skipping frames in Release mode.
+            // .NET Framework has null Frames if skipping frames in Release mode.
             StackFrame[] frames = stackTrace.GetFrames();
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
             if (frames != null)

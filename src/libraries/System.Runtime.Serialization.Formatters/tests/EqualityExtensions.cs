@@ -1162,7 +1162,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 CheckEquals(@this.InnerException, other.InnerException, isSamePlatform);
             }
 
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 // Different by design for those exceptions
                 if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))

@@ -2,33 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This RegexWriter class is internal to the Regex package.
-// It builds a block of regular expression codes (RegexCode)
-// from a RegexTree parse tree.
-
-// Implementation notes:
-//
-// This step is as simple as walking the tree and emitting
-// sequences of codes.
-//
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
+    /// <summary>Builds a block of regular expression codes (RegexCode) from a RegexTree parse tree.</summary>
     internal ref struct RegexWriter
     {
+        // These must be unused RegexNode type bits.
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
-        // Distribution of common patterns indicates an average amount of 56 op codes.
-        private const int EmittedSize = 56;
+
+        // Distribution of common patterns indicates an average amount of 56 op codes. Since we're stackalloc'ing,
+        // we can afford to make it a bit higher and a power of two for simplicity.
+        private const int EmittedSize = 64;
         private const int IntStackSize = 32;
 
+        private readonly Dictionary<string, int> _stringTable;
         private ValueListBuilder<int> _emitted;
         private ValueListBuilder<int> _intStack;
-        private readonly Dictionary<string, int> _stringTable;
         private Hashtable? _caps;
         private int _trackCount;
 
@@ -73,12 +67,14 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// The top level RegexCode generator. It does a depth-first walk
-        /// through the tree and calls EmitFragment to emits code before
-        /// and after each child of an interior node, and at each leaf.
+        /// through the tree and calls EmitFragment to emit code before
+        /// and after each child of an interior node and at each leaf.
+        /// It also computes various information about the tree, such as
+        /// prefix data to help with optimizations.
         /// </summary>
         public RegexCode RegexCodeFromRegexTree(RegexTree tree)
         {
-            // construct sparse capnum mapping if some numbers are unused
+            // Construct sparse capnum mapping if some numbers are unused.
             int capsize;
             if (tree.CapNumList == null || tree.CapTop == tree.CapNumList.Length)
             {
@@ -90,17 +86,21 @@ namespace System.Text.RegularExpressions
                 capsize = tree.CapNumList.Length;
                 _caps = tree.Caps;
                 for (int i = 0; i < tree.CapNumList.Length; i++)
+                {
                     _caps[tree.CapNumList[i]] = i;
+                }
             }
 
-            RegexNode? curNode = tree.Root;
-            int curChild = 0;
-
+            // Every written code begins with a lazy branch.  This will be back-patched
+            // to point to the ending Stop after the whole expression has been written.
             Emit(RegexCode.Lazybranch, 0);
 
+            // Emit every node.
+            RegexNode curNode = tree.Root;
+            int curChild = 0;
             while (true)
             {
-                int curNodeChildCount = curNode!.ChildCount();
+                int curNodeChildCount = curNode.ChildCount();
                 if (curNodeChildCount == 0)
                 {
                     EmitFragment(curNode.Type, curNode, 0);
@@ -116,39 +116,51 @@ namespace System.Text.RegularExpressions
                 }
 
                 if (_intStack.Length == 0)
+                {
                     break;
+                }
 
                 curChild = _intStack.Pop();
-                curNode = curNode.Next;
+                curNode = curNode.Next!;
 
-                EmitFragment(curNode!.Type | AfterChild, curNode, curChild);
+                EmitFragment(curNode.Type | AfterChild, curNode, curChild);
                 curChild++;
             }
 
+            // Patch the starting Lazybranch, emit the final Stop, and get the resulting code array.
             PatchJump(0, _emitted.Length);
             Emit(RegexCode.Stop);
-
-            RegexPrefix? fcPrefix = RegexFCD.FirstChars(tree);
-            RegexPrefix prefix = RegexFCD.Prefix(tree);
-            bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
-
-            CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-
-            RegexBoyerMoore? bmPrefix = null;
-            if (prefix.Prefix.Length > 1) // if it's == 1, we're better off using fcPrefix
-            {
-                bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
-            }
-
-            int anchors = RegexFCD.Anchors(tree);
             int[] emitted = _emitted.AsSpan().ToArray();
 
+            bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
+
+            // Compute prefixes to help optimize FindFirstChar.
+            RegexBoyerMoore? bmPrefix = null;
+            RegexPrefix? fcPrefix = null;
+            RegexPrefix prefix = RegexFCD.Prefix(tree);
+            if (prefix.Prefix.Length > 1 && prefix.Prefix.Length <= RegexBoyerMoore.MaxLimit) // if it's <= 1 || > MaxLimit, perf is better using fcPrefix
+            {
+                // Compute a Boyer-Moore prefix if we find a single string of sufficient length that always begins the expression.
+                CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+                bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
+            }
+            else
+            {
+                // If we didn't find such a string, try to compute the characters set that might begin the string.
+                fcPrefix = RegexFCD.FirstChars(tree);
+            }
+
+            // Compute any anchors starting the expression.
+            int anchors = RegexFCD.Anchors(tree);
+
+            // Convert the string table into an ordered string array/
             var strings = new string[_stringTable.Count];
             foreach (KeyValuePair<string, int> stringEntry in _stringTable)
             {
                 strings[stringEntry.Value] = stringEntry.Key;
             }
 
+            // Return all that in a RegexCode object.
             return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
         }
 
@@ -169,30 +181,32 @@ namespace System.Text.RegularExpressions
         private void Emit(int op)
         {
             if (RegexCode.OpcodeBacktracks(op))
+            {
                 _trackCount++;
+            }
 
             _emitted.Append(op);
         }
 
-        /// <summary>
-        /// Emits a one-argument operation.
-        /// </summary>
+        /// <summary>Emits a one-argument operation.</summary>
         private void Emit(int op, int opd1)
         {
             if (RegexCode.OpcodeBacktracks(op))
+            {
                 _trackCount++;
+            }
 
             _emitted.Append(op);
             _emitted.Append(opd1);
         }
 
-        /// <summary>
-        /// Emits a two-argument operation.
-        /// </summary>
+        /// <summary>Emits a two-argument operation.</summary>
         private void Emit(int op, int opd1, int opd2)
         {
             if (RegexCode.OpcodeBacktracks(op))
+            {
                 _trackCount++;
+            }
 
             _emitted.Append(op);
             _emitted.Append(opd1);
@@ -220,16 +234,10 @@ namespace System.Text.RegularExpressions
         /// for an array of capture slots. Instead of doing the hash
         /// at match time, it's done at compile time, here.
         /// </summary>
-        private int MapCapnum(int capnum)
-        {
-            if (capnum == -1)
-                return -1;
-
-            if (_caps != null)
-                return (int)_caps[capnum]!;
-            else
-                return capnum;
-        }
+        private int MapCapnum(int capnum) =>
+            capnum == -1 ? -1 :
+            _caps != null ? (int)_caps[capnum]! :
+            capnum;
 
         /// <summary>
         /// The main RegexCode generator. It does a depth-first walk
@@ -267,15 +275,14 @@ namespace System.Text.RegularExpressions
                     {
                         if (curIndex < node.ChildCount() - 1)
                         {
-                            int LBPos = _intStack.Pop();
+                            int lazyBranchPos = _intStack.Pop();
                             _intStack.Append(_emitted.Length);
                             Emit(RegexCode.Goto, 0);
-                            PatchJump(LBPos, _emitted.Length);
+                            PatchJump(lazyBranchPos, _emitted.Length);
                         }
                         else
                         {
-                            int I;
-                            for (I = 0; I < curIndex; I++)
+                            for (int i = 0; i < curIndex; i++)
                             {
                                 PatchJump(_intStack.Pop(), _emitted.Length);
                             }
@@ -307,7 +314,10 @@ namespace System.Text.RegularExpressions
                                 PatchJump(Branchpos, _emitted.Length);
                                 Emit(RegexCode.Forejump);
                                 if (node.ChildCount() > 1)
+                                {
                                     break;
+                                }
+
                                 // else fallthrough
                                 goto case 1;
                             }
@@ -399,21 +409,13 @@ namespace System.Text.RegularExpressions
                     break;
 
                 case RegexNode.Require | BeforeChild:
-                    // NOTE: the following line causes lookahead/lookbehind to be
-                    // NON-BACKTRACKING. It can be commented out with (*)
-                    Emit(RegexCode.Setjump);
-
-
+                    Emit(RegexCode.Setjump); // causes lookahead/lookbehind to be non-backtracking
                     Emit(RegexCode.Setmark);
                     break;
 
                 case RegexNode.Require | AfterChild:
                     Emit(RegexCode.Getmark);
-
-                    // NOTE: the following line causes lookahead/lookbehind to be
-                    // NON-BACKTRACKING. It can be commented out with (*)
-                    Emit(RegexCode.Forejump);
-
+                    Emit(RegexCode.Forejump); // causes lookahead/lookbehind to be non-backtracking
                     break;
 
                 case RegexNode.Prevent | BeforeChild:

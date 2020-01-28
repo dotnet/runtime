@@ -166,7 +166,6 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
-#include "castcache.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -961,9 +960,6 @@ void EEStartupHelper(COINITIEE fFlags)
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
 
-        // This will allocate a handle, so do this after GC is initialized.
-        CastCache::Initialize();
-
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
@@ -1647,6 +1643,7 @@ part2:
 #ifdef LOGGING
                 ShutdownLogging();
 #endif
+                GCHeapUtilities::GetGCHeap()->Shutdown();
             }
         }
 
