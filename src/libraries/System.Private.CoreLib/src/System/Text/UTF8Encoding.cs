@@ -61,6 +61,10 @@ namespace System.Text
         // The initialization code will not be run until a static member of the class is referenced
         internal static readonly UTF8EncodingSealed s_default = new UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: true);
 
+        // Used by Encoding.UTF8NoBOM for lazy initialization
+        // The initialization code will not be run until a static member of the class is referenced
+        internal static readonly UTF8EncodingSealed s_noBom = new UTF8EncodingSealed(encoderShouldEmitUTF8Identifier: false);
+
         internal static ReadOnlySpan<byte> PreambleSpan => new byte[3] { 0xEF, 0xBB, 0xBF }; // uses C# compiler's optimization for static byte[] data
 
         // Yes, the idea of emitting U+FEFF as a UTF-8 identifier has made it into

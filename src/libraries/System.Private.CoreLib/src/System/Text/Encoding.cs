@@ -1019,6 +1019,11 @@ namespace System.Text
 
         public static Encoding UTF8 => UTF8Encoding.s_default;
 
+        // Returns an encoding for the UTF-8 format without BOM. The returned encoding will be
+        // an instance of the UTF8Encoding class.
+
+        public static Encoding UTF8NoBOM => UTF8Encoding.s_noBom;
+
         // Returns an encoding for the UTF-32 format. The returned encoding will be
         // an instance of the UTF32Encoding class.
 
