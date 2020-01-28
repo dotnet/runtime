@@ -34162,7 +34162,7 @@ void gc_heap::background_sweep()
     //block concurrent allocation for large objects
     dprintf (3, ("lh state: planning"));
 
-    for (int i = 0; i <= (max_generation + 1); i++)
+    for (int i = 0; i <= max_generation; i++)
     {
         generation* gen_to_reset = generation_of (i);
         generation_allocator (gen_to_reset)->clear();
@@ -34360,6 +34360,13 @@ void gc_heap::background_sweep()
                     generation_free_obj_space (gen) = 0;
                     generation_allocator (gen)->clear();
                     generation_free_list_space (gen) = 0;
+                    generation_free_list_allocated (gen) = 0;
+                    generation_end_seg_allocated (gen) = 0;
+                    generation_condemned_allocated (gen) = 0;
+                    generation_sweep_allocated (gen) = 0;
+                    generation_allocation_pointer (gen)= 0;
+                    generation_allocation_limit (gen) = 0;
+                    generation_allocation_segment (gen) = heap_segment_rw (generation_start_segment (gen));
 
                     dprintf (2, ("bgs: seg: %Ix, [%Ix, %Ix[%Ix", (size_t)seg,
                                     (size_t)heap_segment_mem (seg),
@@ -34485,9 +34492,6 @@ void gc_heap::background_sweep()
         heap_segment_background_allocated (reset_seg) = 0;
         reset_seg = heap_segment_next_rw (reset_seg);
     }
-
-    generation* loh_gen = generation_of (max_generation + 1);
-    generation_allocation_segment (loh_gen) = heap_segment_rw (generation_start_segment (loh_gen));
 
     // We calculate dynamic data here because if we wait till we signal the lh event,
     // the allocation thread can change the fragmentation and we may read an intermediate

@@ -13,6 +13,7 @@ steps:
   - task: NuGetAuthenticate@0
     inputs:
       nuGetServiceConnections: 'dotnet-core-internal-tooling'
+      forceReinstallCredentialProvider: true
 
   - task: DotNetCoreCLI@2
     displayName: Restore internal tools

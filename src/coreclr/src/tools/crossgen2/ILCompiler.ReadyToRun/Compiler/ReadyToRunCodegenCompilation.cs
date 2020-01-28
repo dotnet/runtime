@@ -197,13 +197,11 @@ namespace ILCompiler
 
         private bool _generateMapFile;
 
-        public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
-
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
-            ReadyToRunCodegenNodeFactory nodeFactory,
+            NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             Logger logger,
@@ -218,7 +216,6 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
-            NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
 
             _inputFilePath = inputFilePath;

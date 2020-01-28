@@ -141,7 +141,7 @@ namespace ILCompiler
                 return true;
             });
 
-            ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
+            NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
