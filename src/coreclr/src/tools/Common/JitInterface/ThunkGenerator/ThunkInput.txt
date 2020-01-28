@@ -158,7 +158,6 @@ struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*,void*
 RETURNTYPES
 BOOL,[return: MarshalAs(UnmanagedType.Bool)]bool,int
 bool,[return: MarshalAs(UnmanagedType.I1)]bool
-LPCWSTR,[return: MarshalAs(UnmanagedType.LPWStr)]string,const wchar_t*
 ; NOTE in managed SIZE_T is an enum that is 64bits in size, and returning one of those causing mcg to do the wrong thing.
 size_t,byte*,size_t
 
@@ -199,7 +198,7 @@ FUNCTIONS
     CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE module)
     BOOL isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     BOOL isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-    const char* getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+    LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
     BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)

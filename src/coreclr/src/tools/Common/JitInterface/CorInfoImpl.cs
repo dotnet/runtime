@@ -1152,12 +1152,12 @@ namespace Internal.JitInterface
         private bool shouldEnforceCallvirtRestriction(CORINFO_MODULE_STRUCT_* scope)
         { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
 
-        private byte* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        private short* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
             string s = (string)methodIL.GetObject((int)metaTOK);
             length = (int)s.Length;
-            return (byte*)GetPin(s);
+            return (short*)GetPin(s);
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
@@ -2424,7 +2424,7 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
-        private string getJitTimeLogFilename()
+        private short* getJitTimeLogFilename()
         {
             return null;
         }

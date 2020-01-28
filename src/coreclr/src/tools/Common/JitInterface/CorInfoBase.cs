@@ -84,7 +84,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidStringRef(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate byte* __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
+        delegate short* __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __shouldEnforceCallvirtRestriction(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* scope);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -244,7 +244,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getEEInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_EE_INFO pEEInfoOut);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        [return: MarshalAs(UnmanagedType.LPWStr)]delegate string __getJitTimeLogFilename(IntPtr _this, IntPtr* ppException);
+        delegate short* __getJitTimeLogFilename(IntPtr _this, IntPtr* ppException);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate mdToken __getMethodDefFromMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -862,7 +862,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static byte* _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        static short* _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             var _this = GetThis(thisHandle);
             try
@@ -872,7 +872,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(byte*);
+                return default(short*);
             }
         }
 
@@ -1969,7 +1969,7 @@ namespace Internal.JitInterface
             }
         }
 
-        [return: MarshalAs(UnmanagedType.LPWStr)]static string _getJitTimeLogFilename(IntPtr thisHandle, IntPtr* ppException)
+        static short* _getJitTimeLogFilename(IntPtr thisHandle, IntPtr* ppException)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1979,7 +1979,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(string);
+                return default(short*);
             }
         }
 
