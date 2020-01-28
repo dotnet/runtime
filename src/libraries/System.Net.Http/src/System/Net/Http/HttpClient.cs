@@ -529,7 +529,7 @@ namespace System.Net.Http
             catch (TaskCanceledException e) when (TimeoutFired(timeoutState, cancellationToken))
             {
                 HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
-                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
+                ThrowTimeoutException(e);
                 throw;
             }
             catch
@@ -568,7 +568,7 @@ namespace System.Net.Http
             catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
             {
                 response?.Dispose();
-                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
+                ThrowTimeoutException(e);
                 throw;
             }
             catch (Exception e)
@@ -599,7 +599,7 @@ namespace System.Net.Http
             }
             catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
             {
-                ThrowTimeoutException(ExceptionDispatchInfo.Capture(e));
+                ThrowTimeoutException(e);
                 throw;
             }
             catch (Exception e)
@@ -616,9 +616,8 @@ namespace System.Net.Http
         private bool TimeoutFired(TimeoutState timeoutState, CancellationToken callerToken)
             => !callerToken.IsCancellationRequested && !_pendingRequestsCts.IsCancellationRequested && timeoutState != null && timeoutState.IsFired;
 
-        private static void ThrowTimeoutException(ExceptionDispatchInfo exceptionInfo)
+        private static void ThrowTimeoutException(TaskCanceledException originalException)
         {
-            var originalException = (TaskCanceledException)exceptionInfo.SourceException;
             var timeoutException = new TimeoutException(SR.net_http_request_timedout, originalException);
             var newTaskCancelledException = new TaskCanceledException(originalException.Message, timeoutException, originalException.CancellationToken);
             throw newTaskCancelledException;
