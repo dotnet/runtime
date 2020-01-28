@@ -140,6 +140,7 @@ namespace ILCompiler.IBC
             byte[] ilBytes = ilBody.GetILBytes();
             int currentOffset = 0;
             object metadataObject = null;
+            object methodNotResolvable = new object();
             while (currentOffset < ilBytes.Length)
             {
                 ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
@@ -151,12 +152,24 @@ namespace ILCompiler.IBC
                         if (metadataObject == null)
                         {
                             uint token = (uint)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
-                            metadataObject = ilBody.GetObject((int)token);
+                            try
+                            {
+                                metadataObject = ilBody.GetObject((int)token);
+                            }
+                            catch (TypeSystemException)
+                            {
+                                // The method being referred to may be missing. In that situation,
+                                // use the methodNotResolvable sentinel to indicate that this record should be ignored
+                                metadataObject = methodNotResolvable;
+                            }
                         }
                         break;
                     case ILOpcode.pop:
-                        MethodProfileData mibcData = new MethodProfileData((MethodDesc)metadataObject, MethodProfilingDataFlags.ReadMethodCode, 0xFFFFFFFF);
-                        yield return mibcData;
+                        if (metadataObject != methodNotResolvable)
+                        {
+                            MethodProfileData mibcData = new MethodProfileData((MethodDesc)metadataObject, MethodProfilingDataFlags.ReadMethodCode, 0xFFFFFFFF);
+                            yield return mibcData;
+                        }
                         metadataObject = null;
                         break;
                 }
