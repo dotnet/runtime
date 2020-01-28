@@ -320,23 +320,6 @@
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_ValidTrustedPlatformAssembly
 
 ####################################################################
-##  System.Reflection.MetadataLoadContext.Tests
-####################################################################
-
-# https://github.com/mono/mono/issues/15340
--nomethod System.Reflection.Tests.CustomAttributeTests.TestDllImportPseudoCustomAttribute
--nomethod System.Reflection.Tests.CustomAttributeTests.TestMarshalAsPseudoCustomAttribute
--nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
--nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
-
-# Assertion failure: Expected: true, Actual: false
-# https://github.com/mono/mono/issues/15344
--nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
-
-# flaky tests
--nomethod System.Reflection.Tests.TypeInfoDeclaredImplementedInterfacesTests.*
-
-####################################################################
 ##  System.Utf8String.Experimental.Tests
 ####################################################################
 
