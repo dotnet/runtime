@@ -264,29 +264,6 @@
 ##  System.Threading.Overlapped.Tests
 ####################################################################
 
-# Overflow Exception
-# https://github.com/mono/mono/issues/15197
-# https://github.com/mono/mono/issues/15311
-# These tests should be ignored on x64 in dotnet/corefx
--nomethod OverlappedTests.PropertyTest2
--nomethod OverlappedTests.PropertyTest3
-
-# NRE
-# https://github.com/mono/mono/issues/15312
--nomethod ThreadPoolBoundHandleTests.BindHandle_MinusOneAsHandle_ThrowsArgumentException
-
-# No Exception thrown
-# https://github.com/mono/mono/issues/15313 
--nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws
--nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws
--nomethod ThreadPoolBoundHandleTests.GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException
-
-# NRE on BindHandle 
-# https://github.com/mono/mono/issues/15314
--nomethod ThreadPoolBoundHandleTests.BindHandle_ZeroAsHandle_ThrowsArgumentException
--nomethod ThreadPoolBoundHandleTests.BindHandle_NullAsHandle_ThrowsArgumentNullException
--nomethod ThreadPoolBoundHandleTests.BindHandle_ValidHandle_ThrowsPlatformNotSupportedException
-
 # Test not run
 -nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
 

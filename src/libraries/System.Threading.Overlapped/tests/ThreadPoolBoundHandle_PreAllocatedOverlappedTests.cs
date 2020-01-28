@@ -41,6 +41,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/mono/mono/issues/15313", TargetFrameworkMonikers.Mono)]
     public unsafe void PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         AssertExtensions.Throws<ArgumentException>(null, () => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
@@ -68,6 +69,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/mono/mono/issues/15313", TargetFrameworkMonikers.Mono)]
     public unsafe void PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         object[] array = new object[]
