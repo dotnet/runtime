@@ -739,14 +739,6 @@ typedef enum
 typedef UINT_PTR EVENTPIPE_PROVIDER;
 typedef UINT_PTR EVENTPIPE_EVENT;
 
-typedef struct
-{
-    const WCHAR *providerName;
-    UINT64       keywords;
-    UINT32       loggingLevel;
-    const WCHAR *filterData;
-} COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
-
 typedef enum
 {
     COR_PRF_EVENTPIPE_BOOLEAN = 3,        // Boolean
@@ -782,6 +774,13 @@ typedef struct
     UINT32       type;
     const WCHAR *name;
 } COR_PRF_EVENTPIPE_PARAM_DESC;
+
+typedef struct
+{
+    UINT64 ptr;
+    UINT32 size;
+    UINT32 reserved;
+} COR_PRF_EVENT_DATA;
 
 /* -------------------------------------------------------------------------- *
  * Forward declarations
@@ -4092,8 +4091,9 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
 
     HRESULT EventPipeWriteEvent(
                 [in] EVENTPIPE_EVENT    eventHandle,
-                [in] BYTE              *pData,
-                [in] UINT32             length,
+                [in, size_is(cData)]
+                     COR_PRF_EVENT_DATA data[],
+                [in] UINT32             cData,
                 [in] LPCGUID            pActivityId,
                 [in] LPCGUID            pRelatedActivityId);
 }

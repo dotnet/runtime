@@ -141,6 +141,7 @@
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeprovider.h"
 #include "eventpipemetadatagenerator.h"
+#include "eventpipeeventpayload.h"
 #endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
@@ -7106,8 +7107,9 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     HRESULT hr = S_OK;
     EX_TRY
     {
-        static_assert(offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name), 
-            "Layouts of EventPipe parameter desc type and Profiler parameter desc type do not match!");
+        static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                        &&offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name), 
+            "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
         EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
         
         size_t metadataLength;
@@ -7143,8 +7145,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     EVENTPIPE_EVENT eventHandle,
-    BYTE *pData,
-    UINT32 length,
+    COR_PRF_EVENT_DATA data[],
+    UINT32 cData,
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId)
 {
@@ -7169,7 +7171,12 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
         return E_INVALIDARG;
     }
 
-    EventPipe::WriteEvent(*pEvent, (BYTE *)pData, length, pActivityId, pRelatedActivityId);
+    static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
+                    && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size), 
+        "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
+
+    EventData *pEventData = reinterpret_cast<EventData *>(data);
+    EventPipe::WriteEvent(*pEvent, pEventData, cData, pActivityId, pRelatedActivityId);
 
     return S_OK;
 #elif // FEATURE_PERFTRACING

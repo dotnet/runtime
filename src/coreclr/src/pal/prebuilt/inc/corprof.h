@@ -618,16 +618,8 @@ typedef UINT_PTR EVENTPIPE_PROVIDER;
 
 typedef UINT_PTR EVENTPIPE_EVENT;
 
-typedef /* [public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0013
-    {
-    const WCHAR *providerName;
-    UINT64 keywords;
-    UINT32 loggingLevel;
-    const WCHAR *filterData;
-    }   COR_PRF_EVENTPIPE_PROVIDER_CONFIG;
-
 typedef /* [public] */ 
-enum __MIDL___MIDL_itf_corprof_0000_0000_0014
+enum __MIDL___MIDL_itf_corprof_0000_0000_0013
     {
         COR_PRF_EVENTPIPE_BOOLEAN   = 3,
         COR_PRF_EVENTPIPE_CHAR  = 4,
@@ -648,7 +640,7 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0014
     }   COR_PRF_EVENTPIPE_PARAM_TYPE;
 
 typedef /* [public] */ 
-enum __MIDL___MIDL_itf_corprof_0000_0000_0015
+enum __MIDL___MIDL_itf_corprof_0000_0000_0014
     {
         COR_PRF_EVENTPIPE_LOGALWAYS = 0,
         COR_PRF_EVENTPIPE_CRITICAL  = 1,
@@ -658,11 +650,18 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0015
         COR_PRF_EVENTPIPE_VERBOSE   = 5
     }   COR_PRF_EVENTPIPE_LEVEL;
 
-typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0016
+typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0015
     {
     UINT32 type;
     const WCHAR *name;
     }   COR_PRF_EVENTPIPE_PARAM_DESC;
+
+typedef /* [public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0016
+    {
+    UINT64 ptr;
+    UINT32 size;
+    UINT32 reserved;
+    }   COR_PRF_EVENT_DATA;
 
 
 
@@ -17244,8 +17243,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeWriteEvent( 
             /* [in] */ EVENTPIPE_EVENT eventHandle,
-            /* [in] */ BYTE *pData,
-            /* [in] */ UINT32 length,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
+            /* [in] */ UINT32 cData,
             /* [in] */ LPCGUID pActivityId,
             /* [in] */ LPCGUID pRelatedActivityId) = 0;
         
@@ -17896,8 +17895,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )( 
             ICorProfilerInfo12 * This,
             /* [in] */ EVENTPIPE_EVENT eventHandle,
-            /* [in] */ BYTE *pData,
-            /* [in] */ UINT32 length,
+            /* [size_is][in] */ COR_PRF_EVENT_DATA data[  ],
+            /* [in] */ UINT32 cData,
             /* [in] */ LPCGUID pActivityId,
             /* [in] */ LPCGUID pRelatedActivityId);
         
@@ -18235,8 +18234,8 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
 #define ICorProfilerInfo12_EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventHandle)  \
     ( (This)->lpVtbl -> EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventHandle) ) 
 
-#define ICorProfilerInfo12_EventPipeWriteEvent(This,eventHandle,pData,length,pActivityId,pRelatedActivityId)    \
-    ( (This)->lpVtbl -> EventPipeWriteEvent(This,eventHandle,pData,length,pActivityId,pRelatedActivityId) ) 
+#define ICorProfilerInfo12_EventPipeWriteEvent(This,eventHandle,data,cData,pActivityId,pRelatedActivityId)  \
+    ( (This)->lpVtbl -> EventPipeWriteEvent(This,eventHandle,data,cData,pActivityId,pRelatedActivityId) ) 
 
 #endif /* COBJMACROS */
 

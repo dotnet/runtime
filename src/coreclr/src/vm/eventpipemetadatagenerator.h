@@ -57,7 +57,7 @@ public:
         EventPipeEventLevel level,
         EventPipeParameterDesc *pParams,
         unsigned int paramCount,
-        size_t *metadataLength);
+        size_t *pMetadataLength);
 };
 
 #endif // FEATURE_PERFTRACING
