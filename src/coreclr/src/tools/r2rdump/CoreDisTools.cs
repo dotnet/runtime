@@ -168,7 +168,7 @@ namespace R2RDump
                         }
                         else
                         {
-                            nakedInstruction.Append('\t');
+                            nakedInstruction.Append("    ");
                         }
                         nakedInstruction.Append(line.Substring(colon).TrimStart());
                         nakedInstruction.Append('\n');

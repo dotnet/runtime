@@ -189,8 +189,8 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? _options.HideOffsets ? 8 : 11 : 32);
-            string indentString = new string('\t', indent / 8) + new string(' ', indent % 8);
+            int indent = (_options.Naked ? _options.HideOffsets ? 4 : 11 : 32);
+            string indentString = new string(' ', indent);
             int rtfOffset = 0;
             int codeOffset = rtf.CodeOffset;
             while (rtfOffset < rtf.Size)
@@ -319,10 +319,10 @@ namespace R2RDump
                         }
                         int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
                         _writer.WriteLine($"Index: {rtfIndex}");
-                        _writer.WriteLine($"\tStartRva: 0x{startRva:X8}");
+                        _writer.WriteLine($"        StartRva: 0x{startRva:X8}");
                         if (endRva != -1)
-                            _writer.WriteLine($"\tEndRva: 0x{endRva:X8}");
-                        _writer.WriteLine($"\tUnwindRva: 0x{unwindRva:X8}");
+                            _writer.WriteLine($"        EndRva: 0x{endRva:X8}");
+                        _writer.WriteLine($"        UnwindRva: 0x{unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;
