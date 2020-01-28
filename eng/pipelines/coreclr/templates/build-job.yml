@@ -114,7 +114,7 @@ jobs:
     # # Since our internal tools are behind an authenticated feed,
     # # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
     # # We can't do this from within the build, so we need to do this as a separate step.
-    - ${{ if and(and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')), eq(parameters.osGroup, 'Windows_NT')) }}:
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
         parameters:
           installDotnet: true
