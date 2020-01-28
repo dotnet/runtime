@@ -357,7 +357,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
 
     ABI::ComInterfaceDispatch* dispSection = ABI::PopulateDispatchSection(wrapperMem, dispatchSectionOffset, ARRAYSIZE(AllEntries), AllEntries);
 
-    ManagedObjectWrapper* wrappers = new (wrapperMem) ManagedObjectWrapper
+    ManagedObjectWrapper* wrapper = new (wrapperMem) ManagedObjectWrapper
         {
             flags,
             objectHandle,
@@ -368,7 +368,17 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
             dispSection
         };
 
-    return wrappers;
+    return wrapper;
+}
+
+void ManagedObjectWrapper::Destroy(_In_ ManagedObjectWrapper* wrapper)
+{
+    _ASSERTE(wrapper != nullptr);
+
+    // Manually trigger the destructor since placement
+    // new was used to allocate the object.
+    wrapper->~ManagedObjectWrapper();
+    InteropLibImports::MemFree(wrapper, AllocScenario::ManagedObjectWrapper);
 }
 
 ManagedObjectWrapper::ManagedObjectWrapper(
@@ -379,14 +389,25 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     _In_ int32_t userDefinedCount,
     _In_ const ComInterfaceEntry* userDefined,
     _In_ ABI::ComInterfaceDispatch* dispatches)
-    : Target{ objectHandle }
+    : Target{ nullptr }
     , _runtimeDefinedCount{ runtimeDefinedCount }
     , _userDefinedCount{ userDefinedCount }
     , _runtimeDefined{ runtimeDefined }
     , _userDefined{ userDefined }
     , _flags{ flags }
     , _dispatches{ dispatches }
-{ }
+{
+    bool wasSet = TrySetObjectHandle(objectHandle);
+    _ASSERTE(wasSet);
+}
+
+
+ManagedObjectWrapper::~ManagedObjectWrapper()
+{
+    // If the target isn't null, then a managed object
+    // is going to leak.
+    _ASSERTE(Target == nullptr);
+}
 
 void* ManagedObjectWrapper::As(_In_ REFIID riid)
 {
@@ -410,14 +431,9 @@ void* ManagedObjectWrapper::As(_In_ REFIID riid)
     return nullptr;
 }
 
-OBJECTHANDLE ManagedObjectWrapper::GetObjectHandle() const
+bool ManagedObjectWrapper::TrySetObjectHandle(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current)
 {
-    return Target;
-}
-
-bool ManagedObjectWrapper::IsAlive() const
-{
-    return true; // rt::IsGCHandleLive(GetObjectGCHandle()); [TODO]
+    return (::InterlockedCompareExchangePointer(&Target, objectHandle, current) == current);
 }
 
 bool ManagedObjectWrapper::IsSet(_In_ CreateComInterfaceFlags flag) const
@@ -484,28 +500,16 @@ ULONG ManagedObjectWrapper::AddRef(void)
 
 ULONG ManagedObjectWrapper::Release(void)
 {
+    OBJECTHANDLE local = Target;
     ULONG refCount = (ULONG)::InterlockedDecrement64(&_refCount);
     if (refCount == 0)
     {
-        // [TODO] Instead of freeing this instance, it should be neutered (i.e. delete object handle).
-        // This means the associated SyncBlock always has this instance until it is finalized with
-        // the associated Object.
-        // Export New APIs:
-        //   IsNeutered()
-        //   TrySetObjectHandle()
-        //   FreeManagedObjectWrapper()
-        //
-
-        OBJECTHANDLE local = Target;
-        Target = NULL;
+        // Attempt to reset the target if its current value is the same.
+        // It is possible the wrapper is in the middle of being reactivated.
+        (void)TrySetObjectHandle(nullptr, local);
 
         // Tell the runtime to delete the managed object instance handle.
         InteropLibImports::DeleteObjectInstanceHandle(local);
-
-        // Manually trigger the destructor since placement
-        // new was used to allocate object.
-        this->~ManagedObjectWrapper();
-        InteropLibImports::MemFree(this, AllocScenario::ManagedObjectWrapper);
     }
 
     return refCount;
@@ -513,12 +517,12 @@ ULONG ManagedObjectWrapper::Release(void)
 
 namespace InteropLib
 {
-    HRESULT CreateComInterfaceForObject(
+    HRESULT CreateComWrapperForObject(
         _In_ OBJECTHANDLE instance,
         _In_ INT32 vtableCount,
         _In_ void* vtablesRaw,
         _In_ INT32 flagsRaw,
-        _Outptr_ IUnknown** comObject)
+        _Outptr_ IUnknown** comObject) noexcept
     {
         if (instance == nullptr || vtablesRaw == nullptr || vtableCount < 0)
             return E_INVALIDARG;
@@ -537,10 +541,21 @@ namespace InteropLib
         return S_OK;
     }
 
+    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO]
+    {
+        static OBJECTHANDLE g_objectHandle = nullptr;
+
+        if (g_objectHandle != nullptr)
+            return false;
+
+        g_objectHandle = objectHandle;
+        return true;
+    }
+
     void GetIUnknownImpl(
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
-        _Out_ void** fpRelease)
+        _Out_ void** fpRelease) noexcept
     {
         _ASSERTE(fpQueryInterface != nullptr
                 && fpAddRef != nullptr
@@ -551,14 +566,30 @@ namespace InteropLib
         *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
     }
 
-    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) // [TODO]
+    HRESULT EnsureActiveComWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
     {
-        static OBJECTHANDLE g_objectHandle = nullptr;
+        ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(wrapperMaybe);
+        if (wrapper == nullptr || handle == nullptr)
+            return E_INVALIDARG;
 
-        if (g_objectHandle != nullptr)
-            return false;
+        ULONG count = wrapper->AddRef();
+        if (count == 1)
+        {
+            ::InterlockedExchangePointer(&wrapper->Target, handle);
+            return S_FALSE;
+        }
 
-        g_objectHandle = objectHandle;
-        return true;
+        return S_OK;
+    }
+
+    void DestroyComWrapperForObject(_In_ void* wrapperMaybe) noexcept
+    {
+        ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
+
+        // This should never happen.
+        // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
+        _ASSERTE(wrapper != nullptr);
+
+        ManagedObjectWrapper::Destroy(wrapper);
     }
 }

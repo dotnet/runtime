@@ -810,16 +810,6 @@ public:
     }
 #endif // !DACCESS_COMPILE
 
-    bool TrySeparateFromManagedObjectComWrapper(_In_ void* mocw)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (FastInterlockCompareExchangePointer(
-                        &m_managedObjectComWrapper,
-                        NULL,
-                        mocw) == mocw);
-    }
-
 private:
     // See InteropLib API for usage.
     void* m_managedObjectComWrapper;

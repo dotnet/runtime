@@ -988,8 +988,7 @@ namespace System.Runtime.InteropServices
     {
         None = 0,
         CallerDefinedIUnknown = 1,
-        IgnoreCache = 2,
-        TrackerSupport = 4,
+        TrackerSupport = 2,
     }
     [System.FlagsAttribute]
     public enum CreateObjectFlags

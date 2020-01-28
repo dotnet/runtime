@@ -30,6 +30,8 @@ public:
 
     static void QCALLTYPE RegisterForReferenceTrackerHost(
         _In_ QCall::ObjectHandleOnStack comWrappersImpl);
+
+    static void DestroyManagedObjectComWrapper(_In_ void* wrapper);
 };
 
 #endif // FEATURE_COMINTEROP

@@ -25,6 +25,7 @@
 #include "siginfo.hpp"
 #include "eemessagebox.h"
 #include "finalizerthread.h"
+#include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "cominterfacemarshaler.h"
@@ -1975,6 +1976,12 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     {
         pInteropInfo->SetCCW(NULL);
         pCCW->Cleanup();
+    }
+
+    void* mocw;
+    if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
+    {
+        ComWrappersNative::DestroyManagedObjectComWrapper(mocw);
     }
 }
 

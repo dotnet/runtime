@@ -254,7 +254,7 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
                 // Call the InteropLib and create the associated managed object wrapper.
-                hr = InteropLib::CreateComInterfaceForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
+                hr = InteropLib::CreateComWrapperForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
                 if (FAILED(hr))
                 {
                     DestroyHandleCommon(instHandle, InstanceHandleType);
@@ -282,9 +282,17 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         }
         else
         {
-            // An existing wrapper should have an AddRef() performed.
             _ASSERTE(wrapper != NULL);
-            (void)static_cast<IUnknown *>(wrapper)->AddRef();
+            // It is possible the supplied wrapper is no longer valid. If so, reactivate the
+            // wrapper with the object instance's new handle. If this reactivation
+            // wasn't needed, delete the handle.
+            OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
+            hr = InteropLib::EnsureActiveComWrapperAndAddRef(static_cast<IUnknown *>(wrapper), instHandle);
+            if (hr != S_OK)
+                DestroyHandleCommon(instHandle, InstanceHandleType);
+
+            if (FAILED(hr))
+                COMPlusThrowHR(hr);
         }
 
         GCPROTECT_END();
@@ -394,6 +402,19 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
     InteropLib::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
 
     END_QCALL;
+}
+
+void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        PRECONDITION(wrapper != NULL);
+    }
+    CONTRACTL_END;
+
+    InteropLib::DestroyComWrapperForObject(wrapper);
 }
 
 #endif // FEATURE_COMINTEROP

@@ -13,22 +13,28 @@ namespace InteropLib
 #ifdef _WIN32
 
     // Create an IUnknown instance that represents the supplied managed object instance.
-    HRESULT CreateComInterfaceForObject(
+    HRESULT CreateComWrapperForObject(
         _In_ OBJECTHANDLE instance,
         _In_ INT32 vtableCount,
         _In_ void* vtables,
         _In_ INT32 flags,
-        _Outptr_ IUnknown** comObject);
+        _Outptr_ IUnknown** comObject) noexcept;
+
+    // Destroy the supplied COM wrapper
+    void DestroyComWrapperForObject(_In_ void* wrapper) noexcept;
 
     // Register the default callback in the Reference Tracker Host scenario.
     // Returns true if registration succeeded, otherwise false.
-    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle);
+    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept;
 
     // Get internal interop IUnknown dispatch pointers.
     void GetIUnknownImpl(
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
-        _Out_ void** fpRelease);
+        _Out_ void** fpRelease) noexcept;
+
+    // Ensure the wrapper is active and take an AddRef.
+    HRESULT EnsureActiveComWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
 
 #endif // _WIN32
 

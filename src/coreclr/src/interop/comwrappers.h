@@ -16,8 +16,7 @@ enum class CreateComInterfaceFlags
 {
     None = 0,
     CallerDefinedIUnknown = 1,
-    IgnoreCache = 2,
-    TrackerSupport = 4,
+    TrackerSupport = 2,
 };
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlags);
@@ -70,6 +69,9 @@ public: // static
         _In_ int32_t userDefinedCount,
         _In_ ComInterfaceEntry* userDefined);
 
+    // Destroy the instance
+    static void Destroy(_In_ ManagedObjectWrapper* wrapper);
+
 private:
     ManagedObjectWrapper(
         _In_ CreateComInterfaceFlags flags,
@@ -80,12 +82,13 @@ private:
         _In_ const ComInterfaceEntry* userDefined,
         _In_ ABI::ComInterfaceDispatch* dispatches);
 
+    ~ManagedObjectWrapper();
+
 public:
-    ~ManagedObjectWrapper() = default;
 
     void* As(_In_ REFIID riid);
-    OBJECTHANDLE GetObjectHandle() const;
-    bool IsAlive() const;
+    // Attempt to set the target object handle based on an assumed current value.
+    bool TrySetObjectHandle(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlags flag) const;
 
 public: // IReferenceTrackerTarget
@@ -106,15 +109,15 @@ public: // Lifetime
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
 // Class for connecting a native COM object to a managed object instance
-class NativeCOMWrapperInstance
+class NativeComWrapperInstance
 {
-    void* _gcHandle;
+    OBJECTHANDLE _object;
     IReferenceTracker* _trackerObject;
     IAgileReference* _objectReference;
 
 public:
-    NativeCOMWrapperInstance(_In_ void* gcHandle, _In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference);
-    ~NativeCOMWrapperInstance();
+    NativeComWrapperInstance(_In_ OBJECTHANDLE* object, _In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference);
+    ~NativeComWrapperInstance();
 
     void* GetObjectGCHandle() const;
     bool IsAlive() const;

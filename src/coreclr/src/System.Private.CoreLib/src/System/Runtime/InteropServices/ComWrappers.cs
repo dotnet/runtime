@@ -21,16 +21,11 @@ namespace System.Runtime.InteropServices
         CallerDefinedIUnknown = 1,
 
         /// <summary>
-        /// Ignore the internal cache when creating a instance.
-        /// </summary>
-        IgnoreCache = 2,
-
-        /// <summary>
         /// Flag used to indicate the COM interface should implement <see href="https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/nn-windows-ui-xaml-hosting-referencetracker-ireferencetrackertarget">IReferenceTrackerTarget</see>.
         /// When this flag is passed, the resulting COM interface will have an internal implementation of IUnknown
         /// and as such none should be supplied by the caller.
         /// </summary>
-        TrackerSupport = 4,
+        TrackerSupport = 2,
     }
 
     /// <summary>
