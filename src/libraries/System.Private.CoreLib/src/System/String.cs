@@ -29,10 +29,11 @@ namespace System
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
         [NonSerialized]
-        private int _stringLength;
+        private readonly int _stringLength;
 
-        // For empty strings, this will be '\0' since
-        // strings are both null-terminated and length prefixed
+        // For empty strings, _firstChar will be '\0', since strings are both null-terminated and length-prefixed.
+        // The field is also read-only, however String uses .ctors that C# doesn't recognise as .ctors,
+        // so trying to mark the field as 'readonly' causes the compiler to complain.
         [NonSerialized]
         private char _firstChar;
 
