@@ -500,12 +500,6 @@ namespace System.Net.Http
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    long timeoutMilliseconds = (long)_timeout.TotalMilliseconds;
-                    if (timeoutMilliseconds < -1 || timeoutMilliseconds > int.MaxValue)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(_timeout));
-                    }
-
                     timeoutState = new TimeoutState(cts);
                     timer = new Timer(s =>
                     {
@@ -517,7 +511,7 @@ namespace System.Net.Http
                         }
                         catch (ObjectDisposedException) // ObjectDisposedException is expected when the timer fires just after the CTS has been disposed
                         { }
-                    }, timeoutState, timeoutMilliseconds, Threading.Timeout.Infinite);
+                    }, timeoutState, _timeout, Threading.Timeout.InfiniteTimeSpan);
                 }
             }
             else
