@@ -83,7 +83,6 @@
         "4.5.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "netcoreapp2.1": "4.0.4.0",
