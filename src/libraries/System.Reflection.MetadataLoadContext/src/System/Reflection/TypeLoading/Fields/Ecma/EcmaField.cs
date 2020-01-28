@@ -61,7 +61,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         protected sealed override string ComputeName() => FieldDefinition.Name.GetString(Reader);
         protected sealed override FieldAttributes ComputeAttributes() => FieldDefinition.Attributes;
-        protected sealed override Type ComputeFieldType() => FieldDefinition.DecodeSignature(_module, TypeContext)!;
+        protected sealed override Type ComputeFieldType() => FieldDefinition.DecodeSignature(_module, TypeContext);
 
         public sealed override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(isRequired: false);
         public sealed override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(isRequired: true);

@@ -20,7 +20,7 @@ namespace System.Reflection.TypeLoading
 
     internal sealed class RoAssemblyName : IEquatable<RoAssemblyName>
     {
-        public string? Name { get; }
+        public string Name { get; }
         public Version Version { get; }
         public string CultureName { get; }
         public byte[] PublicKeyToken;
@@ -66,7 +66,7 @@ namespace System.Reflection.TypeLoading
         }
 
         public sealed override bool Equals(object? obj) => obj is RoAssemblyName other && Equals(other);
-        public sealed override int GetHashCode() => Name!.GetHashCode();
+        public sealed override int GetHashCode() => Name.GetHashCode();
         public sealed override string ToString() => FullName;
 
         public AssemblyName ToAssemblyName()

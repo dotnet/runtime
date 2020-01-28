@@ -38,8 +38,8 @@ namespace System.Reflection.TypeLoading
             };
 
             // Yes, *we* have to clone the array. AssemblyName.SetPublicKey() violates framework guidelines and doesn't make a copy.
-            an.SetPublicKey(PublicKey!.CloneArray());
-            an.SetPublicKeyToken(PublicKeyToken!.CloneArray());
+            an.SetPublicKey(PublicKey.CloneArray());
+            an.SetPublicKeyToken(PublicKeyToken.CloneArray());
             return an;
         }
     }

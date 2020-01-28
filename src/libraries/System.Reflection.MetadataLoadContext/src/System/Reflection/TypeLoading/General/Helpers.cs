@@ -13,10 +13,10 @@ namespace System.Reflection.TypeLoading
     internal static class Helpers
     {
         [return: NotNullIfNotNull("original")]
-        public static T[] CloneArray<T>(this T[] original)
+        public static T[]? CloneArray<T>(this T[]? original)
         {
             if (original == null)
-                return null!;
+                return null;
 
             if (original.Length == 0)
                 return Array.Empty<T>();
@@ -361,7 +361,7 @@ namespace System.Reflection.TypeLoading
 
             // AssemblyName's PKT property getters do NOT copy the array before giving it out. Make our own copy
             // as the original is wide open to tampering by anyone.
-            byte[] pkt = assemblyName.GetPublicKeyToken()!.CloneArray();
+            byte[]? pkt = assemblyName.GetPublicKeyToken().CloneArray();
 
             return new RoAssemblyName(assemblyName.Name, assemblyName.Version, assemblyName.CultureName, pkt, assemblyName.Flags);
         }
