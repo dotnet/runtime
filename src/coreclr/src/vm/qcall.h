@@ -197,6 +197,12 @@ public:
     {
         Object ** m_ppObject;
 
+        OBJECTREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToOBJECTREF(*m_ppObject);
+        }
+
 #ifndef DACCESS_COMPILE
         //
         // Helpers for returning common managed types from QCall
