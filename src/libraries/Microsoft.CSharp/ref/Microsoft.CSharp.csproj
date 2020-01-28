@@ -5,4 +5,10 @@
   <ItemGroup>
     <Compile Include="Microsoft.CSharp.cs" />
   </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
 </Project>
