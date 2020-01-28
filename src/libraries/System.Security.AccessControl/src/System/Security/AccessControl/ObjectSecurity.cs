@@ -94,19 +94,19 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Owner) != 0)
             {
                 _ownerModified = true;
-                _securityDescriptor.Owner = newOne.Owner;
+                _securityDescriptor.Owner = newOne!.Owner;
             }
 
             if ((includeSections & AccessControlSections.Group) != 0)
             {
                 _groupModified = true;
-                _securityDescriptor.Group = newOne.Group;
+                _securityDescriptor.Group = newOne!.Group;
             }
 
             if ((includeSections & AccessControlSections.Audit) != 0)
             {
                 _saclModified = true;
-                if (newOne.SystemAcl != null)
+                if (newOne!.SystemAcl != null)
                 {
                     _securityDescriptor.SystemAcl = new SystemAcl(IsContainer, IsDS, newOne.SystemAcl, true);
                 }
@@ -121,7 +121,7 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Access) != 0)
             {
                 _daclModified = true;
-                if (newOne.DiscretionaryAcl != null)
+                if (newOne!.DiscretionaryAcl != null)
                 {
                     _securityDescriptor.DiscretionaryAcl = new DiscretionaryAcl(IsContainer, IsDS, newOne.DiscretionaryAcl, true);
                 }
