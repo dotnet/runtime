@@ -250,9 +250,6 @@
 ##  System.Reflection.Metadata.Tests
 ####################################################################
 
-# Assertion... Expected true, got false
-# https://github.com/mono/mono/issues/15194
--nomethod System.Reflection.Tests.MetadataTokenTests.SuccessImpliesNonNilWithCorrectTable
 # Test broken on Mono, added in https://github.com/dotnet/corefx/pull/40581
 -nomethod System.Reflection.Tests.MetadataLoadContextTests.RelocatableAssembly
 
