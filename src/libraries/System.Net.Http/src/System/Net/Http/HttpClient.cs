@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
