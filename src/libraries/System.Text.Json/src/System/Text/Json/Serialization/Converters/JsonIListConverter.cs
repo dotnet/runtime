@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -11,23 +12,24 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class JsonIListConverter<TCollection> : JsonIEnumerableDefaultConverter<TCollection, object>
         where TCollection : IList
     {
-        protected override void Add(object value, ref ReadStack state)
+        protected override void Add(object? value, ref ReadStack state)
         {
-            ((IList)state.Current.ReturnValue!).Add(value);
+            Debug.Assert(state.Current.ReturnValue is IList);
+            ((IList)state.Current.ReturnValue).Add(value);
         }
 
         protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            if ((TypeToConvert.IsInterface || TypeToConvert.IsAbstract))
+            if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
                 if (!TypeToConvert.IsAssignableFrom(RuntimeType))
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
                 }
 
-                state.Current.ReturnValue = new List<object>();
+                state.Current.ReturnValue = new List<object?>();
             }
             else
             {
@@ -35,17 +37,15 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
                 }
-                else
+
+                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+
+                if (returnValue.IsReadOnly)
                 {
-                    TCollection returnValue = (TCollection)classInfo.CreateObject!()!;
-
-                    if (returnValue.IsReadOnly)
-                    {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(TypeToConvert);
-                    }
-
-                    state.Current.ReturnValue = returnValue;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(TypeToConvert);
                 }
+
+                state.Current.ReturnValue = returnValue;
             }
         }
 
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object> converter = JsonSerializerOptions.GetObjectConverter();
+            JsonConverter<object> converter = GetElementConverter(ref state);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -81,8 +81,6 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;
@@ -94,7 +92,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (TypeToConvert.IsAbstract || TypeToConvert.IsInterface)
                 {
-                    return typeof(List<object>);
+                    return typeof(List<object?>);
                 }
 
                 return TypeToConvert;

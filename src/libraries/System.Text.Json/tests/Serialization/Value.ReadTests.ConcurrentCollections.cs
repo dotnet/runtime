@@ -18,12 +18,14 @@ namespace System.Text.Json.Serialization.Tests
 
             ConcurrentQueue<string> qc = JsonSerializer.Deserialize<ConcurrentQueue<string>>(@"[""1""]");
             Assert.Equal(1, qc.Count);
-            qc.TryPeek(out string val);
+            bool found = qc.TryPeek(out string val);
+            Assert.True(found);
             Assert.Equal("1", val);
 
             ConcurrentStack<string> qs = JsonSerializer.Deserialize<ConcurrentStack<string>>(@"[""1""]");
             Assert.Equal(1, qs.Count);
-            qs.TryPeek(out val);
+            found = qs.TryPeek(out val);
+            Assert.True(found);
             Assert.Equal("1", val);
         }
 

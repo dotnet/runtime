@@ -16,9 +16,9 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class JsonIEnumerableConverterFactory : JsonConverterFactory
     {
-        private static readonly JsonIDictionaryConverter<IDictionary> s_IDictionaryConverter = new JsonIDictionaryConverter<IDictionary>();
-        private static readonly JsonIEnumerableConverter<IEnumerable> s_IEnumerableConverter = new JsonIEnumerableConverter<IEnumerable>();
-        private static readonly JsonIListConverter<IList> s_IListConverter = new JsonIListConverter<IList>();
+        private static readonly JsonIDictionaryConverter<IDictionary> s_converterForIDictionary = new JsonIDictionaryConverter<IDictionary>();
+        private static readonly JsonIEnumerableConverter<IEnumerable> s_converterForIEnumerable = new JsonIEnumerableConverter<IEnumerable>();
+        private static readonly JsonIListConverter<IList> s_converterForIList = new JsonIListConverter<IList>();
 
         public override bool CanConvert(Type typeToConvert)
         {
@@ -47,6 +47,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonConverter? converter = null;
             Type converterType;
+            Type[] genericArgs;
             Type? elementType = null;
             Type? actualTypeToConvert;
 
@@ -71,10 +72,11 @@ namespace System.Text.Json.Serialization.Converters
             // Dictionary<string,> or deriving from Dictionary<string,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericBaseClass(typeof(Dictionary<,>))) != null)
             {
-                if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
+                genericArgs = actualTypeToConvert.GetGenericArguments();
+                if (genericArgs[0] == typeof(string))
                 {
                     converterType = typeof(JsonDictionaryOfStringTValueConverter<,>);
-                    elementType = actualTypeToConvert.GetGenericArguments()[1];
+                    elementType = genericArgs[1];
                 }
                 else
                 {
@@ -84,10 +86,11 @@ namespace System.Text.Json.Serialization.Converters
             // Immutable dictionaries from System.Collections.Immutable, e.g. ImmutableDictionary<string, TValue>
             else if (typeToConvert.IsImmutableDictionaryType())
             {
-                if (typeToConvert.GetGenericArguments()[0] == typeof(string))
+                genericArgs = typeToConvert.GetGenericArguments();
+                if (genericArgs[0] == typeof(string))
                 {
                     converterType = typeof(JsonImmutableDictionaryOfStringTValueConverter<,>);
-                    elementType = typeToConvert.GetGenericArguments()[1];
+                    elementType = genericArgs[1];
                 }
                 else
                 {
@@ -97,10 +100,11 @@ namespace System.Text.Json.Serialization.Converters
             // IDictionary<string,> or deriving from IDictionary<string,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IDictionary<,>))) != null)
             {
-                if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
+                genericArgs = actualTypeToConvert.GetGenericArguments();
+                if (genericArgs[0] == typeof(string))
                 {
                     converterType = typeof(JsonIDictionaryOfStringTValueConverter<,>);
-                    elementType = actualTypeToConvert.GetGenericArguments()[1];
+                    elementType = genericArgs[1];
                 }
                 else
                 {
@@ -110,10 +114,11 @@ namespace System.Text.Json.Serialization.Converters
             // IReadOnlyDictionary<string,> or deriving from IReadOnlyDictionary<string,>
             else if ((actualTypeToConvert = typeToConvert.GetCompatibleGenericInterface(typeof(IReadOnlyDictionary<,>))) != null)
             {
-                if (actualTypeToConvert.GetGenericArguments()[0] == typeof(string))
+                genericArgs = actualTypeToConvert.GetGenericArguments();
+                if (genericArgs[0] == typeof(string))
                 {
                     converterType = typeof(JsonIReadOnlyDictionaryOfStringTValueConverter<,>);
-                    elementType = actualTypeToConvert.GetGenericArguments()[1];
+                    elementType = genericArgs[1];
                 }
                 else
                 {
@@ -179,7 +184,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (typeToConvert == typeof(IDictionary))
                 {
-                    return s_IDictionaryConverter;
+                    return s_converterForIDictionary;
                 }
 
                 converterType = typeof(JsonIDictionaryConverter<>);
@@ -188,7 +193,7 @@ namespace System.Text.Json.Serialization.Converters
             {
                 if (typeToConvert == typeof(IList))
                 {
-                    return s_IListConverter;
+                    return s_converterForIList;
                 }
 
                 converterType = typeof(JsonIListConverter<>);
@@ -202,7 +207,7 @@ namespace System.Text.Json.Serialization.Converters
                 Debug.Assert(typeof(IEnumerable).IsAssignableFrom(typeToConvert));
                 if (typeToConvert == typeof(IEnumerable))
                 {
-                    return s_IEnumerableConverter;
+                    return s_converterForIEnumerable;
                 }
 
                 converterType = typeof(JsonIEnumerableConverter<>);
@@ -222,7 +227,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 converter = (JsonConverter)Activator.CreateInstance(
                     genericType,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
+                    BindingFlags.Instance | BindingFlags.Public,
                     binder: null,
                     args: null,
                     culture: null)!;

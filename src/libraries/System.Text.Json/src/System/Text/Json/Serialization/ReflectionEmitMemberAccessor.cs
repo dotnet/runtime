@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if BUILDING_INBOX_LIBRARY
-using System.Collections;
+#if NETFRAMEWORK || NETCOREAPP
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
@@ -56,12 +55,12 @@ namespace System.Text.Json
             return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
         }
 
-        public override Action<TCollection, object> CreateAddMethodDelegate<TCollection>()
+        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
             Type collectionType = typeof(TCollection);
             Type elementType = typeof(object);
 
-            // We verified this won't be null when a created the converter that calls this method.
+            // We verified this won't be null when we created the converter that calls this method.
             MethodInfo realMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
 
             var dynamicMethod = new DynamicMethod(
@@ -78,7 +77,7 @@ namespace System.Text.Json
             generator.Emit(OpCodes.Callvirt, realMethod);
             generator.Emit(OpCodes.Ret);
 
-            return (Action<TCollection, object>)dynamicMethod.CreateDelegate(typeof(Action<TCollection, object>));
+            return (Action<TCollection, object?>)dynamicMethod.CreateDelegate(typeof(Action<TCollection, object?>));
         }
 
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>()

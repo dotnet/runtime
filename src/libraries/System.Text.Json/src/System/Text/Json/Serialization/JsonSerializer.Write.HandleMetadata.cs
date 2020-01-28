@@ -10,9 +10,29 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         // Pre-encoded metadata properties.
-        private static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
-        private static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
-        private static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+        internal static readonly JsonEncodedText s_metadataId = JsonEncodedText.Encode("$id", encoder: null);
+        internal static readonly JsonEncodedText s_metadataRef = JsonEncodedText.Encode("$ref", encoder: null);
+        internal static readonly JsonEncodedText s_metadataValues = JsonEncodedText.Encode("$values", encoder: null);
+
+        internal static MetadataPropertyName GetResolvedReferenceHandling(
+            JsonConverter converter,
+            object value,
+            ref WriteStack state,
+            out string? referenceId)
+        {
+            if (!converter.CanHaveIdMetadata || converter.TypeToConvert.IsValueType)
+            {
+                referenceId = default;
+                return MetadataPropertyName.NoMetadata;
+            }
+
+            if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(value, out referenceId))
+            {
+                return MetadataPropertyName.Ref;
+            }
+
+            return MetadataPropertyName.Id;
+        }
 
         internal static MetadataPropertyName WriteReferenceForObject(
             JsonConverter jsonConverter,
@@ -20,11 +40,12 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite = state.GetResolvedReferenceHandling(jsonConverter, currentValue, out string? referenceId);
+            MetadataPropertyName metadataToWrite = GetResolvedReferenceHandling(jsonConverter, currentValue, ref state, out string? referenceId);
 
             if (metadataToWrite == MetadataPropertyName.Ref)
             {
                 writer.WriteString(s_metadataRef, referenceId!);
+                writer.WriteEndObject();
             }
             else if (metadataToWrite == MetadataPropertyName.Id)
             {
@@ -40,7 +61,7 @@ namespace System.Text.Json
             ref WriteStack state,
             Utf8JsonWriter writer)
         {
-            MetadataPropertyName metadataToWrite = state.GetResolvedReferenceHandling(jsonConverter, currentValue, out string? referenceId);
+            MetadataPropertyName metadataToWrite = GetResolvedReferenceHandling(jsonConverter, currentValue, ref state, out string? referenceId);
 
             if (metadataToWrite == MetadataPropertyName.NoMetadata)
             {
@@ -50,8 +71,7 @@ namespace System.Text.Json
             {
                 writer.WriteStartObject();
                 writer.WriteString(s_metadataId, referenceId!);
-                writer.WritePropertyName(s_metadataValues);
-                writer.WriteStartArray();
+                writer.WriteStartArray(s_metadataValues);
             }
             else
             {

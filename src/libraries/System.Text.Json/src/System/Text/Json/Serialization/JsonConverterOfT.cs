@@ -12,8 +12,6 @@ namespace System.Text.Json.Serialization
     /// <typeparam name="T">The <see cref="Type"/> to convert.</typeparam>
     public abstract class JsonConverter<T> : JsonConverter
     {
-        private Type _typeToConvert = typeof(T);
-
         /// <summary>
         /// When overidden, constructs a new <see cref="JsonConverter{T}"/> instance.
         /// </summary>
@@ -42,7 +40,7 @@ namespace System.Text.Json.Serialization
 
         internal override ClassType ClassType => ClassType.Value;
 
-        internal override sealed JsonPropertyInfo CreateJsonPropertyInfo()
+        internal sealed override JsonPropertyInfo CreateJsonPropertyInfo()
         {
             return new JsonPropertyInfo<T>();
         }
@@ -52,10 +50,10 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Is the converter built-in.
         /// </summary>
-        internal bool IsInternalConverter;
+        internal bool IsInternalConverter { get; set; }
 
         // This non-generic API is sealed as it just forwards to the generic version.
-        internal override sealed bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
             T valueOfT = (T)value!;
             return TryWrite(writer, valueOfT, options, ref state);
@@ -69,7 +67,7 @@ namespace System.Text.Json.Serialization
         }
 
         // This non-generic API is sealed as it just forwards to the generic version.
-        internal override sealed bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
+        internal sealed override bool TryReadAsObject(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out object? value)
         {
             bool success = TryRead(ref reader, typeToConvert, options, ref state, out T valueOfT);
             if (success)
@@ -126,15 +124,16 @@ namespace System.Text.Json.Serialization
                 else
 #endif
                 {
-                    state.Current.OriginalPropertyTokenType = reader.TokenType;
-                    state.Current.OriginalPropertyDepth = reader.CurrentDepth;
-                    state.Current.OriginalPropertyBytesConsumed = reader.BytesConsumed;
+                    JsonTokenType originalPropertyTokenType = reader.TokenType;
+                    int originalPropertyDepth = reader.CurrentDepth;
+                    long originalPropertyBytesConsumed = reader.BytesConsumed;
 
                     value = Read(ref reader, typeToConvert, options);
                     VerifyRead(
-                        state.Current.OriginalPropertyTokenType,
-                        state.Current.OriginalPropertyDepth,
-                        state.Current.OriginalPropertyBytesConsumed != reader.BytesConsumed,
+                        originalPropertyTokenType,
+                        originalPropertyDepth,
+                        originalPropertyBytesConsumed,
+                        isValueConverter: true,
                         ref reader);
                 }
 
@@ -195,7 +194,8 @@ namespace System.Text.Json.Serialization
                     VerifyRead(
                         state.Current.OriginalTokenType,
                         state.Current.OriginalDepth,
-                        hasConsumedAnyBytes: true,
+                        bytesConsumed : 0,
+                        isValueConverter: false,
                         ref reader);
 
                     // No need to clear state.Current.* since a stack pop will occur.
@@ -231,6 +231,7 @@ namespace System.Text.Json.Serialization
 
                 if (type != TypeToConvert)
                 {
+                    // Handle polymorphic case and get the new converter.
                     JsonConverter jsonConverter = state.Current.InitializeReEntry(type, options);
                     if (jsonConverter != this)
                     {
@@ -242,13 +243,12 @@ namespace System.Text.Json.Serialization
 
             if (ClassType == ClassType.Value)
             {
-                if (!state.IsContinuation)
-                {
-                    state.Current.OriginalPropertyDepth = writer.CurrentDepth;
-                }
+                Debug.Assert(!state.IsContinuation);
+
+                int originalPropertyDepth = writer.CurrentDepth;
 
                 Write(writer, value, options);
-                VerifyWrite(state.Current.OriginalPropertyDepth, writer);
+                VerifyWrite(originalPropertyDepth, writer);
 
                 return true;
             }
@@ -289,10 +289,9 @@ namespace System.Text.Json.Serialization
 
             if (ClassType == ClassType.Value)
             {
-                if (!state.IsContinuation)
-                {
-                    state.Current.OriginalPropertyDepth = writer.CurrentDepth;
-                }
+                Debug.Assert(!state.IsContinuation);
+
+                int originalPropertyDepth = writer.CurrentDepth;
 
                 // Ignore the naming policy for extension data.
                 state.Current.IgnoreDictionaryKeyPolicy = true;
@@ -300,7 +299,7 @@ namespace System.Text.Json.Serialization
                 success = dictionaryConverter.OnWriteResume(writer, value, options, ref state);
                 if (success)
                 {
-                    VerifyWrite(state.Current.OriginalPropertyDepth, writer);
+                    VerifyWrite(originalPropertyDepth, writer);
                 }
             }
             else
@@ -330,9 +329,9 @@ namespace System.Text.Json.Serialization
             return success;
         }
 
-        internal override sealed Type TypeToConvert => _typeToConvert;
+        internal sealed override Type TypeToConvert => typeof(T);
 
-        internal void VerifyRead(JsonTokenType tokenType, int depth, bool hasConsumedAnyBytes, ref Utf8JsonReader reader)
+        internal void VerifyRead(JsonTokenType tokenType, int depth, long bytesConsumed, bool isValueConverter, ref Utf8JsonReader reader)
         {
             switch (tokenType)
             {
@@ -361,8 +360,9 @@ namespace System.Text.Json.Serialization
                     break;
 
                 default:
-                    // A non-array or non-object should not make any additional reads.
-                    if (hasConsumedAnyBytes)
+                    // A non-value converter (object or collection) should always have Start and End tokens.
+                    // A value converter should not make any reads.
+                    if (!isValueConverter || reader.BytesConsumed != bytesConsumed)
                     {
                         ThrowHelper.ThrowJsonException_SerializationConverterRead(this);
                     }

@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,10 +15,11 @@ namespace System.Text.Json.Serialization.Converters
         : JsonIEnumerableDefaultConverter<TCollection, TElement>
         where TCollection: IEnumerable
     {
-        internal override bool CanHaveMetadata => false;
+        internal override bool CanHaveIdMetadata => false;
 
         protected override void Add(TElement value, ref ReadStack state)
         {
+            Debug.Assert(state.Current.ReturnValue is List<TElement>);
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
@@ -28,12 +30,14 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
+            Debug.Assert(state.Current.ReturnValue is List<TElement>);
             List<TElement> list = (List<TElement>)state.Current.ReturnValue!;
             state.Current.ReturnValue = list.ToArray();
         }
 
         protected override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
+            Debug.Assert(value is TElement[]);
             TElement[] array = (TElement[])(IEnumerable)value;
 
             int index = state.Current.EnumeratorIndex;
@@ -63,8 +67,6 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.EnumeratorIndex = ++index;
                         return false;
                     }
-
-                    state.Current.EndElement();
                 }
             }
 

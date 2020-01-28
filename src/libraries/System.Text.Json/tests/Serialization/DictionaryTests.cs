@@ -2033,7 +2033,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(Json, json);
         }
 
-        public class DictionaryThatHasIncomatibleEnumerator : IDictionary
+        public class DictionaryThatHasIncompatibleEnumerator : IDictionary
         {
             Hashtable _inner = new Hashtable();
 
@@ -2117,8 +2117,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string Json = @"{""One"":1,""Two"":2}";
 
-            DictionaryThatHasIncomatibleEnumerator dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator>(Json);
+            DictionaryThatHasIncompatibleEnumerator dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
             Assert.Equal(1, ((JsonElement)dictionary["One"]).GetInt32());
             Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetInt32());
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
@@ -2129,11 +2129,20 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
 
-            DictionaryThatHasIncomatibleEnumerator dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator>(Json);
+            DictionaryThatHasIncompatibleEnumerator dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
             Assert.Equal(1, ((JsonElement)dictionary["One"]).GetProperty("Id").GetInt32());
             Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetProperty("Id").GetInt32());
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+        }
+
+
+        [Fact]
+        public static void VerifyIDictionaryWithNonStringKey()
+        {
+            IDictionary dictionary = new Hashtable();
+            dictionary.Add(1, "value");
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(dictionary));
         }
 
         public class ClassWithoutParameterlessCtor

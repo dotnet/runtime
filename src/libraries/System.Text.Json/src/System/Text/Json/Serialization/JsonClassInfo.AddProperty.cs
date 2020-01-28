@@ -29,7 +29,7 @@ namespace System.Text.Json
 
             if (converter == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(propertyType, parentClassType, propertyInfo);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(propertyType, parentClassType, propertyInfo);
             }
 
             return CreateProperty(

@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization
     {
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
-        private JsonConverter<T> _converter;
+        private readonly JsonConverter<T> _converter;
 
         public JsonValueConverterNullable(JsonConverter<T> converter)
         {

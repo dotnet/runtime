@@ -4,6 +4,10 @@
 
 namespace System.Text.Json
 {
+    /// <summary>
+    /// The current state of an object or collection that supports continuation.
+    /// The values are typically compared with the less-than operator so the ordering is important.
+    /// </summary>
     internal enum StackFrameObjectState : byte
     {
         None = 0,
@@ -16,7 +20,7 @@ namespace System.Text.Json
         MetadataRefPropertyEndObject, // Read EndObject for $ref.
         MetadataValuesPropertyName, // Read $values property name.
         MetadataValuesPropertyStartArray, // Read StartArray for $values.
-        MetataPropertyValue, // Whether all metadata properties has been read.
+        MetadataPropertyValue, // Whether all metadata properties has been read.
 
         CreatedObject,
         ReadElements,

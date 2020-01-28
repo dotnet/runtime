@@ -12,6 +12,9 @@ namespace System.Text.Json.Serialization
     /// </summary>
     public abstract partial class JsonConverter
     {
+        /// <summary>
+        /// Perform a Read() and if read-ahead is required, also read-ahead (to the end of the current JSON level).
+        /// </summary>
         // AggressiveInlining used since this method is on a hot path and short. The optionally called
         // method DoSingleValueReadWithReadAhead is not inlined.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -28,11 +31,10 @@ namespace System.Text.Json.Serialization
 
         internal static bool DoSingleValueReadWithReadAhead(ref Utf8JsonReader reader, ref ReadStack state)
         {
-            // When we're reading ahead we always have to save the state
-            // as we don't know if the next token is an opening object or
-            // array brace.
-            state.InitialReaderState = reader.CurrentState;
-            state.InitialReaderBytesConsumed = reader.BytesConsumed;
+            // When we're reading ahead we always have to save the state as we don't know if the next token
+            // is an opening object or an array brace.
+            JsonReaderState initialReaderState = reader.CurrentState;
+            long initialReaderBytesConsumed = reader.BytesConsumed;
 
             if (!reader.Read())
             {
@@ -47,15 +49,14 @@ namespace System.Text.Json.Serialization
                 bool complete = reader.TrySkip();
 
                 // We need to restore the state in all cases as we need to be positioned back before
-                // the current token to either attempt to skip again or to actually read the value in
-                // HandleValue below.
+                // the current token to either attempt to skip again or to actually read the value.
 
-                reader = new Utf8JsonReader(reader.OriginalSpan.Slice(checked((int)state.InitialReaderBytesConsumed)),
+                reader = new Utf8JsonReader(reader.OriginalSpan.Slice(checked((int)initialReaderBytesConsumed)),
                     isFinalBlock: reader.IsFinalBlock,
-                    state: state.InitialReaderState);
+                    state: initialReaderState);
 
                 Debug.Assert(reader.BytesConsumed == 0);
-                state.BytesConsumed += state.InitialReaderBytesConsumed;
+                state.BytesConsumed += initialReaderBytesConsumed;
 
                 if (!complete)
                 {
@@ -63,8 +64,8 @@ namespace System.Text.Json.Serialization
                     return false;
                 }
 
-                // Success, requeue the reader to the token for HandleValue.
-                reader.Read();
+                // Success, requeue the reader to the start token.
+                reader.ReadWithVerify();
                 Debug.Assert(tokenType == reader.TokenType);
             }
 

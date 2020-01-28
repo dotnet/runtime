@@ -4,11 +4,11 @@
 
 namespace System.Text.Json.Serialization
 {
-    // Used for value converters that need to re-enter the serializer since it will
-    // support JsonPath and other features that require per-serialization state.
+    // Used for value converters that need to re-enter the serializer since it will support JsonPath
+    // and reference handling.
     internal abstract class JsonValueConverter<T> : JsonConverter<T>
     {
-        internal override sealed ClassType ClassType => ClassType.NewValue;
+        internal sealed override ClassType ClassType => ClassType.NewValue;
 
         public override sealed T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization
             }
 
             WriteStack state = default;
-            state.InitializeRoot(typeof(T), options);
+            state.InitializeRoot(typeof(T), options, supportContinuation: false);
             TryWrite(writer, value, options, ref state);
         }
     }

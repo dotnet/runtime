@@ -22,7 +22,12 @@ namespace System.Text.Json
 
             state.Current.InitializeReEntry(typeof(T), options, propertyName);
 
-            return (T)ReadCoreReEntry(options, ref reader, ref state)!;
+            T value = (T)ReadCoreReEntry(options, ref reader, ref state)!;
+
+            // Clear the current property state since we are done processing it.
+            state.Current.EndProperty();
+
+            return value;
         }
 
         /// <summary>
@@ -316,7 +321,7 @@ namespace System.Text.Json
                     valueSpan.CopyTo(rentedSpan);
                 }
 
-                JsonReaderOptions originalReaderOptions = state.Options;
+                JsonReaderOptions originalReaderOptions = readerState.Options;
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 

@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -38,9 +37,6 @@ namespace System.Text.Json
 
         public delegate object? ConstructorDelegate();
         public ConstructorDelegate? CreateObject { get; private set; }
-
-        public delegate TCollection ConstructorDelegate<TCollection>(ICollection elements);
-        public delegate TCollection ConstructorDelegate<TCollection, TElement>(IEnumerable<TElement> elements);
 
         public ClassType ClassType { get; private set; }
 
@@ -118,7 +114,6 @@ namespace System.Text.Json
         {
             Type = type;
             Options = options;
-            JsonConverter? converter;
 
             ClassType = GetClassType(
                 type,
@@ -126,7 +121,7 @@ namespace System.Text.Json
                 propertyInfo: null,
                 out Type? runtimeType,
                 out Type? elementType,
-                out converter,
+                out JsonConverter? converter,
                 options);
 
             switch (ClassType)
@@ -215,7 +210,7 @@ namespace System.Text.Json
                     break;
                 case ClassType.Invalid:
                     {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(type);
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type);
                     }
                     break;
                 default:
@@ -230,15 +225,13 @@ namespace System.Text.Json
             if (jsonPropertyInfo != null)
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
-                if (typeof(Dictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(Dictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) ||
-                    typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
+                if (typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType) ||
                     typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType))
                 {
                     JsonConverter? converter = Options.GetConverter(declaredPropertyType);
                     if (converter == null)
                     {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(declaredPropertyType);
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(declaredPropertyType);
                     }
                 }
                 else
@@ -247,7 +240,6 @@ namespace System.Text.Json
                 }
 
                 DataExtensionProperty = jsonPropertyInfo;
-                jsonPropertyInfo.EscapedName = null;
 
                 return true;
             }
@@ -571,17 +563,13 @@ namespace System.Text.Json
                     {
                         runtimeType = converterRuntimeType;
                     }
-                    else if (converterRuntimeType.IsAssignableFrom(type))
-                    {
-                        runtimeType = type;
-                    }
-                    else if (converter.TypeToConvert.IsAssignableFrom(type))
+                    else if (converterRuntimeType.IsAssignableFrom(type) || converter.TypeToConvert.IsAssignableFrom(type))
                     {
                         runtimeType = type;
                     }
                     else
                     {
-                        throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(type, parentClassType, propertyInfo);
+                        throw ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(type, parentClassType, propertyInfo);
                     }
                 }
             }

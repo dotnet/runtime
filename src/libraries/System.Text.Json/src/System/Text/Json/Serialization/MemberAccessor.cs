@@ -11,7 +11,7 @@ namespace System.Text.Json
     {
         public abstract JsonClassInfo.ConstructorDelegate? CreateConstructor(Type classType);
 
-        public abstract Action<TCollection, object> CreateAddMethodDelegate<TCollection>();
+        public abstract Action<TCollection, object?> CreateAddMethodDelegate<TCollection>();
 
         public abstract Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TElement, TCollection>();
 

@@ -71,10 +71,7 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                state.InitializeRoot(inputType, options);
-
-                // Ensures converters support contination due to having to re-populate the buffer from a Stream.
-                state.SupportContinuation = true;
+                state.InitializeRoot(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
 

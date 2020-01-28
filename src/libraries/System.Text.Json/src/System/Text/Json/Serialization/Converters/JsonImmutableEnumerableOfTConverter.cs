@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,10 +12,11 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TElement value, ref ReadStack state)
         {
+            Debug.Assert(state.Current.ReturnValue is List<TElement>);
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
-        internal override bool CanHaveMetadata => false;
+        internal override bool CanHaveIdMetadata => false;
 
         protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
         {
@@ -40,6 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
                 enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
             }
 
@@ -58,14 +60,10 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;
         }
-
-        internal override Type RuntimeType => TypeToConvert;
 
         private Func<IEnumerable<TElement>, TCollection>? _creatorDelegate;
 

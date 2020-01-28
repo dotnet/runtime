@@ -16,6 +16,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TElement value, ref ReadStack state)
         {
+            Debug.Assert(state.Current.ReturnValue is List<TElement>);
             ((List<TElement>)state.Current.ReturnValue!).Add(value);
         }
 
@@ -42,6 +43,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
                 enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
             }
 
@@ -60,8 +62,6 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;

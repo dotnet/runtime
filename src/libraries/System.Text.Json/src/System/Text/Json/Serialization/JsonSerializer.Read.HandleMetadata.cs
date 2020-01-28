@@ -9,64 +9,73 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        internal static bool ResolveMetadata<T>(
-            this JsonConverter converter,
+        /// <summary>
+        /// Returns true if successful, false is the reader ran out of buffer.
+        /// Sets state.Current.ReturnValue to the $ref target for MetadataRefProperty cases.
+        /// </summary>
+        internal static bool ResolveMetadata(
+            JsonConverter converter,
             ref Utf8JsonReader reader,
-            ref ReadStack state,
-            out T value)
+            ref ReadStack state)
         {
             if (state.Current.ObjectState < StackFrameObjectState.MetadataPropertyName)
             {
                 // Read the first metadata property name.
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
                 if (reader.TokenType != JsonTokenType.PropertyName)
                 {
+                    // An enumerable needs metadata since it starts with StartObject.
                     if (converter.ClassType == ClassType.Enumerable)
                     {
                         ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
                     }
-                    else
-                    {
-                        ThrowHelper.ThrowJsonException_MetadataIdIsNotFirstProperty();
-                    }
+
+                    // The reader should have detected other invalid cases.
+                    Debug.Assert(reader.TokenType == JsonTokenType.EndObject);
+
+                    // Skip the read of the first property name, since we already read it above.
+                    state.Current.PropertyState = StackFramePropertyState.ReadName;
+
+                    return true;
                 }
 
-                ReadOnlySpan<byte> propertyName = GetSpan(ref reader);
+                ReadOnlySpan<byte> propertyName = reader.GetSpan();
                 MetadataPropertyName metadata = GetMetadataPropertyName(propertyName);
-                state.Current.MetadataPropertyName = metadata;
-                if (metadata == MetadataPropertyName.Ref)
+                if (metadata == MetadataPropertyName.Id)
                 {
-                    if (!converter.CanHaveMetadata)
+                    state.Current.JsonPropertyName = propertyName.ToArray();
+                    if (!converter.CanHaveIdMetadata)
                     {
-                        ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
-                    }
-
-                    state.Current.ObjectState = StackFrameObjectState.MetadataRefProperty;
-                }
-                else if (metadata == MetadataPropertyName.Id)
-                {
-                    if (!converter.CanHaveMetadata)
-                    {
-                        if ((converter.ClassType & (ClassType.Dictionary | ClassType.Enumerable)) != 0)
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(converter.TypeToConvert);
-                        }
-                        else
-                        {
-                            ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(state.Current.JsonClassInfo.Type);
-                        }
+                        ThrowHelper.ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(converter.TypeToConvert);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.MetadataIdProperty;
                 }
+                else if (metadata == MetadataPropertyName.Ref)
+                {
+                    state.Current.JsonPropertyName = propertyName.ToArray();
+                    if (converter.TypeToConvert.IsValueType)
+                    {
+                        ThrowHelper.ThrowJsonException_MetadataInvalidReferenceToValueType(converter.TypeToConvert);
+                    }
+
+                    state.Current.ObjectState = StackFrameObjectState.MetadataRefProperty;
+                }
                 else if (metadata == MetadataPropertyName.Values)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues();
+                    state.Current.JsonPropertyName = propertyName.ToArray();
+                    if (converter.ClassType == ClassType.Enumerable)
+                    {
+                        ThrowHelper.ThrowJsonException_MetadataMissingIdBeforeValues();
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
+                    }
                 }
                 else
                 {
@@ -75,12 +84,12 @@ namespace System.Text.Json
                     // Having a StartObject without metadata properties is not allowed.
                     if (converter.ClassType == ClassType.Enumerable)
                     {
-                        ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(converter.TypeToConvert, reader, ref state);
+                        state.Current.JsonPropertyName = propertyName.ToArray();
+                        ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(converter.TypeToConvert, reader);
                     }
 
                     // Skip the read of the first property name, since we already read it above.
                     state.Current.PropertyState = StackFramePropertyState.ReadName;
-                    value = default!;
                     return true;
                 }
             }
@@ -89,7 +98,6 @@ namespace System.Text.Json
             {
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
@@ -100,14 +108,14 @@ namespace System.Text.Json
 
                 string key = reader.GetString()!;
 
-                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key!)!;
+                // todo: verify value is converter.TypeToConvert and throw JsonException? (currently no test)
+                state.Current.ReturnValue = state.ReferenceResolver.ResolveReferenceOnDeserialize(key);
                 state.Current.ObjectState = StackFrameObjectState.MetadataRefPropertyEndObject;
             }
             else if (state.Current.ObjectState == StackFrameObjectState.MetadataIdProperty)
             {
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
@@ -116,13 +124,12 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataValueWasNotString(reader.TokenType);
                 }
 
-                string id = reader.GetString()!;
-                state.Current.MetadataId = id;
+                state.Current.MetadataId = reader.GetString();
 
                 // Clear the MetadataPropertyName since we are done processing Id.
-                state.Current.MetadataPropertyName = MetadataPropertyName.NoMetadata;
+                state.Current.JsonPropertyName = default;
 
-                if (converter.ClassType == ClassType.Enumerable && converter.CanHaveValuesMetadata)
+                if (converter.ClassType == ClassType.Enumerable)
                 {
                     // Need to Read $values property name.
                     state.Current.ObjectState = StackFrameObjectState.MetadataValuesPropertyName;
@@ -130,7 +137,8 @@ namespace System.Text.Json
                 else
                 {
                     // We are done reading metadata.
-                    state.Current.ObjectState = StackFrameObjectState.MetataPropertyValue;
+                    state.Current.ObjectState = StackFrameObjectState.MetadataPropertyValue;
+                    return true;
                 }
             }
 
@@ -138,19 +146,17 @@ namespace System.Text.Json
             {
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
                 if (reader.TokenType != JsonTokenType.EndObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(converter.TypeToConvert);
+                    // We just read a property. The only valid next tokens are EndObject and PropertyName.
+                    Debug.Assert(reader.TokenType == JsonTokenType.PropertyName);
+
+                    ThrowHelper.ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(reader.GetSpan(), ref state);
                 }
 
-                // Clear the MetadataPropertyName since we are done processing Ref.
-                state.Current.MetadataPropertyName = MetadataPropertyName.NoMetadata;
-
-                value = (T)state.Current.ReturnValue!;
                 return true;
             }
 
@@ -158,7 +164,6 @@ namespace System.Text.Json
             {
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
@@ -167,12 +172,16 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
                 }
 
-                if (reader.GetString() != "$values")
+                ReadOnlySpan<byte> propertyName = reader.GetSpan();
+
+                // Remember the property in case we get an exception.
+                state.Current.JsonPropertyName = propertyName.ToArray();
+
+                if (GetMetadataPropertyName(propertyName) != MetadataPropertyName.Values)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayInvalidProperty(converter.TypeToConvert, reader);
                 }
 
-                state.Current.MetadataPropertyName = MetadataPropertyName.Values;
                 state.Current.ObjectState = StackFrameObjectState.MetadataValuesPropertyStartArray;
             }
 
@@ -180,37 +189,18 @@ namespace System.Text.Json
             {
                 if (!reader.Read())
                 {
-                    value = default!;
                     return false;
                 }
 
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
-                    ThrowHelper.ThrowJsonException_MetadataPreservedArrayValuesNotFound(converter.TypeToConvert);
+                    ThrowHelper.ThrowJsonException_MetadataValuesInvalidToken(reader.TokenType);
                 }
 
-                state.Current.ObjectState = StackFrameObjectState.MetataPropertyValue;
+                state.Current.ObjectState = StackFrameObjectState.MetadataPropertyValue;
             }
 
-            value = default!;
             return true;
-        }
-
-        internal static string? GetMetadataPropertyName(in ReadStackFrame frame)
-        {
-            switch (frame.MetadataPropertyName)
-            {
-                case MetadataPropertyName.Id:
-                    return "$id";
-
-                case MetadataPropertyName.Ref:
-                    return "$ref";
-
-                case MetadataPropertyName.Values:
-                    return "$values";
-            }
-
-            return null;
         }
 
         internal static MetadataPropertyName GetMetadataPropertyName(ReadOnlySpan<byte> propertyName)

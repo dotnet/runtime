@@ -218,7 +218,6 @@ namespace System.Text.Json
             // to enable read ahead behaviors to ensure we have complete json objects and arrays
             // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
             // to assign to object and JsonElement properties in the constructed .NET object.)
-            //state.SetToTop();
             state.ReadAhead = !isFinalBlock;
             state.BytesConsumed = 0;
 

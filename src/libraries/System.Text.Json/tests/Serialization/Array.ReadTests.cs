@@ -654,13 +654,13 @@ namespace System.Text.Json.Serialization.Tests
 
         class Dealer
         {
-            private string _Networks;
+            private string _networks;
 
             [JsonIgnore]
             public string Networks
             {
-                get => _Networks;
-                set => _Networks = value ?? string.Empty;
+                get => _networks;
+                set => _networks = value ?? string.Empty;
             }
 
             public IEnumerable<string> NetworkCodeList

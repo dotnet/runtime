@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
@@ -10,12 +11,14 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all object-based types (non-enumerable and non-primitive).
     /// </summary>
-    internal class JsonObjectFactoryConverter : JsonConverterFactory
+    internal class JsonObjectConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
-            // If the IEnumerableConverterFactory doesn't support the collection, ObjectConverterFactory doesn't either.
-            return !typeof(IEnumerable).IsAssignableFrom(typeToConvert);
+            // This is the last built-in factory converter, so if the IEnumerableConverterFactory doesn't
+            // support it, then it is not IEnumerable.
+            Debug.Assert(!typeof(IEnumerable).IsAssignableFrom(typeToConvert));
+            return true;
         }
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,6 +15,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TElement value, ref ReadStack state)
         {
+            Debug.Assert(state.Current.ReturnValue is TCollection);
             ((TCollection)state.Current.ReturnValue!).Add(value);
         }
 
@@ -21,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-            if ((TypeToConvert.IsInterface || TypeToConvert.IsAbstract))
+            if (TypeToConvert.IsInterface || TypeToConvert.IsAbstract)
             {
                 if (!TypeToConvert.IsAssignableFrom(RuntimeType))
                 {
@@ -36,17 +38,15 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
                 }
-                else
+
+                TCollection returnValue = (TCollection)classInfo.CreateObject()!;
+
+                if (returnValue.IsReadOnly)
                 {
-                    TCollection returnValue = (TCollection)classInfo.CreateObject!()!;
-
-                    if (returnValue.IsReadOnly)
-                    {
-                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(TypeToConvert);
-                    }
-
-                    state.Current.ReturnValue = returnValue;
+                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(TypeToConvert);
                 }
+
+                state.Current.ReturnValue = returnValue;
             }
         }
 
@@ -63,6 +63,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
                 enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
             }
 
@@ -81,8 +82,6 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;

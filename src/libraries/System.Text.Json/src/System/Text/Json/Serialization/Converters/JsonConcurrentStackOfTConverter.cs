@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -12,6 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TElement value, ref ReadStack state)
         {
+            Debug.Assert(state.Current.ReturnValue is TCollection);
             ((TCollection)state.Current.ReturnValue!).Push(value);
         }
 
@@ -19,7 +21,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (state.Current.JsonClassInfo.CreateObject == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(state.Current.JsonClassInfo.Type);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonClassInfo.Type);
             }
 
             state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
@@ -38,6 +40,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is IEnumerator<TElement>);
                 enumerator = (IEnumerator<TElement>)state.Current.CollectionEnumerator;
             }
 
@@ -56,13 +59,9 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;
         }
-
-        internal override Type RuntimeType => TypeToConvert;
     }
 }

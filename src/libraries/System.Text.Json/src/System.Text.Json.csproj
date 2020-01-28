@@ -77,7 +77,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\JsonKeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonListOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonObjectDefaultConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\JsonObjectFactoryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonObjectConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonQueueOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonStackOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterBoolean.cs" />
@@ -109,6 +109,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonCollectionConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.ReadAhead.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverterAttribute.cs" />
@@ -117,7 +118,6 @@
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonExtensionDataAttribute.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonIEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonIgnoreAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonObjectConverter.cs" />

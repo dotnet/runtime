@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -16,7 +17,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            string key = state.Current.KeyName!;
+            Debug.Assert(state.Current.ReturnValue is TCollection);
+
+            string key = state.Current.JsonPropertyNameAsString!;
             ((TCollection)state.Current.ReturnValue!)[key] = value;
         }
 
@@ -24,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (state.Current.JsonClassInfo.CreateObject == null)
             {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(state.Current.JsonClassInfo.Type);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonClassInfo.Type);
             }
 
             state.Current.ReturnValue = state.Current.JsonClassInfo.CreateObject();
@@ -47,6 +50,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is Dictionary<string, TValue>.Enumerator);
                 enumerator = (Dictionary<string, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
@@ -65,6 +69,12 @@ namespace System.Text.Json.Serialization.Converters
             {
                 do
                 {
+                    if (ShouldFlush(writer, ref state))
+                    {
+                        state.Current.CollectionEnumerator = enumerator;
+                        return false;
+                    }
+
                     TValue element = enumerator.Current.Value;
                     if (state.Current.PropertyState < StackFramePropertyState.Name)
                     {
@@ -79,7 +89,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    state.Current.EndElement();
+                    state.Current.EndDictionaryElement();
                 } while (enumerator.MoveNext());
             }
 

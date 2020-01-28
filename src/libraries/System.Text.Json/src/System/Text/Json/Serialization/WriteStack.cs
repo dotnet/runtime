@@ -66,7 +66,7 @@ namespace System.Text.Json
         /// <summary>
         /// Initializes the state for the first type being serialized.
         /// </summary>
-        public void InitializeRoot(Type type, JsonSerializerOptions options)
+        public void InitializeRoot(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
             JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
             Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
@@ -82,22 +82,8 @@ namespace System.Text.Json
             {
                 ReferenceResolver = new DefaultReferenceResolver(writing: true);
             }
-        }
 
-        public MetadataPropertyName GetResolvedReferenceHandling(JsonConverter converter, object value, out string? referenceId)
-        {
-            if (!converter.CanHaveMetadata)
-            {
-                referenceId = default;
-                return MetadataPropertyName.NoMetadata;
-            }
-
-            if (ReferenceResolver.TryGetOrAddReferenceOnSerialize(value, out referenceId))
-            {
-                return MetadataPropertyName.Ref;
-            }
-
-            return MetadataPropertyName.Id;
+            SupportContinuation = supportContinuation;
         }
 
         public void Push()

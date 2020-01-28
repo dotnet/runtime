@@ -11,23 +11,17 @@ namespace System.Text.Json
     internal struct ReadStackFrame
     {
         // Current property values.
-        public JsonPropertyInfo JsonPropertyInfo;
+        public JsonPropertyInfo? JsonPropertyInfo;
         public StackFramePropertyState PropertyState;
         public bool UseExtensionProperty;
 
         // Support JSON Path on exceptions.
         public byte[]? JsonPropertyName; // This is Utf8 since we don't want to convert to string until an exception is thown.
-        public string? JsonPropertyNameAsString; // This is used for re-entry cases.
-
-        // Support Dictionary keys.
-        public string? KeyName;
+        public string? JsonPropertyNameAsString; // This is used for dictionary keys and re-entry cases that specify a property name.
 
         // Validation state.
         public int OriginalDepth;
-        public int OriginalPropertyDepth;
-        public long OriginalPropertyBytesConsumed;
         public JsonTokenType OriginalTokenType;
-        public JsonTokenType OriginalPropertyTokenType;
 
         // Current object (POCO or IEnumerable).
         public object? ReturnValue; // The current return value used for re-entry.
@@ -35,7 +29,6 @@ namespace System.Text.Json
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
         // Preserve reference.
-        public MetadataPropertyName MetadataPropertyName;
         public string? MetadataId;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
@@ -52,21 +45,14 @@ namespace System.Text.Json
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
             MetadataId = null;
-            MetadataPropertyName = MetadataPropertyName.NoMetadata;
 
             // No need to clear these since they are overwritten each time:
             //  UseExtensionProperty
-            //  OriginalPropertyDepth
-            //  OriginalPropertyBytesConsumed
-            //  OriginalPropertyTokenType
         }
 
         public void EndElement()
         {
-            OriginalPropertyDepth = 0;
-            OriginalPropertyBytesConsumed = 0;
-            OriginalPropertyTokenType = JsonTokenType.None;
-            KeyName = null;
+            JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
         }
 

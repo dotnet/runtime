@@ -53,10 +53,11 @@ namespace System.Text.Json
             converters.Add(new JsonConverterEnum());
             converters.Add(new JsonKeyValuePairConverter());
 
-            // Enumerable and Object converters should always be last since they can convert any IEnumerable
-            // or non-IEnumerable.
+            // IEnumerable should always be last since they can convert any IEnumerable.
             converters.Add(new JsonIEnumerableConverterFactory());
-            converters.Add(new JsonObjectFactoryConverter());
+
+            // Object should always be last since it converts any type.
+            converters.Add(new JsonObjectConverterFactory());
 
             Debug.Assert(NumberOfConverters == converters.Count);
 
@@ -187,7 +188,6 @@ namespace System.Text.Json
 
             return converter;
         }
-
 
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
         {

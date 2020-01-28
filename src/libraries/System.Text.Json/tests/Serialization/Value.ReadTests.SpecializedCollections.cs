@@ -32,15 +32,15 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Read_SpecializedCollection_Throws()
         {
-            //// Add method for this collection only accepts strings, even though it only implements IList which usually
-            //// indicates that the element type is typeof(object).
-            //Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<StringCollection>(@"[""1"", ""2""]"));
+            // Add method for this collection only accepts strings, even though it only implements IList which usually
+            // indicates that the element type is typeof(object).
+            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<StringCollection>(@"[""1"", ""2""]"));
 
-            //// Not supported. Not IList, and we don't detect the add method for this collection.
-            //Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringDictionary>(@"[{""Key"": ""key"",""Value"":""value""}]"));
+            // Not supported. Not IList, and we don't detect the add method for this collection.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<StringDictionary>(@"[{""Key"": ""key"",""Value"":""value""}]"));
 
-            //// Int key is not allowed.
-            //Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<HybridDictionary>(@"{1:""value""}"));
+            // Int key is not allowed.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<HybridDictionary>(@"{1:""value""}"));
 
             // Runtime type in this case is IOrderedDictionary (we don't replace with concrete type), which we can't instantiate.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<IOrderedDictionary>(@"{""first"":""John"",""second"":""Jane"",""third"":""Jet""}"));

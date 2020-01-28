@@ -34,10 +34,6 @@ namespace System.Text.Json
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
 
-        // Support the read-ahead feature.
-        public JsonReaderState InitialReaderState;
-        public long InitialReaderBytesConsumed;
-
         public bool IsContinuation => _continuationCount != 0;
         public bool IsLastContinuation => _continuationCount == _count;
 
@@ -106,7 +102,7 @@ namespace System.Text.Json
                     if ((Current.JsonClassInfo.ClassType & (ClassType.Object | ClassType.Value | ClassType.NewValue)) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
-                        jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                        jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
                     }
                     else
                     {
@@ -156,7 +152,6 @@ namespace System.Text.Json
                     {
                         // No need for a continuation since there is only one stack frame.
                         _continuationCount = 1;
-                        _count = 1;
                     }
                     else
                     {
@@ -215,36 +210,26 @@ namespace System.Text.Json
 
             return sb.ToString();
 
-            void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
+            static void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
             {
                 // Append the property name.
                 string? propertyName = GetPropertyName(frame);
                 AppendPropertyName(sb, propertyName);
 
-                // For metadata properties, include the name.
-                propertyName = JsonSerializer.GetMetadataPropertyName(in frame);
-                AppendPropertyName(sb, propertyName);
-
-                if (frame.JsonClassInfo != null)
+                if (frame.JsonClassInfo != null && frame.IsProcessingEnumerable())
                 {
-                    if (frame.IsProcessingDictionary())
+                    IEnumerable? enumerable = (IEnumerable?)frame.ReturnValue;
+                    if (enumerable == null)
                     {
-                        // For dictionaries add the key.
-                        AppendPropertyName(sb, frame.KeyName);
+                        return;
                     }
-                    else if (frame.IsProcessingEnumerable())
+
+                    // Once all elements are read, the exception is not within the array.
+                    if (frame.ObjectState < StackFrameObjectState.ReadElements)
                     {
-                        IEnumerable enumerable = (IEnumerable)frame.ReturnValue!;
-                        if (enumerable != null)
-                        {
-                            // Once all elements are read, the exception is not within the array.
-                            if (frame.ObjectState < StackFrameObjectState.ReadElements)
-                            {
-                                sb.Append(@"[");
-                                sb.Append(GetCount(enumerable));
-                                sb.Append(@"]");
-                            }
-                        }
+                        sb.Append(@"[");
+                        sb.Append(GetCount(enumerable));
+                        sb.Append(@"]");
                     }
                 }
             }
@@ -266,7 +251,7 @@ namespace System.Text.Json
                 return count;
             }
 
-            void AppendPropertyName(StringBuilder sb, string? propertyName)
+            static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
                 if (propertyName != null)
                 {
@@ -284,7 +269,7 @@ namespace System.Text.Json
                 }
             }
 
-            string? GetPropertyName(in ReadStackFrame frame)
+            static string? GetPropertyName(in ReadStackFrame frame)
             {
                 string? propertyName = null;
 
@@ -296,7 +281,8 @@ namespace System.Text.Json
                     utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
                     if (utf8PropertyName == null)
                     {
-                        // Attempt to get the JSON property name from the property name specified in re-entry.
+                        // Attempt to get the JSON property name set manually for dictionary
+                        // keys and serializer re-entry cases where a property is specified.
                         propertyName = frame.JsonPropertyNameAsString;
                     }
                 }

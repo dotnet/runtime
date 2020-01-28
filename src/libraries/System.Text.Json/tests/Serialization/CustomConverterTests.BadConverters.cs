@@ -136,7 +136,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             public override bool CanConvert(Type typeToConvert)
             {
-                return true;
+                // To verify the nullable converter, don't convert Nullable.
+                return Nullable.GetUnderlyingType(typeToConvert) == null;
             }
 
             public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
@@ -156,6 +157,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(typeof(int).ToString(), ex.Message);
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int>("0", options));
+            Assert.Contains(typeof(int).ToString(), ex.Message);
+
+            // This will invoke the Nullable converter which should detect a null converter.
+            ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int?>("0", options));
             Assert.Contains(typeof(int).ToString(), ex.Message);
         }
 

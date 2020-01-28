@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -105,10 +106,7 @@ namespace System.Text.Json
             {
                 if (HasGetter)
                 {
-                    if (ConverterBase == null)
-                    {
-                        ThrowCollectionNotSupportedException();
-                    }
+                    Debug.Assert(ConverterBase != null);
 
                     ShouldSerialize = true;
 
@@ -153,6 +151,8 @@ namespace System.Text.Json
             JsonConverter converter,
             JsonSerializerOptions options)
         {
+            Debug.Assert(converter != null);
+
             ParentClassType = parentClassType;
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
@@ -171,7 +171,7 @@ namespace System.Text.Json
 
         // The name of the property with any casing policy or the name specified from JsonPropertyNameAttribute.
         public byte[]? Name { get; private set; }
-        public string? NameAsString { get; set; }
+        public string? NameAsString { get; private set; }
 
         // Key for fast property name lookup.
         public ulong PropertyNameKey { get; set; }
@@ -182,31 +182,45 @@ namespace System.Text.Json
         public bool ReadJsonAndAddExtensionProperty(object obj, ref ReadStack state, ref Utf8JsonReader reader)
         {
             object propValue = GetValueAsObject(obj)!;
-            IDictionary<string, object?>? dictionaryObject = propValue as IDictionary<string, object?>;
 
-            if (dictionaryObject != null && reader.TokenType == JsonTokenType.Null)
+            if (propValue is IDictionary<string, object?> dictionaryObject)
             {
-                // A null JSON value is treated as a null object reference.
-                dictionaryObject[state.Current.KeyName!] = null;
-            }
-            else
-            {
-                JsonConverter<JsonElement> converter = JsonSerializerOptions.GetJsonElementConverter();
-                if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement jsonElement))
-                {
-                    // No need to set a partial object here since JsonElement is a struct that must be read in full.
-                    return false;
-                }
+                // Handle case where extension property is System.Object-based.
 
-                if (dictionaryObject != null)
+                if (reader.TokenType == JsonTokenType.Null)
                 {
-                    dictionaryObject[state.Current.KeyName!] = jsonElement;
+                    // A null JSON value is treated as a null object reference.
+                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = null;
                 }
                 else
                 {
-                    IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
-                    dictionaryJsonElement[state.Current.KeyName!] = jsonElement;
+                    JsonConverter<object> converter = (JsonConverter<object>)
+                        state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+
+                    if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out object? value))
+                    {
+                        return false;
+                    }
+
+                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = value;
                 }
+            }
+            else
+            {
+                // Handle case where extension property is JsonElement-based.
+
+                Debug.Assert(propValue is IDictionary<string, JsonElement>);
+                IDictionary<string, JsonElement> dictionaryJsonElement = (IDictionary<string, JsonElement>)propValue;
+
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)
+                    state.Current.JsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty!.ConverterBase;
+
+                if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
+                {
+                    return false;
+                }
+
+                dictionaryJsonElement[state.Current.JsonPropertyNameAsString!] = value;
             }
 
             return true;
@@ -237,10 +251,5 @@ namespace System.Text.Json
 
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
-
-        public void ThrowCollectionNotSupportedException()
-        {
-            throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(RuntimePropertyType!, ParentClassType, PropertyInfo);
-        }
     }
 }

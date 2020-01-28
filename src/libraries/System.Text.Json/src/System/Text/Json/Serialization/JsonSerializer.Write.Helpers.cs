@@ -101,7 +101,7 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                state.InitializeRoot(type!, options);
+                state.InitializeRoot(type!, options, supportContinuation: false);
                 WriteCore(writer, value, options, ref state, state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
             }
 

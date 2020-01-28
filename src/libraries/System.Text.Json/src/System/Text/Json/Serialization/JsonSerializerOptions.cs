@@ -6,8 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
-using System.Text.Json.Serialization.Converters;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
@@ -28,10 +26,6 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
         private JavaScriptEncoder? _encoder = null;
-
-        // Cache common converters.
-        private static JsonConverter<object> s_objectConverter = null!;
-        private static JsonConverter<JsonElement> s_jsonElementConverter = null!;
 
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
@@ -324,14 +318,11 @@ namespace System.Text.Json
             {
                 if (_memberAccessorStrategy == null)
                 {
-                    if (RuntimeFeature.IsDynamicCodeSupported)
-                    {
-                        _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
-                    }
-                    else
-                    {
-                        _memberAccessorStrategy = new ReflectionMemberAccessor();
-                    }
+#if NETFRAMEWORK || NETCOREAPP
+                    _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
+#else
+                    _memberAccessorStrategy = new ReflectionMemberAccessor();
+#endif
                 }
 
                 return _memberAccessorStrategy;
@@ -382,26 +373,6 @@ namespace System.Text.Json
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
             }
-        }
-
-        internal static JsonConverter<JsonElement> GetJsonElementConverter()
-        {
-            if (s_jsonElementConverter == null)
-            {
-                s_jsonElementConverter = new JsonConverterJsonElement();
-            }
-
-            return s_jsonElementConverter;
-        }
-
-        internal static JsonConverter<object> GetObjectConverter()
-        {
-            if (s_objectConverter == null)
-            {
-                s_objectConverter = new JsonConverterObject();
-            }
-
-            return s_objectConverter;
         }
     }
 }

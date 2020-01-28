@@ -5,41 +5,52 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Lookup the property given its name in the reader.
+        /// Lookup the property given its name (obtained from the reader) and return it.
+        /// Also sets state.Current.JsonPropertyInfo to a non-null value.
         /// </summary>
         // AggressiveInlining used although a large method it is only called from two locations and is on a hot path.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void LookupProperty(
+        internal static JsonPropertyInfo LookupProperty(
             object obj,
             ref Utf8JsonReader reader,
             JsonSerializerOptions options,
             ref ReadStack state,
-            out JsonPropertyInfo jsonPropertyInfo,
             out bool useExtensionProperty)
         {
             Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
 
-            ReadOnlySpan<byte> unescapedPropertyName = GetSpan(ref reader);
-            ReadOnlySpan<byte> propertyName;
+            JsonPropertyInfo jsonPropertyInfo;
+
+            ReadOnlySpan<byte> unescapedPropertyName;
+            ReadOnlySpan<byte> propertyName = reader.GetSpan();
 
             if (reader._stringHasEscaping)
             {
-                int idx = unescapedPropertyName.IndexOf(JsonConstants.BackSlash);
+                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
                 Debug.Assert(idx != -1);
-                propertyName = GetUnescapedString(unescapedPropertyName, idx);
+                unescapedPropertyName = GetUnescapedString(propertyName, idx);
             }
             else
             {
-                propertyName = unescapedPropertyName;
+                unescapedPropertyName = propertyName;
             }
 
-            jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                if (propertyName.Length > 0 && propertyName[0] == '$')
+                {
+                    ThrowHelper.ThrowUnexpectedMetadataException(propertyName, ref reader, ref state);
+                }
+            }
+
+            jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(unescapedPropertyName, ref state.Current);
 
             // Increment PropertyIndex so GetProperty() starts with the next property the next time this function is called.
             state.Current.PropertyIndex++;
@@ -47,42 +58,30 @@ namespace System.Text.Json
             // Determine if we should use the extension property.
             if (jsonPropertyInfo == JsonPropertyInfo.s_missingProperty)
             {
-                if (options.ReferenceHandling.ShouldReadPreservedReferences())
-                {
-                    if (unescapedPropertyName.Length > 0 && unescapedPropertyName[0] == '$')
-                    {
-                        // Ensure JsonPath doesn't attempt to use the previous property.
-                        state.Current.JsonPropertyInfo = null!;
-
-                        ThrowHelper.ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(unescapedPropertyName, ref state, reader);
-                    }
-                }
-
                 JsonPropertyInfo? dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
                 if (dataExtProperty != null)
                 {
-                    state.Current.JsonPropertyName = propertyName.ToArray();
-                    state.Current.KeyName = JsonHelpers.Utf8GetString(propertyName);
+                    state.Current.JsonPropertyNameAsString = JsonHelpers.Utf8GetString(unescapedPropertyName);
                     CreateDataExtensionProperty(obj, dataExtProperty);
                     jsonPropertyInfo = dataExtProperty;
                 }
 
                 state.Current.JsonPropertyInfo = jsonPropertyInfo;
                 useExtensionProperty = true;
-                return;
+                return jsonPropertyInfo;
             }
 
             // Support JsonException.Path.
             Debug.Assert(
                 jsonPropertyInfo.JsonPropertyName == null ||
                 options.PropertyNameCaseInsensitive ||
-                propertyName.SequenceEqual(jsonPropertyInfo.JsonPropertyName));
+                unescapedPropertyName.SequenceEqual(jsonPropertyInfo.JsonPropertyName));
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
 
             if (jsonPropertyInfo.JsonPropertyName == null)
             {
-                byte[] propertyNameArray = propertyName.ToArray();
+                byte[] propertyNameArray = unescapedPropertyName.ToArray();
                 if (options.PropertyNameCaseInsensitive)
                 {
                     // Each payload can have a different name here; remember the value on the temporary stack.
@@ -98,9 +97,10 @@ namespace System.Text.Json
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
             useExtensionProperty = false;
+            return jsonPropertyInfo;
         }
 
-        internal static void CreateDataExtensionProperty(
+        private static void CreateDataExtensionProperty(
             object obj,
             JsonPropertyInfo jsonPropertyInfo)
         {

@@ -104,8 +104,6 @@ namespace System.Text.Json
                 if (state.Current.PropertyState < StackFramePropertyState.Name)
                 {
                     state.Current.PropertyState = StackFramePropertyState.Name;
-
-                    Debug.Assert(EscapedName.HasValue);
                     writer.WritePropertyName(EscapedName.Value);
                 }
 
@@ -126,7 +124,7 @@ namespace System.Text.Json
             }
             else
             {
-                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo.RuntimeClassInfo.ElementClassInfo!.PolicyProperty;
+                state.Current.PolymorphicJsonPropertyInfo = state.Current.DeclaredJsonPropertyInfo!.RuntimeClassInfo.ElementClassInfo!.PolicyProperty;
                 success = Converter.TryWriteDataExtensionProperty(writer, value, Options, ref state);
             }
 
@@ -149,9 +147,10 @@ namespace System.Text.Json
             }
             else
             {
-                // Optimize for internal converters by avoiding the extra call to TryRead.
+                // Get the value from the converter and set the property.
                 if (Converter.CanUseDirectReadOrWrite)
                 {
+                    // Optimize for internal converters by avoiding the extra call to TryRead.
                     TConverter fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     if (!IgnoreNullValues || (!isNullToken && fastvalue != null))
                     {

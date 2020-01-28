@@ -5,14 +5,11 @@
 namespace System.Text.Json.Serialization
 {
     /// <summary>
-    /// Base class for IEnumerable-based collections.
+    /// Base class for all collections. Collections are assumed to implement <cref>System.Collections.IEnumerable</cref>.
     /// </summary>
-    internal abstract class JsonIEnumerableConverter<TCollection, TElement> : JsonResumableConverter<TCollection>
+    internal abstract class JsonCollectionConverter<TCollection, TElement> : JsonResumableConverter<TCollection>
     {
-        private Type _elementType = typeof(TElement);
-
-        internal override bool CanHaveValuesMetadata => true;
         internal override ClassType ClassType => ClassType.Enumerable;
-        internal override Type ElementType => _elementType;
+        internal override Type ElementType => typeof(TElement);
     }
 }

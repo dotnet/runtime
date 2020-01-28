@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected JsonConverterFactory() { }
 
-        internal override sealed ClassType ClassType
+        internal sealed override ClassType ClassType
         {
             get
             {
@@ -40,32 +40,41 @@ namespace System.Text.Json.Serialization
 
         internal override JsonPropertyInfo CreateJsonPropertyInfo()
         {
-            throw new NotSupportedException();
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
         }
 
         internal sealed override Type? ElementType => null;
 
-        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
+        internal JsonConverter? GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
-            return CreateConverter(typeToConvert, options)!;
+            return CreateConverter(typeToConvert, options);
         }
 
-        internal override sealed bool TryReadAsObject(
+        internal sealed override bool TryReadAsObject(
             ref Utf8JsonReader reader,
             Type typeToConvert,
             JsonSerializerOptions options,
             ref ReadStack state,
             out object? value)
         {
-            throw new NotSupportedException();
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
         }
 
-        internal override sealed bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
+        internal sealed override bool TryWriteAsObject(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, ref WriteStack state)
         {
-            throw new NotSupportedException();
+            // We should never get here.
+            Debug.Assert(false);
+
+            throw new InvalidOperationException();
         }
 
-        internal override sealed Type TypeToConvert => null!;
+        internal sealed override Type TypeToConvert => null!;
     }
 }

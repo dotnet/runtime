@@ -13,12 +13,13 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     /// <typeparam name="TCollection"></typeparam>
     internal sealed class JsonIEnumerableConverter<TCollection>
-        : JsonIEnumerableDefaultConverter<TCollection, object>
+        : JsonIEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
-        protected override void Add(object value, ref ReadStack state)
+        protected override void Add(object? value, ref ReadStack state)
         {
-            ((List<object>)state.Current.ReturnValue!).Add(value);
+            Debug.Assert(state.Current.ReturnValue is List<object?>);
+            ((List<object?>)state.Current.ReturnValue!).Add(value);
         }
 
         protected override void CreateCollection(ref ReadStack state, JsonSerializerOptions options)
@@ -28,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_DeserializeNoParameterlessConstructor(TypeToConvert);
             }
 
-            state.Current.ReturnValue = new List<object>();
+            state.Current.ReturnValue = new List<object?>();
         }
 
         // Consider overriding ConvertCollection to convert the list to an array since a List is mutable.
@@ -54,7 +55,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object> converter = GetElementConverter(ref state);
+            JsonConverter<object?> converter = GetElementConverter(ref state);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -63,18 +64,16 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                if (!converter.TryWrite(writer, enumerator.Current!, options, ref state))
+                if (!converter.TryWrite(writer, enumerator.Current, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
-
-                state.Current.EndElement();
             } while (enumerator.MoveNext());
 
             return true;
         }
 
-        internal override Type RuntimeType => typeof(List<object>);
+        internal override Type RuntimeType => typeof(List<object?>);
     }
 }

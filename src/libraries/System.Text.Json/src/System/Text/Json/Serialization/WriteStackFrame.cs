@@ -23,10 +23,10 @@ namespace System.Text.Json
         /// For objects, it is either the policy property for the class or the current property.
         /// For collections, it is either the policy property for the class or the policy property for the current element.
         /// </remarks>
-        public JsonPropertyInfo DeclaredJsonPropertyInfo;
+        public JsonPropertyInfo? DeclaredJsonPropertyInfo;
 
         /// <summary>
-        /// Used when processing dictionaries.
+        /// Used when processing extension data dictionaries.
         /// </summary>
         public bool IgnoreDictionaryKeyPolicy;
 
@@ -36,15 +36,9 @@ namespace System.Text.Json
         public JsonClassInfo JsonClassInfo;
 
         /// <summary>
-        /// The key name for a dictionary value.
-        /// </summary>
-        public string KeyName;
-
-        /// <summary>
         /// Validation state for a class.
         /// </summary>
         public int OriginalDepth;
-        public int OriginalPropertyDepth;
 
         // Class-level state for collections.
         public bool ProcessedStartToken;
@@ -75,9 +69,8 @@ namespace System.Text.Json
         /// </remarks>
         public JsonPropertyInfo? PolymorphicJsonPropertyInfo;
 
-        public void EndElement()
+        public void EndDictionaryElement()
         {
-            OriginalPropertyDepth = 0;
             PropertyState = StackFramePropertyState.None;
         }
 
@@ -85,8 +78,6 @@ namespace System.Text.Json
         {
             DeclaredJsonPropertyInfo = null!;
             JsonPropertyNameAsString = null;
-            KeyName = null!;
-            OriginalPropertyDepth = 0;
             PolymorphicJsonPropertyInfo = null;
             PropertyState = StackFramePropertyState.None;
         }
@@ -95,10 +86,9 @@ namespace System.Text.Json
         /// Return the property that contains the correct polymorphic properties including
         /// the ClassType and ConverterBase.
         /// </summary>
-        /// <returns></returns>
         public JsonPropertyInfo GetPolymorphicJsonPropertyInfo()
         {
-            return PolymorphicJsonPropertyInfo != null ? PolymorphicJsonPropertyInfo : DeclaredJsonPropertyInfo;
+            return PolymorphicJsonPropertyInfo ?? DeclaredJsonPropertyInfo!;
         }
 
         /// <summary>
@@ -107,10 +97,6 @@ namespace System.Text.Json
         public JsonConverter InitializeReEntry(Type type, JsonSerializerOptions options, string? propertyName = null)
         {
             JsonClassInfo newClassInfo = options.GetOrAddClass(type);
-            if (newClassInfo.ClassType == ClassType.Invalid)
-            {
-                ThrowHelper.ThrowNotSupportedException_SerializationNotSupportedCollection(type);
-            }
 
             // todo: check if type==newtype and skip below?
 

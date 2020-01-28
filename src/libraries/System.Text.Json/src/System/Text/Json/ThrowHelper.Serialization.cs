@@ -21,23 +21,25 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException GetNotSupportedException_SerializationNotSupportedCollection(Type propertyType, Type? parentType, MemberInfo? memberInfo)
+        public static NotSupportedException GetNotSupportedException_SerializationNotSupported(Type propertyType, Type? parentType, MemberInfo? memberInfo)
         {
             if (parentType != null && parentType != typeof(object) && memberInfo != null)
             {
-                return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollection, propertyType, $"{parentType}.{memberInfo.Name}"));
+                return new NotSupportedException(SR.Format(SR.SerializationNotSupported, propertyType, $"{parentType}.{memberInfo.Name}"));
             }
 
-            return new NotSupportedException(SR.Format(SR.SerializationNotSupportedCollectionType, propertyType));
+            return new NotSupportedException(SR.Format(SR.SerializationNotSupportedType, propertyType));
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static NotSupportedException ThrowNotSupportedException_SerializationNotSupportedCollection(Type propertyType, Type? parentType = null, MemberInfo? memberInfo = null)
+        public static NotSupportedException ThrowNotSupportedException_SerializationNotSupported(Type propertyType, Type? parentType = null, MemberInfo? memberInfo = null)
         {
-            throw GetNotSupportedException_SerializationNotSupportedCollection(propertyType, parentType, memberInfo);
+            throw GetNotSupportedException_SerializationNotSupported(propertyType, parentType, memberInfo);
         }
 
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializerCycleDetected(int maxDepth)
         {
             throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
@@ -50,21 +52,6 @@ namespace System.Text.Json
             var ex = new JsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType));
             ex.AppendPathInformation = true;
             throw ex;
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, string path, Exception? innerException = null)
-        {
-            string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
-            throw new JsonException(message, path, null, null, innerException);
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DepthTooLarge(int currentDepth, JsonSerializerOptions options)
-        {
-            throw new JsonException(SR.Format(SR.DepthTooLarge, currentDepth, options.EffectiveMaxDepth));
         }
 
         [DoesNotReturn]
@@ -323,32 +310,18 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
+        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(ReadOnlySpan<byte> propertyName, ref ReadStack state)
         {
+            state.Current.JsonPropertyName = propertyName.ToArray();
             ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
         }
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties_Dictionary(ref ReadStackFrame current)
+        public static void ThrowJsonException_MetadataIdIsNotFirstProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state)
         {
-            current.KeyName = null;
-            ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties();
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataIdIsNotFirstProperty()
-        {
+            state.Current.JsonPropertyName = propertyName.ToArray();
             ThrowJsonException(SR.MetadataIdIsNotFirstProperty);
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataIdIsNotFirstProperty_Dictionary(ref ReadStackFrame current)
-        {
-            current.KeyName = null;
-            ThrowJsonException_MetadataIdIsNotFirstProperty();
         }
 
         [DoesNotReturn]
@@ -365,7 +338,7 @@ namespace System.Text.Json
             // Set PropertyInfo or KeyName to write down the conflicting property name in JsonException.Path
             if (state.Current.IsProcessingDictionary())
             {
-                state.Current.KeyName = reader.GetString();
+                state.Current.JsonPropertyNameAsString = reader.GetString();
             }
             else
             {
@@ -377,8 +350,11 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataDuplicateIdFound(string id)
+        public static void ThrowJsonException_MetadataDuplicateIdFound(string id, ref ReadStack state)
         {
+            // Set so JsonPath throws exception with $id in it.
+            state.Current.JsonPropertyName = JsonSerializer.s_metadataId.EncodedUtf8Bytes.ToArray();
+
             ThrowJsonException(SR.Format(SR.MetadataDuplicateIdFound, id));
         }
 
@@ -391,7 +367,7 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType, in Utf8JsonReader reader, ref ReadStack state)
+        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(Type propertyType, in Utf8JsonReader reader)
         {
             string propertyName = reader.GetString()!;
 
@@ -414,6 +390,27 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowUnexpectedMetadataException(
+            ReadOnlySpan<byte> propertyName,
+            ref Utf8JsonReader reader,
+            ref ReadStack state)
+        {
+            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);
+            if (name == MetadataPropertyName.Id)
+            {
+                ThrowJsonException_MetadataIdIsNotFirstProperty(propertyName, ref state);
+            }
+            else if (name == MetadataPropertyName.Ref)
+            {
+                ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(propertyName, ref state);
+            }
+            else
+            {
+                ThrowJsonException_MetadataInvalidPropertyWithLeadingDollarSign(propertyName, ref state, reader);
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization
             // Bridge from resumable to value converters.
             if (options == null)
             {
-                options = JsonSerializerOptions.s_defaultOptions;
+                throw new ArgumentNullException(nameof(options));
             }
 
             ReadStack state = default;
@@ -30,11 +30,11 @@ namespace System.Text.Json.Serialization
             // Bridge from resumable to value converters.
             if (options == null)
             {
-                options = JsonSerializerOptions.s_defaultOptions;
+                throw new ArgumentNullException(nameof(options));
             }
 
             WriteStack state = default;
-            state.InitializeRoot(typeof(T), options);
+            state.InitializeRoot(typeof(T), options, supportContinuation: false);
             TryWrite(writer, value, options, ref state);
         }
     }

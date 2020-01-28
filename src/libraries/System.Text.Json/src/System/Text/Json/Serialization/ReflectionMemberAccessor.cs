@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace System.Text.Json
+namespace System.Text.Json.Serialization
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
@@ -29,7 +28,7 @@ namespace System.Text.Json
             return () => Activator.CreateInstance(type);
         }
 
-        public override Action<TCollection, object> CreateAddMethodDelegate<TCollection>()
+        public override Action<TCollection, object?> CreateAddMethodDelegate<TCollection>()
         {
             Type collectionType = typeof(TCollection);
             Type elementType = typeof(object);
@@ -37,7 +36,7 @@ namespace System.Text.Json
             // We verified this won't be null when we created the converter for the collection type.
             MethodInfo addMethod = (collectionType.GetMethod("Push") ?? collectionType.GetMethod("Enqueue"))!;
 
-            return delegate (TCollection collection, object element)
+            return delegate (TCollection collection, object? element)
             {
                 addMethod.Invoke(collection, new object[] { element! });
             };

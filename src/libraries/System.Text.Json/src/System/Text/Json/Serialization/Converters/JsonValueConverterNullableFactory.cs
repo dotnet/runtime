@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization
@@ -15,13 +16,14 @@ namespace System.Text.Json.Serialization
 
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
+            Debug.Assert(typeToConvert.GetGenericArguments().Length > 0);
+
             Type valueTypeToConvert = typeToConvert.GetGenericArguments()[0];
 
             JsonConverter? valueConverter = options.GetConverter(valueTypeToConvert);
             if (valueConverter == null)
             {
-                // todo: add test for this
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(valueTypeToConvert);
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(valueTypeToConvert);
             }
 
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(

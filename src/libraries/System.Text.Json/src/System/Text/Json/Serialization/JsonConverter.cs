@@ -37,16 +37,11 @@ namespace System.Text.Json.Serialization
         internal bool CanUseDirectReadOrWrite { get; set; }
 
         /// <summary>
-        /// Can the converter have any metadata (properties starting with $).
+        /// Can the converter have $id metadata.
         /// </summary>
-        internal virtual bool CanHaveMetadata => !TypeToConvert.IsValueType;
+        internal virtual bool CanHaveIdMetadata => true;
 
         internal bool CanBePolymorphic { get; set; }
-
-        /// <summary>
-        /// Can the converter have $values metadata.
-        /// </summary>
-        internal virtual bool CanHaveValuesMetadata => false;
 
         internal abstract JsonPropertyInfo CreateJsonPropertyInfo();
 

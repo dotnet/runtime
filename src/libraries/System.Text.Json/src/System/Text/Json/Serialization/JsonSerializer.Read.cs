@@ -14,7 +14,7 @@ namespace System.Text.Json
     /// </summary>
     public static partial class JsonSerializer
     {
-        internal static void ReadCore(
+        private static void ReadCore(
             JsonSerializerOptions options,
             ref Utf8JsonReader reader,
             ref ReadStack state)
@@ -35,8 +35,8 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    // For a continuation continue to read ahead here to avoid having to build and
-                    // then tear down the call stack if there is more than one buffer fetch necessary.
+                    // For a continuation, read ahead here to avoid having to build and then tear
+                    // down the call stack if there is more than one buffer fetch necessary.
                     if (!JsonConverter.SingleValueReadWithReadAhead(ClassType.Value, ref reader, ref state))
                     {
                         state.BytesConsumed += reader.BytesConsumed;
@@ -81,7 +81,7 @@ namespace System.Text.Json
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo!;
             JsonConverter converter = jsonPropertyInfo.ConverterBase;
             bool success = converter.TryReadAsObject(ref reader, jsonPropertyInfo.RuntimePropertyType!, options, ref state, out object? value);
             Debug.Assert(success);

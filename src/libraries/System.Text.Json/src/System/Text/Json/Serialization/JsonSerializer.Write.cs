@@ -21,28 +21,18 @@ namespace System.Text.Json
         {
             try
             {
-                return Write(writer, value, options, ref state, jsonConverter);
+                return jsonConverter.TryWriteAsObject(writer, value, options, ref state);
             }
             catch (InvalidOperationException ex) when (ex.Source == ThrowHelper.ExceptionSourceValueToRethrowAsJsonException)
             {
                 ThrowHelper.ReThrowWithPath(state, ex);
-                return default;
+                throw;
             }
             catch (JsonException ex)
             {
                 ThrowHelper.AddExceptionInformation(state, ex);
                 throw;
             }
-        }
-
-        private static bool Write(
-            Utf8JsonWriter writer,
-            object? value,
-            JsonSerializerOptions options,
-            ref WriteStack state,
-            JsonConverter jsonConverter)
-        {
-            return jsonConverter.TryWriteAsObject(writer, value, options, ref state);
         }
     }
 }

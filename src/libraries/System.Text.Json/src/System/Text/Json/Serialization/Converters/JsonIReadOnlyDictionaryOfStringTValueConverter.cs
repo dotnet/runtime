@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -11,7 +12,9 @@ namespace System.Text.Json.Serialization.Converters
     {
         protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            string key = state.Current.KeyName!;
+            Debug.Assert(state.Current.ReturnValue is Dictionary<string, TValue>);
+
+            string key = state.Current.JsonPropertyNameAsString!;
             ((Dictionary<string, TValue>)state.Current.ReturnValue!)[key] = value;
         }
 
@@ -38,12 +41,19 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
+                Debug.Assert(state.Current.CollectionEnumerator is Dictionary<string, TValue>.Enumerator);
                 enumerator = (Dictionary<string, TValue>.Enumerator)state.Current.CollectionEnumerator;
             }
 
             JsonConverter<TValue> converter = GetValueConverter(ref state);
             do
             {
+                if (ShouldFlush(writer, ref state))
+                {
+                    state.Current.CollectionEnumerator = enumerator;
+                    return false;
+                }
+
                 string key = GetKeyName(enumerator.Current.Key, ref state, options);
                 writer.WritePropertyName(key);
 
@@ -54,7 +64,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
-                state.Current.EndElement();
+                state.Current.EndDictionaryElement();
             } while (enumerator.MoveNext());
 
             return true;

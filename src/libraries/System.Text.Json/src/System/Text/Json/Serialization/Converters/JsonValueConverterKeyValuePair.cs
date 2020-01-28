@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
             bool valueSet = false;
 
             // Get the first property.
-            reader.Read();
+            reader.ReadWithVerify();
             if (reader.TokenType != JsonTokenType.PropertyName)
             {
                 ThrowHelper.ThrowJsonException();
@@ -45,13 +45,13 @@ namespace System.Text.Json.Serialization.Converters
             string propertyName = reader.GetString()!;
             if (propertyName == KeyName)
             {
-                reader.Read();
+                reader.ReadWithVerify();
                 k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
                 keySet = true;
             }
             else if (propertyName == ValueName)
             {
-                reader.Read();
+                reader.ReadWithVerify();
                 v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
                 valueSet = true;
             }
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             // Get the second property.
-            reader.Read();
+            reader.ReadWithVerify();
             if (reader.TokenType != JsonTokenType.PropertyName)
             {
                 ThrowHelper.ThrowJsonException();
@@ -70,13 +70,13 @@ namespace System.Text.Json.Serialization.Converters
             propertyName = reader.GetString()!;
             if (propertyName == KeyName)
             {
-                reader.Read();
+                reader.ReadWithVerify();
                 k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
                 keySet = true;
             }
             else if (propertyName == ValueName)
             {
-                reader.Read();
+                reader.ReadWithVerify();
                 v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
                 valueSet = true;
             }
@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            reader.Read();
+            reader.ReadWithVerify();
 
             if (reader.TokenType != JsonTokenType.EndObject)
             {
