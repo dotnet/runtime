@@ -676,6 +676,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							if (GetFullMemberNameFromDefinition (pattern.AccessedItem) != expectedAccessedItem)
 								return false;
 
+							reflectionPatternRecorder.RecognizedPatterns.Remove (pattern);
 							return true;
 						})) {
 							string sourceMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.RecognizedPatterns
@@ -706,6 +707,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							if (expectedMessage != null && pattern.Message != expectedMessage)
 								return false;
 
+							reflectionPatternRecorder.UnrecognizedPatterns.Remove (pattern);
 							return true;
 						})) {
 							string sourceMethodCandidates = string.Join (Environment.NewLine, reflectionPatternRecorder.UnrecognizedPatterns
@@ -720,6 +722,31 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								$"Potential patterns matching the source method: {Environment.NewLine}{sourceMethodCandidates}{Environment.NewLine}" +
 								$"Potential patterns matching the reflection method: {Environment.NewLine}{reflectionMethodCandidates}{Environment.NewLine}" +
 								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
+						}
+					}
+				}
+			}
+
+			foreach (var typeToVerify in original.MainModule.AllDefinedTypes ()) {
+				foreach (var attr in typeToVerify.CustomAttributes) {
+					if (attr.AttributeType.Resolve ().Name == nameof (VerifyAllReflectionAccessPatternsAreValidatedAttribute)) {
+						// By now all verified recorded patterns were removed from the test recorder lists, so validate
+						// that there are no remaining patterns for this type.
+						var recognizedPatternsForType = reflectionPatternRecorder.RecognizedPatterns
+							.Where (pattern => pattern.SourceMethod.DeclaringType.FullName == typeToVerify.FullName);
+						var unrecognizedPatternsForType = reflectionPatternRecorder.UnrecognizedPatterns
+							.Where (pattern => pattern.SourceMethod.DeclaringType.FullName == typeToVerify.FullName);
+
+						if (recognizedPatternsForType.Any () || unrecognizedPatternsForType.Any ()) {
+							string recognizedPatterns = string.Join (Environment.NewLine, recognizedPatternsForType
+								.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)));
+							string unrecognizedPatterns = string.Join (Environment.NewLine, unrecognizedPatternsForType
+								.Select (p => "\t" + UnrecognizedReflectionAccessPatternToString (p)));
+
+							Assert.Fail (
+								$"All reflection patterns should be verified by test attributes for type {typeToVerify.FullName}, but some were not: {Environment.NewLine}" +
+								$"Recognized patterns which were not verified: {Environment.NewLine}{recognizedPatterns}{Environment.NewLine}" +
+								$"Unrecognized patterns which were not verified: {Environment.NewLine}{unrecognizedPatterns}{Environment.NewLine}");
 						}
 					}
 				}
