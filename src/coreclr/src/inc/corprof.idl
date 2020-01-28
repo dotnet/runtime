@@ -736,9 +736,8 @@ typedef enum
     COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
 } COR_PRF_REJIT_FLAGS;
 
-typedef UINT_PTR EVENTPIPE_PROVIDERID;
-typedef UINT_PTR EVENTPIPE_EVENTID;
-typedef UINT64   EVENTPIPE_SESSIONID;
+typedef UINT_PTR EVENTPIPE_PROVIDER;
+typedef UINT_PTR EVENTPIPE_EVENT;
 
 typedef struct
 {
@@ -4076,11 +4075,11 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
 {
     HRESULT EventPipeCreateProvider(
                 [in, string] const WCHAR    *szName,
-                [out] EVENTPIPE_PROVIDERID  *pProviderID);
+                [out] EVENTPIPE_PROVIDER    *pProviderHandle);
 
     HRESULT EventPipeDefineEvent(
-                [in] EVENTPIPE_PROVIDERID   provHandle,
-                [in, string] const WCHAR    *szName, 
+                [in] EVENTPIPE_PROVIDER     provHandle,
+                [in, string] const WCHAR   *szName, 
                 [in] UINT32                 eventID,
                 [in] UINT64                 keywords,
                 [in] UINT32                 eventVersion,
@@ -4089,11 +4088,11 @@ interface ICorProfilerInfo12 : ICorProfilerInfo11
                 [in] UINT32                 cParamDescs,
                 [in, size_is(cParamDescs)] 
                      COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-                [out] EVENTPIPE_EVENTID     *pEventID);
+                [out] EVENTPIPE_EVENT      *pEventHandle);
 
     HRESULT EventPipeWriteEvent(
-                [in] EVENTPIPE_EVENTID  event,
-                [in] BYTE               *pData,
+                [in] EVENTPIPE_EVENT    eventHandle,
+                [in] BYTE              *pData,
                 [in] UINT32             length,
                 [in] LPCGUID            pActivityId,
                 [in] LPCGUID            pRelatedActivityId);

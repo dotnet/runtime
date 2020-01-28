@@ -7023,7 +7023,7 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
-HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDERID *pProviderID)
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProviderHandle)
 {
     CONTRACTL
     {
@@ -7040,7 +7040,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
         "**PROF: EventPipeCreateProvider.\n"));
 
 #ifdef FEATURE_PERFTRACING
-    if (szName == NULL || pProviderID == NULL)
+    if (szName == NULL || pProviderHandle == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7055,7 +7055,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
         }
         else
         {
-            *pProviderID = reinterpret_cast<EVENTPIPE_PROVIDERID>(pProvider);
+            *pProviderHandle = reinterpret_cast<EVENTPIPE_PROVIDER>(pProvider);
         }
     }
     EX_CATCH_HRESULT(hr);
@@ -7067,7 +7067,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVEN
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
-    EVENTPIPE_PROVIDERID provHandle,
+    EVENTPIPE_PROVIDER provHandle,
     const WCHAR *szName, 
     UINT32 eventID,
     UINT64 keywords,
@@ -7076,7 +7076,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     BOOL needStack,
     UINT32 cParamDescs,
     COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-    EVENTPIPE_EVENTID *pEventID)
+    EVENTPIPE_EVENT *pEventHandle)
 {
     CONTRACTL
     {
@@ -7093,7 +7093,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
         "**PROF: EventPipeDefineEvent.\n"));
 #ifdef FEATURE_PERFTRACING
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-    if (pProvider == NULL || szName == NULL || pEventID == NULL)
+    if (pProvider == NULL || szName == NULL || pEventHandle == NULL)
     {
         return E_INVALIDARG;
     }
@@ -7131,7 +7131,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
             pMetadata,
             (unsigned int)metadataLength);
 
-        *pEventID = reinterpret_cast<EVENTPIPE_EVENTID>(pEvent);
+        *pEventHandle = reinterpret_cast<EVENTPIPE_EVENT>(pEvent);
     }
     EX_CATCH_HRESULT(hr);
 
@@ -7142,7 +7142,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
 }
 
 HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
-    EVENTPIPE_EVENTID event,
+    EVENTPIPE_EVENT eventHandle,
     BYTE *pData,
     UINT32 length,
     LPCGUID pActivityId,
@@ -7162,7 +7162,7 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
         LL_INFO1000,
         "**PROF: EventPipeWriteEvent.\n"));
 #ifdef FEATURE_PERFTRACING
-    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(event);
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
 
     if (pEvent == NULL)
     {

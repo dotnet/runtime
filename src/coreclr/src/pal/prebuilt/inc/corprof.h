@@ -614,11 +614,9 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0012
         COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
     }   COR_PRF_REJIT_FLAGS;
 
-typedef UINT_PTR EVENTPIPE_PROVIDERID;
+typedef UINT_PTR EVENTPIPE_PROVIDER;
 
-typedef UINT_PTR EVENTPIPE_EVENTID;
-
-typedef UINT64 EVENTPIPE_SESSIONID;
+typedef UINT_PTR EVENTPIPE_EVENT;
 
 typedef /* [public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0013
     {
@@ -17230,10 +17228,10 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
     public:
         virtual HRESULT STDMETHODCALLTYPE EventPipeCreateProvider( 
             /* [string][in] */ const WCHAR *szName,
-            /* [out] */ EVENTPIPE_PROVIDERID *pProviderID) = 0;
+            /* [out] */ EVENTPIPE_PROVIDER *pProviderHandle) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeDefineEvent( 
-            /* [in] */ EVENTPIPE_PROVIDERID provHandle,
+            /* [in] */ EVENTPIPE_PROVIDER provHandle,
             /* [string][in] */ const WCHAR *szName,
             /* [in] */ UINT32 eventID,
             /* [in] */ UINT64 keywords,
@@ -17242,10 +17240,10 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ BOOL needStack,
             /* [in] */ UINT32 cParamDescs,
             /* [size_is][in] */ COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[  ],
-            /* [out] */ EVENTPIPE_EVENTID *pEventID) = 0;
+            /* [out] */ EVENTPIPE_EVENT *pEventHandle) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EventPipeWriteEvent( 
-            /* [in] */ EVENTPIPE_EVENTID event,
+            /* [in] */ EVENTPIPE_EVENT eventHandle,
             /* [in] */ BYTE *pData,
             /* [in] */ UINT32 length,
             /* [in] */ LPCGUID pActivityId,
@@ -17880,11 +17878,11 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
         HRESULT ( STDMETHODCALLTYPE *EventPipeCreateProvider )( 
             ICorProfilerInfo12 * This,
             /* [string][in] */ const WCHAR *szName,
-            /* [out] */ EVENTPIPE_PROVIDERID *pProviderID);
+            /* [out] */ EVENTPIPE_PROVIDER *pProviderHandle);
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeDefineEvent )( 
             ICorProfilerInfo12 * This,
-            /* [in] */ EVENTPIPE_PROVIDERID provHandle,
+            /* [in] */ EVENTPIPE_PROVIDER provHandle,
             /* [string][in] */ const WCHAR *szName,
             /* [in] */ UINT32 eventID,
             /* [in] */ UINT64 keywords,
@@ -17893,11 +17891,11 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
             /* [in] */ BOOL needStack,
             /* [in] */ UINT32 cParamDescs,
             /* [size_is][in] */ COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[  ],
-            /* [out] */ EVENTPIPE_EVENTID *pEventID);
+            /* [out] */ EVENTPIPE_EVENT *pEventHandle);
         
         HRESULT ( STDMETHODCALLTYPE *EventPipeWriteEvent )( 
             ICorProfilerInfo12 * This,
-            /* [in] */ EVENTPIPE_EVENTID event,
+            /* [in] */ EVENTPIPE_EVENT eventHandle,
             /* [in] */ BYTE *pData,
             /* [in] */ UINT32 length,
             /* [in] */ LPCGUID pActivityId,
@@ -18231,14 +18229,14 @@ EXTERN_C const IID IID_ICorProfilerInfo12;
     ( (This)->lpVtbl -> SetEnvironmentVariable(This,szName,szValue) ) 
 
 
-#define ICorProfilerInfo12_EventPipeCreateProvider(This,szName,pProviderID) \
-    ( (This)->lpVtbl -> EventPipeCreateProvider(This,szName,pProviderID) ) 
+#define ICorProfilerInfo12_EventPipeCreateProvider(This,szName,pProviderHandle) \
+    ( (This)->lpVtbl -> EventPipeCreateProvider(This,szName,pProviderHandle) ) 
 
-#define ICorProfilerInfo12_EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventID)  \
-    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventID) ) 
+#define ICorProfilerInfo12_EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventHandle)  \
+    ( (This)->lpVtbl -> EventPipeDefineEvent(This,provHandle,szName,eventID,keywords,eventVersion,level,needStack,cParamDescs,pParamDescs,pEventHandle) ) 
 
-#define ICorProfilerInfo12_EventPipeWriteEvent(This,event,pData,length,pActivityId,pRelatedActivityId)  \
-    ( (This)->lpVtbl -> EventPipeWriteEvent(This,event,pData,length,pActivityId,pRelatedActivityId) ) 
+#define ICorProfilerInfo12_EventPipeWriteEvent(This,eventHandle,pData,length,pActivityId,pRelatedActivityId)    \
+    ( (This)->lpVtbl -> EventPipeWriteEvent(This,eventHandle,pData,length,pActivityId,pRelatedActivityId) ) 
 
 #endif /* COBJMACROS */
 

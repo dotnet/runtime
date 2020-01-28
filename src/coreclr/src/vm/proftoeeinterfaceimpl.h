@@ -646,10 +646,10 @@ public:
 
     COM_METHOD EventPipeCreateProvider(
         const WCHAR *szName,
-        EVENTPIPE_PROVIDERID *pProviderID);
+        EVENTPIPE_PROVIDER *pProviderHandle);
 
     COM_METHOD EventPipeDefineEvent(
-        EVENTPIPE_PROVIDERID provHandle,
+        EVENTPIPE_PROVIDER provHandle,
         const WCHAR *szName, 
         UINT32 eventID,
         UINT64 keywords,
@@ -658,10 +658,10 @@ public:
         BOOL needStack,
         UINT32 cParamDescs,
         COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
-        EVENTPIPE_EVENTID *pEventID);
+        EVENTPIPE_EVENT *pEventHandle);
 
     COM_METHOD EventPipeWriteEvent(
-        EVENTPIPE_EVENTID event,
+        EVENTPIPE_EVENT eventHandle,
         BYTE *pData,
         UINT32 length,
         LPCGUID pActivityId,
