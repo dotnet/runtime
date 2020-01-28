@@ -11,11 +11,70 @@ namespace Mono.Linker.Tests.Cases.Reflection
 	{
 		public static void Main ()
 		{
+			TestByName ();
+			TestByNameWithParameters ();
+			TestNullName ();
+			TestNonExistingName ();
+			TestNullType ();
+			TestDataFlowType ();
+		}
+
+		[RecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type[]), typeof (Expression []) },
+			typeof (ExpressionCallString), nameof (OnlyCalledViaExpression), new Type [0])]
+		[Kept]
+		static void TestByName ()
+		{
 			var expr = Expression.Call (typeof (ExpressionCallString), "OnlyCalledViaExpression", Type.EmptyTypes);
 			Console.WriteLine (expr.Method);
+		}
 
-            IQueryable source = null;
-            var e2 = Expression.Call (typeof (ExpressionCallString), "Count", new Type [] { source.ElementType }, source.Expression);
+		[RecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) },
+			typeof (ExpressionCallString), nameof (Count) + "<T>", new string [] { "T" } )]
+		[Kept]
+		static void TestByNameWithParameters ()
+		{
+			IQueryable source = null;
+			var e2 = Expression.Call (typeof (ExpressionCallString), "Count", new Type [] { source.ElementType }, source.Expression);
+		}
+
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
+		[Kept]
+		static void TestNullName ()
+		{
+			var expr = Expression.Call (typeof (ExpressionCallString), null, Type.EmptyTypes);
+		}
+
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
+		[Kept]
+		static void TestNonExistingName ()
+		{
+			var expr = Expression.Call (typeof (ExpressionCallString), "NonExisting", Type.EmptyTypes);
+		}
+
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
+		[Kept]
+		static void TestNullType ()
+		{
+			var expr = Expression.Call ((Type)null, "OnlyCalledViaExpression", Type.EmptyTypes);
+		}
+
+		[Kept]
+		static Type FindType ()
+		{
+			return typeof (ExpressionCallString);
+		}
+
+		[UnrecognizedReflectionAccessPattern (
+			typeof (Expression), nameof (Expression.Call), new Type [] { typeof (Type), typeof (string), typeof (Type []), typeof (Expression []) })]
+		[Kept]
+		static void TestDataFlowType ()
+		{
+			var expr = Expression.Call (FindType (), "OnlyCalledViaExpression", Type.EmptyTypes);
 		}
 
 		[Kept]
