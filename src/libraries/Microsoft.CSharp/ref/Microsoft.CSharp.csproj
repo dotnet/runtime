@@ -7,8 +7,8 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Runtime" />
+    <ProjectReference Include="..\..\System.Linq\ref\System.Linq.csproj" />
+    <ProjectReference Include="..\..\System.Linq.Expressions\ref\System.Linq.Expressions.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>
