@@ -184,6 +184,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15321", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_IntGenerics_Success()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(SumInteger), typeof(int), new Type[] { }, typeof(DynamicILInfoTests), false);
@@ -659,6 +660,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/mono/mono/issues/15334", TargetFrameworkMonikers.Mono)]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException(bool skipVisibility)

@@ -278,12 +278,6 @@
 ##  System.Reflection.Emit.Lightweight.Tests
 ####################################################################
 
-# A different CreateDelegate issue
-# https://github.com/mono/mono/issues/15321
--nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility
--nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module_CoreclrIgnoresSkipVisibility
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_IntGenerics_Success
-
 # Need to implement System.Reflection.Emit.DynamicILInfo.SetLocalSignature(Byte[] localSignature)
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
@@ -297,11 +291,6 @@
 # Need to implement System.Reflection.Emit.DynamicILInfo.SetExceptions(Byte* exceptions, Int32 exceptionsSize)
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
 -nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
-
-# Expected: typeof(System.ArgumentOutOfRangeException)
-# Actual:   typeof(System.OverflowException): Arithmetic operation resulted in an overflow.
-# https://github.com/mono/mono/issues/15334
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException
 
 ####################################################################
 ##  System.Runtime.Loader.Tests
