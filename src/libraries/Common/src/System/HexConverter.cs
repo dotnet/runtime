@@ -66,6 +66,9 @@ namespace System
             buffer[startingIndex] = (byte)(packedResult >> 8);
         }
 
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ToCharsBuffer(byte value, Span<char> buffer, int startingIndex = 0, Casing casing = Casing.Upper)
         {
