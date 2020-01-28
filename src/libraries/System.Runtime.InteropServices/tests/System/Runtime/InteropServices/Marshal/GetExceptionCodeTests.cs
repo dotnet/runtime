@@ -9,7 +9,7 @@ using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [SkipOnMono("https://github.com/mono/mono/issues/15085 - Marshal Methods WILL NOT BE Implemented in MonoVM")]
+    [SkipOnMono("Marshal.GetExceptionCode will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
     public class GetExceptionCodeTests
     {
         [Fact]
