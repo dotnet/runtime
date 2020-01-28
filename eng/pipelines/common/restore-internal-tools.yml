@@ -7,7 +7,7 @@ steps:
       displayName: Install dotnet ${{ parameters.dotnetVersion }}
       inputs:
         packageType: sdk
-        useGlobalJson: true
+        version: 3.1.200
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
   - task: NuGetAuthenticate@0
@@ -24,4 +24,4 @@ steps:
       projects: 'eng/common/internal/Tools.csproj'
       nugetConfigPath: 'eng/internal/NuGet.config'
       restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-      verbosityRestore: 'normal'
+      verbosityRestore: 'diagnostic'
