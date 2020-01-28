@@ -135,52 +135,18 @@ namespace InteropLibImports
         ::free(mem);
     }
 
-    void SeparateObjectInstanceFromWrapper(_In_ InteropLib::OBJECTHANDLE handle, _In_ void* wrapper)
+    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle)
     {
         CONTRACTL
         {
             NOTHROW;
             MODE_PREEMPTIVE;
             PRECONDITION(handle != NULL);
-            PRECONDITION(wrapper != NULL);
         }
         CONTRACTL_END;
 
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-
-        {
-            GCX_COOP();
-
-            struct
-            {
-                OBJECTREF instObjRef;
-            } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
-            gc.instObjRef = ObjectFromHandle(objectHandle);
-            _ASSERTE(gc.instObjRef != NULL);
-
-            // Get access to the SyncBlock and InteropSyncBlockInfo.
-            // Ideally these checks wouldn't be needed because at this point
-            // the data structures should have already been created.
-            SyncBlock* syncBlock = gc.instObjRef->PassiveGetSyncBlock();
-            if (syncBlock != NULL)
-            {
-                InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
-                if (interopInfo != NULL)
-                {
-                    // Separate the managed object from the supplied wrapper. If this
-                    // separation fails, the object handle shouldn't be destroyed.
-                    bool wasSeparated = interopInfo->TrySeparateFromManagedObjectComWrapper(wrapper);
-                    _ASSERTE(wasSeparated);
-                    if (wasSeparated)
-                        DestroyHandleCommon(objectHandle, InstanceHandleType);
-                }
-            }
-
-            GCPROTECT_END();
-        }
+        DestroyHandleCommon(objectHandle, InstanceHandleType);
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(

@@ -388,12 +388,6 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     , _dispatches{ dispatches }
 { }
 
-ManagedObjectWrapper::~ManagedObjectWrapper()
-{
-    // Tell the runtime to separate the managed object from this wrapper.
-    InteropLibImports::SeparateObjectInstanceFromWrapper(Target, As(IID_IUnknown));
-}
-
 void* ManagedObjectWrapper::As(_In_ REFIID riid)
 {
     // Find target interface and return dispatcher or null if not found.
@@ -493,6 +487,21 @@ ULONG ManagedObjectWrapper::Release(void)
     ULONG refCount = (ULONG)::InterlockedDecrement64(&_refCount);
     if (refCount == 0)
     {
+        // [TODO] Instead of freeing this instance, it should be neutered (i.e. delete object handle).
+        // This means the associated SyncBlock always has this instance until it is finalized with
+        // the associated Object.
+        // Export New APIs:
+        //   IsNeutered()
+        //   TrySetObjectHandle()
+        //   FreeManagedObjectWrapper()
+        //
+
+        OBJECTHANDLE local = Target;
+        Target = NULL;
+
+        // Tell the runtime to delete the managed object instance handle.
+        InteropLibImports::DeleteObjectInstanceHandle(local);
+
         // Manually trigger the destructor since placement
         // new was used to allocate object.
         this->~ManagedObjectWrapper();

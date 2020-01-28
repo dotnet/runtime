@@ -20,8 +20,8 @@ namespace InteropLibImports
     // Free the previously allocated memory.
     void MemFree(_In_ void* mem, _In_ AllocScenario scenario);
 
-    // Separate Object instance from wrapper
-    void SeparateObjectInstanceFromWrapper(_In_ InteropLib::OBJECTHANDLE handle, _In_ void* wrapper);
+    // Delete Object instance handle
+    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle);
 
     // Given a ComWrappers implementation, get or create
     // an IReferenceTrackerTarget instance for the supplied

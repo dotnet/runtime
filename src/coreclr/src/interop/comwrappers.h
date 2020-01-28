@@ -81,7 +81,7 @@ private:
         _In_ ABI::ComInterfaceDispatch* dispatches);
 
 public:
-    ~ManagedObjectWrapper();
+    ~ManagedObjectWrapper() = default;
 
     void* As(_In_ REFIID riid);
     OBJECTHANDLE GetObjectHandle() const;
