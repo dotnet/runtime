@@ -393,6 +393,13 @@ namespace System.Collections.Generic
             Array.Copy(_items, 0, array, arrayIndex, _size);
         }
 
+        /// <summary>
+        /// Copies the contents of this List, beginning at 'sourceIndex', into destination span.
+        /// </summary>
+        /// <param name="sourceIndex">The index in this List at which copying begins.</param>
+        /// <param name="count">The number of items to copy</param>
+        /// <param name="destination">The span to copy items into.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when the specified <paramref name="sourceIndex"/> or <paramref name="count"/> is not in range.</exception>
         public void CopyTo(int sourceIndex, int count, Span<T> destination)
         {
             if (sourceIndex < 0)
@@ -413,6 +420,10 @@ namespace System.Collections.Generic
             _items.AsSpan(sourceIndex, count).CopyTo(destination);
         }
 
+        /// <summary>
+        /// Copies the contents of this List into destination span.
+        /// </summary>
+        /// <param name="destination">The span to copy items into.</param>
         public void CopyTo(Span<T> destination)
         {
             _items.AsSpan(0, _size).CopyTo(destination);
