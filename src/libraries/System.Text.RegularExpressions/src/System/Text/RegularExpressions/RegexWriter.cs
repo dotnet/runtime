@@ -136,14 +136,14 @@ namespace System.Text.RegularExpressions
 
             // Compute prefixes to help optimize FindFirstChar.
             RegexBoyerMoore? boyerMoorePrefix = null;
-            RegexPrefix[]? leadingCharClasses = null;
-            RegexPrefix leadingSubstring = RegexPrefixAnalyzer.ComputeLeadingSubstring(tree);
-            if (leadingSubstring.Value.Length > 1 && // if it's <= 1, perf is better using leadingCharClasses
-                leadingSubstring.Value.Length <= RegexBoyerMoore.MaxLimit)
+            (string CharClass, bool CaseInsensitive)[]? leadingCharClasses = null;
+            (string leadingSubstring, bool leadingSubstringCI) = RegexPrefixAnalyzer.ComputeLeadingSubstring(tree);
+            if (leadingSubstring.Length > 1 && // if it's <= 1, perf is better using leadingCharClasses
+                leadingSubstring.Length <= RegexBoyerMoore.MaxLimit)
             {
                 // Compute a Boyer-Moore prefix if we find a single string of sufficient length that always begins the expression.
                 CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-                boyerMoorePrefix = new RegexBoyerMoore(leadingSubstring.Value, leadingSubstring.CaseInsensitive, rtl, culture);
+                boyerMoorePrefix = new RegexBoyerMoore(leadingSubstring, leadingSubstringCI, rtl, culture);
             }
             else
             {
@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions
 
                 if (leadingCharClasses is null)
                 {
-                    RegexPrefixAnalyzer.ComputeFirstCharClass(tree);
+                    leadingCharClasses = RegexPrefixAnalyzer.ComputeFirstCharClass(tree);
                 }
             }
 

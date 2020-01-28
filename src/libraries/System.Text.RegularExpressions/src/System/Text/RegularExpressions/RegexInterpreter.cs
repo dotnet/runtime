@@ -471,10 +471,11 @@ namespace System.Text.RegularExpressions
             // checks in at least the forward iteration direction where the JIT is able to detect the pattern.
 
             // TODO https://github.com/dotnet/runtime/issues/1349:
-            // FCPrefixes may contain multiple sets, one for each of the first N characters in the expression,
-            // but the interpreter currently only uses the first set for the first character.
+            // LeadingCharClasses may contain multiple sets, one for each of the first N characters in the expression,
+            // but the interpreter currently only uses the first set for the first character.  In fact, we currently
+            // only run the analysis that can produce multiple sets if RegexOptions.Compiled was set.
 
-            string set = _code.LeadingCharClasses[0].Value;
+            string set = _code.LeadingCharClasses[0].CharClass;
             if (RegexCharClass.IsSingleton(set))
             {
                 char ch = RegexCharClass.SingletonChar(set);

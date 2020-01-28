@@ -92,14 +92,14 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _cultureLocal;  // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
 
-        protected RegexOptions _options;              // options
-        protected RegexCode? _code;                   // the RegexCode object
-        protected int[]? _codes;                      // the RegexCodes being translated
-        protected string[]? _strings;                 // the stringtable associated with the RegexCodes
-        protected RegexPrefix[]? _leadingCharClasses; // the possible first chars computed by RegexFCD
-        protected RegexBoyerMoore? _boyerMoorePrefix; // a prefix as a boyer-moore machine
-        protected int _anchors;                       // the set of anchors
-        protected bool _hasTimeout;                   // whether the regex has a non-infinite timeout
+        protected RegexOptions _options;                                           // options
+        protected RegexCode? _code;                                                // the RegexCode object
+        protected int[]? _codes;                                                   // the RegexCodes being translated
+        protected string[]? _strings;                                              // the stringtable associated with the RegexCodes
+        protected (string CharClass, bool CaseInsensitive)[]? _leadingCharClasses; // the possible first chars computed by RegexPrefixAnalyzer
+        protected RegexBoyerMoore? _boyerMoorePrefix;                              // a prefix as a boyer-moore machine
+        protected int _anchors;                                                    // the set of anchors
+        protected bool _hasTimeout;                                                // whether the regex has a non-infinite timeout
 
         private Label[]? _labels;             // a label for every operation in _codes
         private BacktrackNote[]? _notes;      // a list of the backtracking states to be generated
@@ -941,9 +941,9 @@ namespace System.Text.RegularExpressions
                 bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _boyerMoorePrefix?.CaseInsensitive == true;
                 if (!needsCulture && _leadingCharClasses != null)
                 {
-                    foreach (RegexPrefix rp in _leadingCharClasses)
+                    for (int i = 0; i < _leadingCharClasses.Length; i++)
                     {
-                        if (rp.CaseInsensitive)
+                        if (_leadingCharClasses[i].CaseInsensitive)
                         {
                             needsCulture = true;
                             break;
@@ -1341,7 +1341,6 @@ namespace System.Text.RegularExpressions
             else if (_code.RightToLeft)
             {
                 Debug.Assert(_leadingCharClasses.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
-                RegexPrefix firstCharClass = _leadingCharClasses[0];
 
                 LocalBuilder charInClassLocal = _temp1Local;
                 LocalBuilder cLocal = _temp2Local;
@@ -1374,14 +1373,14 @@ namespace System.Text.RegularExpressions
 
                 Leftcharnext();
 
-                if (!RegexCharClass.IsSingleton(firstCharClass.Value))
+                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
                 {
-                    EmitMatchCharacterClass(firstCharClass.Value, firstCharClass.CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_leadingCharClasses[0].CharClass, _leadingCharClasses[0].CaseInsensitive, charInClassLocal);
                     BrtrueFar(l2);
                 }
                 else
                 {
-                    Ldc(RegexCharClass.SingletonChar(firstCharClass.Value));
+                    Ldc(RegexCharClass.SingletonChar(_leadingCharClasses[0].CharClass));
                     Beq(l2);
                 }
 
@@ -1389,7 +1388,7 @@ namespace System.Text.RegularExpressions
 
                 Ldloc(cLocal);
                 Ldc(0);
-                if (!RegexCharClass.IsSingleton(firstCharClass.Value))
+                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
                 {
                     BgtFar(l1);
                 }
@@ -1472,7 +1471,7 @@ namespace System.Text.RegularExpressions
                 int setCharsCount;
                 int charClassIndex = 0;
                 if (!_leadingCharClasses[0].CaseInsensitive &&
-                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].Value, setChars)) > 0)
+                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].CharClass, setChars)) > 0)
                 {
                     charClassIndex++;
                     switch (setCharsCount)
@@ -1545,7 +1544,7 @@ namespace System.Text.RegularExpressions
                     }
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(_leadingCharClasses[charClassIndex].Value, _leadingCharClasses[charClassIndex].CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_leadingCharClasses[charClassIndex].CharClass, _leadingCharClasses[charClassIndex].CaseInsensitive, charInClassLocal);
                     BrfalseFar(charNotInClassLabel);
                 }
 

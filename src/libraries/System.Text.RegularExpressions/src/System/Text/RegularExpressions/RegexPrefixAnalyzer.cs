@@ -43,7 +43,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Computes the leading substring in <paramref name="tree"/>.</summary>
         /// <remarks>It's quite trivial and gives up easily, in which case an empty string is returned.</remarks>
-        public static RegexPrefix ComputeLeadingSubstring(RegexTree tree)
+        public static (string Prefix, bool CaseInsensitive) ComputeLeadingSubstring(RegexTree tree)
         {
             RegexNode curNode = tree.Root;
             RegexNode? concatNode = null;
@@ -82,17 +82,16 @@ namespace System.Text.RegularExpressions
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
                         {
-                            string pref = new string(curNode.Ch, curNode.M);
-                            return new RegexPrefix(pref, 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                            return (new string(curNode.Ch, curNode.M), (curNode.Options & RegexOptions.IgnoreCase) != 0);
                         }
 
-                        return RegexPrefix.Empty;
+                        return (string.Empty, false);
 
                     case RegexNode.One:
-                        return new RegexPrefix(curNode.Ch.ToString(), 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                        return (curNode.Ch.ToString(), (curNode.Options & RegexOptions.IgnoreCase) != 0);
 
                     case RegexNode.Multi:
-                        return new RegexPrefix(curNode.Str!, 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                        return (curNode.Str!, (curNode.Options & RegexOptions.IgnoreCase) != 0);
 
                     case RegexNode.Bol:
                     case RegexNode.Eol:
@@ -108,12 +107,12 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        return RegexPrefix.Empty;
+                        return (string.Empty, false);
                 }
 
                 if (concatNode == null || nextChild >= concatNode.ChildCount())
                 {
-                    return RegexPrefix.Empty;
+                    return (string.Empty, false);
                 }
 
                 curNode = concatNode.Child(nextChild++);
@@ -122,7 +121,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Computes a character class for the first character in <paramref name="tree"/>.</summary>
         /// <remarks>true if a character class could be computed; otherwise, false.</remarks>
-        public static RegexPrefix[]? ComputeFirstCharClass(RegexTree tree)
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree)
         {
             var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
             RegexFC? fc = s.RegexFCFromRegexTree(tree);
@@ -138,18 +137,18 @@ namespace System.Text.RegularExpressions
                 fc.AddLowercase(((tree.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
             }
 
-            return new[] { new RegexPrefix(fc.GetFirstChars(), fc.CaseInsensitive) };
+            return new[] { (fc.GetFirstChars(), fc.CaseInsensitive) };
         }
 
         /// <summary>Computes character classes for the first <paramref name="maxChars"/> characters in <paramref name="tree"/>.</summary>
         /// <remarks>
-        /// For example, given "hello|world" and a maxPrefixes of 3, this will compute the sets [hw], [eo], and [lr].
+        /// For example, given "hello|world" and a <paramref name="maxChars"/> of 3, this will compute the sets [hw], [eo], and [lr].
         /// As with some of the other computations, it's quite trivial and gives up easily; for example, we could in
         /// theory handle nodes in a concatenation after an alternation, but we look only at the branches of the
         /// alternation itself.  As this computation is intended primarily to handle global alternations, it's currently
         /// a reasonable tradeoff between simplicity, performance, and the fullness of potential optimizations.
         /// </remarks>
-        public static RegexPrefix[]? ComputeMultipleCharClasses(RegexTree tree, int maxChars)
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeMultipleCharClasses(RegexTree tree, int maxChars)
         {
             Debug.Assert(maxChars > 1);
 
@@ -195,9 +194,9 @@ namespace System.Text.RegularExpressions
 
             int branches = node.ChildCount();
             Debug.Assert(branches >= 2);
-            for (int brancNum = 0; brancNum < branches; brancNum++)
+            for (int branchNum = 0; branchNum < branches; branchNum++)
             {
-                RegexNode alternateBranch = node.Child(brancNum);
+                RegexNode alternateBranch = node.Child(branchNum);
                 caseInsensitive |= (alternateBranch.Options & RegexOptions.IgnoreCase) != 0;
 
                 switch (alternateBranch.Type)
@@ -270,7 +269,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Create and return the RegexPrefix objects.
-            var prefixes = new RegexPrefix[maxChars];
+            var prefixes = new (string CharClass, bool CaseInsensitive)[maxChars];
 
             CultureInfo? ci = null;
             if (caseInsensitive)
@@ -284,7 +283,7 @@ namespace System.Text.RegularExpressions
                 {
                     classes[i]!.AddLowercase(ci!);
                 }
-                prefixes[i] = new RegexPrefix(classes[i]!.ToStringClass(), caseInsensitive);
+                prefixes[i] = (classes[i]!.ToStringClass(), caseInsensitive);
             }
 
             return prefixes;
