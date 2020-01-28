@@ -115,7 +115,6 @@
   <PropertyGroup>
     <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
   </PropertyGroup>
 
   <!--
