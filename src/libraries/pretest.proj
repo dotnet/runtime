@@ -31,7 +31,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateFileVersionProps">
+  <Target Name="GenerateFileVersionProps" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="Microsoft.NETCore.App"
                               PackageVersion="$(ProductVersion)"
@@ -46,7 +46,7 @@
     To use invoke target directly specifying NETCoreAppTestSharedFrameworkPath property.
   -->
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateTestSharedFrameworkDepsFile">
+  <Target Name="GenerateTestSharedFrameworkDepsFile" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />

@@ -4,6 +4,7 @@
   <ItemGroup>
     <!-- identity project, runtime specific projects are included through netcoreapp.rids.props -->
     <Project Include="$(MSBuildProjectName).pkgproj" />
+    <Project Remove="$(MSBuildProjectName).pkgproj" Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)'" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(dir.traversal.targets))" />
