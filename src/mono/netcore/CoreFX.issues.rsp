@@ -360,15 +360,6 @@
 -nomethod System.ComponentModel.Composition.Registration.Tests.ExportInterfacesContractExclusionTests.*
 
 ####################################################################
-##  System.Xml.Xsl.XslTransformApi.Tests
-####################################################################
-
-# Xml differences... Looks like the parsing isn't working
-# https://github.com/mono/mono/issues/15353
--nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
--nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
-
-####################################################################
 ##  System.Security.Cryptography.X509Certificates.Tests
 ####################################################################
 
