@@ -80,7 +80,7 @@ namespace System.Net.Mail
         /// Create a new <see cref="MailAddress"/>. Does not throw an exception if the MailAddress cannot be created.
         /// </summary>
         /// <param name="address">A <see cref="string"/> that contains an email address.</param>
-        /// <param name="result"></param>
+        /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
         public static bool TryCreate(string address, out MailAddress result) => TryCreate(address, displayName: null, out result);
 
@@ -89,7 +89,7 @@ namespace System.Net.Mail
         /// </summary>
         /// <param name="address">A <see cref="string"/> that contains an email address.</param>
         /// <param name="displayName">A <see cref="string"/> that contains the display name associated with address. This parameter can be null.</param>
-        /// <param name="result"></param>
+        /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
         public static bool TryCreate(string address, string displayName, out MailAddress result) => TryCreate(address, displayName, displayNameEncoding: null, out result);
 
@@ -99,7 +99,7 @@ namespace System.Net.Mail
         /// <param name="address">A <see cref="string"/> that contains an email address.</param>
         /// <param name="displayName">A <see cref="string"/> that contains the display name associated with address. This parameter can be null.</param>
         /// <param name="displayNameEncoding">The <see cref="Encoding"/> that defines the character set used for displayName</param>
-        /// <param name="result"></param>
+        /// <param name="result">When this method returns, contains the <see cref="MailAddress"/> instance if address parsing succeed</param>
         /// <returns>A <see cref="bool"/> value that is true if the <see cref="MailAddress"/> was successfully created; otherwise, false.</returns>
         public static bool TryCreate(string address, string displayName, Encoding displayNameEncoding, out MailAddress result)
         {

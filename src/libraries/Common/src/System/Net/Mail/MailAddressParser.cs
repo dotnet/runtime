@@ -128,9 +128,9 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    // Mismatched angle brackets
                     if (throwExceptionIfFail)
                     {
-                        // Mismatched angle brackets, throw
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter,
                             (index >= 0 ? data[index] : MailBnfHelper.EndAngleBracket)));
                     }
@@ -172,9 +172,9 @@ namespace System.Net.Mail
 
             if (index < 0)
             {
+                // More components were expected.  Incomplete address, invalid
                 if (throwExceptionIfFail)
                 {
-                    // More components were expected.  Incomplete address, invalid
                     throw new FormatException(SR.MailAddressInvalidFormat);
                 }
                 else
@@ -386,9 +386,9 @@ namespace System.Net.Mail
                 // belongs to another address.
                 if (index >= 0 && !(expectMultipleAddresses && data[index] == MailBnfHelper.Comma))
                 {
+                    // If there was still data, only a comma could have been the next valid character
                     if (throwExceptionIfFail)
                     {
-                        // If there was still data, only a comma could have been the next valid character
                         throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
                     }
                     else
