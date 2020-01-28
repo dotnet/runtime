@@ -688,7 +688,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             default:
-                unreached();
+                return nullptr;
         }
 
         bool isMemoryStore = retNode->OperIsMemoryStore();
