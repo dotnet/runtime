@@ -31,14 +31,14 @@ enum StackTraceElementFlags
     STEF_IP_ADJUSTED = 0x0002,
 };
 
-// This struct is used by SOS in the diagnostic repo and needs to remain backwards compatible.
+// This struct is used by SOS in the diagnostic repo.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2245
 struct StackTraceElement
 {
     UINT_PTR        ip;
     UINT_PTR        sp;
     PTR_MethodDesc  pFunc;
-    INT             flags;      // This is StackTraceElementFlags but it needs to always be "int" sized for compatibility with SOS.
+    INT             flags;      // This is StackTraceElementFlags but it needs to be "int" sized for compatibility with SOS.
 
     bool operator==(StackTraceElement const & rhs) const
     {
@@ -53,7 +53,7 @@ struct StackTraceElement
     }
 };
 
-// This struct is used by SOS in the diagnostic repo and needs to remain backwards compatible.
+// This struct is used by SOS in the diagnostic repo.
 // See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2669
 class StackTraceInfo
 {

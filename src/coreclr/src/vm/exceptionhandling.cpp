@@ -1333,7 +1333,7 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
 
     INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
 
-    // Clear various flags because the above INDEBUG sets them to true
+    // Clear various flags
     pcfThisFrame->isFrameless = false;
     pcfThisFrame->isInterrupted = false;
     pcfThisFrame->hasFaulted = false;
@@ -1422,7 +1422,7 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
     pcfThisFrame->pRD = pRD;
 
-    // Clear various flags because the above INDEBUG sets them to true
+    // Clear various flags
     pcfThisFrame->pFunc = NULL;
     pcfThisFrame->isInterrupted = false;
     pcfThisFrame->hasFaulted = false;
