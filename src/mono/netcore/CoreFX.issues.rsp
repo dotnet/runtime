@@ -275,30 +275,6 @@
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
 
 ####################################################################
-##  System.Reflection.TypeExtensions.Tests
-####################################################################
-
-# Assertion difference.  Expects 2, but got 1
-# https://github.com/mono/mono/issues/15316
--nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_1DArrayConstructor
-
-# Exception difference
-# https://github.com/mono/mono/issues/15317
--nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_Invalid
-
-# Large Array support
-# https://github.com/mono/mono/issues/15318
--nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_LargeDimensionalArrayConstructor
-
-# Throws a lot of different exceptions
-# https://github.com/mono/mono/issues/15319
--nomethod System.Reflection.Tests.PropertyInfoTests.GetGetMethod_GetSetMethod
-
-# Extra methods 
-# https://github.com/mono/mono/issues/15320
--nomethod System.Reflection.Tests.TypeTests.GetMethods
-
-####################################################################
 ##  System.Reflection.Emit.Lightweight.Tests
 ####################################################################
 
