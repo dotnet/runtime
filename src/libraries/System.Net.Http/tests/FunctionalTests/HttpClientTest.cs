@@ -611,6 +611,24 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_CallerCanceledToken_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromMilliseconds(1);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                CancellationToken token = cts.Token;
+                cts.Cancel();
+                Task.Delay(10).Wait();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
+                TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                Assert.Null(e.InnerException);
+            }
+        }
+
         [Fact]
         [OuterLoop("One second delay in getting server's response")]
         public async Task Timeout_SetTo30AndGetResponseQuickly_Success()
