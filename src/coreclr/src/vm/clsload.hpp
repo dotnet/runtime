@@ -301,6 +301,8 @@ public:
 
 //-------------------------------------------------------------------------------------------
 //
+// TODO: Clean this up
+//
 // Introducing AccessCheckContext so that we can defer caller resolution as much as possible.
 // Stack walk is expensive and we should avoid it if we can determine accessibility without
 // knowing the caller. For example, public transparent APIs without link demand should always
@@ -310,16 +312,9 @@ public:
 //   2. RefSecContext is used by reflection and resolves the caller by performing a stack walk.
 //
 //-------------------------------------------------------------------------------------------
-class AccessCheckContext
-{
-public:
-    virtual MethodDesc*     GetCallerMethod() = 0;      // The method that wants access.
-    virtual MethodTable*    GetCallerMT() = 0;          // The class that wants access; NULL if interop caller.
-    virtual Assembly*       GetCallerAssembly() = 0;    // Assembly containing that class.
-    virtual bool            IsCalledFromInterop() = 0;
-};
+#define AccessCheckContext StaticAccessCheckContext
 
-class StaticAccessCheckContext : public AccessCheckContext
+class StaticAccessCheckContext
 {
 public:
 
@@ -342,25 +337,25 @@ public:
 
     StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType);
 
-    virtual MethodDesc* GetCallerMethod()
+    MethodDesc* GetCallerMethod()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCallerMethod;
     }
 
-    virtual MethodTable* GetCallerMT()
+    MethodTable* GetCallerMT()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCallerMT;
     }
 
-    virtual Assembly* GetCallerAssembly()
+    Assembly* GetCallerAssembly()
     {
         WRAPPER_NO_CONTRACT;
         return m_pCallerAssembly;
     }
 
-    virtual bool IsCalledFromInterop()
+    bool IsCalledFromInterop()
     {
         WRAPPER_NO_CONTRACT;
         return false;
@@ -435,13 +430,6 @@ public:
         return m_accessCheckType == kNormalAccessibilityChecks;
     }
 
-    // Do visibility checks including security demands for reflection access to members
-    BOOL DoReflectionAccessibilityChecks() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return !DoNormalAccessibilityChecks();
-    }
-
     BOOL Throws() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -450,12 +438,6 @@ public:
 
     BOOL DemandMemberAccessOrFail(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const;
     BOOL FailOrThrow(AccessCheckContext *pContext) const;
-
-    BOOL TransparencyCheckNeeded() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_accessCheckType != kNormalAccessNoTransparency && m_accessCheckType != kRestrictedMemberAccessNoTransparency);
-    }
 
     static AccessCheckOptions* s_pNormalAccessChecks;
 
