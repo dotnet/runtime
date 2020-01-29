@@ -21,6 +21,7 @@ set(INTEROP_HEADERS
 if (WIN32)
     list(APPEND INTEROP_SOURCES
         ${INTEROP_HEADERS}
+        agilereferences.cpp
         comwrappers.cpp
         comwrappers.h
         referencetrackertypes.h)

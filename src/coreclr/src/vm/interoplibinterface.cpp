@@ -26,6 +26,7 @@
 namespace
 {
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
+    const HandleType ComWrappersImplHandleType{ HNDTYPE_STRONG };
 
     void* CallComputeVTables(
         _In_ OBJECTREF impl,
@@ -36,6 +37,7 @@ namespace
         CONTRACTL
         {
             THROWS;
+            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(impl != NULL);
             PRECONDITION(instance != NULL);
@@ -77,6 +79,7 @@ namespace
         CONTRACTL
         {
             THROWS;
+            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(impl != NULL);
             PRECONDITION(externalComObject != NULL);
@@ -105,11 +108,204 @@ namespace
 
         return retObjRef;
     }
+
+    // This class is used to track the external object within the runtime.
+    struct ExternalObjectContext
+    {
+        void* Identity;
+        DWORD SyncBlockIndex;
+    };
+
+    class ExtObjCxtCache
+    {
+        static ExtObjCxtCache* g_Instance;
+
+    public: // static
+        static ExtObjCxtCache* GetInstance()
+        {
+            // [TODO] Properly allocate the cache
+            if (g_Instance == nullptr)
+                g_Instance = new ExtObjCxtCache();
+
+            return g_Instance;
+        }
+
+    public: // Inner class definitions
+        class Traits : public DefaultSHashTraits<ExternalObjectContext *>
+        {
+        public:
+            using key_t = void*;
+            static const key_t GetKey(_In_ element_t e) { LIMITED_METHOD_CONTRACT; return (key_t)e->Identity; }
+            static count_t Hash(_In_ key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)key; }
+            static bool Equals(_In_ key_t lhs, _In_ key_t rhs) { LIMITED_METHOD_CONTRACT; return (lhs == rhs); }
+        };
+
+        // Alias some useful types
+        using Element = SHash<Traits>::element_t;
+        using Iterator = SHash<Traits>::Iterator;
+
+        class LockHolder : public CrstHolder
+        {
+        public:
+            LockHolder(_In_ ExtObjCxtCache *cache)
+                : CrstHolder(&cache->_lock)
+            {
+                // This cache must be locked in Cooperative mode
+                // since releases of wrappers can occur during a GC.
+                CONTRACTL
+                {
+                    NOTHROW;
+                    GC_NOTRIGGER;
+                    MODE_COOPERATIVE;
+                }
+                CONTRACTL_END;
+            }
+        };
+
+    private:
+        friend class InteropLibImports::ExtObjCxtIterator;
+        SHash<Traits> _hashMap;
+        Crst _lock;
+
+        ExtObjCxtCache()
+            : _lock(CrstExternalObjectContextCache, CRST_UNSAFE_COOPGC)
+        { }
+        ~ExtObjCxtCache() = default;
+
+    public:
+        bool IsLockHeld()
+        {
+            WRAPPER_NO_CONTRACT;
+            return (_lock.OwnedByCurrentThread() != FALSE);
+        }
+
+        ExternalObjectContext* Find(_In_ IUnknown* instance)
+        {
+            CONTRACT(ExternalObjectContext*)
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(IsLockHeld());
+                PRECONDITION(instance != NULL);
+                POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
+            }
+            CONTRACT_END;
+
+            // Forbid the GC from messing with the hash table.
+            GCX_FORBID();
+
+            RETURN _hashMap.Lookup(instance);
+        }
+
+        ExternalObjectContext* Add(_In_ ExternalObjectContext* cxt)
+        {
+            CONTRACT(ExternalObjectContext*)
+            {
+                THROWS;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(IsLockHeld());
+                PRECONDITION(!Traits::IsNull(cxt));
+                PRECONDITION(!Traits::IsDeleted(cxt));
+                PRECONDITION(cxt->Identity != NULL);
+                PRECONDITION(Find(static_cast<IUnknown*>(cxt->Identity)) == NULL);
+                POSTCONDITION(RETVAL == cxt);
+            }
+            CONTRACT_END;
+
+            _hashMap.Add(cxt);
+            RETURN cxt;
+        }
+
+        ExternalObjectContext* FindOrAdd(_In_ IUnknown* key, _In_ ExternalObjectContext* newCxt)
+        {
+            CONTRACT(ExternalObjectContext*)
+            {
+                THROWS;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+                PRECONDITION(IsLockHeld());
+                PRECONDITION(key != NULL);
+                PRECONDITION(!Traits::IsNull(newCxt));
+                PRECONDITION(!Traits::IsDeleted(newCxt));
+                PRECONDITION(key == newCxt->Identity);
+                POSTCONDITION(CheckPointer(RETVAL));
+            }
+            CONTRACT_END;
+
+            // Forbid the GC from messing with the hash table.
+            GCX_FORBID();
+
+            ExternalObjectContext* cxt = Find(key);
+            if (Traits::IsNull(cxt))
+                cxt = Add(newCxt);
+
+            RETURN cxt;
+        }
+
+        void Remove(_In_ ExternalObjectContext* cxt)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+                PRECONDITION(!Traits::IsNull(cxt));
+                PRECONDITION(!Traits::IsDeleted(cxt));
+                PRECONDITION(cxt->Identity != NULL);
+
+                // The GC thread doesn't have to take the lock
+                // since all other threads access in cooperative mode
+                PRECONDITION(
+                    (IsLockHeld() && GetThread()->PreemptiveGCDisabled())
+                    || Debug_IsLockedViaThreadSuspension());
+            }
+            CONTRACTL_END;
+
+            _hashMap.Remove(cxt->Identity);
+        }
+    };
+
+    // Global instance
+    ExtObjCxtCache* ExtObjCxtCache::g_Instance;
+
+    // Wrapper for External Object Contexts
+    struct ExtObjCxtHolder
+    {
+        void* _cxt;
+        ExtObjCxtHolder()
+            : _cxt(nullptr)
+        { }
+        ~ExtObjCxtHolder()
+        {
+            if (_cxt != nullptr)
+                InteropLib::Com::DestroyWrapperForExternal(_cxt);
+        }
+        ExternalObjectContext* operator->()
+        {
+            return (ExternalObjectContext*)_cxt;
+        }
+        void** operator&()
+        {
+            return &_cxt;
+        }
+        operator ExternalObjectContext*()
+        {
+            return (ExternalObjectContext*)_cxt;
+        }
+        void* Detach()
+        {
+            void* t = _cxt;
+            _cxt = nullptr;
+            return t;
+        }
+    };
 }
 
 namespace InteropLibImports
 {
-    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario)
+    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept
     {
         CONTRACTL
         {
@@ -122,7 +318,7 @@ namespace InteropLibImports
         return ::malloc(sizeInBytes);
     }
 
-    void MemFree(_In_ void* mem, _In_ AllocScenario scenario)
+    void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept
     {
         CONTRACTL
         {
@@ -135,7 +331,7 @@ namespace InteropLibImports
         ::free(mem);
     }
 
-    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle)
+    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept
     {
         CONTRACTL
         {
@@ -193,6 +389,44 @@ namespace InteropLibImports
             GCPROTECT_END();
         }
 
+        return S_OK;
+    }
+
+    class ExtObjCxtIterator
+    {
+    public:
+        ExtObjCxtIterator(_In_ ExtObjCxtCache* cache)
+            : Curr{ cache->_hashMap.Begin() }
+            , End{ cache->_hashMap.End() }
+        { }
+
+        ExtObjCxtCache::Iterator Curr;
+        ExtObjCxtCache::Iterator End;
+    };
+
+    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+            PRECONDITION(iter != NULL);
+            PRECONDITION(context != NULL);
+
+            // Should only be called during a GC suspension
+            PRECONDITION(Debug_IsLockedViaThreadSuspension());
+        }
+        CONTRACTL_END;
+
+        if (iter->Curr == iter->End)
+        {
+            *context = NULL;
+            return S_FALSE;
+        }
+
+        ExtObjCxtCache::Element e = *iter->Curr++;
+        *context = e;
         return S_OK;
     }
 }
@@ -271,7 +505,9 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
                     // If the managed object wrapper couldn't be set, then
                     // it should be possible to get the current one.
                     if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+                    {
                         UNREACHABLE();
+                    }
                 }
             }
         }
@@ -320,6 +556,7 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     BEGIN_QCALL;
 
     HRESULT hr;
+    ExternalObjectContext* extObjCxt;
     IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
 
     // Determine the true identity of the object
@@ -327,26 +564,67 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
     hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
     _ASSERTE(hr == S_OK);
 
-    // Switch to COOP mode in order to check if the the InteropLib already
-    // has an object for the external COM object or to create a new one.
+    // Switch to COOP mode in order to check if the external object is already
+    // known or a new one should be created.
     {
         GCX_COOP();
 
         struct
         {
             OBJECTREF implRef;
-            OBJECTREF newObjRef;
+            OBJECTREF objRef;
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
-        gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
-        _ASSERTE(gc.implRef != NULL);
+        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
-        gc.newObjRef = CallGetObject(gc.implRef, identity, flags);
+        {
+            // Query the external object cache
+            ExtObjCxtCache::LockHolder lock(cache);
+            extObjCxt = cache->Find(identity);
+        }
+
+        if (extObjCxt != NULL)
+        {
+            if (extObjCxt->SyncBlockIndex == 0)
+            {
+                // [TODO] We are in a bad spot?
+            }
+
+            gc.objRef = ObjectToOBJECTREF(g_pSyncTable[extObjCxt->SyncBlockIndex].m_Object);
+        }
+        else
+        {
+            ExtObjCxtHolder newContext;
+            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), &newContext);
+            if (FAILED(hr))
+                COMPlusThrow(hr);
+
+            gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
+            _ASSERTE(gc.implRef != NULL);
+
+            // Call the implementation to create an external object wrapper.
+            gc.objRef = CallGetObject(gc.implRef, identity, flags);
+            if (gc.objRef == NULL)
+                COMPlusThrow(kArgumentNullException);
+
+            newContext->Identity = (void*)identity;
+            newContext->SyncBlockIndex = gc.objRef->GetSyncBlockIndex();
+
+            {
+                ExtObjCxtCache::LockHolder lock(cache);
+                extObjCxt = cache->FindOrAdd(identity, newContext);
+            }
+
+            // Detach from the holder if the returned context matches the new context
+            // since it means the new context was inserted.
+            if (extObjCxt == newContext)
+                (void)newContext.Detach();
+        }
 
         // Set the return value
-        retValue.Set(gc.newObjRef);
+        retValue.Set(gc.objRef);
 
         GCPROTECT_END();
     }
@@ -359,7 +637,6 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
 {
     QCALL_CONTRACT;
 
-    const HandleType implHandleType{ HNDTYPE_STRONG };
     OBJECTHANDLE implHandle;
 
     BEGIN_QCALL;
@@ -375,11 +652,11 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
         implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
         _ASSERTE(implRef != NULL);
 
-        implHandle = GetAppDomain()->CreateTypedHandle(implRef, implHandleType);
+        implHandle = GetAppDomain()->CreateTypedHandle(implRef, ComWrappersImplHandleType);
 
         if (!InteropLib::Com::RegisterReferenceTrackerHostCallback(implHandle))
         {
-            DestroyHandleCommon(implHandle, implHandleType);
+            DestroyHandleCommon(implHandle, ComWrappersImplHandleType);
             COMPlusThrow(kInvalidOperationException, IDS_EE_RESET_REFERENCETRACKERHOST_CALLBACKS);
         }
 
@@ -412,6 +689,7 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(wrapper != NULL);
     }

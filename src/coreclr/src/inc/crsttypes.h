@@ -385,6 +385,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstException",
     "CrstExecuteManLock",
     "CrstExecuteManRangeLock",
+    "CrstExternalObjectContextCache",
     "CrstFCall",
     "CrstFriendAccessCache",
     "CrstFuncPtrStubs",

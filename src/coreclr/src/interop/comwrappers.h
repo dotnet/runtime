@@ -21,14 +21,14 @@ enum class CreateComInterfaceFlags
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlags);
 
-enum class CreateRCWFlags
+enum class CreateObjectFlags
 {
     None = 0,
     TrackerObject = 1,
     IgnoreCache = 2,
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(CreateRCWFlags);
+DEFINE_ENUM_FLAG_OPERATORS(CreateObjectFlags);
 
 struct ComInterfaceEntry
 {
@@ -63,11 +63,12 @@ public: // static
     static ManagedObjectWrapper* MapIUnknownToWrapper(_In_ IUnknown* pUnk);
 
     // Create a ManagedObjectWrapper instance
-    static ManagedObjectWrapper* Create(
+    static HRESULT Create(
         _In_ CreateComInterfaceFlags flags,
         _In_ OBJECTHANDLE objectHandle,
         _In_ int32_t userDefinedCount,
-        _In_ ComInterfaceEntry* userDefined);
+        _In_ ComInterfaceEntry* userDefined,
+        _Outptr_ ManagedObjectWrapper** mow);
 
     // Destroy the instance
     static void Destroy(_In_ ManagedObjectWrapper* wrapper);
@@ -109,21 +110,40 @@ public: // Lifetime
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
 // Class for connecting a native COM object to a managed object instance
-class NativeObjectWrapperInstance
+class NativeObjectWrapperContext
 {
-    OBJECTHANDLE _object;
+#ifdef _DEBUG
+    const size_t _sentinal;
+#endif
+
     IReferenceTracker* _trackerObject;
     IAgileReference* _objectReference;
+    void* _runtimeContext;
+
+public: // static
+    // Convert a context pointer into a NativeObjectWrapperContext.
+    static NativeObjectWrapperContext* MapFromRuntimeContext(_In_ void* cxt);
+
+    // Create a NativeObjectWrapperContext instance
+    static HRESULT NativeObjectWrapperContext::Create(
+        _In_ IUnknown* external,
+        _In_ CreateObjectFlags flags,
+        _In_ size_t runtimeContextSize,
+        _Outptr_ NativeObjectWrapperContext** context);
+
+    // Destroy the instance
+    static void Destroy(_In_ NativeObjectWrapperContext* wrapper);
+
+private:
+    NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference, _In_ void* runtimeContext);
+    ~NativeObjectWrapperContext();
 
 public:
-    NativeObjectWrapperInstance(_In_ OBJECTHANDLE* object, _In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference);
-    ~NativeObjectWrapperInstance();
-
-    void* GetObjectGCHandle() const;
-    bool IsAlive() const;
+    // Get the associated runtime context for this context.
+    void* GetRuntimeContext() const;
 
     // Get the IReferenceTracker instance without going through the reference proxy.
-    IReferenceTracker* GetReferenceTrackerFast();
+    IReferenceTracker* GetReferenceTrackerFast() const;
 
     // Get a type instance of the desired type through the reference proxy.
     template<typename T>
@@ -133,4 +153,89 @@ public:
     }
 };
 
+// API for creating an IAgileReference instance to a supplied IUnknown instance.
+// See https://docs.microsoft.com/windows/win32/api/combaseapi/nf-combaseapi-rogetagilereference
+//
+// N.B. Using a template so that callers are required to provide an explicit IUnknown instance.
+template<typename T>
+HRESULT CreateAgileReference(
+    _In_ T* object,
+    _Outptr_ IAgileReference** agileReference);
+
+// Class used to hold COM objects (i.e. IUnknown base class)
+// This class mimics the semantics of ATL::CComPtr<T> (https://docs.microsoft.com/cpp/atl/reference/ccomptr-class).
+template<typename T>
+struct ComHolder
+{
+    T* p;
+
+    ComHolder()
+        : p{ nullptr }
+    { }
+
+    ComHolder(_In_ const ComHolder&) = delete;
+    ComHolder& operator=(_In_ const ComHolder&) = delete;
+
+    ComHolder(_In_ ComHolder&& other)
+        : p{ other.Detach() }
+    { }
+
+    ComHolder& operator=(_In_ ComHolder&& other)
+    {
+        Release();
+        p = other.Detach();
+        return (*this);
+    }
+
+    ComHolder(_In_ T* i)
+        : p{ i }
+    {
+        _ASSERTE(p != nullptr);
+        (void)p->AddRef();
+    }
+
+    ~ComHolder()
+    {
+        Release();
+    }
+
+    T** operator&()
+    {
+        return &p;
+    }
+
+    T* operator->()
+    {
+        return p;
+    }
+
+    operator T*()
+    {
+        return p;
+    }
+
+    void Attach(_In_opt_ T* i) noexcept
+    {
+        Release();
+        if (i != nullptr)
+            (void)i->AddRef();
+        p = i;
+    }
+
+    T* Detach() noexcept
+    {
+        T* tmp = p;
+        p = nullptr;
+        return tmp;
+    }
+
+    void Release() noexcept
+    {
+        if (p != nullptr)
+        {
+            (void)p->Release();
+            p = nullptr;
+        }
+    }
+};
 #endif // _INTEROP_COMWRAPPERS_H_

@@ -12,16 +12,22 @@ namespace InteropLibImports
     enum class AllocScenario
     {
         ManagedObjectWrapper,
+        NativeObjectWrapper,
     };
 
     // Allocate the given amount of memory.
-    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario);
+    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept;
 
     // Free the previously allocated memory.
-    void MemFree(_In_ void* mem, _In_ AllocScenario scenario);
+    void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept;
 
     // Delete Object instance handle
-    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle);
+    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
+
+    // Get next External Object Context from the iterator.
+    // S_OK - Context is valid.
+    // S_FALSE - Iterator has reached end and context out parameter is set to NULL.
+    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept;
 
     // Given a ComWrappers implementation, get or create
     // an IReferenceTrackerTarget instance for the supplied

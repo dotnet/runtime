@@ -74,9 +74,7 @@ namespace ABI
         {
             // Check if there is padding to attempt an alignment
             if (extraPadding <= 0)
-            {
-                std::abort(); // [TODO] Replace
-            }
+                return nullptr;
 
             extraPadding -= sizeof(void*);
 
@@ -292,12 +290,15 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapIUnknownToWrapper(_In_ IUnknown* 
     return ABI::ToManagedObjectWrapper(disp);
 }
 
-ManagedObjectWrapper* ManagedObjectWrapper::Create(
+HRESULT ManagedObjectWrapper::Create(
     _In_ CreateComInterfaceFlags flags,
     _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t userDefinedCount,
-    _In_ ComInterfaceEntry* userDefined)
+    _In_ ComInterfaceEntry* userDefined,
+    _Outptr_ ManagedObjectWrapper** mow)
 {
+    _ASSERTE(objectHandle != nullptr && mow != nullptr);
+
     // Maximum number of runtime supplied vtables
     ComInterfaceEntry runtimeDefinedLocal[4];
     int32_t runtimeDefinedCount = 0;
@@ -331,7 +332,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     // Allocate memory for the ManagedObjectWrapper
     char* wrapperMem = (char*)InteropLibImports::MemAlloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding, AllocScenario::ManagedObjectWrapper);
     if (wrapperMem == nullptr)
-        return nullptr; // OOM
+        return E_OUTOFMEMORY;
 
     // Compute Runtime defined offset
     char* runtimeDefinedOffset = wrapperMem + sizeof(ManagedObjectWrapper);
@@ -347,6 +348,8 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
     // Compute the dispatch section offset and ensure it is aligned
     char* dispatchSectionOffset = runtimeDefinedOffset + totalRuntimeDefinedSize;
     dispatchSectionOffset = ABI::AlignDispatchSection(dispatchSectionOffset, ABI::AlignmentThisPtrMaxPadding);
+    if (dispatchSectionOffset == nullptr)
+        return E_UNEXPECTED;
 
     // Define the sets for the tables to insert
     const ABI::EntrySet AllEntries[] =
@@ -368,7 +371,8 @@ ManagedObjectWrapper* ManagedObjectWrapper::Create(
             dispSection
         };
 
-    return wrapper;
+    *mow = wrapper;
+    return S_OK;
 }
 
 void ManagedObjectWrapper::Destroy(_In_ ManagedObjectWrapper* wrapper)
@@ -515,6 +519,110 @@ ULONG ManagedObjectWrapper::Release(void)
     return refCount;
 }
 
+namespace
+{
+    const size_t ContextSentinal = 0x0a110ced;
+}
+
+NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_In_ void* cxtMaybe)
+{
+    _ASSERTE(cxtMaybe != nullptr);
+
+    // Convert the supplied context
+    char* cxtRaw = reinterpret_cast<char*>(cxtMaybe);
+    cxtRaw -= sizeof(NativeObjectWrapperContext);
+    NativeObjectWrapperContext* cxt = reinterpret_cast<NativeObjectWrapperContext*>(cxtRaw);
+
+#ifdef _DEBUG
+    _ASSERTE(cxt->_sentinal == ContextSentinal);
+#endif
+
+    return cxt;
+}
+
+HRESULT NativeObjectWrapperContext::Create(
+    _In_ IUnknown* external,
+    _In_ CreateObjectFlags flags,
+    _In_ size_t runtimeContextSize,
+    _Outptr_ NativeObjectWrapperContext** context)
+{
+    _ASSERTE(external != nullptr && context != nullptr);
+
+    HRESULT hr;
+
+    ComHolder<IReferenceTracker> trackerObject;
+    if ((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject)
+    {
+        hr = external->QueryInterface(&trackerObject);
+        if (SUCCEEDED(hr))
+        {
+            // [TODO] RETURN_IF_FAILED(TrackerRCWManager::OnIReferenceTrackerFound(trackerObject));
+        }
+    }
+
+    ComHolder<IAgileReference> reference;
+    RETURN_IF_FAILED(CreateAgileReference(external, &reference));
+
+    // Allocate memory for the RCW
+    char* cxtMem = (char*)InteropLibImports::MemAlloc(sizeof(NativeObjectWrapperContext) + runtimeContextSize, AllocScenario::NativeObjectWrapper);
+    if (cxtMem == nullptr)
+        return E_OUTOFMEMORY;
+
+    void* runtimeContext = cxtMem + sizeof(NativeObjectWrapperContext);
+
+    // Contract specifically requires zeroing out runtime context.
+    std::memset(runtimeContext, 0, runtimeContextSize);
+
+    NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ trackerObject, reference, runtimeContext };
+
+    if (contextLocal->GetReferenceTrackerFast() != nullptr)
+    {
+        // Inform the tracker object manager
+        _ASSERTE((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject);
+        // [TODO] TrackerRCWManager::AfterRCWCreated(contextLocal);
+    }
+
+    *context = contextLocal;
+    return S_OK;
+}
+
+void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrapper)
+{
+    _ASSERTE(wrapper != nullptr);
+
+    // Manually trigger the destructor since placement
+    // new was used to allocate the object.
+    wrapper->~NativeObjectWrapperContext();
+    InteropLibImports::MemFree(wrapper, AllocScenario::NativeObjectWrapper);
+}
+
+NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference, _In_ void* runtimeContext)
+    : _trackerObject{ trackerObject }
+    , _objectReference{ reference }
+    , _runtimeContext{ runtimeContext }
+#ifdef _DEBUG
+    , _sentinal{ ContextSentinal }
+#endif
+{
+    (void)_objectReference->AddRef();
+}
+
+NativeObjectWrapperContext::~NativeObjectWrapperContext()
+{
+    _trackerObject = nullptr;
+    (void)_objectReference->Release();
+}
+
+void* NativeObjectWrapperContext::GetRuntimeContext() const
+{
+    return _runtimeContext;
+}
+
+IReferenceTracker* NativeObjectWrapperContext::GetReferenceTrackerFast() const
+{
+    return _trackerObject;
+}
+
 namespace InteropLib
 {
     namespace Com
@@ -524,26 +632,74 @@ namespace InteropLib
             _In_ INT32 vtableCount,
             _In_ void* vtablesRaw,
             _In_ INT32 flagsRaw,
-            _Outptr_ IUnknown** comObject) noexcept
+            _Outptr_ IUnknown** wrapper) noexcept
         {
-            if (instance == nullptr || vtablesRaw == nullptr || vtableCount < 0)
+            if (instance == nullptr || (vtablesRaw == nullptr && vtableCount != 0) || vtableCount < 0)
                 return E_INVALIDARG;
 
-            if (comObject == nullptr)
+            if (wrapper == nullptr)
                 return E_POINTER;
+
+            HRESULT hr;
 
             // Convert inputs to appropriate types.
             auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
             auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
-            ManagedObjectWrapper* mow = ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables);
-            if (mow == nullptr)
-                return E_OUTOFMEMORY;
 
-            *comObject = static_cast<IUnknown*>(mow->As(IID_IUnknown));
+            ManagedObjectWrapper* mow;
+            RETURN_IF_FAILED(ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables, &mow));
+
+            *wrapper = static_cast<IUnknown*>(mow->As(IID_IUnknown));
             return S_OK;
         }
 
-        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO]
+        void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
+
+            // This should never happen.
+            // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
+            _ASSERTE(wrapper != nullptr);
+
+            ManagedObjectWrapper::Destroy(wrapper);
+        }
+
+        HRESULT CreateWrapperForExternal(
+            _In_ IUnknown* external,
+            _In_ INT32 flagsRaw,
+            _In_ size_t contextSize, 
+            _Outptr_ void** context) noexcept
+        {
+            if (external == nullptr)
+                return E_INVALIDARG;
+
+            if (context == nullptr)
+                return E_POINTER;
+
+            HRESULT hr;
+
+            // Convert input to appropriate type.
+            auto flags = static_cast<CreateObjectFlags>(flagsRaw);
+
+            NativeObjectWrapperContext* wrapperContext;
+            RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
+
+            *context = wrapperContext->GetRuntimeContext();
+            return S_OK;
+        }
+
+        void DestroyWrapperForExternal(_In_ void* contextMaybe) noexcept
+        {
+            NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
+
+            // This should never happen.
+            // A caller should not be destroying a context without knowing if the context is valid.
+            _ASSERTE(context != nullptr);
+
+            NativeObjectWrapperContext::Destroy(context);
+        }
+
+        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO] Move to tracker object manager
         {
             static OBJECTHANDLE g_objectHandle = nullptr;
 
@@ -582,17 +738,6 @@ namespace InteropLib
             }
 
             return S_OK;
-        }
-
-        void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
-        {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
-
-            // This should never happen.
-            // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
-            _ASSERTE(wrapper != nullptr);
-
-            ManagedObjectWrapper::Destroy(wrapper);
         }
     }
 }
