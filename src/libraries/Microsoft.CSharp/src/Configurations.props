@@ -1,7 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      $(NetCoreAppCurrent);
+      netstandard2.0;
+      _$(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

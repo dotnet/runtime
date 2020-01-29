@@ -3,7 +3,7 @@
   <ItemGroup>
     <PackageIndex Include="$(PkgDir)baseline\packageBaseline.1.1.json" />
     <ProjectReference Include="..\ref\System.Runtime.CompilerServices.Unsafe.csproj">
-      <SupportedFramework>net45;netcoreapp1.0;netcore50;netcore45;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net45;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
 

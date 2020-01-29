@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
@@ -161,7 +161,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
