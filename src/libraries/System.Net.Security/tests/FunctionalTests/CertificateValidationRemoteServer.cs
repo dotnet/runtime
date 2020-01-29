@@ -34,19 +34,19 @@ namespace System.Net.Security.Tests
                     new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
                 }
 
-                try
+                using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
-                    using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
+                    try
                     {
                         await sslStream.AuthenticateAsClientAsync(Configuration.Security.TlsServer.IdnHost);
                     }
-                }
-                catch (IOException ex) when (ex.InnerException is SocketException &&
+                    catch (IOException ex) when (ex.InnerException is SocketException &&
                       ((SocketException)ex.InnerException).SocketErrorCode == SocketError.ConnectionReset)
-                {
-                    // Since we try to verify certificate validation, ignore IO errors
-                    // caused most likely by environmental failures.
-                    new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
+                    {
+                        // Since we try to verify certificate validation, ignore IO errors
+                        // caused most likely by environmental failures.
+                        new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
+                    }
                 }
             }
         }
