@@ -22,7 +22,7 @@
       <IBCPackage Condition="$([System.String]::new('%(Identity)').ToLower().Contains('linux'))">
         <SubdirectoryName>Linux</SubdirectoryName>
       </IBCPackage>
-      <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" Package="%(IBCPackage.Identity)" SubdirectoryName="%(IBCPackage.SubdirectoryName)" />
+      <_optimizationDataSourceFile Include="%(IBCPackage.PackagePath)\**\*.dll;%(IBCPackage.PackagePath)\**\*.ibc" SubdirectoryName="%(IBCPackage.SubdirectoryName)" />
     </ItemGroup>
     <Copy SourceFiles="@(_optimizationDataSourceFile)"
           DestinationFiles="@(_optimizationDataSourceFile->'$(IbcOptimizationDataDir)%(SubdirectoryName)\%(RecursiveDir)%(Filename)%(Extension)')"
