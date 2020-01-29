@@ -17,9 +17,11 @@ namespace System.Net.Security.Tests
 
     public class CertificateValidationRemoteServer
     {
-        [Fact]
         [OuterLoop("Uses external servers")]
-        public async Task CertificateValidationRemoteServer_EndToEnd_Ok()
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CertificateValidationRemoteServer_EndToEnd_Ok(bool useAsync)
         {
             using (var client = new TcpClient(AddressFamily.InterNetwork))
             {
@@ -38,7 +40,14 @@ namespace System.Net.Security.Tests
                 {
                     try
                     {
-                        await sslStream.AuthenticateAsClientAsync(Configuration.Security.TlsServer.IdnHost);
+                        if (useAsync)
+                        {
+                            await sslStream.AuthenticateAsClientAsync(Configuration.Security.TlsServer.IdnHost);
+                        }
+                        else
+                        {
+                            sslStream.AuthenticateAsClient(Configuration.Security.TlsServer.IdnHost);
+                        }
                     }
                     catch (IOException ex) when (ex.InnerException is SocketException &&
                       ((SocketException)ex.InnerException).SocketErrorCode == SocketError.ConnectionReset)
