@@ -77,11 +77,6 @@ namespace ILCompiler
                 default:
                     throw new NotImplementedException();
             }
-
-            // Workaround for https://github.com/dotnet/corefx/issues/25267
-            // If pointer size is 8, we're obviously not an X86 process...
-            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
-                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private void ProcessCommandLine()
@@ -260,20 +255,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        // Either single file, or multifile library, or multifile consumption.
-                        EcmaModule entrypointModule = null;
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
-                        {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
-                            if (module.PEReader.PEHeaders.IsExe)
-                            {
-                                if (entrypointModule != null)
-                                    throw new Exception("Multiple EXE modules");
-                                entrypointModule = module;
-                            }
-                        }
-
+                        // Single assembly compilation.
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
                             typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics);
                     }
