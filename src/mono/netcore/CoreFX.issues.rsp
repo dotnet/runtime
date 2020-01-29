@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Drawing.Common.Tests
-####################################################################
-
-# System.ArgumentException Arg_ObjObjEx
--nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
-
-####################################################################
 ##  System.Net.Http.Functional.Tests
 ####################################################################
 
