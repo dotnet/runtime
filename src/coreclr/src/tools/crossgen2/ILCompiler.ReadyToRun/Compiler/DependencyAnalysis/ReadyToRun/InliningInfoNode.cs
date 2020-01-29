@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata.Ecma335;
 
@@ -39,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            Dictionary<EcmaMethod, HashSet<MethodDesc>> inlineeToInliners = new Dictionary<EcmaMethod, HashSet<MethodDesc>>();
+            Dictionary<EcmaMethod, HashSet<EcmaMethod>> inlineeToInliners = new Dictionary<EcmaMethod, HashSet<EcmaMethod>>();
 
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
@@ -59,12 +60,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         continue;
                     }
 
-                    if (!inlineeToInliners.TryGetValue(ecmaInlineeDefinition, out HashSet<MethodDesc> inliners))
+                    if (!inlineeToInliners.TryGetValue(ecmaInlineeDefinition, out HashSet<EcmaMethod> inliners))
                     {
-                        inliners = new HashSet<MethodDesc>();
+                        inliners = new HashSet<EcmaMethod>();
                         inlineeToInliners.Add(ecmaInlineeDefinition, inliners);
                     }
-                    inliners.Add(inlinerDefinition);
+                    inliners.Add((EcmaMethod)inlinerDefinition);
                 }
             }
 
@@ -97,11 +98,30 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inlinee.Module)));
                 }
 
-                foreach (EcmaMethod inliner in inlineeWithInliners.Value)
+                List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value);
+                sortedInliners.Sort((a, b) =>
+                {
+                    int aRid = MetadataTokens.GetRowNumber(a.Handle);
+                    int bRid = MetadataTokens.GetRowNumber(b.Handle);
+                    if (aRid < bRid)
+                        return -1;
+                    else if (aRid > bRid)
+                        return 1;
+
+                    int result = a.Module.CompareTo(b.Module);
+                    Debug.Assert(result != 0);
+                    return result;
+                });
+
+                int baseRid = 0;
+                foreach (EcmaMethod inliner in sortedInliners)
                 {
                     int inlinerRid = MetadataTokens.GetRowNumber(inliner.Handle);
+                    int ridDelta = inlinerRid - baseRid;
+                    baseRid = inlinerRid;
+                    Debug.Assert(ridDelta > 0);
                     bool isForeignInliner = inliner.Module != _globalContext;
-                    sig.Append(new UnsignedConstant((uint)(inlinerRid << 1 | (isForeignInliner ? 1 : 0))));
+                    sig.Append(new UnsignedConstant((uint)(ridDelta << 1 | (isForeignInliner ? 1 : 0))));
                     if (isForeignInliner)
                     {
                         sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inliner.Module)));

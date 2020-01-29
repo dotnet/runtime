@@ -676,13 +676,16 @@ COUNT_T PersistentInlineTrackingMapR2R2::GetInliners(PTR_Module inlineeOwnerMod,
 
         // We have the right inlinee, let's look at the inliners
 
+        DWORD currentInlinerRid = 0;
         do
         {
-            DWORD inlinerRidAndFlag = entryParser.GetUnsigned();
+            DWORD inlinerRidDeltaAndFlag = entryParser.GetUnsigned();
             streamSize--;
 
+            currentInlinerRid += inlinerRidDeltaAndFlag >> 1;
+
             Module* inlinerModule;
-            if ((inlineeRidAndFlag & 1) != 0)
+            if ((inlinerRidDeltaAndFlag & 1) != 0)
             {
                 _ASSERTE(streamSize > 0);
                 inlinerModule = GetModuleByIndex(entryParser.GetUnsigned());
@@ -703,7 +706,7 @@ COUNT_T PersistentInlineTrackingMapR2R2::GetInliners(PTR_Module inlineeOwnerMod,
 
             if (result < inlinersSize)
             {
-                inliners[result].m_methodDef = TokenFromRid(inlinerRidAndFlag >> 1, mdtMethodDef);
+                inliners[result].m_methodDef = TokenFromRid(currentInlinerRid, mdtMethodDef);
                 inliners[result].m_module = inlinerModule;
             }
 

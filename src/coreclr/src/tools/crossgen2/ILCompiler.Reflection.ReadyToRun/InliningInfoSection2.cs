@@ -33,10 +33,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 int count = (int)curParser.GetUnsigned();
-                int inlineeTokenAndFlag = (int)curParser.GetUnsigned();
+                int inlineeRidAndFlag = (int)curParser.GetUnsigned();
                 count--;
-                int inlineeToken = RidToMethodDef(inlineeTokenAndFlag >> 1);
-                if ((inlineeTokenAndFlag & 1) != 0)
+                int inlineeToken = RidToMethodDef(inlineeRidAndFlag >> 1);
+                if ((inlineeRidAndFlag & 1) != 0)
                 {
                     uint module = curParser.GetUnsigned();
                     count--;
@@ -48,13 +48,16 @@ namespace ILCompiler.Reflection.ReadyToRun
                     sb.AppendLine($"Inliners for inlinee {inlineeToken:X8}:");
                 }
 
+                int currentRid = 0;
                 while (count > 0)
                 {
-                    int inlinerTokenAndFlag = (int)curParser.GetUnsigned();
+                    int inlinerDeltaAndFlag = (int)curParser.GetUnsigned();
                     count--;
-                    int inlinerToken = RidToMethodDef(inlinerTokenAndFlag >> 1);
+                    int inlinerDelta = inlinerDeltaAndFlag >> 1;
+                    currentRid += inlinerDelta;
+                    int inlinerToken = RidToMethodDef(currentRid);
 
-                    if ((inlinerTokenAndFlag & 1) != 0)
+                    if ((inlinerDeltaAndFlag & 1) != 0)
                     {
                         uint module = curParser.GetUnsigned();
                         count--;
