@@ -29,7 +29,6 @@ usage_list+=("-skipcrossgen: skip native image generation.")
 usage_list+=("-skipcrossarchnative: Disable Open Source Signing for System.Private.CoreLib.")
 usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipmscorlib: generate IBC-tuning-enabled native images when invoking crossgen.")
-usage_list+=("-skipnuget: skip NuGet package generation.")
 usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
 usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
 usage_list+=("-staticanalyzer: skip native image generation.")
@@ -331,11 +330,9 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-__PackagesBinDir="$__BinDir/.nuget"
 __IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
 export __IntermediatesDir __ArtifactsIntermediatesDir
-
 __CrossComponentBinDir="$__BinDir"
 
 __CrossArch="$__HostArch"

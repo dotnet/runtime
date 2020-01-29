@@ -88,7 +88,6 @@ set __BuildTests=1
 set __BuildNativeCoreLib=1
 set __BuildManagedTools=1
 set __RestoreOptData=1
-set __GenerateLayout=0
 set __CrossgenAltJit=
 set __SkipRestoreArg=/p:RestoreDuringBuild=true
 set __OfficialBuildIdArg=
@@ -166,10 +165,8 @@ if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!p
 if /i "%1" == "-skipmscorlib"        (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipmanagedtools"    (set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-generatelayout"      (set __GenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -188,9 +185,7 @@ if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!pr
 if /i "%1" == "skipmscorlib"        (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "generatelayout"      (set __GenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -696,40 +691,6 @@ endlocal
 
 REM =========================================================================================
 REM ===
-REM === Test build section
-REM ===
-REM =========================================================================================
-
-if %__BuildTests% EQU 1 (
-    echo %__MsgPrefix%Commencing build of tests for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    set  __PriorityArg=
-    if defined __Priority (
-        set __PriorityArg=-priority=%__Priority%
-    )
-    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% !__PriorityArg! %__UnprocessedBuildArgs%
-    echo %__MsgPrefix%!NEXTCMD!
-    !NEXTCMD!
-
-    if not !errorlevel! == 0 (
-        REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
-        goto ExitWithError
-    )
-) else if %__GenerateLayout% EQU 1 (
-    echo %__MsgPrefix%Generating layout for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% generatelayoutonly %__UnprocessedBuildArgs%
-    echo %__MsgPrefix%!NEXTCMD!
-    !NEXTCMD!
-
-    if not !errorlevel! == 0 (
-        REM runtest.cmd has already emitted an error message and mentioned the build log file to examine.
-        goto ExitWithError
-    )
-)
-
-REM =========================================================================================
-REM ===
 REM === All builds complete!
 REM ===
 REM =========================================================================================
@@ -844,26 +805,18 @@ echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
-echo mscorlib version: one of -freebsdmscorlib, -linuxmscorlib, -netbsdmscorlib, -osxmscorlib,
-echo     or -windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
-echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
-echo     respectively^).
-echo     add nativemscorlib to go further and build the native image for designated mscorlib.
+echo -nativemscorlib:Build the native image for an already-built System.Private.CoreLib.
 echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo -ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
 echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
 echo -skipconfigure: skip CMake ^(default: CMake is run^)
-echo -skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
 echo -skipnative: skip building native components ^(default: native components are built^).
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
-echo -skiptests: skip building tests ^(default: tests are built^).
-echo -skipbuildpackages: skip building nuget packages ^(default: packages are built^).
 echo -skipmanagedtools: skip build tools such as R2R dump and RunInContext
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
-echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
 echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
 echo -crossgenaltjit ^<JIT dll^>: run crossgen using specified altjit ^(used for JIT testing^).
