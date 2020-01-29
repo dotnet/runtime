@@ -563,15 +563,6 @@ if %__BuildNative% EQU 1 (
         "%PYTHON%" "%__ProjectDir%\src\scripts\pgocheck.py" "%__BinDir%\coreclr.dll" "%__BinDir%\clrjit.dll"
     )
 
-    call %__RepoRootDir%\dotnet.cmd msbuild "%__ProjectDir%\clr.featuredefines.props" /clp:nosummary /nodeReuse:false^
-        "/p:IntermediateOutputPath=%__IntermediatesDir%" /t:CheckDefinitions
-
-    if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: definition check failed.
-        set __exitCode=!errorlevel!
-        goto ExitWithCode
-    )
-
 :SkipNativeBuild
     REM } Scope environment changes end
     endlocal
