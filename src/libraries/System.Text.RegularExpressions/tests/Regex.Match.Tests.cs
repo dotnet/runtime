@@ -386,6 +386,7 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(r.Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
