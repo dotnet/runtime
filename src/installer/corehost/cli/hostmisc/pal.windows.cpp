@@ -560,8 +560,34 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     assert(len < max_len);
     tmp_dir.assign(temp_path);
 
-    return pal::realpath(&tmp_dir);
+    return realpath(&tmp_dir);
 }
+
+bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
+{
+    if (!get_temp_directory(extraction_dir))
+    {
+        return false;
+    }
+
+    append_path(&extraction_dir, _X(".net"));
+    // Windows Temp-Path is already user-private.
+
+    if (realpath(&extraction_dir))
+    {
+        return true;
+    }
+
+    // Create the %TEMP%\.net directory
+    if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
+        GetLastError() != ERROR_ALREADY_EXISTS)
+    {
+        return false;
+    }
+
+    return realpath(&extraction_dir);
+}
+
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
