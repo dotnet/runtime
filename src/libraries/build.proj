@@ -15,7 +15,7 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <Target Name="Restore">
+  <Target Name="Restore" DependsOnTargets="GenerateRuntimeOSPropsFile">
     <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
       <_RestoreProjects Include="$(MSBuildThisFileDirectory)restore\dirs.proj" Build="true" />
     </ItemGroup>

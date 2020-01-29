@@ -8,7 +8,10 @@
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
+    <RuntimePropsFile>$(RepoRoot)artifacts\tmp\$(Configuration)\RuntimeOS.props</RuntimePropsFile>
   </PropertyGroup>
+
+  <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
 
   <!-- Platform detection -->
   <PropertyGroup>
@@ -39,7 +42,6 @@
   
   <PropertyGroup>
     <OSGroup>$(TargetFrameworkSuffix)</OSGroup>
-    <RuntimeOS Condition="'$(RuntimeOS)' == ''">win10</RuntimeOS>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
