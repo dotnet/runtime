@@ -4,22 +4,15 @@ ReadyToRun File Format
 Revisions:
 * 1.1 - [Jan Kotas](https://github.com/jkotas) - 2015
 * 3.1 - [Tomas Rylek](https://github.com/trylek) - 2019
-* 3.2 - [Tomas Rylek](https://github.com/trylek) - 2020
+* 4.1 - [Tomas Rylek](https://github.com/trylek) - 2020
 
 # Introduction
 
 This document describes ReadyToRun format 3.1 implemented in CoreCLR as of June 2019 and not yet
-implemented proposed extensions 3.2 for the support of composite R2R file format. 
+implemented proposed extensions 4.1 for the support of composite R2R file format. 
 **Composite R2R file format** has basically the same structure as the traditional R2R file format
 defined in earlier revisions except that the output file represents a larger number of input MSIL
 assemblies compiled together as a logical unit.
-
-**Note**: The addition of the new composite R2R file format flavor doesn't require bumping up the
-major ReadyToRun format version number. This is because, according to the format definition, the
-composite R2R file format doesn't technically conform to the single-input R2R supported by older
-versions of CoreCLR so there's no risk of *"the old loader"* messing up by incorrectly trying to
-run *"the new file"*. The only downside is that the *"new composite R2R file"* won't run with the
-*"old loader"* and thus it will somewhat violate the design principle that R2R is a mere code cache.
 
 # PE Headers and CLI Headers
 
@@ -33,9 +26,11 @@ with the following customizations:
 The COR header and ECMA 335 metadata pointed to by the COM descriptor data directory item
 in the COFF header represent a full copy of the input IL and MSIL metadata it was generated from.
 
-For **Composite R2R files** there is no global CLI / COR header (as there are potentially
-multiple metadata blocks in the file). The ReadyToRun header structure is pointed to by the
-well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
+**Composite R2R files** currently conform to Windows PE executable file format as the
+native envelope. Moving forward we plan to gradually add support for platform-native
+executable formats (ELF on Linux, MachO on OSX) as the native envelopes. As a natural corollary
+There is no global CLI / COR header in the file. The ReadyToRun header structure is pointed to
+by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
 as separate files on disk. In case of embedded MSIL, the "actual" metadata for the individual
@@ -56,7 +51,19 @@ The limitations of the current format are:
 
 # Structures
 
-The structures and accompanying constants are defined in the [readytorun.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/readytorun.h) header file.
+The structures and accompanying constants are defined in the [readytorun.h]
+(https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/readytorun.h) header file.
+Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
+pointed to by the well-known export RTR_HEADER in the export section of the native executable
+envelope.
+
+For single-file R2R executables, there's just one header representing all image sections.
+For composite and single exe, the global `READYTORUN_HEADER` includes a section of the type
+`READYTORUN_SECTION_ASSEMBLIES` representing the component assemblies comprising the composite
+R2R image. This table is parallel to (it used the same indexing as) the table
+`READYTORUN_MANIFEST_METADATA`. Each `READYTORUN_SECTION_ASSEMBLIES_ENTRY` record points
+to a `READYTORUN_CORE_HEADER` variable-length structure representing sections specific to the
+particular assembly.
 
 ## READYTORUN_HEADER
 
@@ -67,13 +74,8 @@ struct READYTORUN_HEADER
     USHORT                  MajorVersion;   // READYTORUN_VERSION_XXX
     USHORT                  MinorVersion;
 
-    DWORD                   Flags;          // READYTORUN_FLAG_XXX
-
-    DWORD                   NumberOfSections;
-
-    // Array of sections follows. The array entries are sorted by Type
-    // READYTORUN_SECTION   Sections[];
-};
+    READYTORUN_CORE_HEADER  CoreHeader;
+}
 ```
 
 ### READYTORUN_HEADER::Signature
@@ -90,13 +92,28 @@ MinorVersion increments are meant to compatible file format changes.
 successfully execute native code from images of version 2.9. The runtime should refuse to execute
 native code from image of version 3.0.
 
-### READYTORUN_HEADER::Flags
+## READYTORUN_CORE_HEADER
+
+```C++
+struct READYTORUN_CORE_HEADER
+{
+    DWORD                   Flags;          // READYTORUN_FLAG_XXX
+
+    DWORD                   NumberOfSections;
+
+    // Array of sections follows. The array entries are sorted by Type
+    // READYTORUN_SECTION   Sections[];
+};
+```
+
+### READYTORUN_CORE_HEADER::Flags
 
 | Flag                                    |      Value | Description
 |:----------------------------------------|-----------:|:-----------
 | READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE | 0x00000001 | Set if the original IL image was platform neutral. The platform neutrality is part of assembly name. This flag can be used to reconstruct the full original assembly name.
 | READYTORUN_FLAG_COMPOSITE               | 0x00000002 | The image represents a composite R2R file resulting from a combined compilation of a larger number of input MSIL assemblies.
 | READYTORUN_FLAG_EMBEDDED_MSIL           | 0x00000004 | Input MSIL is embedded in the R2R image.
+| READYTORUN_FLAG_COMPONENT               | 0x00000008 | This is 
 
 ## READYTORUN_SECTION
 
@@ -108,7 +125,7 @@ struct READYTORUN_SECTION
 };
 ```
 
-This ReadyToRun header is immediately followed by an array of `READYTORUN_SECTION` records
+The `READYTORUN_CORE_HEADER` structure is immediately followed by an array of `READYTORUN_SECTION` records
 representing the individual R2R sections. Number of elements in the array is `READYTORUN_HEADER::NumberOfSections`.
 Each record contains section type and its location within the binary. The array is sorted by section type
 to allow binary searching.
@@ -119,27 +136,24 @@ and execute the ready to run file.
 
 The following section types are defined and described later in this document:
 
-```C++
-enum ReadyToRunSectionType
-{
-    READYTORUN_SECTION_COMPILER_IDENTIFIER          = 100,
-    READYTORUN_SECTION_IMPORT_SECTIONS              = 101,
-    READYTORUN_SECTION_RUNTIME_FUNCTIONS            = 102,
-    READYTORUN_SECTION_METHODDEF_ENTRYPOINTS        = 103,
-    READYTORUN_SECTION_EXCEPTION_INFO               = 104,
-    READYTORUN_SECTION_DEBUG_INFO                   = 105,
-    READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS  = 106,
-    // 107 used by an older format of READYTORUN_SECTION_AVAILABLE_TYPES
-    READYTORUN_SECTION_AVAILABLE_TYPES              = 108,
-    READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS  = 109,
-    READYTORUN_SECTION_INLINING_INFO                = 110, // Added in V2.1
-    READYTORUN_SECTION_PROFILEDATA_INFO             = 111, // Added in V2.2
-    READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
-    READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
-    READYTORUN_SECTION_INLINING_INFO2               = 114, // Added in V4.1
-    READYTORUN_SECTION_ASSEMBLIES                   = 115, // Added in V3.2
-};
-```
+| ReadyToRunSectionType                          | Value | Scope (component assembly / entire image)
+|:-----------------------------------------------|------:|:-----------
+| READYTORUN_SECTION_COMPILER_IDENTIFIER         |   100 | Image
+| READYTORUN_SECTION_IMPORT_SECTIONS             |   101 | Image
+| READYTORUN_SECTION_RUNTIME_FUNCTIONS           |   102 | Image
+| READYTORUN_SECTION_METHODDEF_ENTRYPOINTS       |   103 | Assembly
+| READYTORUN_SECTION_EXCEPTION_INFO              |   104 | Assembly
+| READYTORUN_SECTION_DEBUG_INFO                  |   105 | Assembly
+| READYTORUN_SECTION_DELAYLOAD_METHODCALL_THUNKS |   106 | Assembly
+| ~~READYTORUN_SECTION_AVAILABLE_TYPES~~         |   107 | (obsolete - used by an older format)
+| READYTORUN_SECTION_AVAILABLE_TYPES             |   108 | Assembly
+| READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS |   109 | Image
+| READYTORUN_SECTION_INLINING_INFO               |   110 | Assembly (added in V2.1)
+| READYTORUN_SECTION_PROFILEDATA_INFO            |   111 | Image (added in V2.2)
+| READYTORUN_SECTION_MANIFEST_METADATA           |   112 | Image (added in V2.3)
+| READYTORUN_SECTION_ATTRIBUTEPRESENCE           |   113 | Assembly (added in V3.1)
+| READYTORUN_SECTION_INLINING_INFO2              |   114 | Image (added in V4.1)
+| READYTORUN_SECTION_ASSEMBLIES                  |   115 | Image (added in V4.1)
 
 ## READYTORUN_SECTION_COMPILER_IDENTIFIER
 
@@ -301,7 +315,8 @@ basic encoding, with extended encoding for large values).
 This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all functions in the
 image with pointers to their unwind info. The standard Windows xdata/pdata format is used.
 ARM format is used for x86 to compensate for lack of x86 unwind info standard.
-The unwind info blob is immediately followed by GC info blob. The encoding slightly differs for amd64 which encodes an extra 4-byte representing the end RVA of the unwind info blob.
+The unwind info blob is immediately followed by GC info blob. The encoding slightly differs for amd64
+which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 
 ### RUNTIME_FUNCTION (x86, arm, arm64, size = 8 bytes)
 
@@ -320,13 +335,13 @@ The unwind info blob is immediately followed by GC info blob. The encoding sligh
 
 ## READYTORUN_SECTION_METHODDEF_ENTRYPOINTS
 
-This section contains in native format sparse array (see 4 Native Format) that maps methoddef row to
-method entrypoint. Methoddef is used as index into the array. The element of the array is index of the
-method in `READYTORUN_SECTION_RUNTIME_FUNCTIONS`, followed by list of slots that needs to be
-filled before method can be executed executing.
+This section contains a native format sparse array (see 4 Native Format) that maps methoddef rows to
+method entrypoints. Methoddef is used as index into the array. The element of the array is index of the
+method in `READYTORUN_SECTION_RUNTIME_FUNCTIONS`, followed by list of slots that need to be
+filled before the method can start executing.
 
-The index of the method is shift left by 1 bit, with the low bit indicating whether the list of slots to fixup
-follows. The list of slots is encoded as follows (same encoding as used by NGen):
+The index of the method is left-shifted by 1 bit with the low bit indicating whether a list of slots
+to fix up follows. The list of slots is encoded as follows (same encoding as used by NGen):
 
 ```
 READYTORUN_IMPORT_SECTIONS absolute index
@@ -359,9 +374,9 @@ means that the i-th value is the sum of values [1..i].
 
 The list is terminated by a 0 (0 is not meaningful as valid delta).
 
-**Note:** This section is only present in single-file R2R files. In composite R2R files created
-by compiling multiple input MSIL assemblies, method entrypoints need to be split by assembly and
-are addressed through `READYTORUN_SECTION_ASSEMBLIES` section instead.
+**Note:** This is a per-assembly section. In single-file R2R files, it is pointed to directly by the
+main R2R header; in composite R2R files, each component module has its own entrypoint section pointed to
+by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
 ## READYTORUN_SECTION_EXCEPTION_INFO
 
@@ -418,9 +433,9 @@ This section contains a native hashtable of all defined & export types within th
 The version-resilient hashing algorithm used for hashing the type names is implemented in
 [vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/vm/versionresilienthashcode.cpp#L75).
 
-**Note:** This section is only present in single-file R2R files. In composite R2R files created
-by compiling multiple input MSIL assemblies, the available types need to be split by assembly
-and are addressed through `READYTORUN_SECTION_ASSEMBLIES` section instead.
+**Note:** This is a per-assembly section. In single-file R2R files, it is pointed to directly by the
+main R2R header; in composite R2R files, each component module has its own available type section pointed to
+by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
 ## READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 
@@ -431,7 +446,7 @@ hash code calculation is implemented in
 the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the
 runtime function table, the fixups blob and a blob encoding the method signature.
 
-**Note:** In contrast to non-generic method entrypoints, this section is executable-wide for
+**Note:** In contrast to non-generic method entrypoints, this section is image-wide for
 composite R2R images. It represents all generics needed by all assemblies within the composite
 executable. As mentioned elsewhere in this document, CoreCLR runtime requires changes to
 properly look up methods stored in this section in the composite R2R case.
@@ -452,11 +467,6 @@ As of R2R version 3.1, the metadata is only searched for the AssemblyRef table. 
 translate module override indices in signatures to the actual reference modules (using either
 the `READYTORUN_FIXUP_ModuleOverride` bit flag on the signature fixup byte or the
 `ELEMENT_TYPE_MODULE_ZAPSIG` COR element type).
-
-**Disclaimer:** The manifest metadata is a new feature that hasn't shipped yet; it involves
-straightforward adaptation of a fragile nGen technology to ReadyToRun images as an expedite
-means for enabling new functionality (larger version bubble support). The precise details of
-this encoding are still work in progress and likely to further evolve.
 
 **Note:** It doesn't make sense to store references to assemblies external to the version bubble
 in the manifest metadata as there's no guarantee that their metadata token values remain
@@ -499,8 +509,8 @@ Foreign RIDs are only present if a fragile inlining was allowed at compile time.
 
 ## READYTORUN_SECTION_ASSEMBLIES (v4.1+)
 
-This section is only present in composite R2R files. It is a straight binary array of the
-entries `READYTORUN_SECTION_ASSEMBLIES_ENTRY` parallel to the indices in the manifest metadata
+This image-wide section is only present in the main R2R header of composite R2R files. It is an
+array of the entries `READYTORUN_SECTION_ASSEMBLIES_ENTRY` parallel to the indices in the manifest metadata
 AssemblyRef table in the sense that it's a linear table where the row indices correspond to the
 equivalent AssemblyRef indices. Just like in the AssemblyRef ECMA 335 table, the indexing is
 1-based (the first entry in the table corresponds to index 1).

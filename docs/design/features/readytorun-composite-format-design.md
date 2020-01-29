@@ -89,6 +89,11 @@ contains all assemblies contained within the composite file. The linear indices 
 assemblies in the manifest metadata AssemblyRef table correspond to indexing within the
 `READYTORUN_SECTION_ASSEMBLIES` table.
 
+**Disclaimer:** The manifest metadata is a new feature that hasn't shipped yet; it involves
+straightforward adaptation of a fragile NGen technology to ReadyToRun images as an expedite
+means for enabling new functionality (larger version bubble support). The precise details of
+this encoding are still work in progress and likely to further evolve.
+
 **Note**: as of now it's unclear whether we need to support a hybrid scenario where the large
 version bubble is represented by an arbitrary mixture of single-input and composite R2R files.
 If that is the case, manifest metadata would need to be decoupled from the index to
