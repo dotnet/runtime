@@ -42,7 +42,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // Does not consider explicit overrides (methodimpls.) Does not consider "overrides" of interface methods.
         //
-        public abstract bool ImplicitlyOverrides(M baseMember, M derivedMember);
+        public abstract bool ImplicitlyOverrides(M? baseMember, M? derivedMember);
 
         //
         // Policy to decide how BindingFlags should be reinterpreted for a given member type.

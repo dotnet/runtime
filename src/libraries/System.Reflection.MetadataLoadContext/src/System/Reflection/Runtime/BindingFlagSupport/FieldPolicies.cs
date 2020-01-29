@@ -33,7 +33,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = false;
         }
 
-        public sealed override bool ImplicitlyOverrides(FieldInfo baseMember, FieldInfo derivedMember) => false;
+        public sealed override bool ImplicitlyOverrides(FieldInfo? baseMember, FieldInfo? derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(FieldInfo member, FieldInfo[] priorMembers, int startIndex, int endIndex)
         {

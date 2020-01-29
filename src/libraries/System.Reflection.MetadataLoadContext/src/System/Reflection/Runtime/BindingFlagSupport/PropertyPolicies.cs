@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -48,10 +47,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
         }
 
-        public sealed override bool ImplicitlyOverrides(PropertyInfo baseMember, PropertyInfo derivedMember)
+        public sealed override bool ImplicitlyOverrides(PropertyInfo? baseMember, PropertyInfo? derivedMember)
         {
-            MethodInfo baseAccessor = GetAccessorMethod(baseMember);
-            MethodInfo derivedAccessor = GetAccessorMethod(derivedMember);
+            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
+            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
             return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
@@ -83,13 +82,12 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        private MethodInfo GetAccessorMethod(PropertyInfo property)
+        private MethodInfo? GetAccessorMethod(PropertyInfo property)
         {
             MethodInfo? accessor = property.GetMethod;
             if (accessor == null)
             {
                 accessor = property.SetMethod;
-                Debug.Assert(accessor != null);
             }
 
             return accessor;
