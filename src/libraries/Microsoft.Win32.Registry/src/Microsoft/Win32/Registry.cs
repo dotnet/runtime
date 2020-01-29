@@ -70,8 +70,7 @@ namespace Microsoft.Win32
 
         public static object? GetValue(string keyName, string valueName, object defaultValue)
         {
-            string subKeyName;
-            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
+            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out string subKeyName);
 
             using (RegistryKey? key = basekey.OpenSubKey(subKeyName))
             {
@@ -86,8 +85,7 @@ namespace Microsoft.Win32
 
         public static void SetValue(string keyName, string valueName, object value, RegistryValueKind valueKind)
         {
-            string subKeyName;
-            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
+            RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out string subKeyName);
 
             using (RegistryKey key = basekey.CreateSubKey(subKeyName))
             {

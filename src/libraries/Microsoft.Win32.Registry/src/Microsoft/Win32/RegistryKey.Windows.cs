@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
-using System.Security.AccessControl;
 
 /*
   Note on transaction support:
@@ -85,8 +84,7 @@ namespace Microsoft.Win32
 
         private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
-            int disposition = 0;
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
 
             // By default, the new key will be writable.
             int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
@@ -97,7 +95,7 @@ namespace Microsoft.Win32
                 GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)_regView,
                 ref secAttrs,
                 out SafeRegistryHandle result,
-                out disposition);
+                out int _);
 
             if (ret == 0 && !result.IsInvalid)
             {
@@ -335,12 +333,11 @@ namespace Microsoft.Win32
                 }
 
                 // open the base key so that RegistryKey.Handle will return a valid handle
-                SafeRegistryHandle result;
                 ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
                     null,
                     0,
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out result);
+                    out SafeRegistryHandle result);
 
                 if (ret == 0 && !result.IsInvalid)
                 {
