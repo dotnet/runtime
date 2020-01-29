@@ -517,79 +517,82 @@ ULONG ManagedObjectWrapper::Release(void)
 
 namespace InteropLib
 {
-    HRESULT CreateComWrapperForObject(
-        _In_ OBJECTHANDLE instance,
-        _In_ INT32 vtableCount,
-        _In_ void* vtablesRaw,
-        _In_ INT32 flagsRaw,
-        _Outptr_ IUnknown** comObject) noexcept
+    namespace Com
     {
-        if (instance == nullptr || vtablesRaw == nullptr || vtableCount < 0)
-            return E_INVALIDARG;
-
-        if (comObject == nullptr)
-            return E_POINTER;
-
-        // Convert inputs to appropriate types.
-        auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
-        auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
-        ManagedObjectWrapper* mow = ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables);
-        if (mow == nullptr)
-            return E_OUTOFMEMORY;
-
-        *comObject = static_cast<IUnknown*>(mow->As(IID_IUnknown));
-        return S_OK;
-    }
-
-    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO]
-    {
-        static OBJECTHANDLE g_objectHandle = nullptr;
-
-        if (g_objectHandle != nullptr)
-            return false;
-
-        g_objectHandle = objectHandle;
-        return true;
-    }
-
-    void GetIUnknownImpl(
-        _Out_ void** fpQueryInterface,
-        _Out_ void** fpAddRef,
-        _Out_ void** fpRelease) noexcept
-    {
-        _ASSERTE(fpQueryInterface != nullptr
-                && fpAddRef != nullptr
-                && fpRelease != nullptr);
-
-        *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
-        *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
-        *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
-    }
-
-    HRESULT EnsureActiveComWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
-    {
-        ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(wrapperMaybe);
-        if (wrapper == nullptr || handle == nullptr)
-            return E_INVALIDARG;
-
-        ULONG count = wrapper->AddRef();
-        if (count == 1)
+        HRESULT CreateWrapperForObject(
+            _In_ OBJECTHANDLE instance,
+            _In_ INT32 vtableCount,
+            _In_ void* vtablesRaw,
+            _In_ INT32 flagsRaw,
+            _Outptr_ IUnknown** comObject) noexcept
         {
-            ::InterlockedExchangePointer(&wrapper->Target, handle);
-            return S_FALSE;
+            if (instance == nullptr || vtablesRaw == nullptr || vtableCount < 0)
+                return E_INVALIDARG;
+
+            if (comObject == nullptr)
+                return E_POINTER;
+
+            // Convert inputs to appropriate types.
+            auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
+            auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
+            ManagedObjectWrapper* mow = ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables);
+            if (mow == nullptr)
+                return E_OUTOFMEMORY;
+
+            *comObject = static_cast<IUnknown*>(mow->As(IID_IUnknown));
+            return S_OK;
         }
 
-        return S_OK;
-    }
+        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO]
+        {
+            static OBJECTHANDLE g_objectHandle = nullptr;
 
-    void DestroyComWrapperForObject(_In_ void* wrapperMaybe) noexcept
-    {
-        ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
+            if (g_objectHandle != nullptr)
+                return false;
 
-        // This should never happen.
-        // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
-        _ASSERTE(wrapper != nullptr);
+            g_objectHandle = objectHandle;
+            return true;
+        }
 
-        ManagedObjectWrapper::Destroy(wrapper);
+        void GetIUnknownImpl(
+            _Out_ void** fpQueryInterface,
+            _Out_ void** fpAddRef,
+            _Out_ void** fpRelease) noexcept
+        {
+            _ASSERTE(fpQueryInterface != nullptr
+                    && fpAddRef != nullptr
+                    && fpRelease != nullptr);
+
+            *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
+            *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
+            *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
+        }
+
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(wrapperMaybe);
+            if (wrapper == nullptr || handle == nullptr)
+                return E_INVALIDARG;
+
+            ULONG count = wrapper->AddRef();
+            if (count == 1)
+            {
+                ::InterlockedExchangePointer(&wrapper->Target, handle);
+                return S_FALSE;
+            }
+
+            return S_OK;
+        }
+
+        void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
+
+            // This should never happen.
+            // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
+            _ASSERTE(wrapper != nullptr);
+
+            ManagedObjectWrapper::Destroy(wrapper);
+        }
     }
 }

@@ -7,34 +7,40 @@
 
 namespace InteropLib
 {
-    using Ptr_OBJECTREF = void*;
     using OBJECTHANDLE = void*;
 
 #ifdef _WIN32
 
-    // Create an IUnknown instance that represents the supplied managed object instance.
-    HRESULT CreateComWrapperForObject(
-        _In_ OBJECTHANDLE instance,
-        _In_ INT32 vtableCount,
-        _In_ void* vtables,
-        _In_ INT32 flags,
-        _Outptr_ IUnknown** comObject) noexcept;
+    namespace Com
+    {
+        using NativeObjectWrapperHandle = void*;
 
-    // Destroy the supplied COM wrapper
-    void DestroyComWrapperForObject(_In_ void* wrapper) noexcept;
+        // Create an IUnknown instance that represents the supplied managed object instance.
+        HRESULT CreateWrapperForObject(
+            _In_ OBJECTHANDLE instance,
+            _In_ INT32 vtableCount,
+            _In_ void* vtables,
+            _In_ INT32 flags,
+            _Outptr_ IUnknown** comObject) noexcept;
 
-    // Register the default callback in the Reference Tracker Host scenario.
-    // Returns true if registration succeeded, otherwise false.
-    bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept;
+        // Destroy the supplied COM wrapper
+        void DestroyWrapperForObject(_In_ void* wrapper) noexcept;
 
-    // Get internal interop IUnknown dispatch pointers.
-    void GetIUnknownImpl(
-        _Out_ void** fpQueryInterface,
-        _Out_ void** fpAddRef,
-        _Out_ void** fpRelease) noexcept;
+        // Register the default callback in the Reference Tracker Host scenario.
+        // Returns true if registration succeeded, otherwise false.
+        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept;
 
-    // Ensure the wrapper is active and take an AddRef.
-    HRESULT EnsureActiveComWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
+        // Get internal interop IUnknown dispatch pointers.
+        void GetIUnknownImpl(
+            _Out_ void** fpQueryInterface,
+            _Out_ void** fpAddRef,
+            _Out_ void** fpRelease) noexcept;
+
+        // Ensure the wrapper is active and take an AddRef.
+        // S_OK    - the wrapper is active and the OBJECTHANDLE wasn't needed.
+        // S_FALSE - the wrapper was inactive and the OBJECTHANDLE argument was used.
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
+    }
 
 #endif // _WIN32
 

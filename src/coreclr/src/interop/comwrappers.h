@@ -109,15 +109,15 @@ public: // Lifetime
 ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 
 // Class for connecting a native COM object to a managed object instance
-class NativeComWrapperInstance
+class NativeObjectWrapperInstance
 {
     OBJECTHANDLE _object;
     IReferenceTracker* _trackerObject;
     IAgileReference* _objectReference;
 
 public:
-    NativeComWrapperInstance(_In_ OBJECTHANDLE* object, _In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference);
-    ~NativeComWrapperInstance();
+    NativeObjectWrapperInstance(_In_ OBJECTHANDLE* object, _In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference);
+    ~NativeObjectWrapperInstance();
 
     void* GetObjectGCHandle() const;
     bool IsAlive() const;

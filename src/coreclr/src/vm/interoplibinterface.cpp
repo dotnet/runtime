@@ -254,7 +254,7 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
                 // Call the InteropLib and create the associated managed object wrapper.
-                hr = InteropLib::CreateComWrapperForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
+                hr = InteropLib::Com::CreateWrapperForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
                 if (FAILED(hr))
                 {
                     DestroyHandleCommon(instHandle, InstanceHandleType);
@@ -265,6 +265,9 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
                 // Try setting the newly created managed object wrapper on the InteropSyncBlockInfo.
                 if (!interopInfo->TrySetManagedObjectComWrapper(newWrapper))
                 {
+                    // The new wrapper couldn't be set which means a wrapper already exists.
+                    newWrapper.Release();
+
                     // If the managed object wrapper couldn't be set, then
                     // it should be possible to get the current one.
                     if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
@@ -287,7 +290,7 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
             // wrapper with the object instance's new handle. If this reactivation
             // wasn't needed, delete the handle.
             OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
-            hr = InteropLib::EnsureActiveComWrapperAndAddRef(static_cast<IUnknown *>(wrapper), instHandle);
+            hr = InteropLib::Com::EnsureActiveWrapperAndAddRef(static_cast<IUnknown *>(wrapper), instHandle);
             if (hr != S_OK)
                 DestroyHandleCommon(instHandle, InstanceHandleType);
 
@@ -374,7 +377,7 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
 
         implHandle = GetAppDomain()->CreateTypedHandle(implRef, implHandleType);
 
-        if (!InteropLib::RegisterReferenceTrackerHostCallback(implHandle))
+        if (!InteropLib::Com::RegisterReferenceTrackerHostCallback(implHandle))
         {
             DestroyHandleCommon(implHandle, implHandleType);
             COMPlusThrow(kInvalidOperationException, IDS_EE_RESET_REFERENCETRACKERHOST_CALLBACKS);
@@ -399,7 +402,7 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
 
     BEGIN_QCALL;
 
-    InteropLib::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
+    InteropLib::Com::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
 
     END_QCALL;
 }
@@ -414,7 +417,7 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     }
     CONTRACTL_END;
 
-    InteropLib::DestroyComWrapperForObject(wrapper);
+    InteropLib::Com::DestroyWrapperForObject(wrapper);
 }
 
 #endif // FEATURE_COMINTEROP
