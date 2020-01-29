@@ -89,7 +89,7 @@ namespace Microsoft.Win32
             int disposition = 0;
 
             // By default, the new key will be writable.
-            int ret = Interop.Advapi32.RegCreateKeyEx(_hkey!,
+            int ret = Interop.Advapi32.RegCreateKeyEx(_hkey,
                 subkey,
                 0,
                 null,
@@ -125,7 +125,7 @@ namespace Microsoft.Win32
 
         private void DeleteSubKeyCore(string subkey, bool throwOnMissingSubKey)
         {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey!, subkey, (int)_regView, 0);
+            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
 
             if (ret != 0)
             {
@@ -145,7 +145,7 @@ namespace Microsoft.Win32
 
         private void DeleteSubKeyTreeCore(string subkey)
         {
-            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey!, subkey, (int)_regView, 0);
+            int ret = Interop.Advapi32.RegDeleteKeyEx(_hkey, subkey, (int)_regView, 0);
             if (ret != 0)
             {
                 Win32Error(ret, null);
@@ -154,7 +154,7 @@ namespace Microsoft.Win32
 
         private void DeleteValueCore(string name, bool throwOnMissingValue)
         {
-            int errorCode = Interop.Advapi32.RegDeleteValue(_hkey!, name);
+            int errorCode = Interop.Advapi32.RegDeleteValue(_hkey, name);
 
             //
             // From windows 2003 server, if the name is too long we will get error code ERROR_FILENAME_EXCED_RANGE
@@ -246,7 +246,7 @@ namespace Microsoft.Win32
 
         private RegistryKey? InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
         {
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey!, name, 0, (rights | (int)_regView), out SafeRegistryHandle result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (rights | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, (permissionCheck == RegistryKeyPermissionCheck.ReadWriteSubTree), false, _remoteKey, false, _regView);
@@ -268,7 +268,7 @@ namespace Microsoft.Win32
 
         private RegistryKey? InternalOpenSubKeyCore(string name, bool writable)
         {
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey!, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
@@ -290,7 +290,7 @@ namespace Microsoft.Win32
 
         internal RegistryKey? InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
         {
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey!, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out SafeRegistryHandle result);
             if (ret == 0 && !result.IsInvalid)
             {
                 RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
@@ -358,7 +358,7 @@ namespace Microsoft.Win32
         {
             int subkeys = 0;
             int junk = 0;
-            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey!,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -390,7 +390,7 @@ namespace Microsoft.Win32
                 int nameLength = name.Length;
 
                 while ((result = Interop.Advapi32.RegEnumKeyEx(
-                    _hkey!,
+                    _hkey,
                     names.Count,
                     name,
                     ref nameLength,
@@ -424,7 +424,7 @@ namespace Microsoft.Win32
         {
             int values = 0;
             int junk = 0;
-            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey!,
+            int ret = Interop.Advapi32.RegQueryInfoKey(_hkey,
                                       null,
                                       null,
                                       IntPtr.Zero,
@@ -466,7 +466,7 @@ namespace Microsoft.Win32
                 int nameLength = name.Length;
 
                 while ((result = Interop.Advapi32.RegEnumValue(
-                    _hkey!,
+                    _hkey,
                     names.Count,
                     name,
                     ref nameLength,
@@ -529,7 +529,7 @@ namespace Microsoft.Win32
             int type = 0;
             int datasize = 0;
 
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, (byte[])null!, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null!, ref datasize);
 
             if (ret != 0)
             {
@@ -540,7 +540,7 @@ namespace Microsoft.Win32
 
                     int r;
                     byte[] blob = new byte[size];
-                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, blob, ref sizeInput)))
+                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
                     {
                         if (size == int.MaxValue)
                         {
@@ -591,7 +591,7 @@ namespace Microsoft.Win32
                 case Interop.Advapi32.RegistryValues.REG_BINARY:
                     {
                         byte[] blob = new byte[datasize];
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         data = blob;
                     }
                     break;
@@ -605,7 +605,7 @@ namespace Microsoft.Win32
                         long blob = 0;
                         Debug.Assert(datasize == 8, "datasize==8");
                         // Here, datasize must be 8 when calling this
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -620,7 +620,7 @@ namespace Microsoft.Win32
                         int blob = 0;
                         Debug.Assert(datasize == 4, "datasize==4");
                         // Here, datasize must be four when calling this
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, ref blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
                         data = blob;
                     }
@@ -642,7 +642,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
                             data = new string(blob, 0, blob.Length - 1);
@@ -672,7 +672,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
                         {
@@ -707,7 +707,7 @@ namespace Microsoft.Win32
                         }
                         char[] blob = new char[datasize / 2];
 
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, blob, ref datasize);
+                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
 
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
@@ -779,7 +779,7 @@ namespace Microsoft.Win32
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey!, name, null, ref type, (byte[])null!, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null!, ref datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);
@@ -802,7 +802,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.String:
                         {
                             string data = value.ToString()!;
-                            ret = Interop.Advapi32.RegSetValueEx(_hkey!,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 (int)valueKind,
@@ -844,7 +844,7 @@ namespace Microsoft.Win32
                                 destinationIndex += (length + 1); // +1 for null terminator, which is already zero-initialized in new array.
                             }
 
-                            ret = Interop.Advapi32.RegSetValueEx(_hkey!,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 Interop.Advapi32.RegistryValues.REG_MULTI_SZ,
@@ -857,7 +857,7 @@ namespace Microsoft.Win32
                     case RegistryValueKind.None:
                     case RegistryValueKind.Binary:
                         byte[] dataBytes = (byte[])value;
-                        ret = Interop.Advapi32.RegSetValueEx(_hkey!,
+                        ret = Interop.Advapi32.RegSetValueEx(_hkey,
                             name,
                             0,
                             (valueKind == RegistryValueKind.None ? Interop.Advapi32.RegistryValues.REG_NONE : Interop.Advapi32.RegistryValues.REG_BINARY),
@@ -871,7 +871,7 @@ namespace Microsoft.Win32
                             // unboxed and cast at the same time.  I.e. ((int)(object)(short) 5) will fail.
                             int data = Convert.ToInt32(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Interop.Advapi32.RegSetValueEx(_hkey!,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 Interop.Advapi32.RegistryValues.REG_DWORD,
@@ -884,7 +884,7 @@ namespace Microsoft.Win32
                         {
                             long data = Convert.ToInt64(value, System.Globalization.CultureInfo.InvariantCulture);
 
-                            ret = Interop.Advapi32.RegSetValueEx(_hkey!,
+                            ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
                                 Interop.Advapi32.RegistryValues.REG_QWORD,
@@ -938,8 +938,8 @@ namespace Microsoft.Win32
                     // having serialized access).
                     if (!IsPerfDataKey())
                     {
-                        _hkey!.SetHandleAsInvalid();
-                        _hkey = null;
+                        _hkey.SetHandleAsInvalid();
+                        _hkey = null!;
                     }
                     goto default;
 

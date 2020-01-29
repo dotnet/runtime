@@ -41,7 +41,7 @@ namespace Microsoft.Win32
         private const int MaxKeyLength = 255;
         private const int MaxValueLength = 16383;
 
-        private volatile SafeRegistryHandle? _hkey;
+        private volatile SafeRegistryHandle _hkey;
         private volatile string _keyName;
         private readonly bool _remoteKey;
         private volatile StateFlags _state;
@@ -113,7 +113,7 @@ namespace Microsoft.Win32
                     }
                     finally
                     {
-                        _hkey = null;
+                        _hkey = null!;
                     }
                 }
                 else if (IsPerfDataKey())
