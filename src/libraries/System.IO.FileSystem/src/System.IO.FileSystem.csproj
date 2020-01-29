@@ -41,19 +41,14 @@
   </ItemGroup>
   <!-- All targets references -->
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading.Overlapped" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading" />
   </ItemGroup>
   <!-- Windows files -->

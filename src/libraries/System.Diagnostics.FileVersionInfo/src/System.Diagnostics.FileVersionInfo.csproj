@@ -49,10 +49,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -60,7 +57,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <ProjectReference Include="../../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
     <Reference Include="System.Collections.Immutable" />
-    <Reference Include="System.IO" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

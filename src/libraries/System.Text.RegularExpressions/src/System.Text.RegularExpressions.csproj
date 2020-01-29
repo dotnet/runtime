@@ -28,7 +28,6 @@
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexFCD.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
@@ -36,7 +35,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParser.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexPrefix.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
@@ -60,13 +59,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />

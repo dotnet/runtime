@@ -34,7 +34,4 @@
       <Link>Common\System\Net\Capability.RawSocketPermissions.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Buffers" />
-  </ItemGroup>
 </Project>

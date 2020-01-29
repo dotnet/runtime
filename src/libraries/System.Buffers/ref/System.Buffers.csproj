@@ -6,10 +6,11 @@
     <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System.Buffers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
+    <Compile Include="System.Buffers.Forwards.cs" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
   </ItemGroup>
 </Project>

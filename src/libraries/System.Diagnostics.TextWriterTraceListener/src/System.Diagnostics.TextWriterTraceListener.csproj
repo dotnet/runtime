@@ -43,9 +43,7 @@
     <Reference Include="System.Console" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

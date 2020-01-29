@@ -15595,23 +15595,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_THROW:
 
-                if (compIsForInlining())
-                {
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // TODO: Will this be too strict, given that we will inline many basic blocks?
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                    /* Do we have just the exception on the stack ?*/
-
-                    if (verCurrentState.esStackDepth != 1)
-                    {
-                        /* if not, just don't inline the method */
-
-                        compInlineResult->NoteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
-                        return;
-                    }
-                }
-
                 if (tiVerificationNeeded)
                 {
                     tiRetVal = impStackTop().seTypeInfo;
@@ -15622,10 +15605,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                block->bbSetRunRarely(); // any block with a throw is rare
-                /* Pop the exception object and create the 'throw' helper call */
+                // Any block with a throw is rarely executed.
+                block->bbSetRunRarely();
 
+                // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, gtNewCallArgs(impPopStack().val));
+
+            // Fall through to clear out the eval stack.
 
             EVAL_APPEND:
                 if (verCurrentState.esStackDepth > 0)

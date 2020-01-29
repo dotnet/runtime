@@ -14,13 +14,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../System.Resources.ResourceManager/ref/System.Resources.ResourceManager.csproj" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

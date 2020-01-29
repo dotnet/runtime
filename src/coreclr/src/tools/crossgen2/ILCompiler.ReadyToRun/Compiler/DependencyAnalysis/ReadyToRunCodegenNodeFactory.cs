@@ -179,7 +179,8 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
             ResourceData win32Resources,
-            AttributePresenceFilterNode attributePresenceFilterNode)
+            AttributePresenceFilterNode attributePresenceFilterNode,
+            HeaderNode headerNode)
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
@@ -190,6 +191,7 @@ namespace ILCompiler.DependencyAnalysis
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
             AttributePresenceFilter = attributePresenceFilterNode;
+            Header = headerNode;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
@@ -548,8 +550,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            Header = new HeaderNode(Target);
-
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 

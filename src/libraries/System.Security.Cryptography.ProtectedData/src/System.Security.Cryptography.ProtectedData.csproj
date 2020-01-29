@@ -43,7 +43,6 @@
     <Reference Include="System.Security" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

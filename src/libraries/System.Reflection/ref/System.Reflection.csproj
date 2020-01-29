@@ -3,7 +3,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Reflection.cs" />
     <Compile Include="System.Reflection.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

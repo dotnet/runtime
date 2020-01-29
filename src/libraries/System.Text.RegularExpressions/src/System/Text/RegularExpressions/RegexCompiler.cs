@@ -66,7 +66,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringAsSpanMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string) })!;
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
-        private static readonly MethodInfo s_stringIndexOf = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
 
         /// <summary>
         /// The max recursion depth used for computations that can recover for not walking the entire node tree.
@@ -93,14 +92,14 @@ namespace System.Text.RegularExpressions
         private LocalBuilder? _cultureLocal;  // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
         private LocalBuilder? _loopTimeoutCounterLocal; // timeout counter for setrep and setloop
 
-        protected RegexOptions _options;      // options
-        protected RegexCode? _code;           // the RegexCode object
-        protected int[]? _codes;              // the RegexCodes being translated
-        protected string[]? _strings;         // the stringtable associated with the RegexCodes
-        protected RegexPrefix? _fcPrefix;     // the possible first chars computed by RegexFCD
-        protected RegexBoyerMoore? _bmPrefix; // a prefix as a boyer-moore machine
-        protected int _anchors;               // the set of anchors
-        protected bool _hasTimeout;           // whether the regex has a non-infinite timeout
+        protected RegexOptions _options;                                           // options
+        protected RegexCode? _code;                                                // the RegexCode object
+        protected int[]? _codes;                                                   // the RegexCodes being translated
+        protected string[]? _strings;                                              // the stringtable associated with the RegexCodes
+        protected (string CharClass, bool CaseInsensitive)[]? _leadingCharClasses; // the possible first chars computed by RegexPrefixAnalyzer
+        protected RegexBoyerMoore? _boyerMoorePrefix;                              // a prefix as a boyer-moore machine
+        protected int _anchors;                                                    // the set of anchors
+        protected bool _hasTimeout;                                                // whether the regex has a non-infinite timeout
 
         private Label[]? _labels;             // a label for every operation in _codes
         private BacktrackNote[]? _notes;      // a list of the backtracking states to be generated
@@ -939,9 +938,20 @@ namespace System.Text.RegularExpressions
             _cultureLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
             {
-                if (_options.HasFlag(RegexOptions.IgnoreCase) ||
-                    _bmPrefix?.CaseInsensitive == true ||
-                    _fcPrefix.GetValueOrDefault().CaseInsensitive)
+                bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _boyerMoorePrefix?.CaseInsensitive == true;
+                if (!needsCulture && _leadingCharClasses != null)
+                {
+                    for (int i = 0; i < _leadingCharClasses.Length; i++)
+                    {
+                        if (_leadingCharClasses[i].CaseInsensitive)
+                        {
+                            needsCulture = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (needsCulture)
                 {
                     _cultureLocal = DeclareCultureInfo();
                     InitLocalCultureInfo();
@@ -1004,11 +1014,11 @@ namespace System.Text.RegularExpressions
             }
 
             // Generate anchor checks.
-            if ((_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)) != 0)
+            if ((_anchors & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
             {
                 if (!_code.RightToLeft)
                 {
-                    if ((_anchors & RegexFCD.Beginning) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.Beginning) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1022,7 +1032,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.Start) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.Start) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1036,7 +1046,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.EndZ) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.EndZ) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1052,7 +1062,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.End) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.End) != 0)
                     {
                         if (minRequiredLength == 0) // if it's > 0, we already output a more stringent check
                         {
@@ -1069,7 +1079,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    if ((_anchors & RegexFCD.End) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.End) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1083,7 +1093,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.EndZ) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.EndZ) != 0)
                     {
                         Label l1 = DefineLabel();
                         Label l2 = DefineLabel();
@@ -1109,7 +1119,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l2);
                     }
 
-                    if ((_anchors & RegexFCD.Start) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.Start) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1123,7 +1133,7 @@ namespace System.Text.RegularExpressions
                         MarkLabel(l1);
                     }
 
-                    if ((_anchors & RegexFCD.Beginning) != 0)
+                    if ((_anchors & RegexPrefixAnalyzer.Beginning) != 0)
                     {
                         Label l1 = DefineLabel();
                         Ldloc(_runtextposLocal);
@@ -1139,7 +1149,7 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Ret();
             }
-            else if (_bmPrefix != null && _bmPrefix.NegativeUnicode == null)
+            else if (_boyerMoorePrefix != null && _boyerMoorePrefix.NegativeUnicode == null)
             {
                 // Compiled Boyer-Moore string matching
 
@@ -1157,15 +1167,15 @@ namespace System.Text.RegularExpressions
                 if (!_code.RightToLeft)
                 {
                     beforefirst = -1;
-                    last = _bmPrefix.Pattern.Length - 1;
+                    last = _boyerMoorePrefix.Pattern.Length - 1;
                 }
                 else
                 {
-                    beforefirst = _bmPrefix.Pattern.Length;
+                    beforefirst = _boyerMoorePrefix.Pattern.Length;
                     last = 0;
                 }
 
-                int chLast = _bmPrefix.Pattern[last];
+                int chLast = _boyerMoorePrefix.Pattern[last];
 
                 Mvfldloc(s_runtextField, _runtextLocal);
                 Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
@@ -1174,19 +1184,19 @@ namespace System.Text.RegularExpressions
                 Ldloc(_runtextposLocal);
                 if (!_code.RightToLeft)
                 {
-                    Ldc(_bmPrefix.Pattern.Length - 1);
+                    Ldc(_boyerMoorePrefix.Pattern.Length - 1);
                     Add();
                 }
                 else
                 {
-                    Ldc(_bmPrefix.Pattern.Length);
+                    Ldc(_boyerMoorePrefix.Pattern.Length);
                     Sub();
                 }
                 Stloc(_runtextposLocal);
                 Br(lStart);
 
                 MarkLabel(lDefaultAdvance);
-                Ldc(_code.RightToLeft ? -_bmPrefix.Pattern.Length : _bmPrefix.Pattern.Length);
+                Ldc(_code.RightToLeft ? -_boyerMoorePrefix.Pattern.Length : _boyerMoorePrefix.Pattern.Length);
 
                 MarkLabel(lAdvance);
                 Ldloc(_runtextposLocal);
@@ -1206,7 +1216,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 Rightchar();
-                if (_bmPrefix.CaseInsensitive)
+                if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
@@ -1217,28 +1227,28 @@ namespace System.Text.RegularExpressions
                 BeqFar(lPartialMatch);
 
                 Ldloc(chLocal);
-                Ldc(_bmPrefix.LowASCII);
+                Ldc(_boyerMoorePrefix.LowASCII);
                 Sub();
                 Dup();
                 Stloc(chLocal);
-                Ldc(_bmPrefix.HighASCII - _bmPrefix.LowASCII);
+                Ldc(_boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII);
                 Bgtun(lDefaultAdvance);
 
-                int negativeRange = _bmPrefix.HighASCII - _bmPrefix.LowASCII + 1;
+                int negativeRange = _boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII + 1;
                 if (negativeRange > 1)
                 {
                     // Create a string to store the lookup table we use to find the offset.
-                    Debug.Assert(_bmPrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
+                    Debug.Assert(_boyerMoorePrefix.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
                     string negativeLookup = string.Create(negativeRange, (thisRef: this, beforefirst), (span, state) =>
                     {
                         // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
                         // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
                         for (int i = 0; i < span.Length; i++)
                         {
-                            int offset = state.thisRef._bmPrefix!.NegativeASCII[i + state.thisRef._bmPrefix.LowASCII];
+                            int offset = state.thisRef._boyerMoorePrefix!.NegativeASCII[i + state.thisRef._boyerMoorePrefix.LowASCII];
                             if (offset == state.beforefirst)
                             {
-                                offset = state.thisRef._bmPrefix.Pattern.Length;
+                                offset = state.thisRef._boyerMoorePrefix.Pattern.Length;
                             }
                             else if (state.thisRef._code!.RightToLeft)
                             {
@@ -1263,10 +1273,10 @@ namespace System.Text.RegularExpressions
                 {
                     // offset = value;
                     Debug.Assert(negativeRange == 1);
-                    int offset = _bmPrefix.NegativeASCII[_bmPrefix.LowASCII];
+                    int offset = _boyerMoorePrefix.NegativeASCII[_boyerMoorePrefix.LowASCII];
                     if (offset == beforefirst)
                     {
-                        offset = _code.RightToLeft ? -_bmPrefix.Pattern.Length : _bmPrefix.Pattern.Length;
+                        offset = _code.RightToLeft ? -_boyerMoorePrefix.Pattern.Length : _boyerMoorePrefix.Pattern.Length;
                     }
                     Ldc(offset);
                 }
@@ -1277,11 +1287,11 @@ namespace System.Text.RegularExpressions
                 Ldloc(_runtextposLocal);
                 Stloc(testLocal);
 
-                for (int i = _bmPrefix.Pattern.Length - 2; i >= 0; i--)
+                for (int i = _boyerMoorePrefix.Pattern.Length - 2; i >= 0; i--)
                 {
                     Label lNext = DefineLabel();
                     int charindex = _code.RightToLeft ?
-                        _bmPrefix.Pattern.Length - 1 - i :
+                        _boyerMoorePrefix.Pattern.Length - 1 - i :
                         i;
 
                     Ldloc(_runtextLocal);
@@ -1291,14 +1301,14 @@ namespace System.Text.RegularExpressions
                     Dup();
                     Stloc(testLocal);
                     Callvirt(s_stringGetCharsMethod);
-                    if (_bmPrefix.CaseInsensitive)
+                    if (_boyerMoorePrefix.CaseInsensitive)
                     {
                         CallToLower();
                     }
 
-                    Ldc(_bmPrefix.Pattern[charindex]);
+                    Ldc(_boyerMoorePrefix.Pattern[charindex]);
                     Beq(lNext);
-                    Ldc(_bmPrefix.Positive[charindex]);
+                    Ldc(_boyerMoorePrefix.Positive[charindex]);
                     BrFar(lAdvance);
 
                     MarkLabel(lNext);
@@ -1323,13 +1333,15 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 Ret();
             }
-            else if (!_fcPrefix.HasValue)
+            else if (_leadingCharClasses is null)
             {
                 Ldc(1);
                 Ret();
             }
             else if (_code.RightToLeft)
             {
+                Debug.Assert(_leadingCharClasses.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
+
                 LocalBuilder charInClassLocal = _temp1Local;
                 LocalBuilder cLocal = _temp2Local;
 
@@ -1361,14 +1373,14 @@ namespace System.Text.RegularExpressions
 
                 Leftcharnext();
 
-                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
+                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
                 {
-                    EmitMatchCharacterClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_leadingCharClasses[0].CharClass, _leadingCharClasses[0].CaseInsensitive, charInClassLocal);
                     BrtrueFar(l2);
                 }
                 else
                 {
-                    Ldc(RegexCharClass.SingletonChar(_fcPrefix.GetValueOrDefault().Prefix));
+                    Ldc(RegexCharClass.SingletonChar(_leadingCharClasses[0].CharClass));
                     Beq(l2);
                 }
 
@@ -1376,7 +1388,7 @@ namespace System.Text.RegularExpressions
 
                 Ldloc(cLocal);
                 Ldc(0);
-                if (!RegexCharClass.IsSingleton(_fcPrefix.GetValueOrDefault().Prefix))
+                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
                 {
                     BgtFar(l1);
                 }
@@ -1405,160 +1417,171 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 Ret();
             }
-            else // for left-to-right, we can take advantage of vectorization and JIT optimizations
+            else
             {
-                LocalBuilder iLocal = _temp2Local;
-                Label returnFalseLabel = DefineLabel();
-                Label updatePosAndReturnFalse = DefineLabel();
+                Debug.Assert(_leadingCharClasses != null && _leadingCharClasses.Length > 0);
 
-                if (minRequiredLength == 0) // if minRequiredLength > 0, we already output a more stringent check
+                LocalBuilder iLocal = _temp2Local;
+                Label returnFalse = DefineLabel();
+
+                // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
+                // where we were unable to get an accurate enough min required length to ensure it's larger
+                // than the prefixes we calculated, we also need to ensure we have enough spaces for those,
+                // as they also represent a min required length.
+                if (minRequiredLength < _leadingCharClasses.Length)
                 {
-                    // if (runtextend > runtextpos)
+                    // if (runtextpos >= runtextend - (_leadingCharClasses.Length - 1)) goto returnFalse;
                     Ldloc(_runtextendLocal);
+                    if (_leadingCharClasses.Length > 1)
+                    {
+                        Ldc(_leadingCharClasses.Length - 1);
+                        Sub();
+                    }
                     Ldloc(_runtextposLocal);
-                    BleFar(returnFalseLabel);
+                    BleFar(returnFalse);
                 }
 
+                LocalBuilder charInClassLocal = _temp1Local;
+                _temp3Local = DeclareReadOnlySpanChar();
+                LocalBuilder textSpanLocal = _temp3Local;
+
+                Label checkSpanLengthLabel = DefineLabel();
+                Label charNotInClassLabel = DefineLabel();
+                Label loopBody = DefineLabel();
+
+                // ReadOnlySpan<char> span = this.runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                Ldthisfld(s_runtextField);
+                Ldloc(_runtextposLocal);
+                Ldloc(_runtextendLocal);
+                Ldloc(_runtextposLocal);
+                Sub();
+                Call(s_stringAsSpanIntIntMethod);
+                Stloc(textSpanLocal);
+
+                // for (int i = 0;
+                Ldc(0);
+                Stloc(iLocal);
+                BrFar(checkSpanLengthLabel);
+
+                MarkLabel(loopBody);
+
+                // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
+                // We can use it if this is a case-sensitive class with a small number of characters in the class.
                 Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
                 int setCharsCount;
-                if (!_fcPrefix.GetValueOrDefault().CaseInsensitive &&
-                    (setCharsCount = RegexCharClass.GetSetChars(_fcPrefix.GetValueOrDefault().Prefix, setChars)) > 0)
+                int charClassIndex = 0;
+                if (!_leadingCharClasses[0].CaseInsensitive &&
+                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].CharClass, setChars)) > 0)
                 {
-                    // This is a case-sensitive class with a small number of characters in the class, small enough
-                    // that we can generate an IndexOf{Any} call.  That takes advantage of optimizations in
-                    // IndexOf{Any}, such as vectorization, which our open-coded loop through the span doesn't have.
+                    charClassIndex++;
                     switch (setCharsCount)
                     {
                         case 1:
-                            // int i = this.runtext.IndexOf(setChars[0], runtextpos, runtextend - runtextpos);
-                            Ldthisfld(s_runtextField);
-                            Ldc(setChars[0]);
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Ldloc(_runtextposLocal);
-                            Sub();
-                            Call(s_stringIndexOf);
-                            Stloc(iLocal);
-
-                            // if (i >= 0)
+                            // tmp = span.Slice(i).IndexOf(setChars[0]);
+                            Ldloca(textSpanLocal);
                             Ldloc(iLocal);
-                            Ldc(0);
-                            BltFar(updatePosAndReturnFalse);
-
-                            // runtextpos = i; return true;
-                            Mvlocfld(iLocal, s_runtextposField);
-                            Ldc(1);
-                            Ret();
+                            Call(s_spanSliceIntMethod);
+                            Ldc(setChars[0]);
+                            Call(s_spanIndexOf);
                             break;
 
-                        default:
-                            Debug.Assert(setCharsCount == 2 || setCharsCount == 3, $"Unexpected setCharsCount: {setCharsCount}");
-
-                            // int i = this.runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOfAny(setChars[0], setChars[1]{, setChars[2]});
-                            Ldthisfld(s_runtextField);
-                            Ldloc(_runtextposLocal);
-                            Ldloc(_runtextendLocal);
-                            Ldloc(_runtextposLocal);
-                            Sub();
-                            Call(s_stringAsSpanIntIntMethod);
+                        case 2:
+                            // tmp = span.Slice(i).IndexOfAny(setChars[0], setChars[1]);
+                            Ldloca(textSpanLocal);
+                            Ldloc(iLocal);
+                            Call(s_spanSliceIntMethod);
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
-                            if (setCharsCount == 3)
-                            {
-                                Ldc(setChars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
-                            }
-                            else
-                            {
-                                Call(s_spanIndexOfAnyCharChar);
-                            }
-                            Stloc(iLocal);
+                            Call(s_spanIndexOfAnyCharChar);
+                            break;
 
-                            // if (i >= 0)
+                        case 3:
+                            // tmp = span.Slice(i).IndexOfAny(setChars[0], setChars[1], setChars[2]});
+                            Ldloca(textSpanLocal);
                             Ldloc(iLocal);
-                            Ldc(0);
-                            BltFar(updatePosAndReturnFalse);
-
-                            // this.runtextpos = runtextpos + i; return true;
-                            Ldthis();
-                            Ldloc(_runtextposLocal);
-                            Ldloc(iLocal);
-                            Add();
-                            Stfld(s_runtextposField);
-                            Ldc(1);
-                            Ret();
+                            Call(s_spanSliceIntMethod);
+                            Ldc(setChars[0]);
+                            Ldc(setChars[1]);
+                            Ldc(setChars[2]);
+                            Call(s_spanIndexOfAnyCharCharChar);
                             break;
                     }
-                }
-                else
-                {
-                    // Either this isn't a class with just a few characters in it, or this is case insensitive.
-                    // Either way, create a span and iterate through it rather than the original string in order
-                    // to avoid bounds checks on each access.
 
-                    LocalBuilder charInClassLocal = _temp1Local;
-                    _temp3Local = DeclareReadOnlySpanChar();
-                    LocalBuilder textSpanLocal = _temp3Local;
-
-                    Label checkSpanLengthLabel = DefineLabel();
-                    Label charNotInClassLabel = DefineLabel();
-                    Label loopBody = DefineLabel();
-
-                    // ReadOnlySpan<char> span = this.runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                    Ldthisfld(s_runtextField);
-                    Ldloc(_runtextposLocal);
-                    Ldloc(_runtextendLocal);
-                    Ldloc(_runtextposLocal);
-                    Sub();
-                    Call(s_stringAsSpanIntIntMethod);
-                    Stloc(textSpanLocal);
-
-                    // for (int i = 0;
-                    Ldc(0);
+                    // i += tmp;
+                    // if (tmp < 0) goto returnFalse;
+                    Dup();
+                    Ldloc(iLocal);
+                    Add();
                     Stloc(iLocal);
-                    BrFar(checkSpanLengthLabel);
+                    Ldc(0);
+                    BltFar(returnFalse);
 
-                    // if (CharInClass(span[i], "..."))
-                    MarkLabel(loopBody);
+                    // if (i >= span.Length - (_leadingCharClasses.Length - 1)) goto returnFalse;
+                    if (_leadingCharClasses.Length > 1)
+                    {
+                        Ldloca(textSpanLocal);
+                        Call(s_spanGetLengthMethod);
+                        Ldc(_leadingCharClasses.Length - 1);
+                        Sub();
+                        Ldloc(iLocal);
+                        BleFar(returnFalse);
+                    }
+                }
+
+                // if (!CharInClass(span[i], prefix[0], "...")) goto returnFalse;
+                // if (!CharInClass(span[i + 1], prefix[1], "...")) goto returnFalse;
+                // if (!CharInClass(span[i + 2], prefix[2], "...")) goto returnFalse;
+                // ...
+                Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
+                for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
+                {
                     Ldloca(textSpanLocal);
                     Ldloc(iLocal);
+                    if (charClassIndex > 0)
+                    {
+                        Ldc(charClassIndex);
+                        Add();
+                    }
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(_fcPrefix.GetValueOrDefault().Prefix, _fcPrefix.GetValueOrDefault().CaseInsensitive, charInClassLocal);
+                    EmitMatchCharacterClass(_leadingCharClasses[charClassIndex].CharClass, _leadingCharClasses[charClassIndex].CaseInsensitive, charInClassLocal);
                     BrfalseFar(charNotInClassLabel);
-
-                    // thisruntextpos = runtextpos + i; return true;
-                    Ldthis();
-                    Ldloc(_runtextposLocal);
-                    Ldloc(iLocal);
-                    Add();
-                    Stfld(s_runtextposField);
-                    Ldc(1);
-                    Ret();
-
-                    // for (...; ...; i++)
-                    MarkLabel(charNotInClassLabel);
-                    Ldloc(iLocal);
-                    Ldc(1);
-                    Add();
-                    Stloc(iLocal);
-
-                    // for (...; i < span.Length; ...);
-                    MarkLabel(checkSpanLengthLabel);
-                    Ldloc(iLocal);
-                    Ldloca(textSpanLocal);
-                    Call(s_spanGetLengthMethod);
-                    BltFar(loopBody);
                 }
 
+                // this.runtextpos = runtextpos + i;
+                // return true;
+                Ldthis();
+                Ldloc(_runtextposLocal);
+                Ldloc(iLocal);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+
+                // for (...; ...; i++)
+                MarkLabel(charNotInClassLabel);
+                Ldloc(iLocal);
+                Ldc(1);
+                Add();
+                Stloc(iLocal);
+
+                // for (...; i < span.Length - (_leadingCharClasses.Length - 1); ...);
+                MarkLabel(checkSpanLengthLabel);
+                Ldloc(iLocal);
+                Ldloca(textSpanLocal);
+                Call(s_spanGetLengthMethod);
+                if (_leadingCharClasses.Length > 1)
+                {
+                    Ldc(_leadingCharClasses.Length - 1);
+                    Sub();
+                }
+                BltFar(loopBody);
+
                 // runtextpos = runtextend;
-                MarkLabel(updatePosAndReturnFalse);
+                MarkLabel(returnFalse);
                 Ldthis();
                 Ldloc(_runtextendLocal);
                 Stfld(s_runtextposField);
-
-                // return false;
-                MarkLabel(returnFalseLabel);
                 Ldc(0);
                 Ret();
             }

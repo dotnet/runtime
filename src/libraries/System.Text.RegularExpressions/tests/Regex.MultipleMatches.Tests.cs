@@ -179,6 +179,19 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
+            yield return new object[]
+            {
+                "(?:ab|cd|ef|gh|i)j", "abj    cdj  efj           ghjij", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("abj", 0, 3),
+                    new CaptureData("cdj", 7, 3),
+                    new CaptureData("efj", 12, 3),
+                    new CaptureData("ghj", 26, 3),
+                    new CaptureData("ij", 29, 2),
+                }
+            };
+
             if (!PlatformDetection.IsNetFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
             {
                 yield return new object[]

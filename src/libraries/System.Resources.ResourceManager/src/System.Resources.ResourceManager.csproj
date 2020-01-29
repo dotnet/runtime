@@ -5,7 +5,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>

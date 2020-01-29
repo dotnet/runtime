@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 
 namespace ILCompiler
@@ -39,6 +39,12 @@ namespace ILCompiler
         {
             // Profiler guided restrictions are ignored for single method compilation
             return;
+        }
+
+        public override ReadyToRunFlags GetReadyToRunFlags()
+        {
+            // Partial by definition.
+            return ReadyToRunFlags.READYTORUN_FLAG_Partial;
         }
     }
 }

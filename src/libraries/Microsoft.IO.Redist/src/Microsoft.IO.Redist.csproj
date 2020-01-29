@@ -103,13 +103,11 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" />
     <Compile Include="Microsoft\IO\StringExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+  <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Memory" />
   </ItemGroup>

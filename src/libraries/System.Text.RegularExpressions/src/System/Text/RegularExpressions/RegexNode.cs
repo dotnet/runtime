@@ -716,6 +716,7 @@ namespace System.Text.RegularExpressions
             RegexNode ExtractCommonPrefix()
             {
                 // To keep things relatively simple, we currently only handle:
+                // - Left to right (e.g. we don't process alternations in lookbehinds)
                 // - Branches that are one or multi nodes, or that are concatenations beginning with one or multi nodes.
                 // - All branches having the same options.
                 // - Text, rather than also trying to combine identical sets that start each branch.
@@ -723,6 +724,12 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(Children is List<RegexNode>);
                 var children = (List<RegexNode>)Children;
                 Debug.Assert(children.Count >= 2);
+
+                // Only extract left-to-right prefixes.
+                if ((Options & RegexOptions.RightToLeft) != 0)
+                {
+                    return this;
+                }
 
                 // Process the first branch to get the maximum possible common string.
                 RegexNode? startingNode = FindBranchOneMultiStart(children[0]);

@@ -22,11 +22,8 @@
     <Compile Include="System\IO\IsolatedStorage\Helper.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Cryptography.Algorithms" />

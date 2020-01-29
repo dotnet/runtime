@@ -52,6 +52,14 @@ typename SHash<TRAITS>::count_t SHash<TRAITS>::GetCount() const
 }
 
 template <typename TRAITS>
+typename SHash<TRAITS>::count_t SHash<TRAITS>::GetCapacity() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_tableMax;
+}
+
+template <typename TRAITS>
 typename SHash<TRAITS>::element_t SHash<TRAITS>::Lookup(key_t key) const
 {
     CONTRACT(element_t)

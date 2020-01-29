@@ -9,7 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <ProjectReference Include="..\..\System.IO.Pipes\src\System.IO.Pipes.csproj" />

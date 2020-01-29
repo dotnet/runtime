@@ -12,10 +12,8 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
