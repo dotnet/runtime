@@ -436,11 +436,18 @@ void CodeGen::genCodeForBBlist()
                 GenTreeILOffset* ilOffset = node->AsILOffset();
                 genEnsureCodeEmitted(currentILOffset);
                 currentILOffset = ilOffset->gtStmtILoffsx;
+                #ifdef DEBUG
+                if (verbose)
+                {
+                    JITDUMP("\ngenIPmappingAdd(%d) for none\n", currentILOffset);
+                }
+                #endif
+
                 genIPmappingAdd(currentILOffset, firstMapping);
                 firstMapping = false;
 #ifdef DEBUG
-                assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
-                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
+                /*assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
+                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);*/
 
                 if (compiler->opts.dspCode && compiler->opts.dspInstrs && ilOffset->gtStmtLastILoffs != BAD_IL_OFFSET)
                 {

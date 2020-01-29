@@ -22778,7 +22778,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
+                //compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
 
                 compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 

@@ -924,6 +924,13 @@ void Rationalizer::DoPhase()
             continue;
         }
 
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            JITDUMP("\n\n\n\nStatements with ILOffsetX arriving to Rationalize\n\n")
+        }
+#endif
+
         for (Statement* statement : StatementList(firstStatement))
         {
             assert(statement->GetTreeList() != nullptr);
@@ -937,16 +944,39 @@ void Rationalizer::DoPhase()
             // node and insert it into the LIR.
             if (statement->GetILOffsetX() != BAD_IL_OFFSET)
             {
+#ifdef DEBUG
+                if (comp->verbose)
+                {
+                    JITDUMP("\nStatement %d with ILOffsetX %d", statement->GetID(), statement->GetILOffsetX());
+
+                    if (nullptr != statement->GetInlineContext())
+                    {
+                        JITDUMP("\ninlined %d from %s\n", statement->GetILOffsetX(),
+                                comp->eeGetMethodFullName(statement->GetInlineContext()->GetCallee()));
+                        if (nullptr != statement->GetInlineContext()->GetCode())
+                        { // when method is in clases like String this breaks
+                            dumpILRange(statement->GetInlineContext()->GetCode(), statement->GetInlineContext()->GetILSize());
+                        }
+                        statement->GetInlineContext()->DumpData();
+                    }
+                }
+#endif
                 assert(!statement->IsPhiDefnStmt());
                 GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
                     GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
                 BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
             }
+#ifdef DEBUG
+            if (comp->verbose)
+            {
+                JITDUMP("\n\n\n");
+            }
+#endif
 
             m_block = block;
             visitor.WalkTree(statement->GetRootNodePointer(), nullptr);
         }
-
+        // Brian: Aca perdemos los statements del bloque para siempre
         block->bbStmtList = nullptr;
 
         assert(BlockRange().CheckLIR(comp, true));

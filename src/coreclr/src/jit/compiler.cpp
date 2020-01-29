@@ -2545,7 +2545,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_PROF_ENTERLEAVE));
         assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_EnC));
-        assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
+        //assert(!jitFlags->IsSet(JitFlags::JIT_FLAG_DEBUG_INFO));
 
         assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SKIP_VERIFICATION));
     }
@@ -3502,7 +3502,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
 
 void Compiler::compInitDebuggingInfo()
 {
-    assert(!compIsForInlining());
+    //assert(!compIsForInlining());
 
 #ifdef DEBUG
     if (verbose)
@@ -5973,10 +5973,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
 
     lvaInitTypeRef();
 
-    if (!compIsForInlining())
-    {
+    /*if (!compIsForInlining())
+    {*/
         compInitDebuggingInfo();
-    }
+    //}
 
 #ifdef DEBUG
     if (compIsForInlining())

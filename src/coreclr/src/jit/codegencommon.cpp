@@ -10464,6 +10464,12 @@ void CodeGen::genIPmappingListDisp()
 
 void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 {
+#ifdef DEBUG
+    if (verbose)
+    {
+        JITDUMP("bla");
+    }
+#endif // DEBUG
     if (!compiler->opts.compDbgInfo)
     {
         return;
