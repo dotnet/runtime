@@ -127,6 +127,8 @@ namespace System.Net.Http
     {
         protected HttpContent() { }
         public System.Net.Http.Headers.HttpContentHeaders Headers { get { throw null; } }
+        public void CopyTo(System.IO.Stream stream) { }
+        public void CopyTo(System.IO.Stream stream, System.Net.TransportContext context) { }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
@@ -143,6 +145,7 @@ namespace System.Net.Http
         public System.Threading.Tasks.Task<System.IO.Stream> ReadAsStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task<string> ReadAsStringAsync() { throw null; }
         public System.Threading.Tasks.Task<string> ReadAsStringAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        protected virtual void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext context) { }
         protected abstract System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context);
         protected virtual System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal abstract bool TryComputeLength(out long length);
@@ -283,6 +286,8 @@ namespace System.Net.Http
         public bool UseCookies { get { throw null; } set { } }
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        public System.Net.Http.HttpResponseMessage SendDirect(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendDirectAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StreamContent : System.Net.Http.HttpContent

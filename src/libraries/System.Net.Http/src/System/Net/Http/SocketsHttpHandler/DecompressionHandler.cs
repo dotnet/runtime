@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class DecompressionHandler : HttpMessageHandler
+    internal sealed class DecompressionHandler : SocketsHttpHandlerStage
     {
-        private readonly HttpMessageHandler _innerHandler;
+        private readonly SocketsHttpHandlerStage _innerHandler;
         private readonly DecompressionMethods _decompressionMethods;
 
         private const string Gzip = "gzip";
@@ -24,7 +24,7 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(Deflate);
         private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new StringWithQualityHeaderValue(Brotli);
 
-        public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandler innerHandler)
+        public DecompressionHandler(DecompressionMethods decompressionMethods, SocketsHttpHandlerStage innerHandler)
         {
             Debug.Assert(decompressionMethods != DecompressionMethods.None);
             Debug.Assert(innerHandler != null);
@@ -37,7 +37,7 @@ namespace System.Net.Http
         internal bool DeflateEnabled => (_decompressionMethods & DecompressionMethods.Deflate) != 0;
         internal bool BrotliEnabled => (_decompressionMethods & DecompressionMethods.Brotli) != 0;
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        internal override async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (GZipEnabled && !request.Headers.AcceptEncoding.Contains(s_gzipHeaderValue))
             {
@@ -54,7 +54,7 @@ namespace System.Net.Http
                 request.Headers.AcceptEncoding.Add(s_brotliHeaderValue);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
             ICollection<string> contentEncodings = response.Content.Headers.ContentEncoding;
             if (contentEncodings.Count > 0)
@@ -82,15 +82,7 @@ namespace System.Net.Http
             return response;
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _innerHandler.Dispose();
-            }
-
-            base.Dispose(disposing);
-        }
+        public override void Dispose() => _innerHandler.Dispose();
 
         private abstract class DecompressedContent : HttpContent
         {

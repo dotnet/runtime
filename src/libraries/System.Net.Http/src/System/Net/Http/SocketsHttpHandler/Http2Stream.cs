@@ -1204,6 +1204,19 @@ namespace System.Net.Http
 
                 public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
 
+                public override void Write(byte[] buffer, int offset, int count)
+                {
+                    ValidateBufferArgs(buffer, offset, count);
+                    Http2Stream http2Stream = _http2Stream;
+                    if (http2Stream == null)
+                    {
+                        throw new ObjectDisposedException(nameof(Http2WriteStream));
+                    }
+
+                    // Sync-over-async.  See comment on Http2Connection.SendAsync.
+                    http2Stream.SendDataAsync(new ReadOnlyMemory<byte>(buffer, offset, count), default).GetAwaiter().GetResult();
+                }
+
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
                     Http2Stream http2Stream = _http2Stream;

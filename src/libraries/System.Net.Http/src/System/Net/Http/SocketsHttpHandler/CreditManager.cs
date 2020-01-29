@@ -40,6 +40,37 @@ namespace System.Net.Http
             }
         }
 
+        public int RequestCredit(int amount)
+        {
+            Waiter waiter;
+
+            lock (SyncObject)
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(CreditManager));
+                }
+
+                if (_current > 0)
+                {
+                    Debug.Assert(_waiters == null || _waiters.Count == 0, "Shouldn't have waiters when credit is available");
+
+                    int granted = Math.Min(amount, _current);
+                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
+                    _current -= granted;
+                    return granted;
+                }
+
+                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
+
+                waiter = new Waiter { Amount = amount };
+                (_waiters ??= new Queue<Waiter>()).Enqueue(waiter);
+            }
+
+            // TODO: This is sync-over-async... don't see a good way around this.
+            return waiter.Task.GetAwaiter().GetResult();
+        }
+
         public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
         {
             lock (SyncObject)

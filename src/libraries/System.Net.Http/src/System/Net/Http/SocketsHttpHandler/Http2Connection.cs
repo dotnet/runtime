@@ -1641,9 +1641,15 @@ namespace System.Net.Http
             Now
         }
 
+        // TODO: Can we do better for async=false?  Right now the caller will block waiting for this to complete.
+        // But this is also sharing the connection with many other requests, which makes it challenging. At a minimum
+        // a request may need to block while waiting for other threads to finish their work: the question is just
+        // whether we could make it so that at least one of the request's threads is not blocked, which would
+        // mean that the connection processing loop would need to be entirely restructured.
+
         // Note that this is safe to be called concurrently by multiple threads.
 
-        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) Trace($"{request}");
 

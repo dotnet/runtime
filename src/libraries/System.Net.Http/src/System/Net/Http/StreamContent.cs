@@ -52,6 +52,16 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
         }
 
+        protected override void SerializeToStream(Stream stream, TransportContext context)
+        {
+            Debug.Assert(stream != null);
+
+            PrepareContent();
+
+            // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
+            StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
+        }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsyncCore(stream, default);
 

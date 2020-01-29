@@ -99,11 +99,8 @@ namespace System.Net.Http
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            // This does sync-over-async, but it also should only end up being used in strange
-            // situations.  Either a derived stream overrides this anyway, so the implementation won't be used,
-            // or it's being called as part of HttpContent.SerializeToStreamAsync, which means custom
-            // content is explicitly choosing to make a synchronous call as part of an asynchronous method.
-            WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
+            ValidateBufferArgs(buffer, offset, count);
+            Write(new ReadOnlySpan<byte>(buffer, offset, count));
         }
 
         public sealed override void WriteByte(byte value) =>
@@ -130,5 +127,9 @@ namespace System.Net.Http
         public abstract override int Read(Span<byte> buffer);
         public abstract override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
         public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+
+        // Either Write(byte[], int, int) or Write(ReadOnlySpan<byte>) should also be overridden.  If the former is overridden,
+        // the default implementation of the latter will call the former; if the latter is overridden, this type's override
+        // of the former will call the latter.  If neither is overridden, stack overflows will result.
     }
 }

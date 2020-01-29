@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace System.Net.Http
     public sealed class SocketsHttpHandler : HttpMessageHandler
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
-        private HttpMessageHandler _handler;
+        private SocketsHttpHandlerStage _handler;
         private bool _disposed;
 
         private void CheckDisposed()
@@ -284,7 +285,7 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
-        private HttpMessageHandler SetupHandlerChain()
+        private SocketsHttpHandlerStage SetupHandlerChain()
         {
             // Clone the settings to get a relatively consistent view that won't change after this point.
             // (This isn't entirely complete, as some of the collections it contains aren't currently deeply cloned.)
@@ -292,7 +293,7 @@ namespace System.Net.Http
 
             HttpConnectionPoolManager poolManager = new HttpConnectionPoolManager(settings);
 
-            HttpMessageHandler handler;
+            SocketsHttpHandlerStage handler;
 
             if (settings._credentials == null)
             {
@@ -308,7 +309,7 @@ namespace System.Net.Http
                 // Just as with WinHttpHandler, for security reasons, we do not support authentication on redirects
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
-                HttpMessageHandler redirectHandler =
+                SocketsHttpHandlerStage redirectHandler =
                     (settings._credentials == null || settings._credentials is CredentialCache) ?
                     handler :
                     new HttpConnectionHandler(poolManager);        // will not authenticate
@@ -330,11 +331,30 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, CancellationToken cancellationToken)
+        // TODO: The good Send/SendAsync names are taken by the base protected internal methods, and we
+        // can't change visibility as part of overriding.  What names should we use instead?
+        // SendDirect{Async}? Invoke{Async}?
+
+        public HttpResponseMessage SendDirect(HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            SocketsHttpHandlerStage handler = _handler ?? SetupHandlerChain();
+
+            Exception error = ValidateAndNormalizeRequest(request);
+            if (error != null)
+            {
+                throw error;
+            }
+
+            ValueTask<HttpResponseMessage> response = handler.SendAsync(request, async: false, cancellationToken);
+            Debug.Assert(response.IsCompleted);
+            return response.AsTask().GetAwaiter().GetResult();
+        }
+
+        public Task<HttpResponseMessage> SendDirectAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
+        {
+            CheckDisposed();
+            SocketsHttpHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception error = ValidateAndNormalizeRequest(request);
             if (error != null)
@@ -342,8 +362,11 @@ namespace System.Net.Http
                 return Task.FromException<HttpResponseMessage>(error);
             }
 
-            return handler.SendAsync(request, cancellationToken);
+            return handler.SendAsync(request, async: true, cancellationToken).AsTask();
         }
+
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            SendDirectAsync(request, cancellationToken);
 
         private Exception ValidateAndNormalizeRequest(HttpRequestMessage request)
         {

@@ -63,6 +63,12 @@ namespace System.Net.Http
         private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
             stream.WriteAsync(_content, _offset, _count, cancellationToken);
 
+        protected override void SerializeToStream(Stream stream, TransportContext context)
+        {
+            Debug.Assert(stream != null);
+            stream.Write(_content, _offset, _count);
+        }
+
         protected internal override bool TryComputeLength(out long length)
         {
             length = _count;

@@ -319,6 +319,14 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
 
+        protected virtual void SerializeToStream(Stream stream, TransportContext context)
+        {
+            // No choice but to do sync-over-async.  Derived types should override this whenever possible.
+            // Thankfully most CreateContentReadStreamAsync implementations actually complete synchronously.
+            Stream source = CreateContentReadStreamAsync().GetAwaiter().GetResult();
+            source.CopyTo(stream);
+        }
+
         protected virtual Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
             SerializeToStreamAsync(stream, context);
 
@@ -329,6 +337,34 @@ namespace System.Net.Http
         // completes, which could lead to spurious failures in unsuspecting client code.  To mitigate that, we prohibit duplex
         // on all known HttpContent types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
+
+        public void CopyTo(Stream stream) =>
+            CopyTo(stream, null);
+
+        public void CopyTo(Stream stream, TransportContext context)
+        {
+            CheckDisposed();
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            try
+            {
+                if (TryGetBuffer(out ArraySegment<byte> buffer))
+                {
+                    stream.Write(buffer.Array, buffer.Offset, buffer.Count);
+                }
+                else
+                {
+                    SerializeToStream(stream, context);
+                }
+            }
+            catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
+            {
+                throw GetStreamCopyException(e);
+            }
+        }
 
         public Task CopyToAsync(Stream stream) =>
             CopyToAsync(stream, CancellationToken.None);
@@ -349,8 +385,7 @@ namespace System.Net.Http
 
             try
             {
-                ArraySegment<byte> buffer;
-                if (TryGetBuffer(out buffer))
+                if (TryGetBuffer(out ArraySegment<byte> buffer))
                 {
                     return CopyToAsyncCore(stream.WriteAsync(new ReadOnlyMemory<byte>(buffer.Array, buffer.Offset, buffer.Count), cancellationToken));
                 }
@@ -365,17 +400,17 @@ namespace System.Net.Http
             {
                 return Task.FromException(GetStreamCopyException(e));
             }
-        }
 
-        private static async Task CopyToAsyncCore(ValueTask copyTask)
-        {
-            try
+            static async Task CopyToAsyncCore(ValueTask copyTask)
             {
-                await copyTask.ConfigureAwait(false);
-            }
-            catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
-            {
-                throw WrapStreamCopyException(e);
+                try
+                {
+                    await copyTask.ConfigureAwait(false);
+                }
+                catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
+                {
+                    throw GetStreamCopyException(e);
+                }
             }
         }
 
