@@ -192,8 +192,21 @@ namespace System.Text.RegularExpressions.Tests
                 }
             };
 
-            if (!PlatformDetection.IsNetFramework) // missing fix in https://github.com/dotnet/runtime/pull/993
+            if (!PlatformDetection.IsNetFramework)
             {
+                // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/1075
+                yield return new object[]
+                {
+                    @"[a -\-\b]", "a #.", RegexOptions.None,
+                    new CaptureData[]
+                    {
+                        new CaptureData("a", 0, 1),
+                        new CaptureData(" ", 1, 1),
+                        new CaptureData("#", 2, 1),
+                    }
+                };
+
+                // .NET Framework missing fix in https://github.com/dotnet/runtime/pull/993
                 yield return new object[]
                 {
                     "[^]", "every", RegexOptions.ECMAScript,
