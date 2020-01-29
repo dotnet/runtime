@@ -43,16 +43,13 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
     <PackageReference Include="nunit" Version="3.10.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
     <!-- This reference is purely so that the linker can resolve this
          dependency of mscorlib. It is not actually required to build
          the tests. -->
     <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
   </ItemGroup>
 
-  <Target Name="PrepareTools"
-          BeforeTargets="Build"
-          Condition="$(ILLinkBuild)">
+  <Target Name="PrepareTools" BeforeTargets="Build" Condition="$(ILLinkBuild)">
     <!-- Restore ilasm using ilasm.ilproj. Restore must be done
          separately from copy with a different set of input
          properties, to force MSBuild to re-evaluate using new props

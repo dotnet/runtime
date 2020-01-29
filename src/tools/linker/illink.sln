@@ -5,15 +5,13 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Pdb", "external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{63E6915C-7EA4-4D76-AB28-0D7191EEA626}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil.Mdb", "external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj", "{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Cecil", "external\cecil\Mono.Cecil.csproj", "{D68133BD-1E63-496E-9EDE-4FBDBF77B486}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker", "src\linker\Mono.Linker.csproj", "{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILLink.Tasks", "src\ILLink.Tasks\ILLink.Tasks.csproj", "{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mono.Linker.Tests", "test\Mono.Linker.Tests\Mono.Linker.Tests.csproj", "{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}"
 EndProject
@@ -49,18 +47,6 @@ Global
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x64.Build.0 = Release|Any CPU
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x86.ActiveCfg = Release|Any CPU
 		{63E6915C-7EA4-4D76-AB28-0D7191EEA626}.Release|x86.Build.0 = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x64.Build.0 = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Debug|x86.Build.0 = Debug|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x64.ActiveCfg = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x64.Build.0 = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.ActiveCfg = Release|Any CPU
-		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.Build.0 = Release|Any CPU
 		{D68133BD-1E63-496E-9EDE-4FBDBF77B486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D68133BD-1E63-496E-9EDE-4FBDBF77B486}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D68133BD-1E63-496E-9EDE-4FBDBF77B486}.Debug|x64.ActiveCfg = Debug|Any CPU

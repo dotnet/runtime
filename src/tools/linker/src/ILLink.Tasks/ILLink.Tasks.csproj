@@ -77,11 +77,8 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="../linker/Mono.Linker.csproj"
-                      PrivateAssets="All"
-                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
-    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj"
-                      PrivateAssets="All" />
+    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
+    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -89,16 +86,9 @@
     <!-- We use private assets for the Microsoft.Build packages to
          prevent them from being published with the tasks dll, because
          these are already a part of the SDK. -->
-    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)"
-                      PrivateAssets="All"
-                      ExcludeAssets="Runtime" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)"
-                      PrivateAssets="All"
-                      ExcludeAssets="Runtime" />
-    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)"
-                      Condition=" '$(TargetFramework)' == 'net472' "
-                      PrivateAssets="All"
-                      Publish="True" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" PrivateAssets="All" ExcludeAssets="Runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" PrivateAssets="All" ExcludeAssets="Runtime" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" Condition=" '$(TargetFramework)' == 'net472' " PrivateAssets="All" Publish="True" />
 
   </ItemGroup>
 </Project>
