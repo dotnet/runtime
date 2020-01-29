@@ -42,7 +42,7 @@ namespace System.Security.Principal
             }
         }
 
-        public static bool operator !=(IdentityReference left, IdentityReference right)
+        public static bool operator !=(IdentityReference? left, IdentityReference? right)
         {
             return !(left == right);
         }

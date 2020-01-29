@@ -33,7 +33,7 @@ namespace System.Security.Principal
         public abstract override int GetHashCode();
         public abstract bool IsValidTargetType(System.Type targetType);
         public static bool operator ==(System.Security.Principal.IdentityReference? left, System.Security.Principal.IdentityReference? right) { throw null; }
-        public static bool operator !=(System.Security.Principal.IdentityReference left, System.Security.Principal.IdentityReference right) { throw null; }
+        public static bool operator !=(System.Security.Principal.IdentityReference? left, System.Security.Principal.IdentityReference? right) { throw null; }
         public abstract override string ToString();
         public abstract System.Security.Principal.IdentityReference Translate(System.Type targetType);
     }
@@ -63,7 +63,7 @@ namespace System.Security.Principal
         public override int GetHashCode() { throw null; }
         public override bool IsValidTargetType(System.Type targetType) { throw null; }
         public static bool operator ==(System.Security.Principal.NTAccount? left, System.Security.Principal.NTAccount? right) { throw null; }
-        public static bool operator !=(System.Security.Principal.NTAccount left, System.Security.Principal.NTAccount right) { throw null; }
+        public static bool operator !=(System.Security.Principal.NTAccount? left, System.Security.Principal.NTAccount? right) { throw null; }
         public override string ToString() { throw null; }
         public override System.Security.Principal.IdentityReference Translate(System.Type targetType) { throw null; }
     }
@@ -171,6 +171,8 @@ namespace System.Security.Principal
         BuiltinPerformanceMonitoringUsersSid = 57,
         BuiltinPerformanceLoggingUsersSid = 58,
         BuiltinAuthorizationAccessSid = 59,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ObsoleteAttribute("This member has been deprecated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
         MaxDefined = 60,
         WinBuiltinTerminalServerLicenseServersSid = 60,
         WinBuiltinDCOMUsersSid = 61,
@@ -208,6 +210,7 @@ namespace System.Security.Principal
         WinCapabilityEnterpriseAuthenticationSid = 93,
         WinCapabilityRemovableStorageSid = 94,
     }
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum WindowsAccountType
     {
         Normal = 0,
@@ -256,9 +259,9 @@ namespace System.Security.Principal
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public static System.Security.Principal.WindowsIdentity GetAnonymous() { throw null; }
-        public static System.Security.Principal.WindowsIdentity? GetCurrent() { throw null; }
+        public static System.Security.Principal.WindowsIdentity GetCurrent() { throw null; }
         public static System.Security.Principal.WindowsIdentity? GetCurrent(bool ifImpersonating) { throw null; }
-        public static System.Security.Principal.WindowsIdentity? GetCurrent(System.Security.Principal.TokenAccessLevels desiredAccess) { throw null; }
+        public static System.Security.Principal.WindowsIdentity GetCurrent(System.Security.Principal.TokenAccessLevels desiredAccess) { throw null; }
         public static void RunImpersonated(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Action action) { }
         public static System.Threading.Tasks.Task RunImpersonatedAsync(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Func<System.Threading.Tasks.Task> func) { throw null; }
         public static System.Threading.Tasks.Task<T> RunImpersonatedAsync<T>(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Func<System.Threading.Tasks.Task<T>> func) { throw null; }

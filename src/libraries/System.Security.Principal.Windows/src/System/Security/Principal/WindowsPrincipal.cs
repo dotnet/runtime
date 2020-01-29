@@ -174,6 +174,6 @@ namespace System.Security.Principal
         }
 
         // This is called by AppDomain.GetThreadPrincipal() via reflection.
-        private static IPrincipal GetDefaultInstance() => new WindowsPrincipal(WindowsIdentity.GetCurrent()!);
+        private static IPrincipal GetDefaultInstance() => new WindowsPrincipal(WindowsIdentity.GetCurrent());
     }
 }

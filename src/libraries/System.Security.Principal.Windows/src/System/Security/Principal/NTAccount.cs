@@ -212,7 +212,7 @@ namespace System.Security.Principal
             }
         }
 
-        public static bool operator !=(NTAccount left, NTAccount right)
+        public static bool operator !=(NTAccount? left, NTAccount? right)
         {
             return !(left == right); // invoke operator==
         }

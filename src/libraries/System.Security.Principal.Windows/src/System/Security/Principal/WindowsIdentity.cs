@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Claims;
@@ -320,21 +321,24 @@ namespace System.Security.Principal
         // Factory methods.
         //
 
-        public static WindowsIdentity? GetCurrent()
+        public static WindowsIdentity GetCurrent()
         {
+            // not null when threadOnly argument is false
             return GetCurrentInternal(TokenAccessLevels.MaximumAllowed, false)!;
         }
 
 
         public static WindowsIdentity? GetCurrent(bool ifImpersonating)
         {
+
             return GetCurrentInternal(TokenAccessLevels.MaximumAllowed, ifImpersonating);
         }
 
 
-        public static WindowsIdentity? GetCurrent(TokenAccessLevels desiredAccess)
+        public static WindowsIdentity GetCurrent(TokenAccessLevels desiredAccess)
         {
-            return GetCurrentInternal(desiredAccess, false);
+            // not null when threadOnly argument is false
+            return GetCurrentInternal(desiredAccess, false)!;
         }
 
         // GetAnonymous() is used heavily in ASP.NET requests as a dummy identity to indicate

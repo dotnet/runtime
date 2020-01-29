@@ -172,7 +172,7 @@ namespace System.Security.Principal
         BuiltinAuthorizationAccessSid = 59,
         /// <summary>Indicates a SID is present in a server that can issue terminal server licenses.</summary>
         WinBuiltinTerminalServerLicenseServersSid = 60,
-        [Obsolete("This member has been depcreated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
+        [Obsolete("This member has been deprecated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         MaxDefined = WinBuiltinTerminalServerLicenseServersSid,
         /// <summary>Indicates a SID that matches the distributed COM user group.</summary>
