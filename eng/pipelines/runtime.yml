@@ -64,8 +64,26 @@ jobs:
       - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/installer/*
+      - src/mono/*
       - src/libraries/*
       - eng/pipelines/installer/*
+      - eng/pipelines/mono/*
+      - eng/pipelines/libraries/*
+    - subset: mono
+      include:
+      - src/libraries/System.Private.CoreLib/*
+      exclude:
+      - eng/Version.Details.xml
+      - '*.md'
+      - LICENSE.TXT
+      - PATENTS.TXT
+      - THIRD-PARTY-NOTICES.TXT
+      - docs/*
+      - src/installer/*
+      - src/coreclr/*
+      - src/libraries/*
+      - eng/pipelines/installer/*
+      - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
     - subset: libraries
       exclude:
@@ -76,8 +94,10 @@ jobs:
       - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/installer/*
+      - src/mono/*
       - src/coreclr/*
       - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
       - eng/pipelines/installer/*
     - subset: installer
       include:
@@ -90,8 +110,10 @@ jobs:
       - THIRD-PARTY-NOTICES.TXT
       - docs/*
       - src/coreclr/*
+      - src/mono/*
       - src/libraries/*
       - eng/pipelines/coreclr/*
+      - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
 
 #
@@ -138,7 +160,6 @@ jobs:
 
 #
 # Build CoreCLR release
-# Only when CoreCLR is changed
 # Always as they are needed by Installer and we always build and test the Installer.
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -176,6 +197,60 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
+# Build Mono debug
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: debug
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    - Linux_musl_x64
+    # - Linux_musl_arm64
+    - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono release
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    - Linux_musl_x64
+    # - Linux_musl_arm64
+    - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
 # Build libraries using live CoreLib
 # These set of libraries are built always no matter what changed
 # The reason for that is because Corelib and Installer needs it and
@@ -192,7 +267,7 @@ jobs:
     - Windows_NT_arm64
     - Windows_NT_x86
     jobParameters:
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -205,7 +280,7 @@ jobs:
     - OSX_x64
     - Windows_NT_x64
     jobParameters:
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
 #
 # Libraries Build that only run when libraries is changed
 #
@@ -218,8 +293,7 @@ jobs:
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
-      framework: netcoreapp
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -236,7 +310,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netfx
+      framework: net472
       runTests: true
       testScope: innerloop
       condition: >-
@@ -255,7 +329,7 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       framework: allConfigurations
       runTests: true
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -276,7 +350,7 @@ jobs:
       - Windows_NT_arm
       - Windows_NT_arm64
     jobParameters:
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/installer/installer-matrix.yml
@@ -289,12 +363,12 @@ jobs:
       - Linux_musl_x64
       - Windows_NT_x64
     jobParameters:
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
 
 #
 # Libraries Test Build
-# Only when CoreCLR or Libraries is changed
+# Only when CoreCLR, Mono or Libraries is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -306,12 +380,13 @@ jobs:
     - Windows_NT_x64
     jobParameters:
       isOfficialBuild: false
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       testScope: innerloop
       condition: >- 
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -417,7 +492,34 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Libraries Release Test Execution against a release runtime
+# Libraries Release Test Execution against a release mono runtime.
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+    runtimeFlavor: mono
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    platforms:
+    # - Windows_NT_x64
+    - OSX_x64
+    - Linux_x64
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    jobParameters:
+      isOfficialBuild: false
+      isFullMatrix: ${{ variables.isFullMatrix }}
+      testScope: innerloop
+      liveRuntimeBuildConfig: release
+      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
+      dependsOnTestArchitecture: x64
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Libraries Release Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -430,9 +532,8 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
       condition: >-
@@ -441,7 +542,7 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
-# Libraries Debug Test Execution against a release runtime
+# Libraries Debug Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -463,9 +564,8 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
-      liveCoreClrBuildConfig: release
+      liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
       condition: >-
@@ -487,9 +587,8 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
-      liveCoreClrBuildConfig: checked
+      liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
       condition: >-
@@ -508,9 +607,8 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
-      liveCoreClrBuildConfig: checked
+      liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
       condition: >-
@@ -531,9 +629,8 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
-      liveCoreClrBuildConfig: checked
+      liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
       dependsOnTestArchitecture: x64
       condition: >-

@@ -5231,7 +5231,7 @@ DONE:
 
             if ((m_LCG_JumpStubLookup > 0) && ((m_normal_JumpStubBlockFullCount % 5) == 1))
             {
-                // Every 5 occurance of the above we also
+                // Every 5 occurrence of the above we also
                 // Log "LCG JumpStubBlock status" along with the four counter values
                 STRESS_LOG4(LF_JIT, LL_INFO1000, "LCG JumpStubBlock status - (%u, %u, %u, %u)\n",
                             m_LCG_JumpStubLookup, m_LCG_JumpStubUnique,

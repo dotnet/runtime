@@ -1111,13 +1111,13 @@ namespace Internal.Cryptography.Pal
         {
             try
             {
-                AsnReader reader = new AsnReader(authorityInformationAccess, AsnEncodingRules.DER);
-                AsnReader sequenceReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(authorityInformationAccess.Span, AsnEncodingRules.DER);
+                AsnValueReader sequenceReader = reader.ReadSequence();
                 reader.ThrowIfNotEmpty();
 
                 while (sequenceReader.HasData)
                 {
-                    AccessDescriptionAsn.Decode(sequenceReader, out AccessDescriptionAsn description);
+                    AccessDescriptionAsn.Decode(ref sequenceReader, authorityInformationAccess, out AccessDescriptionAsn description);
                     if (StringComparer.Ordinal.Equals(description.AccessMethod, recordTypeOid))
                     {
                         GeneralNameAsn name = description.AccessLocation;

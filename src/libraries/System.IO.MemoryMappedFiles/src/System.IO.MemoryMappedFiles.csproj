@@ -72,6 +72,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORY_BASIC_INFO.cs">
       <Link>Common\Interop\Windows\Interop.MEMORY_BASIC_INFO.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MEMORYSTATUSEX.cs">
+      <Link>Common\Interop\Windows\Interop.MEMORYSTATUSEX.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MemOptions.cs">
       <Link>Common\Interop\Windows\Interop.MemOptions.cs</Link>
     </Compile>

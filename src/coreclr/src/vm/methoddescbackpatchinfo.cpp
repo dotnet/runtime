@@ -21,7 +21,7 @@ void EntryPointSlots::Backpatch_Locked(TADDR slot, SlotType slotType, PCODE entr
 {
     WRAPPER_NO_CONTRACT;
     static_assert_no_msg(SlotType_Count <= sizeof(INT32));
-    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+    _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
     _ASSERTE(slot != NULL);
     _ASSERTE(!(slot & SlotType_Mask));
     _ASSERTE(slotType >= SlotType_Normal);
@@ -72,7 +72,7 @@ CrstStatic MethodDescBackpatchInfoTracker::s_lock;
 void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsLockedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
 
     GCX_COOP();
@@ -95,7 +95,7 @@ void MethodDescBackpatchInfoTracker::Backpatch_Locked(MethodDesc *pMethodDesc, P
 void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodDesc, LoaderAllocator *pLoaderAllocatorOfSlot, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsLockedByCurrentThread());
+    _ASSERTE(IsLockOwnedByCurrentThread());
     _ASSERTE(pMethodDesc != nullptr);
     _ASSERTE(pMethodDesc->MayHaveEntryPointSlotsToBackpatch());
 
@@ -108,17 +108,11 @@ void MethodDescBackpatchInfoTracker::AddSlotAndPatch_Locked(MethodDesc *pMethodD
     EntryPointSlots::Backpatch_Locked(slot, slotType, currentEntryPoint);
 }
 
-void MethodDescBackpatchInfoTracker::StaticInitialize()
-{
-    WRAPPER_NO_CONTRACT;
-    s_lock.Init(CrstMethodDescBackpatchInfoTracker);
-}
-
 #endif // DACCESS_COMPILE
 
 #ifdef _DEBUG
 
-bool MethodDescBackpatchInfoTracker::IsLockedByCurrentThread()
+bool MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread()
 {
     WRAPPER_NO_CONTRACT;
 

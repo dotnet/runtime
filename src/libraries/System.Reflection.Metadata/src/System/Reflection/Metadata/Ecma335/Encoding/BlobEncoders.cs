@@ -916,7 +916,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void Type(EntityHandle type, bool isValueType)
         {
             // Get the coded index before we start writing anything (might throw argument exception):
-            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
             int codedIndex = CodedIndex.TypeDefOrRef(type);
 
             ClassOrValue(isValueType);
@@ -979,7 +979,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             // Get the coded index before we start writing anything (might throw argument exception):
-            // Note: We don't allow TypeSpec as per https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
+            // Note: We don't allow TypeSpec as per https://github.com/dotnet/runtime/blob/master/src/libraries/System.Reflection.Metadata/specs/Ecma-335-Issues.md#proposed-specification-change
             int codedIndex = CodedIndex.TypeDefOrRef(genericType);
 
             Builder.WriteByte((byte)SignatureTypeCode.GenericTypeInstance);

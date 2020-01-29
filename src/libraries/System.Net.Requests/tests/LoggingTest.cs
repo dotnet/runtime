@@ -4,6 +4,7 @@
 
 using System.Diagnostics.Tracing;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Tests
 {
@@ -11,7 +12,8 @@ namespace System.Net.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "NetEventSource is only part of .NET Core.")]
-        [SkipOnCoreClr("System.Net.Tests are inestable")]
+        [SkipOnCoreClr("System.Net.Tests are flaky")]
+        [SkipOnMono("System.Net.Tests are flaky")]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(WebRequest).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);

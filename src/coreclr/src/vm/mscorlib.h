@@ -1452,6 +1452,16 @@ DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _del
 
 DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
 
+DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
+DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFCLASS,IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFINTERFACE,  IsInstanceOfInterface, SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTANY,       ChkCastAny,                  SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
+
 DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
 DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)
 DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)

@@ -3,5 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 [assembly: SkipOnCoreClr("Timeout in stress tests on Linux/arm32", TestPlatforms.Linux)]
+[assembly: SkipOnMono("Timeout in stress tests on Linux/arm32", TestPlatforms.Linux)]

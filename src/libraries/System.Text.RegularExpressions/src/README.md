@@ -127,7 +127,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 
 ### RegexRunnerFactory (public pure abstract)
 
-* Reuseable: creates `RegexRunner`s on demand with `RegexRunner CreateInstance()`
+* Reusable: creates `RegexRunner`s on demand with `RegexRunner CreateInstance()`
 * Not relevant to interpreted mode
 * Must be thread-safe, as each `Regex` holds one, and `Regex` is thread-safe
 
@@ -145,7 +145,7 @@ In particular, we must keep this API stable in order to remain compatible with r
 ### RegexRunner (public abstract)
 
 * Responsible for executing a regular expression: not thread-safe
-* Resueable: each call to `Scan(..)` begins a new execution
+* Reusable: each call to `Scan(..)` begins a new execution
 * Lots of protected members: tracking position, execution stacks, and captures:
   * `protected abstract void Go()`
   * `protected abstract bool FindFirstChar()`

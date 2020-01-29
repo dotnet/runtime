@@ -188,6 +188,7 @@
     <Compile Include="ECDiffieHellmanTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="ECDsaTests.cs" />
+    <Compile Include="HashDerivedTests.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RC2Provider.cs" />

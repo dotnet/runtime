@@ -1,8 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <Import Project="..\..\Directory.Build.targets" />
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <!-- Import targets here to have TargetPath and other macros defined. Limit to CoreLib. -->
+  <Import Condition="'$(MSBuildProjectName)' == 'System.Private.CoreLib'" Project="$(RepositoryEngineeringDir)illink.targets" />
 
   <PropertyGroup>
     <!-- SDK sets product to assembly but we want it to be our product name -->

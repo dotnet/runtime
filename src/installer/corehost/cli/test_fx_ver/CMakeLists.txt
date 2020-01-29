@@ -39,6 +39,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries (${EXE_NAME} "dl")
 endif()
 
-if((${CMAKE_SYSTEM_NAME} MATCHES "Linux") AND CLI_CMAKE_PLATFORM_ARCH_ARM)
+if((${CMAKE_SYSTEM_NAME} MATCHES "Linux") AND CLR_CMAKE_HOST_ARCH_ARM)
     target_link_libraries (${EXE_NAME} "atomic")
 endif()

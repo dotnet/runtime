@@ -116,7 +116,7 @@ namespace R2RDump
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
-            _writer.WriteLine($"{_r2r.R2RMethods.Count} methods");
+            _writer.WriteLine($"{_r2r.Methods.Count} methods");
             SkipLine();
             foreach (ReadyToRunMethod method in NormalizedMethods())
             {

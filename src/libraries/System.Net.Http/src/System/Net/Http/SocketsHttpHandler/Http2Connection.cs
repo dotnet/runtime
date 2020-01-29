@@ -275,6 +275,10 @@ namespace System.Net.Http
                             ProcessGoAwayFrame(frameHeader);
                             break;
 
+                        case FrameType.AltSvc:
+                            ProcessAltSvcFrame(frameHeader);
+                            break;
+
                         case FrameType.PushPromise:     // Should not happen, since we disable this in our initial SETTINGS
                         case FrameType.Continuation:    // Should only be received while processing headers in ProcessHeadersFrame
                         default:
@@ -390,6 +394,41 @@ namespace System.Net.Http
             }
 
             return frameData;
+        }
+
+        /// <summary>
+        /// Parses an ALTSVC frame, defined by RFC 7838 Section 4.
+        /// </summary>
+        /// <remarks>
+        /// The RFC states that any parse errors should result in ignoring the frame.
+        /// </remarks>
+        private void ProcessAltSvcFrame(FrameHeader frameHeader)
+        {
+            if (NetEventSource.IsEnabled) Trace($"{frameHeader}");
+            Debug.Assert(frameHeader.Type == FrameType.AltSvc);
+
+            ReadOnlySpan<byte> span = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length);
+
+            if (BinaryPrimitives.TryReadUInt16BigEndian(span, out ushort originLength))
+            {
+                span = span.Slice(2);
+
+                // Check that this ALTSVC frame is valid for our pool's origin. ALTSVC frames can come in one of two ways:
+                //  - On stream 0, the origin will be specified. HTTP/2 can service multiple origins per connection, and so the server can report origins other than what our pool is using.
+                //  - Otherwise, the origin is implicitly defined by the request stream and must be of length 0.
+
+                if ((frameHeader.StreamId != 0 && originLength == 0) || (frameHeader.StreamId == 0 && span.Length >= originLength && span.Slice(originLength).SequenceEqual(_pool.Http2AltSvcOriginUri)))
+                {
+                    span = span.Slice(originLength);
+
+                    // The span now contains a string with the same format as Alt-Svc headers.
+
+                    string altSvcHeaderValue = Encoding.ASCII.GetString(span);
+                    _pool.HandleAltSvc(new[] { altSvcHeaderValue }, null);
+                }
+            }
+
+            _incomingBuffer.Discard(frameHeader.Length);
         }
 
         private void ProcessDataFrame(FrameHeader frameHeader)
@@ -1017,36 +1056,36 @@ namespace System.Net.Http
             // Method is normalized so we can do reference equality here.
             if (ReferenceEquals(normalizedMethod, HttpMethod.Get))
             {
-                WriteIndexedHeader(StaticTable.MethodGet);
+                WriteIndexedHeader(H2StaticTable.MethodGet);
             }
             else if (ReferenceEquals(normalizedMethod, HttpMethod.Post))
             {
-                WriteIndexedHeader(StaticTable.MethodPost);
+                WriteIndexedHeader(H2StaticTable.MethodPost);
             }
             else
             {
-                WriteIndexedHeader(StaticTable.MethodGet, normalizedMethod.Method);
+                WriteIndexedHeader(H2StaticTable.MethodGet, normalizedMethod.Method);
             }
 
-            WriteIndexedHeader(_stream is SslStream ? StaticTable.SchemeHttps : StaticTable.SchemeHttp);
+            WriteIndexedHeader(_stream is SslStream ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp);
 
             if (request.HasHeaders && request.Headers.Host != null)
             {
-                WriteIndexedHeader(StaticTable.Authority, request.Headers.Host);
+                WriteIndexedHeader(H2StaticTable.Authority, request.Headers.Host);
             }
             else
             {
-                WriteBytes(_pool._encodedAuthorityHostHeader);
+                WriteBytes(_pool._http2EncodedAuthorityHostHeader);
             }
 
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
             {
-                WriteIndexedHeader(StaticTable.PathSlash);
+                WriteIndexedHeader(H2StaticTable.PathSlash);
             }
             else
             {
-                WriteIndexedHeader(StaticTable.PathSlash, pathAndQuery);
+                WriteIndexedHeader(H2StaticTable.PathSlash, pathAndQuery);
             }
 
             if (request.HasHeaders)
@@ -1531,8 +1570,9 @@ namespace System.Net.Http
             GoAway = 7,
             WindowUpdate = 8,
             Continuation = 9,
+            AltSvc = 10,
 
-            Last = 9
+            Last = 10
         }
 
         private struct FrameHeader

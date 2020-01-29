@@ -21,7 +21,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public const uint READYTORUN_SIGNATURE = 0x00525452; // 'RTR'
 
         /// <summary>
-        /// RVA to the begining of the ReadyToRun header
+        /// RVA to the beginning of the ReadyToRun header
         /// </summary>
         public int RelativeVirtualAddress { get; set; }
 
@@ -110,11 +110,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 sb.AppendLine($"MajorVersion: 0x{MajorVersion:X4}");
                 sb.AppendLine($"MinorVersion: 0x{MinorVersion:X4}");
                 sb.AppendLine($"Flags: 0x{Flags:X8}");
-                foreach (ReadyToRunFlag flag in Enum.GetValues(typeof(ReadyToRunFlag)))
+                foreach (ReadyToRunFlags flag in Enum.GetValues(typeof(ReadyToRunFlags)))
                 {
                     if ((Flags & (uint)flag) != 0)
                     {
-                        sb.AppendLine($"  - {Enum.GetName(typeof(ReadyToRunFlag), flag)}");
+                        sb.AppendLine($"  - {Enum.GetName(typeof(ReadyToRunFlags), flag)}");
                     }
                 }
             }

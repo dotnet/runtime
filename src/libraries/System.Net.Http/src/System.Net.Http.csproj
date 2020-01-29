@@ -18,6 +18,8 @@
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
     <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
@@ -41,6 +43,11 @@
     <Compile Include="System\Net\Http\NetEventSource.Http.cs" />
     <Compile Include="System\Net\Http\ReadOnlyMemoryContent.cs" />
     <Compile Include="System\Net\Http\RequestRetryType.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3Connection.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ConnectionException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3ProtocolException.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\Http3RequestStream.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
@@ -195,11 +202,47 @@
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Http3SettingType.cs">
+      <Link>Common\System\Net\Http\Http3\Http3SettingType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Http3StreamType.cs">
+      <Link>Common\System\Net\Http\Http3\Http3StreamType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Helpers\VariableLengthIntegerHelper.cs">
+      <Link>Common\System\Net\Http\Http3\Helpers\VariableLengthIntegerHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Frames\Http3ErrorCode.cs">
+      <Link>Common\System\Net\Http\Http3\Frames\Http3ErrorCode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Frames\Http3Frame.cs">
+      <Link>Common\System\Net\Http\Http3\Frames\Http3Frame.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\Frames\Http3FrameType.cs">
+      <Link>Common\System\Net\Http\Http3\Frames\Http3FrameType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\HeaderField.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\HeaderField.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackDecoder.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackDecodingException.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackEncoder.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackEncoder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\QPackEncodingException.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\QPackEncodingException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\Http\Http3\QPack\H3StaticTable.cs">
+      <Link>Common\System\Net\Http\Http3\QPack\H3StaticTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
@@ -236,6 +279,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs">
       <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
@@ -675,10 +721,11 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
-    <Reference Include="System.Net.NetworkInformation" Condition="'$(TargetsWindows)' == 'true'" />
+    <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Net.Quic" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />

@@ -4,6 +4,7 @@
 
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
+using Internal.ReadyToRunConstants;
 
 namespace ILCompiler
 {
@@ -52,5 +53,10 @@ namespace ILCompiler
         /// <param name="token">Module-based token for the type</param>
         /// <returns>Returns true the type was referenced by any of the input modules in the current compliation</returns>
         public abstract bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token);
+
+        /// <summary>
+        /// Gets the flags to be stored in the generated ReadyToRun module header.
+        /// </summary>
+        public abstract ReadyToRunFlags GetReadyToRunFlags();
     }
 }

@@ -11,6 +11,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Principal;
 
@@ -303,13 +304,7 @@ nameof(binaryForm),
                 type == AceType.SystemAuditCallback ||
                 type == AceType.SystemAlarmCallback)
             {
-                AceQualifier qualifier;
-                int accessMask;
-                SecurityIdentifier sid;
-                bool isCallback;
-                byte[] opaque;
-
-                if (true == CommonAce.ParseBinaryForm(binaryForm, offset, out qualifier, out accessMask, out sid, out isCallback, out opaque))
+                if (CommonAce.ParseBinaryForm(binaryForm, offset, out AceQualifier qualifier, out int accessMask, out SecurityIdentifier? sid, out bool isCallback, out byte[]? opaque))
                 {
                     AceFlags flags = (AceFlags)binaryForm[offset + 1];
                     result = new CommonAce(flags, qualifier, accessMask, sid, isCallback, opaque);
@@ -328,16 +323,8 @@ nameof(binaryForm),
                 type == AceType.SystemAuditCallbackObject ||
                 type == AceType.SystemAlarmCallbackObject)
             {
-                AceQualifier qualifier;
-                int accessMask;
-                SecurityIdentifier sid;
-                ObjectAceFlags objectFlags;
-                Guid objectAceType;
-                Guid inheritedObjectAceType;
-                bool isCallback;
-                byte[] opaque;
-
-                if (true == ObjectAce.ParseBinaryForm(binaryForm, offset, out qualifier, out accessMask, out sid, out objectFlags, out objectAceType, out inheritedObjectAceType, out isCallback, out opaque))
+                if (ObjectAce.ParseBinaryForm(binaryForm, offset, out AceQualifier qualifier, out int accessMask, out SecurityIdentifier? sid,
+                    out ObjectAceFlags objectFlags, out Guid objectAceType, out Guid inheritedObjectAceType, out bool isCallback, out byte[]? opaque))
                 {
                     AceFlags flags = (AceFlags)binaryForm[offset + 1];
                     result = new ObjectAce(flags, qualifier, accessMask, sid, objectFlags, objectAceType, inheritedObjectAceType, isCallback, opaque);
@@ -349,11 +336,7 @@ nameof(binaryForm),
             }
             else if (type == AceType.AccessAllowedCompound)
             {
-                int accessMask;
-                CompoundAceType compoundAceType;
-                SecurityIdentifier sid;
-
-                if (true == CompoundAce.ParseBinaryForm(binaryForm, offset, out accessMask, out compoundAceType, out sid))
+                if (CompoundAce.ParseBinaryForm(binaryForm, offset, out int accessMask, out CompoundAceType compoundAceType, out SecurityIdentifier? sid))
                 {
                     AceFlags flags = (AceFlags)binaryForm[offset + 1];
                     result = new CompoundAce(flags, accessMask, compoundAceType, sid);
@@ -366,7 +349,7 @@ nameof(binaryForm),
             else
             {
                 AceFlags flags = (AceFlags)binaryForm[offset + 1];
-                byte[] opaque = null;
+                byte[]? opaque = null;
                 int aceLength = (binaryForm[offset + 2] << 0) + (binaryForm[offset + 3] << 8);
 
                 if (aceLength % 4 != 0)
@@ -555,14 +538,9 @@ nameof(binaryForm));
             return GenericAce.CreateFromBinaryForm(binaryForm, 0);
         }
 
-        public sealed override bool Equals(object o)
+        public sealed override bool Equals(object? o)
         {
-            if (o == null)
-            {
-                return false;
-            }
-
-            GenericAce ace = (o as GenericAce);
+            GenericAce? ace = (o as GenericAce);
 
             if (ace == null)
             {
@@ -627,10 +605,10 @@ nameof(binaryForm));
             return result;
         }
 
-        public static bool operator ==(GenericAce left, GenericAce right)
+        public static bool operator ==(GenericAce? left, GenericAce? right)
         {
-            object l = left;
-            object r = right;
+            object? l = left;
+            object? r = right;
 
             if (l == null && r == null)
             {
@@ -642,11 +620,11 @@ nameof(binaryForm));
             }
             else
             {
-                return left.Equals(right);
+                return left!.Equals(right);
             }
         }
 
-        public static bool operator !=(GenericAce left, GenericAce right)
+        public static bool operator !=(GenericAce? left, GenericAce? right)
         {
             return !(left == right);
         }
@@ -671,7 +649,7 @@ nameof(binaryForm));
         //
 
         private int _accessMask;
-        private SecurityIdentifier _sid;
+        private SecurityIdentifier _sid = null!; // Initialized in constructor using property
 
         #endregion
 
@@ -763,7 +741,7 @@ nameof(binaryForm));
         // understands the ACE type.
         //
 
-        private byte[] _opaque;
+        private byte[]? _opaque;
 
         #endregion
 
@@ -779,7 +757,7 @@ nameof(binaryForm));
 
         #region Constructors
 
-        public CustomAce(AceType type, AceFlags flags, byte[] opaque)
+        public CustomAce(AceType type, AceFlags flags, byte[]? opaque)
             : base(type, flags)
         {
             if (type <= AceType.MaxDefinedAceType)
@@ -837,12 +815,12 @@ nameof(type),
         // Important: the caller is given the actual (not cloned) copy of the data
         //
 
-        public byte[] GetOpaque()
+        public byte[]? GetOpaque()
         {
             return _opaque;
         }
 
-        public void SetOpaque(byte[] opaque)
+        public void SetOpaque(byte[]? opaque)
         {
             if (opaque != null)
             {
@@ -892,7 +870,7 @@ nameof(opaque),
                     throw new InvalidOperationException();
                 }
 
-                GetOpaque().CopyTo(binaryForm, offset);
+                GetOpaque()!.CopyTo(binaryForm, offset);
             }
         }
         #endregion
@@ -958,7 +936,7 @@ nameof(opaque),
             int offset,
             out int accessMask,
             out CompoundAceType compoundAceType,
-            out SecurityIdentifier sid)
+            [NotNullWhen(true)] out SecurityIdentifier? sid)
         {
             //
             // Verify the ACE header
@@ -1118,7 +1096,7 @@ nameof(opaque),
 
         private readonly bool _isCallback;
         private readonly AceQualifier _qualifier;
-        private byte[] _opaque;
+        private byte[]? _opaque;
 
         #endregion
 
@@ -1214,7 +1192,7 @@ nameof(opaque),
 
         #region Constructors
 
-        internal QualifiedAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier sid, byte[] opaque)
+        internal QualifiedAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier sid, byte[]? opaque)
             : base(type, flags, accessMask, sid)
         {
             _qualifier = QualifierFromType(type, out _isCallback);
@@ -1290,12 +1268,12 @@ nameof(opaque),
         // NOTE: the caller is given the actual (not cloned) copy of the data
         //
 
-        public byte[] GetOpaque()
+        public byte[]? GetOpaque()
         {
             return _opaque;
         }
 
-        public void SetOpaque(byte[] opaque)
+        public void SetOpaque(byte[]? opaque)
         {
             if (opaque != null)
             {
@@ -1386,7 +1364,7 @@ nameof(opaque),
         // to the base class constructor
         //
 
-        public CommonAce(AceFlags flags, AceQualifier qualifier, int accessMask, SecurityIdentifier sid, bool isCallback, byte[] opaque)
+        public CommonAce(AceFlags flags, AceQualifier qualifier, int accessMask, SecurityIdentifier sid, bool isCallback, byte[]? opaque)
             : base(TypeFromQualifier(isCallback, qualifier), flags, accessMask, sid, opaque)
         {
         }
@@ -1427,9 +1405,9 @@ nameof(opaque),
             int offset,
             out AceQualifier qualifier,
             out int accessMask,
-            out SecurityIdentifier sid,
+            [NotNullWhen(true)] out SecurityIdentifier? sid,
             out bool isCallback,
-            out byte[] opaque)
+            out byte[]? opaque)
         {
             //
             // Verify the ACE header
@@ -1638,7 +1616,7 @@ nameof(opaque),
                     throw new InvalidOperationException();
                 }
 
-                GetOpaque().CopyTo(binaryForm, baseOffset + offsetLocal);
+                GetOpaque()!.CopyTo(binaryForm, baseOffset + offsetLocal);
             }
         }
         #endregion
@@ -1751,7 +1729,7 @@ nameof(opaque),
 
         #region Constructors
 
-        public ObjectAce(AceFlags aceFlags, AceQualifier qualifier, int accessMask, SecurityIdentifier sid, ObjectAceFlags flags, Guid type, Guid inheritedType, bool isCallback, byte[] opaque)
+        public ObjectAce(AceFlags aceFlags, AceQualifier qualifier, int accessMask, SecurityIdentifier sid, ObjectAceFlags flags, Guid type, Guid inheritedType, bool isCallback, byte[]? opaque)
             : base(TypeFromQualifier(isCallback, qualifier), aceFlags, accessMask, sid, opaque)
         {
             _objectFlags = flags;
@@ -1840,12 +1818,12 @@ nameof(opaque),
             int offset,
             out AceQualifier qualifier,
             out int accessMask,
-            out SecurityIdentifier sid,
+            [NotNullWhen(true)] out SecurityIdentifier? sid,
             out ObjectAceFlags objectFlags,
             out Guid objectAceType,
             out Guid inheritedObjectAceType,
             out bool isCallback,
-            out byte[] opaque)
+            out byte[]? opaque)
         {
             byte[] guidArray = new byte[GuidLength];
 
@@ -2190,7 +2168,7 @@ nameof(opaque),
                     throw new InvalidOperationException();
                 }
 
-                GetOpaque().CopyTo(binaryForm, baseOffset + offsetLocal);
+                GetOpaque()!.CopyTo(binaryForm, baseOffset + offsetLocal);
             }
         }
         #endregion

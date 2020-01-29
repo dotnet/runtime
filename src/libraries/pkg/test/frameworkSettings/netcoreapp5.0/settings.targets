@@ -5,4 +5,8 @@
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
+
+  <ItemGroup>
+    <IgnoredReference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
 </Project>

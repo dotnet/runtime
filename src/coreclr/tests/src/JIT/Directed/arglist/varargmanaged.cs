@@ -1315,5 +1315,22 @@ namespace NativeVarargTest
 
             return varArg;
         }
+
+        // Tests that take the address of a parameter of a vararg method
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static FourDoubleStruct TestEchoFourDoubleStructManagedViaAddress(FourDoubleStruct arg, __arglist)
+        {
+            ArgIterator it = new ArgIterator(__arglist);
+            var varArg = __refvalue(it.GetNextArg(), FourDoubleStruct);
+
+            return NewFourDoubleStructViaAddress(ref arg.a, ref arg.b, ref varArg.c, ref varArg.d);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static FourDoubleStruct NewFourDoubleStructViaAddress(ref double a, ref double b, ref double c, ref double d)
+        {
+            return new FourDoubleStruct { a = a, b = b, c = c, d = d };
+        }
     }
 }

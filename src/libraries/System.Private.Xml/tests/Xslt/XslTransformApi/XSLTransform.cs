@@ -89,13 +89,15 @@ namespace System.Xml.Tests
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
 
-                // Replace absolute URI in xmlResolver_document_function.xml based on the environment
+                // Replace absolute URI in xmlResolver_document_function.xml based on the environment, and store it under a different name
                 string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
+                string replacedXslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri_replaced.xsl");
+                File.Copy(xslFile, replacedXslFile, true);
                 XmlDocument doc = new XmlDocument();
-                doc.Load(xslFile);
+                doc.Load(replacedXslFile);
                 string xslString = doc.OuterXml.Replace("ABSOLUTE_URI", s_temporaryResolverDocumentFullName);
                 doc.LoadXml(xslString);
-                doc.Save(xslFile);
+                doc.Save(replacedXslFile);
             }
         }
 

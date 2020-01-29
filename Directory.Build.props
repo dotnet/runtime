@@ -52,6 +52,14 @@
     <CoreLibSharedDir>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'System.Private.CoreLib', 'src'))</CoreLibSharedDir>
   </PropertyGroup>
 
+  <!-- Honor the generic RuntimeConfiguration property. -->
+  <PropertyGroup>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(RuntimeConfiguration)</CoreCLRConfiguration>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' != 'checked'">$(RuntimeConfiguration)</MonoConfiguration>
+    <!-- There's no checked configuration on Mono. -->
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
+  </PropertyGroup>
+
   <!-- Packaging properties -->
   <PropertyGroup>
     <!--

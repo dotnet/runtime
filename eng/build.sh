@@ -40,7 +40,7 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: netcoreapp or netfx (short: -f)"
+  echo "  --framework                Build framework: netcoreapp or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
   echo "  --allconfigurations        Build packages for all build configurations"
@@ -85,14 +85,8 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:ConfigurationGroup=$val -configuration $val"
       shift 2
       ;;
-      # This should be removed after we have finalized our ci build pipeline.
      -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
-      if [ "$val" == "netcoreapp" ]; then
-        val=netcoreapp5.0
-      elif [ "$val" == "netfx" ]; then
-        val=net472
-      fi
       arguments="$arguments /p:TargetGroup=$val"
       shift 2
       ;;
@@ -125,8 +119,9 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
-     -coreclrconfiguration)
-      arguments="$arguments /p:CoreCLRConfiguration=$2"
+     -runtimeconfiguration)
+      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      arguments="$arguments /p:RuntimeConfiguration=$val"
       shift 2
       ;;
      -librariesconfiguration)

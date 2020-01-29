@@ -20,7 +20,7 @@
     </PropertyGroup>
     <PropertyGroup>
         <_MonoConfigureParams Condition="$(MonoEnableLLVM) == true">$(_MonoConfigureParams) --enable--llvm </_MonoConfigureParams>
-        <_MonoConfigureParams>$(_MonoConfigureParams) --with-core=only CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) --with-core=only CC=clang CXX=clang++ CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
     </PropertyGroup>
 
     <Message Text="Configuring Mono with '$(_MonoConfigureParams)'" Importance="High" />
@@ -39,19 +39,22 @@
     <PropertyGroup>
         <_MonoBuildParams>/p:MONO_BUILD_DIR_PREFIX=&quot;&quot;$(MonoObjDir)&quot;&quot; /p:MONO_ENABLE_NETCORE=true /p:CL_MPCount=8 /v:minimal</_MonoBuildParams>
         <_MonoBuildParams Condition="$(MonoEnableLLVM) == true">/p:MONO_ENABLE_LLVM=true $(_MonoBuildParams)</_MonoBuildParams>
+        <_MonoBuildPlatform Condition="'$(Platform)' == 'x64'">x64</_MonoBuildPlatform>
+        <_MonoBuildPlatform Condition="'$(Platform)' == 'x86'">win32</_MonoBuildPlatform>
     </PropertyGroup>
-    <Exec Command="msvc\run-msbuild.bat build $(Platform) $(Configuration) sgen &quot;$(_MonoBuildParams)&quot; msvc\mono-netcore.sln" IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="msvc\run-msbuild.bat build $(_MonoBuildPlatform) $(Configuration) sgen &quot;$(_MonoBuildParams)&quot; msvc\mono-netcore.sln" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
   <!-- General targets -->
   <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
-      <_MonoRuntimeFilePath Condition="'$(BuildOS)' == 'Windows_NT'">$(MonoObjDir)$(Platform)\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(BuildOS)' == 'OSX'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
 
-      <_CoreClrFileName Condition="'$(BuildOS)' == 'Windows_NT'">coreclr.dll</_CoreClrFileName>
-      <_CoreClrFileName Condition="'$(BuildOS)' == 'OSX'">libcoreclr.dylib</_CoreClrFileName>
+      <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
+      <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
       <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
     </PropertyGroup>
 

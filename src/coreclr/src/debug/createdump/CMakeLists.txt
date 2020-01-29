@@ -6,11 +6,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
 if (CORECLR_SET_RPATH)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-  if(CLR_CMAKE_PLATFORM_DARWIN)
+  if(CLR_CMAKE_HOST_DARWIN)
     set(CMAKE_INSTALL_RPATH "@loader_path")
   else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
-  endif(CLR_CMAKE_PLATFORM_DARWIN)
+  endif(CLR_CMAKE_HOST_DARWIN)
 endif (CORECLR_SET_RPATH)
 
 remove_definitions(-DUNICODE)

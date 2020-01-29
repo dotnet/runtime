@@ -31,14 +31,12 @@ namespace System.Buffers.Text.Tests
                 string expectedText = Convert.ToBase64String(bytes, 0, value + 1);
                 Assert.Equal(expectedText, encodedText);
 
-                if (encodedBytes.Length % 4 == 0)
-                {
-                    Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(encodedBytes.Length)];
-                    Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(encodedBytes, decodedBytes, out consumed, out int decodedByteCount));
-                    Assert.Equal(encodedBytes.Length, consumed);
-                    Assert.Equal(sourceBytes.Length, decodedByteCount);
-                    Assert.True(sourceBytes.SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
-                }
+                Assert.Equal(0, encodedBytes.Length % 4);
+                Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(encodedBytes.Length)];
+                Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(encodedBytes, decodedBytes, out consumed, out int decodedByteCount));
+                Assert.Equal(encodedBytes.Length, consumed);
+                Assert.Equal(sourceBytes.Length, decodedByteCount);
+                Assert.True(sourceBytes.SequenceEqual(decodedBytes.Slice(0, decodedByteCount)));
             }
         }
 
@@ -61,23 +59,148 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void EncodeEmptySpan()
+        public void BasicEncodingWithFinalBlockFalse()
+        {
+            var rnd = new Random(42);
+            for (int i = 0; i < 10; i++)
+            {
+                int numBytes = rnd.Next(100, 1000 * 1000);
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitalizeBytes(source, numBytes);
+
+                Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
+                int expectedConsumed = source.Length / 3 * 3; // only consume closest multiple of three since isFinalBlock is false
+                int expectedWritten = source.Length / 3 * 4;
+
+                // The constant random seed guarantees that both states are tested.
+                OperationStatus expectedStatus = numBytes % 3 == 0 ? OperationStatus.Done : OperationStatus.NeedMoreData;
+                Assert.Equal(expectedStatus, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: false));
+                Assert.Equal(expectedConsumed, consumed);
+                Assert.Equal(expectedWritten, encodedBytesCount);
+                Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, expectedWritten, source, encodedBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData(1, "AQ==")]
+        [InlineData(2, "AQI=")]
+        [InlineData(3, "AQID")]
+        [InlineData(4, "AQIDBA==")]
+        [InlineData(5, "AQIDBAU=")]
+        [InlineData(6, "AQIDBAUG")]
+        [InlineData(7, "AQIDBAUGBw==")]
+        public void BasicEncodingWithFinalBlockTrueKnownInput(int numBytes, string expectedText)
+        {
+            int expectedConsumed = numBytes;
+            int expectedWritten = expectedText.Length;
+
+            Span<byte> source = new byte[numBytes];
+            for (int i = 0; i < numBytes; i++)
+            {
+                source[i] = (byte)(i + 1);
+            }
+            Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
+
+            Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: true));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, encodedBytesCount);
+
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
+            Assert.Equal(expectedText, encodedText);
+        }
+
+        [Theory]
+        [InlineData(1, "", 0, 0)]
+        [InlineData(2, "", 0, 0)]
+        [InlineData(3, "AQID", 3, 4)]
+        [InlineData(4, "AQID", 3, 4)]
+        [InlineData(5, "AQID", 3, 4)]
+        [InlineData(6, "AQIDBAUG", 6, 8)]
+        [InlineData(7, "AQIDBAUG", 6, 8)]
+        public void BasicEncodingWithFinalBlockFalseKnownInput(int numBytes, string expectedText, int expectedConsumed, int expectedWritten)
+        {
+            Span<byte> source = new byte[numBytes];
+            for (int i = 0; i < numBytes; i++)
+            {
+                source[i] = (byte)(i + 1);
+            }
+            Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
+
+            OperationStatus expectedStatus = numBytes % 3 == 0 ? OperationStatus.Done : OperationStatus.NeedMoreData;
+            Assert.Equal(expectedStatus, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: false));
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(expectedWritten, encodedBytesCount);
+
+            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
+            Assert.Equal(expectedText, encodedText);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void EncodeEmptySpan(bool isFinalBlock)
         {
             Span<byte> source = Span<byte>.Empty;
             Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
 
-            Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
-            Assert.Equal(source.Length, consumed);
-            Assert.Equal(encodedBytes.Length, encodedBytesCount);
-            Assert.True(Base64TestHelper.VerifyEncodingCorrectness(source.Length, encodedBytes.Length, source, encodedBytes));
+            Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock));
+            Assert.Equal(0, consumed);
+            Assert.Equal(0, encodedBytesCount);
         }
 
-        [Fact]
-        [OuterLoop]
-        public void EncodeTooLargeSpan()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void EncodingOutputTooSmall(bool isFinalBlock)
         {
+            for (int numBytes = 4; numBytes < 20; numBytes++)
+            {
+                Span<byte> source = new byte[numBytes];
+                Base64TestHelper.InitalizeBytes(source, numBytes);
 
-            if (IntPtr.Size < 8)
+                Span<byte> encodedBytes = new byte[4];
+                Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int written, isFinalBlock));
+                int expectedConsumed = 3;
+                Assert.Equal(expectedConsumed, consumed);
+                Assert.Equal(encodedBytes.Length, written);
+                Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void EncodingOutputTooSmallRetry(bool isFinalBlock)
+        {
+            Span<byte> source = new byte[750];
+            Base64TestHelper.InitalizeBytes(source);
+
+            int outputSize = 320;
+            int requiredSize = Base64.GetMaxEncodedToUtf8Length(source.Length);
+
+            Span<byte> encodedBytes = new byte[outputSize];
+            Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int written, isFinalBlock));
+            int expectedConsumed = encodedBytes.Length / 4 * 3;
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(encodedBytes.Length, written);
+            Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+
+            encodedBytes = new byte[requiredSize - outputSize];
+            source = source.Slice(consumed);
+            Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out consumed, out written, isFinalBlock));
+            expectedConsumed = encodedBytes.Length / 4 * 3;
+            Assert.Equal(expectedConsumed, consumed);
+            Assert.Equal(encodedBytes.Length, written);
+            Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [OuterLoop]
+        public void EncodeTooLargeSpan(bool isFinalBlock)
+        {
+            if (!Environment.Is64BitProcess)
                 return;
 
             bool allocatedFirst = false;
@@ -102,7 +225,7 @@ namespace System.Buffers.Text.Tests
                         var source = new Span<byte>(memBlockFirst.ToPointer(), sourceCount);
                         var encodedBytes = new Span<byte>(memBlockSecond.ToPointer(), encodedCount);
 
-                        Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount));
+                        Assert.Equal(OperationStatus.DestinationTooSmall, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock));
                         Assert.Equal((encodedBytes.Length >> 2) * 3, consumed); // encoding 1500000000 bytes fits into buffer of 2000000000 bytes
                         Assert.Equal(encodedBytes.Length, encodedBytesCount);
                     }
@@ -115,121 +238,6 @@ namespace System.Buffers.Text.Tests
                 if (allocatedSecond)
                     AllocationHelper.ReleaseNative(ref memBlockSecond);
             }
-        }
-
-        [Fact]
-        public void BasicEncodingWithFinalBlockFalse()
-        {
-            var rnd = new Random(42);
-            for (int i = 0; i < 10; i++)
-            {
-                int numBytes = rnd.Next(100, 1000 * 1000);
-                Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeBytes(source, numBytes);
-                Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
-                int expectedConsumed = source.Length / 3 * 3; // only consume closest multiple of three since isFinalBlock is false
-                int expectedWritten = source.Length / 3 * 4;
-
-                Assert.Equal(OperationStatus.NeedMoreData, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: false));
-                Assert.Equal(expectedConsumed, consumed);
-                Assert.Equal(expectedWritten, encodedBytesCount);
-                Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, expectedWritten, source, encodedBytes));
-            }
-        }
-
-        [Theory]
-        [InlineData(1, "", 0, 0)]
-        [InlineData(2, "", 0, 0)]
-        [InlineData(3, "AQID", 3, 4)]
-        [InlineData(4, "AQID", 3, 4)]
-        [InlineData(5, "AQID", 3, 4)]
-        [InlineData(6, "AQIDBAUG", 6, 8)]
-        [InlineData(7, "AQIDBAUG", 6, 8)]
-        public void BasicEncodingWithFinalBlockFalseKnownInput(int numBytes, string expectedText, int expectedConsumed, int expectedWritten)
-        {
-            Span<byte> source = new byte[numBytes];
-            for (int i = 0; i < numBytes; i++)
-            {
-                source[i] = (byte)(i + 1);
-            }
-            Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
-
-            Assert.Equal(OperationStatus.NeedMoreData, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: false));
-            Assert.Equal(expectedConsumed, consumed);
-            Assert.Equal(expectedWritten, encodedBytesCount);
-
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
-            Assert.Equal(expectedText, encodedText);
-        }
-
-        [Theory]
-        [InlineData(1, "AQ==", 1, 4)]
-        [InlineData(2, "AQI=", 2, 4)]
-        [InlineData(3, "AQID", 3, 4)]
-        [InlineData(4, "AQIDBA==", 4, 8)]
-        [InlineData(5, "AQIDBAU=", 5, 8)]
-        [InlineData(6, "AQIDBAUG", 6, 8)]
-        [InlineData(7, "AQIDBAUGBw==", 7, 12)]
-        public void BasicEncodingWithFinalBlockTrueKnownInput(int numBytes, string expectedText, int expectedConsumed, int expectedWritten)
-        {
-            Span<byte> source = new byte[numBytes];
-            for (int i = 0; i < numBytes; i++)
-            {
-                source[i] = (byte)(i + 1);
-            }
-            Span<byte> encodedBytes = new byte[Base64.GetMaxEncodedToUtf8Length(source.Length)];
-
-            Assert.Equal(OperationStatus.Done, Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int encodedBytesCount, isFinalBlock: true));
-            Assert.Equal(expectedConsumed, consumed);
-            Assert.Equal(expectedWritten, encodedBytesCount);
-
-            string encodedText = Encoding.ASCII.GetString(encodedBytes.Slice(0, expectedWritten).ToArray());
-            Assert.Equal(expectedText, encodedText);
-        }
-
-        [Fact]
-        public void EncodingOutputTooSmall()
-        {
-            for (int numBytes = 4; numBytes < 20; numBytes++)
-            {
-                Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeBytes(source, numBytes);
-
-                Span<byte> encodedBytes = new byte[4];
-                Assert.Equal(OperationStatus.DestinationTooSmall,
-                    Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int written));
-                int expectedConsumed = 3;
-                Assert.Equal(expectedConsumed, consumed);
-                Assert.Equal(encodedBytes.Length, written);
-                Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
-            }
-        }
-
-        [Fact]
-        public void EncodingOutputTooSmallRetry()
-        {
-            Span<byte> source = new byte[750];
-            Base64TestHelper.InitalizeBytes(source);
-
-            int outputSize = 320;
-            int requiredSize = Base64.GetMaxEncodedToUtf8Length(source.Length);
-
-            Span<byte> encodedBytes = new byte[outputSize];
-            Assert.Equal(OperationStatus.DestinationTooSmall,
-                Base64.EncodeToUtf8(source, encodedBytes, out int consumed, out int written));
-            int expectedConsumed = encodedBytes.Length / 4 * 3;
-            Assert.Equal(expectedConsumed, consumed);
-            Assert.Equal(encodedBytes.Length, written);
-            Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
-
-            encodedBytes = new byte[requiredSize - outputSize];
-            source = source.Slice(consumed);
-            Assert.Equal(OperationStatus.Done,
-                Base64.EncodeToUtf8(source, encodedBytes, out consumed, out written));
-            expectedConsumed = encodedBytes.Length / 4 * 3;
-            Assert.Equal(expectedConsumed, consumed);
-            Assert.Equal(encodedBytes.Length, written);
-            Assert.True(Base64TestHelper.VerifyEncodingCorrectness(expectedConsumed, encodedBytes.Length, source, encodedBytes));
         }
 
         [Fact]

@@ -263,6 +263,18 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public bool IsPlatformNeutral
+        {
+            get
+            {
+                PEHeaders peHeaders = PEReader.PEHeaders;
+                return peHeaders.PEHeader.Magic == PEMagic.PE32
+                    && (peHeaders.CorHeader.Flags & (CorFlags.Prefers32Bit | CorFlags.Requires32Bit)) != CorFlags.Requires32Bit
+                    && (peHeaders.CorHeader.Flags & CorFlags.ILOnly) != 0
+                    && peHeaders.CoffHeader.Machine == Machine.I386;
+            }
+        }
+
         public sealed override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
         {
             var stringComparer = _metadataReader.StringComparer;

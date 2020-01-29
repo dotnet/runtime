@@ -3634,7 +3634,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
-        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
         if (!ilCodeVersion.IsDefaultVersion())
         {

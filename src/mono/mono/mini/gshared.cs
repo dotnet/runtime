@@ -2249,6 +2249,27 @@ public class Tests
 		return (c.Foo () == "abcd") ? 0 : 1;
 	}
 #endif
+
+	class KvpList<T> {
+		public T[] array = new T[4];
+		int size = 0;
+
+		[MethodImpl(MethodImplOptions.NoInlining)]
+		public void MyAdd(T item) {
+			if (size < (uint)array.Length) {
+				array [size] = item;
+				size++;
+			}
+		}
+	}
+
+	public static int test_0_regress_18455 () {
+		var p = new KvpList<KeyValuePair<int, KeyValuePair<int,int>>> ();
+		KeyValuePair<int, KeyValuePair<int,int>> kvp = new KeyValuePair<int, KeyValuePair<int,int>> (3, new KeyValuePair<int,int> (1, 2));
+
+		p.MyAdd (kvp);
+		return p.array [1].Key == 0 ? 0 : 1;
+	}
 }
 
 // #13191

@@ -1719,7 +1719,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     // Make sure that the return register is reported as live GC-ref so that any GC that kicks in while
     // executing GS cookie check will not collect the object pointed to by REG_INTRET (R0).
-    if (!pushReg && (compiler->info.compRetType == TYP_REF))
+    if (!pushReg && (compiler->info.compRetNativeType == TYP_REF))
         gcInfo.gcRegGCrefSetCur |= RBM_INTRET;
 
     // We need two temporary registers, to load the GS cookie values and compare them. We can't use
@@ -2253,6 +2253,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
         {
             if (JitConfig.JitForceFallback() || compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5))
             {
+                JITDUMP("\n\n*** forcing no-way fallback -- current jit request will be abandoned ***\n\n");
                 NO_WAY_NOASSERT("Stress failure");
             }
         }
@@ -2287,10 +2288,9 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
     compiler->EndPhase(PHASE_GENERATE_CODE);
 
-    codeSize =
-        GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(), IsFullPtrRegMapRequired(),
-                                     (compiler->info.compRetType == TYP_REF), compiler->compHndBBtabCount, &prologSize,
-                                     &epilogSize, codePtr, &coldCodePtr, &consPtr);
+    codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
+                                            IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
+                                            &epilogSize, codePtr, &coldCodePtr, &consPtr);
 
     compiler->EndPhase(PHASE_EMIT_CODE);
 
@@ -6713,6 +6713,8 @@ void CodeGen::genReserveEpilog(BasicBlock* block)
                 default:
                     break;
             }
+
+            JITDUMP("Extending return value GC liveness to epilog\n");
         }
     }
 
@@ -7113,7 +7115,7 @@ void CodeGen::genFnProlog()
     if (compiler->compJitHaltMethod())
     {
         /* put a nop first because the debugger and other tools are likely to
-           put an int3 at the begining and we don't want to confuse them */
+           put an int3 at the beginning and we don't want to confuse them */
 
         instGen(INS_nop);
         instGen(INS_BREAKPOINT);
@@ -11114,15 +11116,16 @@ void CodeGen::genReturn(GenTree* treeNode)
     //                  in the handling of the GT_RETURN statement.
     //                  Such structs containing GC pointers need to be handled by calling gcInfo.gcMarkRegSetNpt
     //                  for the return registers containing GC refs.
-
-    // There will be a single return block while generating profiler ELT callbacks.
     //
     // Reason for not materializing Leave callback as a GT_PROF_HOOK node after GT_RETURN:
     // In flowgraph and other places assert that the last node of a block marked as
     // BBJ_RETURN is either a GT_RETURN or GT_JMP or a tail call.  It would be nice to
     // maintain such an invariant irrespective of whether profiler hook needed or not.
     // Also, there is not much to be gained by materializing it as an explicit node.
-    if (compiler->compCurBB == compiler->genReturnBB)
+    //
+    // There should be a single return block while generating profiler ELT callbacks,
+    // so we just look for that block to trigger insertion of the profile hook.
+    if ((compiler->compCurBB == compiler->genReturnBB) && compiler->compIsProfilerHookNeeded())
     {
         // !! NOTE !!
         // Since we are invalidating the assumption that we would slip into the epilog
@@ -11143,9 +11146,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             regCount = retTypeDesc.GetReturnRegCount();
         }
 
-        if (varTypeIsGC(compiler->info.compRetType))
+        if (varTypeIsGC(compiler->info.compRetNativeType))
         {
-            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetType);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, compiler->info.compRetNativeType);
         }
         else if (compiler->compMethodReturnsMultiRegRetType())
         {
@@ -11157,10 +11160,14 @@ void CodeGen::genReturn(GenTree* treeNode)
                 }
             }
         }
+        else if (compiler->compMethodReturnsRetBufAddr())
+        {
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_BYREF);
+        }
 
         genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
 
-        if (varTypeIsGC(compiler->info.compRetType))
+        if (varTypeIsGC(compiler->info.compRetNativeType))
         {
             gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
@@ -11173,6 +11180,10 @@ void CodeGen::genReturn(GenTree* treeNode)
                     gcInfo.gcMarkRegSetNpt(genRegMask(retTypeDesc.GetABIReturnReg(i)));
                 }
             }
+        }
+        else if (compiler->compMethodReturnsRetBufAddr())
+        {
+            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
         }
     }
 #endif // PROFILING_SUPPORTED

@@ -16,22 +16,22 @@ namespace System.Security.Cryptography.Asn1
     {
         internal Oid AttrType;
         internal ReadOnlyMemory<byte>[] AttrValues;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteObjectIdentifier(AttrType);
 
             writer.PushSetOf();
             for (int i = 0; i < AttrValues.Length; i++)
             {
-                writer.WriteEncodedValue(AttrValues[i].Span); 
+                writer.WriteEncodedValue(AttrValues[i].Span);
             }
             writer.PopSetOf();
 
@@ -42,33 +42,30 @@ namespace System.Security.Cryptography.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static AttributeAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out AttributeAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out AttributeAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out AttributeAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out AttributeAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out AttributeAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out AttributeAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader collectionReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader collectionReader;
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             decoded.AttrType = sequenceReader.ReadObjectIdentifier();
 
             // Decode SEQUENCE OF for AttrValues
@@ -79,7 +76,8 @@ namespace System.Security.Cryptography.Asn1
 
                 while (collectionReader.HasData)
                 {
-                    tmpItem = collectionReader.ReadEncodedValue(); 
+                    tmpSpan = collectionReader.ReadEncodedValue();
+                    tmpItem = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                     tmpList.Add(tmpItem);
                 }
 

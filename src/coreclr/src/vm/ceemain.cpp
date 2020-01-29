@@ -166,7 +166,6 @@
 #include "threadsuspend.h"
 #include "disassembler.h"
 #include "jithost.h"
-#include "castcache.h"
 
 #ifndef FEATURE_PAL
 #include "dwreport.h"
@@ -684,6 +683,9 @@ void EEStartupHelper(COINITIEE fFlags)
         InitializeStartupFlags();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
+        CodeVersionManager::StaticInitialize();
+        TieredCompilationManager::StaticInitialize();
+        CallCountingManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
@@ -960,9 +962,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
-
-        // This will allocate a handle, so do this after GC is initialized.
-        CastCache::Initialize();
 
 #ifdef DEBUGGING_SUPPORTED
         // Make a call to publish the DefaultDomain for the debugger

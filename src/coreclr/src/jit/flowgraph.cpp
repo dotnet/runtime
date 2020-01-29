@@ -10668,11 +10668,11 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     }
 #endif // DEBUG
 
-    noway_assert(block->bbPrev != nullptr); // Can use this function to remove the first block
+    noway_assert(block->bbPrev != nullptr); // Can't use this function to remove the first block
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-    assert(!block->bbPrev->isBBCallAlwaysPair()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
-#endif                                            // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+    assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
+#endif                                        // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     /* First walk the statement trees in this basic block and delete each stmt */
 
@@ -11060,8 +11060,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     {
         noway_assert(block->isEmpty());
 
-        /* The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it) */
-        noway_assert((bPrev == nullptr) || !bPrev->isBBCallAlwaysPair());
+        // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
+        noway_assert(!block->isBBCallAlwaysPairTail());
 
         /* This cannot be the last basic block */
         noway_assert(block != fgLastBB);
@@ -11303,7 +11303,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 if ((bPrev->bbJumpDest == bPrev->bbNext) &&
                     !fgInDifferentRegions(bPrev, bPrev->bbJumpDest)) // We don't remove a branch from Hot -> Cold
                 {
-                    if ((bPrev == fgFirstBB) || !bPrev->bbPrev->isBBCallAlwaysPair())
+                    if ((bPrev == fgFirstBB) || !bPrev->isBBCallAlwaysPairTail())
                     {
                         // It's safe to change the jump type
                         bPrev->bbJumpKind = BBJ_NONE;
@@ -11672,6 +11672,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
                 // Check for a BBJ_CALLFINALLY followed by a rarely run paired BBJ_ALWAYS
                 //
+                // TODO-Cleanup: How can this be hit? If bbPrev starts a CallAlwaysPair, then this
+                // block must be BBJ_ALWAYS, not BBJ_CALLFINALLY.
                 if (bPrev->isBBCallAlwaysPair())
                 {
                     /* Is the next block rarely run? */
@@ -13908,7 +13910,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             // A GOTO cannot be to the next block since that
             // should have been fixed by the  optimization above
             // An exception is made for a jump from Hot to Cold
-            noway_assert(block->bbJumpDest != block->bbNext || ((bPrev != nullptr) && bPrev->isBBCallAlwaysPair()) ||
+            noway_assert(block->bbJumpDest != block->bbNext || block->isBBCallAlwaysPairTail() ||
                          fgInDifferentRegions(block, block->bbNext));
 
             /* Cannot remove the first BB */
@@ -14586,7 +14588,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
             if (!(block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
             {
                 // We can't remove if the BBJ_ALWAYS is part of a BBJ_CALLFINALLY pair
-                if ((bPrev == nullptr) || !bPrev->isBBCallAlwaysPair())
+                if (!block->isBBCallAlwaysPairTail())
                 {
                     /* the unconditional jump is to the next BB  */
                     block->bbJumpKind = BBJ_NONE;
@@ -16954,7 +16956,7 @@ void Compiler::fgDebugCheckUpdate()
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
             // even if we can prove that the finally block never returns.
-            && (prev == NULL || block->bbJumpKind != BBJ_ALWAYS || !prev->isBBCallAlwaysPair())
+            && !block->isBBCallAlwaysPairTail()
 #endif // FEATURE_EH_FUNCLETS
                 )
         {
@@ -17001,7 +17003,7 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        bool prevIsCallAlwaysPair = ((prev != nullptr) && prev->isBBCallAlwaysPair());
+        bool prevIsCallAlwaysPair = block->isBBCallAlwaysPairTail();
 
         // Check for an unnecessary jumps to the next block
         bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
@@ -22926,13 +22928,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
-
-                // Copy inlinee bbFlags to caller bbFlags.
-                const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
-                noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
-                noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-                iciBlock->bbFlags |= inlineeBlockFlags;
             }
+
+            // Copy inlinee bbFlags to caller bbFlags.
+            const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+            noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+            iciBlock->bbFlags |= inlineeBlockFlags;
 
 #ifdef DEBUG
             if (verbose)
@@ -23182,6 +23184,11 @@ _Done:
 #endif // DEBUG
         // Replace the call with the return expression
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
+
+        if (bottomBlock != nullptr)
+        {
+            bottomBlock->bbFlags |= InlineeCompiler->fgLastBB->bbFlags & BBF_SPLIT_GAINED;
+        }
     }
 
     //
