@@ -28,7 +28,6 @@ namespace ILCompiler
         public string TargetOS { get; set; }
         public string JitPath { get; set; }
         public string SystemModule { get; set; }
-        public bool NonLocalGenerics { get; set; }
         public bool WaitForDebugger { get; set; }
         public bool Tuning { get; set; }
         public bool Partial { get; set; }
@@ -84,7 +83,6 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed"),
                 new Option(new[] { "--inputbubble" }, "True when the entire input forms a version bubble (default = per-assembly bubble)"),
-                new Option(new[] { "--non-local-generics" }, "Include generic code into module even if it isn't defined in module."),
                 new Option(new[] { "--tuning" }, "Generate IBC tuning image") 
                 {
                     Argument = new Argument<bool>() 
