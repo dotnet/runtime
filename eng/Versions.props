@@ -20,7 +20,7 @@
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(ConfigurationGroup)' == 'Release' or '$(Configuration)' == 'Release')">true</EnableNgenOptimization>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
@@ -96,7 +96,9 @@
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxVersion>
-    <optimizationIBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationIBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreFxVersion>
+    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20190716.1</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftTargetingPackPrivateWinRTVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTVersion>
@@ -133,7 +135,8 @@
     <MicrosoftPrivateIntellisensePackage>microsoft.private.intellisense</MicrosoftPrivateIntellisensePackage>
     <MicrosoftDotNetXUnitConsoleRunnerPackage>Microsoft.DotNet.XUnitConsoleRunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
     <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
-    <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
+    <WindowsOptimizationIBCCoreCLRPackage>optimization.windows_nt-x64.IBC.CoreCLR</WindowsOptimizationIBCCoreCLRPackage>
+    <LinuxOptimizationIBCCoreCLRPackage>optimization.linux-x64.IBC.CoreCLR</LinuxOptimizationIBCCoreCLRPackage>
     <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
     <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>
