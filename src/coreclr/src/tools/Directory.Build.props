@@ -1,4 +1,9 @@
 <Project>
+  <!-- The managed projects in this folder are built directly from Arcade, so Configuration is defined but __BuildType is not.
+       Set __BuildType to the correct value ($(Configuration)) so the projects are built in the correct configuration. -->
+  <PropertyGroup>
+    <__BuildType Condition="'$(__BuildType)' == ''">$(Configuration)</__BuildType>
+  </PropertyGroup>
   <Import Project="../Directory.Build.props" />
   <PropertyGroup>
     <IsShipping>false</IsShipping>

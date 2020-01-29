@@ -267,9 +267,11 @@ set __CommonMSBuildArgs=/p:__BuildOS=%__BuildOS% /p:__BuildType=%__BuildType% /p
 if %__EnforcePgo%==1 (
     if %__BuildArchArm%==1 (
         echo NOTICE: enforcepgo does nothing on arm architecture
+        set __EnforcePgo=0
     )
     if %__BuildArchArm64%==1 (
         echo NOTICE: enforcepgo does nothing on arm64 architecture
+        set __EnforcePgo=0
     )
 )
 
@@ -569,6 +571,30 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
+    if /i "%__BuildType%" == "Release" (
+        if not "%__BuildArch%" == "arm64" (
+            copy /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+            if not !errorlevel! == 0 (
+                echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
+                set __exitCode=!errorlevel!
+                goto ExitWithCode
+            )
+        )
+    )
+
+    if %__EnforcePgo% EQU 1 (
+        "%PYTHON%" "%__ProjectDir%\src\scripts\pgocheck.py" "%__BinDir%\coreclr.dll" "%__BinDir%\clrjit.dll"
+    )
+
+    call %__RepoRootDir%\dotnet.cmd msbuild "%__ProjectDir%\clr.featuredefines.props" /clp:nosummary /nodeReuse:false^
+        /t:CheckDefinitions
+
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: definition check failed.
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
+    )
+
 :SkipNativeBuild
     REM } Scope environment changes end
     endlocal
@@ -576,39 +602,20 @@ if %__BuildNative% EQU 1 (
 
 REM =========================================================================================
 REM ===
-REM === CoreLib and NuGet package build section.
+REM === Managed tools build section
 REM ===
 REM =========================================================================================
 
-if %__BuildCoreLib% EQU 1 (
+if "%__BuildManagedTools%" == "1" (
+
     REM Scope environment changes start {
     setlocal
 
-    echo %__MsgPrefix%Commencing build of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
-    rem Explicitly set Platform causes conflicts in CoreLib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
-    set Platform=
+    echo %__MsgPrefix%Publishing crossgen2...
+    call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
 
-    set __ExtraBuildArgs=
-
-    if "%__BuildManagedTools%" == "1" (
-        set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildManagedTools=true
-    )
-
-    set __BuildLogRootName=System.Private.CoreLib
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        %__ProjectDir%\src\build.proj /t:Restore^
-        /nodeReuse:false /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true^
-        !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies restore failed. Refer to the build log files for details.
+        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
         echo     !__BuildLog!
         echo     !__BuildWrn!
         echo     !__BuildErr!
@@ -616,34 +623,6 @@ if %__BuildCoreLib% EQU 1 (
         goto ExitWithCode
     )
 
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-        %__ProjectDir%\src\build.proj /nodeReuse:false /p:PortableBuild=true /maxcpucount^
-        '!__MsbuildLog!' '!__MsbuildWrn!' '!__MsbuildErr!' %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
-    if not !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: Managed Product assemblies build failed. Refer to the build log files for details.
-        echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
-        set __exitCode=!errorlevel!
-        goto ExitWithCode
-    )
-
-    if "%__BuildManagedTools%" == "1" (
-        echo %__MsgPrefix%Publishing crossgen2...
-        call %__RepoRootDir%\dotnet.cmd publish --self-contained -r win-%__BuildArch% -c %__BuildType% -o "%__BinDir%\crossgen2" "%__ProjectDir%\src\tools\crossgen2\crossgen2\crossgen2.csproj" /nologo /p:BuildArch=%__BuildArch%
-
-        if not !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to build crossgen2.
-            echo     !__BuildLog!
-            echo     !__BuildWrn!
-            echo     !__BuildErr!
-            set __exitCode=!errorlevel!
-            goto ExitWithCode
-        )
-
-        copy /Y "%__BinDir%\clrjit.dll" "%__BinDir%\crossgen2\clrjitilc.dll"  | find /i /v "file(s) copied"
-        copy /Y "%__BinDir%\jitinterface.dll" "%__BinDir%\crossgen2\jitinterface.dll" | find /i /v "file(s) copied"
-    )
     REM } Scope environment changes end
     endlocal
 )

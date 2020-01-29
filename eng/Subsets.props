@@ -81,7 +81,9 @@
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
 
     <!-- CoreClr -->
-    <SubsetName Include="All" Category="CoreClr" Description="The .NET runtime." />
+    <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
+    <SubsetName Include="CoreLib" Category="CoreClr" Description="The managed System.Private.CoreLib library for CoreCLR." />
+    <SubsetName Include="Tools" Category="CoreClr" Description="Managed tools that support CoreCLR development and testing." />
 
     <!-- Mono -->
     <SubsetName Include="All" Category="Mono" Description="The Mono .NET runtime." />
@@ -114,6 +116,12 @@
     <CoreClrProjectToBuild>
       <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
     </CoreClrProjectToBuild>
+    <CoreClrCoreLibProjectToBuild>
+      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+    </CoreClrCoreLibProjectToBuild>
+    <CoreClrManagedToolsProjectToBuild>
+      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+    </CoreClrManagedToolsProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
@@ -129,9 +137,21 @@
   </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('corelib'))">
+    <CoreClrCoreLibProjectToBuild Include="$(CoreClrProjectRoot)src\System.Private.CoreLib\System.Private.CoreLib.csproj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CoreClrCoreLibProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('runtime'))">
     <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('tools'))">
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
+    <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
   </ItemGroup>
 
   <!-- Mono sets -->

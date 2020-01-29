@@ -221,14 +221,6 @@ build_CoreLib()
             echo "${__ErrMsgPrefix}Failed to build crossgen2."
             exit "$exit_code"
         fi
-
-        if [[ "$__HostOS" == "OSX" ]]; then
-            cp "$__BinDir/libclrjit.dylib" "$__BinDir/crossgen2/libclrjitilc.dylib"
-            cp "$__BinDir/libjitinterface.dylib" "$__BinDir/crossgen2/libjitinterface.dylib"
-        else
-            cp "$__BinDir/libclrjit.so" "$__BinDir/crossgen2/libclrjitilc.so"
-            cp "$__BinDir/libjitinterface.so" "$__BinDir/crossgen2/libjitinterface.so"
-        fi
     fi
 
     local __CoreLibILDir="$__BinDir"/IL

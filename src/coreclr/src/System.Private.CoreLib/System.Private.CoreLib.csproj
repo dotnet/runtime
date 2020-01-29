@@ -13,7 +13,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(BinDir)IL/</OutputPath>
+    <OutputPath>$(ArtifactsBinDir)/coreclr/$(BuildOS).$(BuildArch).$(Configuration)/IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
 
@@ -31,7 +31,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -322,8 +321,7 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
 
-    <!-- This file should be generated in such a way that VS can regenerate it, rather than with python (src\coreclr\src\scripts\genRuntimeEventSources.py) -->
-    <!-- For now, help VS users figure out how to be successful -->
+    <!--TODO: Figure out how we want to drive the generation of this file when only using Arcade -->
     <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
             Condition="'$(FeaturePerfTracing)' == 'true' and
                        '$(BuildingInsideVisualStudio)' == 'true' and
@@ -430,17 +428,6 @@
     </Compile>
   </ItemGroup>
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
-  <PropertyGroup>
-    <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
-  </PropertyGroup>
-  <!-- PYTHON will not be defined when building in VS-->
-  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true' and '$(BuildingInsideVisualStudio)' != 'true'">
-    <!-- Compiler Definition Verification -->
-    <PropertyGroup>
-      <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
-    </PropertyGroup>
-    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
-  </Target>
   <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
     <OSGroup>Windows_NT</OSGroup>
   </PropertyGroup>

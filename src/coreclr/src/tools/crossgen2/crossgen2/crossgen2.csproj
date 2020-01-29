@@ -34,4 +34,28 @@
       <Version>0.3.0-alpha.19525.2</Version>
     </PackageReference>
   </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
+    <LibraryNamePrefix>lib</LibraryNamePrefix>
+    <LibraryNameExtension>.so</LibraryNameExtension>
+    <LibraryNameExtension Condition="'$(TargetsOSX)' == 'true'">.dylib</LibraryNameExtension>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <LibraryNamePrefix></LibraryNamePrefix>
+    <LibraryNameExtension>.dll</LibraryNameExtension>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)jitinterface$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="%(FileName)%(Extension)"
+     />
+
+    <Content Include="$(BinDir)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      Link="$(LibraryNamePrefix)clrjitilc$(LibraryNameExtension)"
+     />
+  </ItemGroup>
 </Project>

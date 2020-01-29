@@ -77,4 +77,13 @@
         <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);PLATFORM_WINDOWS</DefineConstants>
         <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);PLATFORM_OSX</DefineConstants>
     </PropertyGroup>
+
+  <!-- PYTHON will not be defined when building in VS-->
+  <Target Name="CheckDefinitions">
+    <!-- Compiler Definition Verification -->
+    <PropertyGroup>
+      <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
+    </PropertyGroup>
+    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)src\scripts\check-definitions.py &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
+  </Target>
 </Project>
