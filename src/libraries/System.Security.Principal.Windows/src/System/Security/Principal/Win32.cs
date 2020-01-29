@@ -37,7 +37,7 @@ namespace System.Security.Principal
 
 
         internal static SafeLsaPolicyHandle LsaOpenPolicy(
-            string systemName,
+            string? systemName,
             PolicyRights rights)
         {
 
@@ -115,7 +115,7 @@ namespace System.Security.Principal
 
         internal static int CreateSidFromString(
             string stringSid,
-            out byte[] resultSid
+            out byte[]? resultSid
             )
         {
             int ErrorCode;
@@ -160,7 +160,7 @@ namespace System.Security.Principal
         internal static int CreateWellKnownSid(
             WellKnownSidType sidType,
             SecurityIdentifier domainSid,
-            out byte[] resultSid
+            out byte[]? resultSid
             )
         {
             //
@@ -253,7 +253,7 @@ namespace System.Security.Principal
         //
         internal static int GetWindowsAccountDomainSid(
             SecurityIdentifier sid,
-            out SecurityIdentifier resultSid
+            out SecurityIdentifier? resultSid
             )
         {
             //
