@@ -193,6 +193,14 @@ namespace ILCompiler
             }
         }
 
+        public string GetFilePathForLoadedModule(EcmaModule module)
+        {
+            ModuleData moduleData;
+            if (!_moduleHashtable.TryGetValue(module, out moduleData))
+                return null;
+            return moduleData.FilePath;
+        }
+
         private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding)
         {
             MemoryMappedViewAccessor mappedViewAccessor = null;

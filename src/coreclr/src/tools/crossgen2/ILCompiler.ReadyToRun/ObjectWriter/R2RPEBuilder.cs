@@ -217,6 +217,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.SetCorHeader(symbol, headerSize);
         }
 
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _sectionBuilder.SetDebugDirectory(symbol, size);
+        }
+
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
         {
             _sectionBuilder.SetWin32Resources(symbol, resourcesSize);
@@ -254,6 +259,11 @@ namespace ILCompiler.PEWriter
             }
 
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
+        }
+
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            return _sectionBuilder.GetSymbolFilePosition(symbol);
         }
 
         /// <summary>

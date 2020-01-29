@@ -17,6 +17,7 @@ using Internal.Text;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
+using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -178,6 +179,7 @@ namespace ILCompiler.DependencyAnalysis
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
+            DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
             AttributePresenceFilterNode attributePresenceFilterNode)
         {
@@ -189,6 +191,7 @@ namespace ILCompiler.DependencyAnalysis
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
+            DebugDirectoryNode = debugDirectoryNode;
             AttributePresenceFilter = attributePresenceFilterNode;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
@@ -283,6 +286,19 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedCorHeaderNode(module);
             });
 
+            _debugDirectories = new NodeCache<EcmaModule, DebugDirectoryNode>(module =>
+            {
+                return new DebugDirectoryNode(module);
+            });
+
+            _debugDirectoryEntries = new NodeCache<Tuple<EcmaModule, DebugDirectoryEntry>, DebugDirectoryEntryNode>(key =>
+            {
+                if (key.Item2.Equals(default(DebugDirectoryEntry)))
+                    return new NativeDebugDirectoryEntryNode(key.Item1);
+                else
+                    return new CopiedDebugDirectoryEntryNode(key.Item1, key.Item2);
+            });
+
             _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
             {
                 return new CopiedMetadataBlobNode(module);
@@ -319,6 +335,8 @@ namespace ILCompiler.DependencyAnalysis
         public ModuleTokenResolver Resolver;
 
         public CopiedCorHeaderNode CopiedCorHeaderNode;
+
+        public DebugDirectoryNode DebugDirectoryNode;
 
         public Win32ResourcesNode Win32ResourcesNode;
 
@@ -679,6 +697,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
             graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+            graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
@@ -765,6 +784,20 @@ namespace ILCompiler.DependencyAnalysis
         public CopiedCorHeaderNode CopiedCorHeader(EcmaModule module)
         {
             return _copiedCorHeaders.GetOrAdd(module);
+        }
+
+        private NodeCache<EcmaModule, DebugDirectoryNode> _debugDirectories;
+
+        public DebugDirectoryNode DebugDirectory(EcmaModule module)
+        {
+            return _debugDirectories.GetOrAdd(module);
+        }
+
+        private NodeCache<Tuple<EcmaModule, DebugDirectoryEntry>, DebugDirectoryEntryNode> _debugDirectoryEntries;
+
+        public DebugDirectoryEntryNode DebugDirectoryEntry(EcmaModule module, DebugDirectoryEntry sourceEntry)
+        {
+            return _debugDirectoryEntries.GetOrAdd(new Tuple<EcmaModule, DebugDirectoryEntry>(module, sourceEntry));
         }
 
         private NodeCache<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs;

@@ -21,10 +21,11 @@ namespace ILCompiler.DependencyAnalysis
                                                     // for relative pointer (used to make NGen relocation 
                                                     // section smaller)    
         IMAGE_REL_SECREL                = 0x80,     // 32 bit offset from base of section containing target
+        IMAGE_REL_FILE_ABSOLUTE         = 0x81,     // 32 bit offset from begining of image
 
-        IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x81,   // ADRP
-        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x82,   // ADD/ADDS (immediate) with zero shift, for page offset
-        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x83,   // LDR (indexed, unsigned immediate), for page offset
+        IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 = 0x82,   // ADRP
+        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A = 0x83,   // ADD/ADDS (immediate) with zero shift, for page offset
+        IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L = 0x84,   // LDR (indexed, unsigned immediate), for page offset
 
         //
         // Relocations for R2R image production
@@ -272,6 +273,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -305,6 +307,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:
