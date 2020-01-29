@@ -614,16 +614,31 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
-        public void Timeout_CallerCanceledToken_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        public void Timeout_CallerCanceledTokenAfterTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
             {
-                client.Timeout = TimeSpan.FromMilliseconds(1);
+                client.Timeout = TimeSpan.FromMilliseconds(0.01);
                 CancellationTokenSource cts = new CancellationTokenSource();
                 CancellationToken token = cts.Token;
                 cts.Cancel();
-                Task.Delay(10).Wait();
                 Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
+                TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                Assert.Null(e.InnerException);
+            }
+        }
+
+        [Theory]
+        [InlineData(HttpCompletionOption.ResponseContentRead)]
+        [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
+        {
+            using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
+            {
+                client.Timeout = TimeSpan.FromSeconds(2);
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
+                cts.Cancel();
                 TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
                 Assert.Null(e.InnerException);
             }
