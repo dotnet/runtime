@@ -7,7 +7,7 @@ using System;
 using System.Runtime.CompilerServices;
 
 // Optimization of type equality tests to various
-// vtable and handle copmarions.
+// vtable and handle comparisons.
 
 class X<Q>
 {
