@@ -642,7 +642,21 @@ namespace System.Text.RegularExpressions
                         case '-':
                             if (!scanOnly)
                             {
-                                charClass!.AddRange(ch, ch);
+                                if (inRange)
+                                {
+                                    if (chPrev > ch)
+                                    {
+                                        throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
+                                    }
+
+                                    charClass!.AddRange(chPrev, ch);
+                                    inRange = false;
+                                    chPrev = '\0';
+                                }
+                                else
+                                {
+                                    charClass!.AddRange(ch, ch);
+                                }
                             }
                             continue;
 
