@@ -371,14 +371,14 @@ mono_wasm_setup_single_step (int kind)
 		depth = STEP_DEPTH_OVER;
 		break;
 	default:
-		g_error ("dunno step kind %d", kind);
+		g_error ("[dbg] unknown step kind %d", kind);
 	}
 
 	DbgEngineErrorCode err = mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
 	if (err != DE_ERR_NONE) {
 		DEBUG_PRINTF (1, "[dbg] Failed to setup single step request");
 	}
-	printf ("ss is in place, now ahat?\n");
+	DEBUG_PRINTF (1, "[dbg] single step is in place, now what?\n");
 }
 
 EMSCRIPTEN_KEEPALIVE void
