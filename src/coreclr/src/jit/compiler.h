@@ -8692,6 +8692,7 @@ public:
 #define MAX_STRESS_WEIGHT 100
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
+    bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
 
 #ifdef DEBUG
 
