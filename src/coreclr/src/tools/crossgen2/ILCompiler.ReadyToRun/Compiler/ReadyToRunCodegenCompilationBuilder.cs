@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -141,6 +142,13 @@ namespace ILCompiler
                 return true;
             });
 
+            ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+            if (_inputModule.IsPlatformNeutral)
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            flags |= _compilationGroup.GetReadyToRunFlags();
+
+            var header = new HeaderNode(_context.Target, flags);
+
             NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
@@ -149,7 +157,8 @@ namespace ILCompiler
                 signatureContext,
                 corHeaderNode,
                 win32Resources,
-                attributePresenceFilterNode);
+                attributePresenceFilterNode,
+                header);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
