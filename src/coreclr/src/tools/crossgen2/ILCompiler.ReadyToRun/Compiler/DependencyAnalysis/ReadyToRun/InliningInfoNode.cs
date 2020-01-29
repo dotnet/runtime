@@ -41,11 +41,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             Dictionary<EcmaMethod, HashSet<MethodDesc>> inlineeToInliners = new Dictionary<EcmaMethod, HashSet<MethodDesc>>();
 
-            var r2rfactory = ((ReadyToRunCodegenNodeFactory)factory);
-
             // Build a map from inlinee to the list of inliners
             // We are only interested in the generic definitions of these.
-            foreach (MethodWithGCInfo methodNode in r2rfactory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo methodNode in factory.EnumerateCompiledMethods())
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;
@@ -96,7 +94,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sig.Append(new UnsignedConstant((uint)(inlineeRid << 1 | (isForeignInlinee ? 1 : 0))));
                 if (isForeignInlinee)
                 {
-                    sig.Append(new UnsignedConstant((uint)r2rfactory.ManifestMetadataTable.ModuleToIndex(inlinee.Module)));
+                    sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inlinee.Module)));
                 }
 
                 foreach (EcmaMethod inliner in inlineeWithInliners.Value)
@@ -106,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     sig.Append(new UnsignedConstant((uint)(inlinerRid << 1 | (isForeignInliner ? 1 : 0))));
                     if (isForeignInliner)
                     {
-                        sig.Append(new UnsignedConstant((uint)r2rfactory.ManifestMetadataTable.ModuleToIndex(inliner.Module)));
+                        sig.Append(new UnsignedConstant((uint)factory.ManifestMetadataTable.ModuleToIndex(inliner.Module)));
                     }
                 }
 
