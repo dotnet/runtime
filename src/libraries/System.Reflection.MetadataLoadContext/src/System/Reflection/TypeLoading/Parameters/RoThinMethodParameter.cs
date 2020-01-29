@@ -20,7 +20,7 @@ namespace System.Reflection.TypeLoading
             Debug.Assert(parameterType != null);
         }
 
-        public sealed override string? Name => null;
+        public sealed override string Name => null;
         public sealed override ParameterAttributes Attributes => ParameterAttributes.None;
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => Array.Empty<CustomAttributeData>();
@@ -31,6 +31,6 @@ namespace System.Reflection.TypeLoading
 
         // Returning "null" matches the .NET Framework behavior, though this is inconsistent with the DBNull/Missing values
         // returned by fat ParameterInfo's without default values.
-        public sealed override object? RawDefaultValue => null;
+        public sealed override object RawDefaultValue => null;
     }
 }

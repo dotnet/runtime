@@ -85,7 +85,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // - MethodImpls ignored. (I didn't say it made sense, this is just how the .NET Framework api we're porting behaves.)
         // - Implemented interfaces ignores. (I didn't say it made sense, this is just how the .NET Framework api we're porting behaves.)
         //
-        public static M? GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
+        public static M GetImplicitlyOverriddenBaseClassMember<M>(this M member) where M : MemberInfo
         {
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
             policies.GetMemberAttributes(member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot);
@@ -94,10 +94,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 return null;
             }
             string name = member.Name;
-            TypeInfo typeInfo = member.DeclaringType!.GetTypeInfo();
+            TypeInfo typeInfo = member.DeclaringType.GetTypeInfo();
             while (true)
             {
-                Type? baseType = typeInfo.BaseType;
+                Type baseType = typeInfo.BaseType;
                 if (baseType == null)
                 {
                     return null;

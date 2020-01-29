@@ -17,7 +17,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredMethods;
         }
 
-        public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<MethodInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
         {
             return type.GetMethodsCore(filter, reflectedType);
         }
@@ -35,7 +35,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override bool ImplicitlyOverrides(MethodInfo baseMember, MethodInfo derivedMember)
         {
-            return AreNamesAndSignaturesEqual(baseMember!, derivedMember!);
+            return AreNamesAndSignaturesEqual(baseMember, derivedMember);
         }
 
         //
