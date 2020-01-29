@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -60,10 +61,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        public sealed override bool ImplicitlyOverrides(EventInfo? baseMember, EventInfo? derivedMember)
+        public sealed override bool ImplicitlyOverrides(EventInfo baseMember, EventInfo derivedMember)
         {
-            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
-            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
+            MethodInfo baseAccessor = GetAccessorMethod(baseMember);
+            MethodInfo derivedAccessor = GetAccessorMethod(derivedMember);
             return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
@@ -72,9 +73,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        private MethodInfo? GetAccessorMethod(EventInfo e)
+        private MethodInfo GetAccessorMethod(EventInfo e)
         {
             MethodInfo? accessor = e.AddMethod;
+            Debug.Assert(accessor != null);
             return accessor;
         }
     }

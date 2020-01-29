@@ -43,7 +43,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             visibility = member.IsNestedPublic ? MethodAttributes.Public : MethodAttributes.Private;
         }
 
-        public sealed override bool ImplicitlyOverrides(Type? baseMember, Type? derivedMember) => false;
+        public sealed override bool ImplicitlyOverrides(Type baseMember, Type derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(Type member, Type[] priorMembers, int startIndex, int endIndex)
         {
