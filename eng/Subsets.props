@@ -84,6 +84,7 @@
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="CoreLib" Category="CoreClr" Description="The managed System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Tools" Category="CoreClr" Description="Managed tools that support CoreCLR development and testing." />
+    <SubsetName Include="Packages" Category="CoreClr" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
 
     <!-- Mono -->
     <SubsetName Include="All" Category="Mono" Description="The Mono .NET runtime." />
@@ -122,6 +123,9 @@
     <CoreClrManagedToolsProjectToBuild>
       <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
     </CoreClrManagedToolsProjectToBuild>
+    <CoreClrPackagesProjectToBuild>
+      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+    </CoreClrPackagesProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
@@ -154,6 +158,10 @@
     <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('packages'))">
+    <CoreClrPackagesProjectToBuild Include="$(CoreClrProjectRoot)src\.nuget\packages.builds" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CoreClrPackagesProjectToBuild)" />
+  </ItemGroup>
   <!-- Mono sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('all'))">
     <MonoProjectToBuild Include="$(MonoProjectRoot)mono.proj" BuildInParallel="false" />

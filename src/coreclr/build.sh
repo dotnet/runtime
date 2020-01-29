@@ -186,38 +186,6 @@ build_Crossgen2()
     fi
 }
 
-generate_NugetPackages()
-{
-    # We can only generate nuget package if we also support building mscorlib as part of this build.
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then
-        echo "Nuget package generation unsupported."
-        return
-    fi
-
-    # Since we can build mscorlib for this OS, did we build the native components as well?
-    if [[ "$__SkipCoreCLR" == 1 && "$__CrossgenOnly" == 0 ]]; then
-        echo "Unable to generate nuget packages since native components were not built."
-        return
-    fi
-
-    echo "Generating nuget packages for $__BuildOS"
-    echo "DistroRid is $__DistroRid"
-    echo "ROOTFS_DIR is $ROOTFS_DIR"
-    # Build the packages
-    # Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    "$__RepoRootDir"/eng/common/build.sh -r -b -projects "$__SourceDir"/.nuget/packages.builds \
-                                       -verbosity minimal -bl:"$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.binlog" \
-                                       /p:PortableBuild=true \
-                                       /p:"__IntermediatesDir=$__IntermediatesDir" /p:"__RootBinDir=$__RootBinDir" /p:"__DoCrossArchBuild=$__CrossBuild" \
-                                       $__CommonMSBuildArgs $__UnprocessedBuildArgs
-
-    local exit_code="$?"
-    if [[ "$exit_code" != 0 ]]; then
-        echo "${__ErrMsgPrefix}Failed to generate Nuget packages."
-        exit "$exit_code"
-    fi
-}
-
 handle_arguments_local() {
     case "$1" in
         crossgenonly|-crossgenonly)
@@ -276,10 +244,6 @@ handle_arguments_local() {
 
         skipmscorlib|-skipmscorlib)
             __SkipMSCorLib=1
-            ;;
-
-        skipnuget|-skipnuget|skipbuildpackages|-skipbuildpackages)
-            __SkipNuget=1
             ;;
 
         skiprestore|-skiprestore)
@@ -344,7 +308,6 @@ __SkipCrossgen=0
 __SkipGenerateVersion=0
 __SkipMSCorLib=0
 __SkipManaged=0
-__SkipNuget=0
 __SkipRestore=""
 __SkipRestoreArg="/p:RestoreDuringBuild=true"
 __SkipRestoreOptData=0
@@ -465,12 +428,6 @@ else
         cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
     fi
 fi
-
-# Generate nuget packages
-if [[ "$__SkipNuget" != 1 ]]; then
-    generate_NugetPackages
-fi
-
 
 # Build complete
 
