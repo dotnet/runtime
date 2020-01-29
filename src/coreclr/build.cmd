@@ -392,7 +392,7 @@ set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
 REM =========================================================================================
 REM ===
-REM === Generate source files for eventing
+REM === Locate Python
 REM ===
 REM =========================================================================================
 
@@ -408,11 +408,6 @@ set /p PYTHON=<%TEMP%\pythonlocation.txt
 if NOT DEFINED PYTHON (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: Could not find a python installation
     goto ExitWithError
-)
-
-if %__BuildCoreLib% EQU 1 (
-    echo %__MsgPrefix%Laying out dynamically generated EventSource classes
-    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir% || goto ExitWithError
 )
 
 REM =========================================================================================

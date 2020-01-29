@@ -26,9 +26,9 @@ usage_list+=("-officialbuildid=^<ID^>: specify the official build ID to be used 
 usage_list+=("-partialngen: build CoreLib as PartialNGen.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossgen: skip native image generation.")
-usage_list+=("-skipcrossarchnative: Disable Open Source Signing for System.Private.CoreLib.")
+usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipmscorlib: generate IBC-tuning-enabled native images when invoking crossgen.")
+usage_list+=("-skipmscorlib: skip native image generation of System.Private.CoreLib.")
 usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
 usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
 usage_list+=("-staticanalyzer: skip native image generation.")
@@ -74,27 +74,6 @@ restore_optdata()
         fi
 
         __PgoOptDataPath=$(<"${PgoDataPackagePathOutputFile}")
-    fi
-}
-
-generate_event_logging_sources()
-{
-    __OutputEventingDir="$1"
-
-    __PythonWarningFlags="-Wall"
-    if [[ "$__IgnoreWarnings" == 0 ]]; then
-        __PythonWarningFlags="$__PythonWarningFlags -Werror"
-    fi
-
-    echo "Laying out dynamically generated EventSource classes"
-    "$PYTHON" -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genRuntimeEventSources.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir"
-}
-
-generate_event_logging()
-{
-    # Event Logging Infrastructure
-    if [[ "$__SkipMSCorLib" == 0 ]]; then
-        generate_event_logging_sources "$__ArtifactsIntermediatesDir/Eventing/$__BuildArch/$__BuildType"
     fi
 }
 
@@ -393,38 +372,41 @@ if [[ "$__SkipCrossArchNative" != 1 ]]; then
     fi
 fi
 
-# Build System.Private.CoreLib.
+# Build Crossgen2
 
 build_Crossgen2
 
-# The cross build generates a crossgen with the target architecture.
-if [[ "$__CrossBuild" == 0 ]]; then
-    if [[ "$__SkipCoreCLR" == 1 ]]; then
-        return
-    fi
+# Crossgen System.Private.CoreLib
 
-    # The architecture of host pc must be same architecture with target.
-    if [[ "$__HostArch" == "$__BuildArch" ]]; then
-        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-    elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-    elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+if [[ "$__SkipMSCorLib" != 1 ]]; then
+    # The cross build generates a crossgen with the target architecture.
+    if [[ "$__CrossBuild" == 0 ]]; then
+
+
+        # The architecture of host pc must be same architecture with target.
+        if [[ "$__HostArch" == "$__BuildArch" ]]; then
+            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
+            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+        else
+            exit 1
+        fi
     else
-        exit 1
-    fi
-else
-    if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
-        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-    elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-    elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
-        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-    else
-        # Crossgen not performed, so treat the IL version as the final version
-        cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
+        if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
+            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+        elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
+            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+        else
+            # Crossgen not performed, so treat the IL version as the final version
+            cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
+        fi
     fi
 fi
+
 
 # Build complete
 

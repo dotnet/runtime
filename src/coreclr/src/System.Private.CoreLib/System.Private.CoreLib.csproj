@@ -320,15 +320,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-
-    <!--TODO: Figure out how we want to drive the generation of this file when only using Arcade -->
-    <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
-            Condition="'$(FeaturePerfTracing)' == 'true' and
-                       '$(BuildingInsideVisualStudio)' == 'true' and
-                       !exists('$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
-    <Compile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
-      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
@@ -445,4 +436,53 @@
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+
+  <!-- Setup eventing file generation -->
+  <Target Name="FindPythonWindows"
+          Condition="$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
+          Returns="$(PYTHON)">
+    <PropertyGroup>
+      <_PythonLocationScript>-c "import sys; sys.stdout.write(sys.executable)"</_PythonLocationScript>
+    </PropertyGroup>
+    <Exec Command="py -3 $(_PythonLocationScript) || py -2 $(_PythonLocationScript) || python3 $(_PythonLocationScript) || python2 $(_PythonLocationScript) || python $(_PythonLocationScript)"
+          StandardOutputImportance="Low"
+          EchoOff="true"
+          ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
+    </Exec>
+  </Target>
+  <Target Name="FindPythonUnix"
+          Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
+          Returns="$(PYTHON)">
+    <Exec Condition="command -v python3 || command -v python2 || command -v python || command -v py"
+          StandardOutputImportance="Low"
+          EchoOff="true"
+          ConsoleToMsBuild="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
+    </Exec>
+  </Target>
+
+  <ItemGroup>
+    <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
+    <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
+    <EventingSourceFile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    </EventingSourceFile>
+    <Compile Include="@(EventingSourceFile)" />
+  </ItemGroup>
+
+  <Target Name="GenerateEventingFiles"
+          Inputs="@(EventingGenerationScript);@(EventManifestFile)"
+          Outputs="@(EventingSourceFile)"
+          DependsOnTargets="FindPythonWindows;FindPythonUnix"
+          BeforeTargets="BeforeCompile">
+
+    <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
+    <PropertyGroup>
+      <_PythonWarningParameter>-Wall</_PythonWarningParameter>
+      <_PythonWarningParameter Condition="'$(MSBuildTreatWarningsAsErrors)' == 'true'">$(_PythonWarningParameter) -Werror</_PythonWarningParameter>
+    </PropertyGroup>
+
+    <Exec Command="$(PYTHON) -B $(_PythonWarningParameter) '$(EventingGenerationScript)' --man '$(EventManifestFile)' --intermediate %(EventingSourceFile.Directory)" />
+  </Target>
 </Project>
