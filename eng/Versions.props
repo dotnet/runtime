@@ -30,7 +30,34 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
     <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
     <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
+    <!--
+      The NETStandard.Library targeting pack uses this patch version, which does not match the
+      runtime's. After publishing a new version of the NETStandard targeting pack in a servicing
+      release, increase this number by one.
+    -->
+    <NETStandardPatchVersion>0</NETStandardPatchVersion>
   </PropertyGroup>
+
+  <!--
+    Servicing build settings for Setup/Installer packages. Instructions:
+
+    * To enable a package build for the current patch release, set PatchVersion to match the current
+      patch version of that package. ("major.minor.patch".) This is normally the same as
+      PatchVersion above, but not always. Notably, NETStandard has its own patch version.
+    * When the PatchVersion property above is incremented at the beginning of the next servicing
+      release, all packages listed below automatically stop building because the property no longer
+      matches the metadata. (Do not delete the items!)
+
+    If the PatchVersion below is never changed from '0', the package will build in the 'master'
+    branch, and during a forked RTM release ("X.Y.0"). It will stop building for "X.Y.1" unless
+    manually enabled by updating the metadata.
+  -->
+  <ItemGroup>
+    <!-- Targeting packs are only patched in extreme cases. -->
+    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
+    <ProjectServicingConfiguration Include="NETStandard.Library.Ref" PatchVersion="0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20071.3</MicrosoftDotNetApiCompatVersion>
