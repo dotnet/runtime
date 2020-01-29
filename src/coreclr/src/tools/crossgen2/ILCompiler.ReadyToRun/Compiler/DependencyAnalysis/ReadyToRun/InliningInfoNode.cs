@@ -101,6 +101,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 List<EcmaMethod> sortedInliners = new List<EcmaMethod>(inlineeWithInliners.Value);
                 sortedInliners.Sort((a, b) =>
                 {
+                    if (a == b)
+                        return 0;
+
                     int aRid = MetadataTokens.GetRowNumber(a.Handle);
                     int bRid = MetadataTokens.GetRowNumber(b.Handle);
                     if (aRid < bRid)
