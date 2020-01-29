@@ -536,7 +536,7 @@ FCFuncStart(gAssemblyFuncs)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyBuilderFuncs)
-    FCFuncElement("nCreateDynamicAssembly", AppDomainNative::CreateDynamicAssembly)
+    QCFuncElement("CreateDynamicAssembly", AppDomainNative::CreateDynamicAssembly)
     FCFuncElement("GetInMemoryAssemblyModule", AssemblyNative::GetInMemoryAssemblyModule)
 FCFuncEnd()
 
