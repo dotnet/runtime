@@ -152,7 +152,9 @@ namespace Mono.Linker {
 				if (customLogger != null)
 					context.Logger = customLogger;
 
+#if !FEATURE_ILLINK
 				I18nAssemblies assemblies = I18nAssemblies.All;
+#endif
 				var custom_steps = new List<string> ();
 				var excluded_features = new HashSet<string> (StringComparer.Ordinal);
 				var disabled_optimizations = new HashSet<string> (StringComparer.Ordinal);
@@ -326,6 +328,7 @@ namespace Mono.Linker {
 							p.PrependStep (new ResolveFromAssemblyStep (file, rootVisibility));
 						resolver = true;
 						break;
+#if !FEATURE_ILLINK
 					case 'i':
 						foreach (string file in GetFiles (GetParam ()))
 							p.PrependStep (new ResolveFromXApiStep (new XPathDocument (file)));
@@ -334,6 +337,7 @@ namespace Mono.Linker {
 					case 'l':
 						assemblies = ParseI18n (GetParam ());
 						break;
+#endif
 					case 'm':
 						context.SetParameter (GetParam (), GetParam ());
 						break;
@@ -371,14 +375,16 @@ namespace Mono.Linker {
 				if (context.AddReflectionAnnotations)
 					p.AddStepAfter (typeof (MarkStep), new ReflectionBlockedStep ());
 
+#if !FEATURE_ILLINK
 				p.AddStepAfter (typeof (LoadReferencesStep), new LoadI18nAssemblies (assemblies));
-
-				if (_needAddBypassNGenStep) {
-					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
-				}
 
 				if (assemblies != I18nAssemblies.None) {
 					p.AddStepAfter (typeof (PreserveDependencyLookupStep), new PreserveCalendarsStep (assemblies));
+				}
+#endif
+
+				if (_needAddBypassNGenStep) {
+					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
 				}
 
 				p.AddStepBefore (typeof (MarkStep), new BodySubstituterStep ());
@@ -517,6 +523,7 @@ namespace Mono.Linker {
 			return lines.ToArray ();
 		}
 
+#if !FEATURE_ILLINK
 		protected static I18nAssemblies ParseI18n (string str)
 		{
 			I18nAssemblies assemblies = I18nAssemblies.None;
@@ -526,7 +533,7 @@ namespace Mono.Linker {
 
 			return assemblies;
 		}
-
+#endif
 
 		AssemblyAction ParseAssemblyAction (string s)
 		{
@@ -564,21 +571,25 @@ namespace Mono.Linker {
 			if (msg != null)
 				Console.WriteLine ("Error: " + msg);
 #if FEATURE_ILLINK
-			Console.WriteLine ("illink [options] -a|-i|-r|-x file");
+			Console.WriteLine ("illink [options] -a|-r|-x file");
 #else
 			Console.WriteLine ("monolinker [options] -a|-i|-r|-x file");
 #endif
 
 			Console.WriteLine ("  -a                  Link from a list of assemblies");
+#if !FEATURE_ILLINK
 			Console.WriteLine ("  -i                  Link from an mono-api-info descriptor");
+#endif
 			Console.WriteLine ("  -r                  Link from a list of assemblies using roots visible outside of the assembly");
 			Console.WriteLine ("  -x                  Link from XML descriptor");
 			Console.WriteLine ("  -d <path>           Specify additional directories to search in for references");
 			Console.WriteLine ("  -reference <file>   Specify additional assemblies to use as references");
 			Console.WriteLine ("  -b                  Update debug symbols for each linked module. Defaults to false");
 			Console.WriteLine ("  -v                  Keep members and types used by debugger. Defaults to false");
+#if !FEATURE_ILLINK
 			Console.WriteLine ("  -l <name>,<name>    List of i18n assemblies to copy to the output directory. Defaults to 'all'");
 			Console.WriteLine ("                        Valid names are 'none', 'all', 'cjk', 'mideast', 'other', 'rare', 'west'");
+#endif
 			Console.WriteLine ("  -out <path>         Specify the output directory. Defaults to 'output'");
 			Console.WriteLine ("  --about             About the {0}", _linker);
 			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");

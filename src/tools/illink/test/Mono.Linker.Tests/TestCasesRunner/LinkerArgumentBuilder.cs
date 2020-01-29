@@ -161,8 +161,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// our test cases that pollutes the results
 			IncludeBlacklist (options.IncludeBlacklistStep);
 
+#if !NETCOREAPP
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
+#endif
 
 			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
 				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
