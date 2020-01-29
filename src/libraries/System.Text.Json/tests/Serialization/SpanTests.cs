@@ -84,8 +84,7 @@ namespace System.Text.Json.Serialization.Tests
             byte[] encodedNull = Encoding.UTF8.GetBytes(@"null");
 
             {
-                byte[] output = JsonSerializer.SerializeToUtf8Bytes(null, null);
-                Assert.Equal(encodedNull, output);
+                Assert.Throws<ArgumentNullException>(() => JsonSerializer.SerializeToUtf8Bytes(null, null));
             }
 
             {

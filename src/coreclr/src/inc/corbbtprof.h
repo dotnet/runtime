@@ -198,7 +198,7 @@ enum GeneralProfilingDataFlags
 enum BlobType
 {
     /* IMPORTANT: Keep the first four enums together in the same order and at
-       the very begining of this enum. See MetaModelPub.h for the order */
+       the very beginning of this enum. See MetaModelPub.h for the order */
     MetadataStringPool          = 0,
     MetadataGuidPool            = 1,
     MetadataBlobPool            = 2,
@@ -208,7 +208,7 @@ enum BlobType
     LastMetadataPool            = 3,
 
     // SectionFormat only supports tokens, which have to already exist in the module.
-    // For instantiated paramterized types, there may be no corresponding token
+    // For instantiated parameterized types, there may be no corresponding token
     // in the module, if a dependent module caused the type to be instantiated.
     // For such instantiated types, we save a blob/signature to identify the type.
     //
@@ -452,9 +452,9 @@ struct CORBBTPROF_METHOD_HEADER_V1
 struct CORBBTPROF_METHOD_HEADER
 {
     DWORD                          size;            // Size to skip to get to the next CORBBTPROF_METHOD_HEADER
-    DWORD                          cDetail;         // the count of CORBBTPROF_METHOD_DETAIL_HEADER records that folow this record
+    DWORD                          cDetail;         // the count of CORBBTPROF_METHOD_DETAIL_HEADER records that follow this record
     CORBBTPROF_METHOD_INFO         method;          // Basic block execution counts for a method
-                                                    // ... followed by 'cDetail' occurances of CORBBTPROF_METHOD_DETAIL_HEADER
+                                                    // ... followed by 'cDetail' occurrences of CORBBTPROF_METHOD_DETAIL_HEADER
 
     size_t Size()
     {

@@ -14,7 +14,7 @@
     <Compile Include="System\Json\JsonValue.cs" />
     <Compile Include="System\Json\JavaScriptReader.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Globalization" />

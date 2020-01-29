@@ -129,15 +129,8 @@ BOOL DacValidateMethodTable(MethodTable *pMT, BOOL &bIsFree)
     EX_TRY
     {
         bIsFree = FALSE;
-        EEClass *pEEClass = pMT->GetClass();
-        if (pEEClass==NULL)
+        if (HOST_CDADDR(pMT) == HOST_CDADDR(g_pFreeObjectMethodTable))
         {
-            // Okay to have a NULL EEClass if this is a free methodtable
-            CLRDATA_ADDRESS MethTableAddr = HOST_CDADDR(pMT);
-            CLRDATA_ADDRESS FreeObjMethTableAddr = HOST_CDADDR(g_pFreeObjectMethodTable);
-            if (MethTableAddr != FreeObjMethTableAddr)
-                goto BadMethodTable;
-
             bIsFree = TRUE;
         }
         else
@@ -708,7 +701,7 @@ ClrDataAccess::GetThreadAllocData(CLRDATA_ADDRESS addr, struct DacpAllocData *da
     Thread* thread = PTR_Thread(TO_TADDR(addr));
 
     data->allocBytes = TO_CDADDR(thread->m_alloc_context.alloc_bytes);
-    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_loh);
+    data->allocBytesLoh = TO_CDADDR(thread->m_alloc_context.alloc_bytes_uoh);
 
     SOSDacLeave();
     return hr;
@@ -739,7 +732,7 @@ ClrDataAccess::GetHeapAllocData(unsigned int count, struct DacpGenerationAllocDa
             {
                 dac_generation entry = *GenerationTableIndex(table, i);
                 data[0].allocData[i].allocBytes = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes;
-                data[0].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes_loh;
+                data[0].allocData[i].allocBytesLoh = (CLRDATA_ADDRESS)(ULONG_PTR) entry.allocation_context.alloc_bytes_uoh;
             }
         }
     }
@@ -2207,8 +2200,8 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 TypeHandle thElem = mt->GetArrayElementTypeHandle();
 
                 TypeHandle thCur  = thElem;
-                while (thCur.IsTypeDesc())
-                    thCur = thCur.AsArray()->GetArrayElementTypeHandle();
+                while (thCur.IsArray())
+                    thCur = thCur.GetArrayElementTypeHandle();
 
                 TADDR mtCurTADDR = thCur.AsTAddr();
                 if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))
@@ -3126,9 +3119,9 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
 
     SOSDacEnter();
 
-    PTR_ArrayTypeDesc objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
-    if (objArray)
-        globalsData->ArrayMethodTable = HOST_CDADDR(objArray->GetMethodTable());
+    TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
+    if (objArray != NULL)
+        globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
     else
         globalsData->ArrayMethodTable = 0;
 
@@ -4288,7 +4281,7 @@ HRESULT ClrDataAccess::GetPendingReJITID(CLRDATA_ADDRESS methodDesc, int *pRejit
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
     if (ilVersion.IsNull())
     {
@@ -4320,7 +4313,7 @@ HRESULT ClrDataAccess::GetReJITInformation(CLRDATA_ADDRESS methodDesc, int rejit
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetILCodeVersion(pMD, rejitId);
     if (ilVersion.IsNull())
     {
@@ -4372,7 +4365,7 @@ HRESULT ClrDataAccess::GetProfilerModifiedILInformation(CLRDATA_ADDRESS methodDe
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
     CodeVersionManager* pCodeVersionManager = pMD->GetCodeVersionManager();
-    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
     ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
     if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
     {
@@ -4405,7 +4398,7 @@ HRESULT ClrDataAccess::GetMethodsWithProfilerModifiedIL(CLRDATA_ADDRESS mod, CLR
 
     PTR_Module pModule = PTR_Module(TO_TADDR(mod));
     CodeVersionManager* pCodeVersionManager = pModule->GetCodeVersionManager();
-    CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+    CodeVersionManager::LockHolder codeVersioningLockHolder;
 
     LookupMap<PTR_MethodTable>::Iterator typeIter(&pModule->m_TypeDefToMethodTableMap);
     for (int i = 0; typeIter.Next(); i++)

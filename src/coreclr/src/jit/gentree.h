@@ -235,7 +235,23 @@ struct FieldSeqNode
     bool IsConstantIndexFieldSeq();
 
     // returns true when this is the the pseudo #FirstElem field sequence or the pseudo #ConstantIndex field sequence
-    bool IsPseudoField();
+    bool IsPseudoField() const;
+
+    CORINFO_FIELD_HANDLE GetFieldHandle() const
+    {
+        assert(!IsPseudoField() && (m_fieldHnd != nullptr));
+        return m_fieldHnd;
+    }
+
+    FieldSeqNode* GetTail()
+    {
+        FieldSeqNode* tail = this;
+        while (tail->m_next != nullptr)
+        {
+            tail = tail->m_next;
+        }
+        return tail;
+    }
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in SimplerHash.
     static int GetHashCode(FieldSeqNode fsn)
@@ -3095,12 +3111,6 @@ struct GenTreeLclVar : public GenTreeLclVarCommon
 {
     INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
 
-    GenTreeLclVar(var_types type,
-                  unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
-        : GenTreeLclVarCommon(GT_LCL_VAR, type, lclNum DEBUGARG(largeNode)) DEBUGARG(gtLclILoffs(ilOffs))
-    {
-    }
-
     GenTreeLclVar(genTreeOps oper,
                   var_types  type,
                   unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
@@ -3125,12 +3135,6 @@ private:
     FieldSeqNode* m_fieldSeq; // This LclFld node represents some sequences of accesses.
 
 public:
-    GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs)
-        : GenTreeLclVarCommon(GT_LCL_FLD, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
-    {
-        assert(lclOffs <= UINT16_MAX);
-    }
-
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs)
         : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs)), m_fieldSeq(nullptr)
     {
@@ -3244,6 +3248,13 @@ struct GenTreeField : public GenTree
         gtFieldLookup.addr = nullptr;
 #endif
     }
+
+    // True if this field is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_FLD_VOLATILE) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeField() : GenTree()
     {
@@ -5038,6 +5049,18 @@ struct GenTreeIndir : public GenTreeOp
     {
     }
 
+    // True if this indirection is a volatile memory operation.
+    bool IsVolatile() const
+    {
+        return (gtFlags & GTF_IND_VOLATILE) != 0;
+    }
+
+    // True if this indirection is an unaligned memory operation.
+    bool IsUnaligned() const
+    {
+        return (gtFlags & GTF_IND_UNALIGNED) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
 protected:
     friend GenTree;
@@ -5087,18 +5110,6 @@ public:
     {
         assert((m_layout != nullptr) || OperIs(GT_DYN_BLK, GT_STORE_DYN_BLK));
         return (m_layout != nullptr) ? m_layout->GetSize() : 0;
-    }
-
-    // True if this BlkOpNode is a volatile memory operation.
-    bool IsVolatile() const
-    {
-        return (gtFlags & GTF_BLK_VOLATILE) != 0;
-    }
-
-    // True if this BlkOpNode is an unaligned memory operation.
-    bool IsUnaligned() const
-    {
-        return (gtFlags & GTF_BLK_UNALIGNED) != 0;
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using

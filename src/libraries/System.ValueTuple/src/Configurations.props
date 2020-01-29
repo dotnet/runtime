@@ -1,8 +1,8 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp;
-      _netfx;
+      $(NetCoreAppCurrent);
+      _$(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

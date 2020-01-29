@@ -3,7 +3,7 @@
     <IsFrameworkPackage>true</IsFrameworkPackage>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
     <FrameworkListName>$(NETCoreAppFrameworkBrandName)</FrameworkListName>
@@ -13,7 +13,10 @@
   </PropertyGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
-  <ItemGroup Condition="'$(FrameworkPackType)' != 'apphost' AND '$(ExcludeDepprojReference)' != 'true'">
+  <ItemGroup Condition="
+    '$(FrameworkPackType)' != 'apphost' AND
+    '$(FrameworkPackType)' != 'crossgen2' AND
+    '$(ExcludeDepprojReference)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)..\src\netcoreapp.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">RuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>

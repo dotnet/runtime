@@ -1,9 +1,9 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp;
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
+      $(NetCoreAppCurrent);
+      $(NetCoreAppCurrent)-Windows_NT;
+      $(NetCoreAppCurrent)-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

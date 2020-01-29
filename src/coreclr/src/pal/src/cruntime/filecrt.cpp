@@ -160,31 +160,6 @@ PAL_fflush( PAL_FILE *stream )
 
 
 /*++
-PAL__getcwd
-
-Wrapper function for getcwd.
-
-Input parameters:
-
-szBuf = a copy of the absolute pathname of the current working directory
-is copied into szBuf.
-nSize = size, in bytes, of the array referenced by szBuf.
-
-Return value:
-    A pointer to the pathname if successful, otherwise NULL is returned
---*/
-char *
-__cdecl
-PAL__getcwd(
-    char *szBuf,
-    size_t nSize
-    )
-{
-    return (char *)getcwd(szBuf, nSize);
-}
-
-
-/*++
 PAL__open
 
 Wrapper function for InternalOpen.

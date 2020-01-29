@@ -1612,13 +1612,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // plus they are not marked as blittable.
                 if (!th.IsEnum())
                 {
-                    // It should be blittable
-                    if (!th.IsBlittable())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
                     // Check for Copy Constructor Modifier
                     if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
                         sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
@@ -1632,17 +1625,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         fNeedsCopyCtor = TRUE;
                         m_byref = FALSE;
                     }
-                }
-            }
-            else
-            {
-                if (!(mtype2 != ELEMENT_TYPE_CLASS &&
-                    mtype2 != ELEMENT_TYPE_STRING &&
-                    mtype2 != ELEMENT_TYPE_OBJECT &&
-                    mtype2 != ELEMENT_TYPE_SZARRAY))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
-                    IfFailGoto(E_FAIL, lFail);
                 }
             }
         }
@@ -2924,11 +2906,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 fCalculatingFieldMetadata ? TRUE : FALSE);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
-            ArrayTypeDesc* asArray = arrayTypeHnd.AsArray();
-            if (asArray == NULL)
-                IfFailGoto(E_FAIL, lFail);
-
-            TypeHandle thElement = asArray->GetTypeParam();
+            TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
 
 #ifdef FEATURE_COMINTEROP
             if (m_ms != MARSHAL_SCENARIO_WINRT)
@@ -2941,10 +2919,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
             }
 
-            m_args.na.m_pArrayMT = arrayTypeHnd.GetMethodTable();
+            m_args.na.m_pArrayMT = arrayTypeHnd.AsMethodTable();
 
             // Handle retrieving the information for the array type.
-            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
+            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, arrayTypeHnd.GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;
         }
 

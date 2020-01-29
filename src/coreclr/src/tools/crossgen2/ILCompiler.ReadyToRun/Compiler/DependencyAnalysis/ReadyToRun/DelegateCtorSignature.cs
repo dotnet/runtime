@@ -29,19 +29,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _targetMethod = targetMethod;
             _methodToken = methodToken;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(delegateType);
+            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(targetMethod.Method);
         }
 
         public override int ClassCode => 99885741;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, _signatureContext);
+                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, _signatureContext);
 
                 builder.EmitMethodSignature(
                     new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),

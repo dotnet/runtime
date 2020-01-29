@@ -226,11 +226,7 @@ DLLEXPORT ICorJitCompiler* __stdcall getJit()
 // If you are using it more broadly in retail code, you would need to understand the
 // performance implications of accessing TLS.
 
-#ifndef __GNUC__
-__declspec(thread) void* gJitTls = nullptr;
-#else  // !__GNUC__
 thread_local void* gJitTls = nullptr;
-#endif // !__GNUC__
 
 static void* GetJitTls()
 {

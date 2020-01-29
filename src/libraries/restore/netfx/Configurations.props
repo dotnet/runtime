@@ -9,8 +9,8 @@
       net462;
       net47;
       net471;
-      netfx;
-      netcoreapp;
+      $(NetFrameworkCurrent);
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

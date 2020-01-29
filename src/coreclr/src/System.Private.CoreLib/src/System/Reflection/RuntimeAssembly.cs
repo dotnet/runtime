@@ -309,34 +309,35 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-        {
-            AssemblyName an = new AssemblyName(assemblyString);
+        internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
+            => InternalLoad(new AssemblyName(assemblyName), ref stackMark, assemblyLoadContext);
 
-            return InternalLoadAssemblyName(an, ref stackMark, assemblyLoadContext);
+        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
+            => InternalLoad(assemblyName, requestingAssembly: null, ref stackMark, throwOnFileNotFound: true, assemblyLoadContext);
+
+        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName,
+                                                     RuntimeAssembly? requestingAssembly,
+                                                     ref StackCrawlMark stackMark,
+                                                     bool throwOnFileNotFound,
+                                                     AssemblyLoadContext? assemblyLoadContext = null)
+        {
+            RuntimeAssembly? retAssembly = null;
+            InternalLoad(ObjectHandleOnStack.Create(ref assemblyName),
+                         ObjectHandleOnStack.Create(ref requestingAssembly),
+                         new StackCrawlMarkHandle(ref stackMark),
+                         throwOnFileNotFound,
+                         ObjectHandleOnStack.Create(ref assemblyLoadContext),
+                         ObjectHandleOnStack.Create(ref retAssembly));
+            return retAssembly;
         }
 
-        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-        {
-            assemblyRef = (AssemblyName)assemblyRef.Clone();
-            if (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)
-            {
-                // PA does not have a semantics for by-name binds for execution
-                assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
-            }
-
-            string? codeBase = VerifyCodeBase(assemblyRef.CodeBase);
-
-            return nLoad(assemblyRef, codeBase, null, ref stackMark, true, assemblyLoadContext);
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeAssembly nLoad(AssemblyName fileName,
-                                                    string? codeBase,
-                                                    RuntimeAssembly? assemblyContext,
-                                                    ref StackCrawlMark stackMark,
-                                                    bool throwOnFileNotFound,
-                                                    AssemblyLoadContext? assemblyLoadContext = null);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void InternalLoad(ObjectHandleOnStack assemblyName,
+                                                ObjectHandleOnStack requestingAssembly,
+                                                StackCrawlMarkHandle stackMark,
+                                                bool throwOnFileNotFound,
+                                                ObjectHandleOnStack assemblyLoadContext,
+                                                ObjectHandleOnStack retAssembly);
 
         public override bool ReflectionOnly => false;
 
@@ -456,34 +457,6 @@ namespace System.Reflection
 
         public override long HostContext => 0;
 
-        private static string? VerifyCodeBase(string? codebase)
-        {
-            if (codebase == null)
-                return null;
-
-            int len = codebase.Length;
-            if (len == 0)
-                return null;
-
-
-            int j = codebase.IndexOf(':');
-            // Check to see if the url has a prefix
-            if ((j != -1) &&
-                (j + 2 < len) &&
-                ((codebase[j + 1] == '/') || (codebase[j + 1] == '\\')) &&
-                ((codebase[j + 2] == '/') || (codebase[j + 2] == '\\')))
-                return codebase;
-#if PLATFORM_WINDOWS
-            else if ((len > 2) && (codebase[0] == '\\') && (codebase[1] == '\\'))
-                return "file://" + codebase;
-            else
-                return "file:///" + Path.GetFullPath(codebase);
-#else
-            else
-                return "file://" + Path.GetFullPath(codebase);
-#endif // PLATFORM_WINDOWS
-        }
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetVersion(QCallAssembly assembly,
                                               out int majVer,
@@ -589,7 +562,7 @@ namespace System.Reflection
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = nLoad(an, null, this, ref unused, throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = InternalLoad(an, this, ref unused, throwOnFileNotFound);
 
             if (retAssembly == this)
             {

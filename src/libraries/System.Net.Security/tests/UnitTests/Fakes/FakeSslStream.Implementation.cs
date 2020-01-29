@@ -65,12 +65,9 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private void ProcessAuthentication(LazyAsyncResult lazyResult, CancellationToken cancellationToken)
+        private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
-        }
-
-        private void EndProcessAuthentication(IAsyncResult result)
-        {
+            return Task.Run(() => {});
         }
 
         private void ReturnReadBufferIfEmpty()

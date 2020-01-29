@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -ue
+
 source="${BASH_SOURCE[0]}"
 
 # resolve $source until the file is no longer a symlink
@@ -15,8 +17,8 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --subset                   Build a subset, print availabe subsets with -subset help"
-  echo "  --subsetCategory           Build a subsetCategory, print availabe subsetCategories with -subset help"
+  echo "  --subset                   Build a subset, print available subsets with -subset help"
+  echo "  --subsetCategory           Build a subsetCategory, print available subsetCategories with -subset help"
   echo "  --os                       Build operating system: Windows_NT or Unix"
   echo "  --arch                     Build platform: x86, x64, arm or arm64"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
@@ -38,7 +40,7 @@ usage()
   echo ""
 
   echo "Libraries settings:"
-  echo "  --framework                Build framework: netcoreapp or netfx (short: -f)"
+  echo "  --framework                Build framework: netcoreapp or net472 (short: -f)"
   echo "  --coverage                 Collect code coverage when testing"
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all"
   echo "  --allconfigurations        Build packages for all build configurations"
@@ -117,9 +119,18 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildNativeStripSymbols=true"
       shift 1
       ;;
+     -runtimeconfiguration)
+      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      arguments="$arguments /p:RuntimeConfiguration=$val"
+      shift 2
+      ;;
+     -librariesconfiguration)
+      arguments="$arguments /p:LibrariesConfiguration=$2"
+      shift 2
+      ;;
       *)
       ea=$1
-      
+
       if [[ $checkedPossibleDirectoryToBuild == false ]] && [[ $subsetCategory == "libraries" ]]; then
         checkedPossibleDirectoryToBuild=true
 

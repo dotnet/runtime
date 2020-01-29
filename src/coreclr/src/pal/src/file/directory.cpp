@@ -305,7 +305,7 @@ GetCurrentDirectoryA(PathCharString& lpBuffer)
 
     current_dir = lpBuffer.OpenStringBuffer(MAX_PATH);
     /* NULL first arg means getcwd will allocate the string */
-    current_dir = PAL__getcwd( current_dir, MAX_PATH);
+    current_dir = getcwd( current_dir, MAX_PATH);
 
     if (current_dir != NULL )
     {
@@ -316,7 +316,7 @@ GetCurrentDirectoryA(PathCharString& lpBuffer)
     else if ( errno == ERANGE )
     {
         lpBuffer.CloseBuffer(0);
-        current_dir = PAL__getcwd( NULL, 0);
+        current_dir = getcwd( NULL, 0);
     }
 
     if ( !current_dir )

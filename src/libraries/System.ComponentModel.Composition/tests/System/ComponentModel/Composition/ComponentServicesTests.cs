@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition
     public class ComponentServicesTests
     {
         [Fact]
-        [ActiveIssue(25498, TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void GetValuesByType()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

@@ -1033,17 +1033,6 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
         {
             COMPlusThrow(kInvalidProgramException);
         }
-
-        // The JIT always wants to see normalized typedescs for arrays
-        if (!th.IsTypeDesc() && th.AsMethodTable()->IsArray())
-        {
-            MethodTable * pMT = th.AsMethodTable();
-
-            // Load the TypeDesc for the array type.
-            DWORD rank = pMT->GetRank();
-            TypeHandle elemType = pMT->GetArrayElementTypeHandle();
-            th = ClassLoader::LoadArrayTypeThrowing(elemType, pMT->GetInternalCorElementType(), rank);
-        }
     }
     else
     {
@@ -2164,9 +2153,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
-    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
-    // case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
     {
         if (gcPtrs[0] == TYPE_GC_NONE)
         {
@@ -2234,23 +2221,10 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
     }
     else if (pMT->IsByRefLike())
     {
-        // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
-        // which case the check for g_TypedReferenceMT below would not be necessary
-        if (pMT == g_TypedReferenceMT)
-        {
-            gcPtrs[0] = TYPE_GC_BYREF;
-            gcPtrs[1] = TYPE_GC_NONE;
-            result = 1;
-        }
-        else
-        {
-            memset(gcPtrs, TYPE_GC_NONE,
-                (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
-            // Note: This case is more complicated than the TypedReference case
-            // due to ByRefLike structs being included as fields in other value
-            // types (TypedReference can not be.)
-            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
-        }
+        memset(gcPtrs, TYPE_GC_NONE,
+            (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+        // ByRefLike structs can be included as fields in other value types.
+        result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
     }
     else
     {
@@ -2320,8 +2294,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     // Make sure this is a value type.
     if (th.IsValueType())
     {
-        _ASSERTE((CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct) ||
-                 (CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeTypedReference));
+        _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
 
         // The useNativeLayout in this case tracks whether the classification
         // is for a native layout of the struct or not.
@@ -2624,24 +2597,7 @@ void CEEInfo::embedGenericHandle(
         TypeHandle th(pResolvedToken->hClass);
 
         pResult->handleType = CORINFO_HANDLETYPE_CLASS;
-
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
-        }
-        else
-        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Ldtoken && th.IsArray()
-            && m_pMethodBeingCompiled == MscorlibBinder::GetMethod(METHOD__BUFFER__BLOCKCOPY))
-        {
-            // Workaround for https://github.com/dotnet/coreclr/issues/10258
-            // Allow cheaper type checks to be generated in selected performance critical CoreLib methods until this issue
-            // is fixed properly.
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
-        }
-        else
-        {
-            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
-        }
+        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
 
         if (fEmbedParent && pResolvedToken->hMethod != NULL)
         {
@@ -3324,11 +3280,6 @@ NoSpecialCase:
         {
             if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
             {
-                if (!IsReadyToRunCompilation())
-                {
-                    sigBuilder.AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
-                }
-
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
             }
 
@@ -3792,37 +3743,14 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 
 /*********************************************************************/
 // Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
+//     GetTypeFromHandle(handle) == obj.GetType()
+//     GetTypeFromHandle(X) == GetTypeFromHandle(Y)
 //
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoInlineTypeCheck ret;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (source == CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-    {
-        // It's always okay to compare type handles coming from IL tokens
-        ret = CORINFO_INLINE_TYPECHECK_PASS;
-    }
-    else
-    {
-        _ASSERTE(source == CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-        ret = canInlineTypeCheckWithObjectVTable(clsHnd) ?
-            CORINFO_INLINE_TYPECHECK_PASS : CORINFO_INLINE_TYPECHECK_NONE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return CORINFO_INLINE_TYPECHECK_PASS;
 }
 
 /*********************************************************************/
@@ -3832,41 +3760,8 @@ CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, 
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    BOOL ret = FALSE;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    _ASSERTE(clsHnd);
-
-    TypeHandle VMClsHnd(clsHnd);
-
-    if (VMClsHnd.IsTypeDesc())
-    {
-        // We can't do this optimization for arrays because of the object methodtable is template methodtable
-        ret = FALSE;
-    }
-    else
-    if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
-    {
-        // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.
-        // (It can be array, marshalbyref, etc.)
-        ret = FALSE;
-    }
-    else
-    {
-        // It is safe to perform this optimization
-        ret = TRUE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return TRUE;
 }
 
 /*********************************************************************/
@@ -4893,20 +4788,10 @@ CorInfoType CEEInfo::getChildType (
 
     _ASSERTE(!th.IsNull());
 
-    // BYREF, ARRAY types
-    if (th.IsTypeDesc())
+    // BYREF, pointer types
+    if (th.HasTypeParam())
     {
-        retType = th.AsTypeDesc()->GetTypeParam();
-    }
-    else
-    {
-        // <REVISIT_TODO> we really should not have this case.  arrays type handles
-        // used in the JIT interface should never be ordinary method tables,
-        // indeed array type handles should really never be ordinary MTs
-        // at all.  Perhaps we should assert !th.IsTypeDesc() && th.AsMethodTable().IsArray()? </REVISIT_TODO>
-        MethodTable* pMT= th.AsMethodTable();
-        if (pMT->IsArray())
-            retType = pMT->GetArrayElementTypeHandle();
+        retType = th.GetTypeParam();
     }
 
     if (!retType.IsNull()) {
@@ -4961,7 +4846,7 @@ BOOL CEEInfo::isSDArray(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
@@ -4992,12 +4877,12 @@ unsigned CEEInfo::getArrayRank(CORINFO_CLASS_HANDLE  cls)
 
     _ASSERTE(!th.IsNull());
 
-    if (th.IsArrayType())
+    if (th.IsArray())
     {
         // Lots of code used to think that System.Array's methodtable returns TRUE for IsArray(). It doesn't.
         _ASSERTE(th != TypeHandle(g_pArrayClass));
 
-        result = th.GetPossiblySharedArrayMethodTable()->GetRank();
+        result = th.GetRank();
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5297,7 +5182,7 @@ void CEEInfo::getCallInfo(
     }
     else
     {
-        if (!exactType.IsTypeDesc())
+        if (!exactType.IsTypeDesc() && !pTargetMD->IsArray())
         {
             // Because of .NET's notion of base calls, exactType may point to a sub-class
             // of the actual class that defines pTargetMD.  If the JIT decides to inline, it is
@@ -5314,7 +5199,6 @@ void CEEInfo::getCallInfo(
             else
 #endif
             {
-
                 exactType = pTargetMD->GetExactDeclaringType(exactType.AsMethodTable());
                 _ASSERTE(!exactType.IsNull());
             }
@@ -6146,8 +6030,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 {
     STANDARD_VM_CONTRACT;
 
-    ArrayTypeDesc* arrayTypeDesc = clsHnd.AsArray();
-    _ASSERTE(arrayTypeDesc->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
+    _ASSERTE(clsHnd.GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY);
 
     if (GCStress<cfg_alloc>::IsEnabled())
     {
@@ -6156,7 +6039,7 @@ CorInfoHelpFunc CEEInfo::getNewArrHelperStatic(TypeHandle clsHnd)
 
     CorInfoHelpFunc result = CORINFO_HELP_UNDEF;
 
-    TypeHandle thElemType = arrayTypeDesc->GetTypeParam();
+    TypeHandle thElemType = clsHnd.GetArrayElementTypeHandle();
     CorElementType elemType = thElemType.GetInternalCorElementType();
 
     // This is if we're asked for newarr !0 when verifying generic code
@@ -6274,7 +6157,7 @@ CorInfoHelpFunc CEEInfo::getCastingHelperStatic(TypeHandle clsHnd, bool fThrowin
     else
     if (clsHnd.IsArray())
     {
-        if (clsHnd.AsArray()->GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
+        if (clsHnd.GetInternalCorElementType() != ELEMENT_TYPE_SZARRAY)
         {
             // Casting to multidimensional array type requires restored pointer to EEClass to fetch rank
             *pfClassMustBeRestored = true;
@@ -7243,6 +7126,39 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     return false;
 }
 
+bool getILIntrinsicImplementationForMemoryMarshal(MethodDesc * ftn,
+                                                  CORINFO_METHOD_INFO * methInfo)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(MscorlibBinder::IsClass(ftn->GetMethodTable(), CLASS__MEMORY_MARSHAL));
+
+    mdMethodDef tk = ftn->GetMemberDef();
+
+    if (tk == MscorlibBinder::GetMethod(METHOD__MEMORY_MARSHAL__GET_ARRAY_DATA_REFERENCE)->GetMemberDef())
+    {
+        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
+
+        static BYTE ilcode[] = { CEE_LDARG_0,
+                                 CEE_LDFLDA,0,0,0,0,
+                                 CEE_RET };
+
+        ilcode[2] = (BYTE)(tokRawSzArrayData);
+        ilcode[3] = (BYTE)(tokRawSzArrayData >> 8);
+        ilcode[4] = (BYTE)(tokRawSzArrayData >> 16);
+        ilcode[5] = (BYTE)(tokRawSzArrayData >> 24);
+
+        methInfo->ILCode = const_cast<BYTE*>(ilcode);
+        methInfo->ILCodeSize = sizeof(ilcode);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
+    return false;
+}
+
 bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
                                              CORINFO_METHOD_INFO * methInfo)
 {
@@ -7464,27 +7380,6 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
-    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_RAW_SZ_ARRAY_DATA)->GetMemberDef())
-    {
-        mdToken tokRawSzArrayData = MscorlibBinder::GetField(FIELD__RAW_ARRAY_DATA__DATA)->GetMemberDef();
-
-        static BYTE ilcode[] = { CEE_LDARG_0,
-                                 CEE_LDFLDA,0,0,0,0,
-                                 CEE_RET };
-
-        ilcode[2] = (BYTE)(tokRawSzArrayData);
-        ilcode[3] = (BYTE)(tokRawSzArrayData >> 8);
-        ilcode[4] = (BYTE)(tokRawSzArrayData >> 16);
-        ilcode[5] = (BYTE)(tokRawSzArrayData >> 24);
-
-        methInfo->ILCode = const_cast<BYTE*>(ilcode);
-        methInfo->ILCodeSize = sizeof(ilcode);
-        methInfo->maxStack = 1;
-        methInfo->EHcount = 0;
-        methInfo->options = (CorInfoOptions)0;
-        return true;
-    }
-
     if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__GET_METHOD_TABLE)->GetMemberDef())
     {
         mdToken tokRawData = MscorlibBinder::GetField(FIELD__RAW_DATA__DATA)->GetMemberDef();
@@ -7687,6 +7582,10 @@ getMethodInfoHelper(
             if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
             {
                 fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
+            }
+            else if (MscorlibBinder::IsClass(pMT, CLASS__MEMORY_MARSHAL))
+            {
+                fILIntrinsic = getILIntrinsicImplementationForMemoryMarshal(ftn, methInfo);
             }
             else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
@@ -8126,7 +8025,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8339,7 +8238,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             // If we end up reporting an inlining on a method with non-default IL it means the race
             // happened and we need to manually request ReJIT for it since it was missed.
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8480,17 +8379,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule());
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule()->GetClassLoader());
-
-    // If the caller is the static constructor (.cctor) of a class which has a ComImport base class
-    // somewhere up the class hierarchy, then we cannot make the call into a tailcall.  See
-    // RegisterObjectCreationCallback() in ExtensibleClassFactory.cpp for more information.
-    if (pCaller->IsClassConstructor() &&
-        pCaller->GetMethodTable()->IsComObjectType())
-    {
-        result = false;
-        szFailReason = "Caller is  ComImport .cctor";
-        goto exit;
-    }
 
     if (!fIsTailPrefix)
     {
@@ -10373,7 +10261,11 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
+#ifdef FEATURE_PAL
+    pEEInfoOut->osType = CORINFO_UNIX;
+#else
     pEEInfoOut->osType = CORINFO_WINNT;
+#endif
 
     // hardcode OS version to 0.0.0. These fields can be removed from JITEE interface
     pEEInfoOut->osMajor = 0;
@@ -14321,7 +14213,7 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     if (pMD->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-        CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
     }
 #endif

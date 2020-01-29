@@ -15,7 +15,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="writer"/> is null.
         /// </exception>
-        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions options = null)
+        public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonSerializerOptions? options = null)
         {
             WriteValueCore(writer, value, typeof(TValue), options);
         }
@@ -30,7 +30,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="writer"/> is null.
         /// </exception>
-        public static void Serialize(Utf8JsonWriter writer, object value, Type inputType, JsonSerializerOptions options = null)
+        public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             VerifyValueAndType(value, inputType);
             WriteValueCore(writer, value, inputType, options);

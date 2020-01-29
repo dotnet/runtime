@@ -2598,7 +2598,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
     // The object is potentially agile so if allocate out of the current domain and then hand out to
     // multiple domains we might never release the wrapper for that object and hence never unload the CCWC.
     ComCallWrapperCache *pWrapperCache = NULL;
-    TypeHandle thClass = pServer->GetTrueTypeHandle();
+    TypeHandle thClass = pServer->GetTypeHandle();
 
     pWrapperCache = thClass.GetMethodTable()->GetLoaderAllocator()->GetComCallWrapperCache();
 
@@ -4976,7 +4976,7 @@ ComCallWrapperTemplate::CCWInterfaceMapIterator::CCWInterfaceMapIterator(TypeHan
     if (WinRTSupported() && thClass.IsArray() && !pMT->IsMultiDimArray())
     {
         // We treat arrays as if they implemented IIterable<T>, IVector<T>, and IVectorView<T> (WinRT only)
-        TypeHandle thGenArg = thClass.AsArray()->GetArrayElementTypeHandle();
+        TypeHandle thGenArg = thClass.GetArrayElementTypeHandle();
         Instantiation inst(&thGenArg, 1);
 
         BinderClassID id = (fIterateRedirectedInterfaces ? CLASS__IITERABLE : CLASS__IENUMERABLEGENERIC);

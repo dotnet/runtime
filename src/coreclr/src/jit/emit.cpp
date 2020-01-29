@@ -1107,7 +1107,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
 
     if (memAccessKind == PERFSCORE_MEMORY_WRITE)
     {
-        // We assume that we won't read back from memory for the next WR_GENERAL (3) cycles
+        // We assume that we won't read back from memory for the next WR_GENERAL cycles
         // Thus we normally won't pay latency costs for writes.
         latency = max(0.0f, latency - PERFSCORE_LATENCY_WR_GENERAL);
     }
@@ -1119,6 +1119,34 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     }
 
     return max(throughput, latency);
+}
+
+//------------------------------------------------------------------------------------
+// perfScoreUnhandledInstruction:
+//    Helper method used to report an unhandled instruction
+//
+// Arguments:
+//    id  - The current instruction descriptor to be evaluated
+//    pResult - pointer to struct holding the instruction characteristics
+//              if we return these are updated with default values
+//
+// Notes:
+//     When validating that the PerfScore handles every instruction.
+//     the #if 0 block is changed into a #ifdef DEBUG
+//     We will print the instruction and instruction group
+//     and instead of returning we will assert
+//
+//     Otherwise we will return default latencies of 1 cycle.
+//
+void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacteristics* pResult)
+{
+// Change this to #ifdef DEBUG to assert on any unhandled instructions
+#if 0
+    printf("PerfScore: unhandled instruction: %s, format %s", codeGen->genInsName(id->idIns()), emitIfName(id->idInsFmt()));
+    assert(!"PerfScore: unhandled instruction");
+#endif
+    pResult->insThroughput = PERFSCORE_THROUGHPUT_1C;
+    pResult->insLatency    = PERFSCORE_LATENCY_1C;
 }
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
@@ -4414,17 +4442,33 @@ void emitter::emitComputeCodeSizes()
 #endif
 }
 
-/*****************************************************************************
- *
- *  Called at the end of code generation, this method creates the code, data
- *  and GC info blocks for the method.  Returns the size of the method (which must fit in an unsigned).
- */
-
+//------------------------------------------------------------------------
+// emitEndCodeGen: called at end of code generation to create code, data, and gc info
+//
+// Arguments:
+//    comp - compiler instance
+//    contTrkPtrLcls - true if tracked stack pointers are contiguous on the stack
+//    fullInt - true if method has fully interruptible gc reporting
+//    fullPtrMap - true if gc reporting should use full register pointer map
+//    xcptnsCount - number of EH clauses to report for the method
+//    prologSize [OUT] - prolog size in bytes
+//    epilogSize [OUT] - epilog size in bytes (see notes)
+//    codeAddr [OUT] - address of the code buffer
+//    coldCodeAddr [OUT] - address of the cold code buffer (if any)
+//    consAddr [OUT] - address of the read only constant buffer (if any)
+//
+// Notes:
+//    Currently, in methods with multiple epilogs, all epilogs must have the same
+//    size. epilogSize is the size of just one of these epilogs, not the cumulative
+//    size of all of the method's epilogs.
+//
+// Returns:
+//    size of the method code, in bytes
+//
 unsigned emitter::emitEndCodeGen(Compiler* comp,
                                  bool      contTrkPtrLcls,
                                  bool      fullyInt,
                                  bool      fullPtrMap,
-                                 bool      returnsGCr,
                                  unsigned  xcptnsCount,
                                  unsigned* prologSize,
                                  unsigned* epilogSize,

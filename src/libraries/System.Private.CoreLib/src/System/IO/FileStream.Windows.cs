@@ -204,7 +204,7 @@ namespace System.IO
         {
             Interop.Kernel32.FILE_STANDARD_INFO info;
 
-            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FILE_INFO_BY_HANDLE_CLASS.FileStandardInfo, out info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
+            if (!Interop.Kernel32.GetFileInformationByHandleEx(_fileHandle, Interop.Kernel32.FileStandardInfo, &info, (uint)sizeof(Interop.Kernel32.FILE_STANDARD_INFO)))
                 throw Win32Marshal.GetExceptionForLastWin32Error(_path);
             long len = info.EndOfFile;
 

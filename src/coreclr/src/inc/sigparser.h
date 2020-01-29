@@ -490,7 +490,7 @@ class SigParser
 
         //------------------------------------------------------------------------
         // Is this at the Sentinal (the ... in a varargs signature) that marks
-        // the begining of varguments that are not decared at the target
+        // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
         {
@@ -609,7 +609,6 @@ class SigParser
                 switch (bElementType)
                 {
                 case ELEMENT_TYPE_VAR_ZAPSIG:
-                case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:
@@ -670,7 +669,6 @@ class SigParser
             {
                 switch (bElementType)
                 {
-                case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
                 case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
                 case ELEMENT_TYPE_CANON_ZAPSIG:
                 case ELEMENT_TYPE_MODULE_ZAPSIG:

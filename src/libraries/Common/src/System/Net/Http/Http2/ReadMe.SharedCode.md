@@ -3,17 +3,17 @@ The code in this directory is shared between dotnet/runtime and aspnet/AspNetCor
 dotnet/runtime code paths:
 - runtime\src\libraries\Common\src\System\Net\Http\Http2
 - runtime\src\libraries\Common\tests\Tests\System\Net\Http2
+
 aspnet/AspNetCore code paths:
 - AspNetCore\src\Shared\Http2
 - AspNetCore\src\Shared\test\Shared.Tests\Http2
 
 ## Copying code
-To copy code from dotnet/runtime to aspnet/AspNetCore, set ASPNETCORE_REPO to the AspNetCore repo root and then run CopyToAspNetCore.cmd.
-To copy code from aspnet/AspNetCore to dotnet/runtime, set RUNTIME_REPO to the runtime repo root and then run CopyToRuntime.cmd.
+- To copy code from dotnet/runtime to aspnet/AspNetCore, set ASPNETCORE_REPO to the AspNetCore repo root and then run CopyToAspNetCore.cmd.
+- To copy code from aspnet/AspNetCore to dotnet/runtime, set RUNTIME_REPO to the runtime repo root and then run CopyToRuntime.cmd.
 
 ## Building dotnet/runtime code:
-- https://github.com/dotnet/runtime/blob/master/docs/libraries/building/windows-instructions.md
-- https://github.com/dotnet/runtime/blob/master/docs/libraries/project-docs/developer-guide.md
+- https://github.com/dotnet/runtime/tree/master/docs/workflow
 - Run libraries.cmd from the root once: `PS D:\github\runtime> .\libraries.cmd`
 - Build the individual projects:
 - `PS D:\github\dotnet\src\libraries\Common\tests> dotnet msbuild /t:rebuild`

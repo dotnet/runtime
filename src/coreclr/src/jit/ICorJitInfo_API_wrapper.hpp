@@ -130,6 +130,48 @@ void WrapICorJitInfo::getMethodVTableOffset(
     API_LEAVE(getMethodVTableOffset);
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
+            CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
+            CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
+            CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
+            )
+{
+    API_ENTER(resolveVirtualMethod);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    API_LEAVE(resolveVirtualMethod);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
+            CORINFO_METHOD_HANDLE ftn,
+            bool* requiresInstMethodTableArg = NULL /* OUT */
+            )
+{
+    API_ENTER(getUnboxedEntry);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
+    API_LEAVE(getUnboxedEntry);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
+            CORINFO_CLASS_HANDLE elemType
+            )
+{
+    API_ENTER(getDefaultEqualityComparerClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getDefaultEqualityComparerClass(elemType);
+    API_LEAVE(getDefaultEqualityComparerClass);
+    return temp;
+}
+
+void WrapICorJitInfo::expandRawHandleIntrinsic(
+        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    API_ENTER(expandRawHandleIntrinsic);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    API_LEAVE(expandRawHandleIntrinsic);
+}
+
 CorInfoIntrinsics WrapICorJitInfo::getIntrinsicID(
             CORINFO_METHOD_HANDLE       method,
             bool*                       pMustExpand             /* OUT */)
@@ -395,7 +437,7 @@ BOOL WrapICorJitInfo::isValueClass(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
+CorInfoInlineTypeCheck WrapICorJitInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
 {
     API_ENTER(canInlineTypeCheck);
     CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
@@ -729,6 +771,28 @@ BOOL WrapICorJitInfo::areTypesEquivalent(
     return temp;
 }
 
+TypeCompareState WrapICorJitInfo::compareTypesForCast(
+            CORINFO_CLASS_HANDLE        fromClass,
+            CORINFO_CLASS_HANDLE        toClass
+            )
+{
+    API_ENTER(compareTypesForCast);
+    TypeCompareState temp = wrapHnd->compareTypesForCast(fromClass, toClass);
+    API_LEAVE(compareTypesForCast);
+    return temp;
+}
+
+TypeCompareState WrapICorJitInfo::compareTypesForEquality(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            )
+{
+    API_ENTER(compareTypesForEquality);
+    TypeCompareState temp = wrapHnd->compareTypesForEquality(cls1, cls2);
+    API_LEAVE(compareTypesForEquality);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::mergeClasses(
             CORINFO_CLASS_HANDLE        cls1,
             CORINFO_CLASS_HANDLE        cls2)
@@ -736,6 +800,17 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::mergeClasses(
     API_ENTER(mergeClasses);
     CORINFO_CLASS_HANDLE temp = wrapHnd->mergeClasses(cls1, cls2);
     API_LEAVE(mergeClasses);
+    return temp;
+}
+
+BOOL WrapICorJitInfo::isMoreSpecificType(
+            CORINFO_CLASS_HANDLE        cls1,
+            CORINFO_CLASS_HANDLE        cls2
+            )
+{
+    API_ENTER(isMoreSpecificType);
+    BOOL temp = wrapHnd->isMoreSpecificType(cls1, cls2);
+    API_LEAVE(isMoreSpecificType);
     return temp;
 }
 
@@ -1044,6 +1119,17 @@ void WrapICorJitInfo::ThrowExceptionForHelper(
     API_LEAVE(ThrowExceptionForHelper);
 }
 
+bool WrapICorJitInfo::runWithErrorTrap(
+        void (*function)(void*), // The function to run
+        void* parameter          // The context parameter that will be passed to the function and the handler
+        )
+{
+    API_ENTER(runWithErrorTrap);
+    bool temp = wrapHnd->runWithErrorTrap(function, parameter);
+    API_LEAVE(runWithErrorTrap);
+    return temp;
+}
+
 void WrapICorJitInfo::getEEInfo(
             CORINFO_EE_INFO            *pEEInfoOut)
 {
@@ -1086,7 +1172,7 @@ const char* WrapICorJitInfo::getMethodNameFromMetadata(
         const char                **enclosingClassName  /* OUT */)
 {
     API_ENTER(getMethodNameFromMetadata);
-    const char* temp = wrapHnd->getMethodNameFromMetaData(ftn, className, namespaceName, enclosingClassName);
+    const char* temp = wrapHnd->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
     API_LEAVE(getMethodNameFromMetadata);
     return temp;
 }
@@ -1374,6 +1460,17 @@ void* WrapICorJitInfo::getFieldAddress(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
+                    CORINFO_FIELD_HANDLE    field,
+                    bool                   *pIsSpeculative = NULL
+                    )
+{
+    API_ENTER(getStaticFieldCurrentClass);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getStaticFieldCurrentClass(field, pIsSpeculative);
+    API_LEAVE(getStaticFieldCurrentClass);
+    return temp;
+}
+
 CORINFO_VARARGS_HANDLE WrapICorJitInfo::getVarArgsHandle(
                 CORINFO_SIG_INFO       *pSig,
                 void                  **ppIndirection)
@@ -1470,24 +1567,22 @@ void* WrapICorJitInfo::getTailCallCopyArgsThunk(
     return result;
 }
 
+bool WrapICorJitInfo::convertPInvokeCalliToCall(
+                    CORINFO_RESOLVED_TOKEN * pResolvedToken,
+                    bool fMustConvert
+                    )
+{
+    API_ENTER(convertPInvokeCalliToCall);
+    bool temp = wrapHnd->convertPInvokeCalliToCall(pResolvedToken, fMustConvert);
+    API_LEAVE(convertPInvokeCalliToCall);
+    return temp;
+}
+
 /*********************************************************************************/
 //
 // ICorJitInfo
 //
 /*********************************************************************************/
-
-DWORD WrapICorJitInfo::getJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes)
-{
-    API_ENTER(getJitFlags);
-    DWORD result = wrapHnd->getJitFlags(jitFlags, sizeInBytes);
-    API_LEAVE(getJitFlags);
-    return result;
-}
-
-bool WrapICorJitInfo::runWithErrorTrap(void(*function)(void*), void *param)
-{
-    return wrapHnd->runWithErrorTrap(function, param);
-}
 
 IEEMemoryManager* WrapICorJitInfo::getMemoryManager()
 {
@@ -1659,46 +1754,12 @@ DWORD WrapICorJitInfo::getExpectedTargetArchitecture()
     return result;
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
-    CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
-    CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
-    CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
-)
+DWORD WrapICorJitInfo::getJitFlags(CORJIT_FLAGS *jitFlags, DWORD sizeInBytes)
 {
-    API_ENTER(resolveVirtualMethod);
-    CORINFO_METHOD_HANDLE result = wrapHnd->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
-    API_LEAVE(resolveVirtualMethod);
+    API_ENTER(getJitFlags);
+    DWORD result = wrapHnd->getJitFlags(jitFlags, sizeInBytes);
+    API_LEAVE(getJitFlags);
     return result;
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::getUnboxedEntry(
-    CORINFO_METHOD_HANDLE       ftn,          /* IN */
-    bool* requiresInstMethodTableArg          /* OUT */
-)
-{
-    API_ENTER(getUnboxedEntry);
-    CORINFO_METHOD_HANDLE result = wrapHnd->getUnboxedEntry(ftn, requiresInstMethodTableArg);
-    API_LEAVE(getUnboxedEntry);
-    return result;
-}
-
-CORINFO_CLASS_HANDLE WrapICorJitInfo::getDefaultEqualityComparerClass(
-    CORINFO_CLASS_HANDLE elemType)
-{
-    API_ENTER(getDefaultEqualityComparerClass);
-    CORINFO_CLASS_HANDLE result = wrapHnd->getDefaultEqualityComparerClass(elemType);
-    API_LEAVE(getDefaultEqualityComparerClass);
-    return result;
-}
-
-
-void WrapICorJitInfo::expandRawHandleIntrinsic(
-    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
-    CORINFO_GENERICHANDLE_RESULT *  pResult)
-{
-    API_ENTER(expandRawHandleIntrinsic);
-    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
-    API_LEAVE(expandRawHandleIntrinsic);
 }
 
 /**********************************************************************************/

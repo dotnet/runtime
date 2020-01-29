@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,30 +18,30 @@ namespace R2RDump
     class R2RDiff
     {
         /// <summary>
-        /// Left R2R image for the diff.
+        /// Left dumper to use for the diff
         /// </summary>
-        private readonly R2RReader _leftFile;
+        private readonly Dumper _leftDumper;
 
         /// <summary>
-        /// Right R2R image for the diff.
+        /// Right dumper to use for the diff
         /// </summary>
-        private readonly R2RReader _rightFile;
+        private readonly Dumper _rightDumper;
 
         /// <summary>
-        /// Text writer to receive diff output.
+        /// Text writer to use for common output
         /// </summary>
         private readonly TextWriter _writer;
 
         /// <summary>
         /// Store the left and right file and output writer.
         /// </summary>
-        /// <param name="leftFile">Left R2R file</param>
-        /// <param name="rightFile">Right R2R file</param>
-        /// <param name="writer">Output writer to receive the diff</param>
-        public R2RDiff(R2RReader leftFile, R2RReader rightFile, TextWriter writer)
+        /// <param name="leftDumper">Dumper to use for the left diff output</param>
+        /// <param name="rightDumper">Dumper to use for the right diff output</param>
+        /// <param name="writer">Writer to use for output common to left / right side</param>
+        public R2RDiff(Dumper leftDumper, Dumper rightDumper, TextWriter writer)
         {
-            _leftFile = leftFile;
-            _rightFile = rightFile;
+            _leftDumper = leftDumper;
+            _rightDumper = rightDumper;
             _writer = writer;
         }
 
@@ -53,6 +54,11 @@ namespace R2RDump
             DiffPESections();
             DiffR2RSections();
             DiffR2RMethods();
+
+            HashSet<string> commonMethods = new HashSet<string>(_leftDumper.Reader.Methods.Select(method => method.SignatureString)
+                .Intersect(_rightDumper.Reader.Methods.Select(method => method.SignatureString)));
+            DumpCommonMethods(_leftDumper, commonMethods);
+            DumpCommonMethods(_rightDumper, commonMethods);
         }
 
         /// <summary>
@@ -60,8 +66,8 @@ namespace R2RDump
         /// </summary>
         private void DiffTitle()
         {
-            _writer.WriteLine($@"Left file:  {_leftFile.Filename} ({_leftFile.Image.Length} B)");
-            _writer.WriteLine($@"Right file: {_rightFile.Filename} ({_rightFile.Image.Length} B)");
+            _writer.WriteLine($@"Left file:  {_leftDumper.Reader.Filename} ({_leftDumper.Reader.Image.Length} B)");
+            _writer.WriteLine($@"Right file: {_rightDumper.Reader.Filename} ({_rightDumper.Reader.Image.Length} B)");
             _writer.WriteLine();
         }
 
@@ -70,7 +76,7 @@ namespace R2RDump
         /// </summary>
         private void DiffPESections()
         {
-            ShowDiff(GetPESectionMap(_leftFile), GetPESectionMap(_rightFile), "PE sections");
+            ShowDiff(GetPESectionMap(_leftDumper.Reader), GetPESectionMap(_rightDumper.Reader), "PE sections");
         }
 
         /// <summary>
@@ -78,7 +84,7 @@ namespace R2RDump
         /// </summary>
         private void DiffR2RSections()
         {
-            ShowDiff(GetR2RSectionMap(_leftFile), GetR2RSectionMap(_rightFile), "R2R sections");
+            ShowDiff(GetR2RSectionMap(_leftDumper.Reader), GetR2RSectionMap(_rightDumper.Reader), "R2R sections");
         }
 
         /// <summary>
@@ -86,7 +92,7 @@ namespace R2RDump
         /// </summary>
         private void DiffR2RMethods()
         {
-            ShowDiff(GetR2RMethodMap(_leftFile), GetR2RMethodMap(_rightFile), "R2R methods");
+            ShowDiff(GetR2RMethodMap(_leftDumper.Reader), GetR2RMethodMap(_rightDumper.Reader), "R2R methods");
         }
 
         /// <summary>
@@ -156,7 +162,7 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetPESectionMap(R2RReader reader)
+        private Dictionary<string, int> GetPESectionMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
@@ -173,11 +179,11 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetR2RSectionMap(R2RReader reader)
+        private Dictionary<string, int> GetR2RSectionMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
-            foreach (KeyValuePair<R2RSection.SectionType, R2RSection> typeAndSection in reader.R2RHeader.Sections)
+            foreach (KeyValuePair<ReadyToRunSection.SectionType, ReadyToRunSection> typeAndSection in reader.ReadyToRunHeader.Sections)
             {
                 string name = typeAndSection.Key.ToString();
                 sectionMap.Add(name, typeAndSection.Value.Size);
@@ -191,17 +197,36 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2R image to scan</param>
         /// <returns></returns>
-        private Dictionary<string, int> GetR2RMethodMap(R2RReader reader)
+        private Dictionary<string, int> GetR2RMethodMap(ReadyToRunReader reader)
         {
             Dictionary<string, int> methodMap = new Dictionary<string, int>();
 
-            foreach (R2RMethod method in reader.R2RMethods)
+            foreach (ReadyToRunMethod method in reader.Methods)
             {
                 int size = method.RuntimeFunctions.Sum(rf => rf.Size);
                 methodMap.Add(method.SignatureString, size);
             }
 
             return methodMap;
+        }
+
+        /// <summary>
+        /// Dump the subset of methods common to both sides of the diff to the given dumper.
+        /// </summary>
+        /// <param name="dumper">Output dumper to use</param>
+        /// <param name="signatureFilter">Set of common signatures of methods to dump</param>
+        private void DumpCommonMethods(Dumper dumper, HashSet<string> signatureFilter)
+        {
+            IEnumerable<ReadyToRunMethod> filteredMethods = dumper
+                .Reader
+                .Methods
+                .Where(method => signatureFilter.Contains(method.SignatureString))
+                .OrderBy(method => method.SignatureString);
+
+            foreach (ReadyToRunMethod method in filteredMethods)
+            {
+                dumper.DumpMethod(method);
+            }
         }
     }
 }

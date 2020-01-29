@@ -2,7 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard2.0;
-      netcoreapp;
+      $(NetCoreAppCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

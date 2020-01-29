@@ -171,31 +171,30 @@ namespace Internal.JitInterface
             throw new NotSupportedException();
         }
 
-        private bool ShouldSkipCompilation(IMethodNode methodCodeNodeNeedingCode)
+        public static bool ShouldSkipCompilation(MethodDesc methodNeedingCode)
         {
-            MethodDesc method = methodCodeNodeNeedingCode.Method;
-            if (method.IsAggressiveOptimization)
+            if (methodNeedingCode.IsAggressiveOptimization)
             {
                 return true;
             }
-            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(method))
+            if (HardwareIntrinsicHelpers.IsHardwareIntrinsic(methodNeedingCode))
             {
                 return true;
             }
-            if (MethodBeingCompiled.IsAbstract)
+            if (methodNeedingCode.IsAbstract)
             {
                 return true;
             }
-            if (MethodBeingCompiled.OwningType.IsDelegate && (
-                MethodBeingCompiled.IsConstructor ||
-                MethodBeingCompiled.Name == "BeginInvoke" ||
-                MethodBeingCompiled.Name == "Invoke" ||
-                MethodBeingCompiled.Name == "EndInvoke"))
+            if (methodNeedingCode.OwningType.IsDelegate && (
+                methodNeedingCode.IsConstructor ||
+                methodNeedingCode.Name == "BeginInvoke" ||
+                methodNeedingCode.Name == "Invoke" ||
+                methodNeedingCode.Name == "EndInvoke"))
             {
                 // Special methods on delegate types
                 return true;
             }
-            if (method.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
+            if (methodNeedingCode.HasCustomAttribute("System.Runtime", "BypassReadyToRunAttribute"))
             {
                 // This is a quick workaround to opt specific methods out of ReadyToRun compilation to work around bugs.
                 return true;
@@ -211,7 +210,7 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(methodCodeNodeNeedingCode))
+                if (!ShouldSkipCompilation(MethodBeingCompiled))
                 {
                     CompileMethodInternal(methodCodeNodeNeedingCode);
                     codeGotPublished = true;
@@ -612,6 +611,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.StackProbe;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
+                    id = ReadyToRunHelper.GCPoll;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -670,10 +673,11 @@ namespace Internal.JitInterface
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
             // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
             // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
+            // token to refer to the result of token lookup in the R2R fixups; we replace the token
             // token to refer to the result of token lookup in the R2R fixups.
             //
-            // We replace the token with the token of the ECMA entity. This only works for **non-generic
-            // types/members within the current version bubble**, but this happens to be good enough because
+            // We replace the token with the token of the ECMA entity. This only works for **types/members
+            // within the current version bubble**, but this happens to be good enough because
             // we only do this replacement within CoreLib to replace method bodies in places
             // that we cannot express in C# right now and for p/invokes in large version bubbles).
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
@@ -682,22 +686,32 @@ namespace Internal.JitInterface
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
 
-                if (resultDef is MethodDesc)
+                if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultDef is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultDef = rawPinvoke.Target;
+                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        resultMethod = rawPinvoke.Target;
 
-                    Debug.Assert(resultDef is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
-                    module = ((EcmaMethod)resultDef).Module;
+                    // It's okay to strip the instantiation away because we don't need a MethodSpec
+                    // token - SignatureBuilder will generate the generic method signature
+                    // using instantiation parameters from the MethodDesc entity.
+                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+
+                    Debug.Assert(resultMethod is EcmaMethod);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
+                    module = ((EcmaMethod)resultMethod).Module;
                 }
-                else if (resultDef is FieldDesc)
+                else if (resultDef is FieldDesc resultField)
                 {
-                    Debug.Assert(resultDef is EcmaField);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
-                    module = ((EcmaField)resultDef).Module;
+                    // It's okay to strip the instantiation away because we don't need the
+                    // instantiated MemberRef token - SignatureBuilder will generate the generic
+                    // field signature using instantiation parameters from the FieldDesc entity.
+                    resultField = resultField.GetTypicalFieldDefinition();
+
+                    Debug.Assert(resultField is EcmaField);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultField).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
+                    module = ((EcmaField)resultField).Module;
                 }
                 else
                 {
@@ -889,6 +903,31 @@ namespace Internal.JitInterface
             return false;
         }
 
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
+        {
+            const int MaxInstatiationNesting = 10;
+
+            if (nestingLevel == MaxInstatiationNesting)
+            {
+                return true;
+            }
+
+            foreach (TypeDesc instantiationType in instantiation)
+            {
+                if (instantiationType.HasInstantiation && IsGenericTooDeeplyNested(instantiationType.Instantiation, nestingLevel + 1))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsGenericTooDeeplyNested(Instantiation instantiation)
+        {
+            return IsGenericTooDeeplyNested(instantiation, 0);
+        }
+
         private void ceeInfoGetCallInfo(
             ref CORINFO_RESOLVED_TOKEN pResolvedToken,
             CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
@@ -928,6 +967,17 @@ namespace Internal.JitInterface
             useInstantiatingStub = originalMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).RequiresInstMethodDescArg();
 
             callerMethod = HandleToObject(callerHandle);
+
+            if (originalMethod.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
+            if (originalMethod.OwningType.HasInstantiation && IsGenericTooDeeplyNested(originalMethod.OwningType.Instantiation))
+            {
+                throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + originalMethod.ToString());
+            }
+
             if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod))
             {
                 // We must abort inline attempts calling from outside of the version bubble being compiled
@@ -1220,6 +1270,9 @@ namespace Internal.JitInterface
             }
             else
             {
+                // At this point, we knew it is a virtual call to targetMethod, 
+                // If it is also a default interface method call, it should go through instantiating stub.
+                useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
                 // Insert explicit null checks for cross-version bubble non-interface calls.
                 // It is required to handle null checks properly for non-virtual <-> virtual change between versions
                 pResult->nullInstanceCheck = callVirtCrossingVersionBubble && !targetMethod.OwningType.IsInterface;
@@ -1997,9 +2050,17 @@ namespace Internal.JitInterface
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
-            
-            pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
-            pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+
+            if (ecmaMethod.IsSuppressGCTransition())
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PVALUE;
+            }
+            else
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+            }
         }
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)

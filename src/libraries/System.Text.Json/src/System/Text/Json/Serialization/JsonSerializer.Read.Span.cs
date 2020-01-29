@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -19,9 +20,10 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static TValue Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions options = null)
+        [return: MaybeNull]
+        public static TValue Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
         {
-            return (TValue)ParseCore(utf8Json, typeof(TValue), options);
+            return (TValue)ParseCore(utf8Json, typeof(TValue), options)!;
         }
 
         /// <summary>
@@ -39,7 +41,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static object Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null)
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
@@ -47,7 +49,7 @@ namespace System.Text.Json
             return ParseCore(utf8Json, returnType, options);
         }
 
-        private static object ParseCore(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options)
+        private static object? ParseCore(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
         {
             if (options == null)
             {
@@ -56,7 +58,7 @@ namespace System.Text.Json
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
-            object result = ReadCore(returnType, options, ref reader);
+            object? result = ReadCore(returnType, options, ref reader);
 
             // The reader should have thrown if we have remaining bytes.
             Debug.Assert(reader.BytesConsumed == utf8Json.Length);

@@ -24,24 +24,24 @@ namespace Microsoft.Win32
         // one of the delegates.
         private static readonly object s_eventLockObject = new object();
         private static readonly object s_procLockObject = new object();
-        private static volatile SystemEvents s_systemEvents;
-        private static volatile Thread s_windowThread;
-        private static volatile ManualResetEvent s_eventWindowReady;
+        private static volatile SystemEvents? s_systemEvents;
+        private static volatile Thread? s_windowThread;
+        private static volatile ManualResetEvent? s_eventWindowReady;
         private static readonly Random s_randomTimerId = new Random();
         private static volatile bool s_registeredSessionNotification = false;
         private static volatile IntPtr s_defWindowProc;
 
-        private static volatile string s_className = null;
+        private static volatile string? s_className;
 
         // cross-thread marshaling
-        private static volatile Queue<Delegate> s_threadCallbackList; // list of Delegates
+        private static volatile Queue<Delegate>? s_threadCallbackList; // list of Delegates
         private static volatile int s_threadCallbackMessage = 0;
-        private static volatile ManualResetEvent s_eventThreadTerminated;
+        private static volatile ManualResetEvent? s_eventThreadTerminated;
 
         // Per-instance data that is isolated to the window thread.
         private volatile IntPtr _windowHandle;
-        private Interop.User32.WndProc _windowProc;
-        private Interop.Kernel32.ConsoleCtrlHandlerRoutine _consoleHandler;
+        private Interop.User32.WndProc? _windowProc;
+        private Interop.Kernel32.ConsoleCtrlHandlerRoutine? _consoleHandler;
 
         // The set of events we respond to.
         private static readonly object s_onUserPreferenceChangingEvent = new object();
@@ -61,7 +61,7 @@ namespace Microsoft.Win32
 
         // Our list of handler information.  This is a lookup of the above keys and objects that
         // match a delegate with a SynchronizationContext so we can fire on the proper thread.
-        private static Dictionary<object, List<SystemEventInvokeInfo>> s_handlers;
+        private static Dictionary<object, List<SystemEventInvokeInfo>>? s_handlers;
 
         private SystemEvents()
         {
@@ -77,32 +77,24 @@ namespace Microsoft.Win32
         {
             get
             {
-                if (Environment.OSVersion.Platform == System.PlatformID.Win32NT)
-                {
-                    IntPtr hwinsta = IntPtr.Zero;
-
-                    hwinsta = Interop.User32.GetProcessWindowStation();
-                    if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
-                    {
-                        s_isUserInteractive = true;
-
-                        int lengthNeeded = 0;
-                        Interop.User32.USEROBJECTFLAGS flags = default;
-
-                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
-                        {
-                            if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
-                            {
-                                s_isUserInteractive = false;
-                            }
-                        }
-                        s_processWinStation = hwinsta;
-                    }
-                }
-                else
+                IntPtr hwinsta = Interop.User32.GetProcessWindowStation();
+                if (hwinsta != IntPtr.Zero && s_processWinStation != hwinsta)
                 {
                     s_isUserInteractive = true;
+
+                    uint dummy = 0;
+                    Interop.User32.USEROBJECTFLAGS flags = default;
+
+                    if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, &flags, (uint)sizeof(Interop.User32.USEROBJECTFLAGS), ref dummy))
+                    {
+                        if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
+                        {
+                            s_isUserInteractive = false;
+                        }
+                    }
+                    s_processWinStation = hwinsta;
                 }
+
                 return s_isUserInteractive;
             }
         }
@@ -110,7 +102,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the display settings are changing.
         /// </summary>
-        public static event EventHandler DisplaySettingsChanging
+        public static event EventHandler? DisplaySettingsChanging
         {
             add
             {
@@ -125,7 +117,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the user changes the display settings.
         /// </summary>
-        public static event EventHandler DisplaySettingsChanged
+        public static event EventHandler? DisplaySettingsChanged
         {
             add
             {
@@ -141,7 +133,7 @@ namespace Microsoft.Win32
         ///  Occurs before the thread that listens for system events is terminated.
         ///  Delegates will be invoked on the events thread.
         /// </summary>
-        public static event EventHandler EventsThreadShutdown
+        public static event EventHandler? EventsThreadShutdown
         {
             // Really only here for GDI+ initialization and shut down
             add
@@ -157,7 +149,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the user adds fonts to or removes fonts from the system.
         /// </summary>
-        public static event EventHandler InstalledFontsChanged
+        public static event EventHandler? InstalledFontsChanged
         {
             add
             {
@@ -174,7 +166,7 @@ namespace Microsoft.Win32
         /// </summary>
         [Obsolete("This event has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
-        public static event EventHandler LowMemory
+        public static event EventHandler? LowMemory
         {
             add
             {
@@ -191,7 +183,7 @@ namespace Microsoft.Win32
         ///  Occurs when the user switches to an application that uses a different
         ///  palette.
         /// </summary>
-        public static event EventHandler PaletteChanged
+        public static event EventHandler? PaletteChanged
         {
             add
             {
@@ -207,7 +199,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the user suspends or resumes the system.
         /// </summary>
-        public static event PowerModeChangedEventHandler PowerModeChanged
+        public static event PowerModeChangedEventHandler? PowerModeChanged
         {
             add
             {
@@ -223,7 +215,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the user is logging off or shutting down the system.
         /// </summary>
-        public static event SessionEndedEventHandler SessionEnded
+        public static event SessionEndedEventHandler? SessionEnded
         {
             add
             {
@@ -239,7 +231,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when the user is trying to log off or shutdown the system.
         /// </summary>
-        public static event SessionEndingEventHandler SessionEnding
+        public static event SessionEndingEventHandler? SessionEnding
         {
             add
             {
@@ -255,7 +247,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when a user session switches.
         /// </summary>
-        public static event SessionSwitchEventHandler SessionSwitch
+        public static event SessionSwitchEventHandler? SessionSwitch
         {
             add
             {
@@ -272,7 +264,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///   Occurs when the user changes the time on the system clock.
         /// </summary>
-        public static event EventHandler TimeChanged
+        public static event EventHandler? TimeChanged
         {
             add
             {
@@ -288,7 +280,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when a windows timer interval has expired.
         /// </summary>
-        public static event TimerElapsedEventHandler TimerElapsed
+        public static event TimerElapsedEventHandler? TimerElapsed
         {
             add
             {
@@ -305,7 +297,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when a user preference has changed.
         /// </summary>
-        public static event UserPreferenceChangedEventHandler UserPreferenceChanged
+        public static event UserPreferenceChangedEventHandler? UserPreferenceChanged
         {
             add
             {
@@ -320,7 +312,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Occurs when a user preference is changing.
         /// </summary>
-        public static event UserPreferenceChangingEventHandler UserPreferenceChanging
+        public static event UserPreferenceChangingEventHandler? UserPreferenceChanging
         {
             add
             {
@@ -332,8 +324,13 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void AddEventHandler(object key, Delegate value)
+        private static void AddEventHandler(object key, Delegate? value)
         {
+            if (value is null)
+            {
+                return;
+            }
+
             lock (s_eventLockObject)
             {
                 if (s_handlers == null)
@@ -342,7 +339,7 @@ namespace Microsoft.Win32
                     EnsureSystemEvents(requireHandle: false);
                 }
 
-                if (!s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo> invokeItems))
+                if (!s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo>? invokeItems))
                 {
                     invokeItems = new List<SystemEventInvokeInfo>();
                     s_handlers[key] = invokeItems;
@@ -399,7 +396,7 @@ namespace Microsoft.Win32
             }
 
             EnsureSystemEvents(requireHandle: true);
-            IntPtr timerId = Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
+            IntPtr timerId = Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle),
                                                         Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
 
             if (timerId == IntPtr.Zero)
@@ -415,7 +412,7 @@ namespace Microsoft.Win32
             {
                 if (s_registeredSessionNotification)
                 {
-                    Interop.Wtsapi32.WTSUnRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents._windowHandle));
+                    Interop.Wtsapi32.WTSUnRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle));
                 }
 
                 IntPtr handle = _windowHandle;
@@ -452,7 +449,7 @@ namespace Microsoft.Win32
                 else
                 {
                     IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
-                    Interop.User32.UnregisterClassW(s_className, hInstance);
+                    Interop.User32.UnregisterClassW(s_className!, hInstance);
                 }
             }
 
@@ -523,7 +520,7 @@ namespace Microsoft.Win32
 
                 if (retval != IntPtr.Zero)
                 {
-                    Interop.Wtsapi32.WTSRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
+                    Interop.Wtsapi32.WTSRegisterSessionNotification(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), Interop.Wtsapi32.NOTIFY_FOR_THIS_SESSION);
                     s_registeredSessionNotification = true;
                     Interop.Kernel32.FreeLibrary(retval);
                 }
@@ -536,11 +533,11 @@ namespace Microsoft.Win32
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam).Equals("Policy"))
+                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
                 {
                     pref = UserPreferenceCategory.Policy;
                 }
-                else if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam).Equals("intl"))
+                else if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
                 {
                     pref = UserPreferenceCategory.Locale;
                 }
@@ -724,12 +721,12 @@ namespace Microsoft.Win32
         {
             Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
 
-            Delegate current = null;
-            lock (s_threadCallbackList)
+            Delegate? current = null;
+            lock (s_threadCallbackList!)
             {
                 if (s_threadCallbackList.Count > 0)
                 {
-                    current = (Delegate)s_threadCallbackList.Dequeue();
+                    current = s_threadCallbackList.Dequeue();
                 }
             }
 
@@ -740,8 +737,7 @@ namespace Microsoft.Win32
                 {
                     // Optimize a common case of using EventHandler. This allows us to invoke
                     // early bound, which is a bit more efficient.
-                    EventHandler c = current as EventHandler;
-                    if (c != null)
+                    if (current is EventHandler c)
                     {
                         c(null, EventArgs.Empty);
                     }
@@ -754,16 +750,12 @@ namespace Microsoft.Win32
                 {
                     Debug.Fail("SystemEvents marshaled callback failed:" + t);
                 }
+
                 lock (s_threadCallbackList)
                 {
-                    if (s_threadCallbackList.Count > 0)
-                    {
-                        current = (Delegate)s_threadCallbackList.Dequeue();
-                    }
-                    else
-                    {
-                        current = null;
-                    }
+                    current = s_threadCallbackList.Count > 0 ?
+                        s_threadCallbackList.Dequeue() :
+                        null;
                 }
             }
         }
@@ -778,7 +770,7 @@ namespace Microsoft.Win32
 
 #if DEBUG
             int pid;
-            int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), out pid);
+            int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), out pid);
             Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
 #endif
 
@@ -801,7 +793,7 @@ namespace Microsoft.Win32
                 s_threadCallbackList.Enqueue(method);
             }
 
-            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
+            Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
         }
 
         /// <summary>
@@ -810,7 +802,7 @@ namespace Microsoft.Win32
         public static void KillTimer(IntPtr timerId)
         {
             EnsureSystemEvents(requireHandle: true);
-            if (s_systemEvents._windowHandle != IntPtr.Zero)
+            if (s_systemEvents!._windowHandle != IntPtr.Zero)
             {
                 int res = (int)Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
                                                                 Interop.User32.WM_KILLTIMER, timerId, IntPtr.Zero);
@@ -1010,13 +1002,15 @@ namespace Microsoft.Win32
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static void RaiseEvent(bool checkFinalization, object key, params object[] args)
         {
+            Debug.Assert(args != null && args.Length == 2);
+
             // If the AppDomain's unloading, we shouldn't fire SystemEvents other than Shutdown.
             if (checkFinalization && AppDomain.CurrentDomain.IsFinalizingForUnload())
             {
                 return;
             }
 
-            SystemEventInvokeInfo[] invokeItemArray = null;
+            SystemEventInvokeInfo?[]? invokeItemArray = null;
 
             lock (s_eventLockObject)
             {
@@ -1039,8 +1033,8 @@ namespace Microsoft.Win32
                 {
                     try
                     {
-                        SystemEventInvokeInfo info = invokeItemArray[i];
-                        info.Invoke(checkFinalization, args);
+                        SystemEventInvokeInfo info = invokeItemArray[i]!;
+                        info.Invoke(checkFinalization, args!);
                         invokeItemArray[i] = null; // clear it if it's valid
                     }
                     catch (Exception)
@@ -1052,16 +1046,16 @@ namespace Microsoft.Win32
                 // clean out any that are dead.
                 lock (s_eventLockObject)
                 {
-                    List<SystemEventInvokeInfo> invokeItems = null;
+                    List<SystemEventInvokeInfo>? invokeItems = null;
 
                     for (int i = 0; i < invokeItemArray.Length; i++)
                     {
-                        SystemEventInvokeInfo info = invokeItemArray[i];
+                        SystemEventInvokeInfo? info = invokeItemArray[i];
                         if (info != null)
                         {
                             if (invokeItems == null)
                             {
-                                if (!s_handlers.TryGetValue(key, out invokeItems))
+                                if (!s_handlers!.TryGetValue(key, out invokeItems))
                                 {
                                     // weird.  just to be safe.
                                     return;
@@ -1075,13 +1069,18 @@ namespace Microsoft.Win32
             }
         }
 
-        private static void RemoveEventHandler(object key, Delegate value)
+        private static void RemoveEventHandler(object key, Delegate? value)
         {
+            if (value is null)
+            {
+                return;
+            }
+
             lock (s_eventLockObject)
             {
                 if (s_handlers != null && s_handlers.ContainsKey(key))
                 {
-                    List<SystemEventInvokeInfo> invokeItems = (List<SystemEventInvokeInfo>)s_handlers[key];
+                    List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
 
                     invokeItems.Remove(new SystemEventInvokeInfo(value));
                 }
@@ -1122,7 +1121,7 @@ namespace Microsoft.Win32
         }
 
         [PrePrepareMethod]
-        private static void Shutdown(object sender, EventArgs e)
+        private static void Shutdown(object? sender, EventArgs e)
         {
             Shutdown();
         }
@@ -1137,7 +1136,7 @@ namespace Microsoft.Win32
             switch (msg)
             {
                 case Interop.User32.WM_SETTINGCHANGE:
-                    string newString;
+                    string? newString;
                     IntPtr newStringPtr = lParam;
                     if (lParam != IntPtr.Zero)
                     {
@@ -1263,7 +1262,7 @@ namespace Microsoft.Win32
             try
             {
                 Initialize();
-                s_eventWindowReady.Set();
+                s_eventWindowReady!.Set();
 
                 if (_windowHandle != IntPtr.Zero)
                 {
@@ -1305,7 +1304,7 @@ namespace Microsoft.Win32
             {
                 // In case something very very wrong happend during the creation action.
                 // This will unblock the calling thread.
-                s_eventWindowReady.Set();
+                s_eventWindowReady!.Set();
 
                 if (!((e is ThreadInterruptedException) || (e is ThreadAbortException)))
                 {
@@ -1359,20 +1358,14 @@ namespace Microsoft.Win32
             }
 
             // our delegate method that the SyncContext will call on.
-            private void InvokeCallback(object arg)
+            private void InvokeCallback(object? arg)
             {
-                _delegate.DynamicInvoke((object[])arg);
+                _delegate.DynamicInvoke((object[]?)arg);
             }
 
-            public override bool Equals(object other)
+            public override bool Equals(object? other)
             {
-                SystemEventInvokeInfo otherInvoke = other as SystemEventInvokeInfo;
-
-                if (otherInvoke == null)
-                {
-                    return false;
-                }
-                return otherInvoke._delegate.Equals(_delegate);
+                return other is SystemEventInvokeInfo otherInvoke && otherInvoke._delegate.Equals(_delegate);
             }
 
             public override int GetHashCode()

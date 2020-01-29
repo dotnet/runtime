@@ -1633,7 +1633,7 @@ BOOL MethodTable::CanCastToClass(MethodTable *pTargetMT, TypeHandlePairList *pVi
 #include <optsmallperfcritical.h>
 
 //==========================================================================================
-BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
+BOOL MethodTable::CanCastTo(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL
     {
@@ -1642,7 +1642,6 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
         MODE_COOPERATIVE;
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(pTargetMT));
-        PRECONDITION(!pTargetMT->IsArray());
         PRECONDITION(IsRestored_NoLogging());
     }
     CONTRACTL_END
@@ -1652,6 +1651,23 @@ BOOL MethodTable::CanCastToClassOrInterface(MethodTable* pTargetMT, TypeHandlePa
     // callers should have handled this already according to their rules.
     _ASSERTE(!Nullable::IsNullableForType(TypeHandle(pTargetMT), this));
 #endif // CROSSGEN_COMPILE
+
+    if (IsArray())
+    {
+        if (pTargetMT->IsArray())
+        {
+            return ArrayIsInstanceOf(pTargetMT, pVisited);
+        }
+        else if (pTargetMT->IsInterface() && pTargetMT->HasInstantiation())
+        {
+            return ArraySupportsBizarreInterface(pTargetMT, pVisited);
+        }
+    }
+    else if (pTargetMT->IsArray())
+    {
+        CastCache::TryAddToCache(this, pTargetMT, false);
+        return false;
+    }
 
     BOOL result = pTargetMT->IsInterface() ?
                                 CanCastToInterface(pTargetMT, pVisited) :
@@ -1693,44 +1709,42 @@ BOOL MethodTable::ArraySupportsBizarreInterface(MethodTable * pInterfaceMT, Type
     return result;
 }
 
-BOOL MethodTable::ArrayIsInstanceOf(TypeHandle toTypeHnd, TypeHandlePairList* pVisited)
+BOOL MethodTable::ArrayIsInstanceOf(MethodTable* pTargetMT, TypeHandlePairList* pVisited)
 {
     CONTRACTL{
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(this->IsArray());
-        PRECONDITION(toTypeHnd.IsArray());
+        PRECONDITION(pTargetMT->IsArray());
     } CONTRACTL_END;
 
-    ArrayTypeDesc* toArrayType = toTypeHnd.AsArray();
-
     // GetRank touches EEClass. Try to avoid it for SZArrays.
-    if (toArrayType->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
+    if (pTargetMT->GetInternalCorElementType() == ELEMENT_TYPE_SZARRAY)
     {
         if (this->IsMultiDimArray())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
     else
     {
-        if (this->GetRank() != toArrayType->GetRank())
+        if (this->GetRank() != pTargetMT->GetRank())
         {
-            CastCache::TryAddToCache(this, toTypeHnd, FALSE);
+            CastCache::TryAddToCache(this, pTargetMT, FALSE);
             return TypeHandle::CannotCast;
         }
     }
-    _ASSERTE(this->GetRank() == toArrayType->GetRank());
+    _ASSERTE(this->GetRank() == pTargetMT->GetRank());
 
     TypeHandle elementTypeHandle = this->GetArrayElementTypeHandle();
-    TypeHandle toElementTypeHandle = toArrayType->GetArrayElementTypeHandle();
+    TypeHandle toElementTypeHandle = pTargetMT->GetArrayElementTypeHandle();
 
     BOOL result = (elementTypeHandle == toElementTypeHandle) ||
         TypeDesc::CanCastParam(elementTypeHandle, toElementTypeHandle, pVisited);
 
-    CastCache::TryAddToCache(this, toTypeHnd, (BOOL)result);
+    CastCache::TryAddToCache(this, pTargetMT, (BOOL)result);
     return result;
 }
 
@@ -1746,6 +1760,11 @@ MethodTable::IsExternallyVisible()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    if (IsArray())
+    {
+        return GetArrayElementTypeHandle().IsExternallyVisible();
+    }
 
     BOOL bIsVisible = IsTypeDefExternallyVisible(GetCl(), GetModule(), GetClass()->GetAttrClass());
 
@@ -2187,7 +2206,6 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
     case SystemVClassificationTypeIntegerReference:     return "IntegerReference";
     case SystemVClassificationTypeIntegerByRef:         return "IntegerByReference";
     case SystemVClassificationTypeSSE:                  return "SSE";
-    case SystemVClassificationTypeTypedReference:       return "TypedReference";
     default:                                            return "ERROR";
     }
 };
@@ -2417,64 +2435,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             }
 
             continue;
-        }
-
-        if (fieldClassificationType == SystemVClassificationTypeTypedReference ||
-            CorInfoType2UnixAmd64Classification(GetClass_NoLogging()->GetInternalCorElementType()) == SystemVClassificationTypeTypedReference)
-        {
-            // The TypedReference is a very special type.
-            // In source/metadata it has two fields - Type and Value and both are defined of type IntPtr.
-            // When the VM creates a layout of the type it changes the type of the Value to ByRef type and the
-            // type of the Type field is left to IntPtr (TYPE_I internally - native int type.)
-            // This requires a special treatment of this type. The code below handles the both fields (and this entire type).
-
-            for (unsigned i = 0; i < 2; i++)
-            {
-                fieldSize = 8;
-                fieldOffset = (i == 0 ? 0 : 8);
-                normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
-                fieldClassificationType = (i == 0 ? SystemVClassificationTypeIntegerByRef : SystemVClassificationTypeInteger);
-                if ((normalizedFieldOffset % fieldSize) != 0)
-                {
-                    // The spec requires that struct values on the stack from register passed fields expects
-                    // those fields to be at their natural alignment.
-
-                    LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
-                    return false;
-                }
-
-                helperPtr->largestFieldOffset = (int)normalizedFieldOffset;
-
-                // Set the data for a new field.
-
-                // The new field classification must not have been initialized yet.
-                _ASSERTE(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] == SystemVClassificationTypeNoClass);
-
-                // There are only a few field classifications that are allowed.
-                _ASSERTE((fieldClassificationType == SystemVClassificationTypeInteger) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerReference) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerByRef) ||
-                    (fieldClassificationType == SystemVClassificationTypeSSE));
-
-                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = fieldClassificationType;
-                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = fieldSize;
-                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
-
-                LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-                    nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
-                    GetSystemVClassificationTypeName(fieldClassificationType),
-                    GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
-
-                helperPtr->currentUniqueOffsetField++;
-#ifdef _DEBUG
-                ++fieldIndex;
-#endif // _DEBUG
-            }
-
-            // Both fields of the special TypedReference struct are handled.
-            // Done classifying the System.TypedReference struct fields.
-            break;
         }
 
         if ((normalizedFieldOffset % fieldSize) != 0)
@@ -3264,7 +3224,7 @@ void MethodTable::DoRunClassInitThrowing()
         // Some error occurred trying to init this class
         ListLockEntry*     pEntry= (ListLockEntry *) _pLock->Find(this);
         _ASSERTE(pEntry!=NULL);
-        _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+        _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
 
         // If this isn't a TypeInitializationException, then its creation failed
         // somehow previously, so we should make one last attempt to create it. If
@@ -3425,7 +3385,7 @@ void MethodTable::DoRunClassInitThrowing()
                                     wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
                             }
 
-                            pEntry->m_pLoaderAllocator = GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator();
+                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
 
                             // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
                             // init error. Whatever exception was thrown will be rethrown below, so no worries.
@@ -3480,7 +3440,7 @@ void MethodTable::DoRunClassInitThrowing()
                     // An exception may have occurred in the cctor. DoRunClassInit() should return FALSE in that
                     // case.
                     _ASSERTE(pEntry->m_hInitException);
-                    _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+                    _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
                     _ASSERTE(IsInitError());
 
                     // Throw the saved exception. Since we are rethrowing a previously cached exception, must clear the stack trace first.
@@ -3834,7 +3794,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(!IsArray());      // Arrays can't go through this path.
         POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
@@ -5116,7 +5075,11 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
     }
     CONTRACTL_END;
 
-    if (thConstraint.IsTypeDesc())
+    if (thConstraint.IsArray())
+    {
+        DoAccessibilityCheckForConstraint(pAskingMT, thConstraint.GetArrayElementTypeHandle(), resIDWhy);
+    }
+    else if (thConstraint.IsTypeDesc())
     {
         TypeDesc *pTypeDesc = thConstraint.AsTypeDesc();
 
@@ -5426,6 +5389,13 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
     CONSISTENCY_CHECK(IsRestored_NoLogging());
     CONSISTENCY_CHECK(!HasApproxParent());
 
+    if (IsArray())
+    {
+        Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
+
+        // Fully load the element type
+        GetArrayElementTypeHandle().DoFullyLoad(&newVisited, level, pPending, pfBailed, pInstContext);
+    }
 
     DoFullyLoadLocals locals(pPending, level, this, pVisited);
 
@@ -5498,7 +5468,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         {
             if (!IsComObjectType()) //RCW's are special - they are manufactured by the runtime and derive from the non-public type System.__ComObject
             {
-                // A transparenct type should not be allowed to derive from a critical type.
+                // A transparent type should not be allowed to derive from a critical type.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED);
@@ -5517,7 +5487,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             if (IsInterfaceDeclaredOnClass(it.GetIndex())) // only test directly implemented interfaces (it's
                                                            // legal for an inherited interface to be private.)
             {
-                // A transparenct type should not be allowed to implement a critical interface.
+                // A transparent type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
                 DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
@@ -5817,19 +5787,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
             _ASSERTE(!"Can't get here.");
             break;
 
-    }
-
-    if (level >= CLASS_DEPENDENCIES_LOADED && IsArray())
-    {
-        // The array type should be loaded, if template method table is loaded
-        // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
-        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetArrayElementTypeHandle(),
-                                                           GetInternalCorElementType(),
-                                                           GetRank(),
-                                                           ClassLoader::LoadTypes,
-                                                           level);
-        _ASSERTE(th.IsTypeDesc() && th.IsArray());
-        _ASSERTE(!(level == CLASS_LOADED && !th.IsFullyLoaded()));
     }
 #endif //!DACCESS_COMPILE
 } //MethodTable::DoFullyLoad
@@ -6376,7 +6333,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!IsArray()); // arrays are not fully described by MethodTable
+        PRECONDITION(!IsArray()); // arrays are handled in the callers
     }
     CONTRACTL_END
 
@@ -6444,7 +6401,7 @@ BOOL MethodTable::IsLegalNonArrayWinRTType()
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 // arrays are not allowed as generic arguments
-                if (inst[i].IsArrayType())
+                if (inst[i].IsArray())
                     return FALSE;
 
                 if (inst[i].IsTypeDesc())
@@ -7607,6 +7564,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
     BOOL        bGenerated = FALSE;     // A flag indicating if we generated the GUID from name.
 
     _ASSERTE(pGuid != NULL);
+    _ASSERTE(!this->IsArray());
 
     // Use the per-EEClass GuidInfo if we are asked for the "classic" non-WinRT GUID of non-WinRT type
     GuidInfo *pInfo = ((bClassic && !IsProjectedFromWinRT()) ? GetClass()->GetGuidInfo() : GetGuidInfo());

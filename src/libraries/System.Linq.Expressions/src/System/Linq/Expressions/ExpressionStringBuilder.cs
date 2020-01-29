@@ -19,7 +19,7 @@ namespace System.Linq.Expressions
 
         // Associate every unique label or anonymous parameter in the tree with an integer.
         // Labels are displayed as UnnamedLabel_#; parameters are displayed as Param_#.
-        private Dictionary<object, int> _ids;
+        private Dictionary<object, int>? _ids;
 
         private ExpressionStringBuilder()
         {
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions
 
         #region The printing code
 
-        private void Out(string s)
+        private void Out(string? s)
         {
             _out.Append(s);
         }
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions
                         break;
                     case ExpressionType.Power:
                         op = "**";
-                        break; // This was changed in CoreFx from ^ to **
+                        break; // This was changed in .NET Core from ^ to **
                     case ExpressionType.PowerAssign:
                         op = "**=";
                         break;
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions
             {
                 Out("ref ");
             }
-            string name = node.Name;
+            string? name = node.Name;
             if (string.IsNullOrEmpty(name))
             {
                 Out("Param_" + GetParamId(node));
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions
         {
             if (node.Value != null)
             {
-                string sValue = node.Value.ToString();
+                string? sValue = node.Value.ToString();
                 if (node.Value is string)
                 {
                     Out('\"');
@@ -403,7 +403,7 @@ namespace System.Linq.Expressions
         }
 
         // Prints ".instanceField" or "declaringType.staticField"
-        private void OutMember(Expression instance, MemberInfo member)
+        private void OutMember(Expression? instance, MemberInfo member)
         {
             if (instance != null)
             {
@@ -412,7 +412,7 @@ namespace System.Linq.Expressions
             else
             {
                 // For static members, include the type name
-                Out(member.DeclaringType.Name);
+                Out(member.DeclaringType!.Name);
             }
 
             Out('.');
@@ -525,7 +525,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitMethodCall(MethodCallExpression node)
         {
             int start = 0;
-            Expression ob = node.Object;
+            Expression? ob = node.Object;
 
             if (node.Method.GetCustomAttribute(typeof(ExtensionAttribute)) != null)
             {
@@ -574,7 +574,7 @@ namespace System.Linq.Expressions
             Out("new ");
             Out(node.Type.Name);
             Out('(');
-            ReadOnlyCollection<MemberInfo> members = node.Members;
+            ReadOnlyCollection<MemberInfo>? members = node.Members;
             for (int i = 0; i < node.ArgumentCount; i++)
             {
                 if (i > 0)
@@ -660,7 +660,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.ConvertChecked:
                     Out(", ");
                     Out(node.Type.Name);
-                    Out(')'); break; // These were changed in CoreFx to add the type name
+                    Out(')'); break; // These were changed in .NET Core to add the type name
                 case ExpressionType.PostIncrementAssign: Out("++"); break;
                 case ExpressionType.PostDecrementAssign: Out("--"); break;
                 default: Out(')'); break;
@@ -770,7 +770,7 @@ namespace System.Linq.Expressions
             else
             {
                 Debug.Assert(node.Indexer != null);
-                Out(node.Indexer.DeclaringType.Name);
+                Out(node.Indexer.DeclaringType!.Name);
             }
             if (node.Indexer != null)
             {
@@ -793,7 +793,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitExtension(Expression node)
         {
             // Prefer an overridden ToString, if available.
-            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes);
+            MethodInfo toString = node.GetType().GetMethod("ToString", Type.EmptyTypes)!;
             if (toString.DeclaringType != typeof(Expression) && !toString.IsStatic)
             {
                 Out(node.ToString());

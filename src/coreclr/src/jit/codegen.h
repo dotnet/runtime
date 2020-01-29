@@ -1314,12 +1314,7 @@ public:
 
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
 
-    void inst_TT_RV(instruction ins,
-                    GenTree*    tree,
-                    regNumber   reg,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
+    void inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg);
 
     void inst_RV_TT(instruction ins,
                     regNumber   reg,
@@ -1341,6 +1336,7 @@ public:
 #if defined(_TARGET_XARCH_)
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
     void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
+    void inst_RV_RV_TT(instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW);
 #endif
 
     void inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);

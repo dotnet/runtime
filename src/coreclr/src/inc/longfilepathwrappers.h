@@ -70,12 +70,6 @@ MoveFileExWrapper(
     _In_     DWORD    dwFlags
     );
 
-BOOL
-CreateDirectoryWrapper(
-    _In_ LPCWSTR lpPathName,
-    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
-    );
-
 DWORD
 SearchPathWrapper(
     _In_opt_ LPCWSTR lpPath,

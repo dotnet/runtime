@@ -55,9 +55,9 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>An immutable array.</returns>
-        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[] array)
+        internal static ImmutableArray<byte> DangerousCreateFromUnderlyingArray(ref byte[]? array)
         {
-            byte[] givenArray = array;
+            byte[] givenArray = array!;
             array = null;
 
             ByteArrayUnion union = default;
@@ -80,7 +80,7 @@ namespace System.Reflection.Internal
         /// whose underlying backing field is modified.
         /// </remarks>
         /// <returns>The underlying array, or null if <see cref="ImmutableArray{T}.IsDefault"/> is true.</returns>
-        internal static byte[] DangerousGetUnderlyingArray(ImmutableArray<byte> array)
+        internal static byte[]? DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
             ByteArrayUnion union = default;
             union.ImmutableArray = array;
@@ -91,7 +91,7 @@ namespace System.Reflection.Internal
         private struct ByteArrayUnion
         {
             [FieldOffset(0)]
-            internal byte[] UnderlyingArray;
+            internal byte[]? UnderlyingArray;
 
             [FieldOffset(0)]
             internal ImmutableArray<byte> ImmutableArray;

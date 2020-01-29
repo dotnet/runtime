@@ -6,6 +6,7 @@ using System;
 
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -63,8 +64,11 @@ namespace ILCompiler
                         if (containsSignatureVariables)
                             continue;
 
-                        CheckCanGenerateMethod(method);
-                        rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                        if (!CorInfoImpl.ShouldSkipCompilation(method))
+                        {
+                            CheckCanGenerateMethod(method);
+                            rootProvider.AddCompilationRoot(method, "Profile triggered method");
+                        }
                     }
                     catch (TypeSystemException)
                     {
@@ -79,16 +83,6 @@ namespace ILCompiler
             {
                 foreach (MetadataType type in _module.GetAllTypes())
                 {
-                    try
-                    {
-                        rootProvider.AddCompilationRoot(type, "Library module type");
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // Swallow type load exceptions while rooting
-                        continue;
-                    }
-
                     MetadataType typeWithMethods = type;
                     if (type.HasInstantiation)
                     {
@@ -124,8 +118,11 @@ namespace ILCompiler
 
                 try
                 {
-                    CheckCanGenerateMethod(methodToRoot);
-                    rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    {
+                        CheckCanGenerateMethod(methodToRoot);
+                        rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    }
                 }
                 catch (TypeSystemException)
                 {
@@ -143,6 +140,9 @@ namespace ILCompiler
         /// </summary>
         public static void CheckCanGenerateMethod(MethodDesc method)
         {
+            // Ensure the method is loadable
+            ((CompilerTypeSystemContext)method.Context).EnsureLoadableMethod(method);
+
             MethodSignature signature = method.Signature;
 
             // Vararg methods are not supported in .NET Core

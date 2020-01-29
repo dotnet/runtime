@@ -885,7 +885,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                                                                  false /* do not allow code with a shared-code calling convention to be returned */,
                                                                  true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
                 BOOL fIsOpenDelegate;
-                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTrueTypeHandle(),
+                if (!COMDelegate::IsMethodDescCompatible((gc.target == NULL) ? TypeHandle() : gc.target->GetTypeHandle(),
                                                         methodType,
                                                         pCurMethod,
                                                         gc.refThis->GetTypeHandle(),
@@ -966,7 +966,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                                      true /* Ensure that methods on generic interfaces are returned as instantiated method descs */);
 
     BOOL fIsOpenDelegate;
-    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTrueTypeHandle(),
+    if (COMDelegate::IsMethodDescCompatible((gc.refFirstArg == NULL) ? TypeHandle() : gc.refFirstArg->GetTypeHandle(),
                                             TypeHandle(pMethMT),
                                             method,
                                             gc.refThis->GetTypeHandle(),
@@ -2777,22 +2777,6 @@ BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
     // handle this case.
     if (!pTargetMethod->IsStatic() && Nullable::IsNullableType(pTargetMethod->GetMethodTable()))
         return FALSE;
-
-    // Have to be careful with automatically generated array methods (Get, Set, etc.). The TypeHandle here may actually be one
-    // of the "special case" MethodTables (such as Object[]) instead of an ArrayTypeDesc and our TypeHandle CanCastTo code can't
-    // cope with all the different possible combinations. In general we want to normalize the TypeHandle into an ArrayTypeDesc
-    // for these cases.
-    if (thExactMethodType.IsArrayType() && !thExactMethodType.IsArray())
-    {
-        TypeHandle thElement = thExactMethodType.AsMethodTable()->GetArrayElementTypeHandle();
-        CorElementType etElement = thExactMethodType.AsMethodTable()->GetInternalCorElementType();
-        unsigned uRank = thExactMethodType.AsMethodTable()->GetRank();
-
-        thExactMethodType = ClassLoader::LoadArrayTypeThrowing(thElement,
-                                                               etElement,
-                                                               uRank,
-                                                               ClassLoader::DontLoadTypes);
-    }
 
     // Get signatures for the delegate invoke and target methods.
     MetaSig sigInvoke(pInvokeMethod, thDelegate);

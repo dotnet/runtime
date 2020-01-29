@@ -533,7 +533,7 @@ TryAgain:
 #if !defined(BIT64) && (DATA_ALIGNMENT > 4)
         if ( fData && origArgPtr == value->data ) {
             // allocate an aligned copy of the value
-            value->data = value->type.GetMethodTable()->Box(origArgPtr, FALSE)->UnBox();
+            value->data = value->type.AsMethodTable()->Box(origArgPtr, FALSE)->UnBox();
         }
 #endif
         break;
@@ -580,12 +580,12 @@ TryAgain:
         case ELEMENT_TYPE_CLASS: {
             value->type = data->SigPtr.GetTypeHandleThrowing(data->ArgCookie->pModule, &typeContext);
 
-            if (value->type.GetMethodTable()->IsByRefLike())
+            if (value->type.AsMethodTable()->IsByRefLike())
             {
                 COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
             }
 
-            if (elemType == ELEMENT_TYPE_CLASS && value->type.GetMethodTable()->IsValueType())
+            if (elemType == ELEMENT_TYPE_CLASS && value->type.AsMethodTable()->IsValueType())
                 value->type = g_pObjectClass;
             } break;
 

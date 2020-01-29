@@ -53,8 +53,7 @@ namespace System.Runtime.CompilerServices
             if (collection == null)
                 throw new ArgumentNullException(nameof(collection));
 
-            ICollection<T> c = collection as ICollection<T>;
-            if (c != null)
+            if (collection is ICollection<T> c)
             {
                 int count = c.Count;
                 _items = new T[count];
@@ -160,7 +159,7 @@ namespace System.Runtime.CompilerServices
             {
                 Array.Copy(_items, index + 1, _items, index, _size - index);
             }
-            _items[_size] = default(T);
+            _items[_size] = default(T)!;
             _version++;
         }
 
@@ -226,11 +225,11 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if item is found in the <see cref="ReadOnlyCollectionBuilder{T}"/>; otherwise, false.</returns>
         public bool Contains(T item)
         {
-            if ((object)item == null)
+            if ((object?)item == null)
             {
                 for (int i = 0; i < _size; i++)
                 {
-                    if ((object)_items[i] == null)
+                    if ((object?)_items[i] == null)
                     {
                         return true;
                     }
@@ -305,12 +304,12 @@ namespace System.Runtime.CompilerServices
 
         bool IList.IsReadOnly => false;
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             ValidateNullValue(value, nameof(value));
             try
             {
-                Add((T)value);
+                Add((T)value!);
             }
             catch (InvalidCastException)
             {
@@ -319,30 +318,30 @@ namespace System.Runtime.CompilerServices
             return Count - 1;
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             if (IsCompatibleObject(value))
             {
-                return Contains((T)value);
+                return Contains((T)value!);
             }
             else return false;
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             if (IsCompatibleObject(value))
             {
-                return IndexOf((T)value);
+                return IndexOf((T)value!);
             }
             return -1;
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             ValidateNullValue(value, nameof(value));
             try
             {
-                Insert(index, (T)value);
+                Insert(index, (T)value!);
             }
             catch (InvalidCastException)
             {
@@ -352,15 +351,15 @@ namespace System.Runtime.CompilerServices
 
         bool IList.IsFixedSize => false;
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             if (IsCompatibleObject(value))
             {
-                Remove((T)value);
+                Remove((T)value!);
             }
         }
 
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get
             {
@@ -372,7 +371,7 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    this[index] = (T)value;
+                    this[index] = (T)value!;
                 }
                 catch (InvalidCastException)
                 {
@@ -478,14 +477,14 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static bool IsCompatibleObject(object value)
+        private static bool IsCompatibleObject(object? value)
         {
-            return ((value is T) || (value == null && default(T) == null));
+            return ((value is T) || (value == null && default(T)! == null));
         }
 
-        private static void ValidateNullValue(object value, string argument)
+        private static void ValidateNullValue(object? value, string argument)
         {
-            if (value == null && default(T) != null)
+            if (value == null && default(T)! != null)
             {
                 throw Error.InvalidNullValue(typeof(T), argument);
             }
@@ -504,7 +503,7 @@ namespace System.Runtime.CompilerServices
                 _builder = builder;
                 _version = builder._version;
                 _index = 0;
-                _current = default(T);
+                _current = default(T)!;
             }
 
             #region IEnumerator<T> Members
@@ -523,7 +522,7 @@ namespace System.Runtime.CompilerServices
 
             #region IEnumerator Members
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -547,7 +546,7 @@ namespace System.Runtime.CompilerServices
                     else
                     {
                         _index = _builder._size + 1;
-                        _current = default(T);
+                        _current = default(T)!;
                         return false;
                     }
                 }
@@ -568,7 +567,7 @@ namespace System.Runtime.CompilerServices
                     throw Error.CollectionModifiedWhileEnumerating();
                 }
                 _index = 0;
-                _current = default(T);
+                _current = default(T)!;
             }
 
             #endregion

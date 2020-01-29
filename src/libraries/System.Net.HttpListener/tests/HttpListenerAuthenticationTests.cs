@@ -10,10 +10,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests are flaky")]
+    [SkipOnMono("System.Net.Tests are flaky")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
     {
@@ -32,7 +34,7 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        // [ActiveIssue(20840, TestPlatforms.Unix)] // Managed implementation connects successfully.
+        // [ActiveIssue("https://github.com/dotnet/corefx/issues/20840", TestPlatforms.Unix)] // Managed implementation connects successfully.
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         [InlineData("Basic")]
         [InlineData("NTLM")]
@@ -49,7 +51,7 @@ namespace System.Net.Tests
             }
         }
 
-        // [ActiveIssue(20840, TestPlatforms.Unix)] Managed implementation connects successfully.
+        // [ActiveIssue("https://github.com/dotnet/corefx/issues/20840", TestPlatforms.Unix)] Managed implementation connects successfully.
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
         [InlineData("Basic")]
         [InlineData("NTLM")]
@@ -106,7 +108,7 @@ namespace System.Net.Tests
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20098, TestPlatforms.Unix)]
+        [Theory]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]

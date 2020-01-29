@@ -383,7 +383,7 @@ namespace System
             return Syntax.InternalIsWellFormedOriginalString(this);
         }
 
-        public static bool IsWellFormedUriString(string? uriString, UriKind uriKind)
+        public static bool IsWellFormedUriString([NotNullWhen(true)] string? uriString, UriKind uriKind)
         {
             Uri? result;
 

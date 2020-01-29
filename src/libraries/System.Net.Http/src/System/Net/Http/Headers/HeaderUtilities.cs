@@ -321,9 +321,9 @@ namespace System.Net.Http.Headers
         }
 
         internal static bool TryParseInt32(string value, out int result) =>
-            TryParseInt32(value, 0, value.Length, out result);
+            int.TryParse(value, NumberStyles.None, provider: null, out result);
 
-        internal static bool TryParseInt32(string value, int offset, int length, out int result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
+        internal static bool TryParseInt32(string value, int offset, int length, out int result)
         {
             if (offset < 0 || length < 0 || offset > value.Length - length)
             {
@@ -331,27 +331,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            int tmpResult = 0;
-            int pos = offset, endPos = offset + length;
-            while (pos < endPos)
-            {
-                char c = value[pos++];
-                int digit = c - '0';
-                if ((uint)digit > 9 || // invalid digit
-                    tmpResult > int.MaxValue / 10 || // will overflow when shifting digits
-                    (tmpResult == int.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
-                {
-                    result = 0;
-                    return false;
-                }
-                tmpResult = (tmpResult * 10) + digit;
-            }
-
-            result = tmpResult;
-            return true;
+            return int.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
-        internal static bool TryParseInt64(string value, int offset, int length, out long result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
+        internal static bool TryParseInt64(string value, int offset, int length, out long result)
         {
             if (offset < 0 || length < 0 || offset > value.Length - length)
             {
@@ -359,24 +342,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            long tmpResult = 0;
-            int pos = offset, endPos = offset + length;
-            while (pos < endPos)
-            {
-                char c = value[pos++];
-                int digit = c - '0';
-                if ((uint)digit > 9 || // invalid digit
-                    tmpResult > long.MaxValue / 10 || // will overflow when shifting digits
-                    (tmpResult == long.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
-                {
-                    result = 0;
-                    return false;
-                }
-                tmpResult = (tmpResult * 10) + digit;
-            }
-
-            result = tmpResult;
-            return true;
+            return long.TryParse(value.AsSpan(offset, length), NumberStyles.None, provider: null, out result);
         }
 
         internal static void DumpHeaders(StringBuilder sb, params HttpHeaders[] headers)

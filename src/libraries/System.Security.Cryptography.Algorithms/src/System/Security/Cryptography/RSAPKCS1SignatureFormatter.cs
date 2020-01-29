@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                // For desktop compat, exception is deferred until VerifySignature
+                // For .NET Framework compat, exception is deferred until VerifySignature
                 _algName = null;
             }
         }

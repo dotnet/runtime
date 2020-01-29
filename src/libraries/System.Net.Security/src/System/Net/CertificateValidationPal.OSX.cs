@@ -35,9 +35,12 @@ namespace System.Net
                 {
                     SafeDeleteSslContext sslContext = (SafeDeleteSslContext)securityContext;
 
-                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName, remoteCertificate.NotBefore))
+                    if (!Interop.AppleCrypto.SslCheckHostnameMatch(sslContext.SslContext, hostName, remoteCertificate.NotBefore, out int osStatus))
                     {
                         errors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+
+                        if (NetEventSource.IsEnabled)
+                            NetEventSource.Error(sslContext, $"Cert name validation for '{hostName}' failed with status '{osStatus}'");
                     }
                 }
             }

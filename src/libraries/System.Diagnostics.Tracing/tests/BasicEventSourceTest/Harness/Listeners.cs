@@ -109,7 +109,6 @@ namespace BasicEventSourceTests
         }
         public abstract IList<string> PayloadNames { get; }
 
-#if DEBUG
         /// <summary>
         /// This is a convenience function for the debugger.   It is not used typically
         /// </summary>
@@ -123,7 +122,6 @@ namespace BasicEventSourceTests
                 return ret;
             }
         }
-#endif
 
         public override string ToString()
         {
@@ -259,7 +257,7 @@ namespace BasicEventSourceTests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                // OnEventWritten is abstract in netfx <= 461
+                // OnEventWritten is abstract in .NET Framework <= 461
                 base.OnEventWritten(eventData);
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }

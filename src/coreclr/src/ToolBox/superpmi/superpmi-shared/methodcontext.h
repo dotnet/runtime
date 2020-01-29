@@ -584,8 +584,8 @@ public:
     static int dumpStatTitleToBuffer(char* buff, int len);
     int methodSize;
 
-    int dumpMethodIdentityInfoToBuffer(char* buff, int len);
-    int dumpMethodMD5HashToBuffer(char* buff, int len);
+    int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false);
+    int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false);
 
     void recGlobalContext(const MethodContext& other);
 

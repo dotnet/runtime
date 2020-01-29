@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,7 +30,7 @@ namespace System.Text.Json
         /// </exception>
         public static ValueTask<TValue> DeserializeAsync<TValue>(
             Stream utf8Json,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -57,10 +58,10 @@ namespace System.Text.Json
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<object> DeserializeAsync(
+        public static ValueTask<object?> DeserializeAsync(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -69,13 +70,13 @@ namespace System.Text.Json
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));
 
-            return ReadAsync<object>(utf8Json, returnType, options, cancellationToken);
+            return ReadAsync<object?>(utf8Json, returnType, options, cancellationToken);
         }
 
         private static async ValueTask<TValue> ReadAsync<TValue>(
             Stream utf8Json,
             Type returnType,
-            JsonSerializerOptions options = null,
+            JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
             if (options == null)
@@ -84,6 +85,11 @@ namespace System.Text.Json
             }
 
             ReadStack readStack = default;
+            if (options.ReferenceHandling.ShouldReadPreservedReferences())
+            {
+                readStack.ReferenceResolver = new DefaultReferenceResolver(writing: false);
+            }
+
             readStack.Current.Initialize(returnType, options);
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
@@ -197,7 +203,7 @@ namespace System.Text.Json
             // The reader should have thrown if we have remaining bytes.
             Debug.Assert(bytesInBuffer == 0);
 
-            return (TValue)readStack.Current.ReturnValue;
+            return (TValue)readStack.Current.ReturnValue!;
         }
 
         private static void ReadCore(

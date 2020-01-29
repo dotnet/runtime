@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.IO
@@ -55,7 +57,7 @@ namespace System.IO
         /// <summary>
         /// Gets the count of common characters from the left optionally ignoring case
         /// </summary>
-        internal static unsafe int EqualStartingCharacterCount(string first, string second, bool ignoreCase)
+        internal static unsafe int EqualStartingCharacterCount(string? first, string? second, bool ignoreCase)
         {
             if (string.IsNullOrEmpty(first) || string.IsNullOrEmpty(second)) return 0;
 
@@ -84,7 +86,7 @@ namespace System.IO
         /// <summary>
         /// Returns true if the two paths have the same root
         /// </summary>
-        internal static bool AreRootsEqual(string first, string second, StringComparison comparisonType)
+        internal static bool AreRootsEqual(string? first, string? second, StringComparison comparisonType)
         {
             int firstRootLength = GetRootLength(first.AsSpan());
             int secondRootLength = GetRootLength(second.AsSpan());
@@ -220,15 +222,16 @@ namespace System.IO
         /// <summary>
         /// Trims one trailing directory separator beyond the root of the path.
         /// </summary>
-        internal static string TrimEndingDirectorySeparator(string path) =>
+        [return: NotNullIfNotNull("path")]
+        internal static string? TrimEndingDirectorySeparator(string? path) =>
             EndsInDirectorySeparator(path) && !IsRoot(path.AsSpan()) ?
-                path.Substring(0, path.Length - 1) :
+                path!.Substring(0, path.Length - 1) :
                 path;
 
         /// <summary>
         /// Returns true if the path ends in a directory separator.
         /// </summary>
-        internal static bool EndsInDirectorySeparator(string path) =>
+        internal static bool EndsInDirectorySeparator(string? path) =>
               !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
 
         /// <summary>

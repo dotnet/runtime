@@ -919,10 +919,6 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
 
     _ASSERTE(ThreadAdjustmentLock.IsHeld());
 
-    DWORD currentTicks = GetTickCount();
-    LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
-    LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
-
     LARGE_INTEGER startTime = CurrentSampleStartTime;
     LARGE_INTEGER endTime;
     QueryPerformanceCounter(&endTime);
@@ -941,6 +937,9 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     //
     if (elapsed*1000.0 >= (ThreadAdjustmentInterval/2))
     {
+        DWORD currentTicks = GetTickCount();
+        LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
+        LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
         ThreadCounter::Counts currentCounts = WorkerCounter.GetCleanCounts();
 
         int newMax = HillClimbingInstance.Update(
@@ -1503,28 +1502,13 @@ WorkRequest* ThreadpoolMgr::DequeueWorkRequest()
     RETURN entry;
 }
 
-DWORD WINAPI ThreadpoolMgr::ExecuteHostRequest(PVOID pArg)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    bool foundWork, wasNotRecalled;
-    ExecuteWorkRequest(&foundWork, &wasNotRecalled);
-    return ERROR_SUCCESS;
-}
-
 void ThreadpoolMgr::ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled)
 {
     CONTRACTL
     {
         THROWS;     // QueueUserWorkItem can throw
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -3672,7 +3656,7 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     //Very Very Important!
     //Do not change the timeout for GetQueuedCompletionStatus to a non-zero value.
     //Selecting a non-zero value can cause the thread to block, and lead to expensive context switches.
-    //In real life scenarios, we have noticed a packet to be not availabe immediately, but very shortly
+    //In real life scenarios, we have noticed a packet to be not available immediately, but very shortly
     //(after few 100's of instructions), and falling back to the VM is good in that case as compared to
     //taking a context switch. Changing the timeout to non-zero can lead to perf degrades, that are very
     //hard to diagnose.

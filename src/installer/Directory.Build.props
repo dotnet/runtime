@@ -13,6 +13,9 @@
   <PropertyGroup>
     <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
     <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
+
+    <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. -->
+    <AssemblyVersion />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
@@ -45,7 +48,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == '' AND '$(BuildArchitecture)' == 'arm64'">$(BuildArchitecture)</TargetArchitecture>
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
@@ -351,7 +353,7 @@
 
   <PropertyGroup>
     <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
-    <LibSuffix>.so</LibSuffix> 
+    <LibSuffix>.so</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>
     <LibSuffix Condition="'$(OSGroup)' == 'OSX'">.dylib</LibSuffix>
     <StaticLibPrefix>lib</StaticLibPrefix>

@@ -24,13 +24,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixupKind = fixupKind;
             _typeDesc = typeDesc;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeDesc);
         }
 
         public override int ClassCode => 255607008;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
@@ -38,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, _signatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
@@ -55,7 +57,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             TypeFixupSignature otherNode = (TypeFixupSignature)other;
-            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 
@@ -69,7 +71,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.NecessaryTypeSymbol(_typeDesc), "Type referenced in a fixup signature");
+
+            if (_typeDesc.HasInstantiation && !_typeDesc.IsGenericDefinition)
+            {
+                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+            }
             return dependencies;
         }
     }

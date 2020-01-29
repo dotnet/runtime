@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <ItemGroup>
     <!-- We dont have a project reference to the ref project because we dont ship a ref in the package. -->
     <ProjectReference Include="..\src\System.Text.Json.csproj">
@@ -14,5 +14,5 @@
       <Value>.NETCoreApp;UAP</Value>
     </ValidatePackageSuppression>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

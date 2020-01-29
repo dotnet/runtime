@@ -54,6 +54,11 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
+            if (mdType.Name == "MemoryMarshal" && mdType.Namespace == "System.Runtime.InteropServices")
+            {
+                return MemoryMarshalIntrinsics.EmitIL(method);
+            }
+
             if (mdType.Name == "Volatile" && mdType.Namespace == "System.Threading")
             {
                 return VolatileIntrinsics.EmitIL(method);

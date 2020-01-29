@@ -15,7 +15,7 @@ namespace System.Reflection.Emit
     // This file implements the minimum subset of ISymWrapper.dll required to restore
     // that functionality. Namely, the SymWriter and SymDocumentWriter objects.
     //
-    // Ideally we wouldn't need ISymWrapper.dll on desktop either - it's an ugly piece
+    // Ideally we wouldn't need ISymWrapper.dll on .NET Framework either - it's an ugly piece
     // of legacy.  We could just use this (or COM-interop code) everywhere, but we might
     // have to worry about compatibility.
     //
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit
         }
 
         //------------------------------------------------------------------------------
-        // Implements Telesto's version of SymDocumentWriter (in the desktop world,
+        // Implements Telesto's version of SymDocumentWriter (in the .NET Framework world,
         // this type is exposed from ISymWrapper.dll.)
         //
         // The only thing user code can do with this wrapper is to receive it from
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             void ISymbolDocumentWriter.SetSource(byte[] source)
             {
-                throw new NotSupportedException();   // Intentionally not supported to match desktop CLR
+                throw new NotSupportedException();   // Intentionally not supported to match .NET Framework
             }
 
             //------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ namespace System.Reflection.Emit
 
 
         //------------------------------------------------------------------------------
-        // Implements Telesto's version of SymWriter (in the desktop world,
+        // Implements Telesto's version of SymWriter (in the .NET Framework world,
         // this type is expored from ISymWrapper.dll.)
         //------------------------------------------------------------------------------
         internal unsafe class SymWriter : ISymbolWriter
@@ -153,7 +153,7 @@ namespace System.Reflection.Emit
 
             //------------------------------------------------------------------------------
             // Basic ctor. You'd think this ctor would take the unmanaged symwriter object as an argument
-            // but to fit in with existing desktop code, the unmanaged writer is passed in
+            // but to fit in with existing .NET Framework code, the unmanaged writer is passed in
             // through a subsequent call to InternalSetUnderlyingWriter
             //------------------------------------------------------------------------------
             private SymWriter()
@@ -250,7 +250,7 @@ namespace System.Reflection.Emit
                 }
 
                 // Sure, claim to accept any type that implements ISymbolDocumentWriter but the only one that actually
-                // works is the one returned by DefineDocument. The desktop ISymWrapper commits the same signature fraud.
+                // works is the one returned by DefineDocument. The .NET Framework ISymWrapper commits the same signature fraud.
                 // Ideally we'd just return a sealed opaque cookie type, which had an internal accessor to
                 // get the writer out.
                 // Regardless, this cast is important for security - we cannot allow our caller to provide
@@ -497,7 +497,7 @@ namespace System.Reflection.Emit
     //
     // ! Because the Release occurs in the finalizer thread, this safehandle really takes
     // ! an ostrich approach to apartment issues. We only tolerate this here because we're emulating
-    // ! the desktop CLR's use of ISymWrapper which also pays lip service to COM apartment rules.
+    // ! the .NET Framework's use of ISymWrapper which also pays lip service to COM apartment rules.
     // !
     // ! However, think twice about pulling this safehandle out for other uses.
     //

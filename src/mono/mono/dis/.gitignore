@@ -1,0 +1,13 @@
+/Makefile
+/Makefile.in
+/.libs
+/.deps
+/monodis
+/monodis.exe
+/*.a
+/*.o
+/*.lo
+/semantic.cache
+/.project
+/.cproject
+/TAGS

@@ -37,28 +37,19 @@
 
   <!-- Common properties -->
   <PropertyGroup>
-
-    <__ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</__ProjectDir>
-    <ProjectDir>$(__ProjectDir)\</ProjectDir>
-    <RootRepoDir>$(ProjectDir)\..\..\</RootRepoDir>
-    <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</ProjectDir>
+    <RootRepoDir>$(MSBuildThisFileDirectory)..\..\</RootRepoDir>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
 
     <BaseIntermediateOutputPath>$(RootRepoDir)artifacts\obj\coreclr\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
 
-    <SourceDir>$(__SourceDir)\</SourceDir>
-    <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
-
-    <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(RootRepoDir)artifacts\</RootBinDir>
-
-    <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <RootBinDir>$(RootRepoDir)artifacts\</RootBinDir>
+    <BinDir>$(RootBinDir)bin\coreclr\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
     -->
-    <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
-    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
+    <PackagesBinDir>$(BinDir).nuget\</PackagesBinDir>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -122,5 +113,5 @@
   </PropertyGroup>
 
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
-  <Import Project="$(ProjectDir)dependencies.props" />
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 </Project>

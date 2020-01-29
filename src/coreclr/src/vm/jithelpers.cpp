@@ -2107,31 +2107,12 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // allow an object of type T to be cast to Nullable<T> (they have the same representation)
         fCast = TRUE;
     }
-    else if (pMT->IsArray())
-    {
-        if (toTypeHnd.IsArray())
-        {
-            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, /* pVisited */ NULL);
-        }
-        else if (!toTypeHnd.IsTypeDesc())
-        {
-            MethodTable* toMT = toTypeHnd.AsMethodTable();
-            if (toMT->IsInterface() && toMT->HasInstantiation())
-            {
-                fCast = pMT->ArraySupportsBizarreInterface(toMT, /* pVisited */ NULL);
-            }
-            else
-            {
-                fCast = pMT->CanCastToClassOrInterface(toMT, /* pVisited */ NULL);
-            }
-        }
-    }
     else if (toTypeHnd.IsTypeDesc())
     {
         CastCache::TryAddToCache(pMT, toTypeHnd, FALSE);
         fCast = FALSE;
     }
-    else if (pMT->CanCastToClassOrInterface(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
+    else if (pMT->CanCastTo(toTypeHnd.AsMethodTable(), /* pVisited */ NULL))
     {
         fCast = TRUE;
     }
@@ -2207,365 +2188,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-//
-// This optimization is intended for all non-framed casting helpers
-//
-
-#include <optsmallperfcritical.h>
-
-HCIMPL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    FCALL_CONTRACT;
-
-    //
-    // casts pObject to type pMT
-    //
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    PTR_VOID pMT = pObject->GetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    } while (pMT);
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-//
-// This helper assumes that the check for the trivial cases has been inlined by the JIT.
-//
-HCIMPL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        // This assumes that the check for the trivial cases has been inlined by the JIT.
-        PRECONDITION(pObject != NULL);
-        PRECONDITION(pObject->GetMethodTable() != pTargetMT);
-    } CONTRACTL_END;
-
-    PTR_VOID pMT = MethodTable::GetParentMethodTableOrIndirection(pObject->GetMethodTable());
-
-    while (pMT)
-    {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    FCALL_CONTRACT;
-
-    //
-    // casts pObject to type pMT
-    //
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    PTR_VOID pMT = pObject->GetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    } while (pMT);
-
-    if (!pObject->GetMethodTable()->HasTypeEquivalence())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_ChkCastInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pInterfaceMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (NULL == pObject)
-    {
-        return pObject;
-    }
-
-    if (pObject->GetMethodTable()->ImplementsInterfaceInline(pInterfaceMT))
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastInterface, pInterfaceMT, pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pInterfaceMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    if (pObject->GetMethodTable()->ImplementsInterfaceInline(pInterfaceMT))
-    {
-        return pObject;
-    }
-
-    if (!pObject->GetMethodTable()->InstanceRequiresNonTrivialInterfaceCast())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfInterface, pInterfaceMT, pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object *, JIT_ChkCastArray, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(TypeHandle(type).IsArray());
-    } CONTRACTL_END;
-
-    if (pObject == NULL)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    TypeHandle::CastResult result = ObjIsInstanceOfCached(pObject, th);
-    if (result == TypeHandle::CanCast)
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    Object* pRet = HCCALL2(JITutil_ChkCastAny_NoCacheLookup, type, pObject);
-    // Make sure that the fast helper have not lied
-    _ASSERTE(result != TypeHandle::CannotCast);
-    return pRet;
-}
-HCIMPLEND
-
-
-HCIMPL2(Object *, JIT_IsInstanceOfArray, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(TypeHandle(type).IsArray());
-    } CONTRACTL_END;
-
-    if (pObject == NULL)
-    {
-        return NULL;
-    }
-
-    OBJECTREF refObj = ObjectToOBJECTREF(pObject);
-    VALIDATEOBJECTREF(refObj);
-    MethodTable *pMT = refObj->GetMethodTable();
-
-    if (!pMT->IsArray())
-    {
-        // We know that the clsHnd is an array so check the object.  If it is not an array return null
-        return NULL;
-    }
-    else
-    {
-        TypeHandle th = TypeHandle(type);
-        TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, th);
-
-        switch (result) {
-        case TypeHandle::CanCast:
-            return pObject;
-        case TypeHandle::CannotCast:
-            return NULL;
-        default:
-            // fall through to the slow helper
-            break;
-        }
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, pObject);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == obj)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    switch (ObjIsInstanceOfCached(obj, th)) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, obj);
-}
-HCIMPLEND
-
-// ChkCast test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the ChkCastInterface, ChkCastClass, and ChkCastArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    TypeHandle::CastResult result = ObjIsInstanceOfCached(pObject, th);
-    if (result == TypeHandle::CanCast)
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    Object* pRet = HCCALL2(JITutil_ChkCastAny_NoCacheLookup, type, pObject);
-    // Make sure that the fast helper have not lied
-    _ASSERTE(result != TypeHandle::CannotCast);
-    return pRet;
-}
-HCIMPLEND
-
-
-NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    MethodTable* pMT = obj->GetMethodTable();
-    TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, pInterfaceMT);
-
-    switch (result) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE(pInterfaceMT), obj);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object *, JITutil_ChkCastInterface, MethodTable *pInterfaceMT, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    MethodTable* pMT = obj->GetMethodTable();
-    TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, pInterfaceMT);
-
-    if (result == TypeHandle::CanCast)
-    {
-        return obj;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE(pInterfaceMT), obj);
-}
-HCIMPLEND
-
-
-#include <optdefault.h>
-
-
-//
-// Framed helpers
-//
-NOINLINE HCIMPL2(Object *, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    // This case should be handled by frameless helper
-     _ASSERTE(obj != NULL);
-
-    OBJECTREF oref = ObjectToOBJECTREF (obj);
-    VALIDATEOBJECTREF(oref);
-
-    TypeHandle clsHnd(type);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd, TRUE))
-    {
-        UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    // This case should be handled by frameless helper
-     _ASSERTE(obj != NULL);
-
-    OBJECTREF oref = ObjectToOBJECTREF (obj);
-    VALIDATEOBJECTREF(oref);
-
-    TypeHandle clsHnd(type);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd))
-        oref = NULL;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2582,13 +2205,14 @@ NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE
     {
         UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
     }
+    HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
 }
 HCIMPLEND
 
-NOINLINE HCIMPL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2603,6 +2227,7 @@ NOINLINE HCIMPL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_H
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
     if (!ObjIsInstanceOfCore(OBJECTREFToObject(oref), clsHnd))
         oref = NULL;
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
@@ -2634,7 +2259,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
         Thread *thread = GetThread();
 
         TypeHandle typeHandle(typeHnd_);
-        _ASSERTE(!typeHandle.IsTypeDesc());
+        _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
         MethodTable *methodTable = typeHandle.AsMethodTable();
 
         SIZE_T size = methodTable->GetBaseSize();
@@ -2675,7 +2300,7 @@ HCIMPL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_)
 
     TypeHandle typeHnd(typeHnd_);
 
-    _ASSERTE(!typeHnd.IsTypeDesc());                                   // we never use this helper for arrays
+    _ASSERTE(!typeHnd.IsTypeDesc());  // heap objects must have method tables
     MethodTable *pMT = typeHnd.AsMethodTable();
     _ASSERTE(pMT->IsRestored_NoLogging());
 
@@ -3056,22 +2681,6 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, I
 }
 HCIMPLEND
 
-//*************************************************************
-// R2R-specific array allocation wrapper that extracts array method table from ArrayTypeDesc
-//
-HCIMPL2(Object*, JIT_NewArr1_R2R, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle arrayTypeHandle(arrayTypeHnd_);
-    ArrayTypeDesc *pArrayTypeDesc = arrayTypeHandle.AsArray();
-    MethodTable *pArrayMT = pArrayTypeDesc->GetTemplateMethodTable();
-
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, (CORINFO_CLASS_HANDLE)pArrayMT, size);
-}
-HCIMPLEND
-
 #include <optdefault.h>
 
 /*************************************************************/
@@ -3329,7 +2938,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     TypeHandle clsHnd(type);
 
-    _ASSERTE(!clsHnd.IsTypeDesc());  // we never use this helper for arrays
+    _ASSERTE(!clsHnd.IsTypeDesc());  // boxable types have method tables
 
     MethodTable *pMT = clsHnd.AsMethodTable();
 
@@ -3433,7 +3042,7 @@ LPVOID __fastcall JIT_Unbox_Helper(CORINFO_CLASS_HANDLE type, Object* obj)
     CorElementType type2 = pMT2->GetInternalCorElementType();
     if (type1 == type2)
     {
-        MethodTable* pMT1 = typeHnd.GetMethodTable();
+        MethodTable* pMT1 = typeHnd.AsMethodTable();
         if (pMT1 && (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
         {
@@ -3454,7 +3063,7 @@ HCIMPL2(LPVOID, JIT_Unbox, CORINFO_CLASS_HANDLE type, Object* obj)
 
     TypeHandle typeHnd(type);
     VALIDATEOBJECT(obj);
-    _ASSERTE(!typeHnd.IsTypeDesc());       // value classes are always unshared
+    _ASSERTE(!typeHnd.IsTypeDesc());   // boxable types have method tables
 
         // This has been tuned so that branch predictions are good
         // (fall through for forward branches) for the common case
@@ -4069,9 +3678,6 @@ NOINLINE HCIMPL1(Object*, JIT_GetRuntimeType_Framed, CORINFO_CLASS_HANDLE type)
     if (refType == NULL)
     {
         HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-        // Compensate for CORINFO_TOKENKIND_Ldtoken optimization done by CEEInfo::embedGenericHandle
-        if (!typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsArray())
-            typeHandle = ArrayBase::GetTypeHandle(typeHandle.AsMethodTable());
         refType = typeHandle.GetManagedClassObject();
         HELPER_METHOD_FRAME_END();
     }

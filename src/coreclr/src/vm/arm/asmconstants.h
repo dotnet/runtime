@@ -98,9 +98,6 @@ ASMCONSTANTS_C_ASSERT(MethodTableWriteableData__enum_flag_Unrestored == MethodTa
 #define ArrayBase__m_NumComponents     0x4
 ASMCONSTANTS_C_ASSERT(ArrayBase__m_NumComponents == offsetof(ArrayBase, m_NumComponents));
 
-#define ArrayTypeDesc__m_Arg           0x8
-ASMCONSTANTS_C_ASSERT(ArrayTypeDesc__m_Arg == offsetof(ArrayTypeDesc, m_Arg));
-
 #define PtrArray__m_Array              0x8
 ASMCONSTANTS_C_ASSERT(PtrArray__m_Array == offsetof(PtrArray, m_Array));
 

@@ -29,12 +29,12 @@ namespace System.IO
                   isNormalized: true);
         }
 
-        internal DirectoryInfo(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
+        internal DirectoryInfo(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
             Init(originalPath, fullPath, fileName, isNormalized);
         }
 
-        private void Init(string originalPath, string fullPath = null, string fileName = null, bool isNormalized = false)
+        private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
             OriginalPath = originalPath ?? throw new ArgumentNullException(nameof(originalPath));
 
@@ -50,14 +50,14 @@ namespace System.IO
             _isNormalized = isNormalized;
         }
 
-        public DirectoryInfo Parent
+        public DirectoryInfo? Parent
         {
             get
             {
                 // FullPath might end in either "parent\child" or "parent\child\", and in either case we want
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
-                string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : Path.TrimEndingDirectorySeparator(FullPath));
+                string? parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : Path.TrimEndingDirectorySeparator(FullPath));
                 return parentName != null ?
                     new DirectoryInfo(parentName, isNormalized: true) :
                     null;
@@ -193,7 +193,7 @@ namespace System.IO
             };
         }
 
-        public DirectoryInfo Root => new DirectoryInfo(Path.GetPathRoot(FullPath));
+        public DirectoryInfo Root => new DirectoryInfo(Path.GetPathRoot(FullPath)!);
 
         public void MoveTo(string destDirName)
         {
@@ -210,14 +210,14 @@ namespace System.IO
             if (string.Equals(sourceWithSeparator, destinationWithSeparator, PathInternal.StringComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            string sourceRoot = Path.GetPathRoot(sourceWithSeparator);
-            string destinationRoot = Path.GetPathRoot(destinationWithSeparator);
+            string? sourceRoot = Path.GetPathRoot(sourceWithSeparator);
+            string? destinationRoot = Path.GetPathRoot(destinationWithSeparator);
 
             if (!string.Equals(sourceRoot, destinationRoot, PathInternal.StringComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches NetFX behavior.
+            // to make sure our cross platform behavior matches .NET Framework behavior.
             if (!Exists && !FileSystem.FileExists(FullPath))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
 

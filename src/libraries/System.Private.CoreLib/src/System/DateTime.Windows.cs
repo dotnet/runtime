@@ -97,17 +97,17 @@ namespace System
             {
                 DateTime dt = new DateTime(ticks);
 
-                int year, month, day;
-                dt.GetDatePart(out year, out month, out day);
+                dt.GetDate(out int year, out int month, out int day);
+                dt.GetTime(out int hour, out int minute, out int second, out int millisecond);
 
                 systemTime.Year = (ushort)year;
                 systemTime.Month = (ushort)month;
                 systemTime.DayOfWeek = (ushort)dt.DayOfWeek;
                 systemTime.Day = (ushort)day;
-                systemTime.Hour = (ushort)dt.Hour;
-                systemTime.Minute = (ushort)dt.Minute;
-                systemTime.Second = (ushort)dt.Second;
-                systemTime.Milliseconds = (ushort)dt.Millisecond;
+                systemTime.Hour = (ushort)hour;
+                systemTime.Minute = (ushort)minute;
+                systemTime.Second = (ushort)second;
+                systemTime.Milliseconds = (ushort)millisecond;
                 hundredNanoSecond = 0;
             }
         }

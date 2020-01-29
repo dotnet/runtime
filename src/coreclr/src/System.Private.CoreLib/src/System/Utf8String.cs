@@ -25,10 +25,7 @@ namespace System
     /// <summary>
     /// Represents an immutable string of UTF-8 code units.
     /// </summary>
-    public sealed partial class Utf8String : IComparable<Utf8String?>,
-#nullable disable // see comment on String
-        IEquatable<Utf8String>
-#nullable restore
+    public sealed partial class Utf8String : IComparable<Utf8String?>, IEquatable<Utf8String?>
     {
         /*
          * STATIC FIELDS

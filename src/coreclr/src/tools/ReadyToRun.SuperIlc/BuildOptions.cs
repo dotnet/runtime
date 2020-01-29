@@ -21,7 +21,7 @@ namespace ReadyToRun.SuperIlc
         public bool NoExe { get; set; }
         public bool NoEtw { get; set; }
         public bool NoCleanup { get; set; }
-        public bool GenerateMapFile { get; set; }
+        public bool Map { get; set; }
         public FileInfo PackageList { get; set; }
         public int DegreeOfParallelism { get; set; }
         public bool Sequential { get; set; }
@@ -36,11 +36,12 @@ namespace ReadyToRun.SuperIlc
         public FileInfo[] IssuesPath { get; set; }
         public FileInfo R2RDumpPath { get; set; }
         public FileInfo CrossgenResponseFile { get; set; }
-        public DirectoryInfo[] RewriteOldPath { get;set; }
-        public DirectoryInfo[] RewriteNewPath { get;set; }
+        public DirectoryInfo[] RewriteOldPath { get; set; }
+        public DirectoryInfo[] RewriteNewPath { get; set; }
         public bool MeasurePerf { get; set; }
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
+        public string GCStress { get; set; }
 
         public IEnumerable<string> ReferencePaths()
         {

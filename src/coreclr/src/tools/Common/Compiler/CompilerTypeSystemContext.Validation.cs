@@ -21,6 +21,19 @@ namespace ILCompiler
             _validTypes.GetOrCreateValue(type);
         }
 
+        public void EnsureLoadableMethod(MethodDesc method)
+        {
+            EnsureLoadableType(method.OwningType);
+
+            // If this is an instantiated generic method, check the instantiation.
+            MethodDesc methodDef = method.GetMethodDefinition();
+            if (methodDef != method)
+            {
+                foreach (var instType in method.Instantiation)
+                    EnsureLoadableType(instType);
+            }
+        }
+
         class ValidTypeHashTable : LockFreeReaderHashtable<TypeDesc, TypeDesc>
         {
             protected override bool CompareKeyToValue(TypeDesc key, TypeDesc value) => key == value;
@@ -112,6 +125,11 @@ namespace ILCompiler
                 foreach (var intf in type.RuntimeInterfaces)
                 {
                     ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(intf.NormalizeInstantiation());
+                }
+
+                if (type.BaseType != null)
+                {
+                    ((CompilerTypeSystemContext)type.Context).EnsureLoadableType(type.BaseType);
                 }
 
                 var defType = (DefType)type;

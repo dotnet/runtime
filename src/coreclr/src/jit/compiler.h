@@ -327,7 +327,7 @@ public:
         }
 
         unsigned ssaNum    = GetMinSsaNum() + m_count;
-        m_array[m_count++] = T(jitstd::forward<Args>(args)...);
+        m_array[m_count++] = T(std::forward<Args>(args)...);
 
         // Ensure that the first SSA number we allocate is SsaConfig::FIRST_SSA_NUM
         assert((ssaNum == SsaConfig::FIRST_SSA_NUM) || (m_count > 1));
@@ -1001,8 +1001,8 @@ public:
     TempDsc(int _tdNum, unsigned _tdSize, var_types _tdType) : tdNum(_tdNum), tdSize((BYTE)_tdSize), tdType(_tdType)
     {
 #ifdef DEBUG
-        assert(tdNum <
-               0); // temps must have a negative number (so they have a different number from all local variables)
+        // temps must have a negative number (so they have a different number from all local variables)
+        assert(tdNum < 0);
         tdOffs = BAD_TEMP_OFFSET;
 #endif // DEBUG
         if (tdNum != _tdNum)
@@ -2042,35 +2042,15 @@ public:
     hashBvGlobalData hbvGlobalData; // Used by the hashBv bitvector package.
 
 #ifdef DEBUG
-    bool    verbose;
-    bool    dumpIR;
-    bool    dumpIRNodes;
-    bool    dumpIRTypes;
-    bool    dumpIRKinds;
-    bool    dumpIRLocals;
-    bool    dumpIRRegs;
-    bool    dumpIRSsa;
-    bool    dumpIRValnums;
-    bool    dumpIRCosts;
-    bool    dumpIRFlags;
-    bool    dumpIRNoLists;
-    bool    dumpIRNoLeafs;
-    bool    dumpIRNoStmts;
-    bool    dumpIRTrees;
-    bool    dumpIRLinear;
-    bool    dumpIRDataflow;
-    bool    dumpIRBlockHeaders;
-    bool    dumpIRExit;
-    LPCWSTR dumpIRPhase;
-    LPCWSTR dumpIRFormat;
-    bool    verboseTrees;
-    bool    shouldUseVerboseTrees();
-    bool    asciiTrees; // If true, dump trees using only ASCII characters
-    bool    shouldDumpASCIITrees();
-    bool    verboseSsa; // If true, produce especially verbose dump output in SSA construction.
-    bool    shouldUseVerboseSsa();
-    bool    treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
-    int     morphNum; // This counts the the trees that have been morphed, allowing us to label each uniquely.
+    bool verbose;
+    bool verboseTrees;
+    bool shouldUseVerboseTrees();
+    bool asciiTrees; // If true, dump trees using only ASCII characters
+    bool shouldDumpASCIITrees();
+    bool verboseSsa; // If true, produce especially verbose dump output in SSA construction.
+    bool shouldUseVerboseSsa();
+    bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
+    int  morphNum;              // This counts the the trees that have been morphed, allowing us to label each uniquely.
 
     const char* VarNameToStr(VarName name)
     {
@@ -2601,7 +2581,7 @@ public:
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
     GenTree* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -3015,6 +2995,7 @@ public:
     // Getters and setters for address-exposed and do-not-enregister local var properties.
     bool lvaVarAddrExposed(unsigned varNum);
     void lvaSetVarAddrExposed(unsigned varNum);
+    void lvaSetVarLiveInOutOfHandler(unsigned varNum);
     bool lvaVarDoNotEnregister(unsigned varNum);
 #ifdef DEBUG
     // Reasons why we can't enregister.  Some of these correspond to debug properties of local vars.
@@ -4040,7 +4021,7 @@ private:
     }
     void impLoadArg(unsigned ilArgNum, IL_OFFSET offset);
     void impLoadLoc(unsigned ilLclNum, IL_OFFSET offset);
-    bool impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode);
+    bool impReturnInstruction(int prefixFlags, OPCODE& opcode);
 
 #ifdef _TARGET_ARM_
     void impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -4461,8 +4442,6 @@ public:
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
-
-    void fgMorph();
 
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
@@ -5597,6 +5576,7 @@ private:
     void fgMarkDemotedImplicitByRefArgs();
 
     void fgMarkAddressExposedLocals();
+    void fgMarkAddressExposedLocals(Statement* stmt);
 
     static fgWalkPreFn  fgUpdateSideEffectsPre;
     static fgWalkPostFn fgUpdateSideEffectsPost;
@@ -6162,8 +6142,8 @@ protected:
 
         unsigned csdHashKey; // the orginal hashkey
 
-        unsigned csdIndex;          // 1..optCSECandidateCount
-        char     csdLiveAcrossCall; // 0 or 1
+        unsigned csdIndex; // 1..optCSECandidateCount
+        bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
         unsigned short csdUseCount; // use          count  (excluding the implicit uses at defs)
@@ -6171,9 +6151,9 @@ protected:
         unsigned csdDefWtCnt; // weighted def count
         unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-        GenTree*    csdTree;  // treenode containing the 1st occurance
-        Statement*  csdStmt;  // stmt containing the 1st occurance
-        BasicBlock* csdBlock; // block containing the 1st occurance
+        GenTree*    csdTree;  // treenode containing the 1st occurrence
+        Statement*  csdStmt;  // stmt containing the 1st occurrence
+        BasicBlock* csdBlock; // block containing the 1st occurrence
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
@@ -6260,7 +6240,7 @@ protected:
     unsigned optCSECandidateCount; // Count of CSE's candidates, reset for Lexical and ValNum CSE's
     unsigned optCSEstart;          // The first local variable number that is a CSE
     unsigned optCSEcount;          // The total count of CSE's introduced.
-    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCS
+    unsigned optCSEweight;         // The weight of the current block when we are doing PerformCSE
 
     bool optIsCSEcandidate(GenTree* tree);
 
@@ -6319,8 +6299,8 @@ public:
     INDEBUG(void optDumpCopyPropStack(LclNumToGenTreePtrStack* curSsaName));
 
     /**************************************************************************
-    *               Early value propagation
-    *************************************************************************/
+     *               Early value propagation
+     *************************************************************************/
     struct SSAName
     {
         unsigned m_lvNum;
@@ -6414,17 +6394,35 @@ public:
         OPK_NULLCHECK
     };
 
+    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
+
     bool gtIsVtableRef(GenTree* tree);
-    GenTree* getArrayLengthFromAllocation(GenTree* tree);
-    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree);
+    GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
-    GenTree* optEarlyPropRewriteTree(GenTree* tree);
+    GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
     bool optDoEarlyPropForBlock(BasicBlock* block);
     bool optDoEarlyPropForFunc();
     void optEarlyProp();
-    void optFoldNullCheck(GenTree* tree);
-    bool optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry);
+    void optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    GenTree* optFindNullCheckToFold(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
+    bool optIsNullCheckFoldingLegal(GenTree*    tree,
+                                    GenTree*    nullCheckTree,
+                                    GenTree**   nullCheckParent,
+                                    Statement** nullCheckStmt);
+    bool optCanMoveNullCheckPastTree(GenTree* tree,
+                                     unsigned nullCheckLclNum,
+                                     bool     isInsideTry,
+                                     bool     checkSideEffectSummary);
+#if DEBUG
+    void optCheckFlagsAreSet(unsigned    methodFlag,
+                             const char* methodFlagStr,
+                             unsigned    bbFlag,
+                             const char* bbFlagStr,
+                             GenTree*    tree,
+                             BasicBlock* basicBlock);
+#endif
 
 #if ASSERTION_PROP
     /**************************************************************************
@@ -6500,6 +6498,7 @@ public:
             struct IntVal
             {
                 ssize_t  iconVal;   // integer
+                unsigned padding;   // unused; ensures iconFlags does not overlap lconVal
                 unsigned iconFlags; // gtFlags
             };
             struct Range // integer subrange
@@ -6779,16 +6778,16 @@ public:
 
     // Assertion prop for lcl var functions.
     bool optAssertionProp_LclVarTypeCheck(GenTree* tree, LclVarDsc* lclVarDsc, LclVarDsc* copyVarDsc);
-    GenTree* optCopyAssertionProp(AssertionDsc* curAssertion,
-                                  GenTree*      tree,
+    GenTree* optCopyAssertionProp(AssertionDsc*        curAssertion,
+                                  GenTreeLclVarCommon* tree,
                                   Statement* stmt DEBUGARG(AssertionIndex index));
-    GenTree* optConstantAssertionProp(AssertionDsc* curAssertion,
-                                      GenTree*      tree,
+    GenTree* optConstantAssertionProp(AssertionDsc*        curAssertion,
+                                      GenTreeLclVarCommon* tree,
                                       Statement* stmt DEBUGARG(AssertionIndex index));
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
-    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
@@ -7955,6 +7954,7 @@ private:
 
     void setLclRelatedToSIMDIntrinsic(GenTree* tree);
     bool areFieldsContiguous(GenTree* op1, GenTree* op2);
+    bool areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* second);
     bool areArrayElementsContiguous(GenTree* op1, GenTree* op2);
     bool areArgumentsContiguous(GenTree* op1, GenTree* op2);
     GenTree* createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize);
@@ -10606,8 +10606,12 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef _TARGET_ARM64_
 
-const instruction INS_MULADD     = INS_madd;
+const instruction INS_MULADD = INS_madd;
+#if defined(_TARGET_UNIX_)
+const instruction INS_BREAKPOINT = INS_brk;
+#else
 const instruction INS_BREAKPOINT = INS_bkpt;
+#endif
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;
@@ -10639,100 +10643,7 @@ extern BasicBlock dummyBB;
 /*****************************************************************************/
 
 #ifdef DEBUG
-
 void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars);
-
-/*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                          Debugging helpers                                XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-/* The following functions are intended to be called from the debugger, to dump
- * various data structures. The can be used in the debugger Watch or Quick Watch
- * windows. They are designed to be short to type and take as few arguments as
- * possible. The 'c' versions take a Compiler*, whereas the 'd' versions use the TlsCompiler.
- * See the function definition comment for more details.
- */
-
-void cBlock(Compiler* comp, BasicBlock* block);
-void cBlocks(Compiler* comp);
-void cBlocksV(Compiler* comp);
-void cStmt(Compiler* comp, Statement* statement);
-void cTree(Compiler* comp, GenTree* tree);
-void cTrees(Compiler* comp);
-void cEH(Compiler* comp);
-void cVar(Compiler* comp, unsigned lclNum);
-void cVarDsc(Compiler* comp, LclVarDsc* varDsc);
-void cVars(Compiler* comp);
-void cVarsFinal(Compiler* comp);
-void cBlockPreds(Compiler* comp, BasicBlock* block);
-void cReach(Compiler* comp);
-void cDoms(Compiler* comp);
-void cLiveness(Compiler* comp);
-void cCVarSet(Compiler* comp, VARSET_VALARG_TP vars);
-
-void cFuncIR(Compiler* comp);
-void cBlockIR(Compiler* comp, BasicBlock* block);
-void cLoopIR(Compiler* comp, Compiler::LoopDsc* loop);
-void cStmtIR(Compiler* comp, Statement* stmt);
-void cTreeIR(Compiler* comp, GenTree* tree);
-int cTreeTypeIR(Compiler* comp, GenTree* tree);
-int cTreeKindsIR(Compiler* comp, GenTree* tree);
-int cTreeFlagsIR(Compiler* comp, GenTree* tree);
-int cOperandIR(Compiler* comp, GenTree* operand);
-int cLeafIR(Compiler* comp, GenTree* tree);
-int cIndirIR(Compiler* comp, GenTree* tree);
-int cListIR(Compiler* comp, GenTree* list);
-int cSsaNumIR(Compiler* comp, GenTree* tree);
-int cValNumIR(Compiler* comp, GenTree* tree);
-int cDependsIR(Compiler* comp, GenTree* comma, bool* first);
-
-void dBlock(BasicBlock* block);
-void dBlocks();
-void dBlocksV();
-void dTree(GenTree* tree);
-void dTrees();
-void dEH();
-void dVar(unsigned lclNum);
-void dVarDsc(LclVarDsc* varDsc);
-void dVars();
-void dVarsFinal();
-void dBlockPreds(BasicBlock* block);
-void dReach();
-void dDoms();
-void dLiveness();
-void dCVarSet(VARSET_VALARG_TP vars);
-
-void dRegMask(regMaskTP mask);
-
-void dFuncIR();
-void dBlockIR(BasicBlock* block);
-void dTreeIR(GenTree* tree);
-void dLoopIR(Compiler::LoopDsc* loop);
-void dLoopNumIR(unsigned loopNum);
-int dTabStopIR(int curr, int tabstop);
-int dTreeTypeIR(GenTree* tree);
-int dTreeKindsIR(GenTree* tree);
-int dTreeFlagsIR(GenTree* tree);
-int dOperandIR(GenTree* operand);
-int dLeafIR(GenTree* tree);
-int dIndirIR(GenTree* tree);
-int dListIR(GenTree* list);
-int dSsaNumIR(GenTree* tree);
-int dValNumIR(GenTree* tree);
-int dDependsIR(GenTree* comma);
-void dFormatIR();
-
-GenTree* dFindTree(GenTree* tree, unsigned id);
-GenTree* dFindTree(unsigned id);
-Statement* dFindStmt(unsigned id);
-BasicBlock* dFindBlock(unsigned bbNum);
-
 #endif // DEBUG
 
 #include "compiler.hpp" // All the shared inline functions

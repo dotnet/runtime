@@ -41,7 +41,6 @@ typedef unsigned int TARGET_POINTER_TYPE;
 #include "gcinfotypes.h"
 
 #include "holder.h"
-#include "strongname.h"
 #include "ex.h"
 #include "corbbtprof.h"
 #include "clrnt.h"

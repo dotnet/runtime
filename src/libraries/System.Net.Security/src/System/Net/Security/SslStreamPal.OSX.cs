@@ -35,22 +35,22 @@ namespace System.Net.Security
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer,
+            byte[] inputBuffer, int offset, int count,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
             string targetName,
-            ArraySegment<byte> inputBuffer,
+            byte[] inputBuffer, int offset, int count,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(credential, ref context, new ReadOnlySpan<byte>(inputBuffer, offset, count), ref outputBuffer, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(
@@ -233,7 +233,7 @@ namespace System.Net.Security
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -260,9 +260,9 @@ namespace System.Net.Security
                     }
                 }
 
-                if (inputBuffer.Array != null && inputBuffer.Count > 0)
+                if (inputBuffer.Length > 0)
                 {
-                    sslContext.Write(inputBuffer.Array, inputBuffer.Offset, inputBuffer.Count);
+                    sslContext.Write(inputBuffer);
                 }
 
                 SafeSslHandle sslHandle = sslContext.SslContext;

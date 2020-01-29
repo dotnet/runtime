@@ -13,6 +13,10 @@ namespace Internal.Cryptography
         public static CryptographicException ToCryptographicException(this int hr)
         {
             string message = Interop.Kernel32.GetMessage(hr);
+
+            if ((hr & 0x80000000) != 0x80000000)
+                hr = (hr & 0x0000FFFF) | unchecked((int)0x80070000);
+
             return new WindowsCryptographicException(hr, message);
         }
 

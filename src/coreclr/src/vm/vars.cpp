@@ -53,7 +53,7 @@ GPTR_IMPL(IdDispenser,       g_pModuleIndexDispenser);
 IBCLogger                    g_IBCLogger;
 
 // For [<I1, etc. up to and including [Object
-GARY_IMPL(PTR_ArrayTypeDesc, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
+GARY_IMPL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 GPTR_IMPL(EEConfig, g_pConfig);     // configuration data (from the registry)
 

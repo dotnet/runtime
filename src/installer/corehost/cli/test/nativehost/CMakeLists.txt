@@ -2,7 +2,6 @@
 # The .NET Foundation licenses this file to you under the MIT license.
 # See the LICENSE file in the project root for more information.
 
-cmake_minimum_required (VERSION 2.8.12)
 project(nativehost)
 
 set(DOTNET_PROJECT_NAME "nativehost")
@@ -19,6 +18,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/../../nethost)
 
 set(SOURCES
     ./error_writer_redirector.cpp
+    ./get_native_search_directories_test.cpp
     ./hostfxr_exports.cpp
     ./hostpolicy_exports.cpp
     ./host_context_test.cpp
@@ -28,6 +28,7 @@ set(SOURCES
 
 set(HEADERS
     ./error_writer_redirector.h
+    ./get_native_search_directories_test.h
     ./hostfxr_exports.h
     ./hostpolicy_exports.h
     ./host_context_test.h
@@ -49,6 +50,6 @@ include(../testexe.cmake)
 target_link_libraries(${DOTNET_PROJECT_NAME} nethost)
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     target_link_libraries(${DOTNET_PROJECT_NAME} Advapi32.lib Ole32.lib OleAut32.lib)
 endif()

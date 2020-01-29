@@ -1,4 +1,11 @@
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
+  <PropertyGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(_bc_OSGroup)</CoreCLROSGroup>
+    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(_bc_ConfigurationGroup)</CoreCLRConfiguration>
+    <MonoOSGroup Condition="'$(MonoCLROSGroup)' == ''">$(_bc_OSGroup)</MonoOSGroup>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(_bc_ConfigurationGroup)</MonoConfiguration>
+  </PropertyGroup>
+
   <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -40,16 +47,17 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+    <BinPlaceForTargetVertical Condition="'$(BinPlaceForTargetVertical)' == ''">true</BinPlaceForTargetVertical>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)" Condition="'$(BinPlaceForTargetVertical)' == 'true'">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
     <!-- binplace to directories for packages -->
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' and '$(BuildingNETCoreAppVertical)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
       <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime\$(_bc_OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
@@ -59,10 +67,10 @@
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="netfx-Windows_NT">
+    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="$(NetFrameworkCurrent)-Windows_NT">
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceConfiguration>
 
@@ -82,7 +90,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true' and ('$(BinPlaceForTargetVertical)' == 'true' or '$(_bc_TargetGroup)' != '$(NetCoreAppCurrent)')" Include="$(NetCoreAppCurrent)-$(_bc_OSGroup)">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>
 
@@ -115,7 +123,8 @@
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
       <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
-      <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
+      <_ExcludeAPIList>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', 'ReferenceSourceExcludeApi.txt'))</_ExcludeAPIList>
+      <_ExcludeAttributesList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAttributesList>
       <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
@@ -124,7 +133,8 @@
       <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAttributesList)"</_GenAPICmd>
+      <_GenAPICmd Condition="Exists('$(_ExcludeAPIList)')">$(_GenAPICmd) --exclude-api-list "$(_ExcludeAPIList)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
       <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
     </PropertyGroup>

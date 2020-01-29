@@ -158,7 +158,7 @@ Implementation
 
 ### Code Versions ###
 
-The implementation can be located in [codeversion.h](../../src/vm/codeversion.h) and [codeversion.cpp](../../src/vm/codeversion.cpp)
+The implementation can be located in [codeversion.h](../../../src/coreclr/src/vm/codeversion.h) and [codeversion.cpp](../../../src/coreclr/src/vm/codeversion.cpp)
 
 Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accesors to retrieve all the code and configuration data such as:
 
@@ -330,11 +330,7 @@ to update the active child at either of those levels (ReJIT uses SetActiveILCode
 In order to do step 3 the `CodeVersionManager` relies on one of three different mechanisms, a `FixupPrecode`, a `JumpStamp`, or backpatching entry point slots. In [method.hpp](https://github.com/dotnet/coreclr/blob/master/src/vm/method.hpp) these mechanisms are described in the `MethodDesc::IsVersionableWith*()` functions, and all methods have been classified to use at most one of the techniques, based on the `MethodDesc::IsVersionableWith*()` functions.
 
 ### Thread-safety ###
-CodeVersionManager is designed for use in a free-threaded environment, in many cases by requiring the caller to acquire a lock before calling. This lock can be acquired by constructing an instance of the
-
-```
-CodeVersionManager::TableLockHolder(CodeVersionManager*)
-```
+CodeVersionManager is designed for use in a free-threaded environment, in many cases by requiring the caller to acquire a lock before calling. This lock can be acquired by constructing an instance of `CodeVersionManager::LockHolder`.
 
 in some scope for the CodeVersionManager being operated on. CodeVersionManagers from different domains should not have their locks taken by the same thread with one exception, it is OK to take the shared domain  manager lock and one AppDomain manager lock in that order. The lock is required to change the shape of the tree or traverse it but not to read/write configuration properties from each node. A few special cases:
 

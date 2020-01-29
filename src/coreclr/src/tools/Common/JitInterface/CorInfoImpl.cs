@@ -41,9 +41,10 @@ namespace Internal.JitInterface
             IA64 = 0x0200,
             AMD64 = 0x8664,
             ARM = 0x01c4,
+            ARM64 = 0xaa64,
         }
 
-        private const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -108,29 +109,11 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private static JitConfigProvider s_jitConfig;
-
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
-        public static void RegisterJITModule(JitConfigProvider jitConfig)
+        public static void Startup()
         {
-            s_jitConfig = jitConfig;
-            if (jitConfig.JitPath != null)
-            {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
-        }
-
-        private static IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libHandle = IntPtr.Zero;
-            if (libraryName == JitLibrary)
-            {
-                libHandle = NativeLibrary.Load(s_jitConfig.JitPath, assembly, searchPath);
-            }
-            return libHandle;
+            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl()
@@ -242,7 +225,7 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = s_jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -345,6 +328,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -432,6 +418,11 @@ namespace Internal.JitInterface
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
 
+            if (method.IsPInvoke && method.IsSuppressGCTransition())
+            {
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+            }
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 
@@ -504,7 +495,7 @@ namespace Internal.JitInterface
             sig->_retType = (byte)CorInfoType.CORINFO_TYPE_VOID;
             sig->retTypeClass = null;
             sig->retTypeSigClass = null;
-            sig->flags = (byte)CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
+            sig->flags = CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
 
             sig->numArgs = (ushort)locals.Length;
 
@@ -676,7 +667,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
@@ -1270,7 +1261,7 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || metadataType.IsWellKnownType(WellKnownType.TypedReference))
+                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
                 // TODO
@@ -1389,14 +1380,29 @@ namespace Internal.JitInterface
             return (uint)type.InstanceFieldAlignment.AsInt;
         }
 
+        private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
+        {
+            // Ensure that if we have multiple fields with the same offset,
+            // that we don't double count the data in the gc layout.
+            if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+            {
+                *gcPtrs = (byte)gcType;
+                return 1;
+            }
+            else
+            {
+                Debug.Assert(*gcPtrs == (byte)gcType);
+                return 0;
+            }
+        }
+
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
+            if (type.IsByReferenceOfT)
             {
-                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
-                return 1;
+                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
 
             foreach (var field in type.GetFields())
@@ -1437,20 +1443,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Ensure that if we have multiple fields with the same offset, 
-                    // that we don't double count the data in the gc layout.
-                    if (*fieldGcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
-                    {
-                        *fieldGcPtrs = (byte)gcType;
-                        result++;
-                    }
-                    else
-                    {
-                        Debug.Assert(*fieldGcPtrs == (byte)gcType);
-                    }
+                    result += MarkGcField(fieldGcPtrs, gcType);
                 }
             }
-
             return result;
         }
 
@@ -2197,13 +2192,22 @@ namespace Internal.JitInterface
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
 #endif
                     }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
                     else
                     {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
+                        helperId = field.HasGCStaticBase ?
+                            ReadyToRunHelperId.GetGCStaticBase :
+                            ReadyToRunHelperId.GetNonGCStaticBase;
+
+                        //
+                        // Currently, we only do this optimization for regular statics, but it
+                        // looks like it may be permissible to do this optimization for
+                        // thread statics as well.
+                        //
+                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
+                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
+                        {
+                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
+                        }
                     }
 
 #if READYTORUN
@@ -2409,6 +2413,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
+            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
         private string getJitTimeLogFilename()
@@ -2531,8 +2536,12 @@ namespace Internal.JitInterface
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
+
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
+        {
+            ppIndirection = null;
+            return null;
+        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
@@ -2878,19 +2887,41 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
+        private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
+        {
+            if (targetArchitecture != TargetArchitecture.ARM64)
+                return (RelocType)fRelocType;
+
+            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+            switch (fRelocType)
+            {
+                case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                default:
+                    Debug.Fail("Invalid RelocType: " + fRelocType);
+                    return 0;
+            };
+        }
+
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
-            // slotNum is not unused
+            // slotNum is not used
             Debug.Assert(slotNum == 0);
 
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+
             if (locationBlock != BlockType.Code)
             {
                 // TODO: https://github.com/dotnet/corert/issues/3877
-                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
                 if (targetArchitecture == TargetArchitecture.ARM)
                     return;
                 throw new NotImplementedException("Arbitrary relocs"); 
@@ -2929,12 +2960,13 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
             // relocDelta is stored as the value
-            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+            Relocation.WriteValue(relocType, location, relocDelta);
 
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
+            _relocs.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
@@ -2968,7 +3000,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.ARM:
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)ImageFileMachine.ARM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -2988,7 +3020,7 @@ namespace Internal.JitInterface
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
-            foreach (var flag in s_jitConfig.Flags)
+            foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
             // Set the rest of the flags that don't make sense to expose publically.

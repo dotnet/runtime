@@ -18,13 +18,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _typeDesc = typeDesc;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(typeDesc);
         }
 
         public override int ClassCode => 551247760;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
@@ -32,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.NewObject, targetModule, _signatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewObject, targetModule, _signatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
@@ -54,13 +56,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.ConstructedTypeSymbol(_typeDesc), "Type constructed through new object fixup");
-            return dependencies;
         }
     }
 }

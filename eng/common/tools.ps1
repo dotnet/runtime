@@ -98,6 +98,9 @@ function Exec-Process([string]$command, [string]$commandArgs) {
   }
 }
 
+# createSdkLocationFile parameter enables a file being generated under the toolset directory
+# which writes the sdk's location into. This is only necessary for cmd --> powershell invocations
+# as dot sourcing isn't possible.
 function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
   if (Test-Path variable:global:_DotNetInstallDir) {
     return $global:_DotNetInstallDir
@@ -146,21 +149,23 @@ function InitializeDotNetCli([bool]$install, [bool]$createSdkLocationFile) {
     }
 
     $env:DOTNET_INSTALL_DIR = $dotnetRoot
+  }
 
-    if ($createSdkLocationFile) {
-      # Create a temporary file under the toolset dir and rename it to sdk.txt to avoid races.
-      do { 
-        $sdkCacheFileTemp = Join-Path $ToolsetDir $([System.IO.Path]::GetRandomFileName())
-      } 
-      until (!(Test-Path $sdkCacheFileTemp))
-      Set-Content -Path $sdkCacheFileTemp -Value $dotnetRoot
-
-      try {
-        Rename-Item -Force -Path $sdkCacheFileTemp 'sdk.txt'
-      } catch {
-        # Somebody beat us
-        Remove-Item -Path $sdkCacheFileTemp
-      }
+  # Creates a temporary file under the toolset dir.
+  # The following code block is protecting against concurrent access so that this function can
+  # be called in parallel.
+  if ($createSdkLocationFile) {
+    do { 
+      $sdkCacheFileTemp = Join-Path $ToolsetDir $([System.IO.Path]::GetRandomFileName())
+    } 
+    until (!(Test-Path $sdkCacheFileTemp))
+    Set-Content -Path $sdkCacheFileTemp -Value $dotnetRoot
+  
+    try {
+      Rename-Item -Force -Path $sdkCacheFileTemp 'sdk.txt'
+    } catch {
+      # Somebody beat us
+      Remove-Item -Path $sdkCacheFileTemp
     }
   }
 
@@ -232,7 +237,10 @@ function InstallDotNet([string] $dotnetRoot,
       }
       catch {
         Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Failed to install dotnet runtime '$runtime' from custom location '$runtimeSourceFeed'."
+        ExitWithExitCode 1
       }
+    } else {
+      ExitWithExitCode 1
     }
   }
 }
@@ -290,8 +298,11 @@ function InitializeVisualStudioMSBuild([bool]$install, [object]$vsRequirements =
       $vsMajorVersion = $vsMinVersion.Major
       $xcopyMSBuildVersion = "$vsMajorVersion.$($vsMinVersion.Minor).0-alpha"
     }
-
-    $vsInstallDir = InitializeXCopyMSBuild $xcopyMSBuildVersion $install
+    
+    $vsInstallDir = $null
+    if ($xcopyMSBuildVersion.Trim() -ine "none") {
+        $vsInstallDir = InitializeXCopyMSBuild $xcopyMSBuildVersion $install
+    }
     if ($vsInstallDir -eq $null) {
       throw 'Unable to find Visual Studio that has required version and components installed'
     }

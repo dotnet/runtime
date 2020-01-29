@@ -43,14 +43,6 @@ namespace Internal.TypeSystem.Interop
                     continue;
                 }
 
-                if (!field.FieldType.IsValueType)
-                {
-                    // Types with fields of non-value types cannot be blittable
-                    // This check prevents possible infinite recursion where GetMarshallerKind would call back to IsBlittable e.g. for
-                    // the case of classes with pointer members to the class itself.
-                    return false;
-                }
-
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     field.FieldType,
                     field.GetMarshalAsDescriptor(),

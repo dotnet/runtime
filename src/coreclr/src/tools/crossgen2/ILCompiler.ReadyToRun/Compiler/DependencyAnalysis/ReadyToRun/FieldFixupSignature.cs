@@ -25,13 +25,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _fixupKind = fixupKind;
             _fieldDesc = fieldDesc;
             _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            signatureContext.Resolver.CompilerContext.EnsureLoadableType(fieldDesc.OwningType);
         }
 
         public override int ClassCode => 271828182;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
@@ -39,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 EcmaModule targetModule = _signatureContext.GetTargetModule(_fieldDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, _signatureContext);
 
                 dataBuilder.EmitFieldSignature(_fieldDesc, innerContext);
             }
@@ -56,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             FieldFixupSignature otherNode = (FieldFixupSignature)other;
-            int result = _fixupKind.CompareTo(otherNode._fixupKind);
+            int result = ((int)_fixupKind).CompareTo((int)otherNode._fixupKind);
             if (result != 0)
                 return result;
 
@@ -65,13 +67,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.NecessaryTypeSymbol(_fieldDesc.OwningType), "Type referenced in a fixup signature");
-            return dependencies;
         }
     }
 }

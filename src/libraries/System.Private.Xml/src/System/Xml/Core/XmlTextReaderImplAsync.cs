@@ -1950,44 +1950,38 @@ namespace System.Xml
         // case occurs (like end of buffer, invalid name char)
         ContinueStartName:
             // check element name start char
-            unsafe
+            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
             {
-                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
+                pos++;
+            }
+
+#if XML10_FIFTH_EDITION
+            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
+                pos += 2;
+            }
+#endif
+            else
+            {
+                goto ParseQNameSlow;
+            }
+
+        ContinueName:
+            // parse element name
+            while (true)
+            {
+                if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }
 
 #if XML10_FIFTH_EDITION
-                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
+                else if ( pos < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
                     pos += 2;
                 }
 #endif
                 else
                 {
-                    goto ParseQNameSlow;
-                }
-            }
-
-        ContinueName:
-            unsafe
-            {
-                // parse element name
-                while (true)
-                {
-                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
-                    {
-                        pos++;
-                    }
-
-#if XML10_FIFTH_EDITION
-                    else if ( pos < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                        pos += 2;
-                    }
-#endif
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
 
@@ -2298,16 +2292,13 @@ namespace System.Xml
 
                 bool tagMismatch = false;
 
-                unsafe
-                {
-                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
+                if (_xmlCharType.IsNCNameSingleChar(chars[pos]) || (chars[pos] == ':')
 #if XML10_FIFTH_EDITION
-                         || xmlCharType.IsNCNameHighSurrogateChar(chars[pos])
+                        || xmlCharType.IsNCNameHighSurrogateChar(chars[pos])
 #endif
 )
-                    {
-                        tagMismatch = true;
-                    }
+                {
+                    tagMismatch = true;
                 }
 
                 if (tagMismatch)
@@ -2460,18 +2451,15 @@ namespace System.Xml
                 char tmpch1;
                 int startNameCharSize = 0;
 
-                unsafe
+                if (_xmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
                 {
-                    if (_xmlCharType.IsStartNCNameSingleChar(tmpch1 = chars[pos]))
-                    {
-                        startNameCharSize = 1;
-                    }
-#if XML10_FIFTH_EDITION
-                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch1 )) {
-                        startNameCharSize = 2;
-                    }
-#endif
+                    startNameCharSize = 1;
                 }
+#if XML10_FIFTH_EDITION
+                else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch1 )) {
+                    startNameCharSize = 2;
+                }
+#endif
 
                 if (startNameCharSize == 0)
                 {
@@ -2538,23 +2526,20 @@ namespace System.Xml
             ContinueParseName:
                 char tmpch2;
 
-                unsafe
+                while (true)
                 {
-                    while (true)
+                    if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
                     {
-                        if (_xmlCharType.IsNCNameSingleChar(tmpch2 = chars[pos]))
-                        {
-                            pos++;
-                        }
+                        pos++;
+                    }
 #if XML10_FIFTH_EDITION
-                        else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch2)) {
-                            pos += 2;
-                        }
+                    else if (pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], tmpch2)) {
+                        pos += 2;
+                    }
 #endif
-                        else
-                        {
-                            break;
-                        }
+                    else
+                    {
+                        break;
                     }
                 }
 
@@ -2578,20 +2563,17 @@ namespace System.Xml
                         colonPos = pos;
                         pos++;
 
-                        unsafe
+                        if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
                         {
-                            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
-                            {
-                                pos++;
-                                goto ContinueParseName;
-                            }
-#if XML10_FIFTH_EDITION
-                            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                                pos += 2;
-                                goto ContinueParseName;
-                            }
-#endif
+                            pos++;
+                            goto ContinueParseName;
                         }
+#if XML10_FIFTH_EDITION
+                        else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
+                            pos += 2;
+                            goto ContinueParseName;
+                        }
+#endif
 
                         // else fallback to full name parsing routine
 
@@ -5136,16 +5118,44 @@ namespace System.Xml
         ContinueStartName:
             char[] chars = _ps.chars;
 
-            //a tmp flag, used to avoid await keyword in unsafe context.
-            bool awaitReadDataInNameAsync = false;
             // start name char
-            unsafe
+            if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
             {
-                if (_xmlCharType.IsStartNCNameSingleChar(chars[pos]))
+                pos++;
+            }
+
+#if XML10_FIFTH_EDITION
+            else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
+                pos += 2;
+            }
+#endif
+            else
+            {
+                if (pos + 1 >= _ps.charsUsed)
+                {
+                    var tuple_27 = await ReadDataInNameAsync(pos).ConfigureAwait(false);
+                    pos = tuple_27.Item1;
+
+                    if (tuple_27.Item2)
+                    {
+                        goto ContinueStartName;
+                    }
+                    Throw(pos, SR.Xml_UnexpectedEOF, "Name");
+                }
+                else if (chars[pos] != ':' || _supportNamespaces)
+                {
+                    Throw(pos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
+                }
+            }
+
+        ContinueName:
+            // parse name
+            while (true)
+            {
+                if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
                 {
                     pos++;
                 }
-
 #if XML10_FIFTH_EDITION
                 else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
                     pos += 2;
@@ -5153,48 +5163,7 @@ namespace System.Xml
 #endif
                 else
                 {
-                    if (pos + 1 >= _ps.charsUsed)
-                    {
-                        awaitReadDataInNameAsync = true;
-                    }
-                    else if (chars[pos] != ':' || _supportNamespaces)
-                    {
-                        Throw(pos, SR.Xml_BadStartNameChar, XmlException.BuildCharExceptionArgs(chars, _ps.charsUsed, pos));
-                    }
-                }
-            }
-
-            if (awaitReadDataInNameAsync)
-            {
-                var tuple_27 = await ReadDataInNameAsync(pos).ConfigureAwait(false);
-                pos = tuple_27.Item1;
-
-                if (tuple_27.Item2)
-                {
-                    goto ContinueStartName;
-                }
-                Throw(pos, SR.Xml_UnexpectedEOF, "Name");
-            }
-
-        ContinueName:
-            // parse name
-            unsafe
-            {
-                while (true)
-                {
-                    if (_xmlCharType.IsNCNameSingleChar(chars[pos]))
-                    {
-                        pos++;
-                    }
-#if XML10_FIFTH_EDITION
-                    else if ( pos + 1 < ps.charsUsed && xmlCharType.IsNCNameSurrogateChar(chars[pos + 1], chars[pos])) {
-                        pos += 2;
-                    }
-#endif
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
 

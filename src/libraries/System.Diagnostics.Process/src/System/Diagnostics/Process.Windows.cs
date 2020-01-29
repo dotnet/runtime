@@ -476,6 +476,10 @@ namespace System.Diagnostics
             SafeFileHandle parentErrorPipeHandle = null;
             SafeFileHandle childErrorPipeHandle = null;
 
+            // Take a global lock to synchronize all redirect pipe handle creations and CreateProcess
+            // calls. We do not want one process to inherit the handles created concurrently for another
+            // process, as that will impact the ownership and lifetimes of those handles now inherited
+            // into multiple child processes.
             lock (s_createProcessLock)
             {
                 try
@@ -787,7 +791,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                // If we dispose of our contained handle we'll be in a bad state. NetFX dealt with this
+                // If we dispose of our contained handle we'll be in a bad state. .NET Framework dealt with this
                 // by doing a try..finally around every usage of GetProcessHandle and only disposed if
                 // it wasn't our handle.
                 return new SafeProcessHandle(_processHandle.DangerousGetHandle(), ownsHandle: false);

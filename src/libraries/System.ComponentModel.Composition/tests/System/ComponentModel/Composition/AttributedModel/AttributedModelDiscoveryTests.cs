@@ -33,22 +33,6 @@ namespace System.ComponentModel.Composition.AttributedModel
             public override int MyProp { get; set; }
         }
 
-        [ActiveIssue(551341)]
-        [Fact]
-        public void ShowIssueWithVirtualPropertiesInReflectionAPI()
-        {
-            PropertyInfo propInfo = typeof(BaseClassWithPropertyExports).GetProperty("MyProp");
-
-            // pi.GetCustomAttributes does not find the inherited attributes
-            var c1 = propInfo.GetCustomAttributes(true);
-
-            // Attribute.GetCustomAttributes does find the inherited attributes
-            var c2 = Attribute.GetCustomAttributes(propInfo, true);
-
-            // This seems like it should be a bug in the reflection API's...
-            Assert.NotEqual(c1, c2);
-        }
-
         [Fact]
         public void CreatePartDefinition_TypeWithImports_ShouldHaveMultipleImports()
         {
@@ -232,7 +216,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void IsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();
@@ -257,7 +241,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void CreatePartDefinition_EnsureIsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();
@@ -317,25 +301,6 @@ namespace System.ComponentModel.Composition.AttributedModel
             Assert.Equal(type, definition.GetPartType());
 
             return definition;
-        }
-
-        [InheritedExport]
-        [InheritedExport]
-        [InheritedExport]
-        [Export]
-        [InheritedExport]
-        [InheritedExport]
-        [InheritedExport]
-        public class DuplicateMixedExporter1
-        {
-        }
-
-        [Fact]
-        [ActiveIssue(710352)]
-        public void MixedDuplicateExports_ShouldOnlyCollapseInheritedExport()
-        {
-            var def = AttributedModelServices.CreatePartDefinition(typeof(DuplicateMixedExporter1), null);
-            Assert.Equal(2, def.ExportDefinitions.Count());
         }
     }
 }

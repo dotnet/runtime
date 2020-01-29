@@ -95,6 +95,7 @@ DEFINE_DACVAR(ULONG, PTR_JumpStubStubManager, JumpStubStubManager__g_pManager, J
 DEFINE_DACVAR(ULONG, PTR_RangeSectionStubManager, RangeSectionStubManager__g_pManager, RangeSectionStubManager::g_pManager)
 DEFINE_DACVAR(ULONG, PTR_DelegateInvokeStubManager, DelegateInvokeStubManager__g_pManager, DelegateInvokeStubManager::g_pManager)
 DEFINE_DACVAR(ULONG, PTR_VirtualCallStubManagerManager, VirtualCallStubManagerManager__g_pManager, VirtualCallStubManagerManager::g_pManager)
+DEFINE_DACVAR(ULONG, PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, CallCountingStubManager::g_pManager)
 
 DEFINE_DACVAR(ULONG, PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 

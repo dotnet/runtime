@@ -16,7 +16,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize<TValue>(TValue value, JsonSerializerOptions options = null)
+        public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             return WriteCoreString(value, typeof(TValue), options);
         }
@@ -32,7 +32,7 @@ namespace System.Text.Json
         /// encoding since the implementation internally uses UTF-8. See also <see cref="SerializeToUtf8Bytes"/>
         /// and <see cref="SerializeAsync"/>.
         /// </remarks>
-        public static string Serialize(object value, Type inputType, JsonSerializerOptions options = null)
+        public static string Serialize(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             VerifyValueAndType(value, inputType);
             return WriteCoreString(value, inputType, options);

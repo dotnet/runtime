@@ -12,7 +12,6 @@
     <NativeBinary Include="$(BinDir)libdbgshim.so" />
     <NativeBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeBinary Include="$(BinDir)libmscordbi.so" />
-    <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
     <File Include="$(BinDir)SOS_README.md">
       <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
     </File>

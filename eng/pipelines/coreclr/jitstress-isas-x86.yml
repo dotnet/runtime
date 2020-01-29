@@ -38,7 +38,7 @@ jobs:
     - Windows_NT_x86
     jobParameters:
       testGroup: jitstress-isas-x86
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -53,4 +53,4 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
       testGroup: jitstress-isas-x86
-      useLiveLibrariesBuildConfig: Release
+      liveLibrariesBuildConfig: Release

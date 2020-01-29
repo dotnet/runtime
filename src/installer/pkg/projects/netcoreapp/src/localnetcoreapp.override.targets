@@ -1,152 +1,98 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Targets to enable building the NETCoreApp shared framework from a local CoreCLR and CoreFX build. -->
-  
-  <Target Name="OverrideRuntimeFilesFromPackageResolve" Condition="'$(CoreCLROverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
-    <Error Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
+  <!--
+    Get paths from packages that are needed for crossgen. Only relevant for runtime-specific builds.
+  -->
+  <Target Name="GetCorePackagePaths"
+          DependsOnTargets="ResolveReferences">
     <PropertyGroup>
-      <CoreCLROverridePath>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLROverridePath>
+      <_winmdPackageDir>$(NuGetPackageRoot)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTVersion)/</_winmdPackageDir>
+      <_diaSymReaderPackageDir>$(NuGetPackageRoot)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativeVersion)/</_diaSymReaderPackageDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">
+      <_crossHostArch>x86</_crossHostArch>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">
+      <_crossHostArch>x64</_crossHostArch>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64' AND '$(BuildArchitecture)' != 'arm64'">
+      <_crossHostArch>x64</_crossHostArch>
     </PropertyGroup>
     <PropertyGroup>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
-      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
-      <CoreCLRCrossTargetComponentDir
-        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+      <_crossDir Condition="'$(_crossHostArch)' != ''">/$(_crossHostArch)_$(TargetArchitecture)</_crossDir>
     </PropertyGroup>
+
     <ItemGroup>
-      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
-      <CoreCLRCrossTargetFiles
-        Include="$(CoreCLRCrossTargetComponentDir)*.*"
-        Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
-        IsNative="true" />
-      <CoreCLRFiles Include="$(CoreCLROverridePath)Redist/**/*.dll" />
-      <CoreCLRFiles>
-        <IsNative>true</IsNative>
-      </CoreCLRFiles>
-      <CoreCLRFiles Include="$(CoreCLROverridePath)System.Private.CoreLib.dll" />
-      <CoreCLRFiles
-        Include="
-          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
-      <CoreCLRFiles Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.pdb" />
+      <_requiredProperty Include="_winmdPackageDir" />
+    </ItemGroup>
 
-      <CoreCLRSystemPrivateCoreLibNiSymbolFiles
-        Include="$(CoreCLROverridePath)PDB/System.Private.CoreLib.ni.pdb" />
-      <CoreCLRFiles
-        Include="@(CoreCLRSystemPrivateCoreLibNiSymbolFiles)"
-        Condition="Exists('%(Identity)')" />
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+  </Target>
 
-      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
-        Include="
-          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+  <Target Name="GetCrossgenToolPaths"
+          DependsOnTargets="GetCorePackagePaths">
+    <ItemGroup>
+      <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
+      <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
+      <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
+    </ItemGroup>
 
-      <CoreCLRCrossTargetFiles>
-        <TargetPath>runtimes/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
-      </CoreCLRCrossTargetFiles>
+    <PropertyGroup>
+      <_runtimeDirectory>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</_runtimeDirectory>
+      <_crossGenPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', 'crossgen$(ApplicationFileExtension)'))</_crossGenPath>
+    </PropertyGroup>
 
-      <CoreCLRFiles Include="@(CoreCLRCrossTargetFiles)" />
+    <PropertyGroup>
+      <_coreLibDirectory>$(CoreCLRArtifactsPath)</_coreLibDirectory>
+      <_fxLibDirectory>$(LibrariesSharedFrameworkBinArtifactsPath)</_fxLibDirectory>
+    </PropertyGroup>
 
+    <PropertyGroup>
+      <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLRArtifactsPath)', '$(CoreCLRCrossTargetComponentDirName)', 'sharedFramework', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
+      <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
+      <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <!--
+      DiaSymReader can't be built from source, so use an unrelated default directory in that case.
+      This is used as the working directory for crossgen calls.
+    -->
+    <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+      <_diaSymReaderToolDir>$(IntermediateOutputPath)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+
+    <ItemGroup>
       <!--
-        Remove files we want to override from ReferenceCopyLocalPaths.
-
-        Use distinct filenames: we may have a target arch file as well as cross-arch (build machine
-        arch). In that case, the typical match-up condition fails:
-
-          '@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'
-
-        We get 'clrjit.dll;clrjit.dll' == 'clrjit.dll', preventing clrjit.dll from being removed.
-        Filtering CoreCLRFiles down to unique FileName+Extension items makes it work.
+        The following path must be passed to crossgen to locate all dependencies. Include it first
+        so in case of conflicts, DLLs are found in the framework being crossgenned.
       -->
-      <CoreCLRFileFileNameExtensions Include="@(CoreCLRFiles -> '%(FileName)%(Extension)')" />
-      <ReferenceCopyLocalPaths
-        Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'@(CoreCLRFileFileNameExtensions->Distinct())' == '%(FileName)%(Extension)'"/>
-
-      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('mscordaccore_'))" />
-
-      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" NuGetPackageId="$(MicrosoftNETCoreRuntimeCoreCLRPackage)" />
+      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
+      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
+      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
+      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+      <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
     </ItemGroup>
 
-    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
-  </Target>
-
-  <Target Name="OverrideFrameworkFilesFromPackageResolve" Condition="'$(CoreFXOverridePath)' != ''" BeforeTargets="GetFilesFromPackageResolve">
-    <Error Condition="!Exists('$(CoreFXOverridePath)')" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) does not exist." />
-
-    <!-- Determine Libraries OSGroup for this build. Copied from "local live-live" PR. -->
     <PropertyGroup>
-      <CoreCLROSGroup Condition="'$(TargetsWindows)' == 'true'">Windows_NT</CoreCLROSGroup>
-      <CoreCLROSGroup Condition="'$(TargetsLinux)' == 'true'">Linux</CoreCLROSGroup>
-      <CoreCLROSGroup Condition="'$(TargetsOSX)' == 'true'">OSX</CoreCLROSGroup>
-      <CoreCLROSGroup Condition="'$(TargetsFreeBSD)' == 'true'">FreeBSD</CoreCLROSGroup>
-      <LibrariesOSGroup>$(CoreCLROSGroup)</LibrariesOSGroup>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <CoreFXReferenceItems
-        Include="$([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'ref', 'microsoft.netcore.app', '$(Configuration)'))*"
-        NuGetPackageId="$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
-
-      <CoreFXReferenceCopyLocalItems
-        Include="
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'pkg', 'netcoreapp', 'runtime', '$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*;
-          $([MSBuild]::NormalizeDirectory('$(CoreFXOverridePath)', 'bin', 'native', 'netcoreapp-$(LibrariesOSGroup)-$(Configuration)-$(TargetArchitecture)'))*"
-        NuGetPackageId="runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage)" />
-    </ItemGroup>
-
-    <Error Condition="'@(CoreFXReferenceItems)' == ''" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) has no CoreFXReferenceItems." />
-    <Error Condition="'@(CoreFXReferenceCopyLocalItems)' == ''" Text="The path provided to CoreFXOverridePath ($(CoreFXOverridePath)) has no CoreFXReferenceCopyLocalItems." />
-
-    <ItemGroup>
-      <OverriddenFrameworkReferenceFiles
-        Include="@(Reference)"
-        Condition="
-          '@(CoreFXReferenceItems->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)' And
-          '@(CoreFXReferenceItems->'%(NuGetPackageId)')' == '%(NuGetPackageId)'">
-        <CoreFXFile>@(CoreFXReferenceItems)</CoreFXFile>
-      </OverriddenFrameworkReferenceFiles>
-
-      <Reference Remove="@(OverriddenFrameworkReferenceFiles)" />
-      <Reference Include="@(OverriddenFrameworkReferenceFiles->Metadata('CoreFXFile'))" />
-
-      <OverriddenFrameworkImplementationFiles
-        Include="@(ReferenceCopyLocalPaths)"
-        Condition="
-          '@(CoreFXReferenceCopyLocalItems->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)' And
-          '@(CoreFXReferenceCopyLocalItems->'%(NuGetPackageId)')' == '%(NuGetPackageId)'">
-        <CoreFXFile>@(CoreFXReferenceCopyLocalItems)</CoreFXFile>
-      </OverriddenFrameworkImplementationFiles>
-
-      <OverriddenFrameworkImplementationFiles>
-        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
-      </OverriddenFrameworkImplementationFiles>
-
-      <ReferenceCopyLocalPaths Remove="@(OverriddenFrameworkImplementationFiles)" />
-      <ReferenceCopyLocalPaths Include="@(OverriddenFrameworkImplementationFiles->Metadata('CoreFXFile'))" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-      <_coreFXOverrideDocFiles
-        Condition="'$(CoreFXOverridePath)' != '' And '%(NuGetPackageId)' == '$(MicrosoftPrivateCoreFxNETCoreAppPackage)'"
-        Include="@(OverriddenFrameworkReferenceFiles->'$(CoreFXOverridePath)/../../bin/docs/%(FileName).xml')" />
-      <_docFilesToPackage Include="@(_coreFXOverrideDocFiles)" Condition="Exists('%(Identity)')" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="OverrideCrossgenToolPaths" DependsOnTargets="GetCorePackagePaths" AfterTargets="GetCrossgenToolPaths" BeforeTargets="CreateCrossGenImages">  
-    <PropertyGroup Condition="'$(CoreCLROverridePath)' != ''">
-      <_runtimeDirectory>$(CoreCLROverridePath)</_runtimeDirectory>
-      <_crossgenPath>$([MSBuild]::NormalizePath('$(CoreCLROverridePath)', '$(_crossHostArch)', 'crossgen$(ApplicationFileExtension)'))</_crossgenPath>
-      <_CoreLibSharedDirectory>$(CoreCLROverridePath)</_CoreLibSharedDirectory>
-      <_jitPath>$([MSBuild]::NormalizePath('$(CoreCLROverridePath)', '$(_crossHostArch)', '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'))</_jitPath>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
     </PropertyGroup>
   </Target>
 
-  <!-- !!!BEGIN PATCHING Sharedfx SDK target -->
   <Target Name="GetFilesFromPackageResolve">
     <ItemGroup>
       <!-- RID-specific: include all runtime files. -->
@@ -155,9 +101,9 @@
              calculate it by looking for native in the path -->
         <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
       </RidSpecificFilesToPackage>
-      <!-- !!!BEGIN CHANGE Persist existing TargetPath. -->
+      <!-- !!!BEGIN CHANGE Persist existing TargetPath. !!!-->
       <RidSpecificFilesToPackage Condition="'%(RidSpecificFilesToPackage.TargetPath)' == ''">
-      <!-- !!!END CHANGE -->
+      <!-- !!!END CHANGE !!! -->
         <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' != 'true'">runtimes/$(PackageRID)/lib/$(PackageTargetFramework)</TargetPath>
         <TargetPath Condition="'%(RidSpecificFilesToPackage.IsNative)' == 'true'">runtimes/$(PackageRID)/native</TargetPath>
       </RidSpecificFilesToPackage>
@@ -192,6 +138,4 @@
       </FilesToPackage>
     </ItemGroup>
   </Target>
-  <!-- !!!END PATCHING -->
-
 </Project>

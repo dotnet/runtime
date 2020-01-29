@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
 
         internal static void WriteCryptoBinary(string name, int value, StringBuilder builder)
         {
-            // NetFX compat
+            // .NET Framework compat
             if (value == 0)
             {
                 Span<byte> single = stackalloc byte[1];
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
             Span<byte> valBuf = stackalloc byte[sizeof(int)];
             BinaryPrimitives.WriteInt32BigEndian(valBuf, value);
 
-            // NetFX does write the counter value as CryptoBinary, so do the leading-byte trim here.
+            // .NET Framework does write the counter value as CryptoBinary, so do the leading-byte trim here.
 
             int start = 0;
 

@@ -135,7 +135,7 @@ namespace System.Net.Http
 
                                 if (needDrain)
                                 {
-                                    await connection.DrainResponseAsync(response).ConfigureAwait(false);
+                                    await connection.DrainResponseAsync(response, cancellationToken).ConfigureAwait(false);
                                 }
 
                                 SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);

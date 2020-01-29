@@ -2154,7 +2154,7 @@ namespace System.Tests
             }
         }
 
-        [ActiveIssue(14797, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/14797", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void ToSerializedString_FromSerializedString_RoundTrips(TimeZoneInfo timeZone)
