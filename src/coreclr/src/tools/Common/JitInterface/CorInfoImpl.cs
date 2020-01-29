@@ -1400,7 +1400,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
+            if (type.IsByReferenceOfT)
             {
                 return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }

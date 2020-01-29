@@ -2153,9 +2153,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
-    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
-    // case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
     {
         if (gcPtrs[0] == TYPE_GC_NONE)
         {
@@ -2223,23 +2221,10 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
     }
     else if (pMT->IsByRefLike())
     {
-        // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
-        // which case the check for g_TypedReferenceMT below would not be necessary
-        if (pMT == g_TypedReferenceMT)
-        {
-            gcPtrs[0] = TYPE_GC_BYREF;
-            gcPtrs[1] = TYPE_GC_NONE;
-            result = 1;
-        }
-        else
-        {
-            memset(gcPtrs, TYPE_GC_NONE,
-                (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
-            // Note: This case is more complicated than the TypedReference case
-            // due to ByRefLike structs being included as fields in other value
-            // types (TypedReference can not be.)
-            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
-        }
+        memset(gcPtrs, TYPE_GC_NONE,
+            (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+        // ByRefLike structs can be included as fields in other value types.
+        result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
     }
     else
     {
@@ -2309,8 +2294,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     // Make sure this is a value type.
     if (th.IsValueType())
     {
-        _ASSERTE((CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct) ||
-                 (CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeTypedReference));
+        _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
 
         // The useNativeLayout in this case tracks whether the classification
         // is for a native layout of the struct or not.
