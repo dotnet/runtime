@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
 {
     internal sealed class EccSecurityTransforms : IDisposable
     {
-        private SecKeyPair _keys;
+        private SecKeyPair? _keys;
         private bool _disposed;
         private readonly string _disposedName;
 
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            SecKeyPair current = _keys;
+            SecKeyPair? current = _keys;
 
             if (current != null)
             {
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            SecKeyPair current = _keys;
+            SecKeyPair? current = _keys;
             _keys = keyPair;
             current?.Dispose();
         }

@@ -49,7 +49,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] Key
+        public override byte[]? Key
         {
             get
             {
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
                 HMACCommon hMacCommon = _hMacCommon;
                 if (hMacCommon != null)
                 {
-                    _hMacCommon = null;
+                    _hMacCommon = null!;
                     hMacCommon.Dispose(disposing);
                 }
             }

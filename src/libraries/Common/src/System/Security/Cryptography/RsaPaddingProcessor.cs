@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
         {
             // https://tools.ietf.org/html/rfc3447#section-7.1.1
 
-            byte[] dbMask = null;
+            byte[]? dbMask = null;
             Span<byte> dbMaskSpan = Span<byte>.Empty;
 
             try

@@ -151,7 +151,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        CryptoPool.Return(decrypted.Array);
+                        CryptoPool.Return(decrypted.Array!);
                     }
                 }
             }
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        CryptoPool.Return(decrypted.Array, clearSize: 0);
+                        CryptoPool.Return(decrypted.Array!, clearSize: 0);
                     }
                 }
             }

@@ -17,14 +17,14 @@ internal static partial class Interop
 
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             int exportPrivate,
             SafeCreateHandle cfExportPassphrase,
             out SafeCFDataHandle cfDataOut,
             out int pOSStatus);
 
         internal static SafeCFDataHandle SecKeyExportData(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             ReadOnlySpan<char> password)
         {
@@ -70,7 +70,7 @@ internal static partial class Interop
         }
 
         internal static byte[] SecKeyExport(
-            SafeSecKeyRefHandle key,
+            SafeSecKeyRefHandle? key,
             bool exportPrivate,
             string password)
         {

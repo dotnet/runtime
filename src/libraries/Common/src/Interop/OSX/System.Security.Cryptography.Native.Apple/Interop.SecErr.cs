@@ -10,7 +10,7 @@ internal static partial class Interop
     {
         internal static Exception CreateExceptionForOSStatus(int osStatus)
         {
-            string msg = GetSecErrorString(osStatus);
+            string? msg = GetSecErrorString(osStatus);
 
             if (msg == null)
             {

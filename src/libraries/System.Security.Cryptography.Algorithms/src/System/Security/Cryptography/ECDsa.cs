@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 
         protected ECDsa() { }
 
-        public static new ECDsa Create(string algorithm)
+        public static new ECDsa? Create(string algorithm)
         {
             if (algorithm == null)
             {
@@ -69,9 +69,6 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             return SignData(data, 0, data.Length, hashAlgorithm);
         }
 
@@ -120,9 +117,6 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
 
@@ -196,7 +190,7 @@ namespace System.Security.Cryptography
         public abstract byte[] SignHash(byte[] hash);
         public abstract bool VerifyHash(byte[] hash, byte[] signature);
 
-        public override string KeyExchangeAlgorithm => null;
+        public override string? KeyExchangeAlgorithm => null;
         public override string SignatureAlgorithm => "ECDsa";
 
         protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)

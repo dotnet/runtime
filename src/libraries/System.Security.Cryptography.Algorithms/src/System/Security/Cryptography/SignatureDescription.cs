@@ -2,14 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Security.Cryptography
 {
     public class SignatureDescription
     {
-        public string KeyAlgorithm { get; set; }
-        public string DigestAlgorithm { get; set; }
-        public string FormatterAlgorithm { get; set; }
-        public string DeformatterAlgorithm { get; set; }
+        public string? KeyAlgorithm { get; set; }
+        public string? DigestAlgorithm { get; set; }
+        public string? FormatterAlgorithm { get; set; }
+        public string? DeformatterAlgorithm { get; set; }
 
         public SignatureDescription()
         {
@@ -27,21 +29,26 @@ namespace System.Security.Cryptography
 
         public virtual AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
         {
-            AsymmetricSignatureDeformatter item = (AsymmetricSignatureDeformatter)CryptoConfig.CreateFromName(DeformatterAlgorithm);
+            Debug.Assert(DeformatterAlgorithm != null);
+            AsymmetricSignatureDeformatter? item = (AsymmetricSignatureDeformatter?)CryptoConfig.CreateFromName(DeformatterAlgorithm);
+            Debug.Assert(item != null);
             item.SetKey(key);
             return item;
         }
 
         public virtual AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
         {
-            AsymmetricSignatureFormatter item = (AsymmetricSignatureFormatter)CryptoConfig.CreateFromName(FormatterAlgorithm);
+            Debug.Assert(FormatterAlgorithm != null);
+            AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm);
+            Debug.Assert(item != null);
             item.SetKey(key);
             return item;
         }
 
-        public virtual HashAlgorithm CreateDigest()
+        public virtual HashAlgorithm? CreateDigest()
         {
-            return (HashAlgorithm)CryptoConfig.CreateFromName(DigestAlgorithm);
+            Debug.Assert(DigestAlgorithm != null);
+            return (HashAlgorithm?)CryptoConfig.CreateFromName(DigestAlgorithm);
         }
     }
 }

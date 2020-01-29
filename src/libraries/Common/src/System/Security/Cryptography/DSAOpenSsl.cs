@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
                 if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                 ThrowIfDisposed();
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
                 if (disposing)
                 {
                     FreeKey();
-                    _key = null;
+                    _key = null!;
                 }
 
                 base.Dispose(disposing);

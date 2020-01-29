@@ -74,8 +74,8 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHash(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
@@ -96,9 +96,9 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyFromHmac(
                 ECDiffieHellmanPublicKey otherPartyPublicKey,
                 HashAlgorithmName hashAlgorithm,
-                byte[] hmacKey,
-                byte[] secretPrepend,
-                byte[] secretAppend)
+                byte[]? hmacKey,
+                byte[]? secretPrepend,
+                byte[]? secretAppend)
             {
                 if (otherPartyPublicKey == null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));

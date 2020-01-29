@@ -138,7 +138,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                domainParameters = ECDomainParameters.Decode(algId.Parameters.Value, AsnEncodingRules.DER);
+                domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
             ret = new ECParameters
@@ -488,10 +488,11 @@ namespace System.Security.Cryptography
                 // On Windows the FriendlyName is populated in places where the Value mightn't be.
                 if (string.IsNullOrEmpty(oid.Value))
                 {
+                    Debug.Assert(oid.FriendlyName != null);
                     oid = Oid.FromFriendlyName(oid.FriendlyName, OidGroup.All);
                 }
 
-                writer.WriteObjectIdentifier(oid.Value);
+                writer.WriteObjectIdentifier(oid.Value!);
             }
             else if (ecParameters.Curve.IsExplicit)
             {

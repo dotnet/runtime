@@ -13,7 +13,7 @@ internal static partial class Interop
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByOid")]
         private static extern SafeEcKeyHandle CryptoNative_EcKeyCreateByOid(string oid);
-        internal static SafeEcKeyHandle EcKeyCreateByOid(string oid)
+        internal static SafeEcKeyHandle? EcKeyCreateByOid(string oid)
         {
             SafeEcKeyHandle handle = CryptoNative_EcKeyCreateByOid(oid);
             if (handle == null || handle.IsInvalid)

@@ -371,7 +371,7 @@ namespace System.Security.Cryptography.Apple
 
                 lock (s_lookup)
                 {
-                    SafeTemporaryKeychainHandle temporaryHandle;
+                    SafeTemporaryKeychainHandle? temporaryHandle;
 
                     if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
                     {
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography.Apple
 
                 lock (s_lookup)
                 {
-                    SafeTemporaryKeychainHandle temporaryHandle;
+                    SafeTemporaryKeychainHandle? temporaryHandle;
 
                     if (s_lookup.TryGetValue(keychain.DangerousGetHandle(), out temporaryHandle))
                     {

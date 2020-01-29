@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Derive the raw ECDH value into <paramref name="hasher"/>, if present, otherwise returning the value.
         /// </summary>
-        internal delegate byte[] DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash hasher);
+        internal delegate byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher);
 
         internal static byte[] DeriveKeyFromHash(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             {
                 hash.AppendData(secretPrepend);
 
-                byte[] secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
+                byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
                 // We want the side effect, and it should not have returned the answer.
                 Debug.Assert(secretAgreement == null);
 
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography
         internal static unsafe byte[] DeriveKeyFromHmac(
             ECDiffieHellmanPublicKey otherPartyPublicKey,
             HashAlgorithmName hashAlgorithm,
-            byte[] hmacKey,
+            byte[]? hmacKey,
             ReadOnlySpan<byte> secretPrepend,
             ReadOnlySpan<byte> secretAppend,
             DeriveSecretAgreement deriveSecretAgreement)
@@ -60,8 +60,8 @@ namespace System.Security.Cryptography
             if (useSecretAsKey)
             {
                 hmacKey = deriveSecretAgreement(otherPartyPublicKey, null);
-                Debug.Assert(hmacKey != null);
             }
+            Debug.Assert(hmacKey != null);
 
             // Reduce the likelihood of the value getting copied during heap compaction.
             fixed (byte* pinnedHmacKey = hmacKey)
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
                         }
                         else
                         {
-                            byte[] secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
+                            byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
                             // We want the side effect, and it should not have returned the answer.
                             Debug.Assert(secretAgreement == null);
                         }
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
             const int Sha1Size = 20;
             const int Md5Size = 16;
 
-            byte[] secretAgreement = deriveSecretAgreement(otherPartyPublicKey, null);
+            byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, null);
             Debug.Assert(secretAgreement != null);
 
             // Reduce the likelihood of the value getting copied during heap compaction.

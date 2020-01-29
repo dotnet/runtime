@@ -20,7 +20,7 @@ internal static partial class Interop
             out SafeCFDataHandle cfDataOut,
             out SafeCFErrorHandle cfErrorOut);
 
-        internal static byte[] EcdhKeyAgree(
+        internal static byte[]? EcdhKeyAgree(
             SafeSecKeyRefHandle privateKey,
             SafeSecKeyRefHandle publicKey,
             Span<byte> opportunisticDestination,

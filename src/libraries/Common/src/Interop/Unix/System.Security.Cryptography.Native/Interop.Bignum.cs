@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -55,7 +56,8 @@ internal static partial class Interop
             }
         }
 
-        private static unsafe byte[] ExtractBignum(SafeBignumHandle bignum, int targetSize)
+        [return: NotNullIfNotNull("bignum")]
+        private static unsafe byte[]? ExtractBignum(SafeBignumHandle? bignum, int targetSize)
         {
             if (bignum == null || bignum.IsInvalid)
             {

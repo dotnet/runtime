@@ -109,7 +109,7 @@ namespace System.Security.Cryptography
 
             // Use oid Value first if present, otherwise FriendlyName
             string oid = !string.IsNullOrEmpty(parameters.Curve.Oid.Value) ?
-                parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName;
+                parameters.Curve.Oid.Value : parameters.Curve.Oid.FriendlyName!;
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
                 oid,
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
                 parameters.Curve.G.X, parameters.Curve.G.X.Length,
                 parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
                 parameters.Curve.Order, parameters.Curve.Order.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor.Length,
+                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
                 parameters.Curve.G.X, parameters.Curve.G.X.Length,
                 parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
                 parameters.Curve.Order, parameters.Curve.Order.Length,
-                parameters.Curve.Cofactor, parameters.Curve.Cofactor.Length,
+                parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography
 
         public static SafeEcKeyHandle GenerateKeyByKeySize(int keySize)
         {
-            string oid = null;
+            string oid;
             switch (keySize)
             {
                 case 256: oid = ECDSA_P256_OID_VALUE; break;
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography
                     throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
             }
 
-            SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+            SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
             if (key == null || key.IsInvalid)
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));

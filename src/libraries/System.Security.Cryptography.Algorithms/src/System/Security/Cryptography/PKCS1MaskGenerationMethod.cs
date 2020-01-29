@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -24,7 +25,7 @@ namespace System.Security.Cryptography
 
         public override byte[] GenerateMask(byte[] rgbSeed, int cbReturn)
         {
-            using (HashAlgorithm hasher = CryptoConfig.CreateFromName(_hashNameValue) as HashAlgorithm)
+            using (HashAlgorithm? hasher = CryptoConfig.CreateFromName(_hashNameValue) as HashAlgorithm)
             {
                 if (hasher is null)
                 {
@@ -41,6 +42,7 @@ namespace System.Security.Cryptography
                     Helpers.ConvertIntToByteArray(counter++, rgbCounter);
                     hasher.TransformBlock(rgbSeed, 0, rgbSeed.Length, rgbSeed, 0);
                     hasher.TransformFinalBlock(rgbCounter, 0, 4);
+                    Debug.Assert(hasher.Hash != null);
                     byte[] hash = hasher.Hash;
                     hasher.Initialize();
                     Buffer.BlockCopy(hash, 0, rgbT, ib, Math.Min(rgbT.Length - ib, hash.Length));

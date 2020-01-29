@@ -197,17 +197,17 @@ internal static partial class Interop
             int nLength,
             byte[] e,
             int eLength,
-            byte[] d,
+            byte[]? d,
             int dLength,
-            byte[] p,
+            byte[]? p,
             int pLength,
-            byte[] dmp1,
+            byte[]? dmp1,
             int dmp1Length,
-            byte[] q,
+            byte[]? q,
             int qLength,
-            byte[] dmq1,
+            byte[]? dmq1,
             int dmq1Length,
-            byte[] iqmp,
+            byte[]? iqmp,
             int iqmpLength);
 
         internal enum RsaPadding : int

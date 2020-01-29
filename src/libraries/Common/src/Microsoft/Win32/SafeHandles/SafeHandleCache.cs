@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SafeHandles
     /// <typeparam name="T">Specifies the type of SafeHandle.</typeparam>
     internal static class SafeHandleCache<T> where T : SafeHandle
     {
-        private static T s_invalidHandle;
+        private static T? s_invalidHandle;
 
         /// <summary>
         /// Gets a cached, invalid handle.  As the instance is cached, it should either never be Disposed
@@ -22,7 +22,7 @@ namespace Microsoft.Win32.SafeHandles
         /// </summary>
         internal static T GetInvalidHandle(Func<T> invalidHandleFactory)
         {
-            T currentHandle = Volatile.Read(ref s_invalidHandle);
+            T? currentHandle = Volatile.Read(ref s_invalidHandle);
             if (currentHandle == null)
             {
                 T newHandle = invalidHandleFactory();

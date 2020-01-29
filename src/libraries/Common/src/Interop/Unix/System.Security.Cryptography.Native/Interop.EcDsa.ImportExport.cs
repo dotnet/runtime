@@ -18,13 +18,13 @@ internal static partial class Interop
             string oid,
             byte[] qx, int qxLength,
             byte[] qy, int qyLength,
-            byte[] d, int dLength);
+            byte[]? d, int dLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByKeyParameters(
             string oid,
             byte[] qx, int qxLength,
             byte[] qy, int qyLength,
-            byte[] d, int dLength)
+            byte[]? d, int dLength)
         {
             SafeEcKeyHandle key;
             int rc = EcKeyCreateByKeyParameters(out key, oid, qx, qxLength, qy, qyLength, d, dLength);
@@ -41,17 +41,17 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
         internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
-            byte[] qx, int qxLength,
-            byte[] qy, int qyLength,
-            byte[] d, int dLength,
+            byte[]? qx, int qxLength,
+            byte[]? qy, int qyLength,
+            byte[]? d, int dLength,
             byte[] p, int pLength,
             byte[] a, int aLength,
             byte[] b, int bLength,
             byte[] gx, int gxLength,
             byte[] gy, int gyLength,
             byte[] order, int nLength,
-            byte[] cofactor, int cofactorLength,
-            byte[] seed, int seedLength);
+            byte[]? cofactor, int cofactorLength,
+            byte[]? seed, int seedLength);
 
         internal static SafeEcKeyHandle EcKeyCreateByExplicitCurve(ECCurve curve)
         {
@@ -80,7 +80,7 @@ internal static partial class Interop
                 curve.G.X, curve.G.X.Length,
                 curve.G.Y, curve.G.Y.Length,
                 curve.Order, curve.Order.Length,
-                curve.Cofactor, curve.Cofactor.Length,
+                curve.Cofactor, curve.Cofactor!.Length,
                 curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
 
             if (key == null || key.IsInvalid)

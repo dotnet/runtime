@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Asn1
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
             {
-                if (usedTags.TryGetValue(tag, out string existing))
+                if (usedTags.TryGetValue(tag, out string? existing))
                 {
                     throw new InvalidOperationException($"Tag '{tag}' is in use by both '{existing}' and '{fieldName}'");
                 }

@@ -12,9 +12,9 @@ namespace System.Security.Cryptography
 {
     public abstract partial class RSA : AsymmetricAlgorithm
     {
-        public static new RSA Create(string algName)
+        public static new RSA? Create(string algName)
         {
-            return (RSA)CryptoConfig.CreateFromName(algName);
+            return (RSA?)CryptoConfig.CreateFromName(algName);
         }
 
         public static RSA Create(int keySizeInBits)
@@ -211,9 +211,6 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
 

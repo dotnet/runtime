@@ -167,7 +167,7 @@ internal static partial class Interop
             int gLength,
             byte[] y,
             int yLength,
-            byte[] x,
+            byte[]? x,
             int xLength);
     }
 }

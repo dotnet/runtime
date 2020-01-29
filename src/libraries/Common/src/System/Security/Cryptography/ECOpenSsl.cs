@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class ECOpenSsl : IDisposable
     {
-        private Lazy<SafeEcKeyHandle> _key;
+        private Lazy<SafeEcKeyHandle> _key = null!; // Always initialized
 
         public ECOpenSsl(ECCurve curve)
         {
@@ -86,12 +86,12 @@ namespace System.Security.Cryptography
 
             if (curve.IsNamed)
             {
-                string oid = null;
+                string oid;
                 // Use oid Value first if present, otherwise FriendlyName because Oid maintains a hard-coded
                 // cache that may have different casing for FriendlyNames than OpenSsl
-                oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName;
+                oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
 
-                SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByOid(oid);
+                SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
                 if (key == null || key.IsInvalid)
                 {
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
                     _key.Value?.Dispose();
                 }
 
-                _key = null;
+                _key = null!;
             }
         }
     }

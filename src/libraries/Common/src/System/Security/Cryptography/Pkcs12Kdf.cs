@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Pkcs
             // https://tools.ietf.org/html/rfc7292#appendix-B.2
             Debug.Assert(iterationCount >= 1);
 
-            if (!s_uvLookup.TryGetValue(hashAlgorithm, out Tuple<int, int> uv))
+            if (!s_uvLookup.TryGetValue(hashAlgorithm, out Tuple<int, int>? uv))
             {
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
             }
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Pkcs
             // 4.  Set I=S||P to be the concatenation of S and P.
             int ILen = SLen + PLen;
             Span<byte> I = stackalloc byte[0];
-            byte[] IRented = null;
+            byte[]? IRented = null;
 
             if (ILen <= 1024)
             {

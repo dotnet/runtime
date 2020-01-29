@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
             string name,
             int sizeHint = -1)
         {
-            byte[] ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
+            byte[]? ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
 
             if (ret == null)
             {
@@ -35,10 +35,10 @@ namespace System.Security.Cryptography
             byte[] q = ReadRequiredElement(ref state, nameof(DSAParameters.Q));
             byte[] g = ReadRequiredElement(ref state, nameof(DSAParameters.G), p.Length);
             byte[] y = ReadRequiredElement(ref state, nameof(DSAParameters.Y), p.Length);
-            byte[] j = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.J));
-            byte[] seed = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.Seed));
+            byte[]? j = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.J));
+            byte[]? seed = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.Seed));
             int counter = 0;
-            byte[] x = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.X), q.Length);
+            byte[]? x = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.X), q.Length);
 
             if (seed != null)
             {

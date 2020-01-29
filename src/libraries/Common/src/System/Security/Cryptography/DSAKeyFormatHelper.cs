@@ -183,7 +183,7 @@ namespace System.Security.Cryptography
             writer.PopSequence();
         }
 
-        private static void WriteKeyComponent(AsnWriter writer, byte[] component, bool bitString)
+        private static void WriteKeyComponent(AsnWriter writer, byte[]? component, bool bitString)
         {
             using (AsnWriter inner = new AsnWriter(AsnEncodingRules.DER))
             {

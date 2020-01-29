@@ -64,8 +64,8 @@ namespace System.Security.Cryptography
             {
                 ECParameters ecparams = default;
 
-                string curveName = GetCurveName(out string oidValue);
-                byte[] blob = null;
+                string? curveName = GetCurveName(out string? oidValue);
+                byte[]? blob = null;
 
                 try
                 {

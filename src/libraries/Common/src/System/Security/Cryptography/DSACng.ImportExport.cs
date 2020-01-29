@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
                 if (parameters.G.Length != keySizeInBytes || parameters.Y.Length != keySizeInBytes)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
 
-                if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
+                if (hasPrivateKey && parameters.X!.Length != parameters.Q.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
                 byte[] blob;
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
                         if (includePrivate)
                         {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X);
+                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
                         }
 
                         Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
                         parameters.P.Length +
                         parameters.G.Length +
                         parameters.Y.Length +
-                        (includePrivateParameters ? parameters.X.Length : 0);
+                        (includePrivateParameters ? parameters.X!.Length : 0);
 
                     blob = new byte[blobSize];
                     fixed (byte* pDsaBlob = &blob[0])
@@ -317,7 +317,7 @@ namespace System.Security.Cryptography
 
                         if (includePrivateParameters)
                         {
-                            Interop.BCrypt.Emit(blob, ref offset, parameters.X);
+                            Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
                         }
 
                         Debug.Assert(offset == blobSize, $"Expected offset = blobSize, got {offset} != {blobSize}");

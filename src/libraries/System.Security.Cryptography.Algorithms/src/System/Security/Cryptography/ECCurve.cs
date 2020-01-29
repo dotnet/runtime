@@ -39,12 +39,12 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Cofactor (optional). Applies only to Explicit curves.
         /// </summary>
-        public byte[] Cofactor;
+        public byte[]? Cofactor;
 
         /// <summary>
         /// Seed of the curve (optional). Applies only to Explicit curves.
         /// </summary>
-        public byte[] Seed;
+        public byte[]? Seed;
 
         /// <summary>
         /// Curve Type.
@@ -140,9 +140,9 @@ namespace System.Security.Cryptography
             return ECCurve.CreateFromValueAndName(oidValue, null);
         }
 
-        private static ECCurve CreateFromValueAndName(string oidValue, string oidFriendlyName)
+        private static ECCurve CreateFromValueAndName(string? oidValue, string? oidFriendlyName)
         {
-            Oid oid = null;
+            Oid? oid = null;
 
             if (oidValue == null && oidFriendlyName != null)
             {
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography
                 {
                     if (!hasErrors)
                     {
-                        if (Prime == null || Prime.Length != A.Length)
+                        if (Prime == null || Prime.Length != A!.Length)
                         {
                             hasErrors = true;
                         }

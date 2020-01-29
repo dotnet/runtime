@@ -77,7 +77,7 @@ namespace System.Security.Cryptography
             // Maybe some future PBES3 will have one with a default.
 
             HashAlgorithmName digestAlgorithmName;
-            SymmetricAlgorithm cipher = null;
+            SymmetricAlgorithm? cipher = null;
 
             bool pkcs12 = false;
 
@@ -161,8 +161,8 @@ namespace System.Security.Cryptography
                 {
                     Span<byte> buf = stackalloc byte[128];
                     ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
-                    byte[] rented = null;
-                    System.Text.Encoding encoding = null;
+                    byte[]? rented = null;
+                    System.Text.Encoding? encoding = null;
 
                     if (passwordBytes.Length > 0 || password.Length == 0)
                     {
@@ -299,7 +299,7 @@ namespace System.Security.Cryptography
             byte[] destination,
             Span<byte> ivDest)
         {
-            byte[] pwdTmpBytes = null;
+            byte[]? pwdTmpBytes = null;
             byte[] derivedKey;
             byte[] iv = cipher.IV;
 
@@ -356,14 +356,14 @@ namespace System.Security.Cryptography
                 {
                     if (passwordBytes.Length > 0)
                     {
-                        Debug.Assert(pwdTmpBytes.Length == passwordBytes.Length);
+                        Debug.Assert(pwdTmpBytes!.Length == passwordBytes.Length);
                         passwordBytes.CopyTo(pwdTmpBytes);
                     }
                     else if (password.Length > 0)
                     {
                         int length = encoding.GetBytes(password, pwdTmpBytes);
 
-                        if (length != pwdTmpBytes.Length)
+                        if (length != pwdTmpBytes!.Length)
                         {
                             Debug.Fail($"UTF-8 encoding size changed between GetByteCount and GetBytes");
                             throw new CryptographicException();
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography
                     }
                     else
                     {
-                        Debug.Assert(pwdTmpBytes.Length == 0);
+                        Debug.Assert(pwdTmpBytes!.Length == 0);
                     }
 
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
@@ -436,8 +436,8 @@ namespace System.Security.Cryptography
         {
             Span<byte> buf = stackalloc byte[128];
             ReadOnlySpan<byte> effectivePasswordBytes = stackalloc byte[0];
-            byte[] rented = null;
-            System.Text.Encoding encoding = null;
+            byte[]? rented = null;
+            System.Text.Encoding? encoding = null;
 
             if (passwordBytes.Length > 0 || password.Length == 0)
             {
@@ -547,7 +547,7 @@ namespace System.Security.Cryptography
             byte? requestedKeyLength,
             ref Span<byte> iv)
         {
-            string algId = encryptionScheme.Algorithm.Value;
+            string? algId = encryptionScheme.Algorithm.Value;
 
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
