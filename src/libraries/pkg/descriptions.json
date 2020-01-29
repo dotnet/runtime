@@ -15,6 +15,17 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.CSharp",
+    "Description": "Provides support for compilation and code generation, including dynamic, using the C# language.",
+    "CommonTypes": [
+      "Microsoft.CSharp.RuntimeBinder.Binder",
+      "Microsoft.CSharp.RuntimeBinder.RuntimeBinderException",
+      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfo",
+      "Microsoft.CSharp.RuntimeBinder.CSharpArgumentInfoFlags",
+      "Microsoft.CSharp.RuntimeBinder.CSharpBinderFlags"
+    ]
+  },
+  {
     "Name": "Microsoft.Bcl.HashCode",
     "Description": "Provides the HashCode type for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
     "CommonTypes": [
