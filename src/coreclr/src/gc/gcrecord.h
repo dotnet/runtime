@@ -333,7 +333,7 @@ int index_of_highest_set_bit (size_t value);
 class gc_history_per_heap
 {
 public:
-    gc_generation_data gen_data[max_generation+2];
+    gc_generation_data gen_data[total_generation_count];
     maxgen_size_increase maxgen_size_info;
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
