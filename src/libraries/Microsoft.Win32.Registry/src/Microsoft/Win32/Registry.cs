@@ -45,7 +45,7 @@ namespace Microsoft.Win32
             int length = i != -1 ? i : keyName.Length;
 
             // Determine the potential base key from the length.
-            RegistryKey baseKey = null;
+            RegistryKey baseKey = null!;
             switch (length)
             {
                 case 10: baseKey = Users; break; // HKEY_USERS
@@ -62,18 +62,18 @@ namespace Microsoft.Win32
                     string.Empty :
                     keyName.Substring(i + 1, keyName.Length - i - 1);
 
-                return baseKey;
+                return baseKey!;
             }
 
             throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)), nameof(keyName));
         }
 
-        public static object GetValue(string keyName, string valueName, object defaultValue)
+        public static object? GetValue(string keyName, string valueName, object defaultValue)
         {
             string subKeyName;
             RegistryKey basekey = GetBaseKeyFromKeyName(keyName, out subKeyName);
 
-            using (RegistryKey key = basekey.OpenSubKey(subKeyName))
+            using (RegistryKey? key = basekey.OpenSubKey(subKeyName))
             {
                 return key?.GetValue(valueName, defaultValue);
             }
