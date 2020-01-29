@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Systen.Net.Mail.Tests;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Mail.Tests
 {
@@ -340,6 +341,7 @@ namespace System.Net.Mail.Tests
         [InlineData("")]
         [InlineData(null)]
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestMailDeliveryAsync(string body)
         {
             using var server = new LoopbackSmtpServer();
@@ -358,6 +360,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/corefx/issues/28961
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestCredentialsCopyInAsyncContext()
         {
             using var server = new LoopbackSmtpServer();

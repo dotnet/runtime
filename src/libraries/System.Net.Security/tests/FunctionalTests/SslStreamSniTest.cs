@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Security.Tests
 {
@@ -138,6 +139,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {
             await WithVirtualConnection(async (server, client) =>
