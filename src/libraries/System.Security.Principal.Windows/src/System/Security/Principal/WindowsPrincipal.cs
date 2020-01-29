@@ -24,13 +24,11 @@ namespace System.Security.Principal
 
     public class WindowsPrincipal : ClaimsPrincipal
     {
-        private readonly WindowsIdentity _identity = null!;
+        private readonly WindowsIdentity _identity;
 
         //
         // Constructors.
         //
-
-        private WindowsPrincipal() { }
 
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
