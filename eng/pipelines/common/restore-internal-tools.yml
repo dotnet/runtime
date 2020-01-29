@@ -24,4 +24,4 @@ steps:
       projects: 'eng/common/internal/Tools.csproj'
       nugetConfigPath: 'eng/internal/NuGet.config'
       restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-      verbosityRestore: 'normal'
+      verbosityRestore: 'diagnostic'
