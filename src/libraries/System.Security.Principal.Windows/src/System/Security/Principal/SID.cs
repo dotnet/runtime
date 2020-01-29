@@ -291,7 +291,7 @@ namespace System.Security.Principal
         // values guaranteed to be non-null on account of CreateFromParts()
         // method called by every constructor in this class.
         private int[] _subAuthorities = null! ;
-        private byte[] _binaryForm = null! ;
+        private byte[] _binaryForm = null!;
         private SecurityIdentifier? _accountDomainSid;
         private bool _accountDomainSidInitialized = false;
 
