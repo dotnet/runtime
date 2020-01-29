@@ -3379,6 +3379,12 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 //
 bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 {
+    // This can be called early, before info is fully set up.
+    if ((info.compMethodName == nullptr) || (info.compFullName == nullptr))
+    {
+        return false;
+    }
+
     // Inlinees defer to the root method for stress, so that we can
     // more easily isolate methods that cause stress failures.
     if (compIsForInlining())
@@ -3416,12 +3422,6 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //
 bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
 {
-    // This can be called early, before info is fully set up.
-    if (info.compMethodName == nullptr)
-    {
-        return false;
-    }
-
     if (!bRangeAllowStress)
     {
         return false;
