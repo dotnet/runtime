@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// This RegexFCD class is internal to the Regex package.
-// It builds a bunch of FC information (RegexFC) about
-// the regex for optimization purposes.
-
-// Implementation notes:
-//
-// This step is as simple as walking the tree and emitting
-// sequences of codes.
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -18,14 +9,14 @@ using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
-    internal ref struct RegexFCD
+    /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
+    internal ref struct RegexPrefixAnalyzer
     {
         private const int StackBufferSize = 32;
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
 
         // where the regex can be pegged
-
         public const int Beginning = 0x0001;
         public const int Bol = 0x0002;
         public const int Start = 0x0004;
@@ -41,7 +32,7 @@ namespace System.Text.RegularExpressions
         private bool _skipchild;                    // don't process the current child.
         private bool _failed;
 
-        private RegexFCD(Span<int> intStack)
+        private RegexPrefixAnalyzer(Span<int> intStack)
         {
             _fcStack = new List<RegexFC>(StackBufferSize);
             _intStack = new ValueListBuilder<int>(intStack);
@@ -50,34 +41,9 @@ namespace System.Text.RegularExpressions
             _skipAllChildren = false;
         }
 
-        /// <summary>
-        /// This is the one of the only two functions that should be called from outside.
-        /// It takes a RegexTree and computes the set of chars that can start it.
-        /// </summary>
-        public static RegexPrefix? FirstChars(RegexTree t)
-        {
-            var s = new RegexFCD(stackalloc int[StackBufferSize]);
-            RegexFC? fc = s.RegexFCFromRegexTree(t);
-            s.Dispose();
-
-            if (fc == null || fc._nullable)
-            {
-                return null;
-            }
-
-            if (fc.CaseInsensitive)
-            {
-                fc.AddLowercase(((t.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
-            }
-
-            return new RegexPrefix(fc.GetFirstChars(), fc.CaseInsensitive);
-        }
-
-        /// <summary>
-        /// This is a related computation: it takes a RegexTree and computes the
-        /// leading substring if it see one. It's quite trivial and gives up easily.
-        /// </summary>
-        public static RegexPrefix Prefix(RegexTree tree)
+        /// <summary>Computes the leading substring in <paramref name="tree"/>.</summary>
+        /// <remarks>It's quite trivial and gives up easily, in which case an empty string is returned.</remarks>
+        public static (string Prefix, bool CaseInsensitive) ComputeLeadingSubstring(RegexTree tree)
         {
             RegexNode curNode = tree.Root;
             RegexNode? concatNode = null;
@@ -116,17 +82,16 @@ namespace System.Text.RegularExpressions
 
                         if (curNode.M > 0 && curNode.M < Cutoff)
                         {
-                            string pref = new string(curNode.Ch, curNode.M);
-                            return new RegexPrefix(pref, 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                            return (new string(curNode.Ch, curNode.M), (curNode.Options & RegexOptions.IgnoreCase) != 0);
                         }
 
-                        return RegexPrefix.Empty;
+                        return (string.Empty, false);
 
                     case RegexNode.One:
-                        return new RegexPrefix(curNode.Ch.ToString(), 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                        return (curNode.Ch.ToString(), (curNode.Options & RegexOptions.IgnoreCase) != 0);
 
                     case RegexNode.Multi:
-                        return new RegexPrefix(curNode.Str!, 0 != (curNode.Options & RegexOptions.IgnoreCase));
+                        return (curNode.Str!, (curNode.Options & RegexOptions.IgnoreCase) != 0);
 
                     case RegexNode.Bol:
                     case RegexNode.Eol:
@@ -142,21 +107,190 @@ namespace System.Text.RegularExpressions
                         break;
 
                     default:
-                        return RegexPrefix.Empty;
+                        return (string.Empty, false);
                 }
 
                 if (concatNode == null || nextChild >= concatNode.ChildCount())
-                    return RegexPrefix.Empty;
+                {
+                    return (string.Empty, false);
+                }
 
                 curNode = concatNode.Child(nextChild++);
             }
         }
 
-        /// <summary>
-        /// Yet another related computation: it takes a RegexTree and computes
-        /// the leading anchor that it encounters.
-        /// </summary>
-        public static int Anchors(RegexTree tree)
+        /// <summary>Computes a character class for the first character in <paramref name="tree"/>.</summary>
+        /// <remarks>true if a character class could be computed; otherwise, false.</remarks>
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree)
+        {
+            var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
+            RegexFC? fc = s.RegexFCFromRegexTree(tree);
+            s.Dispose();
+
+            if (fc == null || fc._nullable)
+            {
+                return null;
+            }
+
+            if (fc.CaseInsensitive)
+            {
+                fc.AddLowercase(((tree.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+            }
+
+            return new[] { (fc.GetFirstChars(), fc.CaseInsensitive) };
+        }
+
+        /// <summary>Computes character classes for the first <paramref name="maxChars"/> characters in <paramref name="tree"/>.</summary>
+        /// <remarks>
+        /// For example, given "hello|world" and a <paramref name="maxChars"/> of 3, this will compute the sets [hw], [eo], and [lr].
+        /// As with some of the other computations, it's quite trivial and gives up easily; for example, we could in
+        /// theory handle nodes in a concatenation after an alternation, but we look only at the branches of the
+        /// alternation itself.  As this computation is intended primarily to handle global alternations, it's currently
+        /// a reasonable tradeoff between simplicity, performance, and the fullness of potential optimizations.
+        /// </remarks>
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeMultipleCharClasses(RegexTree tree, int maxChars)
+        {
+            Debug.Assert(maxChars > 1);
+
+            if ((tree.Options & RegexOptions.RightToLeft) != 0)
+            {
+                // We don't bother for RightToLeft.  It's rare and adds non-trivial complication.
+                return null;
+            }
+
+            // The known minimum required length will have already factored in knowledge about alternations.
+            // If the known min length is less than the maximum number of chars requested, we can
+            // cut this short.  If it's zero, there's nothing to be found.  If it's one, we won't do
+            // any better than ComputeFirstCharClass (and likely worse).  Otherwise, don't bother looking for more
+            // the min of the min length and the max requested chars.
+            maxChars = Math.Min(tree.MinRequiredLength, maxChars);
+            if (maxChars <= 1)
+            {
+                return null;
+            }
+
+            // Find an alternation on the path to the first node.  If we can't, bail.
+            RegexNode node = tree.Root;
+            while (node.Type != RegexNode.Alternate)
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.Atomic:
+                    case RegexNode.Capture:
+                    case RegexNode.Concatenate:
+                        node = node.Child(0);
+                        break;
+
+                    default:
+                        return null;
+                }
+            }
+            Debug.Assert(node.Type == RegexNode.Alternate);
+
+            // Create RegexCharClasses to store the built-up sets.  We may end up returning fewer
+            // than this if we find we can't easily fill this number of sets with 100% confidence.
+            var classes = new RegexCharClass?[maxChars];
+            bool caseInsensitive = false;
+
+            int branches = node.ChildCount();
+            Debug.Assert(branches >= 2);
+            for (int branchNum = 0; branchNum < branches; branchNum++)
+            {
+                RegexNode alternateBranch = node.Child(branchNum);
+                caseInsensitive |= (alternateBranch.Options & RegexOptions.IgnoreCase) != 0;
+
+                switch (alternateBranch.Type)
+                {
+                    case RegexNode.Multi:
+                        maxChars = Math.Min(maxChars, alternateBranch.Str!.Length);
+                        for (int i = 0; i < maxChars; i++)
+                        {
+                            (classes[i] ??= new RegexCharClass()).AddChar(alternateBranch.Str[i]);
+                        }
+                        continue;
+
+                    case RegexNode.Concatenate:
+                        {
+                            int classPos = 0;
+                            int concatChildren = alternateBranch.ChildCount();
+                            for (int i = 0; i < concatChildren && classPos < classes.Length; i++)
+                            {
+                                RegexNode concatChild = alternateBranch.Child(i);
+                                caseInsensitive |= (concatChild.Options & RegexOptions.IgnoreCase) != 0;
+
+                                switch (concatChild.Type)
+                                {
+                                    case RegexNode.One:
+                                        (classes[classPos++] ??= new RegexCharClass()).AddChar(concatChild.Ch);
+                                        break;
+                                    case RegexNode.Set:
+                                        (classes[classPos++] ??= new RegexCharClass()).AddCharClass(RegexCharClass.Parse(concatChild.Str!));
+                                        break;
+                                    case RegexNode.Multi:
+                                        for (int c = 0; c < concatChild.Str!.Length && classPos < classes.Length; c++)
+                                        {
+                                            (classes[classPos++] ??= new RegexCharClass()).AddChar(concatChild.Str[c]);
+                                        }
+                                        break;
+
+                                    default: // nothing else supported
+                                        i = concatChildren; // stop looking at additional nodes
+                                        break;
+                                }
+                            }
+
+                            maxChars = Math.Min(maxChars, classPos);
+                        }
+                        continue;
+
+                    default:
+                        // Any other node type as a branch in the alternation and we give up.  Note that we don't special-case One/Notone/Set
+                        // because that would mean the whole branch was a single char, in which case this computation provides
+                        // zero benefit over the ComputeFirstCharClass computation.
+                        return null;
+                }
+            }
+
+            // We've now examined all of the alternate branches and were able to successfully process them.
+            // Determine how many we can actually return.
+            for (int i = 0; i < maxChars; i++)
+            {
+                if (classes[i] is null)
+                {
+                    maxChars = i;
+                    break;
+                }
+            }
+
+            // Make sure we got something.
+            if (maxChars == 0)
+            {
+                return null;
+            }
+
+            // Create and return the RegexPrefix objects.
+            var prefixes = new (string CharClass, bool CaseInsensitive)[maxChars];
+
+            CultureInfo? ci = null;
+            if (caseInsensitive)
+            {
+                ci = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
+            }
+
+            for (int i = 0; i < prefixes.Length; i++)
+            {
+                if (caseInsensitive)
+                {
+                    classes[i]!.AddLowercase(ci!);
+                }
+                prefixes[i] = (classes[i]!.ToStringClass(), caseInsensitive);
+            }
+
+            return prefixes;
+        }
+
+        /// <summary>Takes a RegexTree and computes the leading anchor that it encounters.</summary>
+        public static int FindLeadingAnchors(RegexTree tree)
         {
             RegexNode curNode = tree.Root;
             RegexNode? concatNode = null;
@@ -188,7 +322,18 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Start:
                     case RegexNode.EndZ:
                     case RegexNode.End:
-                        return AnchorFromType(curNode.Type);
+                        return curNode.Type switch
+                        {
+                            RegexNode.Bol => Bol,
+                            RegexNode.Eol => Eol,
+                            RegexNode.Boundary => Boundary,
+                            RegexNode.ECMABoundary => ECMABoundary,
+                            RegexNode.Beginning => Beginning,
+                            RegexNode.Start => Start,
+                            RegexNode.EndZ => EndZ,
+                            RegexNode.End => End,
+                            _ => 0,
+                        };
 
                     case RegexNode.Empty:
                     case RegexNode.Require:
@@ -200,28 +345,13 @@ namespace System.Text.RegularExpressions
                 }
 
                 if (concatNode == null || nextChild >= concatNode.ChildCount())
+                {
                     return 0;
+                }
 
                 curNode = concatNode.Child(nextChild++);
             }
         }
-
-        /// <summary>
-        /// Convert anchor type to anchor bit.
-        /// </summary>
-        private static int AnchorFromType(int type) =>
-            type switch
-            {
-                RegexNode.Bol => Bol,
-                RegexNode.Eol => Eol,
-                RegexNode.Boundary => Boundary,
-                RegexNode.ECMABoundary => ECMABoundary,
-                RegexNode.Beginning => Beginning,
-                RegexNode.Start => Start,
-                RegexNode.EndZ => EndZ,
-                RegexNode.End => End,
-                _ => 0,
-            };
 
 #if DEBUG
         [ExcludeFromCodeCoverage]
