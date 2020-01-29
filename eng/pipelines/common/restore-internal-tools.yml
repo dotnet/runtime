@@ -7,7 +7,7 @@ steps:
       displayName: Install dotnet ${{ parameters.dotnetVersion }}
       inputs:
         packageType: sdk
-        version: 3.1.200
+        useGlobalJson: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
 
   - task: NuGetAuthenticate@0
