@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -491,26 +492,15 @@ namespace System.Net.Http
             CancellationTokenSource cts;
             bool disposeCts;
             bool hasTimeout = _timeout != s_infiniteTimeout;
-            TimeoutState timeoutState = null; // Lazy initialization to avoid unnecessary allocation when timeout is not set
-            Timer timer = null;
+            long timeoutTime = 0;
             if (hasTimeout || cancellationToken.CanBeCanceled)
             {
                 disposeCts = true;
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    timeoutState = new TimeoutState(cts);
-                    timer = new Timer(s =>
-                    {
-                        var state = (TimeoutState)s;
-                        state.IsFired = true;
-                        try
-                        {
-                            state.CancellationSource.Cancel();
-                        }
-                        catch (ObjectDisposedException) // ObjectDisposedException is expected when the timer fires just after the CTS has been disposed
-                        { }
-                    }, timeoutState, _timeout, Threading.Timeout.InfiniteTimeSpan);
+                    timeoutTime = Environment.TickCount64 + (long) _timeout.TotalMilliseconds;
+                    cts.CancelAfter(_timeout);
                 }
             }
             else
@@ -525,25 +515,25 @@ namespace System.Net.Http
             {
                 sendTask = base.SendAsync(request, cts.Token);
             }
-            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, cancellationToken))
+            catch (OperationCanceledException e) when (TimeoutFired(timeoutTime))
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
+                HandleFinishSendAsyncCleanup(cts, disposeCts);
                 ThrowTimeoutException(e);
                 throw;
             }
             catch
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
+                HandleFinishSendAsyncCleanup(cts, disposeCts);
                 throw;
             }
 
             return completionOption == HttpCompletionOption.ResponseContentRead && !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase) ?
-                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts, timeoutState, cancellationToken, timer) :
-                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts, timeoutState, cancellationToken, timer);
+                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts, timeoutTime) :
+                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts, timeoutTime);
         }
 
         private async Task<HttpResponseMessage> FinishSendAsyncBuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, TimeoutState timeoutState, CancellationToken callerToken, Timer timer)
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, long timeoutTime)
         {
             HttpResponseMessage response = null;
             try
@@ -564,7 +554,7 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
+            catch (OperationCanceledException e) when (TimeoutFired(timeoutTime))
             {
                 response?.Dispose();
                 ThrowTimeoutException(e);
@@ -578,12 +568,12 @@ namespace System.Net.Http
             }
             finally
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
+                HandleFinishSendAsyncCleanup(cts, disposeCts);
             }
         }
 
         private async Task<HttpResponseMessage> FinishSendAsyncUnbuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, TimeoutState timeoutState, CancellationToken callerToken, Timer timer)
+            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts, long timeoutTime)
         {
             try
             {
@@ -596,7 +586,7 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (TaskCanceledException e) when (TimeoutFired(timeoutState, callerToken))
+            catch (OperationCanceledException e) when (TimeoutFired(timeoutTime))
             {
                 ThrowTimeoutException(e);
                 throw;
@@ -608,14 +598,13 @@ namespace System.Net.Http
             }
             finally
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts, timer);
+                HandleFinishSendAsyncCleanup(cts, disposeCts);
             }
         }
 
-        private bool TimeoutFired(TimeoutState timeoutState, CancellationToken callerToken)
-            => !callerToken.IsCancellationRequested && timeoutState != null && timeoutState.IsFired;
+        private bool TimeoutFired(long timeoutTime) => timeoutTime > 0 && Environment.TickCount64 >= timeoutTime;
 
-        private static void ThrowTimeoutException(TaskCanceledException originalException)
+        private static void ThrowTimeoutException(OperationCanceledException originalException)
         {
             var timeoutException = new TimeoutException(SR.net_http_request_timedout, originalException);
             var newTaskCancelledException = new TaskCanceledException(originalException.Message, timeoutException, originalException.CancellationToken);
@@ -635,7 +624,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleFinishSendAsyncCleanup(CancellationTokenSource cts, bool disposeCts, Timer timer)
+        private void HandleFinishSendAsyncCleanup(CancellationTokenSource cts, bool disposeCts)
         {
             // Dispose of the CancellationTokenSource if it was created specially for this request
             // rather than being used across multiple requests.
@@ -643,8 +632,6 @@ namespace System.Net.Http
             {
                 cts.Dispose();
             }
-
-            timer?.Dispose();
 
             // This method used to also dispose of the request content, e.g.:
             //     request.Content?.Dispose();
@@ -804,18 +791,6 @@ namespace System.Net.Http
 
         private HttpRequestMessage CreateRequestMessage(HttpMethod method, Uri uri) =>
             new HttpRequestMessage(method, uri) { Version = _defaultRequestVersion };
-
-        private class TimeoutState
-        {
-            public readonly CancellationTokenSource CancellationSource;
-
-            public volatile bool IsFired;
-
-            public TimeoutState(CancellationTokenSource cancellationSource)
-            {
-                CancellationSource = cancellationSource;
-            }
-        }
         #endregion Private Helpers
     }
 }
