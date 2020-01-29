@@ -165,52 +165,14 @@ build_CoreLib_ni()
     fi
 }
 
-build_CoreLib()
+build_Crossgen2()
 {
     if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then
-        echo "System.Private.CoreLib.dll build unsupported."
+        echo "Managed build unsupported."
         return
     fi
 
-    if [[ "$__SkipMSCorLib" == 1 ]]; then
-       echo "Skipping building System.Private.CoreLib."
-       return
-    fi
-
     echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
-
-    # Invoke MSBuild
-    __ExtraBuildArgs=""
-
-    if [[ "$__BuildManagedTools" -eq "1" ]]; then
-        __ExtraBuildArgs="$__ExtraBuildArgs /p:BuildManagedTools=true"
-    fi
-
-    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
-                                           $__ProjectDir/src/build.proj /t:Restore \
-                                           /p:PortableBuild=true /maxcpucount /p:IncludeRestoreOnlyProjects=true \
-                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
-                                           /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
-                                           $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
-
-    local exit_code="$?"
-    if [[ "$exit_code" != 0 ]]; then
-        echo "${__ErrMsgPrefix}Failed to restore managed components."
-        exit "$exit_code"
-    fi
-
-    "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
-                                           $__ProjectDir/src/build.proj \
-                                           /p:PortableBuild=true /maxcpucount \
-                                           /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
-                                           /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir \
-                                           $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
-
-    local exit_code="$?"
-        if [[ "$exit_code" != 0 ]]; then
-        echo "${__ErrMsgPrefix}Failed to build managed components."
-        exit "$exit_code"
-    fi
 
     if [[ "$__BuildManagedTools" -eq "1" ]]; then
         echo "Publishing crossgen2 for $__DistroRid"
@@ -221,48 +183,6 @@ build_CoreLib()
             echo "${__ErrMsgPrefix}Failed to build crossgen2."
             exit "$exit_code"
         fi
-    fi
-
-    local __CoreLibILDir="$__BinDir"/IL
-
-    if [[ "$__SkipCrossgen" == 1 ]]; then
-        echo "Skipping generating native image"
-
-        if [[ "$__CrossBuild" == 1 ]]; then
-            # Crossgen not performed, so treat the IL version as the final version
-            cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
-        fi
-
-        return
-    fi
-
-    # The cross build generates a crossgen with the target architecture.
-    if [[ "$__CrossBuild" == 0 ]]; then
-       if [[ "$__SkipCoreCLR" == 1 ]]; then
-           return
-       fi
-
-       # The architecture of host pc must be same architecture with target.
-       if [[ "$__HostArch" == "$__BuildArch" ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-       elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-       else
-           exit 1
-       fi
-    else
-       if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-       elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-       elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
-           build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-       else
-           # Crossgen not performed, so treat the IL version as the final version
-           cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
-       fi
     fi
 }
 
@@ -515,10 +435,35 @@ fi
 
 # Build System.Private.CoreLib.
 
-build_CoreLib
+build_Crossgen2
 
-if [[ "$__CrossgenOnly" == 1 ]]; then
-    build_CoreLib_ni "$__BinDir/crossgen"
+# The cross build generates a crossgen with the target architecture.
+if [[ "$__CrossBuild" == 0 ]]; then
+    if [[ "$__SkipCoreCLR" == 1 ]]; then
+        return
+    fi
+
+    # The architecture of host pc must be same architecture with target.
+    if [[ "$__HostArch" == "$__BuildArch" ]]; then
+        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+    elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
+        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+    elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+        build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
+    else
+        exit 1
+    fi
+else
+    if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
+        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+    elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
+        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+    elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
+        build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
+    else
+        # Crossgen not performed, so treat the IL version as the final version
+        cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
+    fi
 fi
 
 # Generate nuget packages
