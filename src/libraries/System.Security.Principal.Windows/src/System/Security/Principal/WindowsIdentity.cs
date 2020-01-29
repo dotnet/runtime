@@ -598,9 +598,9 @@ namespace System.Security.Principal
 
                 if (_owner == null)
                 {
-                    using (SafeLocalAllocHandle? tokenOwner = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenOwner))
+                    using (SafeLocalAllocHandle tokenOwner = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenOwner, nullOnInvalidParam: false)!)
                     {
-                        _owner = new SecurityIdentifier(tokenOwner!.Read<IntPtr>(0));
+                        _owner = new SecurityIdentifier(tokenOwner.Read<IntPtr>(0));
                     }
                 }
 
@@ -618,7 +618,7 @@ namespace System.Security.Principal
 
                 if (_user == null)
                 {
-                    using (SafeLocalAllocHandle? tokenUser = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser))
+                    using (SafeLocalAllocHandle tokenUser = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser, nullOnInvalidParam: false)!)
                     {
                         _user = new SecurityIdentifier(tokenUser!.Read<IntPtr>(0));
                     }
@@ -639,7 +639,7 @@ namespace System.Security.Principal
                 if (_groups == null)
                 {
                     IdentityReferenceCollection groups = new IdentityReferenceCollection();
-                    using (SafeLocalAllocHandle? pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups))
+                    using (SafeLocalAllocHandle pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups, nullOnInvalidParam: false)!)
                     {
                         Interop.TOKEN_GROUPS tokenGroups = pGroups!.Read<Interop.TOKEN_GROUPS>(0);
                         Interop.SID_AND_ATTRIBUTES[] groupDetails = new Interop.SID_AND_ATTRIBUTES[tokenGroups.GroupCount];
@@ -867,7 +867,7 @@ namespace System.Security.Principal
         {
             Debug.Assert(!_safeTokenHandle.IsInvalid && !_safeTokenHandle.IsClosed, "!m_safeTokenHandle.IsInvalid && !m_safeTokenHandle.IsClosed");
 
-            using (SafeLocalAllocHandle? information = GetTokenInformation(_safeTokenHandle, tokenInformationClass))
+            using (SafeLocalAllocHandle information = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: false)!)
             {
                 Debug.Assert(information!.ByteLength >= (ulong)Marshal.SizeOf<T>(),
                                 "information.ByteLength >= (ulong)Marshal.SizeOf(typeof(T))");
@@ -878,7 +878,7 @@ namespace System.Security.Principal
 
         private static Interop.LUID GetLogonAuthId(SafeAccessTokenHandle safeTokenHandle)
         {
-            using (SafeLocalAllocHandle? pStatistics = GetTokenInformation(safeTokenHandle, TokenInformationClass.TokenStatistics))
+            using (SafeLocalAllocHandle pStatistics = GetTokenInformation(safeTokenHandle, TokenInformationClass.TokenStatistics, nullOnInvalidParam: false)!)
             {
                 Interop.TOKEN_STATISTICS statistics = pStatistics!.Read<Interop.TOKEN_STATISTICS>(0);
                 return statistics.AuthenticationId;
