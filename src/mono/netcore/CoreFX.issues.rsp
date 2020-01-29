@@ -13,9 +13,6 @@
 # NOTE: KEEPING THIS HERE BUT COMMENTED OUT - in the event the UI is shown (wasn't for me)
 #-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
 
-# When test is run, xunit claims it's not a part of the test suite 
-#-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test.AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable
-
 ####################################################################
 ##  System.Reflection.Emit.ILGeneration.Tests
 ####################################################################
