@@ -10,10 +10,12 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests are flaky")]
+    [SkipOnMono("System.Net.Tests are flaky")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
     {
