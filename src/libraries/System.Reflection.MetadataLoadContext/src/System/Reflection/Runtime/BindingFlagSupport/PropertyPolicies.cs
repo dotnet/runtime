@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -17,7 +18,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredProperties;
         }
 
-        public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
         {
             return type.GetPropertiesCore(filter, reflectedType);
         }
@@ -26,7 +27,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetAccessorMethod(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
@@ -60,11 +61,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         public sealed override bool IsSuppressedByMoreDerivedMember(PropertyInfo member, PropertyInfo[] priorMembers, int startIndex, int endIndex)
         {
-            MethodInfo baseAccessor = GetAccessorMethod(member);
+            MethodInfo baseAccessor = GetAccessorMethod(member)!;
             for (int i = startIndex; i < endIndex; i++)
             {
                 PropertyInfo prior = priorMembers[i];
-                MethodInfo derivedAccessor = GetAccessorMethod(prior);
+                MethodInfo derivedAccessor = GetAccessorMethod(prior)!;
                 if (!AreNamesAndSignaturesEqual(baseAccessor, derivedAccessor))
                     continue;
                 if (derivedAccessor.IsStatic != baseAccessor.IsStatic)
@@ -84,10 +85,11 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private MethodInfo GetAccessorMethod(PropertyInfo property)
         {
-            MethodInfo accessor = property.GetMethod;
+            MethodInfo? accessor = property.GetMethod;
             if (accessor == null)
             {
                 accessor = property.SetMethod;
+                Debug.Assert(accessor != null);
             }
 
             return accessor;

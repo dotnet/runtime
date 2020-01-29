@@ -27,7 +27,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         // Returns all of the directly declared members on the given TypeInfo whose name matches filter. If filter is null,
         // returns all directly declared members.
         //
-        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType);
+        public abstract IEnumerable<M> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType);
 
         //
         // Policy to decide whether a member is considered "virtual", "virtual new" and what its member visibility is.
@@ -147,7 +147,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
                 if (t1.IsArray && (t1.GetArrayRank() != t2.GetArrayRank()))
                     return false;
 
-                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType(), t2.GetElementType());
+                return GenericMethodAwareAreParameterTypesEqual(t1.GetElementType()!, t2.GetElementType()!);
             }
 
             if (t1.IsConstructedGenericType)
@@ -227,7 +227,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         //
         // This is a singleton class one for each MemberInfo category: Return the appropriate one.
         //
-        public static readonly MemberPolicies<M> Default;
+        public static readonly MemberPolicies<M> Default = null!;
 
         //
         // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M

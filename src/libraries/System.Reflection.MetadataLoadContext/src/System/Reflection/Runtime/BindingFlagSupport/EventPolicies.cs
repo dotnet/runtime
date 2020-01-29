@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using RuntimeTypeInfo = System.Reflection.TypeLoading.RoType;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -17,7 +18,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredEvents;
         }
 
-        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
         {
             return type.GetEventsCore(filter, reflectedType);
         }
@@ -26,7 +27,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetAccessorMethod(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited EventInfo that only had private accessors and is now refusing to give them out
@@ -74,7 +75,8 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         private MethodInfo GetAccessorMethod(EventInfo e)
         {
-            MethodInfo accessor = e.AddMethod;
+            MethodInfo? accessor = e.AddMethod;
+            Debug.Assert(accessor != null);
             return accessor;
         }
     }
