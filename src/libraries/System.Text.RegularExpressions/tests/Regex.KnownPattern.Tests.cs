@@ -736,34 +736,23 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("functional", matches[3].Value);
         }
 
-        // https://docs.microsoft.com/en-us/dotnet/standard/base-types/details-of-regular-expression-behavior#net-framework-engine-capabilities
+        // https://docs.microsoft.com/en-us/dotnet/standard/base-types/alternation-constructs-in-regular-expressions#conditional-matching-with-an-expression
         [Theory]
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         public void Docs_EngineCapabilities_ConditionalEvaluation(RegexOptions options)
         {
-            const string Pattern = @"^(?<Pvt>\<PRIVATE\>\s)?(?(Pvt)((\w+\p{P}?\s)+)|((\w+\p{P}?\s)+))\r?$";
+            const string Pattern = @"\b(?(\d{2}-)\d{2}-\d{7}|\d{3}-\d{2}-\d{4})\b";
+            const string Input = "01-9999999 020-333333 777-88-9999";
 
-            string input = "<PRIVATE> This is not for public consumption." + Environment.NewLine +
-                           "But this is for public consumption." + Environment.NewLine +
-                           "<PRIVATE> Again, this is confidential.\n";
+            MatchCollection matches = Regex.Matches(Input, Pattern, options);
+            Assert.Equal(2, matches.Count);
 
-            string publicDocument = null, privateDocument = null;
-            foreach (Match match in Regex.Matches(input, Pattern, RegexOptions.Multiline | options))
-            {
-                if (match.Groups[1].Success)
-                {
-                    privateDocument += match.Groups[1].Value;
-                }
-                else
-                {
-                    publicDocument += match.Groups[3].Value;
-                    privateDocument += match.Groups[3].Value;
-                }
-            }
+            Assert.Equal("01-9999999", matches[0].Value);
+            Assert.Equal(0, matches[0].Index);
 
-            Assert.Equal("This is not for public consumption.\rBut this is for public consumption.\rAgain, this is confidential.\n", privateDocument);
-            Assert.Equal("But this is for public consumption.\r", publicDocument);
+            Assert.Equal("777-88-9999", matches[1].Value);
+            Assert.Equal(22, matches[1].Index);
         }
 
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/details-of-regular-expression-behavior#net-framework-engine-capabilities
