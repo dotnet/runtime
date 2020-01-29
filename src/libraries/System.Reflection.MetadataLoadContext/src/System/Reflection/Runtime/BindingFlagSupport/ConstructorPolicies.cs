@@ -41,7 +41,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isNewSlot = false;
         }
 
-        public sealed override bool ImplicitlyOverrides(ConstructorInfo? baseMember, ConstructorInfo? derivedMember) => false;
+        public sealed override bool ImplicitlyOverrides(ConstructorInfo baseMember, ConstructorInfo derivedMember) => false;
 
         public sealed override bool IsSuppressedByMoreDerivedMember(ConstructorInfo member, ConstructorInfo[] priorMembers, int startIndex, int endIndex)
         {
