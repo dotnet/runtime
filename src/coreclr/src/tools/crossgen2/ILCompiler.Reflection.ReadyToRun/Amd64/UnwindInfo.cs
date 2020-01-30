@@ -143,8 +143,8 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\tVersion: {Version}");
-            sb.Append($"\tFlags: 0x{Flags:X8} (");
+            sb.AppendLine($"    Version: {Version}");
+            sb.Append($"    Flags: 0x{Flags:X8} (");
             if (Flags == (byte)UnwindFlags.UNW_FLAG_NHANDLER)
             {
                 sb.Append(" UNW_FLAG_NHANDLER");
@@ -160,27 +160,27 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             }
             sb.AppendLine(" )");
 
-            sb.AppendLine($"\tSizeOfProlog: {SizeOfProlog}");
-            sb.AppendLine($"\tCountOfUnwindCodes: {CountOfUnwindCodes}");
-            sb.AppendLine($"\tFrameRegister: {FrameRegister}");
-            sb.AppendLine($"\tFrameOffset: {FrameOffset}");
-            sb.AppendLine($"\tUnwind Codes:");
-            sb.AppendLine($"\t\t------------------");
+            sb.AppendLine($"    SizeOfProlog: {SizeOfProlog}");
+            sb.AppendLine($"    CountOfUnwindCodes: {CountOfUnwindCodes}");
+            sb.AppendLine($"    FrameRegister: {FrameRegister}");
+            sb.AppendLine($"    FrameOffset: {FrameOffset}");
+            sb.AppendLine($"    Unwind Codes:");
+            sb.AppendLine($"        ------------------");
             for (int i = 0; i < CountOfUnwindCodes; i++)
             {
                 if (!UnwindCodeArray[i].IsOpInfo)
                     continue;
-                sb.AppendLine($"\t\tCodeOffset: 0x{UnwindCodeArray[i].CodeOffset:X2}");
-                sb.AppendLine($"\t\tUnwindOp: {UnwindCodeArray[i].UnwindOp}({(byte)UnwindCodeArray[i].UnwindOp})");
-                sb.AppendLine($"\t\tOpInfo: {UnwindCodeArray[i].OpInfoStr}");
+                sb.AppendLine($"        CodeOffset: 0x{UnwindCodeArray[i].CodeOffset:X2}");
+                sb.AppendLine($"        UnwindOp: {UnwindCodeArray[i].UnwindOp}({(byte)UnwindCodeArray[i].UnwindOp})");
+                sb.AppendLine($"        OpInfo: {UnwindCodeArray[i].OpInfoStr}");
                 if (UnwindCodeArray[i].NextFrameOffset != -1)
                 {
-                    sb.AppendLine($"\t\tFrameOffset: {UnwindCodeArray[i].NextFrameOffset}");
+                    sb.AppendLine($"        FrameOffset: {UnwindCodeArray[i].NextFrameOffset}");
                 }
-                sb.AppendLine($"\t\t------------------");
+                sb.AppendLine($"        ------------------");
             }
-            sb.AppendLine($"\tPersonalityRoutineRVA: 0x{PersonalityRoutineRVA:X8}");
-            sb.AppendLine($"\tSize: {Size} bytes");
+            sb.AppendLine($"        PersonalityRoutineRVA: 0x{PersonalityRoutineRVA:X8}");
+            sb.AppendLine($"        Size: {Size} bytes");
 
             return sb.ToString();
         }
