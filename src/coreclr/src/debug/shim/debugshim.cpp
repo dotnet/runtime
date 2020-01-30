@@ -22,18 +22,6 @@
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 #endif
 
-// making the defines very clear, these represent the host architecture - aka
-// the arch on which this code is running
-#if defined(HOST_X86)
-#define HOST_X86
-#elif defined(HOST_AMD64)
-#define HOST_AMD64
-#elif defined(HOST_ARM)
-#define HOST_ARM
-#elif defined(HOST_ARM64)
-#define HOST_ARM64
-#endif
-
 //*****************************************************************************
 // CLRDebuggingImpl implementation (ICLRDebugging)
 //*****************************************************************************

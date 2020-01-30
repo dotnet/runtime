@@ -4296,13 +4296,13 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
 class ClrTeb
 {
 public:
-#if defined(TARGET_UNIX)
+#if defined(HOST_UNIX)
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
     {
         LIMITED_METHOD_CONTRACT;
-        // not fiber for TARGET_UNIX - use the regular thread ID
+        // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
     }
 
@@ -4321,7 +4321,7 @@ public:
         return PAL_GetStackLimit();
     }
 
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
@@ -4370,7 +4370,7 @@ public:
     {
         return (void*) 1;
     }
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 };
 
 #if !defined(DACCESS_COMPILE)

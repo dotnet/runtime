@@ -62,7 +62,6 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_X86 and HOST_ARM64
 #endif
-#define HOST_X86
 #elif defined(HOST_AMD64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_AMD64 and HOST_X86
@@ -73,7 +72,6 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_AMD64 and HOST_ARM64
 #endif
-#define HOST_AMD64
 #elif defined(HOST_ARM)
 #if defined(HOST_X86)
 #error Cannot define both HOST_ARM and HOST_X86
@@ -84,7 +82,6 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_ARM and HOST_ARM64
 #endif
-#define HOST_ARM
 #elif defined(HOST_ARM64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_ARM64 and HOST_X86
@@ -95,13 +92,8 @@
 #if defined(HOST_ARM)
 #error Cannot define both HOST_ARM64 and HOST_ARM
 #endif
-#define HOST_ARM64
 #else
 #error Unsupported or unset host architecture
-#endif
-
-#if defined(HOST_AMD64) || defined(HOST_ARM64)
-#define HOST_64BIT
 #endif
 
 #if defined(TARGET_X86)
@@ -160,12 +152,6 @@
 #error Unsupported or unset target architecture
 #endif
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-#ifndef TARGET_64BIT
-#define TARGET_64BIT
-#endif // TARGET_64BIT
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
-
 #ifdef TARGET_64BIT
 #ifdef TARGET_X86
 #error Cannot define both TARGET_X86 and TARGET_64BIT
@@ -197,20 +183,11 @@
 #endif
 #endif
 
-#if defined(TARGET_UNIX)
-#define HOST_UNIX
-#endif
-
-// Are we generating code to target Unix? This is true if we will run on Unix (HOST_UNIX is defined).
-// It's also true if we are building an altjit targetting Unix, which we determine by checking if either
-// UNIX_AMD64_ABI or UNIX_X86_ABI is defined.
-#if defined(HOST_UNIX) || ((defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && defined(ALT_JIT))
+#if (defined(ALT_JIT) && (defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && !defined(TARGET_UNIX))
+// If we are building an ALT_JIT targeting Unix, override the TARGET_<os> to TARGET_UNIX
+#undef TARGET_WINDOWS
 #define TARGET_UNIX
 #endif
-
-#ifndef TARGET_UNIX
-#define TARGET_WINDOWS
-#endif // !TARGET_UNIX
 
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
@@ -230,14 +207,7 @@
 
 // Include the AMD64 unwind codes when appropriate.
 #if defined(TARGET_AMD64)
-// We need to temporarily set TARGET_UNIX, if necessary, to get the Unix-specific unwind codes.
-#if defined(TARGET_UNIX) && !defined(HOST_UNIX)
-#define TARGET_UNIX
-#endif
 #include "win64unwind.h"
-#if defined(TARGET_UNIX) && !defined(HOST_UNIX)
-#undef TARGET_UNIX
-#endif
 #endif
 
 #include "corhdr.h"

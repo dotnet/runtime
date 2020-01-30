@@ -96,7 +96,7 @@ typedef signed char SCHAR;
 typedef SCHAR *PSCHAR;
 typedef LONG NTSTATUS;
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 
 #define TLS_MINIMUM_AVAILABLE 64    // winnt
 #define TLS_EXPANSION_SLOTS   1024
@@ -748,7 +748,7 @@ typedef VM_COUNTERS *PVM_COUNTERS;
 
 #undef TYPE3
 
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
 
 #if !defined(TARGET_X86)
 

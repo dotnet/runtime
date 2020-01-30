@@ -241,11 +241,11 @@
 //
 //#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
 
-#if TARGET_UNIX
+#if HOST_UNIX
 #define WszFindFirstFile     FindFirstFileW
 #else
 #define WszFindFirstFile(_lpFileName_, _lpFindData_)       FindFirstFileExWrapper(_lpFileName_, FindExInfoStandard, _lpFindData_, FindExSearchNameMatch, NULL, 0)
-#endif //TARGET_UNIX
+#endif // HOST_UNIX
 //*****************************************************************************
 // Prototypes for API's.
 //*****************************************************************************
@@ -258,14 +258,14 @@ inline DWORD GetMaxDBCSCharByteSize()
 {
     // contract.h not visible here
     __annotation(W("WRAPPER ") W("GetMaxDBCSCharByteSize"));
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     EnsureCharSetInfoInitialized();
 
     _ASSERTE(g_dwMaxDBCSCharByteSize != 0);
     return (g_dwMaxDBCSCharByteSize);
-#else // TARGET_UNIX
+#else // HOST_UNIX
     return 3;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 #ifndef TARGET_UNIX
@@ -338,7 +338,7 @@ InterlockedCompareExchangePointer (
 
 #endif // HOST_X86 && _MSC_VER
 
-#if defined(HOST_ARM) & !defined(TARGET_UNIX)
+#if defined(HOST_ARM) & !defined(HOST_UNIX)
 //
 // InterlockedCompareExchangeAcquire/InterlockedCompareExchangeRelease is not mapped in SDK to the correct intrinsics. Remove once
 // the SDK definition is fixed (OS Bug #516255)
@@ -450,7 +450,7 @@ inline int LateboundMessageBoxW(HWND hWnd,
                                 LPCWSTR lpCaption,
                                 UINT uType)
 {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     // User32 should exist on all systems where displaying a message box makes sense.
     HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
     if (hGuiExtModule)
@@ -463,7 +463,7 @@ inline int LateboundMessageBoxW(HWND hWnd,
         FreeLibrary(hGuiExtModule);
         return result;
     }
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
     // No luck. Output the caption and text to the debugger if present or stdout otherwise.
     if (lpText == NULL)

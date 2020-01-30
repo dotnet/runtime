@@ -52,7 +52,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     {
         if (g_procInitialized)
         {
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
             // Double initialization can happen on Unix
             // in case of manual load of DAC shared lib and calling DllMain
             // not a big deal, we just ignore it.
@@ -62,7 +62,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 #endif
         }
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         int err = PAL_InitializeDLL();
         if(err != 0)
         {

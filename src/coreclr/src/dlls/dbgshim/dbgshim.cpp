@@ -55,7 +55,7 @@ Notes:
 
 */
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #define INITIALIZE_SHIM { if (PAL_InitializeDLL() != 0) return E_FAIL; }
 #else
 #define INITIALIZE_SHIM

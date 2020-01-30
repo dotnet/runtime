@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.14.2)
 
 # Compile options
-add_definitions(-DTARGET_UNIX)
 add_definitions(-DLP64COMPATIBLE)
-add_definitions(-DTARGET_UNIX)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 
