@@ -159,7 +159,7 @@ namespace System.Security.Principal
 
         internal static int CreateWellKnownSid(
             WellKnownSidType sidType,
-            SecurityIdentifier domainSid,
+            SecurityIdentifier? domainSid,
             out byte[]? resultSid
             )
         {

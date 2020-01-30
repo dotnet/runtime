@@ -573,7 +573,7 @@ namespace System.Security.Principal
         //
 
 
-        public SecurityIdentifier(WellKnownSidType sidType, SecurityIdentifier domainSid)
+        public SecurityIdentifier(WellKnownSidType sidType, SecurityIdentifier? domainSid)
         {
             //
             // sidType must not be equal to LogonIdsSid

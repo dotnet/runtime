@@ -73,7 +73,7 @@ namespace System.Security.Principal
         public static readonly int MinBinaryLength;
         public SecurityIdentifier(byte[] binaryForm, int offset) { }
         public SecurityIdentifier(System.IntPtr binaryForm) { }
-        public SecurityIdentifier(System.Security.Principal.WellKnownSidType sidType, System.Security.Principal.SecurityIdentifier domainSid) { }
+        public SecurityIdentifier(System.Security.Principal.WellKnownSidType sidType, System.Security.Principal.SecurityIdentifier? domainSid) { }
         public SecurityIdentifier(string sddlForm) { }
         public System.Security.Principal.SecurityIdentifier? AccountDomainSid { get { throw null; } }
         public int BinaryLength { get { throw null; } }
@@ -171,8 +171,6 @@ namespace System.Security.Principal
         BuiltinPerformanceMonitoringUsersSid = 57,
         BuiltinPerformanceLoggingUsersSid = 58,
         BuiltinAuthorizationAccessSid = 59,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("This member has been deprecated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
         MaxDefined = 60,
         WinBuiltinTerminalServerLicenseServersSid = 60,
         WinBuiltinDCOMUsersSid = 61,
