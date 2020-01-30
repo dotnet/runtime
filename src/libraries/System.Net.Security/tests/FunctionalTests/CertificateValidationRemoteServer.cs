@@ -33,7 +33,7 @@ namespace System.Net.Security.Tests
                 {
                     // if we cannot connect, skip the test instead of failing.
                     // This test is not trying to test networking.
-                    new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
+                    throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.Message}");
                 }
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
@@ -54,7 +54,7 @@ namespace System.Net.Security.Tests
                     {
                         // Since we try to verify certificate validation, ignore IO errors
                         // caused most likely by environmental failures.
-                        new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
+                        throw new SkipTestException($"Unable to connect to '{Configuration.Security.TlsServer.IdnHost}': {ex.InnerException.Message}");
                     }
                 }
             }
