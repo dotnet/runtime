@@ -186,7 +186,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [MemberData(nameof(TraceDataObjectArrayInvariants))]
         public void AttributeDelimiter_ChangesDelimiter_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
         {
-            var newDelimiter = "||";
+            string newDelimiter = "||";
             using (var target = GetListener())
             {
                 target.Filter = filter;
@@ -207,7 +207,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [MemberData(nameof(TraceDataObjectArrayInvariants))]
         public void AttributeDelimiter_IgnoredAfterDelimiterSet_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
         {
-            var newDelimiter = "||";
+            string newDelimiter = "||";
             using (var target = GetListener())
             {
                 target.Filter = filter;
@@ -230,7 +230,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [MemberData(nameof(TraceDataObjectArrayInvariants))]
         public void AttributeDelimiter_IgnoredAfterDelimiterRead_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
         {
-            var newDelimiter = "||";
+            string newDelimiter = "||";
             using (var target = GetListener())
             {
                 target.Filter = filter;
