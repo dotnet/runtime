@@ -507,6 +507,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vnegq_f64 (float64x2_t a)
+            ///   A64: FNEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Negate(Vector128<double> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x2_t vnegq_s64 (int64x2_t a)
+            ///   A64: NEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> Negate(Vector128<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int64x1_t vneg_s64 (int64x1_t a)
+            ///   A64: NEG Dd, Dn
+            /// </summary>
+            public static Vector64<long> NegateScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -3122,6 +3140,77 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vneg_s16 (int16x4_t a)
+        ///   A32: VNEG.S16 Dd, Dm
+        ///   A64: NEG Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> Negate(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vneg_s32 (int32x2_t a)
+        ///   A32: VNEG.S32 Dd, Dm
+        ///   A64: NEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> Negate(Vector64<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vneg_s8 (int8x8_t a)
+        ///   A32: VNEG.S8 Dd, Dm
+        ///   A64: NEG Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> Negate(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vneg_f32 (float32x2_t a)
+        ///   A32: VNEG.F32 Dd, Dm
+        ///   A64: FNEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Negate(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vnegq_s16 (int16x8_t a)
+        ///   A32: VNEG.S16 Qd, Qm
+        ///   A64: NEG Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> Negate(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vnegq_s32 (int32x4_t a)
+        ///   A32: VNEG.S32 Qd, Qm
+        ///   A64: NEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> Negate(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vnegq_s8 (int8x16_t a)
+        ///   A32: VNEG.S8 Qd, Qm
+        ///   A64: NEG Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> Negate(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vnegq_f32 (float32x4_t a)
+        ///   A32: VNEG.F32 Qd, Qm
+        ///   A64: FNEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Negate(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vneg_f64 (float64x1_t a)
+        ///   A32: VNEG.F64 Dd, Dm
+        ///   A64: FNEG Dd, Dn
+        /// </summary>
+        public static Vector64<double> NegateScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vnegs_f32 (float32_t a)
+        ///   A32: VNEG.F32 Sd, Sm
+        ///   A64: FNEG Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> NegateScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
