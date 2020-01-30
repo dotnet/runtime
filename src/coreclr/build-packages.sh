@@ -15,6 +15,7 @@ initDistroRid()
     source $__RepoRootDir/eng/native/init-distro-rid.sh
 
     local passedRootfsDir=""
+    local __IsPortableBuild=1
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
     if (( __CrossBuild == 1 )); then
@@ -27,7 +28,6 @@ initDistroRid()
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 __RepoRootDir=${__ProjectRoot}/../..
 
-__IsPortableBuild=1
 __CrossBuild=0
 
 # Use uname to determine what the OS is.
@@ -101,10 +101,6 @@ while :; do
             __CrossBuild=$(echo $1| cut -d'=' -f 2)
             buildArgs="$buildArgs /p:__DoCrossArchBuild=$__CrossBuild"
             ;;
-        -portablebuild=false)
-            buildArgs="$buildArgs /p:PortableBuild=false"
-            __IsPortableBuild=0
-            ;;
         --)
             ;;
         *)
@@ -114,18 +110,6 @@ while :; do
 done
 
 initDistroRid
-
-if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
-    # ArchGroup is generally determined from parsing {}-{}; however, linux-musl-arm64
-    # will break this logic. To work around this, pass ArchGroup explicitely.
-
-    export ArchGroup=arm64
-
-    # Currently the decision tree in src/.nuget/dirs.props will incorrectly
-    # reparse the already calculated __DistroRid. For linux-musl-arm64 use
-    # the hack/hook to specifically bypass this logic.
-    export OutputRID=${__DistroRid}
-fi
 
 logFile=$__RepoRootDir/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
