@@ -517,9 +517,8 @@ equivalent AssemblyRef indices. Just like in the AssemblyRef ECMA 335 table, the
 ```C++
 struct READYTORUN_SECTION_ASSEMBLIES_ENTRY
 {
-    IMAGE_DATA_DIRECTORY CorHeader;         // Input MSIL metadata COR header
-    IMAGE_DATA_DIRECTORY AvailableTypes;    // Available types table
-    IMAGE_DATA_DIRECTORY MethodEntrypoints; // Method entrypoint table
+    IMAGE_DATA_DIRECTORY CorHeader;        // Input MSIL metadata COR header (for composite R2R images with embedded MSIL metadata)
+    IMAGE_DATA_DIRECTORY ReadyToRunHeader; // READYTORUN_CORE_HEADER of the assembly in question
 };
 ```
 
