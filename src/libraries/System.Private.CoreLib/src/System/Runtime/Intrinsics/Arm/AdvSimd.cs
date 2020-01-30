@@ -3505,50 +3505,50 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vorn_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> OrNot(Vector64<byte> left, Vector64<byte> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
+        /// <summary>
+        /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
 
         /// <summary>
         /// int16x4_t vorn_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> OrNot(Vector64<short> left, Vector64<short> right) => OrNot(left, right);
 
         /// <summary>
-        /// int32x2_t vorn_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vorn_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> OrNot(Vector64<int> left, Vector64<int> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
+        /// <summary>
+        /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
 
         /// <summary>
         /// int8x8_t vorn_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> OrNot(Vector64<sbyte> left, Vector64<sbyte> right) => OrNot(left, right);
 
         /// <summary>
         /// float32x2_t vorn_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> OrNot(Vector64<float> left, Vector64<float> right) => OrNot(left, right);
@@ -3556,93 +3556,93 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vorn_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> OrNot(Vector64<ushort> left, Vector64<ushort> right) => OrNot(left, right);
 
         /// <summary>
         /// uint32x2_t vorn_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> OrNot(Vector64<uint> left, Vector64<uint> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
+        /// <summary>
+        /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint8x16_t vorn_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint8x16_t vornq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> OrNot(Vector128<byte> left, Vector128<byte> right) => OrNot(left, right);
 
         /// <summary>
-        /// float64x2_t vorn_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float64x2_t vornq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> OrNot(Vector128<double> left, Vector128<double> right) => OrNot(left, right);
 
         /// <summary>
-        /// int16x8_t vorn_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int16x8_t vornq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> OrNot(Vector128<short> left, Vector128<short> right) => OrNot(left, right);
 
         /// <summary>
-        /// int32x4_t vorn_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int32x4_t vornq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> OrNot(Vector128<int> left, Vector128<int> right) => OrNot(left, right);
 
         /// <summary>
-        /// int64x2_t vorn_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int64x2_t vornq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> OrNot(Vector128<long> left, Vector128<long> right) => OrNot(left, right);
 
         /// <summary>
-        /// int8x16_t vorn_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int8x16_t vornq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> OrNot(Vector128<sbyte> left, Vector128<sbyte> right) => OrNot(left, right);
 
         /// <summary>
-        /// float32x4_t vorn_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float32x4_t vornq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> OrNot(Vector128<float> left, Vector128<float> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint16x8_t vorn_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint16x8_t vornq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> OrNot(Vector128<ushort> left, Vector128<ushort> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint32x4_t vorn_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint32x4_t vornq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> OrNot(Vector128<uint> left, Vector128<uint> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint64x2_t vorn_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint64x2_t vornq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
