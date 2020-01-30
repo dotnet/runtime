@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>net461;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.CodeDom.cs" />

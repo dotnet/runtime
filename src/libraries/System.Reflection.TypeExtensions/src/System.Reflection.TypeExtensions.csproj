@@ -4,7 +4,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
     <TargetFrameworks>net461;netstandard2.0;netstandard1.3;netstandard1.5;$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard1.5'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_ReflectionTypeExtensions</GeneratePlatformNotSupportedAssemblyMessage>

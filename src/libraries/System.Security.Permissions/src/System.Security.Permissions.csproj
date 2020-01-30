@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFrameworks>netcoreapp3.0;netstandard2.0;net461;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\ApplicationIdentity.cs" />

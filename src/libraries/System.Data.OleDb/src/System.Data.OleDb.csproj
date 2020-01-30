@@ -6,7 +6,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == '' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
     <NoWarn Condition="'$(OSGroup)' == '' and '$(TargetsNetStandard)' == 'true'">$(NoWarn);CS0618</NoWarn>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' and '$(TargetsWindows)' == 'true'">

@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard1.1;netstandard1.3;net45;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>netstandard2.0;$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
     <CLSCompliant>false</CLSCompliant>
     <Nullable>enable</Nullable>
   </PropertyGroup>

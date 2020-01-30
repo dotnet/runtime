@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.1;$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.SqlClient.cs" />

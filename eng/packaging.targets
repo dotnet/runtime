@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup Condition="'$(ExcludeCurrentTargetFrameworks)' == 'true'">
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netcoreapp5.0'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net472'">true</ExcludeFromPackage>
+  </PropertyGroup>
   <!--     There are some packages where we require only one ref for a specific framework to be present. In order to avoid problems with this package when targetting 
            dektop with RAR we will make sure there are no exclude=compile references in the package.
     For more info, please check issues:

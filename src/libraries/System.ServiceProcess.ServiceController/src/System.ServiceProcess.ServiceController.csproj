@@ -5,7 +5,7 @@
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_ServiceController</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;net461-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT;</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true')">
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">

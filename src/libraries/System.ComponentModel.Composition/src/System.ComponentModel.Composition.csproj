@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;$(NetCoreAppCurrent);_$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>_$(NetFrameworkCurrent);$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
+    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />

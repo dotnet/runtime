@@ -3,7 +3,6 @@
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
     <TargetFrameworks>netstandard2.0;_$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>_$(NetFrameworkCurrent)</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />

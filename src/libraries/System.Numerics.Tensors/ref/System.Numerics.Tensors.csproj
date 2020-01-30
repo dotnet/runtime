@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard1.1;netstandard2.0</TargetFrameworks>
-    <ExcludeTargetFrameworksFromPackages>netstandard2.0;</ExcludeTargetFrameworksFromPackages>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>
