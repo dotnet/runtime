@@ -37,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class ReadyToRunSymbolNodeFactory
     {
-        private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
+        private readonly NodeFactory _codegenNodeFactory;
 
-        public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
         {
             _codegenNodeFactory = codegenNodeFactory;
             CreateNodeCaches();

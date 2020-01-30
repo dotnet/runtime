@@ -144,19 +144,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20294", TargetFrameworkMonikers.Netcoreapp)]
-        public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
-        {
-            HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");
-            Assert.Equal("1", request.Headers["Content-Length"]);
-
-            request.Headers.Remove("Content-Length");
-            Assert.Equal(1, request.ContentLength64);
-
-            Assert.True(request.HasEntityBody);
-        }
-
-        [Fact]
         public async Task ContentLength_SetInHeadersAfterAccessingProperty_DoesNothing()
         {
             HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");

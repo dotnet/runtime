@@ -26,7 +26,7 @@ namespace System.Reflection.TypeLoading.Ecma
         public sealed override MethodBase DeclaringMethod => GetRoDeclaringMethod();
         private RoMethod GetRoDeclaringMethod() => _lazyDeclaringMethod ?? (_lazyDeclaringMethod = ComputeDeclaringMethod());
         private RoMethod ComputeDeclaringMethod() => ((MethodDefinitionHandle)(GenericParameter.Parent)).ResolveMethod<RoMethod>(GetEcmaModule(), default);
-        private volatile RoMethod _lazyDeclaringMethod;
+        private volatile RoMethod? _lazyDeclaringMethod;
 
         protected sealed override TypeContext TypeContext => GetRoDeclaringMethod().TypeContext;
     }

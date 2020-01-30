@@ -23,7 +23,7 @@ namespace System.Net.Http.Enterprise.Tests
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/416")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/416")]
         [Fact]
         public async Task HttpClient_InvalidAuthentication_Failure()
         {

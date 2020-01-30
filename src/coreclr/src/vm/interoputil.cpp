@@ -2427,7 +2427,7 @@ void SafeReleaseStream(IStream *pStream)
         LogInterop(logStr);
         if (hr != S_OK)
         {
-            // Reset the stream to the begining
+            // Reset the stream to the beginning
             LARGE_INTEGER li;
             LISet32(li, 0);
             ULARGE_INTEGER li2;

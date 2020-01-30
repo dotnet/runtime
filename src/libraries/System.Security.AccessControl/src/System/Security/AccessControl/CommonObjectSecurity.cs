@@ -13,6 +13,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
@@ -67,7 +68,7 @@ namespace System.Security.AccessControl
 nameof(targetType));
                 }
 
-                CommonAcl acl = null;
+                CommonAcl? acl = null;
 
                 if (access)
                 {
@@ -92,7 +93,7 @@ nameof(targetType));
                     return result;
                 }
 
-                IdentityReferenceCollection irTarget = null;
+                IdentityReferenceCollection? irTarget = null;
 
                 if (targetType != typeof(SecurityIdentifier))
                 {
@@ -109,7 +110,7 @@ nameof(targetType));
                         // A better way would be to have an internal method that would canonicalize the ACL
                         // and call it once, then use the RawAcl.
                         //
-                        CommonAce ace = acl[i] as CommonAce;
+                        CommonAce? ace = acl[i] as CommonAce;
                         if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                         {
                             irSource.Add(ace.SecurityIdentifier);
@@ -132,10 +133,10 @@ nameof(targetType));
                     // and call it once, then use the RawAcl.
                     //
 
-                    CommonAce ace = acl[i] as CommonAce;
+                    CommonAce? ace = acl[i] as CommonAce;
                     if (AceNeedsTranslation(ace, access, includeExplicit, includeInherited))
                     {
-                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget[targetIndex++];
+                        IdentityReference iref = (targetType == typeof(SecurityIdentifier)) ? ace.SecurityIdentifier : irTarget![targetIndex++];
 
                         if (access)
                         {
@@ -181,7 +182,7 @@ nameof(targetType));
             }
         }
 
-        private bool AceNeedsTranslation(CommonAce ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
+        private bool AceNeedsTranslation([NotNullWhen(true)] CommonAce? ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
         {
             if (ace == null)
             {
@@ -248,7 +249,7 @@ nameof(targetType));
                     _securityDescriptor.AddControlFlags(ControlFlags.DiscretionaryAclPresent);
                 }
 
-                SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
                 if (rule.AccessControlType == AccessControlType.Allow)
                 {
@@ -378,7 +379,7 @@ nameof(modification),
                     _securityDescriptor.AddControlFlags(ControlFlags.SystemAclPresent);
                 }
 
-                SecurityIdentifier sid = rule.IdentityReference.Translate(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
                 switch (modification)
                 {

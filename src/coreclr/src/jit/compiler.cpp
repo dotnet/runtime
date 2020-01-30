@@ -3092,10 +3092,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Honour COMPlus_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
-    if (!compProfilerHookNeeded &&
-        ((JitConfig.JitELTHookEnabled() != 0) || compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+    // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
+    // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
+    // in the pre-JIT image.
+    if (!compProfilerHookNeeded)
     {
-        opts.compJitELTHookEnabled = true;
+        if ((JitConfig.JitELTHookEnabled() != 0) ||
+            (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+        {
+            opts.compJitELTHookEnabled = true;
+        }
     }
 
     // TBD: Exclude PInvoke stubs
@@ -3422,7 +3428,8 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
     // Should we allow unlimited stress ?
     if (stressArea > STRESS_COUNT_VARN && stressLevel == 2)
     {
-        return true;
+        doStress = true;
+        goto _done;
     }
 
     if (weight == MAX_STRESS_WEIGHT)
@@ -4123,15 +4130,23 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 #endif // DEBUG
 }
 
-//*********************************************************************************************
-// #Phases
+//------------------------------------------------------------------------
+// compCompile: run phases needed for compilation
 //
-// This is the most interesting 'toplevel' function in the JIT.  It goes through the operations of
-// importing, morphing, optimizations and code generation.  This is called from the EE through the
-// code:CILJit::compileMethod function.
+// Arguments:
+//   methodCodePtr [OUT] - address of generated code
+//   methodCodeSize [OUT] - size of the generated code (hot + cold setions)
+//   compileFlags [IN] - flags controlling jit behavior
 //
-// For an overview of the structure of the JIT, see:
+// Notes:
+//  This is the most interesting 'toplevel' function in the JIT.  It goes through the operations of
+//  importing, morphing, optimizations and code generation.  This is called from the EE through the
+//  code:CILJit::compileMethod function.
+//
+//  For an overview of the structure of the JIT, see:
 //   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+//
+//  Also called for inlinees, though they will only be run through the first few phases.
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
@@ -4145,8 +4160,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
 
-    /* The temp holding the secret stub argument is used by fgImport() when importing the intrinsic. */
-
+    // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
     if (info.compPublishStubParam)
     {
         assert(lvaStubArgumentVar == BAD_VAR_NUM);
@@ -4158,8 +4172,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     compFunctionTraceStart();
 
-    /* Convert the instrs in each basic block to a tree based intermediate representation */
-
+    // Convert the instrs in each basic block to a tree based intermediate representation
     fgImport();
 
     assert(!fgComputePredsDone);
@@ -4178,12 +4191,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (compIsForInlining())
     {
-        /* Quit inlining if fgImport() failed for any reason. */
-
+        // Abandon inlining if fgImport() failed for any reason
         if (!compDonotInline())
         {
-            /* Filter out unimported BBs */
-
+            // Filter out unimported BBs
             fgRemoveEmptyBlocks();
 
             // Update type of return spill temp if we have gathered
@@ -4220,7 +4231,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         return;
     }
 
-    assert(!compDonotInline());
+    // At this point in the phase list, all the inlinee phases have
+    // been run, and inlinee compiles have exited, so we should only
+    // get this far if we are jitting the root method.
+    noway_assert(!compIsForInlining());
 
     // Maybe the caller was not interested in generating code
     if (compIsForImportOnly())
@@ -4263,16 +4277,212 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     EndPhase(PHASE_POST_IMPORT);
 
-    /* Initialize the BlockSet epoch */
-
+    // Initialize the BlockSet epoch
     NewBasicBlockEpoch();
 
-    /* Massage the trees so that we can generate code out of them */
+    // Start phases that are broadly called morphing, and includes
+    // global morph, as well as other phases that massage the trees so
+    // that we can generate code out of them.
+    fgOutgoingArgTemps = nullptr;
 
-    fgMorph();
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMorph()\n");
+    }
+    if (verboseTrees)
+    {
+        fgDispBasicBlocks(true);
+    }
+#endif // DEBUG
+
+    // Insert call to class constructor as the first basic block if
+    // we were asked to do so.
+    if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+                                    impTokenLookupContextHandle /* context */) &
+        CORINFO_INITCLASS_USE_HELPER)
+    {
+        fgEnsureFirstBBisScratch();
+        fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
+    }
+
+#ifdef DEBUG
+    if (opts.compGcChecks)
+    {
+        for (unsigned i = 0; i < info.compArgsCount; i++)
+        {
+            if (lvaTable[i].TypeGet() == TYP_REF)
+            {
+                // confirm that the argument is a GC pointer (for debugging (GC stress))
+                GenTree*          op   = gtNewLclvNode(i, TYP_REF);
+                GenTreeCall::Use* args = gtNewCallArgs(op);
+                op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+
+                fgEnsureFirstBBisScratch();
+                fgNewStmtAtEnd(fgFirstBB, op);
+
+                if (verbose)
+                {
+                    printf("\ncompGcChecks tree:\n");
+                    gtDispTree(op);
+                }
+            }
+        }
+    }
+#endif // DEBUG
+
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
+    if (opts.compStackCheckOnRet)
+    {
+        lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+        lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+    }
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+
+#if defined(DEBUG) && defined(_TARGET_X86_)
+    if (opts.compStackCheckOnCall)
+    {
+        lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+    }
+#endif // defined(DEBUG) && defined(_TARGET_X86_)
+
+    // Filter out unimported BBs
+    fgRemoveEmptyBlocks();
+
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+#endif // DEBUG
+
+    EndPhase(PHASE_MORPH_INIT);
+
+    // Inline callee methods into this root method
+    fgInline();
+
+    RecordStateAtEndOfInlining(); // Record "start" values for post-inlining cycles and elapsed time.
+
+    EndPhase(PHASE_MORPH_INLINE);
+
+    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
+    // local variable allocation on the stack.
+    ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
+
+    if (JitConfig.JitObjectStackAllocation() && opts.OptimizationEnabled())
+    {
+        objectAllocator.EnableObjectStackAllocation();
+    }
+
+    objectAllocator.Run();
+
+    // Add any internal blocks/trees we may need
+    fgAddInternal();
+
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+    // Inliner could clone some trees.
+    fgDebugCheckNodesUniqueness();
+#endif // DEBUG
+
+    fgRemoveEmptyTry();
+
+    EndPhase(PHASE_EMPTY_TRY);
+
+    fgRemoveEmptyFinally();
+
+    EndPhase(PHASE_EMPTY_FINALLY);
+
+    fgMergeFinallyChains();
+
+    EndPhase(PHASE_MERGE_FINALLY_CHAINS);
+
+    fgCloneFinally();
+    fgUpdateFinallyTargetFlags();
+
+    EndPhase(PHASE_CLONE_FINALLY);
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
+    fgRenumberBlocks();
+
+    // This is the first time full (not cheap) preds will be computed
+    //
+    noway_assert(!fgComputePredsDone);
+    fgComputePreds();
+
+    // Run an early flow graph simplification pass
+    if (opts.OptimizationEnabled())
+    {
+        fgUpdateFlowGraph();
+    }
+
+    EndPhase(PHASE_COMPUTE_PREDS);
+
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated
+
+    // For x64 and ARM64 we need to mark irregular parameters
+    lvaRefCountState = RCS_EARLY;
+    fgResetImplicitByRefRefCount();
+
+    // Promote struct locals if necessary
+    fgPromoteStructs();
+
+    // Figure out what locals are address exposed
+    fgMarkAddressExposedLocals();
+
+    EndPhase(PHASE_STR_ADRLCL);
+
+    // Apply type updates to implicit byref parameters; also choose (based on address-exposed
+    // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
+    fgRetypeImplicitByRefArgs();
+
+#ifdef DEBUG
+    // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
+    lvaStressLclFld();
+    fgStress64RsltMul();
+#endif // DEBUG
+
+    EndPhase(PHASE_MORPH_IMPBYREF);
+
+    // Morph the trees in all the blocks of the method
+    fgMorphBlocks();
+
+    // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
+    fgMarkDemotedImplicitByRefArgs();
+    lvaRefCountState = RCS_INVALID;
+
+    EndPhase(PHASE_MORPH_GLOBAL);
+
+#if 0
+    JITDUMP("trees after fgMorphBlocks\n");
+    DBEXEC(VERBOSE, fgDispBasicBlocks(true));
+#endif
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+    if (fgNeedToAddFinallyTargetBits)
+    {
+        // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
+        fgAddFinallyTargetFlags();
+        fgNeedToAddFinallyTargetBits = false;
+    }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+
+    // Decide the kind of code we want to generate
+    fgSetOptions();
+
+    fgExpandQmarkNodes();
+
+#ifdef DEBUG
+    compCurBB = nullptr;
+#endif // DEBUG
+
+    // End of the morphing phases
     EndPhase(PHASE_MORPH_END);
 
-    /* GS security checks for unsafe buffers */
+    // GS security checks for unsafe buffers
     if (getNeedsGSSecurityCookie())
     {
 #ifdef DEBUG
@@ -4303,9 +4513,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // so make sure this is the case.
     fgRenumberBlocks();
 
-    /* If we need to emit GC Poll calls, mark the blocks that need them now.  This is conservative and can
-     * be optimized later. */
-
+    // If we need to emit GC Poll calls, mark the blocks that need them now.
+    // This is conservative and can be optimized later.
     fgMarkGCPollBlocks();
     EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
 
@@ -4315,8 +4524,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    /* Create funclets from the EH handlers. */
-
+    // Create funclets from the EH handlers.
     fgCreateFunclets();
     EndPhase(PHASE_CREATE_FUNCLETS);
 
@@ -4337,12 +4545,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
-        /*  Perform loop inversion (i.e. transform "while" loops into
-            "repeat" loops) and discover and classify natural loops
-            (e.g. mark iterative loops as such). Also marks loop blocks
-            and sets bbWeight to the loop nesting levels
-        */
-
+        // Perform loop inversion (i.e. transform "while" loops into
+        // "repeat" loops) and discover and classify natural loops
+        // (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels
         optOptimizeLoops();
         EndPhase(PHASE_OPTIMIZE_LOOPS);
 
@@ -4351,7 +4557,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         optCloneLoops();
         EndPhase(PHASE_CLONE_LOOPS);
 
-        /* Unroll loops */
+        // Unroll loops
         optUnrollLoops();
         EndPhase(PHASE_UNROLL_LOOPS);
     }
@@ -4360,29 +4566,24 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Create the variable table (and compute variable ref counts) */
-
+    // Create the variable table (and compute variable ref counts)
     lvaMarkLocalVars();
     EndPhase(PHASE_MARK_LOCAL_VARS);
 
-    // IMPORTANT, after this point, every place where trees are modified or cloned
-    // the local variable reference counts must be updated
-    // You can test the value of the following variable to see if
-    // the local variable ref counts must be updated
-    //
+    // IMPORTANT, after this point, locals are ref counted.
+    // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
     if (opts.OptimizationEnabled())
     {
-        /* Optimize boolean conditions */
-
+        // Optimize boolean conditions
         optOptimizeBools();
         EndPhase(PHASE_OPTIMIZE_BOOLS);
 
         // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
 
-    /* Figure out the order in which operators are to be evaluated */
+    // Figure out the order in which operators are to be evaluated
     fgFindOperOrder();
     EndPhase(PHASE_FIND_OPER_ORDER);
 
@@ -4445,7 +4646,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
             if (doEarlyProp)
             {
-                /* Propagate array length and rewrite getType() method call */
+                // Propagate array length and rewrite getType() method call
                 optEarlyProp();
                 EndPhase(PHASE_EARLY_PROP);
             }
@@ -4458,41 +4659,41 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
             if (doLoopHoisting)
             {
-                /* Hoist invariant code out of loops */
+                // Hoist invariant code out of loops
                 optHoistLoopCode();
                 EndPhase(PHASE_HOIST_LOOP_CODE);
             }
 
             if (doCopyProp)
             {
-                /* Perform VN based copy propagation */
+                // Perform VN based copy propagation
                 optVnCopyProp();
                 EndPhase(PHASE_VN_COPY_PROP);
             }
 
 #if FEATURE_ANYCSE
-            /* Remove common sub-expressions */
+            // Remove common sub-expressions
             optOptimizeCSEs();
 #endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
             {
-                /* Assertion propagation */
+                // Assertion propagation
                 optAssertionPropMain();
                 EndPhase(PHASE_ASSERTION_PROP_MAIN);
             }
 
             if (doRangeAnalysis)
             {
-                /* Optimize array index range checks */
+                // Optimize array index range checks
                 RangeCheck rc(this);
                 rc.OptimizeRangeChecks();
                 EndPhase(PHASE_OPTIMIZE_INDEX_CHECKS);
             }
 #endif // ASSERTION_PROP
 
-            /* update the flowgraph if we modified it during the optimization phase*/
+            // update the flowgraph if we modified it during the optimization phase
             if (fgModified)
             {
                 fgUpdateFlowGraph();
@@ -4556,9 +4757,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Enable this to gather statistical data such as
-     * call and register argument info, flowgraph and loop info, etc. */
-
+    // Enable this to gather statistical data such as
+    // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
 
 #ifdef _TARGET_ARM_
@@ -4569,7 +4769,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
 #endif // _TARGET_ARM_
 
-    /* Assign registers to variables, etc. */
+    // Assign registers to variables, etc.
 
     ///////////////////////////////////////////////////////////////////////////////
     // Dominator and reachability sets are no longer valid. They haven't been
@@ -4577,19 +4777,22 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     ///////////////////////////////////////////////////////////////////////////////
     fgDomsComputed = false;
 
-    /* Create LSRA before Lowering, this way Lowering can initialize the TreeNode Map */
+    // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
+    // for determining whether locals are register candidates and (for xarch) whether
+    // a node is a containable memory op.
     m_pLinearScan = getLinearScanAllocator(this);
 
-    /* Lower */
+    // Lower
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
     StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
     stackLevelSetter.Run();
 
-    lvaTrackedFixed = true; // We can not add any new tracked variables after this point.
+    // We can not add any new tracked variables after this point.
+    lvaTrackedFixed = true;
 
-    /* Now that lowering is completed we can proceed to perform register allocation */
+    // Now that lowering is completed we can proceed to perform register allocation
     m_pLinearScan->doLinearScan();
     EndPhase(PHASE_LINEAR_SCAN);
 
@@ -4600,8 +4803,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Generate code */
-
+    // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
 #ifdef FEATURE_JIT_METHOD_PERF

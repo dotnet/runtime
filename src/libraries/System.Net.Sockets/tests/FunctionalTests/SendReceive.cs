@@ -1755,7 +1755,53 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
+        {
+            if (UsesSync) return;
+
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                await client.ConnectAsync(listener.LocalEndPoint);
+                using (Socket server = await listener.AcceptAsync())
+                {
+                    await Task.Run(async delegate // escape the xunit sync context / task scheduler
+                    {
+                        const int SendDelayMs = 100;
+
+                        Task sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        await client.ReceiveAsync(new byte[1], SocketFlags.None);
+                        sendTask.GetAwaiter().GetResult(); // should have already completed
+
+                        // We may now be executing here as part of the continuation invoked synchronously
+                        // when the client ReceiveAsync task was completed. Validate that if socket callbacks block
+                        // (undesirably), other operations on that socket can still be processed.
+                        var mre = new ManualResetEventSlim();
+                        sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        Task receiveTask = client
+                            .ReceiveAsync(new byte[1], SocketFlags.None)
+                            .ContinueWith(t => { mre.Set(); return t; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
+                            .Unwrap();
+                        mre.Wait(); // block waiting for other operations on this socket to complete
+
+                        sendTask.GetAwaiter().GetResult();
+                        await sendTask;
+                        await receiveTask;
+                    });
+                }
+            }
+        }
     }
+
     public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
     {
         public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }

@@ -11575,6 +11575,21 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     noway_assert(!id->idGCref());
 
+    if (!emitInsCanOnlyWriteSSE2OrAVXReg(id))
+    {
+        switch (id->idInsFmt())
+        {
+            case IF_RWR_RRD_RRD:
+            case IF_RWR_RRD_RRD_CNS:
+            case IF_RWR_RRD_RRD_RRD:
+                emitGCregDeadUpd(id->idReg1(), dst);
+                break;
+
+            default:
+                break;
+        }
+    }
+
     return dst;
 }
 

@@ -296,24 +296,6 @@ namespace System.ComponentModel.Composition.AttributedModel
             Assert.Equal("Value1", container.GetExportedValue<string>("Property"));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/739354")]
-        public void TestExportedValueCachesNullValue()
-        {
-            var container = ContainerFactory.Create();
-            var exporter = new ExportsMutableProperty();
-            exporter.Property = null;
-
-            container.ComposeParts(exporter);
-
-            Assert.Null(container.GetExportedValue<string>("Property"));
-
-            exporter.Property = "Value1";
-
-            //  Exported value should have been cached and so it shouldn't change
-            Assert.Null(container.GetExportedValue<string>("Property"));
-        }
-
         public class ExportsMutableProperty
         {
             [Export("Property")]

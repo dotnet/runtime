@@ -1,4 +1,0 @@
-"$(MSBuildFrameworkToolsPath)\Ilasm.exe" /dll /noautoinherit /out:"$(TargetPath).il.tmp" "$(ProjectDir)\..\..\class\corlib\System.Runtime.CompilerServices\Unsafe.il"
-move "$(TargetPath)" "$(TargetPath).tmp"
-"$(ProjectDir)\..\..\build\cil-stringreplacer.exe" --mscorlib-debug --ilreplace="$(TargetPath).il.tmp" "$(TargetPath).tmp"
-move "$(TargetPath).tmp" "$(TargetPath)"

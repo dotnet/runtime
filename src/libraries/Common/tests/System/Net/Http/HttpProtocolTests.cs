@@ -454,7 +454,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpMessageInvoker client = new HttpMessageInvoker(CreateHttpClientHandler()))
-                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 }, CancellationToken.None))
+                using (HttpResponseMessage resp = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion }, CancellationToken.None))
                 using (Stream respStream = await resp.Content.ReadAsStreamAsync())
                 {
                     var actualData = new MemoryStream();
@@ -510,7 +510,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var m = new HttpRequestMessage(new HttpMethod(specifiedMethod), uri) { Version = VersionFromUseHttp2 };
+                    var m = new HttpRequestMessage(new HttpMethod(specifiedMethod), uri) { Version = UseVersion };
                     (await client.SendAsync(m)).Dispose();
                 }
             }, async server =>

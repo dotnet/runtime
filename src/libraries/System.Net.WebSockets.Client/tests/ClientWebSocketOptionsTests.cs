@@ -162,7 +162,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool callbackInvoked = false;
@@ -198,7 +198,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
@@ -234,7 +234,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue("https://github.com/dotnet/corefx/issues/27846")]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool connectionAccepted = false;

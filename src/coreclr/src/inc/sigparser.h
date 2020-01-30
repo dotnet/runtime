@@ -490,7 +490,7 @@ class SigParser
 
         //------------------------------------------------------------------------
         // Is this at the Sentinal (the ... in a varargs signature) that marks
-        // the begining of varguments that are not decared at the target
+        // the beginning of varguments that are not decared at the target
 
         bool AtSentinel() const
         {

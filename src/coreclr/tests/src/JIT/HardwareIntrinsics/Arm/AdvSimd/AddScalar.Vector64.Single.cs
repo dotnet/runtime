@@ -506,7 +506,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (BitConverter.SingleToInt32Bits(left[0] + right[0]) != BitConverter.SingleToInt32Bits(result[0]))
+            if (BitConverter.SingleToInt32Bits(Helpers.Add(left[0], right[0])) != BitConverter.SingleToInt32Bits(result[0]))
             {
                 succeeded = false;
             }

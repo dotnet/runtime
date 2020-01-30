@@ -153,7 +153,7 @@ namespace System.Runtime.InteropServices
 				return new System.NotFiniteNumberException ();
 			case HResults.COR_E_NOTSUPPORTED:
 				return new System.NotSupportedException ();
-			case HResults.COR_E_NULLREFERENCE:
+			case HResults.E_POINTER:
 				return new System.NullReferenceException ();
 			case HResults.COR_E_OBJECTDISPOSED:
 				return new System.ObjectDisposedException ("");
@@ -220,16 +220,16 @@ namespace System.Runtime.InteropServices
 			case HResults.COR_E_AMBIGUOUSIMPLEMENTATION:
 			case HResults.COR_E_CANNOTUNLOADAPPDOMAIN:
 			case HResults.COR_E_CONTEXTMARSHAL:
-			case HResults.COR_E_HOSTPROTECTION:
+			//case HResults.COR_E_HOSTPROTECTION:
 			case HResults.COR_E_INSUFFICIENTMEMORY:
 			case HResults.COR_E_INVALIDCOMOBJECT:
 			case HResults.COR_E_KEYNOTFOUND:
 			case HResults.COR_E_MISSINGSATELLITEASSEMBLY:
 			case HResults.COR_E_SAFEARRAYRANKMISMATCH:
 			case HResults.COR_E_SAFEARRAYTYPEMISMATCH:
-			case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
-			case HResults.COR_E_SEMAPHOREFULL:
-			case HResults.COR_E_THREADSTOP:
+			//case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
+			//case HResults.COR_E_SEMAPHOREFULL:
+			//case HResults.COR_E_THREADSTOP:
 			case HResults.COR_E_TIMEOUT:
 			case HResults.COR_E_WAITHANDLECANNOTBEOPENED:
 			case HResults.DISP_E_OVERFLOW:

@@ -499,7 +499,6 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22627")]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
@@ -1263,7 +1262,7 @@ namespace System.Net.Tests
                 }
             }, async server =>
             {
-                string host = server.Uri.Host + ":" + server.Uri.Port;
+                string host = server.Address.Host + ":" + server.Address.Port;
                 HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Host", host) });
                 string serverReceivedHost = requestData.GetSingleHeaderValue("Host");
                 Assert.Equal(host, serverReceivedHost);

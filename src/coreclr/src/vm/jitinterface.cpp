@@ -2153,9 +2153,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
     _ASSERTE(pMT->IsValueType());
 
-    // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in which
-    // case the check for g_TypedReferenceMT below would not be necessary
-    if (pMT == g_TypedReferenceMT || pMT->HasSameTypeDefAs(g_pByReferenceClass))
+    if (pMT->HasSameTypeDefAs(g_pByReferenceClass))
     {
         if (gcPtrs[0] == TYPE_GC_NONE)
         {
@@ -2223,23 +2221,10 @@ unsigned CEEInfo::getClassGClayout (CORINFO_CLASS_HANDLE clsHnd, BYTE* gcPtrs)
     }
     else if (pMT->IsByRefLike())
     {
-        // TODO: TypedReference should ideally be implemented as a by-ref-like struct containing a ByReference<T> field, in
-        // which case the check for g_TypedReferenceMT below would not be necessary
-        if (pMT == g_TypedReferenceMT)
-        {
-            gcPtrs[0] = TYPE_GC_BYREF;
-            gcPtrs[1] = TYPE_GC_NONE;
-            result = 1;
-        }
-        else
-        {
-            memset(gcPtrs, TYPE_GC_NONE,
-                (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
-            // Note: This case is more complicated than the TypedReference case
-            // due to ByRefLike structs being included as fields in other value
-            // types (TypedReference can not be.)
-            result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
-        }
+        memset(gcPtrs, TYPE_GC_NONE,
+            (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
+        // ByRefLike structs can be included as fields in other value types.
+        result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
     }
     else
     {
@@ -2309,8 +2294,7 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
     // Make sure this is a value type.
     if (th.IsValueType())
     {
-        _ASSERTE((CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct) ||
-                 (CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeTypedReference));
+        _ASSERTE(CorInfoType2UnixAmd64Classification(th.GetInternalCorElementType()) == SystemVClassificationTypeStruct);
 
         // The useNativeLayout in this case tracks whether the classification
         // is for a native layout of the struct or not.
@@ -3759,37 +3743,14 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 
 /*********************************************************************/
 // Decides how the JIT should do the optimization to inline the check for
-//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
-//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
+//     GetTypeFromHandle(handle) == obj.GetType()
+//     GetTypeFromHandle(X) == GetTypeFromHandle(Y)
 //
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CorInfoInlineTypeCheck ret;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    if (source == CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
-    {
-        // It's always okay to compare type handles coming from IL tokens
-        ret = CORINFO_INLINE_TYPECHECK_PASS;
-    }
-    else
-    {
-        _ASSERTE(source == CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-        ret = canInlineTypeCheckWithObjectVTable(clsHnd) ?
-            CORINFO_INLINE_TYPECHECK_PASS : CORINFO_INLINE_TYPECHECK_NONE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return CORINFO_INLINE_TYPECHECK_PASS;
 }
 
 /*********************************************************************/
@@ -3799,37 +3760,8 @@ CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, 
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    BOOL ret = FALSE;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    _ASSERTE(clsHnd);
-
-    TypeHandle VMClsHnd(clsHnd);
-    if (VMClsHnd == TypeHandle(g_pCanonMethodTableClass))
-    {
-        // We can't do this optimization in shared generics code because of we do not know what the actual type is going to be.
-        // (It can be array, marshalbyref, etc.)
-        ret = FALSE;
-    }
-    else
-    {
-        // It is safe to perform this optimization
-        // NOTE: clsHnd could be a TypeDesc with shared MethodTable (ex: typeof(int*) == o.GetType()), but that is still optimizable.
-        //       That is because optimized version compares literally a handle to a methodtable and that will be not equal,
-        //       which is valid since none of MethodDesc types can have heap instances.
-        ret = TRUE;
-    }
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return(ret);
+    LIMITED_METHOD_CONTRACT;
+    return TRUE;
 }
 
 /*********************************************************************/
@@ -8093,7 +8025,7 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         if (CORProfilerEnableRejit())
         {
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8306,7 +8238,7 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
             // If we end up reporting an inlining on a method with non-default IL it means the race
             // happened and we need to manually request ReJIT for it since it was missed.
             CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
-            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
             ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
             if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
             {
@@ -8447,17 +8379,6 @@ bool CEEInfo::canTailCall (CORINFO_METHOD_HANDLE hCaller,
 
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule());
     _ASSERTE((pExactCallee == NULL) || pExactCallee->GetModule()->GetClassLoader());
-
-    // If the caller is the static constructor (.cctor) of a class which has a ComImport base class
-    // somewhere up the class hierarchy, then we cannot make the call into a tailcall.  See
-    // RegisterObjectCreationCallback() in ExtensibleClassFactory.cpp for more information.
-    if (pCaller->IsClassConstructor() &&
-        pCaller->GetMethodTable()->IsComObjectType())
-    {
-        result = false;
-        szFailReason = "Caller is  ComImport .cctor";
-        goto exit;
-    }
 
     if (!fIsTailPrefix)
     {
@@ -14292,7 +14213,7 @@ NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
     if (pMD->IsVersionable())
     {
         CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
-        CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
     }
 #endif

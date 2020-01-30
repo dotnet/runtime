@@ -2581,7 +2581,7 @@ public:
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
     GenTree* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -4443,8 +4443,6 @@ public:
     void fgExpandQmarkStmt(BasicBlock* block, Statement* stmt);
     void fgExpandQmarkNodes();
 
-    void fgMorph();
-
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
     void fgSimpleLowering();
@@ -6153,9 +6151,9 @@ protected:
         unsigned csdDefWtCnt; // weighted def count
         unsigned csdUseWtCnt; // weighted use count  (excluding the implicit uses at defs)
 
-        GenTree*    csdTree;  // treenode containing the 1st occurance
-        Statement*  csdStmt;  // stmt containing the 1st occurance
-        BasicBlock* csdBlock; // block containing the 1st occurance
+        GenTree*    csdTree;  // treenode containing the 1st occurrence
+        Statement*  csdStmt;  // stmt containing the 1st occurrence
+        BasicBlock* csdBlock; // block containing the 1st occurrence
 
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
@@ -6399,8 +6397,8 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
     bool gtIsVtableRef(GenTree* tree);
-    GenTree* getArrayLengthFromAllocation(GenTree* tree);
-    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree);
+    GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -6417,6 +6415,14 @@ public:
                                      unsigned nullCheckLclNum,
                                      bool     isInsideTry,
                                      bool     checkSideEffectSummary);
+#if DEBUG
+    void optCheckFlagsAreSet(unsigned    methodFlag,
+                             const char* methodFlagStr,
+                             unsigned    bbFlag,
+                             const char* bbFlagStr,
+                             GenTree*    tree,
+                             BasicBlock* basicBlock);
+#endif
 
 #if ASSERTION_PROP
     /**************************************************************************
@@ -7648,12 +7654,15 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector64FloatHandle;
+        CORINFO_CLASS_HANDLE Vector64DoubleHandle;
         CORINFO_CLASS_HANDLE Vector64IntHandle;
         CORINFO_CLASS_HANDLE Vector64UShortHandle;
         CORINFO_CLASS_HANDLE Vector64UByteHandle;
         CORINFO_CLASS_HANDLE Vector64ShortHandle;
         CORINFO_CLASS_HANDLE Vector64ByteHandle;
+        CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
+        CORINFO_CLASS_HANDLE Vector64ULongHandle;
 #endif // defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;

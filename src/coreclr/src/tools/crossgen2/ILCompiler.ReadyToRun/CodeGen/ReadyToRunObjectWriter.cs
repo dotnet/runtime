@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis
     internal class ReadyToRunObjectWriter
     {
         // Nodefactory for which ObjectWriter is instantiated for.
-        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly NodeFactory _nodeFactory;
         private readonly string _objectFilePath;
         private readonly IEnumerable<DependencyNode> _nodes;
         private readonly PEReader _inputPeReader;
@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory, bool generateMapFile)
+        public ReadyToRunObjectWriter(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             _objectFilePath = objectFilePath;
             _nodes = nodes;
@@ -204,7 +204,7 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFile);
         }
 
-        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, ReadyToRunCodegenNodeFactory factory, bool generateMapFile)
+        public static void EmitObject(PEReader inputPeReader, string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
             ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(inputPeReader, objectFilePath, nodes, factory, generateMapFile);

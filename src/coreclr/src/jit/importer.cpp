@@ -3632,7 +3632,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }
             else
@@ -13063,7 +13063,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 if (tiVerificationNeeded)
                 {
-                    // Dup could start the begining of delegate creation sequence, remember that
+                    // Dup could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 1;
                     impStackTop(0);
                 }
@@ -13384,7 +13384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    // LDFTN could start the begining of delegate creation sequence, remember that
+                    // LDFTN could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 2;
 
                     // check any constraints on the callee's class and type parameters
@@ -15595,23 +15595,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_THROW:
 
-                if (compIsForInlining())
-                {
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // TODO: Will this be too strict, given that we will inline many basic blocks?
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                    /* Do we have just the exception on the stack ?*/
-
-                    if (verCurrentState.esStackDepth != 1)
-                    {
-                        /* if not, just don't inline the method */
-
-                        compInlineResult->NoteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
-                        return;
-                    }
-                }
-
                 if (tiVerificationNeeded)
                 {
                     tiRetVal = impStackTop().seTypeInfo;
@@ -15622,10 +15605,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                block->bbSetRunRarely(); // any block with a throw is rare
-                /* Pop the exception object and create the 'throw' helper call */
+                // Any block with a throw is rarely executed.
+                block->bbSetRunRarely();
 
+                // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, gtNewCallArgs(impPopStack().val));
+
+            // Fall through to clear out the eval stack.
 
             EVAL_APPEND:
                 if (verCurrentState.esStackDepth > 0)
@@ -16014,14 +16000,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
-
-                    /* Mark the block as containing a length expression */
-
-                    if (op1->gtOper == GT_LCL_VAR)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
 
                     op1 = arrLen;
                 }

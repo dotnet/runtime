@@ -24,7 +24,7 @@
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
@@ -109,7 +109,6 @@
   <PropertyGroup>
     <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
   </PropertyGroup>
 
   <!--
@@ -241,6 +240,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CrossLoaderAllocatorHashHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DependentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GCHeapHash.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\QCallHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
@@ -260,7 +260,6 @@
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\SR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
@@ -456,16 +455,7 @@
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
-  </Target>
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
 
-  <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
-  <Target Name="AddUntrackedResourcesForSourceLink"
-          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
-          BeforeTargets="CoreCompile"
-          DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;_GenerateResxSource" >
-    <ItemGroup>
-      <EmbeddedFiles Include="@(GeneratedResxSource)" />
-    </ItemGroup>
-  </Target>  
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 </Project>

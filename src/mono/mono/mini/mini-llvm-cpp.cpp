@@ -455,6 +455,14 @@ mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind)
 }
 
 void
+mono_llvm_add_func_attr_nv (LLVMValueRef func, const char *attr_name, const char *attr_value)
+{
+	AttrBuilder NewAttrs;
+	NewAttrs.addAttribute (attr_name, attr_value);
+	unwrap<Function> (func)->addAttributes (AttributeList::FunctionIndex, NewAttrs);
+}
+
+void
 mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
 {
 	Function *func = unwrap<Argument> (param)->getParent ();

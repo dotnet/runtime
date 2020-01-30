@@ -30,7 +30,6 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Globalization" />
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

@@ -77,11 +77,6 @@ namespace ILCompiler
                 default:
                     throw new NotImplementedException();
             }
-
-            // Workaround for https://github.com/dotnet/corefx/issues/25267
-            // If pointer size is 8, we're obviously not an X86 process...
-            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
-                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private void ProcessCommandLine()
@@ -185,12 +180,14 @@ namespace ILCompiler
                     //  typeSystemContext.InputFilePaths = _inputFilePaths;
                     //
                     Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();
+                    List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
                     foreach (var inputFile in _inputFilePaths)
                     {
                         try
                         {
                             var module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                             inputFilePaths.Add(inputFile.Key, inputFile.Value);
+                            referenceableModules.Add(module);
                         }
                         catch (TypeSystemException.BadImageFormatException)
                         {
@@ -200,6 +197,21 @@ namespace ILCompiler
 
                     typeSystemContext.InputFilePaths = inputFilePaths;
                     typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
+
+                    List<EcmaModule> inputModules = new List<EcmaModule>();
+                    HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
+
+                    foreach (var inputFile in typeSystemContext.InputFilePaths)
+                    {
+                        EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
+                        inputModules.Add(module);
+                        versionBubbleModulesHash.Add(module);
+
+                        if (!_commandLineOptions.InputBubble)
+                        {
+                            break;
+                        }
+                    }
 
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
                     typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(systemModuleName));
@@ -216,89 +228,60 @@ namespace ILCompiler
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
-                    List<ModuleDesc> referenceableModules = new List<ModuleDesc>();
-                    foreach (var inputFile in inputFilePaths)
-                    {
-                        try
-                        {
-                            referenceableModules.Add(typeSystemContext.GetModuleFromPath(inputFile.Value));
-                        }
-                        catch { } // Ignore non-managed pe files
-                    }
-
                     foreach (var referenceFile in _referenceFilePaths.Values)
                     {
                         try
                         {
-                            referenceableModules.Add(typeSystemContext.GetModuleFromPath(referenceFile));
+                            EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            referenceableModules.Add(module);
+                            if (_commandLineOptions.InputBubble)
+                            {
+                                // In large version bubble mode add reference paths to the compilation group
+                                versionBubbleModulesHash.Add(module);
+                            }
                         }
                         catch { } // Ignore non-managed pe files
                     }
 
-                    ProfileDataManager profileDataManager = new ProfileDataManager(logger, referenceableModules);
+                    List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
 
-                    CompilationModuleGroup compilationGroup;
+                    ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     if (singleMethod != null)
                     {
                         // Compiling just a single method
-                        compilationGroup = new SingleMethodCompilationModuleGroup(singleMethod);
+                        compilationGroup = new SingleMethodCompilationModuleGroup(typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics, singleMethod);
                         compilationRoots.Add(new SingleMethodRootProvider(singleMethod));
                     }
                     else
                     {
-                        // Either single file, or multifile library, or multifile consumption.
-                        EcmaModule entrypointModule = null;
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
+                        // Single assembly compilation.
+                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
+                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics);
+                    }
+
+                    // Examine profile guided information as appropriate
+                    ProfileDataManager profileDataManager =
+                        new ProfileDataManager(logger,
+                        referenceableModules);
+
+                    if (_commandLineOptions.Partial)
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
+                    else
+                        compilationGroup.ApplyProfilerGuidedCompilationRestriction(null);
+
+                    if (singleMethod == null)
+                    {
+                        // For non-single-method compilations add compilation roots.
+                        foreach (var module in inputModules)
                         {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
-                            if (module.PEReader.PEHeaders.IsExe)
-                            {
-                                if (entrypointModule != null)
-                                    throw new Exception("Multiple EXE modules");
-                                entrypointModule = module;
-                            }
-                        }
-
-                        List<EcmaModule> inputModules = new List<EcmaModule>();
-
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
-                        {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                             compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
-                            inputModules.Add(module);
 
                             if (!_commandLineOptions.InputBubble)
                             {
                                 break;
                             }
                         }
-
-
-                        List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>();
-                        if (_commandLineOptions.InputBubble)
-                        {
-                            // In large version bubble mode add reference paths to the compilation group
-                            foreach (string referenceFile in _referenceFilePaths.Values)
-                            {
-                                try
-                                {
-                                    // Currently SimpleTest.targets has no easy way to filter out non-managed assemblies
-                                    // from the reference list.
-                                    EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
-                                    versionBubbleModules.Add(module);
-                                }
-                                catch (TypeSystemException.BadImageFormatException ex)
-                                {
-                                    Console.WriteLine("Warning: cannot open reference assembly '{0}': {1}", referenceFile, ex.Message);
-                                }
-                            }
-                        }
-
-                        compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
-                            typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics,
-                            _commandLineOptions.Partial ? profileDataManager : null);
                     }
 
                     //
@@ -325,8 +308,8 @@ namespace ILCompiler
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
-                        .UseILProvider(ilProvider)
                         .UseJitPath(_commandLineOptions.JitPath)
+                        .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
                         .UseDependencyTracking(trackingLevel)

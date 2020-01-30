@@ -22,7 +22,7 @@
     <Compile Include="System\Security\AccessControl\FileSystemRights.cs" />
     <Compile Include="System\Security\AccessControl\FileSystemSecurity.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileAttributes.cs" Link="Common\Interop\Windows\Interop.FileAttributes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs" Link="Common\Interop\Windows\Interop.FileTypes.cs" />
@@ -51,7 +51,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.LongFileTime.cs" Link="Common\Interop\Windows\Interop.LongFileTime.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateDirectory.cs" Link="Common\Interop\Windows\Interop.CreateDirectory.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" Link="Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.Attributes.Windows.cs" Link="Common\System\IO\FileSystem.Attributes.Windows.cs" />
     <Compile Include="$(CommonPath)System\IO\FileSystem.DirectoryCreation.Windows.cs" Link="Common\System\IO\FileSystem.DirectoryCreation.Windows.cs" />

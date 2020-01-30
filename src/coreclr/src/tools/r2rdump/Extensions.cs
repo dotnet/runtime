@@ -19,10 +19,10 @@ namespace R2RDump
             if (theThis.BoundsList.Count > 0)
                 writer.WriteLine("Debug Info");
 
-            writer.WriteLine("\tBounds:");
+            writer.WriteLine("    Bounds:");
             for (int i = 0; i < theThis.BoundsList.Count; ++i)
             {
-                writer.Write('\t');
+                writer.Write("    ");
                 if (!dumpOptions.Naked)
                 {
                     writer.Write($"Native Offset: 0x{theThis.BoundsList[i].NativeOffset:X}, ");
@@ -38,51 +38,51 @@ namespace R2RDump
             }
 
             if (theThis.VariablesList.Count > 0)
-                writer.WriteLine("\tVariable Locations:");
+                writer.WriteLine("    Variable Locations:");
 
             for (int i = 0; i < theThis.VariablesList.Count; ++i)
             {
                 var varLoc = theThis.VariablesList[i];
-                writer.WriteLine($"\tVariable Number: {varLoc.VariableNumber}");
-                writer.WriteLine($"\tStart Offset: 0x{varLoc.StartOffset:X}");
-                writer.WriteLine($"\tEnd Offset: 0x{varLoc.EndOffset:X}");
-                writer.WriteLine($"\tLoc Type: {varLoc.VariableLocation.VarLocType}");
+                writer.WriteLine($"    Variable Number: {varLoc.VariableNumber}");
+                writer.WriteLine($"    Start Offset: 0x{varLoc.StartOffset:X}");
+                writer.WriteLine($"    End Offset: 0x{varLoc.EndOffset:X}");
+                writer.WriteLine($"    Loc Type: {varLoc.VariableLocation.VarLocType}");
 
                 switch (varLoc.VariableLocation.VarLocType)
                 {
                     case VarLocType.VLT_REG:
                     case VarLocType.VLT_REG_FP:
                     case VarLocType.VLT_REG_BYREF:
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     case VarLocType.VLT_STK:
                     case VarLocType.VLT_STK_BYREF:
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data2}");
                         break;
                     case VarLocType.VLT_REG_REG:
-                        writer.WriteLine($"\tRegister 1: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tRegister 2: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Register 1: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Register 2: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
                         break;
                     case VarLocType.VLT_REG_STK:
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data3}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data3}");
                         break;
                     case VarLocType.VLT_STK_REG:
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data1}");
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data3)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data1}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data3)}");
                         break;
                     case VarLocType.VLT_STK2:
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data2}");
                         break;
                     case VarLocType.VLT_FPSTK:
-                        writer.WriteLine($"\tOffset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Offset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     case VarLocType.VLT_FIXED_VA:
-                        writer.WriteLine($"\tOffset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Offset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     default:
                         throw new BadImageFormatException("Unexpected var loc type");

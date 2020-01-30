@@ -43,7 +43,9 @@ the implementation without compat concerns in future releases.
 ## Making the changes in repo
 
 **If changing the library version**
-  - Update the `AssemblyVersion` property in `<Library>\Directory.Build.props` (ex: [System.Runtime\Directory.Build.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/Directory.Build.props#L4)) to the version determined above.
+- The `AssemblyVersion` property isn't always in `<Library>\Directory.Build.props` file unless we want to override the default for some reason. For more information on how the original version is calculated, see [Arcade documentation](https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/Versioning.md).
+- If the `AssemblyVersion` property exists (for example, [Microsoft.CSharp\Directory.Build.props](https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.CSharp/Directory.Build.props#L4)), you can change it.
+- If the `AssemblyVersion` property doesn't exist (for example, [System.Runtime\Directory.Build.props](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime/Directory.Build.props)), you can add it.
 
 **If changing the target group**
 - Update both the `Configurations` property in the library's csproj file and the `BuildConfigurations` property in the library's Configurations.props file.

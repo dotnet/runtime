@@ -16,6 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Systen.Net.Mail.Tests;
 using Xunit;
+using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Mail.Tests
 {
@@ -309,7 +310,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/40711")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and may not time out for low values")]
         [PlatformSpecific(~TestPlatforms.OSX)] // on OSX, not all synchronous operations (e.g. connect) can be aborted by closing the socket.
         public void TestZeroTimeout()
@@ -341,6 +341,7 @@ namespace System.Net.Mail.Tests
         [InlineData("")]
         [InlineData(null)]
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestMailDeliveryAsync(string body)
         {
             using var server = new LoopbackSmtpServer();
@@ -359,6 +360,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/corefx/issues/28961
         [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestCredentialsCopyInAsyncContext()
         {
             using var server = new LoopbackSmtpServer();

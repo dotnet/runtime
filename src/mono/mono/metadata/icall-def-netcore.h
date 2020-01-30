@@ -484,9 +484,9 @@ HANDLES(MUTEX_2, "OpenMutex_icall", ves_icall_System_Threading_Mutex_OpenMutex_i
 NOHANDLES(ICALL(MUTEX_3, "ReleaseMutex_internal", ves_icall_System_Threading_Mutex_ReleaseMutex_internal))
 
 ICALL_TYPE(SEMA, "System.Threading.Semaphore", SEMA_1)
-HANDLES(SEMA_1, "CreateSemaphore_icall", ves_icall_System_Threading_Semaphore_CreateSemaphore_icall, gpointer, 5, (gint32, gint32, const_gunichar2_ptr, gint32, gint32_ptr))
-HANDLES(SEMA_2, "OpenSemaphore_icall", ves_icall_System_Threading_Semaphore_OpenSemaphore_icall, gpointer, 4, (const_gunichar2_ptr, gint32, gint32, gint32_ptr))
-HANDLES(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal, MonoBoolean, 3, (gpointer, gint32, gint32_ref))
+NOHANDLES(ICALL(SEMA_1, "CreateSemaphore_icall", ves_icall_System_Threading_Semaphore_CreateSemaphore_icall))
+NOHANDLES(ICALL(SEMA_2, "OpenSemaphore_icall", ves_icall_System_Threading_Semaphore_OpenSemaphore_icall))
+NOHANDLES(ICALL(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal))
 
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 HANDLES(THREAD_1, "ClrState", ves_icall_System_Threading_Thread_ClrState, void, 2, (MonoInternalThread, guint32))
