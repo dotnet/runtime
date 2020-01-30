@@ -6,31 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Reflection.Emit.ILGeneration.Tests
-####################################################################
-
-# System.Reflection implementation to do.
--noclass System.Reflection.Emit.Tests.CustomAttributeBuilderTests
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArgument.*
--nomethod System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.*
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
--nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_TypeCreated_ThrowsInvalidOperationException
--nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException
--nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree
--nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray
--nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree
--nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray_NullObjectInParameterType_ThrowsArgumentNullException
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
--nomethod System.Reflection.Emit.Tests.SetCustomAttributeTests.SetCustomAttribute_NullArgument_ThrowsArgumentNullException
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit4.TestEmitCalliNonBlittable
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInRequiredCustomModifiers_ThrowsArgumentNullException
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInOptionalCustomModifiers_ThrowsArgumentNullException
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments_SignatureFinished_ThrowsArgumentException
--nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments
-
-####################################################################
 ##  System.Reflection.Emit.Tests
 ####################################################################
 
