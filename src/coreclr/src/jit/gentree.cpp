@@ -6139,8 +6139,16 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSE
         // Make an exception for implicit by-ref parameters during global morph, since
         // their lvType has been updated to byref but their appearances have not yet all
         // been rewritten and so may have struct type still.
-        assert(type == lvaTable[lnum].lvType ||
-               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
+        // Also, make an exception for retyping of a lclVar to a SIMD or scalar type of the same
+        // size as the struct if it has a single field This can happen when we retype the lhs
+        // of a call assignment.
+        // TODO-1stClassStructs: When we stop "lying" about the types for ABI purposes, we
+        // should be able to remove this exception and handle the assignment mismatch in
+        // Lowering.
+        LclVarDsc* varDsc = lvaGetDesc(lnum);
+        assert((type == varDsc->lvType) ||
+               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)) ||
+               ((varDsc->lvType == TYP_STRUCT) && (genTypeSize(type) == varDsc->lvExactSize)));
     }
     GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(ILoffs));
 
