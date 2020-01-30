@@ -291,6 +291,12 @@ ss_args_destroy (SingleStepArgs *ss_args)
 	//nothing to do	
 }
 
+static int
+handle_multiple_ss_requests (void) {
+	mono_de_cancel_ss ();
+	return 1;
+}
+
 void
 mono_wasm_debugger_init (void)
 {
@@ -313,6 +319,7 @@ mono_wasm_debugger_init (void)
 		.process_breakpoint_events = process_breakpoint_events,
 		.ss_create_init_args = ss_create_init_args,
 		.ss_args_destroy = ss_args_destroy,
+		.handle_multiple_ss_requests = handle_multiple_ss_requests,
 	};
 
 	mono_debug_init (MONO_DEBUG_FORMAT_MONO);
@@ -371,14 +378,14 @@ mono_wasm_setup_single_step (int kind)
 		depth = STEP_DEPTH_OVER;
 		break;
 	default:
-		g_error ("dunno step kind %d", kind);
+		g_error ("[dbg] unknown step kind %d", kind);
 	}
 
 	DbgEngineErrorCode err = mono_de_ss_create (THREAD_TO_INTERNAL (mono_thread_current ()), size, depth, filter, req);
 	if (err != DE_ERR_NONE) {
 		DEBUG_PRINTF (1, "[dbg] Failed to setup single step request");
 	}
-	printf ("ss is in place, now ahat?\n");
+	DEBUG_PRINTF (1, "[dbg] single step is in place, now what?\n");
 }
 
 EMSCRIPTEN_KEEPALIVE void

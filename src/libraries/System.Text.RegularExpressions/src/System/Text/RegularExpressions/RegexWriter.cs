@@ -133,6 +133,7 @@ namespace System.Text.RegularExpressions
             int[] emitted = _emitted.AsSpan().ToArray();
 
             bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
+            bool compiled = (tree.Options & RegexOptions.Compiled) != 0;
 
             // Compute prefixes to help optimize FindFirstChar.
             RegexBoyerMoore? boyerMoorePrefix = null;
@@ -145,9 +146,14 @@ namespace System.Text.RegularExpressions
                 CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
                 boyerMoorePrefix = new RegexBoyerMoore(leadingSubstring, leadingSubstringCI, rtl, culture);
             }
-            else
+
+            // If we didn't find a single leading substring, or if we found one but we won't be able to use it for a Boyer-Moore
+            // search, try to compute the characters set that might begin the string.
+            if (boyerMoorePrefix is null ||
+                (boyerMoorePrefix.NegativeUnicode != null && compiled)) // compilation won't use Boyer-Moore if it has a negative Unicode table
             {
-                // If we didn't find a single leading substring, try to compute the characters set that might begin the string.
+                boyerMoorePrefix = null;
+
                 // First we employ a less aggressive but more valuable computation to see if we can find sets for each of the first N
                 // characters in the string.  If that's unsuccessful, we employ a more aggressive check to compute a set for just
                 // the first character in the string.

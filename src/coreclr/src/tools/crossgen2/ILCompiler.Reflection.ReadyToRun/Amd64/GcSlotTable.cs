@@ -133,11 +133,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\t\tNumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
-            sb.AppendLine($"\t\tGcSlots:");
+            sb.AppendLine($"        NumSlots({NumSlots}) = NumRegisters({NumRegisters}) + NumStackSlots({NumStackSlots}) + NumUntracked({NumUntracked})");
+            sb.AppendLine($"        GcSlots:");
             foreach (GcSlot slot in GcSlots)
             {
-                sb.Append("\t\t\t");
+                sb.Append(' ', 12);
                 slot.WriteTo(sb, _machine, GcSlotFlags.GC_SLOT_INVALID);
                 sb.AppendLine();
             }

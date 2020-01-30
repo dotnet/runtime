@@ -15,13 +15,13 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetForwardedTypes()
         {
             List<Type> types = new List<Type>();
-            List<Exception> exceptions = null;
+            List<Exception>? exceptions = null;
 
             IterateTypeForwards(
                 delegate (RoAssembly redirectedAssembly, ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name)
                 {
-                    Type type = null;
-                    Exception exception = null;
+                    Type? type = null;
+                    Exception? exception = null;
                     if (redirectedAssembly is RoExceptionAssembly exceptionAssembly)
                     {
                         exception = exceptionAssembly.Exception;
@@ -29,7 +29,7 @@ namespace System.Reflection.TypeLoading
                     else
                     {
                         // GetTypeCore() will follow any further type-forwards if needed.
-                        type = redirectedAssembly.GetTypeCore(ns, name, ignoreCase: false, out Exception e);
+                        type = redirectedAssembly.GetTypeCore(ns, name, ignoreCase: false, out Exception? e);
                         if (type == null)
                         {
                             exception = e;
@@ -49,7 +49,7 @@ namespace System.Reflection.TypeLoading
                         {
                             exceptions = new List<Exception>();
                         }
-                        exceptions.Add(exception);
+                        exceptions.Add(exception!);
                     }
                 }
             );

@@ -1211,13 +1211,7 @@ int MethodTable::GetVectorSize()
             // We need to verify that T (the element or "base" type) is a primitive type.
             TypeHandle typeArg = GetInstantiation()[0];
             CorElementType corType = typeArg.GetSignatureCorElementType();
-            bool isSupportedElementType = (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8);
-            // These element types are not supported for Vector64<T>.
-            if ((vectorSize == 8) && (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8))
-            {
-                isSupportedElementType = false;
-            }
-            if (isSupportedElementType)
+            if (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8)
             {
                 _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 
@@ -43,7 +44,7 @@ namespace System.Reflection
                 if (file.Length == 0)
                     throw new ArgumentException(SR.Format(SR.Arg_InvalidPath, path), nameof(assemblyPaths));
 
-                List<string> paths;
+                List<string>? paths;
                 if (!_fileToPaths.TryGetValue(file, out paths))
                 {
                     _fileToPaths.Add(file, paths = new List<string>());
@@ -52,11 +53,12 @@ namespace System.Reflection
             }
         }
 
-        public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)
+        public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
         {
-            Assembly candidateWithSamePkt = null;
-            Assembly candidateIgnoringPkt = null;
-            if (_fileToPaths.TryGetValue(assemblyName.Name, out List<string> paths))
+            Debug.Assert(assemblyName.Name != null);
+            Assembly? candidateWithSamePkt = null;
+            Assembly? candidateIgnoringPkt = null;
+            if (_fileToPaths.TryGetValue(assemblyName.Name, out List<string>? paths))
             {
                 ReadOnlySpan<byte> pktFromName = assemblyName.GetPublicKeyToken();
 
