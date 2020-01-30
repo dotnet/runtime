@@ -498,7 +498,7 @@ void FinalizeWeakReference(Object * obj)
 
     bool isRuntimeSuspended = (ThreadSuspend::GetSuspensionThread() != nullptr);
 
-    OBJECTHANDLE handle = isRuntimeSuspended ? pThis->m_Handle : AcquireWeakHandleSpinLock(pThis);
+    OBJECTHANDLE handle = isRuntimeSuspended ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
     bool isWeakWinRTHandle = false;
 
