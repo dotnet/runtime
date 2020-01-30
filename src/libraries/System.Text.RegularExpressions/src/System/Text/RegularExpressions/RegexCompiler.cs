@@ -1031,7 +1031,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextbegField);
                         Ble(l1);
-                        BrFar(returnFalse);
+                        Br(returnFalse);
                         MarkLabel(l1);
                     }
 
@@ -1084,7 +1084,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldloc(_runtextendLocal);
                         Bge(l1);
-                        BrFar(returnFalse);
+                        Br(returnFalse);
                         MarkLabel(l1);
                     }
 
