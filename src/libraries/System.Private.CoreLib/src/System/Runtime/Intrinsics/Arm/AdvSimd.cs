@@ -447,6 +447,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareTestScalar(left, right);
 
             /// <summary>
+            /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> Divide(Vector64<float> left, Vector64<float> right) => Divide(left, right);
+
+            /// <summary>
+            /// float64x2_t vdivq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FDIV Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) => Divide(left, right);
+
+            /// <summary>
+            /// float32x4_t vdivq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FDIV Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -2472,6 +2490,21 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CMTST Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) => CompareTest(left, right);
+
+        /// <summary>
+        /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VDIV.F64 Dd, Dn, Dm
+        ///   A64: FDIV Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> DivideScalar(Vector64<double> left, Vector64<double> right) => DivideScalar(left, right);
+
+        /// <summary>
+        /// float32_t vdivs_f32 (float32_t a, float32_t b)
+        ///   A32: VDIV.F32 Sd, Sn, Sm
+        ///   A64: FDIV Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
 
         /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
