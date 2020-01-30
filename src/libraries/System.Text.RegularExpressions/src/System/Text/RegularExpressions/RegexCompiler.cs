@@ -969,49 +969,56 @@ namespace System.Text.RegularExpressions
             }
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
+            // It's rare for min required length to be 0, so we don't bother special-casing the check,
+            // especially since we want the "return false" code regardless.
             int minRequiredLength = _code.Tree.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
-            if (minRequiredLength > 0)
+            Label returnFalse = DefineLabel();
+            Label finishedLengthCheck = DefineLabel();
+            if (!_code.RightToLeft)
             {
-                Label finishedLengthCheck = DefineLabel();
-                if (!_code.RightToLeft)
+                // if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
+                // {
+                //     this.runtextpos = runtextend;
+                //     return false;
+                // }
+                Ldloc(_runtextposLocal);
+                Ldloc(_runtextendLocal);
+                if (minRequiredLength > 0)
                 {
-                    // if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
-                    // {
-                    //     this.runtextpos = runtextend;
-                    //     return false;
-                    // }
-                    Ldloc(_runtextposLocal);
-                    Ldloc(_runtextendLocal);
                     Ldc(minRequiredLength);
                     Sub();
-                    Ble(finishedLengthCheck);
-                    Ldthis();
-                    Ldloc(_runtextendLocal);
-                    Stfld(s_runtextposField);
-                    Ldc(0);
-                    Ret();
                 }
-                else
-                {
-                    // if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
-                    // {
-                    //     runtextpos = runtextbeg;
-                    //     return false;
-                    // }
-                    Ldloc(_runtextposLocal);
-                    Ldc(minRequiredLength);
-                    Sub();
-                    Ldloc(_runtextbegLocal!);
-                    Bge(finishedLengthCheck);
-                    Ldthis();
-                    Ldloc(_runtextbegLocal!);
-                    Stfld(s_runtextposField);
-                    Ldc(0);
-                    Ret();
-                }
-                MarkLabel(finishedLengthCheck);
+                Ble(finishedLengthCheck);
+
+                MarkLabel(returnFalse);
+                Ldthis();
+                Ldloc(_runtextendLocal);
             }
+            else
+            {
+                // if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
+                // {
+                //     this.runtextpos = runtextbeg;
+                //     return false;
+                // }
+                Ldloc(_runtextposLocal);
+                if (minRequiredLength > 0)
+                {
+                    Ldc(minRequiredLength);
+                    Sub();
+                }
+                Ldloc(_runtextbegLocal!);
+                Bge(finishedLengthCheck);
+
+                MarkLabel(returnFalse);
+                Ldthis();
+                Ldloc(_runtextbegLocal!);
+            }
+            Stfld(s_runtextposField);
+            Ldc(0);
+            Ret();
+            MarkLabel(finishedLengthCheck);
 
             // Generate anchor checks.
             if ((_anchors & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)) != 0)
@@ -1024,11 +1031,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextbegField);
                         Ble(l1);
-                        Ldthis();
-                        Ldloc(_runtextendLocal);
-                        Stfld(s_runtextposField);
-                        Ldc(0);
-                        Ret();
+                        Br(returnFalse);
                         MarkLabel(l1);
                     }
 
@@ -1038,11 +1041,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextstartField);
                         Ble(l1);
-                        Ldthis();
-                        Ldloc(_runtextendLocal);
-                        Stfld(s_runtextposField);
-                        Ldc(0);
-                        Ret();
+                        BrFar(returnFalse);
                         MarkLabel(l1);
                     }
 
@@ -1085,11 +1084,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldloc(_runtextendLocal);
                         Bge(l1);
-                        Ldthis();
-                        Ldloc(_runtextbegLocal!);
-                        Stfld(s_runtextposField);
-                        Ldc(0);
-                        Ret();
+                        Br(returnFalse);
                         MarkLabel(l1);
                     }
 
@@ -1111,11 +1106,7 @@ namespace System.Text.RegularExpressions
                         Ldc('\n');
                         Beq(l2);
                         MarkLabel(l1);
-                        Ldthis();
-                        Ldloc(_runtextbegLocal!);
-                        Stfld(s_runtextposField);
-                        Ldc(0);
-                        Ret();
+                        BrFar(returnFalse);
                         MarkLabel(l2);
                     }
 
@@ -1125,11 +1116,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(_runtextposLocal);
                         Ldthisfld(s_runtextstartField);
                         Bge(l1);
-                        Ldthis();
-                        Ldloc(_runtextbegLocal!);
-                        Stfld(s_runtextposField);
-                        Ldc(0);
-                        Ret();
+                        BrFar(returnFalse);
                         MarkLabel(l1);
                     }
 
@@ -1158,7 +1145,6 @@ namespace System.Text.RegularExpressions
                 LocalBuilder limitLocal = _temp2Local;
                 Label lDefaultAdvance = DefineLabel();
                 Label lAdvance = DefineLabel();
-                Label lFail = DefineLabel();
                 Label lStart = DefineLabel();
                 Label lPartialMatch = DefineLabel();
 
@@ -1208,11 +1194,11 @@ namespace System.Text.RegularExpressions
                 Ldloc(limitLocal);
                 if (!_code.RightToLeft)
                 {
-                    BgeFar(lFail);
+                    BgeFar(returnFalse);
                 }
                 else
                 {
-                    BltFar(lFail);
+                    BltFar(returnFalse);
                 }
 
                 Rightchar();
@@ -1324,14 +1310,6 @@ namespace System.Text.RegularExpressions
                 Stfld(s_runtextposField);
                 Ldc(1);
                 Ret();
-
-                MarkLabel(lFail);
-
-                Ldthis();
-                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
-                Stfld(s_runtextposField);
-                Ldc(0);
-                Ret();
             }
             else if (_leadingCharClasses is null)
             {
@@ -1422,7 +1400,6 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(_leadingCharClasses != null && _leadingCharClasses.Length > 0);
 
                 LocalBuilder iLocal = _temp2Local;
-                Label returnFalse = DefineLabel();
 
                 // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
                 // where we were unable to get an accurate enough min required length to ensure it's larger
@@ -1445,10 +1422,6 @@ namespace System.Text.RegularExpressions
                 _temp3Local = DeclareReadOnlySpanChar();
                 LocalBuilder textSpanLocal = _temp3Local;
 
-                Label checkSpanLengthLabel = DefineLabel();
-                Label charNotInClassLabel = DefineLabel();
-                Label loopBody = DefineLabel();
-
                 // ReadOnlySpan<char> span = this.runtext.AsSpan(runtextpos, runtextend - runtextpos);
                 Ldthisfld(s_runtextField);
                 Ldloc(_runtextposLocal);
@@ -1458,48 +1431,66 @@ namespace System.Text.RegularExpressions
                 Call(s_stringAsSpanIntIntMethod);
                 Stloc(textSpanLocal);
 
-                // for (int i = 0;
-                Ldc(0);
-                Stloc(iLocal);
-                BrFar(checkSpanLengthLabel);
-
-                MarkLabel(loopBody);
-
                 // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
                 // We can use it if this is a case-sensitive class with a small number of characters in the class.
                 Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
-                int setCharsCount;
-                int charClassIndex = 0;
-                if (!_leadingCharClasses[0].CaseInsensitive &&
-                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].CharClass, setChars)) > 0)
+                int setCharsCount = 0, charClassIndex = 0;
+                bool canUseIndexOf =
+                    !_leadingCharClasses[0].CaseInsensitive &&
+                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].CharClass, setChars)) > 0;
+                bool needLoop = !canUseIndexOf || _leadingCharClasses.Length > 1;
+
+                Label checkSpanLengthLabel = default;
+                Label charNotInClassLabel = default;
+                Label loopBody = default;
+                if (needLoop)
                 {
-                    charClassIndex++;
+                    checkSpanLengthLabel = DefineLabel();
+                    charNotInClassLabel = DefineLabel();
+                    loopBody = DefineLabel();
+
+                    // for (int i = 0;
+                    Ldc(0);
+                    Stloc(iLocal);
+                    BrFar(checkSpanLengthLabel);
+                    MarkLabel(loopBody);
+                }
+
+                if (canUseIndexOf)
+                {
+                    charClassIndex = 1;
+
+                    if (needLoop)
+                    {
+                        // textSpan.Slice(iLocal)
+                        Ldloca(textSpanLocal);
+                        Ldloc(iLocal);
+                        Call(s_spanSliceIntMethod);
+                    }
+                    else
+                    {
+                        // textSpan
+                        Ldloc(textSpanLocal);
+                    }
+
                     switch (setCharsCount)
                     {
                         case 1:
-                            // tmp = span.Slice(i).IndexOf(setChars[0]);
-                            Ldloca(textSpanLocal);
-                            Ldloc(iLocal);
-                            Call(s_spanSliceIntMethod);
+                            // tmp = ...IndexOf(setChars[0]);
                             Ldc(setChars[0]);
                             Call(s_spanIndexOf);
                             break;
 
                         case 2:
-                            // tmp = span.Slice(i).IndexOfAny(setChars[0], setChars[1]);
-                            Ldloca(textSpanLocal);
-                            Ldloc(iLocal);
-                            Call(s_spanSliceIntMethod);
+                            // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
                             Call(s_spanIndexOfAnyCharChar);
                             break;
 
-                        case 3:
-                            // tmp = span.Slice(i).IndexOfAny(setChars[0], setChars[1], setChars[2]});
-                            Ldloca(textSpanLocal);
-                            Ldloc(iLocal);
-                            Call(s_spanSliceIntMethod);
+                        default: // 3
+                            // tmp = ...IndexOfAny(setChars[0], setChars[1], setChars[2]});
+                            Debug.Assert(setCharsCount == 3);
                             Ldc(setChars[0]);
                             Ldc(setChars[1]);
                             Ldc(setChars[2]);
@@ -1507,18 +1498,22 @@ namespace System.Text.RegularExpressions
                             break;
                     }
 
-                    // i += tmp;
+                    // i = tmp; // or i += tmp if there's a loop
                     // if (tmp < 0) goto returnFalse;
                     Dup();
-                    Ldloc(iLocal);
-                    Add();
+                    if (needLoop)
+                    {
+                        Ldloc(iLocal);
+                        Add();
+                    }
                     Stloc(iLocal);
                     Ldc(0);
                     BltFar(returnFalse);
 
-                    // if (i >= span.Length - (_leadingCharClasses.Length - 1)) goto returnFalse;
+                    // if (i >= textSpan.Length - (_leadingCharClasses.Length - 1)) goto returnFalse;
                     if (_leadingCharClasses.Length > 1)
                     {
+                        Debug.Assert(needLoop);
                         Ldloca(textSpanLocal);
                         Call(s_spanGetLengthMethod);
                         Ldc(_leadingCharClasses.Length - 1);
@@ -1528,13 +1523,14 @@ namespace System.Text.RegularExpressions
                     }
                 }
 
-                // if (!CharInClass(span[i], prefix[0], "...")) goto returnFalse;
-                // if (!CharInClass(span[i + 1], prefix[1], "...")) goto returnFalse;
-                // if (!CharInClass(span[i + 2], prefix[2], "...")) goto returnFalse;
+                // if (!CharInClass(textSpan[i], prefix[0], "...")) goto returnFalse;
+                // if (!CharInClass(textSpan[i + 1], prefix[1], "...")) goto returnFalse;
+                // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) goto returnFalse;
                 // ...
                 Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
                 for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
                 {
+                    Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
                     Ldloc(iLocal);
                     if (charClassIndex > 0)
@@ -1558,32 +1554,32 @@ namespace System.Text.RegularExpressions
                 Ldc(1);
                 Ret();
 
-                // for (...; ...; i++)
-                MarkLabel(charNotInClassLabel);
-                Ldloc(iLocal);
-                Ldc(1);
-                Add();
-                Stloc(iLocal);
-
-                // for (...; i < span.Length - (_leadingCharClasses.Length - 1); ...);
-                MarkLabel(checkSpanLengthLabel);
-                Ldloc(iLocal);
-                Ldloca(textSpanLocal);
-                Call(s_spanGetLengthMethod);
-                if (_leadingCharClasses.Length > 1)
+                if (needLoop)
                 {
-                    Ldc(_leadingCharClasses.Length - 1);
-                    Sub();
-                }
-                BltFar(loopBody);
+                    MarkLabel(charNotInClassLabel);
 
-                // runtextpos = runtextend;
-                MarkLabel(returnFalse);
-                Ldthis();
-                Ldloc(_runtextendLocal);
-                Stfld(s_runtextposField);
-                Ldc(0);
-                Ret();
+                    // for (...; ...; i++)
+                    Ldloc(iLocal);
+                    Ldc(1);
+                    Add();
+                    Stloc(iLocal);
+
+                    // for (...; i < span.Length - (_leadingCharClasses.Length - 1); ...);
+                    MarkLabel(checkSpanLengthLabel);
+                    Ldloc(iLocal);
+                    Ldloca(textSpanLocal);
+                    Call(s_spanGetLengthMethod);
+                    if (_leadingCharClasses.Length > 1)
+                    {
+                        Ldc(_leadingCharClasses.Length - 1);
+                        Sub();
+                    }
+                    BltFar(loopBody);
+
+                    // runtextpos = runtextend;
+                    // return false;
+                    BrFar(returnFalse);
+                }
             }
         }
 
