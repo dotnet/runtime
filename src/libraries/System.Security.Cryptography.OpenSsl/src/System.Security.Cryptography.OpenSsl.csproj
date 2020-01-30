@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion Condition="'$(OriginalTargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.1.0.0</AssemblyVersion>
     <TargetFrameworks>netcoreapp3.0-Unix;netcoreapp3.0;netstandard2.0;;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>

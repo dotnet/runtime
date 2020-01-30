@@ -1,19 +1,11 @@
 <Project>
-  <PropertyGroup>
-    <!-- shared configurations between shims and apicompat -->
-    <BuildConfigurations>
-      $(BuildConfigurations);
-      $(NetCoreAppCurrent);
-    </BuildConfigurations>
-  </PropertyGroup>
-
   <Import Project="..\Directory.Build.props" />
 
   <Import Project="netfxreference.props" />
 
   <PropertyGroup>
     <IsNETCoreApp>true</IsNETCoreApp>
-    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(OriginalTargetFramework)</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(NuGetTargetMoniker)' == ''">$(TargetFramework)</NuGetTargetMoniker>
   </PropertyGroup>
 
   <PropertyGroup>

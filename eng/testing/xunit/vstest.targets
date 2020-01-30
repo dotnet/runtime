@@ -5,7 +5,7 @@
 
     <!-- CLI options -->
     <RunArguments>$(RunArguments) --logger "xunit;LogFilePath=$(TestResultsName)"</RunArguments>
-    <RunArguments>$(RunArguments) --framework $(OriginalTargetFramework)</RunArguments>
+    <RunArguments>$(RunArguments) --framework $(TargetFramework)</RunArguments>
     <RunArguments>$(RunArguments) --platform $(ArchGroup)</RunArguments>
     <RunArguments Condition="'$(TestDisableParallelization)' != 'true'">$(RunArguments) --parallel</RunArguments>
     <RunArguments Condition="'$(TestBlame)' == 'true'">$(RunArguments) --blame</RunArguments>

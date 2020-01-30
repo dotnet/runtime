@@ -5,7 +5,6 @@
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
     <TargetFrameworkVersion>$(NETCoreAppCurrentVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
-    <OriginalTargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</OriginalTargetFramework>
     <RefBinDir>$(NETCoreAppPackageRefPath)</RefBinDir>
     <LibBinDir>$(NETCoreAppPackageRuntimePath)</LibBinDir>
 

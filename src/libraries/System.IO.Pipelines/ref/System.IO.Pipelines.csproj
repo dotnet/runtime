@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <!-- We only plan to use this ref in netcoreapp. For all other netstandard compatible frameworks we should use the lib
     asset instead. -->
-    <PackageTargetFramework Condition="'$(OriginalTargetFramework)' == 'netstandard2.0'">netcoreapp2.0</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard2.0'">netcoreapp2.0</PackageTargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.IO.Pipelines.cs" />

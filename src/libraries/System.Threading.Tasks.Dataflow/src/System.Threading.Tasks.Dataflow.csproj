@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'netstandard2.0'">$(DefineConstants);FEATURE_TRACING</DefineConstants>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' == 'netstandard1.0'">$(DefineConstants);USE_INTERNAL_CONCURRENT_COLLECTIONS</DefineConstants>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' == 'netstandard1.0' or '$(OriginalTargetFramework)' == 'netstandard1.1'">$(DefineConstants);USE_INTERNAL_THREADING</DefineConstants>
-    <PackageTargetFramework Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard2.0'">$(DefineConstants);FEATURE_TRACING</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0'">$(DefineConstants);USE_INTERNAL_CONCURRENT_COLLECTIONS</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">$(DefineConstants);USE_INTERNAL_THREADING</DefineConstants>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
     <TargetFrameworks>netstandard1.0;netstandard1.1;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
@@ -44,10 +44,10 @@
       <Link>Common\Internal\Padding.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.0' or '$(OriginalTargetFramework)' == 'netstandard1.1'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.1'">
     <Compile Include="Internal\Threading.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0'">
     <Compile Include="Internal\ConcurrentQueue.cs" />
     <Compile Include="Internal\IProducerConsumerCollection.cs" />
   </ItemGroup>
@@ -57,7 +57,7 @@
   <ItemGroup>
     <Content Include="XmlDocs\System.Threading.Tasks.Dataflow.xml" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' != 'netstandard1.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.0'">
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Collections.Concurrent" />
   </ItemGroup>

@@ -5,7 +5,7 @@
     <IsNETStandard2x Condition="$(NETStandardVersion.StartsWith('2.'))">true</IsNETStandard2x>
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <_NETStandardTFMFolder Condition="'$(OriginalTargetFramework)' == 'netstandard2.0'">netstandard2.0</_NETStandardTFMFolder>
+    <_NETStandardTFMFolder Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard2.0</_NETStandardTFMFolder>
     <TargetFrameworks>netstandard1.0;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
@@ -70,10 +70,10 @@
 
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
-    <BinPlaceTargetFrameworks Include="$(OriginalTargetFramework)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
     </BinPlaceTargetFrameworks>
-    <BinPlaceTargetFrameworks Include="$(OriginalTargetFramework)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <!-- copy shims to the testhost as well in order to be able to run the netfx tests -->
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
     </BinPlaceTargetFrameworks>

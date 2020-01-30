@@ -4,14 +4,14 @@
          we also have a separate complilation of this DLL that works for V4.5
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
          to work with older NuGet clients -->
-    <PackageTargetFramework Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);SA1205</NoWarn>
     <Nullable>enable</Nullable>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
-    <DefineConstants Condition="'$(OriginalTargetFramework)' != 'netstandard1.1' and '$(OriginalTargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'net45'">$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
     <TargetFrameworks>netstandard1.1;netstandard1.3;net45;net46;;$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent);</ExcludeTargetFrameworksFromPackages>
@@ -25,34 +25,34 @@
     </Compile>
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OriginalTargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OriginalTargetFramework)' != 'net45' And '$(OriginalTargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition=" '$(TargetFramework)' != 'net45' And '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OriginalTargetFramework)' == 'net45' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Runtime.Remoting" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(OriginalTargetFramework)' == 'netstandard1.1' or '$(OriginalTargetFramework)' == 'netstandard1.3' or '$(OriginalTargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard1.1' or '$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(OriginalTargetFramework)' == 'netstandard2.1'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == 'netstandard2.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' and '$(OriginalTargetFramework)' != 'netstandard2.1' and '$(OriginalTargetFramework)' != 'netstandard1.1'">
+  <ItemGroup Condition=" '$(TargetsNetCoreApp)' != 'true' and '$(TargetFramework)' != 'netstandard2.1' and '$(TargetFramework)' != 'netstandard1.1'">
     <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' != '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetFrameworkCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />

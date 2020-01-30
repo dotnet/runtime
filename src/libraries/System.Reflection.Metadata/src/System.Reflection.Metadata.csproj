@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
     <CLSCompliant>false</CLSCompliant>
-    <PackageTargetFramework Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
     <TargetFrameworks>netstandard1.1;netstandard2.0;;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
     <Nullable>enable</Nullable>
@@ -17,8 +17,8 @@
       <Link>Common\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
     </Compile>
     <Compile Include="System\Reflection\Internal\Utilities\PinnedObject.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
-    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.netstandard1.1.cs" Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\CriticalDisposableObject.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PathUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\Encoding\FunctionPointerAttributes.cs" />
@@ -61,15 +61,15 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Heaps.cs" />
     <Compile Include="System\Reflection\Metadata\IL\ILOpCodeExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.cs" />
-    <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.Serialization.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.Serialization.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Metadata\Internal\HeapSizeFlag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataWriterUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataStreamOptions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataReaderProvider.cs" />
     <Compile Include="System\Reflection\Metadata\BlobContentId.cs" />
     <Compile Include="System\Reflection\Metadata\Signatures\PrimitiveSerializationTypeCode.cs" />
-    <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.netstandard.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
-    <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyReference.netstandard.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyDefinition.netstandard.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Metadata\TypeSystem\AssemblyReference.netstandard.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Metadata\TypeSystem\Handles.TypeSystem.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedPEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />
@@ -100,15 +100,15 @@
     <Compile Include="System\Reflection\Internal\Utilities\EmptyArray.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
     <Compile Include="System\Reflection\Internal\Utilities\EncodingHelper.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
-    <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
-    <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.netstandard1.1.cs" Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\FileStreamReadLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\Hash.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableByteArrayInterop.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ImmutableMemoryStream.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\LightUpHelper.cs" Condition="'$(TargetsNetCoreApp)' != 'true'" />
     <Compile Include="System\Reflection\Internal\Utilities\MemoryBlock.cs" />
-    <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
-    <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.netstandard1.1.cs" Condition="'$(OriginalTargetFramework)' == 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Internal\Utilities\MemoryMapLightUp.netstandard1.1.cs" Condition="'$(TargetFramework)' == 'netstandard1.1'" />
     <Compile Include="System\Reflection\Internal\Utilities\PooledStringBuilder.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ObjectPool`1.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\ReadOnlyUnmanagedMemoryStream.cs" />
@@ -179,7 +179,7 @@
     <Compile Include="System\Reflection\Metadata\Signatures\MemberReferenceKind.cs" />
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataAggregator.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataKind.cs" />
-    <Compile Include="System\Reflection\Metadata\MetadataReader.netstandard.cs" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
+    <Compile Include="System\Reflection\Metadata\MetadataReader.netstandard.cs" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Metadata\MetadataReader.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataReader.WinMD.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataReaderOptions.cs" />
@@ -263,7 +263,7 @@
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.IO.MemoryMappedFiles" Condition="'$(OriginalTargetFramework)' != 'netstandard1.1'" />
+    <Reference Include="System.IO.MemoryMappedFiles" Condition="'$(TargetFramework)' != 'netstandard1.1'" />
     <Reference Include="System.Buffers" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>
 </Project>

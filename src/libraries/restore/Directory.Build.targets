@@ -5,5 +5,5 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)\runtime\referenceFromRuntime.targets" Condition="'$(OriginalTargetFramework)' == 'netcoreapp3.0-Windows_NT'"/>
+  <Import Project="$(MSBuildThisFileDirectory)\runtime\referenceFromRuntime.targets" Condition="'$(TargetFramework)' == 'netcoreapp3.0' and '$(OSGroup)' == 'Windows_NT'"/>
 </Project>

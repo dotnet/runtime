@@ -3,15 +3,15 @@
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net461;netstandard2.0;netstandard1.3;netstandard1.5;;$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.0;netstandard1.3;netstandard1.5;$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetFrameworkCurrent);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;</ExcludeTargetFrameworksFromPackages>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3' or '$(OriginalTargetFramework)' == 'netstandard1.5'">
+  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard1.5'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_ReflectionTypeExtensions</GeneratePlatformNotSupportedAssemblyMessage>
-    <AssemblyVersion Condition="'$(OriginalTargetFramework)' == 'netstandard1.3'">4.0.0.0</AssemblyVersion>
-    <AssemblyVersion Condition="'$(OriginalTargetFramework)' == 'netstandard1.5'">4.1.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.3'">4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard1.5'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' != 'netstandard1.3' and '$(OriginalTargetFramework)' != 'netstandard1.5'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard1.3' and '$(TargetFramework)' != 'netstandard1.5'">
     <Compile Include="System\Reflection\Requires.cs" />
     <Compile Include="System\Reflection\TypeExtensions.cs" />
   </ItemGroup>
@@ -19,7 +19,7 @@
     <Reference Include="mscorlib" Condition="'$(TargetsNetFx)' == 'true'" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3' or '$(OriginalTargetFramework)' == 'netstandard1.5'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard1.5'">
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

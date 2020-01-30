@@ -3,7 +3,7 @@
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
     <RootNamespace>System.Collections.Immutable</RootNamespace>
     <FileAlignment>512</FileAlignment>
-    <PackageTargetFramework Condition="'$(OriginalTargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
     <TargetFrameworks>netstandard1.0;netstandard1.3;netstandard2.0;;$(NetCoreAppCurrent)</TargetFrameworks>
     <ExcludeTargetFrameworksFromPackages>$(NetCoreAppCurrent);</ExcludeTargetFrameworksFromPackages>
     <Nullable>enable</Nullable>
@@ -90,7 +90,7 @@
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.0' or '$(OriginalTargetFramework)' == 'netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.0' or '$(TargetFramework)' == 'netstandard1.3'">
     <Compile Include="$(CommonPath)System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs">
       <Link>System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
@@ -108,10 +108,10 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3' or '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
-  <ItemGroup Condition="'$(OriginalTargetFramework)' == 'netstandard1.3' or '$(OriginalTargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3' or '$(TargetFramework)' == 'netstandard2.0'">
     <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>
