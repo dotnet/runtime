@@ -46,6 +46,7 @@ namespace System.Text.Json
         }
 
         [PreserveDependency(".ctor()", "System.Text.Json.JsonPropertyInfoNullable`2")]
+        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.JsonPropertyInfoNotNullable`4")]
         [PreserveDependency(".ctor()", "System.Text.Json.Serialization.JsonPropertyInfoNotNullableContravariant`4")]
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
