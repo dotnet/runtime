@@ -16,6 +16,8 @@ using System.Text;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
 
+using Debug = System.Diagnostics.Debug;
+
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
@@ -955,20 +957,11 @@ namespace ILCompiler.Reflection.ReadyToRun
             return cells.ToArray();
         }
 
-        /// <summary>
-        /// Open a given reference assembly (relative to this ECMA metadata file).
-        /// </summary>
-        /// <param name="refAsmIndex">Reference assembly index</param>
-        /// <returns>MetadataReader instance representing the reference assembly</returns>
-        internal MetadataReader OpenReferenceAssembly(int refAsmIndex)
+        private AssemblyReferenceHandle GetAssemblyAtIndex(int refAsmIndex, out MetadataReader metadataReader)
         {
-            if (refAsmIndex == 0)
-            {
-                return this.MetadataReader;
-            }
+            Debug.Assert(refAsmIndex != 0);
 
             int assemblyRefCount = MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
-            MetadataReader metadataReader;
             AssemblyReferenceHandle assemblyReferenceHandle;
             if (refAsmIndex <= assemblyRefCount)
             {
@@ -981,10 +974,32 @@ namespace ILCompiler.Reflection.ReadyToRun
                 assemblyReferenceHandle = ManifestReferences[refAsmIndex - assemblyRefCount - 2];
             }
 
+            return assemblyReferenceHandle;
+        }
+
+        internal string GetReferenceAssemblyName(int refAsmIndex)
+        {
+            AssemblyReferenceHandle handle = GetAssemblyAtIndex(refAsmIndex, out MetadataReader reader);
+            return reader.GetString(reader.GetAssemblyReference(handle).Name);
+        }
+
+        /// <summary>
+        /// Open a given reference assembly (relative to this ECMA metadata file).
+        /// </summary>
+        /// <param name="refAsmIndex">Reference assembly index</param>
+        /// <returns>MetadataReader instance representing the reference assembly</returns>
+        internal MetadataReader OpenReferenceAssembly(int refAsmIndex)
+        {
+            if (refAsmIndex == 0)
+            {
+                return this.MetadataReader;
+            }
 
             MetadataReader result;
             if (!_assemblyCache.TryGetValue(refAsmIndex, out result))
             {
+                AssemblyReferenceHandle assemblyReferenceHandle = GetAssemblyAtIndex(refAsmIndex, out MetadataReader metadataReader);
+
                 result = _assemblyResolver.FindAssembly(metadataReader, assemblyReferenceHandle, Filename);
                 if (result == null)
                 {

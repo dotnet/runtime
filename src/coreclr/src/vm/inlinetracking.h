@@ -357,7 +357,7 @@ public:
 #ifndef DACCESS_COMPILE
     static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker *pamTracker, PersistentInlineTrackingMapR2R** ppLoadedMap);
 #endif
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
 
 
     // compile time serialization
@@ -368,6 +368,29 @@ public:
 };
 
 typedef DPTR(PersistentInlineTrackingMapR2R) PTR_PersistentInlineTrackingMapR2R;
+
+#ifndef DACCESS_COMPILE
+class PersistentInlineTrackingMapR2R2 : private PersistentInlineTrackingMapR2R
+{
+private:
+    PTR_Module m_module;
+
+    NativeFormat::NativeReader m_reader;
+    NativeFormat::NativeHashtable m_hashtable;
+
+public:
+
+    // runtime deserialization
+    static BOOL TryLoad(Module* pModule, const BYTE* pBuffer, DWORD cbBuffer, AllocMemTracker* pamTracker, PersistentInlineTrackingMapR2R2** ppLoadedMap);
+    virtual COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL* incompleteData) override;
+
+private:
+    Module* GetModuleByIndex(DWORD index);
+};
+
+typedef DPTR(PersistentInlineTrackingMapR2R2) PTR_PersistentInlineTrackingMapR2R2;
+#endif
+
 #endif //FEATURE_READYTORUN
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

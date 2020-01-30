@@ -350,6 +350,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public DebugInfoTableNode DebugInfoTable;
 
+        public InliningInfoNode InliningInfoTable;
+
         public AttributePresenceFilterNode AttributePresenceFilter;
 
         public ImportSectionNode EagerImports;
@@ -585,6 +587,9 @@ namespace ILCompiler.DependencyAnalysis
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+
+            InliningInfoTable = new InliningInfoNode(Target, InputModuleContext.GlobalContext);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, InliningInfoTable, InliningInfoTable);
 
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are

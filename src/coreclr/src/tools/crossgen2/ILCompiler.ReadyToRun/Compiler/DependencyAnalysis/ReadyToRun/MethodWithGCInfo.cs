@@ -27,6 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
+        private MethodDesc[] _inlinedMethods;
 
         public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
         {
@@ -238,6 +239,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
+        public MethodDesc[] InlinedMethods => _inlinedMethods;
 
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
@@ -297,6 +299,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return SignatureContext.CompareTo(otherNode.SignatureContext, comparer);
+        }
+
+        public void InitializeInliningInfo(MethodDesc[] inlinedMethods)
+        {
+            Debug.Assert(_inlinedMethods == null);
+            _inlinedMethods = inlinedMethods;
         }
 
         public int Offset => 0;
