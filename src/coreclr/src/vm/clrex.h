@@ -32,7 +32,7 @@ enum StackTraceElementFlags
 };
 
 // This struct is used by SOS in the diagnostic repo.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2245
+// See: https://github.com/dotnet/diagnostics/blob/9ff35f13af2f03a68a166cfd53f1a4bb32425f2f/src/SOS/Strike/strike.cpp#L2245
 struct StackTraceElement
 {
     UINT_PTR        ip;
@@ -54,7 +54,7 @@ struct StackTraceElement
 };
 
 // This struct is used by SOS in the diagnostic repo.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/SOS/Strike/strike.cpp#L2669
+// See: https://github.com/dotnet/diagnostics/blob/9ff35f13af2f03a68a166cfd53f1a4bb32425f2f/src/SOS/Strike/strike.cpp#L2669
 class StackTraceInfo
 {
 private:

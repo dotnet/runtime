@@ -941,7 +941,6 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
     // This will compute IL offsets.
     for (INT32 i = 0; i < pData->cElements; i++)
     {
-        // pStartFrame is NULL when collecting frames for current thread.
         pData->pElements[i].InitPass2();
     }
 
