@@ -3736,7 +3736,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// float32x2_t vsub_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VSUB.F32 Dd, Dn, Dm
-        ///   A64: FADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: FSUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> Subtract(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -3792,7 +3792,7 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// float32x4_t vsubq_f32 (float32x4_t a, float32x4_t b)
         ///   A32: VSUB.F32 Qd, Qn, Qm
-        ///   A64: FADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: FSUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> Subtract(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -3817,32 +3817,34 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector128<ulong> Subtract(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VSUB.F64 Dd, Dn, Dm
-        // ///   A64: FADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: SUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: SUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VSUB.F64 Dd, Dn, Dm
+        ///   A64: FSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vsubs_f32 (float32_t a, float32_t b)
         ///   A32: VSUB.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FSUB Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SubtractScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)

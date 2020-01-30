@@ -548,7 +548,7 @@ namespace System.Runtime.Intrinsics.Arm
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Add(left, right);
+            public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Subtract(left, right);
 
             /// <summary>
             /// uint8x8_t vrbit_u8 (uint8x8_t a)
@@ -3710,28 +3710,28 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
-        ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
+        ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Subtract(Vector64<byte> left, Vector64<byte> right) => Subtract(left, right);
 
         /// <summary>
         /// int16x4_t vsub_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VSUB.I16 Dd, Dn, Dm
-        ///   A64: ADD Vd.4H, Vn.4H, Vm.4H
+        ///   A64: SUB Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> Subtract(Vector64<short> left, Vector64<short> right) => Subtract(left, right);
 
         /// <summary>
         /// int32x2_t vsub_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VSUB.I32 Dd, Dn, Dm
-        ///   A64: ADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: SUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> Subtract(Vector64<int> left, Vector64<int> right) => Subtract(left, right);
 
         /// <summary>
         /// int8x8_t vsub_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
-        ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
+        ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Subtract(Vector64<sbyte> left, Vector64<sbyte> right) => Subtract(left, right);
 
@@ -3745,49 +3745,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vsub_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VSUB.I16 Dd, Dn, Dm
-        ///   A64: ADD Vd.4H, Vn.4H, Vm.4H
+        ///   A64: SUB Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> Subtract(Vector64<ushort> left, Vector64<ushort> right) => Subtract(left, right);
 
         /// <summary>
         /// uint32x2_t vsub_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VSUB.I32 Dd, Dn, Dm
-        ///   A64: ADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: SUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> Subtract(Vector64<uint> left, Vector64<uint> right) => Subtract(left, right);
 
         /// <summary>
         /// uint8x16_t vsubq_u8 (uint8x16_t a, uint8x16_t b)
         ///   A32: VSUB.I8 Qd, Qn, Qm
-        ///   A64: ADD Vd.16B, Vn.16B, Vm.16B
+        ///   A64: SUB Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Subtract(Vector128<byte> left, Vector128<byte> right) => Subtract(left, right);
 
         /// <summary>
         /// int16x8_t vsubq_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VSUB.I16 Qd, Qn, Qm
-        ///   A64: ADD Vd.8H, Vn.8H, Vm.8H
+        ///   A64: SUB Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> Subtract(Vector128<short> left, Vector128<short> right) => Subtract(left, right);
 
         /// <summary>
         /// int32x4_t vsubq_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VSUB.I32 Qd, Qn, Qm
-        ///   A64: ADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: SUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> Subtract(Vector128<int> left, Vector128<int> right) => Subtract(left, right);
 
         /// <summary>
         /// int64x2_t vsubq_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VSUB.I64 Qd, Qn, Qm
-        ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
+        ///   A64: SUB Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<long> Subtract(Vector128<long> left, Vector128<long> right) => Subtract(left, right);
 
         /// <summary>
         /// int8x16_t vsubq_s8 (int8x16_t a, int8x16_t b)
         ///   A32: VSUB.I8 Qd, Qn, Qm
-        ///   A64: ADD Vd.16B, Vn.16B, Vm.16B
+        ///   A64: SUB Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Subtract(Vector128<sbyte> left, Vector128<sbyte> right) => Subtract(left, right);
 
@@ -3801,50 +3801,52 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x8_t vsubq_u16 (uint16x8_t a, uint16x8_t b)
         ///   A32: VSUB.I16 Qd, Qn, Qm
-        ///   A64: ADD Vd.8H, Vn.8H, Vm.8H
+        ///   A64: SUB Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> Subtract(Vector128<ushort> left, Vector128<ushort> right) => Subtract(left, right);
 
         /// <summary>
         /// uint32x4_t vsubq_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VSUB.I32 Qd, Qn, Qm
-        ///   A64: ADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: SUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Subtract(Vector128<uint> left, Vector128<uint> right) => Subtract(left, right);
 
         /// <summary>
         /// uint64x2_t vsubq_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VSUB.I64 Qd, Qn, Qm
-        ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
+        ///   A64: SUB Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> Subtract(Vector128<ulong> left, Vector128<ulong> right) => Subtract(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VSUB.F64 Dd, Dn, Dm
-        // ///   A64: FSUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) => Subtract(left, right);
-
-        // /// <summary>
-        // /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) => SubtractScalar(left, right);
-
-        // /// <summary>
-        // /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractScalar(left, right);
+        /// <summary>
+        /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VSUB.F64 Dd, Dn, Dm
+        ///   A64: FSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) => SubtractScalar(left, right);
 
         /// <summary>
+        /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) => SubtractScalar(left, right);
+
+        /// <summary>
+        /// float32_t vsubs_f32 (float32_t a, float32_t b)
         ///   A32: VSUB.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FSUB Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SubtractScalar(Vector64<float> left, Vector64<float> right) => SubtractScalar(left, right);
+
+        /// <summary>
+        /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractScalar(left, right);
 
         /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)
