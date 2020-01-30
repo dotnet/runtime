@@ -15,6 +15,7 @@
 #include "weakreferencenative.h"
 #include "typestring.h"
 #include "typeparse.h"
+#include "threadsuspend.h"
 
 //************************************************************************
 
@@ -495,7 +496,9 @@ void FinalizeWeakReference(Object * obj)
 
     WEAKREFERENCEREF pThis((WeakReferenceObject *)(obj));
 
-    OBJECTHANDLE handle = AcquireWeakHandleSpinLock(pThis);
+    bool isRuntimeSuspended = (ThreadSuspend::GetSuspensionThread() != nullptr);
+
+    OBJECTHANDLE handle = isRuntimeSuspended ? pThis->m_Handle : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
     bool isWeakWinRTHandle = false;
 
@@ -518,7 +521,10 @@ void FinalizeWeakReference(Object * obj)
     }
 
     // Release the spin lock
-    ReleaseWeakHandleSpinLock(pThis, handle);
+    if (!isRuntimeSuspended)
+    {
+        ReleaseWeakHandleSpinLock(pThis, handle);
+    }
 
     if (handleToDestroy != NULL)
     {
