@@ -4101,7 +4101,11 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
     emitAttr attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
     insOpts  opt  = genGetSimdInsOpt(attr, baseType);
 
-    if (genIsValidIntReg(op1Reg))
+    if (opt == INS_OPTS_1D)
+    {
+        GetEmitter()->emitIns_R_R(INS_mov, attr, targetReg, op1Reg);
+    }
+    else if (genIsValidIntReg(op1Reg))
     {
         GetEmitter()->emitIns_R_R(INS_dup, attr, targetReg, op1Reg, opt);
     }

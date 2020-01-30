@@ -506,19 +506,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if ((int)(left[0] + right[0]) != result[0])
+            for (var i = 0; i < RetElementCount; i++)
             {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
+                if (Helpers.Add(left[i], right[i]) != result[i])
                 {
-                    if ((int)(left[i] + right[i]) != result[i])
-                    {
-                        succeeded = false;
-                        break;
-                    }
+                    succeeded = false;
+                    break;
                 }
             }
 

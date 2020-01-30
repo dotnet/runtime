@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        private static void Abs_Vector128_Byte()
+        private static void Abs_Vector128_SByte()
         {
-            var test = new SimpleUnaryOpTest__Abs_Vector128_Byte();
+            var test = new SimpleUnaryOpTest__Abs_Vector128_SByte();
 
             if (test.IsSupported)
             {
@@ -110,7 +110,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
     }
 
-    public sealed unsafe class SimpleUnaryOpTest__Abs_Vector128_Byte
+    public sealed unsafe class SimpleUnaryOpTest__Abs_Vector128_SByte
     {
         private struct DataTable
         {
@@ -171,7 +171,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return testStruct;
             }
 
-            public void RunStructFldScenario(SimpleUnaryOpTest__Abs_Vector128_Byte testClass)
+            public void RunStructFldScenario(SimpleUnaryOpTest__Abs_Vector128_SByte testClass)
             {
                 var result = AdvSimd.Abs(_fld1);
 
@@ -179,7 +179,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
             }
 
-            public void RunStructFldScenario_Load(SimpleUnaryOpTest__Abs_Vector128_Byte testClass)
+            public void RunStructFldScenario_Load(SimpleUnaryOpTest__Abs_Vector128_SByte testClass)
             {
                 fixed (Vector128<SByte>* pFld1 = &_fld1)
                 {
@@ -206,13 +206,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private DataTable _dataTable;
 
-        static SimpleUnaryOpTest__Abs_Vector128_Byte()
+        static SimpleUnaryOpTest__Abs_Vector128_SByte()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = (sbyte)-TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
-        public SimpleUnaryOpTest__Abs_Vector128_Byte()
+        public SimpleUnaryOpTest__Abs_Vector128_SByte()
         {
             Succeeded = true;
 
@@ -330,7 +330,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new SimpleUnaryOpTest__Abs_Vector128_Byte();
+            var test = new SimpleUnaryOpTest__Abs_Vector128_SByte();
             var result = AdvSimd.Abs(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -341,7 +341,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
 
-            var test = new SimpleUnaryOpTest__Abs_Vector128_Byte();
+            var test = new SimpleUnaryOpTest__Abs_Vector128_SByte();
 
             fixed (Vector128<SByte>* pFld1 = &test._fld1)
             {
@@ -466,19 +466,12 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             bool succeeded = true;
 
-            if (result[0] != (byte)Math.Abs(firstOp[0]))
+            for (var i = 0; i < RetElementCount; i++)
             {
-                succeeded = false;
-            }
-            else
-            {
-                for (var i = 1; i < RetElementCount; i++)
+                if (Helpers.Abs(firstOp[i]) != result[i])
                 {
-                    if (result[i] != (byte)Math.Abs(firstOp[i]))
-                    {
-                        succeeded = false;
-                        break;
-                    }
+                    succeeded = false;
+                    break;
                 }
             }
 

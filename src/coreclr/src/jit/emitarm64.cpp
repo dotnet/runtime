@@ -3879,6 +3879,7 @@ void emitter::emitIns_R_R(
             assert(isGeneralRegisterOrZR(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // Reserved encoding
             fmt = IF_DV_2C;
             break;
 
@@ -5256,19 +5257,20 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                fmt      = IF_DV_3A;
+                assert(opt != INS_OPTS_1D); // Reserved encoding
+                fmt = IF_DV_3A;
             }
             else
             {
-                NYI("Untested");
+                assert(insOptsNone(opt));
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(size == EA_8BYTE); // Only Int64/UInt64 supported
                 fmt = IF_DV_3E;
             }
             break;
@@ -5280,10 +5282,10 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
@@ -5292,8 +5294,8 @@ void emitter::emitIns_R_R_R(
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
+                assert(insOptsNone(opt));
                 assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
                 fmt = IF_DV_3D;
             }
