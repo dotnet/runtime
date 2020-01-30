@@ -29,7 +29,7 @@ in the COFF header represent a full copy of the input IL and MSIL metadata it wa
 **Composite R2R files** currently conform to Windows PE executable file format as the
 native envelope. Moving forward we plan to gradually add support for platform-native
 executable formats (ELF on Linux, MachO on OSX) as the native envelopes. As a natural corollary
-There is no global CLI / COR header in the file. The ReadyToRun header structure is pointed to
+there is no global CLI / COR header in the file. The ReadyToRun header structure is pointed to
 by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOSITE` flag set.
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
@@ -113,7 +113,7 @@ struct READYTORUN_CORE_HEADER
 | READYTORUN_FLAG_PLATFORM_NEUTRAL_SOURCE | 0x00000001 | Set if the original IL image was platform neutral. The platform neutrality is part of assembly name. This flag can be used to reconstruct the full original assembly name.
 | READYTORUN_FLAG_COMPOSITE               | 0x00000002 | The image represents a composite R2R file resulting from a combined compilation of a larger number of input MSIL assemblies.
 | READYTORUN_FLAG_EMBEDDED_MSIL           | 0x00000004 | Input MSIL is embedded in the R2R image.
-| READYTORUN_FLAG_COMPONENT               | 0x00000008 | This is 
+| READYTORUN_FLAG_COMPONENT               | 0x00000008 | This is a component assembly of a composite R2R image
 
 ## READYTORUN_SECTION
 
@@ -463,7 +463,7 @@ properly look up methods stored in this section in the composite R2R case.
 
 Manifest metadata is an [ECMA-335] metadata blob containing extra reference assemblies within
 the version bubble introduced by inlining on top of assembly references stored in the input MSIL.
-As of R2R version 3.1, the metadata is only searched for the AssemblyRef table. This is used to
+As of R2R version 3.1, the metadata is only used for the AssemblyRef table. This is used to
 translate module override indices in signatures to the actual reference modules (using either
 the `READYTORUN_FIXUP_ModuleOverride` bit flag on the signature fixup byte or the
 `ELEMENT_TYPE_MODULE_ZAPSIG` COR element type).
@@ -486,10 +486,9 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 
 **TODO**: document attribute presence encoding
 
-**Note**: We already know this table uses assembly-relative token encoding so it has similar
-characteristics like `READYTORUN_SECTION_AVAILABLE_TYPES` or `READYTORUN_SECTION_METHOD_ENTRYPOINTS`.
-No matter what component assembly-relative encoding we end up choosing for these tables, we
-should use the same encoding for ATTRIBUTEPRESENCE.
+**Note:** This is a per-assembly section. In single-file R2R files, it is pointed to directly by the
+main R2R header; in composite R2R files, each component module has its own attribute presence
+section pointed to by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
 ## READYTORUN_SECTION_INLINING_INFO2
 

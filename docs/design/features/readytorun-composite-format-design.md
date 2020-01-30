@@ -122,7 +122,8 @@ entrypoints need to be split per input assembly and are referenced from
 In single-input R2R PE files the  generic instantiations generated for the input MSIL assembly
 are placed in `READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS`. In composite R2R files, this
 section represents all instance entrypoints emitted within the composite build (i.e. generic
-instantiations needed by any of the input assemblies).
+instantiations needed by any of the input assemblies). CoreCLR runtime requires changes to
+properly look up methods stored in this section in the composite R2R case.
 
 # CoreCLR runtime changes
 
