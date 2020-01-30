@@ -4,7 +4,6 @@
 
   <Target Name="Build">
     <ItemGroup>
-      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="-skiptests" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="$(CMakeArgs)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
