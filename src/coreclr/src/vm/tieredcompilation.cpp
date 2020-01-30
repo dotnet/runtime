@@ -450,6 +450,7 @@ void TieredCompilationManager::DeactivateTieringDelay()
         COUNT_T methodCount = methodsPendingCounting->GetCount();
         CodeVersionManager *codeVersionManager = GetAppDomain()->GetCodeVersionManager();
 
+        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
@@ -815,6 +816,10 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     HRESULT hr = S_OK;
     {
         bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
+        if (mayHaveEntryPointSlotsToBackpatch)
+        {
+            MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
+        }
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(mayHaveEntryPointSlotsToBackpatch);
 
         // Backpatching entry point slots requires cooperative GC mode, see
