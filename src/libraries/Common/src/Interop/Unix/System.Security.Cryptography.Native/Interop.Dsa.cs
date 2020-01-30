@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
-#nullable enable
 internal static partial class Interop
 {
     internal static partial class Crypto
@@ -126,10 +126,10 @@ internal static partial class Interop
 
                 DSAParameters dsaParameters = new DSAParameters
                 {
-                    P = Crypto.ExtractBignum(p_bn, pgy_cb),
-                    Q = Crypto.ExtractBignum(q_bn, qx_cb),
-                    G = Crypto.ExtractBignum(g_bn, pgy_cb),
-                    Y = Crypto.ExtractBignum(y_bn, pgy_cb),
+                    P = Crypto.ExtractBignum(p_bn, pgy_cb)!,
+                    Q = Crypto.ExtractBignum(q_bn, qx_cb)!,
+                    G = Crypto.ExtractBignum(g_bn, pgy_cb)!,
+                    Y = Crypto.ExtractBignum(y_bn, pgy_cb)!,
                 };
 
                 if (includePrivateParameters)

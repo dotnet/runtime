@@ -717,7 +717,7 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedBasePoint(in ECParameters ecParameters, AsnWriter writer)
         {
-            int basePointLength = ecParameters.Curve.G.X.Length * 2 + 1;
+            int basePointLength = ecParameters.Curve.G.X!.Length * 2 + 1;
             byte[] tmp = CryptoPool.Rent(basePointLength);
             tmp[0] = 0x04;
             ecParameters.Curve.G.X.CopyTo(tmp.AsSpan(1));
@@ -729,7 +729,7 @@ namespace System.Security.Cryptography
 
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
-            int publicKeyLength = ecParameters.Q.X.Length * 2 + 1;
+            int publicKeyLength = ecParameters.Q.X!.Length * 2 + 1;
 
             writer.WriteBitString(
                 publicKeyLength,
@@ -738,7 +738,7 @@ namespace System.Security.Cryptography
                 {
                     publicKeyBytes[0] = 0x04;
                     point.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
-                    point.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + point.X.Length));
+                    point.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + point.X!.Length));
                 });
         }
 

@@ -329,8 +329,8 @@ namespace System.Security.Cryptography
     }
     public partial struct ECPoint
     {
-        public byte[] X;
-        public byte[] Y;
+        public byte[]? X;
+        public byte[]? Y;
     }
     public static class HKDF
     {

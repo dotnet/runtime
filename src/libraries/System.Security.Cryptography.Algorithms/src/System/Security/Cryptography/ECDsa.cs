@@ -69,6 +69,9 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
             return SignData(data, 0, data.Length, hashAlgorithm);
         }
 
@@ -117,6 +120,9 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
 

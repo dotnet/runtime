@@ -86,10 +86,9 @@ namespace System.Security.Cryptography
 
             if (curve.IsNamed)
             {
-                string oid;
                 // Use oid Value first if present, otherwise FriendlyName because Oid maintains a hard-coded
                 // cache that may have different casing for FriendlyNames than OpenSsl
-                oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
+                string oid = !string.IsNullOrEmpty(curve.Oid.Value) ? curve.Oid.Value : curve.Oid.FriendlyName!;
 
                 SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 

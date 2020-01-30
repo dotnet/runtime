@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
@@ -34,8 +35,8 @@ namespace System.Security.Cryptography
                 //     byte[cbKey]          D
 
                 int blobSize = sizeof(BCRYPT_ECCKEY_BLOB) +
-                    parameters.Q.X.Length +
-                    parameters.Q.Y.Length;
+                    parameters.Q.X!.Length +
+                    parameters.Q.Y!.Length;
                 if (includePrivateParameters)
                 {
                     blobSize += parameters.D!.Length;
@@ -95,13 +96,13 @@ namespace System.Security.Cryptography
                     curve.Prime.Length +
                     curve.A.Length +
                     curve.B.Length +
-                    curve.G.X.Length +
-                    curve.G.Y.Length +
+                    curve.G.X!.Length +
+                    curve.G.Y!.Length +
                     curve.Order.Length +
                     curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length) +
-                    parameters.Q.X.Length +
-                    parameters.Q.Y.Length;
+                    parameters.Q.X!.Length +
+                    parameters.Q.Y!.Length;
 
                 if (includePrivateParameters)
                 {
@@ -281,8 +282,8 @@ namespace System.Security.Cryptography
                     curve.Prime.Length +
                     curve.A.Length +
                     curve.B.Length +
-                    curve.G.X.Length +
-                    curve.G.Y.Length +
+                    curve.G.X!.Length +
+                    curve.G.Y!.Length +
                     curve.Order.Length +
                     curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length);

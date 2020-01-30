@@ -211,6 +211,9 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            if (data == null)
+                throw new ArgumentNullException(nameof(data));
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
 

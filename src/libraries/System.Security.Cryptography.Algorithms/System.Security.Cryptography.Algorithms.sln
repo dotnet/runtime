@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29720.21
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Algorithms.Tests", "tests\System.Security.Cryptography.Algorithms.Tests.csproj", "{508A7D81-6462-459C-9F8F-B58FCCCFC8E7}"
 	ProjectSection(ProjectDependencies) = postProject

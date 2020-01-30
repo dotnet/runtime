@@ -29,10 +29,8 @@ namespace System.Security.Cryptography
 
         public virtual AsymmetricSignatureDeformatter CreateDeformatter(AsymmetricAlgorithm key)
         {
-            Debug.Assert(DeformatterAlgorithm != null);
-            AsymmetricSignatureDeformatter? item = (AsymmetricSignatureDeformatter?)CryptoConfig.CreateFromName(DeformatterAlgorithm);
-            Debug.Assert(item != null);
-            item.SetKey(key);
+            AsymmetricSignatureDeformatter? item = (AsymmetricSignatureDeformatter?)CryptoConfig.CreateFromName(DeformatterAlgorithm!);
+            item!.SetKey(key);
             return item;
         }
 

@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class RSASecurityTransforms : RSA
         {
-            private SecKeyPair?_keys;
+            private SecKeyPair? _keys;
 
             public RSASecurityTransforms()
                 : this(2048)
