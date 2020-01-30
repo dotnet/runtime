@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO.Compression;
+using System.Reflection;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.IL;
 
-using ILCompiler.Win32Resources;
 using System.Linq;
 using System.IO;
 
@@ -56,70 +56,74 @@ namespace ILCompiler.IBC
                 }
             }
 
-            EcmaModule mibcModule = tsc.GetMetadataOnlyModuleFromMemory(filename, peData);
-            var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
-            IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
-
-            EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
-            byte[] ilBytes = ilBody.GetILBytes();
-            int currentOffset = 0;
-
-            string mibcGroupName = "";
-            while (currentOffset < ilBytes.Length)
+            using (var peReader = new System.Reflection.PortableExecutable.PEReader(System.Collections.Immutable.ImmutableArray.Create<byte>(peData)))
             {
-                ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
-                if (opcode == ILOpcode.prefix1)
-                    opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
-                switch (opcode)
+                var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
+
+                var assemblyDictionary = (EcmaMethod)mibcModule.GetGlobalModuleType().GetMethod("AssemblyDictionary", null);
+                IEnumerable<MethodProfileData> loadedMethodProfileData = Enumerable.Empty<MethodProfileData>();
+
+                EcmaMethodIL ilBody = EcmaMethodIL.Create(assemblyDictionary);
+                byte[] ilBytes = ilBody.GetILBytes();
+                int currentOffset = 0;
+
+                string mibcGroupName = "";
+                while (currentOffset < ilBytes.Length)
                 {
-                    case ILOpcode.ldstr:
-                        if (mibcGroupName == "")
-                        {
-                            UInt32 userStringToken = (UInt32)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
-                            mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
-                        }
-                        break;
-
-                    case ILOpcode.ldtoken:
-                        if (String.IsNullOrEmpty(mibcGroupName))
-                            break;
-
-                        string[] assembliesByName = mibcGroupName.Split(';');
-                        
-                        bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
-
-                        if (!hasMatchingDefinition)
-                            break;
-
-                        bool areAllEntriesInVersionBubble = true;
-                        foreach (string s in assembliesByName)
-                        {
-                            if (string.IsNullOrEmpty(s))
-                                continue;
-
-                            if (!assemblyNamesInVersionBubble.Contains(s))
+                    ILOpcode opcode = (ILOpcode)ilBytes[currentOffset];
+                    if (opcode == ILOpcode.prefix1)
+                        opcode = 0x100 + (ILOpcode)ilBytes[currentOffset + 1];
+                    switch (opcode)
+                    {
+                        case ILOpcode.ldstr:
+                            if (mibcGroupName == "")
                             {
-                                areAllEntriesInVersionBubble = false;
-                                break;
+                                UInt32 userStringToken = (UInt32)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
+                                mibcGroupName = (string)ilBody.GetObject((int)userStringToken);
                             }
-                        }
-
-                        if (!areAllEntriesInVersionBubble)
                             break;
 
-                        uint token = (uint)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
-                        break;
-                    case ILOpcode.pop:
-                        mibcGroupName = "";
-                        break;
+                        case ILOpcode.ldtoken:
+                            if (String.IsNullOrEmpty(mibcGroupName))
+                                break;
+
+                            string[] assembliesByName = mibcGroupName.Split(';');
+
+                            bool hasMatchingDefinition = (onlyDefinedInAssembly == null) || assembliesByName[0].Equals(onlyDefinedInAssembly);
+
+                            if (!hasMatchingDefinition)
+                                break;
+
+                            bool areAllEntriesInVersionBubble = true;
+                            foreach (string s in assembliesByName)
+                            {
+                                if (string.IsNullOrEmpty(s))
+                                    continue;
+
+                                if (!assemblyNamesInVersionBubble.Contains(s))
+                                {
+                                    areAllEntriesInVersionBubble = false;
+                                    break;
+                                }
+                            }
+
+                            if (!areAllEntriesInVersionBubble)
+                                break;
+
+                            uint token = (uint)(ilBytes[currentOffset + 1] + (ilBytes[currentOffset + 2] << 8) + (ilBytes[currentOffset + 3] << 16) + (ilBytes[currentOffset + 4] << 24));
+                            loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject((int)token)));
+                            break;
+                        case ILOpcode.pop:
+                            mibcGroupName = "";
+                            break;
+                    }
+
+                    // This isn't correct if there is a switch opcode, but since we won't do that, its ok
+                    currentOffset += opcode.GetSize();
                 }
 
-                // This isn't correct if there is a switch opcode, but since we won't do that, its ok
-                currentOffset += opcode.GetSize();
+                return new IBCProfileData(false, loadedMethodProfileData);
             }
-
-            return new IBCProfileData(false, loadedMethodProfileData);
         }
 
         /// <summary>
@@ -176,6 +180,77 @@ namespace ILCompiler.IBC
 
                 // This isn't correct if there is a switch opcode, but since we won't do that, its ok
                 currentOffset += opcode.GetSize();
+            }
+        }
+
+        /// <summary>
+        /// Use this implementation of IModuleResolver to provide a module resolver which overrides resolution of System.Private.Canon module to point to a module
+        /// that can resolve the CanonTypes out of the core library as CanonType.
+        /// </summary>
+        class CustomCanonResolver : IModuleResolver
+        {
+            private class CanonModule : ModuleDesc, IAssemblyDesc
+            {
+                public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
+                {
+                }
+
+                public override IEnumerable<MetadataType> GetAllTypes()
+                {
+                    throw new NotImplementedException();
+                }
+
+                public override MetadataType GetGlobalModuleType()
+                {
+                    throw new NotImplementedException();
+                }
+
+                public override MetadataType GetType(string nameSpace, string name, bool throwIfNotFound = true)
+                {
+                    TypeSystemContext context = Context;
+
+                    if (context.SupportsCanon && (nameSpace == context.CanonType.Namespace) && (name == context.CanonType.Name))
+                        return Context.CanonType;
+                    if (context.SupportsUniversalCanon && (nameSpace == context.UniversalCanonType.Namespace) && (name == context.UniversalCanonType.Name))
+                        return Context.UniversalCanonType;
+                    else
+                    {
+                        if (throwIfNotFound)
+                        {
+                            throw new TypeLoadException($"{nameSpace}.{name}");
+                        }
+                        return null;
+                    }
+                }
+
+                public AssemblyName GetName()
+                {
+                    return new AssemblyName("System.Private.Canon");
+                }
+            }
+
+            CanonModule _canonModule;
+            AssemblyName _canonModuleName;
+            IModuleResolver _wrappedResolver;
+
+            public CustomCanonResolver(TypeSystemContext wrappedContext)
+            {
+                _canonModule = new CanonModule(wrappedContext);
+                _canonModuleName = _canonModule.GetName();
+                _wrappedResolver = wrappedContext;
+            }
+
+            ModuleDesc IModuleResolver.ResolveAssembly(AssemblyName name, bool throwIfNotFound)
+            {
+                if (name.Name == _canonModuleName.Name)
+                    return _canonModule;
+                else
+                    return _wrappedResolver.ResolveAssembly(name, throwIfNotFound);
+            }
+
+            ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
+            {
+                return _wrappedResolver.ResolveModule(referencingModule, fileName, throwIfNotFound);
             }
         }
     }

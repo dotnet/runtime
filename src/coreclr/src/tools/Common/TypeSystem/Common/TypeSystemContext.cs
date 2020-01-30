@@ -11,7 +11,7 @@ using Internal.NativeFormat;
 
 namespace Internal.TypeSystem
 {
-    public abstract partial class TypeSystemContext
+    public abstract partial class TypeSystemContext : IModuleResolver
     {
         public TypeSystemContext() : this(new TargetDetails(TargetArchitecture.Unknown, TargetOS.Unknown, TargetAbi.Unknown))
         {
@@ -66,7 +66,7 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
+        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
         {
             if (throwIfNotFound)
                 throw new NotSupportedException();
