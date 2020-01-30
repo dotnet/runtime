@@ -25,90 +25,6 @@
 
 namespace
 {
-    const HandleType InstanceHandleType{ HNDTYPE_STRONG };
-    const HandleType ComWrappersImplHandleType{ HNDTYPE_STRONG };
-
-    void* CallComputeVTables(
-        _In_ OBJECTREF impl,
-        _In_ OBJECTREF instance,
-        _In_ INT32 flags,
-        _Out_ DWORD* vtableCount)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-            PRECONDITION(impl != NULL);
-            PRECONDITION(instance != NULL);
-            PRECONDITION(vtableCount != NULL);
-        }
-        CONTRACTL_END;
-
-        void* vtables = NULL;
-
-        struct
-        {
-            OBJECTREF implRef;
-            OBJECTREF instRef;
-        } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
-        GCPROTECT_BEGIN(gc);
-
-        gc.implRef = impl;
-        gc.instRef = instance;
-
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__COMPUTE_VTABLES);
-        DECLARE_ARGHOLDER_ARRAY(args, 4);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(gc.implRef);
-        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(gc.instRef);
-        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
-        args[ARGNUM_3]  = PTR_TO_ARGHOLDER(vtableCount);
-        CALL_MANAGED_METHOD(vtables, void*, args);
-
-        GCPROTECT_END();
-
-        return vtables;
-    }
-
-    OBJECTREF CallGetObject(
-        _In_ OBJECTREF impl,
-        _In_ IUnknown* externalComObject,
-        _In_ INT32 flags)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-            PRECONDITION(impl != NULL);
-            PRECONDITION(externalComObject != NULL);
-        }
-        CONTRACTL_END;
-
-        OBJECTREF retObjRef;
-
-        struct
-        {
-            OBJECTREF implRef;
-        } gc;
-        ::ZeroMemory(&gc, sizeof(gc));
-        GCPROTECT_BEGIN(gc);
-
-        gc.implRef = impl;
-
-        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(gc.implRef);
-        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
-        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
-        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
-
-        GCPROTECT_END();
-
-        return retObjRef;
-    }
-
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext
     {
@@ -116,16 +32,53 @@ namespace
         DWORD SyncBlockIndex;
     };
 
+    // Holder for a External Object Context
+    struct ExtObjCxtHolder
+    {
+        ExternalObjectContext* _cxt;
+        ExtObjCxtHolder()
+            : _cxt(nullptr)
+        { }
+        ~ExtObjCxtHolder()
+        {
+            if (_cxt != nullptr)
+                InteropLib::Com::DestroyWrapperForExternal(_cxt);
+        }
+        ExternalObjectContext* operator->()
+        {
+            return (ExternalObjectContext*)_cxt;
+        }
+        ExternalObjectContext** operator&()
+        {
+            return &_cxt;
+        }
+        operator ExternalObjectContext*()
+        {
+            return _cxt;
+        }
+        ExternalObjectContext* Detach()
+        {
+            ExternalObjectContext* t = _cxt;
+            _cxt = nullptr;
+            return t;
+        }
+    };
+
     class ExtObjCxtCache
     {
-        static ExtObjCxtCache* g_Instance;
+        static Volatile<ExtObjCxtCache*> g_Instance;
 
     public: // static
         static ExtObjCxtCache* GetInstance()
         {
-            // [TODO] Properly allocate the cache
-            if (g_Instance == nullptr)
-                g_Instance = new ExtObjCxtCache();
+            if (g_Instance.Load() == NULL)
+            {
+                ExtObjCxtCache* instMaybe = new ExtObjCxtCache();
+
+                // Attempt to set the global instance.
+                if (NULL != FastInterlockCompareExchangePointer(&g_Instance, instMaybe, NULL))
+                    delete instMaybe;
+            }
 
             return g_Instance;
         }
@@ -206,8 +159,7 @@ namespace
                 GC_NOTRIGGER;
                 MODE_COOPERATIVE;
                 PRECONDITION(IsLockHeld());
-                PRECONDITION(!Traits::IsNull(cxt));
-                PRECONDITION(!Traits::IsDeleted(cxt));
+                PRECONDITION(!Traits::IsNull(cxt) && !Traits::IsDeleted(cxt));
                 PRECONDITION(cxt->Identity != NULL);
                 PRECONDITION(Find(static_cast<IUnknown*>(cxt->Identity)) == NULL);
                 POSTCONDITION(RETVAL == cxt);
@@ -227,8 +179,7 @@ namespace
                 MODE_COOPERATIVE;
                 PRECONDITION(IsLockHeld());
                 PRECONDITION(key != NULL);
-                PRECONDITION(!Traits::IsNull(newCxt));
-                PRECONDITION(!Traits::IsDeleted(newCxt));
+                PRECONDITION(!Traits::IsNull(newCxt) && !Traits::IsDeleted(newCxt));
                 PRECONDITION(key == newCxt->Identity);
                 POSTCONDITION(CheckPointer(RETVAL));
             }
@@ -251,8 +202,7 @@ namespace
                 NOTHROW;
                 GC_NOTRIGGER;
                 MODE_ANY;
-                PRECONDITION(!Traits::IsNull(cxt));
-                PRECONDITION(!Traits::IsDeleted(cxt));
+                PRECONDITION(!Traits::IsNull(cxt) && !Traits::IsDeleted(cxt));
                 PRECONDITION(cxt->Identity != NULL);
 
                 // The GC thread doesn't have to take the lock
@@ -268,189 +218,89 @@ namespace
     };
 
     // Global instance
-    ExtObjCxtCache* ExtObjCxtCache::g_Instance;
+    Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
 
-    // Wrapper for External Object Contexts
-    struct ExtObjCxtHolder
-    {
-        void* _cxt;
-        ExtObjCxtHolder()
-            : _cxt(nullptr)
-        { }
-        ~ExtObjCxtHolder()
-        {
-            if (_cxt != nullptr)
-                InteropLib::Com::DestroyWrapperForExternal(_cxt);
-        }
-        ExternalObjectContext* operator->()
-        {
-            return (ExternalObjectContext*)_cxt;
-        }
-        void** operator&()
-        {
-            return &_cxt;
-        }
-        operator ExternalObjectContext*()
-        {
-            return (ExternalObjectContext*)_cxt;
-        }
-        void* Detach()
-        {
-            void* t = _cxt;
-            _cxt = nullptr;
-            return t;
-        }
-    };
-}
+    // Defined handle types for the specific object uses.
+    const HandleType InstanceHandleType{ HNDTYPE_STRONG };
+    const HandleType ComWrappersImplHandleType{ HNDTYPE_STRONG };
 
-namespace InteropLibImports
-{
-    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept
+    void* CallComputeVTables(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ OBJECTREF* instancePROTECTED,
+        _In_ INT32 flags,
+        _Out_ DWORD* vtableCount)
     {
         CONTRACTL
         {
-            NOTHROW;
-            MODE_ANY;
-            PRECONDITION(sizeInBytes != 0);
-        }
-        CONTRACTL_END;
-
-        return ::malloc(sizeInBytes);
-    }
-
-    void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            MODE_ANY;
-            PRECONDITION(mem != NULL);
-        }
-        CONTRACTL_END;
-
-        ::free(mem);
-    }
-
-    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            MODE_PREEMPTIVE;
-            PRECONDITION(handle != NULL);
-        }
-        CONTRACTL_END;
-
-        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-        DestroyHandleCommon(objectHandle, InstanceHandleType);
-    }
-
-    HRESULT GetOrCreateTrackerTargetForExternal(
-        _In_ InteropLib::OBJECTHANDLE impl,
-        _In_ IUnknown* externalComObject,
-        _In_ INT32 externalObjectFlags,
-        _In_ INT32 trackerTargetFlags,
-        _Outptr_ IUnknown** trackerTarget) noexcept
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            MODE_PREEMPTIVE;
-            PRECONDITION(impl != NULL);
-            PRECONDITION(externalComObject != NULL);
-            PRECONDITION(trackerTarget != NULL);
-        }
-        CONTRACTL_END;
-
-        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(impl);
-
-        {
-            GCX_COOP();
-
-            struct
-            {
-                OBJECTREF implRef;
-                OBJECTREF newObjRef;
-            } gc;
-            ::ZeroMemory(&gc, sizeof(gc));
-            GCPROTECT_BEGIN(gc);
-
-            gc.implRef = ObjectFromHandle(implHandle);
-            _ASSERTE(gc.implRef != NULL);
-
-            //
-            // Get wrapper for external object
-            //
-
-            //
-            // Get wrapper for managed object
-            //
-
-            GCPROTECT_END();
-        }
-
-        return S_OK;
-    }
-
-    class ExtObjCxtIterator
-    {
-    public:
-        ExtObjCxtIterator(_In_ ExtObjCxtCache* cache)
-            : Curr{ cache->_hashMap.Begin() }
-            , End{ cache->_hashMap.End() }
-        { }
-
-        ExtObjCxtCache::Iterator Curr;
-        ExtObjCxtCache::Iterator End;
-    };
-
-    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
+            THROWS;
+            GC_TRIGGERS;
             MODE_COOPERATIVE;
-            PRECONDITION(iter != NULL);
-            PRECONDITION(context != NULL);
-
-            // Should only be called during a GC suspension
-            PRECONDITION(Debug_IsLockedViaThreadSuspension());
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(instancePROTECTED != NULL);
+            PRECONDITION(vtableCount != NULL);
         }
         CONTRACTL_END;
 
-        if (iter->Curr == iter->End)
-        {
-            *context = NULL;
-            return S_FALSE;
-        }
+        void* vtables = NULL;
 
-        ExtObjCxtCache::Element e = *iter->Curr++;
-        *context = e;
-        return S_OK;
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__COMPUTE_VTABLES);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*instancePROTECTED);
+        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
+        args[ARGNUM_3]  = PTR_TO_ARGHOLDER(vtableCount);
+        CALL_MANAGED_METHOD(vtables, void*, args);
+
+        return vtables;
     }
-}
 
-#ifdef FEATURE_COMINTEROP
-
-void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
-    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
-    _In_ QCall::ObjectHandleOnStack instance,
-    _In_ INT32 flags)
-{
-    QCALL_CONTRACT;
-
-    HRESULT hr;
-
-    SafeComHolder<IUnknown> newWrapper;
-    void* wrapper = NULL;
-
-    BEGIN_QCALL;
-
-    // Switch to COOP mode to check if the object already
-    // has a wrapper in its syncblock.
+    OBJECTREF CallGetObject(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 flags)
     {
-        GCX_COOP();
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(externalComObject != NULL);
+        }
+        CONTRACTL_END;
+
+        OBJECTREF retObjRef;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
+        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
+        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
+        CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
+
+        return retObjRef;
+    }
+
+    void* GetOrCreateComInterfaceForObjectInternal(
+        _In_ OBJECTREF impl,
+        _In_ OBJECTREF instance,
+        _In_ INT32 flags)
+    {
+        CONTRACT(void*)
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(instance != NULL);
+            POSTCONDITION(CheckPointer(RETVAL));
+        }
+        CONTRACT_END;
+
+        HRESULT hr;
+
+        SafeComHolder<IUnknown> newWrapper;
+        void* wrapper = NULL;
 
         struct
         {
@@ -460,8 +310,8 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
 
-        gc.instRef = ObjectToOBJECTREF(*instance.m_ppObject);
-        _ASSERTE(gc.instRef != NULL);
+        gc.implRef = impl;
+        gc.instRef = instance;
 
         // Check the object's SyncBlock for a managed object wrapper.
         SyncBlock* syncBlock = gc.instRef->GetSyncBlock();
@@ -470,17 +320,13 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
         if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
         {
-            // Get the supplied COM Wrappers implementation to request VTable computation.
-            gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
-            _ASSERTE(gc.implRef != NULL);
-
-            // Compute VTables for the new existing COM object
+            // Compute VTables for the new existing COM object using the supplied COM Wrappers implementation.
             //
             // N.B. Calling to compute the associated VTables is perhaps early since no lock
             // is taken. However, a key assumption here is that the returned memory will be
             // idempotent for the same object.
             DWORD vtableCount;
-            void* vtables = CallComputeVTables(gc.implRef, gc.instRef, flags, &vtableCount);
+            void* vtables = CallComputeVTables(&gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
             if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
@@ -535,39 +381,28 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         }
 
         GCPROTECT_END();
+
+        RETURN wrapper;
     }
 
-    END_QCALL;
-
-    _ASSERTE(wrapper != NULL);
-    return wrapper;
-}
-
-void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
-    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
-    _In_ void* ext,
-    _In_ INT32 flags,
-    _Inout_ QCall::ObjectHandleOnStack retValue)
-{
-    QCALL_CONTRACT;
-
-    _ASSERTE(ext != NULL);
-
-    BEGIN_QCALL;
-
-    HRESULT hr;
-    ExternalObjectContext* extObjCxt;
-    IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
-
-    // Determine the true identity of the object
-    SafeComHolder<IUnknown> identity;
-    hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
-    _ASSERTE(hr == S_OK);
-
-    // Switch to COOP mode in order to check if the external object is already
-    // known or a new one should be created.
+    OBJECTREF GetOrCreateObjectForComInstanceInternal(
+        _In_ OBJECTREF impl,
+        _In_ IUnknown* identity,
+        _In_ INT32 flags)
     {
-        GCX_COOP();
+        CONTRACT(OBJECTREF)
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(identity != NULL);
+            POSTCONDITION(RETVAL != NULL);
+        }
+        CONTRACT_END;
+
+        HRESULT hr;
+        ExternalObjectContext* extObjCxt;
 
         struct
         {
@@ -576,6 +411,8 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         } gc;
         ::ZeroMemory(&gc, sizeof(gc));
         GCPROTECT_BEGIN(gc);
+
+        gc.implRef = impl;
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
@@ -597,15 +434,12 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         else
         {
             ExtObjCxtHolder newContext;
-            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), &newContext);
+            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), (void**)&newContext);
             if (FAILED(hr))
                 COMPlusThrow(hr);
 
-            gc.implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
-            _ASSERTE(gc.implRef != NULL);
-
             // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(gc.implRef, identity, flags);
+            gc.objRef = CallGetObject(&gc.implRef, identity, flags);
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
@@ -623,10 +457,210 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
                 (void)newContext.Detach();
         }
 
-        // Set the return value
-        retValue.Set(gc.objRef);
-
         GCPROTECT_END();
+
+        RETURN gc.objRef;
+    }
+}
+
+namespace InteropLibImports
+{
+    void* MemAlloc(_In_ size_t sizeInBytes, _In_ AllocScenario scenario) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(sizeInBytes != 0);
+        }
+        CONTRACTL_END;
+
+        return ::malloc(sizeInBytes);
+    }
+
+    void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+            PRECONDITION(mem != NULL);
+        }
+        CONTRACTL_END;
+
+        ::free(mem);
+    }
+
+    void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+        DestroyHandleCommon(objectHandle, InstanceHandleType);
+    }
+
+    HRESULT GetOrCreateTrackerTargetForExternal(
+        _In_ InteropLib::OBJECTHANDLE impl,
+        _In_ IUnknown* externalComObject,
+        _In_ INT32 externalObjectFlags,
+        _In_ INT32 trackerTargetFlags,
+        _Outptr_ void** trackerTarget) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+            PRECONDITION(impl != NULL);
+            PRECONDITION(externalComObject != NULL);
+            PRECONDITION(trackerTarget != NULL);
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(impl);
+
+        *trackerTarget = NULL;
+
+        {
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF implRef;
+                OBJECTREF objRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            gc.implRef = ObjectFromHandle(implHandle);
+
+            EX_TRY
+            {
+                // Get wrapper for external object
+                gc.objRef = GetOrCreateObjectForComInstanceInternal(
+                    gc.implRef,
+                    externalComObject,
+                    externalObjectFlags);
+
+                // Get wrapper for managed object
+                *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
+                    gc.implRef,
+                    gc.objRef,
+                    trackerTargetFlags);
+            }
+            EX_CATCH_HRESULT(hr);
+
+            GCPROTECT_END();
+        }
+
+        return hr;
+    }
+
+    class ExtObjCxtIterator
+    {
+    public:
+        ExtObjCxtIterator(_In_ ExtObjCxtCache* cache)
+            : Curr{ cache->_hashMap.Begin() }
+            , End{ cache->_hashMap.End() }
+        { }
+
+        ExtObjCxtCache::Iterator Curr;
+        ExtObjCxtCache::Iterator End;
+    };
+
+    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+            PRECONDITION(iter != NULL);
+            PRECONDITION(context != NULL);
+
+            // Should only be called during a GC suspension
+            PRECONDITION(Debug_IsLockedViaThreadSuspension());
+        }
+        CONTRACTL_END;
+
+        if (iter->Curr == iter->End)
+        {
+            *context = NULL;
+            return S_FALSE;
+        }
+
+        ExtObjCxtCache::Element e = *iter->Curr++;
+        *context = e;
+        return S_OK;
+    }
+}
+
+#ifdef FEATURE_COMINTEROP
+
+void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
+    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ QCall::ObjectHandleOnStack instance,
+    _In_ INT32 flags)
+{
+    QCALL_CONTRACT;
+
+    void* wrapper = NULL;
+
+    BEGIN_QCALL;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+        wrapper = GetOrCreateComInterfaceForObjectInternal(
+            ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
+            ObjectToOBJECTREF(*instance.m_ppObject),
+            flags);
+    }
+
+    END_QCALL;
+
+    _ASSERTE(wrapper != NULL);
+    return wrapper;
+}
+
+void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
+    _In_ QCall::ObjectHandleOnStack comWrappersImpl,
+    _In_ void* ext,
+    _In_ INT32 flags,
+    _Inout_ QCall::ObjectHandleOnStack retValue)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(ext != NULL);
+
+    BEGIN_QCALL;
+
+    HRESULT hr;
+    IUnknown* externalComObject = reinterpret_cast<IUnknown*>(ext);
+
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    hr = externalComObject->QueryInterface(IID_IUnknown, &identity);
+    _ASSERTE(hr == S_OK);
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+        OBJECTREF newObj = GetOrCreateObjectForComInstanceInternal(
+            ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
+            identity,
+            flags);
+
+        // Set the return value
+        retValue.Set(newObj);
     }
 
     END_QCALL;
