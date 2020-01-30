@@ -153,7 +153,7 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
      -cmakeargs)
-      cmakeargs="${cmakeargs}x#160;${opt}x#160;$2"
+      cmakeargs="${cmakeargs} ${opt} $2"
       shift 2
       ;;
      -gcc*)
@@ -191,5 +191,8 @@ if [ ${#actInt[@]} -eq 0 ]; then
     arguments="-restore -build $arguments"
 fi
 
+# URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
+# In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
+cmakeargs="${cmakeargs// /%20}"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments

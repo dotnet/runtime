@@ -3,9 +3,6 @@
   <Import Project="Directory.Build.targets" />
 
   <Target Name="Build">
-    <PropertyGroup>
-      <CMakeArgs>$(CMakeArgs.Replace("x#160;", " "))</CMakeArgs>
-    </PropertyGroup>
     <ItemGroup>
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="-skiptests" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
