@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Format of the sequence:
                 // Inlinee RID with flag in the lowest bit
                 // - if flag is set, followed by module ID
-                // Followed by inliner RIDs with flag in the lowest bit
+                // Followed by inliner RIDs deltas with flag in the lowest bit
                 // - if flag is set, followed by module ID
 
                 var sig = new VertexSequence();
@@ -122,7 +122,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int inlinerRid = MetadataTokens.GetRowNumber(inliner.Handle);
                     int ridDelta = inlinerRid - baseRid;
                     baseRid = inlinerRid;
-                    Debug.Assert(ridDelta > 0);
+                    Debug.Assert(ridDelta >= 0);
                     bool isForeignInliner = inliner.Module != _globalContext;
                     sig.Append(new UnsignedConstant((uint)(ridDelta << 1 | (isForeignInliner ? 1 : 0))));
                     if (isForeignInliner)
