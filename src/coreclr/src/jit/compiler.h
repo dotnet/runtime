@@ -4340,6 +4340,7 @@ public:
 
 #if defined(DEBUG)
     unsigned impInlinedCodeSize;
+    bool     fgPrintInlinedMethods;
 #endif
 
     //-------------------------------------------------------------------------
@@ -5601,10 +5602,6 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
     bool gtIsActiveCSE_Candidate(GenTree* tree);
-
-#ifdef DEBUG
-    bool fgPrintInlinedMethods;
-#endif
 
     bool fgIsBigOffset(size_t offset);
 

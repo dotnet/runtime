@@ -751,16 +751,31 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while (*p == L' ')
+        while ((*p == L' ') || (*p == L','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (L'0' <= *p && *p <= L'9')
+        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
         {
-            int j = 10 * i + ((*p++) - L'0');
+            int n = 0;
+
+            if ((L'0' <= *p) && (*p <= L'9'))
+            {
+                n = (*p++) - L'0';
+            }
+            else if ((L'A' <= *p) && (*p <= L'F'))
+            {
+                n = (*p++) - L'A';
+            }
+            else if ((L'a' <= *p) && (*p <= L'f'))
+            {
+                n = (*p++) - L'a';
+            }
+
+            int j = 16 * i + n;
 
             // Check for overflow
             if ((m_badChar != 0) && (j <= i))

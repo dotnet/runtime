@@ -508,8 +508,8 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         }
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
-        fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", calleeToken);
-        fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", calleeHash);
+        fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
+        fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", calleeHash);
         fprintf(file, "%*s<Offset>%u</Offset>\n", indent + 2, "", offset);
         fprintf(file, "%*s<Reason>%s</Reason>\n", indent + 2, "", inlineReason);
 
@@ -687,11 +687,10 @@ void InlineResult::Report()
     m_Reported = true;
 
 #ifdef DEBUG
-    const char* callee      = nullptr;
-    const bool  showInlines = (JitConfig.JitPrintInlinedMethods() == 1);
+    const char* callee = nullptr;
 
     // Optionally dump the result
-    if (VERBOSE || showInlines)
+    if (VERBOSE || m_RootCompiler->fgPrintInlinedMethods)
     {
         const char* format = "INLINER: during '%s' result '%s' reason '%s' for '%s' calling '%s'\n";
         const char* caller = (m_Caller == nullptr) ? "n/a" : m_RootCompiler->eeGetMethodFullName(m_Caller);
@@ -726,8 +725,7 @@ void InlineResult::Report()
             {
                 JITDUMP("\nINLINER: Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
-
-            if (showInlines)
+            else if (m_RootCompiler->fgPrintInlinedMethods)
             {
                 printf("Marking %s as NOINLINE because of %s\n", callee, obsString);
             }
@@ -1597,8 +1595,8 @@ void InlineStrategy::DumpXml(FILE* file, unsigned indent)
     }
 
     fprintf(file, "%*s<Method>\n", indent, "");
-    fprintf(file, "%*s<Token>%u</Token>\n", indent + 2, "", currentMethodToken);
-    fprintf(file, "%*s<Hash>%u</Hash>\n", indent + 2, "", hash);
+    fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", currentMethodToken);
+    fprintf(file, "%*s<Hash>%08x</Hash>\n", indent + 2, "", hash);
     fprintf(file, "%*s<Name>%s</Name>\n", indent + 2, "", buf);
     fprintf(file, "%*s<InlineCount>%u</InlineCount>\n", indent + 2, "", m_InlineCount);
     fprintf(file, "%*s<HotSize>%u</HotSize>\n", indent + 2, "", info.compTotalHotCodeSize);
