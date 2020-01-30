@@ -37,15 +37,13 @@ namespace System.Security.Cryptography
         public virtual AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
         {
             AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm!);
-            Debug.Assert(item != null);
-            item.SetKey(key);
+            item!.SetKey(key);
             return item;
         }
 
         public virtual HashAlgorithm? CreateDigest()
         {
-            Debug.Assert(DigestAlgorithm != null);
-            return (HashAlgorithm?)CryptoConfig.CreateFromName(DigestAlgorithm);
+            return (HashAlgorithm?)CryptoConfig.CreateFromName(DigestAlgorithm!);
         }
     }
 }
