@@ -14,7 +14,7 @@ namespace System.Diagnostics
     {
         private string _delimiter = ";";
         private string _secondaryDelim = ",";
-        private bool _initializedDelim = false;
+        private bool _initializedDelim;
 
         public DelimitedListTraceListener(Stream stream) : base(stream)
         {
