@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Immutable;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Diagnostics;
@@ -131,25 +130,20 @@ namespace ILCompiler
                 }
             }
 
-            return AddModule(filePath, simpleName, null, true);
+            return AddModule(filePath, simpleName, true);
         }
 
         public EcmaModule GetModuleFromPath(string filePath)
         {
-            return GetOrAddModuleFromPath(filePath, null, true);
+            return GetOrAddModuleFromPath(filePath, true);
         }
 
         public EcmaModule GetMetadataOnlyModuleFromPath(string filePath)
         {
-            return GetOrAddModuleFromPath(filePath, null, false);
+            return GetOrAddModuleFromPath(filePath, false);
         }
 
-        public EcmaModule GetMetadataOnlyModuleFromMemory(string filePath, byte[] moduleData)
-        {
-            return GetOrAddModuleFromPath(filePath, moduleData, false);
-        }
-
-        private EcmaModule GetOrAddModuleFromPath(string filePath, byte[] moduleData, bool useForBinding)
+        private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
         {
             // This method is not expected to be called frequently. Linear search is acceptable.
             foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
@@ -158,19 +152,11 @@ namespace ILCompiler
                     return entry.Module;
             }
 
-            return AddModule(filePath, null, moduleData, useForBinding);
+            return AddModule(filePath, null, useForBinding);
         }
 
-        public static unsafe PEReader OpenPEFile(string filePath, byte[] moduleBytes, out MemoryMappedViewAccessor mappedViewAccessor)
+        public static unsafe PEReader OpenPEFile(string filePath, out MemoryMappedViewAccessor mappedViewAccessor)
         {
-            // If moduleBytes is specified create PEReader from the in memory array, not from a file on disk
-            if (moduleBytes != null)
-            {
-                var peReader = new PEReader(ImmutableArray.Create<byte>(moduleBytes));
-                mappedViewAccessor = null;
-                return peReader;
-            }
-
             // System.Reflection.Metadata has heuristic that tries to save virtual address space. This heuristic does not work
             // well for us since it can make IL access very slow (call to OS for each method IL query). We will map the file
             // ourselves to get the desired performance characteristics reliably.
@@ -207,13 +193,13 @@ namespace ILCompiler
             }
         }
 
-        private EcmaModule AddModule(string filePath, string expectedSimpleName, byte[] moduleDataBytes, bool useForBinding)
+        private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding)
         {
             MemoryMappedViewAccessor mappedViewAccessor = null;
             PdbSymbolReader pdbReader = null;
             try
             {
-                PEReader peReader = OpenPEFile(filePath, moduleDataBytes, out mappedViewAccessor);
+                PEReader peReader = OpenPEFile(filePath, out mappedViewAccessor);
                 pdbReader = OpenAssociatedSymbolFile(filePath, peReader);
 
                 EcmaModule module = EcmaModule.Create(this, peReader, containingAssembly: null, pdbReader);
