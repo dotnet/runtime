@@ -1826,21 +1826,25 @@ namespace System.Text.RegularExpressions
                             supported = node.N == -1;
                             if (supported)
                             {
-                                // And we only support them in certain places in the tree, e.g. we don't support
-                                // them inside of lookaheads.
+                                // And we only support them in certain places in the tree.
                                 RegexNode? parent = node.Next;
                                 while (parent != null)
                                 {
-                                    if (parent.Type != RegexNode.Concatenate &&
-                                        parent.Type != RegexNode.Alternate &&
-                                        parent.Type != RegexNode.Capture &&
-                                        parent.Type != RegexNode.Require) // a positive look* node is already checked to ensure it's lookahead rather than lookbehind
+                                    switch (parent.Type)
                                     {
-                                        supported = false;
-                                        break;
-                                    }
+                                        case RegexNode.Alternate:
+                                        case RegexNode.Atomic:
+                                        case RegexNode.Capture:
+                                        case RegexNode.Concatenate:
+                                        case RegexNode.Require:
+                                            parent = parent.Next;
+                                            break;
 
-                                    parent = parent.Next;
+                                        default:
+                                            parent = null;
+                                            supported = false;
+                                            break;
+                                    }
                                 }
 
                                 if (supported)
