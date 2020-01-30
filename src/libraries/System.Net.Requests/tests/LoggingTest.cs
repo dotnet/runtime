@@ -4,7 +4,6 @@
 
 using System.Diagnostics.Tracing;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Tests
 {

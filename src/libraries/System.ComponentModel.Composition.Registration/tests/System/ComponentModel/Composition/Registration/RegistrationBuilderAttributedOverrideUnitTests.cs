@@ -8,7 +8,6 @@ using System.Linq.Expressions;
 using System.Reflection;
 using Xunit;
 using Xunit.Sdk;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
