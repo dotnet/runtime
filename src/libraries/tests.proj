@@ -8,8 +8,7 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
   <PropertyGroup>
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier> 
-    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
+    <TargetFramework>netcoreapp5.0</TargetFramework> 
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">

@@ -82,8 +82,6 @@
 
     <!-- We don't want Private packages to be shipped to NuGet.org -->
     <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
-    <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
-    <RuntimeGraph>$(LibrariesProjectRoot)\runtime.json</RuntimeGraph>
   </PropertyGroup>
 
   <!-- Language configuration -->
