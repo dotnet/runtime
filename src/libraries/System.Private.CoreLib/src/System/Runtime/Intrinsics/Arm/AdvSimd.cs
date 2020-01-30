@@ -503,6 +503,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> MinScalar(Vector64<float> left, Vector64<float> right) => MinScalar(left, right);
 
             /// <summary>
+            /// float64x2_t vmulq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -3005,6 +3011,119 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// uint8x8_t vmul_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Multiply(Vector64<byte> left, Vector64<byte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int16x4_t vmul_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Multiply(Vector64<short> left, Vector64<short> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int32x2_t vmul_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Multiply(Vector64<int> left, Vector64<int> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x8_t vmul_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Multiply(Vector64<sbyte> left, Vector64<sbyte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float32x2_t vmul_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMUL.F32 Dd, Dn, Dm
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Multiply(Vector64<float> left, Vector64<float> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmul_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Multiply(Vector64<ushort> left, Vector64<ushort> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmul_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Multiply(Vector64<uint> left, Vector64<uint> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmulq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Multiply(Vector128<byte> left, Vector128<byte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int16x8_t vmulq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Multiply(Vector128<short> left, Vector128<short> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Multiply(Vector128<int> left, Vector128<int> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x16_t vmulq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Multiply(Vector128<sbyte> left, Vector128<sbyte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float32x4_t vmulq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMUL.F32 Qd, Qn, Qm
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Multiply(Vector128<float> left, Vector128<float> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmulq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Multiply(Vector128<ushort> left, Vector128<ushort> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmulq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMUL.F64 Dd, Dn, Dm
+        ///   A64: FMUL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MultiplyScalar(Vector64<double> left, Vector64<double> right) => MultiplyScalar(left, right);
+
+        /// <summary>
+        /// float32_t vmuls_f32 (float32_t a, float32_t b)
+        ///   A32: VMUL.F32 Sd, Sn, Sm
+        ///   A64: FMUL Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) => MultiplyScalar(left, right);
 
         /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
