@@ -42,7 +42,6 @@ jobs:
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-
     gatherAssetManifests: true
     variables:
     - name: osGroup
