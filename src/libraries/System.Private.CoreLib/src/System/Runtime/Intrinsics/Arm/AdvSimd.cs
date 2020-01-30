@@ -465,6 +465,25 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
 
             /// <summary>
+            /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
+
+            /// <summary>
+            /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMAX Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MaxScalar(Vector64<double> left, Vector64<double> right) => MaxScalar(left, right);
+
+            /// <summary>
+            /// float32_t vmaxs_f32 (float32_t a, float32_t b)
+            ///   A64: FMAX Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MaxScalar(Vector64<float> left, Vector64<float> right) => MaxScalar(left, right);
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -2771,6 +2790,104 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2D, [Xn]
         /// </summary>
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
+
+        /// <summary>
+        /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Max(Vector64<byte> left, Vector64<byte> right) => Max(left, right);
+
+        /// <summary>
+        /// int16x4_t vmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Max(Vector64<short> left, Vector64<short> right) => Max(left, right);
+
+        /// <summary>
+        /// int32x2_t vmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Max(Vector64<int> left, Vector64<int> right) => Max(left, right);
+
+        /// <summary>
+        /// int8x8_t vmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Max(Vector64<sbyte> left, Vector64<sbyte> right) => Max(left, right);
+
+        /// <summary>
+        /// float32x2_t vmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Max(Vector64<float> left, Vector64<float> right) => Max(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Max(Vector64<ushort> left, Vector64<ushort> right) => Max(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Max(Vector64<uint> left, Vector64<uint> right) => Max(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmaxq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMAX.U8 Qd, Qn, Qm
+        ///   A64: UMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Max(Vector128<byte> left, Vector128<byte> right) => Max(left, right);
+
+        /// <summary>
+        /// int16x8_t vmaxq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMAX.S16 Qd, Qn, Qm
+        ///   A64: SMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Max(Vector128<short> left, Vector128<short> right) => Max(left, right);
+
+        /// <summary>
+        /// int32x4_t vmaxq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMAX.S32 Qd, Qn, Qm
+        ///   A64: SMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Max(Vector128<int> left, Vector128<int> right) => Max(left, right);
+
+        /// <summary>
+        /// int8x16_t vmaxq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMAX.S8 Qd, Qn, Qm
+        ///   A64: SMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Max(Vector128<sbyte> left, Vector128<sbyte> right) => Max(left, right);
+
+        /// <summary>
+        /// float32x4_t vmaxq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAX.F32 Qd, Qn, Qm
+        ///   A64: FMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Max(Vector128<float> left, Vector128<float> right) => Max(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmaxq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMAX.U16 Qd, Qn, Qm
+        ///   A64: UMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) => Max(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmaxq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMAX.U32 Qd, Qn, Qm
+        ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) => Max(left, right);
 
         /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
