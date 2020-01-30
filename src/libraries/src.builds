@@ -1,10 +1,6 @@
 <Project DefaultTargets="Build" TreatAsLocalProperty="AdditionalBuildTargetFrameworks">
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
 
-  <PropertyGroup>
-    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>    
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />

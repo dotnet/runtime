@@ -9,6 +9,7 @@
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
     <RuntimePropsFile>$(RepoRoot)artifacts\tmp\$(Configuration)\RuntimeOS.props</RuntimePropsFile>
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>  
   </PropertyGroup>
 
   <Import Project="$(RuntimePropsFile)" Condition="Exists('$(RuntimePropsFile)')"/>
@@ -330,6 +331,7 @@
     <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(Configuration)\</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(OriginalTargetFramework)-$(Configuration)</IntermediateOutputPath>
+    <AdditionalBuildTargetFrameworks Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0</AdditionalBuildTargetFrameworks>  
   </PropertyGroup>
 
   <PropertyGroup>

@@ -10,7 +10,7 @@
     <!-- let us control the output path -->
     <OutputPath>$(BaseOutputPath)$(OriginalTargetFramework)-$(Configuration)</OutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <AdditionalBuildTargetFrameworks>netstandard2.0-$(OSGroup)</AdditionalBuildTargetFrameworks>
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">netstandard2.0-$(OSGroup)</AdditionalBuildTargetFrameworks>
   </PropertyGroup>
   
   <!-- don't bring in props/targets from packages, we're not consuming them we're

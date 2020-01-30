@@ -11,13 +11,13 @@
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true' and '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;AdditionalBuildTargetFrameworks=$(AdditionalBuildTargetFrameworks)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndStop" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;%(Project.AdditionalProperties);AdditionalBuildTargetFrameworks=$(AdditionalBuildTargetFrameworks)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 

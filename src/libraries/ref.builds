@@ -1,9 +1,5 @@
-<Project DefaultTargets="Build" TreatAsLocalProperty="AdditionalBuildTargetFrameworks" >
+<Project DefaultTargets="Build" >
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
-
-  <PropertyGroup>
-    <AdditionalBuildTargetFrameworks>$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>    
-  </PropertyGroup>
 
   <ItemGroup>
     <Project Condition="'$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\ref\*.*proj" Exclude="@(ProjectExclusions)" />
