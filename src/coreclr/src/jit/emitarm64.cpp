@@ -11571,10 +11571,31 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
-        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg   - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
+        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
+            switch (ins)
+            {
+                case INS_addv:
+                case INS_saddlv:
+                case INS_smaxv:
+                case INS_sminv:
+                case INS_uaddlv:
+                case INS_umaxv:
+                case INS_uminv:
+                    elemsize = optGetElemsize(id->idInsOpt());
+                    emitDispReg(id->idReg1(), elemsize, true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+
+                default:
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+            }
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
