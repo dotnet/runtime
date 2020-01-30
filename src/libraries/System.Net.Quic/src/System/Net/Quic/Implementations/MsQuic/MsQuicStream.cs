@@ -283,8 +283,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                     QuicBuffer nativeBuffer = sourceBuffers[i];
                     int length = Math.Min((int)nativeBuffer.Length, slicedBuffer.Length);
                     new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
-                    if (length < slicedBuffer.Length)
+                    if (length < nativeBuffer.Length)
                     {
+                        // The buffer passed in was larger that the received data, return
                         return;
                     }
                     slicedBuffer = slicedBuffer.Slice(length);
@@ -297,6 +298,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_readState == ReadState.IndividualReadComplete)
                 {
+                    _receiveQuicBuffers.Clear();
                     ReceiveComplete(actual);
                     EnableReceive();
                     _readState = ReadState.None;
