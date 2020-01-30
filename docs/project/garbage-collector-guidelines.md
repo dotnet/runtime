@@ -62,4 +62,4 @@ due to poor interactions with the Linux OOM killer. However, they have proven to
 ```
 
 ## Performance Testing ##
-Coming soon.
+Performance tests can be run using the GC Benchmarking Infrastructure hosted within the [benchmarks section](https://github.com/dotnet/performance/tree/master/src/benchmarks/gc) of the _performance_ repo. This tool allows you to run the tests capturing traces through PerfView, and later analyze such traces for detailed results on GC's, heaps, and related behaviors.
