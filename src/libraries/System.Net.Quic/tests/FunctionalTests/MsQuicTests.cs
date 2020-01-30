@@ -327,7 +327,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(24, res);
         }
 
-        [Theory]
+        [Theory(Skip = "MsQuic not available")]]
         [MemberData(nameof(QuicStream_ReadWrite_Random_Success_Data))]
         public async Task QuicStream_ReadWrite_Random_Success(int readSize, int writeSize)
         {
