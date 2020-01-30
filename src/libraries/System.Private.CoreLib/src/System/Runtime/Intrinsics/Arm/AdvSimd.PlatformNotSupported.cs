@@ -482,6 +482,25 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<float> MaxScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// float64x2_t vminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMIN Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMIN Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MinScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vmins_f32 (float32_t a, float32_t b)
+            ///   A64: FMIN Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MinScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -2886,6 +2905,104 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMIN.U8 Dd, Dn, Dm
+        ///   A64: UMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Min(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMIN.S16 Dd, Dn, Dm
+        ///   A64: SMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Min(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMIN.S32 Dd, Dn, Dm
+        ///   A64: SMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Min(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMIN.S8 Dd, Dn, Dm
+        ///   A64: SMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Min(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x2_t vmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMIN.F32 Dd, Dn, Dm
+        ///   A64: FMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Min(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMIN.U16 Dd, Dn, Dm
+        ///   A64: UMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Min(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMIN.U32 Dd, Dn, Dm
+        ///   A64: UMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Min(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vminq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMIN.U8 Qd, Qn, Qm
+        ///   A64: UMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Min(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vminq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMIN.S16 Qd, Qn, Qm
+        ///   A64: SMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Min(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vminq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMIN.S32 Qd, Qn, Qm
+        ///   A64: SMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Min(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vminq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMIN.S8 Qd, Qn, Qm
+        ///   A64: SMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Min(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32x4_t vminq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMIN.F32 Qd, Qn, Qm
+        ///   A64: FMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Min(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vminq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMIN.U16 Qd, Qn, Qm
+        ///   A64: UMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vminq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMIN.U32 Qd, Qn, Qm
+        ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
