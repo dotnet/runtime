@@ -527,6 +527,24 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<long> NegateScalar(Vector64<long> value) => NegateScalar(value);
 
             /// <summary>
+            /// float32x2_t vsqrt_f32 (float32x2_t a)
+            ///   A64: FSQRT Vd.2S, Vn.2S
+            /// </summary>
+            public static Vector64<float> Sqrt(Vector64<float> value) => Sqrt(value);
+
+            /// <summary>
+            /// float64x2_t vsqrtq_f64 (float64x2_t a)
+            ///   A64: FSQRT Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
+
+            /// <summary>
+            /// float32x4_t vsqrtq_f32 (float32x4_t a)
+            ///   A64: FSQRT Vd.4S, Vn.4S
+            /// </summary>
+            public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -3673,6 +3691,21 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: CNT Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
+
+        /// <summary>
+        /// float64x1_t vsqrt_f64 (float64x1_t a)
+        ///   A32: VSQRT.F64 Dd, Dm
+        ///   A64: FSQRT Dd, Dn
+        /// </summary>
+        public static Vector64<double> SqrtScalar(Vector64<double> value) => SqrtScalar(value);
+
+        /// <summary>
+        /// float32_t vsqrts_f32 (float32_t a)
+        ///   A32: VSQRT.F32 Sd, Sm
+        ///   A64: FSQRT Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> SqrtScalar(Vector64<float> value) => SqrtScalar(value);
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
