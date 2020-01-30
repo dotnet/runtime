@@ -4645,6 +4645,16 @@ public:
     // Does value-numbering for an intrinsic tree.
     void fgValueNumberIntrinsic(GenTree* tree);
 
+#ifdef FEATURE_SIMD
+    // Does value-numbering for a GT_SIMD tree
+    void fgValueNumberSimd(GenTree* tree);
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Does value-numbering for a GT_HWINTRINSIC tree
+    void fgValueNumberHWIntrinsic(GenTree* tree);
+#endif // FEATURE_HW_INTRINSICS
+
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
@@ -4668,6 +4678,9 @@ public:
 
     // Adds the exception set for the current tree node which is performing a overflow checking operation
     void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a bounds check operation
+    void fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree);
 
     // Adds the exception set for the current tree node which is performing a ckfinite operation
     void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);
