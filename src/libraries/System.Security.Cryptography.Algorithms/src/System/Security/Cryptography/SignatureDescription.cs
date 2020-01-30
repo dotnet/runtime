@@ -36,8 +36,7 @@ namespace System.Security.Cryptography
 
         public virtual AsymmetricSignatureFormatter CreateFormatter(AsymmetricAlgorithm key)
         {
-            Debug.Assert(FormatterAlgorithm != null);
-            AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm);
+            AsymmetricSignatureFormatter? item = (AsymmetricSignatureFormatter?)CryptoConfig.CreateFromName(FormatterAlgorithm!);
             Debug.Assert(item != null);
             item.SetKey(key);
             return item;

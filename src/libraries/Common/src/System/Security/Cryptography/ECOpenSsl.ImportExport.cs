@@ -113,8 +113,8 @@ namespace System.Security.Cryptography
 
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByKeyParameters(
                 oid,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X!, parameters.Q.X!.Length,
+                parameters.Q.Y!, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length);
 
             return key;
@@ -125,14 +125,14 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsPrime);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X, parameters.Q.X!.Length,
+                parameters.Q.Y, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Prime, parameters.Curve.Prime.Length,
                 parameters.Curve.A, parameters.Curve.A.Length,
                 parameters.Curve.B, parameters.Curve.B.Length,
-                parameters.Curve.G.X, parameters.Curve.G.X.Length,
-                parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
+                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
+                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
                 parameters.Curve.Order, parameters.Curve.Order.Length,
                 parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
@@ -145,14 +145,14 @@ namespace System.Security.Cryptography
             Debug.Assert(parameters.Curve.IsCharacteristic2);
             SafeEcKeyHandle key = Interop.Crypto.EcKeyCreateByExplicitParameters(
                 parameters.Curve.CurveType,
-                parameters.Q.X, parameters.Q.X.Length,
-                parameters.Q.Y, parameters.Q.Y.Length,
+                parameters.Q.X, parameters.Q.X!.Length,
+                parameters.Q.Y, parameters.Q.Y!.Length,
                 parameters.D, parameters.D == null ? 0 : parameters.D.Length,
                 parameters.Curve.Polynomial, parameters.Curve.Polynomial.Length,
                 parameters.Curve.A, parameters.Curve.A.Length,
                 parameters.Curve.B, parameters.Curve.B.Length,
-                parameters.Curve.G.X, parameters.Curve.G.X.Length,
-                parameters.Curve.G.Y, parameters.Curve.G.Y.Length,
+                parameters.Curve.G.X!, parameters.Curve.G.X!.Length,
+                parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
                 parameters.Curve.Order, parameters.Curve.Order.Length,
                 parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
                 parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
