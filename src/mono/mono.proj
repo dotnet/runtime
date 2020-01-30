@@ -81,4 +81,23 @@
 
   <Target Name="Test" />
 
+  <Target Name="RunSample">
+    <PropertyGroup>
+      <TestHostPath>$(ArtifactsDir)bin/testhost/$(NetCoreAppCurrent)-$(OSGroup)-$(Configuration)-$(Platform)</TestHostPath>
+      <DotNetExec Condition="'$(TargetsWindows)' == 'true'">dotnet.exe</DotNetExec>
+      <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MonoRuntimeArtifacts Include="$(BinDir)/*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFolder="$(TestHostPath)/shared/Microsoft.NETCore.App/$(NETCoreAppCurrentVersion).0" 
+          SkipUnchangedFiles="true"/>
+  
+    <MSBuild Projects="$(MonoProjectRoot)netcore\sample\HelloWorld\HelloWorld.csproj" Targets="Restore;Build" />
+    <Exec Command="$(TestHostPath)/$(DotNetExec) $(MonoProjectRoot)netcore/sample/HelloWorld/bin/HelloWorld.dll" />
+  </Target>
+
 </Project>
