@@ -4,7 +4,7 @@
 //
 
 
-#ifndef _TARGET_ARM_
+#ifndef TARGET_ARM
 #error Should only include "cGenCpu.h" for ARM builds
 #endif
 
@@ -30,9 +30,9 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
@@ -1059,7 +1059,7 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define JIT_Stelem_Ref                      JIT_Stelem_Ref
 #endif
 

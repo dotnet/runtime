@@ -684,7 +684,7 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
     WRAPPER_NO_CONTRACT;
     BindIoCompletionCallbackStubEx(ErrorCode, numBytesTransferred, lpOverlapped, TRUE);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     extern Volatile<ULONG> g_fCompletionPortDrainNeeded;
 
     Thread *pThread = GetThread();
@@ -697,7 +697,7 @@ void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
             pThread->MarkCompletionPortDrained();
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 FCIMPL1(FC_BOOL_RET, ThreadPoolNative::CorBindIoCompletionCallback, HANDLE fileHandle)

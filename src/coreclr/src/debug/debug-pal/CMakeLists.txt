@@ -17,7 +17,7 @@ endif(WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
 
-    add_definitions(-DFEATURE_PAL)
+    add_definitions(-DTARGET_UNIX)
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
 

@@ -95,7 +95,7 @@ extern "C" void STDCALL WriteBarrierAssert(BYTE* ptr, Object* obj)
 
 #endif // _DEBUG
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /****************************************************************************/
 /* assigns 'val to 'array[idx], after doing all the proper checks */
 
@@ -210,7 +210,7 @@ THROW:
     FCThrow(kOverflowException);
 }
 HCIMPLEND
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
 FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);

@@ -15,7 +15,7 @@
 
 #if defined(_MSC_VER) && !defined(_DEBUG)
  #pragma optimize("t", on)   // optimize for speed
- #if !defined(_AMD64_)   // 'y' isn't an option on amd64
+ #if !defined(HOST_AMD64)   // 'y' isn't an option on amd64
   #pragma optimize("y", on)   // omit frame pointer
- #endif // !defined(_TARGET_AMD64_)
+ #endif // !defined(TARGET_AMD64)
 #endif

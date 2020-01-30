@@ -1617,7 +1617,7 @@ public:
                 onStack = true;
             }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             // Treat floating point and 64 bit integers as always on the stack
             if (varTypeIsFloating(varDsc->TypeGet()) || varTypeIsLong(varDsc->TypeGet()))
                 onStack = true;
@@ -1653,7 +1653,7 @@ public:
                     }
                 }
             }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             if (frameSize > 0x080)
             {
                 // We likely have a large stack frame.
@@ -1679,7 +1679,7 @@ public:
                 hugeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
             }
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
             if (frameSize > 0x1000)
             {
                 // We likely have a large stack frame.
@@ -1730,7 +1730,7 @@ public:
             {
                 enregCount++; // The primitive types, including TYP_SIMD types use one register
 
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
                 if (varTyp == TYP_LONG)
                 {
                     enregCount++; // on 32-bit targets longs use two registers
@@ -2242,11 +2242,11 @@ public:
                         printf("Codesize CSE Promotion (%s frame)\n", hugeFrame ? "huge" : "large");
                     }
 #endif
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                     /* The following formula is good choice when optimizing CSE for SMALL_CODE */
                     cse_def_cost = 6; // mov [EBP-0x00001FC],reg
                     cse_use_cost = 5; //     [EBP-0x00001FC]
-#else                                 // _TARGET_ARM_
+#else                                 // TARGET_ARM
                     if (hugeFrame)
                     {
                         cse_def_cost = 10 + 2; // movw/movt r10 and str reg,[sp+r10]
@@ -2267,26 +2267,26 @@ public:
                         printf("Codesize CSE Promotion (small frame)\n");
                     }
 #endif
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                     /* The following formula is good choice when optimizing CSE for SMALL_CODE */
                     cse_def_cost = 3; // mov [EBP-1C],reg
                     cse_use_cost = 2; //     [EBP-1C]
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
                     cse_def_cost = 2; // str reg,[sp+0x9c]
                     cse_use_cost = 2; // ldr reg,[sp+0x9c]
 #endif
                 }
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (varTypeIsFloating(candidate->Expr()->TypeGet()))
             {
                 // floating point loads/store encode larger
                 cse_def_cost += 2;
                 cse_use_cost += 1;
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         }
         else // not SMALL_CODE ...
         {
@@ -3142,7 +3142,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (type == TYP_FLOAT)
     {
         // TODO-X86-CQ: Revisit this

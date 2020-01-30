@@ -29,13 +29,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // same code for all platforms, hence it is here instead of in the targetXXX.cpp
 // files.
 
-#ifdef _TARGET_UNIX_
+#ifdef TARGET_UNIX
 // Should we distinguish Mac? Can we?
 // Should we distinguish flavors of Unix? Can we?
 const char* Target::g_tgtPlatformName = "Unix";
-#else  // !_TARGET_UNIX_
+#else  // !TARGET_UNIX
 const char* Target::g_tgtPlatformName = "Windows";
-#endif // !_TARGET_UNIX_
+#endif // !TARGET_UNIX
 
 /*****************************************************************************/
 
@@ -143,7 +143,7 @@ const char* getRegName(regNumber reg, bool isFloat)
         return "NA";
     }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
 #include "register.h"
@@ -171,7 +171,7 @@ const char* getRegName(unsigned reg,
 
 const char* getRegNameFloat(regNumber reg, var_types type)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     assert(genIsValidFloatReg(reg));
     if (type == TYP_FLOAT)
         return getRegName(reg);
@@ -237,7 +237,7 @@ const char* getRegNameFloat(regNumber reg, var_types type)
         return regName;
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     static const char* regNamesFloat[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
@@ -311,7 +311,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                 // What kind of separator should we use for this range (if it is indeed going to be a range)?
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
                 // For AMD64, create ranges for int registers R8 through R15, but not the "old" registers.
                 if (regNum >= REG_R8)
                 {
@@ -319,7 +319,7 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                 // R17 and R28 can't be the start of a range, since the range would include TEB or FP
                 if ((regNum < REG_R17) || ((REG_R19 <= regNum) && (regNum < REG_R28)))
                 {
@@ -327,28 +327,28 @@ void dspRegMask(regMaskTP regMask, size_t minSiz)
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
                 if (regNum < REG_R12)
                 {
                     regHead    = regNum;
                     inRegRange = true;
                     sep        = "-";
                 }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 // No register ranges
 #else // _TARGET_*
 #error Unsupported or unset target architecture
 #endif // _TARGET_*
             }
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
             // We've already printed a register. Is this the end of a range?
             else if ((regNum == REG_INT_LAST) || (regNum == REG_R17) // last register before TEB
                      || (regNum == REG_R28))                         // last register before FP
-#else                                                                // _TARGET_ARM64_
+#else                                                                // TARGET_ARM64
             // We've already printed a register. Is this the end of a range?
             else if (regNum == REG_INT_LAST)
-#endif                                                               // _TARGET_ARM64_
+#endif                                                               // TARGET_ARM64
             {
                 const char* nam = getRegName(regNum);
                 printf("%s%s", sep, nam);
@@ -1849,7 +1849,7 @@ double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
     double  d;
     if (s64 < 0)
     {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         // RyuJIT codegen and clang (or gcc) may produce different results for casting uint64 to
         // double, and the clang result is more accurate. For example,
         //    1) (double)0x84595161401484A0UL --> 43e08b2a2c280290  (RyuJIT codegen or VC++)
@@ -1899,7 +1899,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
         return u64;
     }
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 
     // While the Ecma spec does not specifically call this out,
     // the case of conversion from negative double to unsigned integer is
@@ -1913,7 +1913,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
     u64 = UINT64(INT64(d));
 #else
     u64                               = UINT64(d);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
     return u64;
 }
@@ -1992,7 +1992,7 @@ double FloatingPointUtils::round(double x)
 // We will redirect the macro to this other functions if the macro is not defined for the platform.
 // This has the side effect of a possible implicit upcasting for arguments passed in and an explicit
 // downcasting for the _copysign() call.
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+#if (defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_ARM64)) && !defined(TARGET_UNIX)
 
 #if !defined(_copysignf)
 #define _copysignf (float)_copysign
@@ -2301,7 +2301,7 @@ uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/)
     return GetUnsignedMagic<uint32_t>(d, add, shift);
 }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/)
 {
     return GetUnsignedMagic<uint64_t>(d, add, shift);
@@ -2457,7 +2457,7 @@ int32_t GetSigned32Magic(int32_t d, int* shift /*out*/)
     return GetSignedMagic<int32_t>(d, shift);
 }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/)
 {
     return GetSignedMagic<int64_t>(d, shift);

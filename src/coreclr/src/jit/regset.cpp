@@ -24,12 +24,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 /*****************************************************************************/
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 const regMaskSmall regMasks[] = {
 #define REGDEF(name, rnum, mask, xname, wname) mask,
 #include "register.h"
 };
-#else // !_TARGET_ARM64_
+#else // !TARGET_ARM64
 const regMaskSmall regMasks[] = {
 #define REGDEF(name, rnum, mask, sname) mask,
 #include "register.h"
@@ -229,11 +229,11 @@ RegSet::RegSet(Compiler* compiler, GCInfo& gcInfo) : m_rsCompiler(compiler), m_r
 
     rsMaskResvd = RBM_NONE;
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     rsMaskCalleeSaved = RBM_NONE;
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     rsMaskPreSpillRegArg = RBM_NONE;
     rsMaskPreSpillAlign  = RBM_NONE;
 #endif
@@ -297,7 +297,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
 
     GenTreeCall* call = nullptr;
     var_types    treeType;
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     GenTreePutArgSplit* splitArg = nullptr;
     GenTreeMultiRegOp*  multiReg = nullptr;
 #endif
@@ -308,7 +308,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         treeType                    = retTypeDesc->GetReturnRegType(regIdx);
     }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     else if (tree->OperIsPutArgSplit())
     {
         splitArg = tree->AsPutArgSplit();
@@ -319,7 +319,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         multiReg = tree->AsMultiRegOp();
         treeType = multiReg->GetRegType(regIdx);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     else
     {
         treeType = tree->TypeGet();
@@ -357,7 +357,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     else if (splitArg != nullptr)
     {
         regFlags = splitArg->GetRegSpillFlagByIdx(regIdx);
@@ -370,20 +370,20 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     else
     {
         assert(!varTypeIsMultiReg(tree));
         tree->gtFlags &= ~GTF_SPILL;
     }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
            (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg) ||
            (multiReg != nullptr && multiReg->GetRegNumByIdx(regIdx) == reg));
 #else
     assert(tree->GetRegNum() == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
-#endif // !_TARGET_ARM_
+#endif // !TARGET_ARM
 
     // Are any registers free for spillage?
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
@@ -434,7 +434,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         regFlags |= GTF_SPILLED;
         call->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     else if (splitArg != nullptr)
     {
         regFlags |= GTF_SPILLED;
@@ -445,10 +445,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
         regFlags |= GTF_SPILLED;
         multiReg->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 /*****************************************************************************
 *
 *  Spill the top of the FP x87 stack.
@@ -485,7 +485,7 @@ void RegSet::rsSpillFPStack(GenTreeCall* call)
 
     rsMarkSpill(call, reg);
 }
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
 /*****************************************************************************
  *
@@ -549,7 +549,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
         flags &= ~GTF_SPILLED;
         call->SetRegSpillFlagByIdx(flags, regIdx);
     }
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     else if (tree->OperIsPutArgSplit())
     {
         GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
@@ -564,7 +564,7 @@ TempDsc* RegSet::rsUnspillInPlace(GenTree* tree, regNumber oldReg, unsigned regI
         flags &= ~GTF_SPILLED;
         multiReg->SetRegSpillFlagByIdx(flags, regIdx);
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     else
     {
         tree->gtFlags &= ~GTF_SPILLED;
@@ -627,7 +627,7 @@ var_types RegSet::tmpNormalizeType(var_types type)
     {
         type = TYP_SIMD16;
     }
-#endif // defined(FEATURE_SIMD) && !defined(_TARGET_64BIT_)
+#endif // defined(FEATURE_SIMD) && !defined(TARGET_64BIT)
 
     return type;
 }
@@ -719,14 +719,14 @@ void RegSet::tmpPreAllocateTemps(var_types type, unsigned count)
         tmpCount++;
         tmpSize += size;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         if (type == TYP_DOUBLE)
         {
             // Adjust tmpSize to accommodate possible alignment padding.
             // Note that at this point the offsets aren't yet finalized, so we don't yet know if it will be required.
             tmpSize += TARGET_POINTER_SIZE;
         }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
         TempDsc* temp = new (m_rsCompiler, CMK_Unknown) TempDsc(-((int)tmpCount), size, type);
 
@@ -940,7 +940,7 @@ regNumber genRegArgNext(regNumber argReg)
     switch (argReg)
     {
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #ifdef UNIX_AMD64_ABI
 
         // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
@@ -960,7 +960,7 @@ regNumber genRegArgNext(regNumber argReg)
             return REG_ARG_2; // REG_R8
 
 #endif // !UNIX_AMD64_ABI
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         default:
             return REG_NEXT(argReg);

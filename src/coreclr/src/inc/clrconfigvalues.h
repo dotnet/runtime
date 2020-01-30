@@ -377,7 +377,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TailCallLoopOpt, W("TailCallLoopOpt"), 1, "Con
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Jit_NetFx40PInvokeStackResilience, W("NetFx40_PInvokeStackResilience"), (DWORD)-1, "Makes P/Invoke resilient against mismatched signature and calling convention (significant perf penalty).")
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate fallback to main JIT on hitting a NYI.
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0, "Controls the AltJit behavior of NYI stuff")
 #else
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1, "Controls the AltJit behavior of NYI stuff")
@@ -387,16 +387,16 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_JitRegisterFP, W("JitRegisterFP"), 3, "Cont
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitELTHookEnabled, W("JitELTHookEnabled"), 0, "On ARM, setting this will emit Enter/Leave/TailCall callbacks")
 RETAIL_CONFIG_DWORD_INFO_EX(INTERNAL_JitMemStats, W("JitMemStats"), 0, "Display JIT memory usage statistics", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
 #define EXTERNAL_FeatureSIMD_Default 1
-#else // !(defined(_TARGET_AMD64_) || defined(_TARGET_X86_) || defined(_TARGET_ARM64_))
+#else // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
 #define EXTERNAL_FeatureSIMD_Default 0
-#endif // !(defined(_TARGET_AMD64_) || defined(_TARGET_X86_) || defined(_TARGET_ARM64_))
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#endif // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 #define EXTERNAL_JitEnableAVX_Default 1
-#else // !(defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#else // !(defined(TARGET_AMD64) || defined(TARGET_X86)
 #define EXTERNAL_JitEnableAVX_Default 0
-#endif // !(defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#endif // !(defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_FeatureSIMD, W("FeatureSIMD"), EXTERNAL_FeatureSIMD_Default, "Enable SIMD intrinsics recognition in System.Numerics.dll and/or System.Numerics.Vectors.dll", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_SIMD16ByteOnly, W("SIMD16ByteOnly"), 0, "Limit maximum SIMD vector length to 16 bytes (used by x64_arm64_altjit)")
 RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_EnableAVX, W("EnableAVX"), EXTERNAL_JitEnableAVX_Default, "Enable AVX instruction set for wide operations as default", CLRConfig::REGUTIL_default)
@@ -601,12 +601,12 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPoo
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DebugBreakOnWorkerStarvation, W("ThreadPool_DebugBreakOnWorkerStarvation"), 0, "Breaks into the debugger if the ThreadPool detects work queue starvation")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_EnableWorkerTracking, W("ThreadPool_EnableWorkerTracking"), 0, "Enables extra expensive tracking of how many workers threads are working simultaneously")
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 // Spinning scheme is currently different on ARM64, see CLRLifoSemaphore::Wait(DWORD, UINT32, UINT32)
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x32, "Maximum number of spins per processor a thread pool worker thread performs before waiting for work")
-#else // !_TARGET_ARM64_
+#else // !TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UnfairSemaphoreSpinLimit, W("ThreadPool_UnfairSemaphoreSpinLimit"), 0x46, "Maximum number of spins a thread pool worker thread performs before waiting for work")
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_Thread_UseAllCpuGroups, W("Thread_UseAllCpuGroups"), 0, "Specifies if to automatically distribute thread across CPU Groups")
 
 CONFIG_DWORD_INFO(INTERNAL_ThreadpoolTickCountAdjustment, W("ThreadpoolTickCountAdjustment"), 0, "")

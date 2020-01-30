@@ -15,7 +15,7 @@
 #include "frames.h"
 #include "openum.h"
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 
 PCODE Expand19bitoffset(PCODE opcode)
 {

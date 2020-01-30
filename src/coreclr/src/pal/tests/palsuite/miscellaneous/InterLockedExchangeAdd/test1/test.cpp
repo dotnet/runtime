@@ -36,7 +36,7 @@ int __cdecl main(int argc, char *argv[])
 
 
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     ptrValue = (LONG *) malloc(sizeof(LONG));
 
     if(ptrValue == NULL)

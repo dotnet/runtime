@@ -261,7 +261,7 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
     do
     {
         bool forceLongStub = false;
-    #if defined(_DEBUG) && defined(_TARGET_AMD64_)
+    #if defined(_DEBUG) && defined(TARGET_AMD64)
         if (s_callCountingStubCount % 2 == 0)
         {
             forceLongStub = true;
@@ -272,7 +272,7 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
         {
             sizeInBytes = sizeof(CallCountingStubShort);
             AllocMemHolder<void> allocationAddressHolder(heap->AllocAlignedMem(sizeInBytes, CallCountingStub::Alignment));
-        #ifdef _TARGET_AMD64_
+        #ifdef TARGET_AMD64
             if (CallCountingStubShort::CanUseFor(allocationAddressHolder, targetForMethod))
         #endif
             {
@@ -282,7 +282,7 @@ const CallCountingStub *CallCountingManager::CallCountingStubAllocator::Allocate
             }
         }
 
-    #ifdef _TARGET_AMD64_
+    #ifdef TARGET_AMD64
         sizeInBytes = sizeof(CallCountingStubLong);
         void *allocationAddress = (void *)heap->AllocAlignedMem(sizeInBytes, CallCountingStub::Alignment);
         stub = new(allocationAddress) CallCountingStubLong(remainingCallCountCell, targetForMethod);

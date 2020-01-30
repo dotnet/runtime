@@ -217,11 +217,11 @@ PCCOR_SIGNATURE PrettyPrintSignature(
         label[strlen(label)-1] = 0;
         if(label[0] == '@') // it's pointer!
         {
-#ifdef BIT64
+#ifdef HOST_64BIT
             pszArgName = (ParamDescriptor*)_atoi64(&label[1]);
-#else // !BIT64
+#else // !HOST_64BIT
             pszArgName = (ParamDescriptor*)(size_t)atoi(&label[1]);
-#endif // BIT64
+#endif // HOST_64BIT
         }
     }
 

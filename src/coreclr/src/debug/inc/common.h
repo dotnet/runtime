@@ -14,7 +14,7 @@
 // conversions between PTR types (eg. DPTR) and CORDB_ADDRESS, and not need conversions
 // from host pointer types to CORDB_ADDRESS.
 //
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
 inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(const void* ptr)
 {
     SUPPORTS_DAC;
@@ -31,7 +31,7 @@ inline CORDB_ADDRESS PTR_TO_CORDB_ADDRESS(UINT_PTR ptr)
 }
 #else
 #define PTR_TO_CORDB_ADDRESS(_ptr) (CORDB_ADDRESS)(ULONG_PTR)(_ptr)
-#endif //_TARGET_X86_ || _TARGET_ARM_
+#endif //TARGET_X86 || TARGET_ARM
 
 #define CORDB_ADDRESS_TO_PTR(_cordb_addr) ((LPVOID)(SIZE_T)(_cordb_addr))
 
@@ -93,7 +93,7 @@ extern void CORDbgSetDebuggerREGDISPLAYFromContext(DebuggerREGDISPLAY *pDRD,
 inline
 ULONG32 ContextSizeForFlags(ULONG32 flags)
 {
-#if defined(CONTEXT_EXTENDED_REGISTERS) && defined(_TARGET_X86_)
+#if defined(CONTEXT_EXTENDED_REGISTERS) && defined(TARGET_X86)
     // Older platforms didn't have extended registers in
     // the context definition so only enforce that size
     // if the extended register flag is set.
@@ -102,7 +102,7 @@ ULONG32 ContextSizeForFlags(ULONG32 flags)
         return offsetof(T_CONTEXT, ExtendedRegisters);
     }
     else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     {
         return sizeof(T_CONTEXT);
     }

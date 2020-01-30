@@ -791,7 +791,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
 
     ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     contextFlags |= CONTEXT_XSTATE;
 #endif
 
