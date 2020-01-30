@@ -84,8 +84,8 @@ namespace System.Reflection.TypeLoading
                     }
                 }
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -94,8 +94,8 @@ namespace System.Reflection.TypeLoading
                 if (!toTypeInfo.IsByRef)
                     return false;
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -110,8 +110,8 @@ namespace System.Reflection.TypeLoading
                 if (!toTypeInfo.IsPointer)
                     return false;
 
-                Type toElementTypeInfo = toTypeInfo.GetElementType();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type toElementTypeInfo = toTypeInfo.GetElementType()!;
+                Type fromElementTypeInfo = fromTypeInfo.GetElementType()!;
                 return fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes);
             }
 
@@ -166,7 +166,7 @@ namespace System.Reflection.TypeLoading
                 Type walk = fromTypeInfo;
                 while (true)
                 {
-                    Type baseType = walk.BaseType;
+                    Type? baseType = walk.BaseType;
                     if (baseType == null)
                         return false;
                     walk = baseType;
@@ -344,7 +344,7 @@ namespace System.Reflection.TypeLoading
                 Type toElementTypeInfo = toTypeGenericTypeArguments[0];
 
                 Type toTypeGenericTypeDefinition = toTypeInfo.GetGenericTypeDefinition();
-                Type fromElementTypeInfo = fromTypeInfo.GetElementType();
+                Type? fromElementTypeInfo = fromTypeInfo.GetElementType();
                 foreach (Type ifc in fromTypeInfo.GetInterfaces())
                 {
                     if (ifc.IsConstructedGenericType)
@@ -352,7 +352,7 @@ namespace System.Reflection.TypeLoading
                         Type ifcGenericTypeDefinition = ifc.GetGenericTypeDefinition();
                         if (ifcGenericTypeDefinition.Equals(toTypeGenericTypeDefinition))
                         {
-                            if (fromElementTypeInfo.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes))
+                            if (fromElementTypeInfo!.IsElementTypeCompatibleWith(toElementTypeInfo, coreTypes))
                                 return true;
                         }
                     }
