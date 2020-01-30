@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
 
+#nullable enable
 internal partial class Interop
 {
     internal partial class BCrypt

@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using System;
 
+#nullable enable
 internal static partial class Interop
 {
     internal static partial class Crypto

@@ -9,6 +9,7 @@ using NTSTATUS = Interop.BCrypt.NTSTATUS;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 
+#nullable enable
 namespace Internal.Cryptography
 {
     //

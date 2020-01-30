@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using Internal.NativeCrypto;
 using Microsoft.Win32.SafeHandles;
 
+#nullable enable
 internal static partial class Interop
 {
     internal static partial class BCrypt

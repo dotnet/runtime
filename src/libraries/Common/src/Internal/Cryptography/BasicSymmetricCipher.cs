@@ -6,6 +6,7 @@ using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
+#nullable enable
 namespace Internal.Cryptography
 {
     //

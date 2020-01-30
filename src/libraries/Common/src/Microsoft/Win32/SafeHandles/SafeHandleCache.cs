@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+#nullable enable
 namespace Microsoft.Win32.SafeHandles
 {
     /// <summary>Provides a cache for special instances of SafeHandles.</summary>
