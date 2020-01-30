@@ -26,7 +26,6 @@ using System.Threading.Tasks;
 
 namespace System.Security.Principal
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
     public enum WindowsAccountType
     {
         Normal = 0,

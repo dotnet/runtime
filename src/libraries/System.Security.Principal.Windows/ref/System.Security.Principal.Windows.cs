@@ -210,7 +210,6 @@ namespace System.Security.Principal
         WinCapabilityEnterpriseAuthenticationSid = 93,
         WinCapabilityRemovableStorageSid = 94,
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public enum WindowsAccountType
     {
         Normal = 0,
