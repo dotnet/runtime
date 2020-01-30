@@ -51,11 +51,10 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            Debug.Assert(_keyHandle != null);
             if (ECCng.IsECNamedCurve(_lastAlgorithm))
             {
                 // Curve was previously created, so use that
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
             }
             else
             {
@@ -99,7 +98,7 @@ namespace System.Security.Cryptography
                     KeySize = callerKeySizeProperty;
                 }
 
-                return new DuplicateSafeNCryptKeyHandle(_keyHandle);
+                return new DuplicateSafeNCryptKeyHandle(_keyHandle!);
             }
         }
 
