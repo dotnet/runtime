@@ -396,7 +396,7 @@ namespace System.Security.Principal
             }
         }
 
-        private void CreateFromBinaryForm(byte[]? binaryForm, int offset)
+        private void CreateFromBinaryForm(byte[] binaryForm, int offset)
         {
             //
             // Give us something to work with
@@ -539,7 +539,7 @@ namespace System.Security.Principal
                 throw new Win32Exception(error);
             }
 
-            CreateFromBinaryForm(resultSid, 0);
+            CreateFromBinaryForm(resultSid!, 0);
         }
 
         //
@@ -648,7 +648,7 @@ namespace System.Security.Principal
                 throw new Win32Exception(error);
             }
 
-            CreateFromBinaryForm(resultSid, 0);
+            CreateFromBinaryForm(resultSid!, 0);
         }
 
 #if NETCOREAPP2_0
