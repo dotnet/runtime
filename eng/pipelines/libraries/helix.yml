@@ -21,7 +21,6 @@ steps:
             /p:Configuration=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
-            /p:BuildTargetFramework=${{ parameters.framework }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
             /p:Creator=${{ parameters.creator }}
