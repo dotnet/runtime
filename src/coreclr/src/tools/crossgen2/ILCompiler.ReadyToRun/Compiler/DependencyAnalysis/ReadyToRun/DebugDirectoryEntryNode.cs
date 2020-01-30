@@ -11,6 +11,7 @@ using System.Reflection.PortableExecutable;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
 using System.IO;
+using System.Collections.Immutable;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -77,60 +78,54 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return builder.ToObjectData();
         }
 
-        public unsafe byte[] GenerateRSDSEntryData(byte[] md5Hash)
+        public byte[] GenerateRSDSEntryData(byte[] md5Hash)
         {
-            byte[] rsdsEntry = new byte[RSDSSize];
+            MemoryStream rsdsEntry = new MemoryStream(RSDSSize);
 
-            fixed (byte* pData = rsdsEntry)
+            using (BinaryWriter writer = new BinaryWriter(rsdsEntry))
             {
-                byte* pSignature = pData + 4;
-                byte* pAge = pSignature + 16;
-                byte* pFileName = pAge + 4;
+                // Magic "RSDS"
+                writer.Write((uint)0x53445352);
 
-                *(uint*)pData = 0x53445352;     // Magic "RSDS"
-                *(uint*)pAge = 1;
-
-                // our PDB signature will be the same as our NGEN signature.
+                // The PDB signature will be the same as our NGEN signature.
                 // However we want the printed version of the GUID to be the same as the
                 // byte dump of the signature so we swap bytes to make this work.
                 Debug.Assert(md5Hash.Length == 16);
-                *(uint*)pSignature = (uint)((md5Hash[0] * 256 + md5Hash[1]) * 256 + md5Hash[2]) * 256 + md5Hash[3];
-                pSignature += 4;
-                *(ushort*)pSignature = (ushort)(md5Hash[4] * 256 + md5Hash[5]);
-                pSignature += 2;
-                *(ushort*)pSignature = (ushort)(md5Hash[6] * 256 + md5Hash[7]);
-                Array.Copy(md5Hash, 8, rsdsEntry, 12, 8);
+                writer.Write((uint)((md5Hash[0] * 256 + md5Hash[1]) * 256 + md5Hash[2]) * 256 + md5Hash[3]);
+                writer.Write((ushort)(md5Hash[4] * 256 + md5Hash[5]));
+                writer.Write((ushort)(md5Hash[6] * 256 + md5Hash[7]));
+                writer.Write(md5Hash, 8, 8);
 
-                string moduleFilePath = ((CompilerTypeSystemContext)_module.Context).GetFilePathForLoadedModule(_module);
-                Debug.Assert(!String.IsNullOrEmpty(moduleFilePath));
-                string pdbFileName = Path.GetFileNameWithoutExtension(moduleFilePath) + ".ni.pdb";
-                Debug.Assert(pdbFileName.Length < 260);
+                // Age
+                writer.Write(1);
 
-                byte[] pdbFileNameBytes = Encoding.ASCII.GetBytes(pdbFileName);
-                Array.Copy(Encoding.ASCII.GetBytes(pdbFileName), 0, rsdsEntry, (pFileName - pData), pdbFileNameBytes.Length);
+                string pdbFileName = _module.Assembly.GetName().Name + ".ni.pdb";
+                byte[] pdbFileNameBytes = Encoding.UTF8.GetBytes(pdbFileName);
+                writer.Write(pdbFileNameBytes);
+
+                Debug.Assert(rsdsEntry.Length <= RSDSSize);
+                return rsdsEntry.ToArray();
             }
-
-            return rsdsEntry;
         }
     }
 
     public class CopiedDebugDirectoryEntryNode : DebugDirectoryEntryNode
     {
-        private readonly DebugDirectoryEntry _sourceDebugEntry;
+        private readonly int _debugEntryIndex;
 
         public override int ClassCode => 1558397;
 
-        public CopiedDebugDirectoryEntryNode(EcmaModule sourceModule, DebugDirectoryEntry sourceEntry)
+        public CopiedDebugDirectoryEntryNode(EcmaModule sourceModule, int debugEntryIndex)
             : base(sourceModule)
         {
-            Debug.Assert(sourceEntry.DataRelativeVirtualAddress > 0 && sourceEntry.DataSize > 0);
-            _sourceDebugEntry = sourceEntry;
+            Debug.Assert(debugEntryIndex >= 0);
+            _debugEntryIndex = debugEntryIndex;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append($"__CopiedDebugEntryNode_{_sourceDebugEntry.DataRelativeVirtualAddress}_{_module.Assembly.GetName().Name}");
+            sb.Append($"__CopiedDebugEntryNode_{_debugEntryIndex}_{_module.Assembly.GetName().Name}");
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -144,9 +139,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            PEMemoryBlock block = _module.PEReader.GetSectionData(_sourceDebugEntry.DataRelativeVirtualAddress);
-            byte[] result = new byte[_sourceDebugEntry.DataSize];
-            block.GetContent(0, _sourceDebugEntry.DataSize).CopyTo(result);
+            ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
+            Debug.Assert(entries != null && _debugEntryIndex < entries.Length);
+
+            DebugDirectoryEntry sourceDebugEntry = entries[_debugEntryIndex];
+
+            PEMemoryBlock block = _module.PEReader.GetSectionData(sourceDebugEntry.DataRelativeVirtualAddress);
+            byte[] result = new byte[sourceDebugEntry.DataSize];
+            block.GetContent(0, sourceDebugEntry.DataSize).CopyTo(result);
             builder.EmitBytes(result);
 
             return builder.ToObjectData();
@@ -158,7 +158,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (moduleComp != 0)
                 return moduleComp;
 
-            return _sourceDebugEntry.DataRelativeVirtualAddress - ((CopiedDebugDirectoryEntryNode)other)._sourceDebugEntry.DataRelativeVirtualAddress;
+            return _debugEntryIndex - ((CopiedDebugDirectoryEntryNode)other)._debugEntryIndex;
         }
     }
 }

@@ -69,7 +69,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // First, write the native debug directory entry
             {
-                var entry = (NativeDebugDirectoryEntryNode)factory.DebugDirectoryEntry(_module, default);
+                var entry = (NativeDebugDirectoryEntryNode)factory.DebugDirectoryEntry(_module, -1);
 
                 builder.EmitUInt(0 /* Characteristics */);
                 if (numEntries > 0)
@@ -108,8 +108,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 else
                 {
-                    builder.EmitReloc(factory.DebugDirectoryEntry(_module, entries[i]), RelocType.IMAGE_REL_BASED_ADDR32NB);
-                    builder.EmitReloc(factory.DebugDirectoryEntry(_module, entries[i]), RelocType.IMAGE_REL_FILE_ABSOLUTE);
+                    builder.EmitReloc(factory.DebugDirectoryEntry(_module, i), RelocType.IMAGE_REL_BASED_ADDR32NB);
+                    builder.EmitReloc(factory.DebugDirectoryEntry(_module, i), RelocType.IMAGE_REL_FILE_ABSOLUTE);
                 }
             }
 

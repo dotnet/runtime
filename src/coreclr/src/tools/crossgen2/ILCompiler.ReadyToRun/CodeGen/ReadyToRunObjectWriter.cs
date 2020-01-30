@@ -104,7 +104,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     if (node is NativeDebugDirectoryEntryNode nddeNode)
                     {
-                        // There should is only one NativeDebugDirectoryEntry.
+                        // There should be only one NativeDebugDirectoryEntry.
                         // This assert will need to be revisited when we implement the composite R2R format, where we'll need to figure
                         // out how native symbols will be emitted, and verify that the DiaSymReader library is able to consume them.
                         Debug.Assert(nativeDebugDirectoryEntryNode == null);
@@ -140,23 +140,21 @@ namespace ILCompiler.DependencyAnalysis
                     r2rPeBuilder.SetWin32Resources(_nodeFactory.Win32ResourcesNode, _nodeFactory.Win32ResourcesNode.Size);
                 }
 
-                var memStream = new MemoryStream();
-                r2rPeBuilder.Write(memStream);
-                byte[] objectFileData = memStream.ToArray();
-
-                // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
-                using (var md5Hash = MD5.Create())
-                {
-                    byte[] hash = md5Hash.ComputeHash(objectFileData);
-                    byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
-
-                    int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);
-                    Array.Copy(rsdsEntry, 0, objectFileData, offsetToUpdate, rsdsEntry.Length);
-                }
-
                 using (var peStream = File.Create(_objectFilePath))
                 {
-                    peStream.Write(objectFileData, 0, objectFileData.Length);
+                    r2rPeBuilder.Write(peStream);
+
+                    // Compute MD5 hash of the output image and store that in the native DebugDirectory entry
+                    using (var md5Hash = MD5.Create())
+                    {
+                        peStream.Seek(0, SeekOrigin.Begin);
+                        byte[] hash = md5Hash.ComputeHash(peStream);
+                        byte[] rsdsEntry = nativeDebugDirectoryEntryNode.GenerateRSDSEntryData(hash);
+
+                        int offsetToUpdate = r2rPeBuilder.GetSymbolFilePosition(nativeDebugDirectoryEntryNode);
+                        peStream.Seek(offsetToUpdate, SeekOrigin.Begin);
+                        peStream.Write(rsdsEntry);
+                    }
                 }
 
                 if (mapFile != null)
