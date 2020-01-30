@@ -104,19 +104,19 @@
 
   <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
     <CoreClrProjectToBuild>
-      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
     <MonoProjectToBuild>
-      <Properties>Configuration=$(MonoConfiguration)</Properties>
+      <AdditionalProperties>Configuration=$(MonoConfiguration)</AdditionalProperties>
     </MonoProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
     <LibrariesProjectToBuild>
-      <Properties>Configuration=$(LibrariesConfiguration)</Properties>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
     </LibrariesProjectToBuild>
   </ItemDefinitionGroup>
 
