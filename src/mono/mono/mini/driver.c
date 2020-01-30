@@ -1777,7 +1777,7 @@ mono_jit_parse_options (int argc, char * argv[])
 	for (i = 0; i < argc; ++i) {
 		if (argv [i] [0] != '-')
 			break;
- 		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
+		if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
 			sdb_options = g_strdup (argv [i] + 17);
