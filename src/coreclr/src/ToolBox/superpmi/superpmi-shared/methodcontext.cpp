@@ -4641,7 +4641,7 @@ LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigne
     if (GetStringLiteral == nullptr)
     {
         *length = -1;
-        return W("hackishStringLiteral");
+        return nullptr;
     }
 
     DLD key;
@@ -4655,7 +4655,7 @@ LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigne
     if (itemIndex < 0)
     {
         *length = -1;
-        return W("hackishStringLiteral");
+        return nullptr;
     }
     else
     {
