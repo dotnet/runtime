@@ -408,15 +408,12 @@ namespace System.Text.RegularExpressions
             // Make sure the initial capacity for s_definedCategories is correct
             Debug.Assert(
                 s_definedCategories.Count == DefinedCategoriesCapacity,
-                "RegexCharClass s_definedCategories's initial capacity (DefinedCategoriesCapacity) is incorrect.",
-                "Expected (s_definedCategories.Count): {0}, Actual (DefinedCategoriesCapacity): {1}",
-                s_definedCategories.Count,
-                DefinedCategoriesCapacity);
+                $"Expected (s_definedCategories.Count): {s_definedCategories.Count}, Actual (DefinedCategoriesCapacity): {DefinedCategoriesCapacity}");
 
             // Make sure the s_propTable is correctly ordered
             int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
-                Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
+                Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, $"RegexCharClass s_propTable is out of order at ({s_propTable[i][0]}, {s_propTable[i + 1][0]})");
         }
 #endif
 
@@ -738,7 +735,7 @@ namespace System.Text.RegularExpressions
             return set[SetStartIndex];
         }
 
-        public static bool IsMergeable(string? charClass) =>
+        public static bool IsMergeable(string charClass) =>
             charClass != null &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
@@ -1544,7 +1541,7 @@ namespace System.Text.RegularExpressions
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
 
-            StringBuilder desc = new StringBuilder();
+            var desc = new StringBuilder();
 
             desc.Append('[');
 

@@ -214,7 +214,7 @@ LPCWSTR GetPCEnd(LPCWSTR lpszStart)
 
 //
 // Given a pointer to the end of a path component, return a pointer to
-// its begining.
+// its beginning.
 // ie return a pointer to the previous backslash (or start of the string).
 //
 LPCWSTR PCStart(LPCWSTR lpszStart, LPCWSTR lpszEnd)

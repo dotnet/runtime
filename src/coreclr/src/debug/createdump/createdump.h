@@ -45,6 +45,9 @@ typedef int T_CONTEXT;
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <sys/procfs.h>
+#ifdef HAVE_PROCESS_VM_READV
+#include <sys/uio.h>
+#endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <elf.h>

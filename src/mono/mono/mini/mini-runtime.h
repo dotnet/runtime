@@ -256,8 +256,13 @@ typedef struct MonoDebugOptions {
 	 */
 	gboolean aot_skip_set;
 	int aot_skip;
-} MonoDebugOptions;
 
+	/*
+	 * Treat exceptions which reach the topmost runtime invoke as unhandled when
+	 * embedding.
+	 */
+	gboolean top_runtime_invoke_unhandled;
+} MonoDebugOptions;
 
 /*
  * We need to store the image which the token refers to along with the token,

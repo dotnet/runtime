@@ -32,12 +32,6 @@ public:
     static
     void QCALLTYPE GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly);
 
-    static FCDECL5(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE,
-                                                                AssemblyBaseObject* requestingAssemblyUNSAFE,
-                                                                StackCrawlMark* stackMark,
-                                                                CLR_BOOL fThrowOnFileNotFound,
-                                                                AssemblyLoadContextBaseObject *assemblyLoadContextUNSAFE);
-
     static FCDECL0(FC_BOOL_RET, IsTracingEnabled);
 
     //
@@ -120,6 +114,7 @@ public:
 
     static INT_PTR QCALLTYPE InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible);
     static void QCALLTYPE PrepareForAssemblyLoadContextRelease(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR ptrManagedStrongAssemblyLoadContext);
+    static void QCALLTYPE InternalLoad(QCall::ObjectHandleOnStack assemblyName, QCall::ObjectHandleOnStack requestingAssembly, QCall::StackCrawlMarkHandle stackMark,BOOL fThrowOnFileNotFound, QCall::ObjectHandleOnStack assemblyLoadContext, QCall::ObjectHandleOnStack retAssembly);
     static void QCALLTYPE LoadFromPath(INT_PTR ptrNativeAssemblyLoadContext, LPCWSTR pwzILPath, LPCWSTR pwzNIPath, QCall::ObjectHandleOnStack retLoadedAssembly);
     static void QCALLTYPE LoadFromStream(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR ptrAssemblyArray, INT32 cbAssemblyArrayLength, INT_PTR ptrSymbolArray, INT32 cbSymbolArrayLength, QCall::ObjectHandleOnStack retLoadedAssembly);
 #ifndef FEATURE_PAL

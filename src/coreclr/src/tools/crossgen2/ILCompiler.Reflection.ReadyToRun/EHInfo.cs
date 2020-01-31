@@ -41,12 +41,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Length of the serialized EH clause in the PE image.
         /// </summary>
-        public const int Length = 6 * sizeof(uint);
+        internal const int Length = 6 * sizeof(uint);
 
         /// <summary>
         /// Flags describing the exception handler.
         /// </summary>
-        CorExceptionFlag Flags;
+        private CorExceptionFlag Flags;
 
         /// <summary>
         /// Starting offset of the try block
@@ -149,20 +149,33 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class EHInfo
     {
+        private readonly ReadyToRunReader _readyToRunReader;
+        private readonly int _offset;
+        private readonly int _clauseCount;
+
         /// <summary>
         /// RVA of the EH info in the PE image.
         /// </summary>
-        public readonly int EHInfoRVA;
+        public int RelativeVirtualAddress { get; }
 
         /// <summary>
         /// Starting RVA of the corresponding runtime function.
         /// </summary>
-        public readonly int MethodRVA;
+        internal int MethodRelativeVirtualAddress { get; }
+
+        private List<EHClause> _clauses;
 
         /// <summary>
         /// List of EH clauses for the runtime function.
         /// </summary>
-        public readonly EHClause[] EHClauses;
+        public IReadOnlyList<EHClause> EHClauses
+        {
+            get
+            {
+                EnsureClauses();
+                return _clauses;
+            }
+        }
 
         /// <summary>
         /// Construct the EH info for a given runtime method by reading it from a given offset
@@ -177,12 +190,23 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="clauseCount">Number of EH info clauses</param>
         public EHInfo(ReadyToRunReader reader, int ehInfoRva, int methodRva, int offset, int clauseCount)
         {
-            EHInfoRVA = ehInfoRva;
-            MethodRVA = methodRva;
-            EHClauses = new EHClause[clauseCount];
-            for (int clauseIndex = 0; clauseIndex < clauseCount; clauseIndex++)
+            _readyToRunReader = reader;
+            RelativeVirtualAddress = ehInfoRva;
+            MethodRelativeVirtualAddress = methodRva;
+            _offset = offset;
+            _clauseCount = clauseCount;
+        }
+
+        private void EnsureClauses()
+        {
+            if (_clauses != null)
             {
-                EHClauses[clauseIndex] = new EHClause(reader, offset + clauseIndex * EHClause.Length);
+                return;
+            }
+            _clauses = new List<EHClause>();
+            for (int clauseIndex = 0; clauseIndex < _clauseCount; clauseIndex++)
+            {
+                _clauses.Add(new EHClause(_readyToRunReader, _offset + clauseIndex * EHClause.Length));
             }
         }
 
@@ -193,67 +217,8 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             foreach (EHClause ehClause in EHClauses)
             {
-                ehClause.WriteTo(writer, MethodRVA);
+                ehClause.WriteTo(writer, MethodRelativeVirtualAddress);
                 writer.WriteLine();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Location of the EH clauses for a single runtime function
-    /// </summary>
-    public class EHInfoLocation
-    {
-        /// <summary>
-        /// RVA of the EH clause list in the R2R PE image
-        /// </summary>
-        public readonly int EHInfoRVA;
-
-        /// <summary>
-        /// Number of EH clauses
-        /// </summary>
-        public readonly int ClauseCount;
-
-        public EHInfoLocation(int ehInfoRva, int clauseCount)
-        {
-            EHInfoRVA = ehInfoRva;
-            ClauseCount = clauseCount;
-        }
-    }
-
-    /// <summary>
-    /// Lookup table maps IP RVAs to EH info.
-    /// </summary>
-    public class EHLookupTable
-    {
-        /// <summary>
-        /// Map from runtime function RVA's to EH info location in the R2R PE file.
-        /// </summary>
-        public readonly Dictionary<int, EHInfoLocation> RuntimeFunctionToEHInfoMap;
-
-        /// <summary>
-        /// Reads the EH info lookup table from the PE image.
-        /// </summary>
-        /// <param name="image">R2R PE image</param>
-        /// <param name="offset">Starting offset of the EH info in the PE image</param>
-        /// <param name="length">Byte length of the EH info</param>
-        public EHLookupTable(byte[] image, int offset, int length)
-        {
-            RuntimeFunctionToEHInfoMap = new Dictionary<int, EHInfoLocation>();
-
-            int rva1 = BitConverter.ToInt32(image, offset);
-            int eh1 = BitConverter.ToInt32(image, offset + sizeof(uint));
-
-            while ((length -= 2 * sizeof(uint)) >= 8)
-            {
-                offset += 2 * sizeof(uint);
-                int rva2 = BitConverter.ToInt32(image, offset);
-                int eh2 = BitConverter.ToInt32(image, offset + sizeof(uint));
-
-                RuntimeFunctionToEHInfoMap.Add(rva1, new EHInfoLocation(eh1, (eh2 - eh1) / EHClause.Length));
-
-                rva1 = rva2;
-                eh1 = eh2;
             }
         }
     }

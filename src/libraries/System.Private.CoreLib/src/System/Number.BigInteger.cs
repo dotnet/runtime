@@ -427,8 +427,8 @@ namespace System
 
             public static void DivRem(ref BigInteger lhs, ref BigInteger rhs, out BigInteger quo, out BigInteger rem)
             {
-                // This is modified from the CoreFX BigIntegerCalculator.DivRem.cs implementation:
-                // https://github.com/dotnet/corefx/blob/0bb106232745aedfc0d0c5a84ff2b244bf190317/src/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
+                // This is modified from the libraries BigIntegerCalculator.DivRem.cs implementation:
+                // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime.Numerics/src/System/Numerics/BigIntegerCalculator.DivRem.cs
 
                 Debug.Assert(!rhs.IsZero());
 

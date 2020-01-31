@@ -518,6 +518,14 @@ mono_counters_sample (MonoCounter *counter, void *buffer, int buffer_size)
 	return sample_internal (counter, buffer, buffer_size);
 }
 
+// We want to default to g_print if outfile is not specified. This matters because on some platforms (e.g. Android),
+// printing to stdout is not the actual way to see output, and we've wrapped that logic in `g_print`.
+#define FPRINTF_OR_G_PRINT(outfile, ...) if (outfile) { \
+	fprintf (outfile, __VA_ARGS__); \
+} else { \
+	g_print (__VA_ARGS__); \
+}
+
 #define ENTRY_FMT "%-36s: "
 static void
 dump_counter (MonoCounter *counter, FILE *outfile) {
@@ -526,34 +534,36 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 
 	switch (counter->type & MONO_COUNTER_TYPE_MASK) {
 	case MONO_COUNTER_INT:
-		fprintf (outfile, ENTRY_FMT "%d\n", counter->name, *(int*)buffer);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%d\n", counter->name, *(int*)buffer);
 		break;
 	case MONO_COUNTER_UINT:
-		fprintf (outfile, ENTRY_FMT "%u\n", counter->name, *(guint*)buffer);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%u\n", counter->name, *(guint*)buffer);
 		break;
 	case MONO_COUNTER_LONG:
-		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
-			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 10000.0);
-		else
-			fprintf (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, *(gint64 *)buffer);
+		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME) {
+			FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 10000.0);
+		} else {
+			FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, *(gint64 *)buffer);
+		}
 		break;
 	case MONO_COUNTER_ULONG:
-		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME)
-			fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(guint64*)buffer) / 10000.0);
-		else
-			fprintf (outfile, ENTRY_FMT "%" PRIu64 "\n", counter->name, *(guint64 *)buffer);
+		if ((counter->type & MONO_COUNTER_UNIT_MASK) == MONO_COUNTER_TIME) {
+			FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(guint64*)buffer) / 10000.0);
+		} else {
+			FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%" PRIu64 "\n", counter->name, *(guint64 *)buffer);
+		}
 		break;
 	case MONO_COUNTER_WORD:
-		fprintf (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, (gint64)*(gssize*)buffer);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%" PRId64 "\n", counter->name, (gint64)*(gssize*)buffer);
 		break;
 	case MONO_COUNTER_DOUBLE:
-		fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, *(double*)buffer);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%.4f\n", counter->name, *(double*)buffer);
 		break;
 	case MONO_COUNTER_STRING:
-		fprintf (outfile, ENTRY_FMT "%s\n", counter->name, (size == 0) ? "(null)" : (char*)buffer);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%s\n", counter->name, (size == 0) ? "(null)" : (char*)buffer);
 		break;
 	case MONO_COUNTER_TIME_INTERVAL:
-		fprintf (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 1000.0);
+		FPRINTF_OR_G_PRINT (outfile, ENTRY_FMT "%.2f ms\n", counter->name, (double)(*(gint64*)buffer) / 1000.0);
 		break;
 	}
 
@@ -589,7 +599,7 @@ mono_counters_dump_section (int section, int variance, FILE *outfile)
 /**
  * mono_counters_dump:
  * \param section_mask The sections to dump counters for
- * \param outfile a FILE to dump the results to
+ * \param outfile a FILE to dump the results to; NULL will default to g_print
  * Displays the counts of all the enabled counters registered. 
  * To filter by variance, you can OR one or more variance with the specific section you want.
  * Use \c MONO_COUNTER_SECTION_MASK to dump all categories of a specific variance.
@@ -620,14 +630,18 @@ mono_counters_dump (int section_mask, FILE *outfile)
 
 	for (j = 0, i = MONO_COUNTER_JIT; i < MONO_COUNTER_LAST_SECTION; j++, i <<= 1) {
 		if ((section_mask & i) && (set_mask & i)) {
-			fprintf (outfile, "\n%s statistics\n", section_names [j]);
+			FPRINTF_OR_G_PRINT (outfile, "\n%s statistics\n", section_names [j]);
 			mono_counters_dump_section (i, variance, outfile);
 		}
 	}
 
-	fflush (outfile);
+	if (outfile)
+		fflush (outfile);
+
 	mono_os_mutex_unlock (&counters_mutex);
 }
+
+#undef FPRINTF_OR_G_PRINT
 
 /**
  * mono_counters_cleanup:

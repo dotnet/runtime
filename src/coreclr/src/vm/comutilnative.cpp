@@ -846,7 +846,7 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
 FCIMPLEND
 
 /*================================CollectionCount=================================
-**Action: Returns the number of collections for this generation since the begining of the life of the process
+**Action: Returns the number of collections for this generation since the beginning of the life of the process
 **Returns: The collection count.
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
@@ -1033,7 +1033,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
     gc_alloc_context* ac = pThread->GetAllocContext();
-    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
 }

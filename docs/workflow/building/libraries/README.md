@@ -9,7 +9,7 @@ Here is one example of a daily workflow for a developer working mainly on the li
 git clean -xdf
 git pull upstream master & git push origin master
 build -subsetCategory coreclr -c Release
-build -subsetCategory libraries -coreclrConfiguration Release
+build -subsetCategory libraries -runtimeConfiguration release
 
 :: The above you may only perform once in a day, or when
 :: you pull down significant new changes.
@@ -34,7 +34,7 @@ The instructions for Linux and macOS are essentially the same:
 git clean -xdf
 git pull upstream master & git push origin master
 ./build.sh -subsetcategory coreclr -c Release
-./build.sh -subsetcategory libraries -coreclrconfiguration Release
+./build.sh -subsetcategory libraries -runtimeconfiguration Release
 
 # The above you may only perform once in a day, or when
 # you pull down significant new changes.
@@ -59,12 +59,12 @@ These example commands will build a release CoreCLR (and CoreLib), debug librari
 
 For Linux:
 ```bash
-./build.sh -coreclrconfiguration Release
+./build.sh -runtimeconfiguration Release
 ```
 
 For Windows:
 ```bat
-./build.cmd -coreclrConfiguration Release
+./build.cmd -runtimeconfiguration Release
 ```
 
 Detailed information about building and testing runtimes and the libraries is in the documents linked below.
@@ -77,7 +77,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build configurations are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. It defaults to `netcoreapp` but possible values include `netcoreapp` or `netfx`. (msbuild property `TargetGroup`)
+- `-framework|-f` identifies the target framework for the build. It defaults to latest `netcoreapp` but possible values include `netcoreapp` (Which will map to latest netcoreapp) or `net472`. (msbuild property `TargetGroup`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `ConfigurationGroup`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)

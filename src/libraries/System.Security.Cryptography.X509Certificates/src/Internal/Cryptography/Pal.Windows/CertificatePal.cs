@@ -360,6 +360,11 @@ namespace Internal.Cryptography.Pal
             }
         }
 
+        public PolicyData GetPolicyData()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public IEnumerable<X509Extension> Extensions
         {
             get

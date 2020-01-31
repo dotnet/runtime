@@ -20,22 +20,19 @@
     <Platforms>x64;x86;arm;arm64;wasm32</Platforms>
 
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
-    <ILLinkTrimXml>$(BclSourcesRoot)\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly> <!-- TODO: reenable this -->
+    <ILLinkTrimXml>$(MSBuildThisFileDirectory)src\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
   </ItemGroup>
 
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
-    <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -118,7 +115,6 @@
   <PropertyGroup>
     <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
   </PropertyGroup>
 
   <!--
@@ -147,11 +143,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-      <Compile Include="resources\SR.extra.cs" />
-      <Compile Include="$(CoreClrProjectRoot)\src\System.Private.CoreLib\src\System\SR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-      <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />

@@ -1432,3 +1432,19 @@ GenerateProfileHelper ProfileLeave, PROFILE_LEAVE
 GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
+    PROLOG_WITH_TRANSITION_BLOCK
+
+    add     x0, sp, #__PWTB_TransitionBlock // TransitionBlock *
+    mov     x1, x10 // stub-identifying token
+    bl      C_FUNC(OnCallCountThresholdReached)
+    mov     x9, x0
+
+    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+    EPILOG_BRANCH_REG x9
+NESTED_END OnCallCountThresholdReachedStub, _TEXT
+
+#endif // FEATURE_TIERED_COMPILATION

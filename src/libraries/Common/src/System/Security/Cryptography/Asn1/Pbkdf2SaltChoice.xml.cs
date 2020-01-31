@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -30,7 +31,7 @@ namespace System.Security.Cryptography.Asn1
 
                 usedTags.Add(tag, fieldName);
             };
-            
+
             ensureUniqueTag(Asn1Tag.PrimitiveOctetString, "Specified");
             ensureUniqueTag(Asn1Tag.Sequence, "OtherSource");
         }
@@ -38,13 +39,13 @@ namespace System.Security.Cryptography.Asn1
 
         internal void Encode(AsnWriter writer)
         {
-            bool wroteValue = false; 
-            
+            bool wroteValue = false;
+
             if (Specified.HasValue)
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 writer.WriteOctetString(Specified.Value.Span);
                 wroteValue = true;
             }
@@ -53,7 +54,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (wroteValue)
                     throw new CryptographicException();
-                
+
                 OtherSource.Value.Encode(writer);
                 wroteValue = true;
             }
@@ -66,27 +67,27 @@ namespace System.Security.Cryptography.Asn1
 
         internal static Pbkdf2SaltChoice Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, out Pbkdf2SaltChoice decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, encoded, out Pbkdf2SaltChoice decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out Pbkdf2SaltChoice decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out Pbkdf2SaltChoice decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
-            
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             if (tag.HasSameClassAndValue(Asn1Tag.PrimitiveOctetString))
             {
 
-                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSpecified))
+                if (reader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
                 {
-                    decoded.Specified = tmpSpecified;
+                    decoded.Specified = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
                 }
                 else
                 {
@@ -97,7 +98,7 @@ namespace System.Security.Cryptography.Asn1
             else if (tag.HasSameClassAndValue(Asn1Tag.Sequence))
             {
                 System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn tmpOtherSource;
-                System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(reader, out tmpOtherSource);
+                System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref reader, rebind, out tmpOtherSource);
                 decoded.OtherSource = tmpOtherSource;
 
             }

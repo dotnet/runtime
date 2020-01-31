@@ -53,7 +53,7 @@ namespace System
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -122,7 +122,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -210,7 +210,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -314,7 +314,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -474,7 +474,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -556,7 +556,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {
@@ -659,7 +659,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {

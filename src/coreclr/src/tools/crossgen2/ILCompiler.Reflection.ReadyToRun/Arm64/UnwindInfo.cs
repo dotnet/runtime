@@ -37,9 +37,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm64
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"\t\tEpilog Start Offset: 0x{EpilogStartOffset:X5} Actual offset = 0x{EpilogStartOffset * 4:X5} Offset from main function begin = 0x{EpilogStartOffsetFromMainFunctionBegin:X6}");
-            sb.AppendLine($"\t\tCondition: {Condition} (0x{Condition:X})" + ((Condition == 0xE) ? " (always)" : ""));
-            sb.Append($"\t\tEpilog Start Index: {EpilogStartIndex} (0x{EpilogStartIndex:X})");
+            sb.AppendLine($"        Epilog Start Offset: 0x{EpilogStartOffset:X5} Actual offset = 0x{EpilogStartOffset * 4:X5} Offset from main function begin = 0x{EpilogStartOffsetFromMainFunctionBegin:X6}");
+            sb.AppendLine($"        Condition: {Condition} (0x{Condition:X})" + ((Condition == 0xE) ? " (always)" : ""));
+            sb.Append($"        Epilog Start Index: {EpilogStartIndex} (0x{EpilogStartIndex:X})");
             return sb.ToString();
         }
     }
@@ -128,29 +128,29 @@ namespace ILCompiler.Reflection.ReadyToRun.Arm64
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"\tCodeWords: {CodeWords}");
-            sb.AppendLine($"\tEpilogCount: {EpilogCount}");
-            sb.AppendLine($"\tEBit: {EBit}");
-            sb.AppendLine($"\tXBit: {XBit}");
-            sb.AppendLine($"\tVers: {Vers}");
-            sb.AppendLine($"\tFunctionLength: {FunctionLength}");
+            sb.AppendLine($"    CodeWords: {CodeWords}");
+            sb.AppendLine($"    EpilogCount: {EpilogCount}");
+            sb.AppendLine($"    EBit: {EBit}");
+            sb.AppendLine($"    XBit: {XBit}");
+            sb.AppendLine($"    Vers: {Vers}");
+            sb.AppendLine($"    FunctionLength: {FunctionLength}");
             if (CodeWords == 0 && EpilogCount == 0)
             {
-                sb.AppendLine("\t---- Extension word ----");
-                sb.AppendLine($"\tExtended Code Words: {CodeWords}");
-                sb.AppendLine($"\tExtended Epilog Count: {EpilogCount}");
+                sb.AppendLine("    ---- Extension word ----");
+                sb.AppendLine($"    Extended Code Words: {CodeWords}");
+                sb.AppendLine($"    Extended Epilog Count: {EpilogCount}");
             }
             if (EpilogCount == 0)
             {
-                sb.AppendLine("\tNo epilogs");
+                sb.AppendLine("    No epilogs");
             }
             else
             {
                 for (int i = 0; i < Epilogs.Length; i++)
                 {
-                    sb.AppendLine("\t\t-------------------------");
+                    sb.AppendLine("        -------------------------");
                     sb.AppendLine(Epilogs[i].ToString());
-                    sb.AppendLine("\t\t-------------------------");
+                    sb.AppendLine("        -------------------------");
                 }
             }
             return sb.ToString();

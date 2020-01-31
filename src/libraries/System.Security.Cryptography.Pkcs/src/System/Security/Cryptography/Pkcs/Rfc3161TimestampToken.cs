@@ -297,11 +297,12 @@ namespace System.Security.Cryptography.Pkcs
 
             try
             {
-                AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+                AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
                 int bytesActuallyRead = reader.PeekEncodedValue().Length;
 
                 ContentInfoAsn.Decode(
-                    reader,
+                    ref reader,
+                    source,
                     out ContentInfoAsn contentInfo);
 
                 // https://tools.ietf.org/html/rfc3161#section-2.4.2

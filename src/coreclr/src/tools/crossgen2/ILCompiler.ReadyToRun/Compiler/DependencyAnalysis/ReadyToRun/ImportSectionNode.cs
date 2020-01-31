@@ -51,7 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _gcRefMap = _emitGCRefMap ? new GCRefMapNode(this) : null;
         }
 
-        public void MaterializeSignature(ReadyToRunCodegenNodeFactory r2rFactory)
+        public void MaterializeSignature(NodeFactory r2rFactory)
         {
             if (!_materializedSignature)
             {

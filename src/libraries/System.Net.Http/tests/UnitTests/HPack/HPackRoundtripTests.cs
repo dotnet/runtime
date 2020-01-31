@@ -162,6 +162,16 @@ namespace System.Net.Http.Unit.Tests.HPack
             {
                 throw new NotImplementedException();
             }
+
+            public void OnStaticIndexedHeader(int index)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

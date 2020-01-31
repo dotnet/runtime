@@ -57,7 +57,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
+    <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
@@ -104,13 +104,19 @@
 
   <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
     <CoreClrProjectToBuild>
-      <Properties>Configuration=$(CoreCLRConfiguration)</Properties>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrProjectToBuild>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
+    <MonoProjectToBuild>
+      <AdditionalProperties>Configuration=$(MonoConfiguration)</AdditionalProperties>
+    </MonoProjectToBuild>
   </ItemDefinitionGroup>
 
   <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
     <LibrariesProjectToBuild>
-      <Properties>Configuration=$(LibrariesConfiguration)</Properties>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
     </LibrariesProjectToBuild>
   </ItemDefinitionGroup>
 

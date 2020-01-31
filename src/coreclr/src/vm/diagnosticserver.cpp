@@ -135,9 +135,24 @@ bool DiagnosticServer::Initialize()
                 szMessage);                                           // data2
         };
 
+        // char transportPath[MAX_PATH];
+        NewArrayHolder<char> transportPath = nullptr;
+        CLRConfigStringHolder wTransportPath = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DiagnosticsServerTransportPath);
+        int nCharactersWritten = 0;
+        if (wTransportPath != nullptr)
+        {
+            nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wTransportPath, -1, NULL, 0, NULL, NULL);
+            if (nCharactersWritten != 0)
+            {
+                transportPath = new char[nCharactersWritten];
+                nCharactersWritten = WideCharToMultiByte(CP_UTF8, 0, wTransportPath, -1, transportPath, nCharactersWritten, NULL, NULL);
+                assert(nCharactersWritten != 0);
+            }
+        }
+
         // TODO: Should we handle/assert that (s_pIpc == nullptr)?
         s_pIpc = IpcStream::DiagnosticsIpc::Create(
-            "dotnet-diagnostic", ErrorCallback);
+            transportPath, ErrorCallback);
 
         if (s_pIpc != nullptr)
         {

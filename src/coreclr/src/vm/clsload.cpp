@@ -4438,7 +4438,7 @@ static MethodTable* GetEnclosingMethodTable(MethodTable *pMT)
     RETURN pMT->LoadEnclosingMethodTable();
 }
 
-StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod)
+AccessCheckContext::AccessCheckContext(MethodDesc* pCallerMethod)
 {
     CONTRACTL
     {
@@ -4452,7 +4452,7 @@ StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod)
     m_pCallerAssembly = m_pCallerMT->GetAssembly();
 }
 
-StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType)
+AccessCheckContext::AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType)
 {
     CONTRACTL
     {
@@ -4555,10 +4555,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
         if (m_accessCheckType == kNormalAccessNoTransparency || m_accessCheckType == kRestrictedMemberAccessNoTransparency)
             return TRUE;
     }
-
-    // Always allow interop (NULL) callers full access.
-    if (pContext->IsCalledFromInterop())
-        return TRUE;
 
     // No Access
     if (m_fThrowIfTargetIsInaccessible)
@@ -5022,10 +5018,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         }
         else
         {
-            // Always allow interop callers full access.
-            if (pContext->IsCalledFromInterop())
-                return TRUE;
-
             Assembly* pCurrentAssembly = pContext->GetCallerAssembly();
             _ASSERTE(pCurrentAssembly != NULL);
 
@@ -5072,10 +5064,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             // If we don't grant assembly or friend access to the target class, and that class has assembly
             // protection, we can fail the request now.  Otherwise we can check to make sure a public member
             // of the outer class is allowed, since we have satisfied the target's accessibility rules.
-
-            // Always allow interop callers full access.
-            if (pContext->IsCalledFromInterop())
-                return TRUE;
 
             if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly, NULL, NULL, pTargetClass))
                 dwProtection = (dwProtection == tdNestedFamANDAssem) ? mdFamily : mdPublic;
@@ -5151,9 +5139,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
         // is no enclosing class.
         MethodTable* pCurrentMT = pContext->GetCallerMT();
 
-        // if this is called from interop, the CheckAccessMember call above should have already succeeded.
-        _ASSERTE(!pContext->IsCalledFromInterop());
-
         BOOL isNestedClass = (pCurrentMT && pCurrentMT->GetClass()->IsNested());
 
         if (isNestedClass)
@@ -5162,7 +5147,7 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
             //  recursively check whether the enclosing class can access the desired target member.
             MethodTable * pEnclosingMT = GetEnclosingMethodTable(pCurrentMT);
 
-            StaticAccessCheckContext accessContext(pContext->GetCallerMethod(),
+            AccessCheckContext accessContext(pContext->GetCallerMethod(),
                                                    pEnclosingMT,
                                                    pContext->GetCallerAssembly());
 
@@ -5250,10 +5235,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         return TRUE;
     }
-
-    // Always allow interop callers full access.
-    if (pContext->IsCalledFromInterop())
-        return TRUE;
 
     MethodTable* pCurrentMT = pContext->GetCallerMT();
 

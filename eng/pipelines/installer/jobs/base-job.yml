@@ -32,8 +32,9 @@ parameters:
   useOfficialAllConfigurations: false
   buildFullPlatformManifest: false
 
-  liveCoreClrBuildConfig: ''
+  liveRuntimeBuildConfig: ''
   liveLibrariesBuildConfig: ''
+  runtimeFlavor: 'coreclr'
   platforms: []
 
 jobs:
@@ -182,6 +183,8 @@ jobs:
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
 
     - name: BuildArguments
       value: >-
@@ -232,12 +235,12 @@ jobs:
 
   - name: LiveOverridePathArgs
     value: >-
-      $(CoreCLRArtifactsArgs)
+      $(RuntimeArtifactsArgs)
       $(LibrariesConfigurationArg)
       $(LibrariesAllConfigurationsOverridePathArg)
       $(AllArtifactsArgs)
 
-  - name: CoreCLRArtifactsArgs
+  - name: RuntimeArtifactsArgs
     value: ''
   - name: LibrariesConfigurationArg
     value: ''
@@ -246,7 +249,7 @@ jobs:
   - name: AllArtifactsArgs
     value: ''
 
-  - name: CoreClrDownloadPath
+  - name: RuntimeDownloadPath
     value: ''
   - name: LibrariesDownloadPath
     value: ''
@@ -255,21 +258,21 @@ jobs:
   - name: AllArtifactsDownloadPath
     value: ''
 
-  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-    - name: liveCoreClrLegName
+  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+    - name: liveRuntimeLegName
       value: ${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
-        parameters.liveCoreClrBuildConfig) }}
-    - name: CoreClrDownloadPath
-      value: 'artifacts/transport/coreclr'
-    - name: CoreCLRArtifactsArgs
+        parameters.liveRuntimeBuildConfig) }}
+    - name: RuntimeDownloadPath
+      value: 'artifacts/transport/${{ parameters.runtimeFlavor }}'
+    - name: RuntimeArtifactsArgs
       value: >-
-        /p:CoreCLROverridePath=${{ parameters.buildCommandSourcesDirectory }}$(CoreClrDownloadPath)
-        /p:CoreCLRConfiguration=${{ parameters.liveCoreClrBuildConfig }}
-    - name: CoreClrArtifactName
-      value: CoreCLRProduct_$(liveCoreClrLegName)
+        /p:RuntimeArtifactsPath=$(buildCommandSourcesDirectory)$(RuntimeDownloadPath)
+        /p:RuntimeConfiguration=${{ parameters.liveRuntimeBuildConfig }}
+    - name: RuntimeArtifactName
+      value: $(runtimeFlavorName)Product_$(liveRuntimeLegName)
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - name: liveLibrariesLegName
@@ -307,14 +310,15 @@ jobs:
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
-  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
-    - coreclr_product_build_${{ format('{0}{1}_{2}_{3}',
+  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+    - ${{ format('{0}_product_build_{1}{2}_{3}_{4}',
+        parameters.runtimeFlavor,
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
-        parameters.liveCoreClrBuildConfig) }}
+        parameters.liveRuntimeBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_netcoreapp_${{ format('{0}{1}_{2}_{3}',
+    - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
@@ -323,8 +327,8 @@ jobs:
     - libraries_build_allconfigurations_Windows_NT_x64_Release
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
-      - coreclr_product_build_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}
-      - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+      - ${{ parameters.runtimeFlavor }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
+      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 
@@ -371,17 +375,17 @@ jobs:
       downloadType: specific
       downloadPath: '$(Build.SourcesDirectory)/__download__/AllPlatforms/'
       itemPattern: |
-        CoreCLRProduct_*/**
+        $(runtimeFlavorName)Product_*/**
         libraries_bin_*/**
 
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
       - task: ExtractFiles@1
-        displayName: 'Unzip CoreCLR artifacts: ${{ platform }}'
+        displayName: 'Unzip $(runtimeFlavorName) artifacts: ${{ platform }}'
         inputs:
           archiveFilePatterns: |
-            $(Build.SourcesDirectory)/__download__/AllPlatforms/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}.*
-          destinationFolder: $(AllArtifactsDownloadPath)/CoreCLRProduct_${{ platform }}_${{ parameters.liveCoreClrBuildConfig }}/
+            $(Build.SourcesDirectory)/__download__/AllPlatforms/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}.*
+          destinationFolder: $(AllArtifactsDownloadPath)/$(runtimeFlavorName)Product_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}/
           cleanUnpackFolder: false
       - task: ExtractFiles@1
         displayName: 'Unzip Libraries artifacts: ${{ platform }}'
@@ -391,13 +395,13 @@ jobs:
           destinationFolder: $(AllArtifactsDownloadPath)/libraries_bin_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}/
           cleanUnpackFolder: false
 
-  - ${{ if ne(parameters.liveCoreClrBuildConfig, '') }}:
+  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        unpackFolder: $(Build.SourcesDirectory)/$(CoreClrDownloadPath)
-        artifactFileName: '$(CoreClrArtifactName)$(archiveExtension)'
-        artifactName: '$(CoreClrArtifactName)'
-        displayName: 'CoreCLR artifacts'
+        unpackFolder: $(Build.SourcesDirectory)/$(RuntimeDownloadPath)
+        artifactFileName: '$(RuntimeArtifactName)$(archiveExtension)'
+        artifactName: '$(RuntimeArtifactName)'
+        displayName: '$(runtimeFlavorName) artifacts'
 
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
     - template: /eng/pipelines/common/download-artifact-step.yml

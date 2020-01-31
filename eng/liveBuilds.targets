@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(OSGroup)</MonoOSGroup>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
 
@@ -17,6 +15,10 @@
     <MonoArtifactsPath Condition="'$(MonoOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(MonoOverridePath)'))</MonoArtifactsPath>
     <LibrariesArtifactsPath Condition="'$(LibrariesOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesOverridePath)'))</LibrariesArtifactsPath>
     <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsOverridePath)'))</LibrariesAllConfigurationsArtifactsPath>
+
+    <!-- Honor the RuntimeArtifactsPath property. -->
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</MonoArtifactsPath>
   </PropertyGroup>
 
   <!--

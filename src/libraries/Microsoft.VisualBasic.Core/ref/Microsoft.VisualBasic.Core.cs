@@ -1098,6 +1098,7 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal Utils() { }
         public static System.Array CopyArray(System.Array arySrc, System.Array aryDest) { throw null; }
+        public static string GetResourceString(string ResourceKey, params string[] Args) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Versioned

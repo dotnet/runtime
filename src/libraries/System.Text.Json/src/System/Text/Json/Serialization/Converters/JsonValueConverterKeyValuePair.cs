@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Converters
                 k = JsonSerializer.Deserialize<T>(ref reader, options);
             }
 
-            return k;
+            return k!;
         }
 
         private void WriteProperty<T>(Utf8JsonWriter writer, T value, JsonEncodedText name, JsonSerializerOptions? options)

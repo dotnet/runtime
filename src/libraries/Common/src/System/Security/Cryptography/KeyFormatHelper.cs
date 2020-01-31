@@ -37,9 +37,9 @@ namespace System.Security.Cryptography
             out int bytesRead)
         {
             // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
             int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(reader, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
 
             if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
             {
@@ -58,9 +58,9 @@ namespace System.Security.Cryptography
             out TRet ret)
         {
             // X.509 SubjectPublicKeyInfo is described as DER.
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.DER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.DER);
             int read = reader.PeekEncodedValue().Length;
-            SubjectPublicKeyInfoAsn.Decode(reader, out SubjectPublicKeyInfoAsn spki);
+            SubjectPublicKeyInfoAsn.Decode(ref reader, source, out SubjectPublicKeyInfoAsn spki);
 
             if (Array.IndexOf(validOids, spki.Algorithm.Algorithm.Value) < 0)
             {
@@ -92,9 +92,9 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
             if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
             {
@@ -112,9 +112,9 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            PrivateKeyInfoAsn.Decode(reader, out PrivateKeyInfoAsn privateKeyInfo);
+            PrivateKeyInfoAsn.Decode(ref reader, source, out PrivateKeyInfoAsn privateKeyInfo);
 
             if (Array.IndexOf(validOids, privateKeyInfo.PrivateKeyAlgorithm.Algorithm.Value) < 0)
             {
@@ -205,9 +205,9 @@ namespace System.Security.Cryptography
             out int bytesRead,
             out TRet ret)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(reader, out EncryptedPrivateKeyInfoAsn epki);
+            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
@@ -423,9 +423,9 @@ namespace System.Security.Cryptography
             ReadOnlyMemory<byte> source,
             out int bytesRead)
         {
-            AsnReader reader = new AsnReader(source, AsnEncodingRules.BER);
+            AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int localRead = reader.PeekEncodedValue().Length;
-            EncryptedPrivateKeyInfoAsn.Decode(reader, out EncryptedPrivateKeyInfoAsn epki);
+            EncryptedPrivateKeyInfoAsn.Decode(ref reader, source, out EncryptedPrivateKeyInfoAsn epki);
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.

@@ -379,7 +379,7 @@ void Compiler::optAddCopies()
 #if defined(FEATURE_EH_FUNCLETS)
                     // With funclets, this is only used for BBJ_CALLFINALLY/BBJ_ALWAYS pairs. For x86, it is also used
                     // as the "final step" block for leaving finallys.
-                    assert((block->bbPrev != nullptr) && block->bbPrev->isBBCallAlwaysPair());
+                    assert(block->isBBCallAlwaysPairTail());
 #endif // FEATURE_EH_FUNCLETS
 #ifdef DEBUG
                     if (verbose)

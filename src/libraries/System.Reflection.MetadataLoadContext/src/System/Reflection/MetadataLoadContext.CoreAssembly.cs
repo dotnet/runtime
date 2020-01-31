@@ -13,7 +13,7 @@ namespace System.Reflection
         private static readonly string[] s_CoreNames = { "mscorlib", "System.Runtime", "netstandard" };
 
         // Cache loaded coreAssembly and core types.
-        internal RoAssembly TryGetCoreAssembly(string coreAssemblyName, out Exception e)
+        internal RoAssembly? TryGetCoreAssembly(string? coreAssemblyName, out Exception? e)
         {
             e = null;
             Debug.Assert(_coreAssembly == null);
@@ -30,12 +30,12 @@ namespace System.Reflection
             return _coreAssembly;
         }
 
-        private RoAssembly TryGetDefaultCoreAssembly(out Exception e)
+        private RoAssembly? TryGetDefaultCoreAssembly(out Exception? e)
         {
             foreach (string coreName in s_CoreNames)
             {
                 RoAssemblyName roAssemblyName = new AssemblyName(coreName).ToRoAssemblyName();
-                RoAssembly roAssembly = TryResolveAssembly(roAssemblyName, out e);
+                RoAssembly? roAssembly = TryResolveAssembly(roAssemblyName, out e);
 
                 // Stop on the first core assembly we find
                 if (roAssembly != null)
@@ -49,7 +49,7 @@ namespace System.Reflection
             return null;
         }
 
-        private RoAssembly _coreAssembly = null;
+        private RoAssembly? _coreAssembly = null;
 
         /// <summary>
         /// Returns a lazily created and cached Type instance corresponding to the indicated core type. This method throws
@@ -59,8 +59,8 @@ namespace System.Reflection
         internal RoType GetCoreType(CoreType coreType)
         {
             CoreTypes coreTypes = GetAllFoundCoreTypes();
-            RoType t = TryGetCoreType(coreType);
-            return t ?? throw coreTypes.GetException(coreType);
+            RoType? t = TryGetCoreType(coreType);
+            return t ?? throw coreTypes.GetException(coreType)!;
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace System.Reflection
         /// if the core assembly name wasn't supplied, the core assembly could not be loaded for some reason or if the specified
         /// type does not exist in the core assembly.
         /// </summary>
-        internal RoType TryGetCoreType(CoreType coreType)
+        internal RoType? TryGetCoreType(CoreType coreType)
         {
             CoreTypes coreTypes = GetAllFoundCoreTypes();
             return coreTypes[coreType];
@@ -87,6 +87,6 @@ namespace System.Reflection
         // one reason, we have to instance it per MetadataLoadContext.
         //
         internal Binder GetDefaultBinder() => _lazyDefaultBinder ?? (_lazyDefaultBinder = new DefaultBinder(this));
-        private volatile Binder _lazyDefaultBinder;
+        private volatile Binder? _lazyDefaultBinder;
     }
 }

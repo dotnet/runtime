@@ -443,16 +443,13 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -462,7 +459,6 @@
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

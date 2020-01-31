@@ -119,6 +119,7 @@ enum ReadyToRunSectionType
     READYTORUN_SECTION_PROFILEDATA_INFO             = 111, // Added in V2.2
     READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
     READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
+    READYTORUN_SECTION_INLINING_INFO2               = 114, // Added in V4.1
 };
 ```
 
@@ -427,6 +428,19 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 ## READYTORUN_SECTION_ATTRIBUTEPRESENCE
 
 **TODO**: document attribute presence encoding
+
+## READYTORUN_SECTION_INLINING_INFO2
+
+The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+
+The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed by hashcode of the module name XORed with inlinee RID.
+
+The entry of the hashtable is a counted sequence of compressed unsigned integers:
+
+* RID of the inlinee shifted left by one bit. If the lowest bit is set, this is an inlinee from a foreign module. The _module override index_ (as defined above) follows as another compressed unsigned integer in that case.
+* RIDs of the inliners follow. They are encoded similarly to the way the inlinee is encoded (shifted left with the lowest bit indicating foreign RID). Instead of encoding the RID directly, RID delta (the difference between the previous RID and the current RID) is encoded. This allows better integer compression.
+
+Foreign RIDs are only present if a fragile inlining was allowed at compile time.
 
 # Native Format
 

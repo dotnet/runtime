@@ -520,7 +520,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_VAR (type variable)
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_ARRAY
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_GENERICINST
-        SystemVClassificationTypeTypedReference,        // ELEMENT_TYPE_TYPEDBYREF
+        SystemVClassificationTypeStruct,                // ELEMENT_TYPE_TYPEDBYREF
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_I
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_U
@@ -543,7 +543,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_I4] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_PTR] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_VALUETYPE] == SystemVClassificationTypeStruct);
-    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeTypedReference);
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeStruct);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_BYREF] == SystemVClassificationTypeIntegerByRef);
 
     return (((unsigned)eeType) < ELEMENT_TYPE_MAX) ? (toSystemVAmd64ClassificationTypeMap[(unsigned)eeType]) : SystemVClassificationTypeUnknown;
@@ -1948,17 +1948,6 @@ public:
     // Returns true iff the native view of this type requires 64-bit aligment.
     bool NativeRequiresAlign8();
 #endif // FEATURE_64BIT_ALIGNMENT
-
-    // True if interface casts for an object having this type require more
-    // than a simple scan of the interface map
-    // See JIT_IsInstanceOfInterface
-    inline BOOL InstanceRequiresNonTrivialInterfaceCast()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return GetFlag(enum_flag_NonTrivialInterfaceCast);
-    }
-
 
     //-------------------------------------------------------------------
     // PARENT INTERFACES
@@ -3838,14 +3827,6 @@ private:
     {
         return (m_wFlags2 & (DWORD)mask) == (DWORD)flag;
     }
-
-    // Just exposing a couple of these for x86 asm versions of JIT_IsInstanceOfClass and JIT_IsInstanceOfInterface
-public:
-    enum
-    {
-        public_enum_flag_HasTypeEquivalence = enum_flag_HasTypeEquivalence,
-        public_enum_flag_NonTrivialInterfaceCast = enum_flag_NonTrivialInterfaceCast,
-    };
 
 private:
     /*
