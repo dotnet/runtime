@@ -500,11 +500,7 @@ void FinalizeWeakReference(Object * obj)
     // We need to revisit the implementation of FinalizeWeakReference() in case of concurrent ScanForFinalization
     // ThreadSuspend::g_pSuspensionThread is set before SuspendRuntime is called, during that time interval, 
     // there could be managed code running calling WeakReferenceNative::SetTarget() and missed the synchronization.
-    // bool isRuntimeSuspended = (ThreadSuspend::GetSuspensionThread() != nullptr);
-
-    // An alternative solution that should work all the time - as it will be false for the time interval
-    // that we worried about
-    bool isRuntimeSuspended = (ThreadSuspend::GetSuspensionThread() == ::GetThread());
+    bool isRuntimeSuspended = (ThreadSuspend::GetSuspensionThread() != nullptr);
 
     OBJECTHANDLE handle = isRuntimeSuspended ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
