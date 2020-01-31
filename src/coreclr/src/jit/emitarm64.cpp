@@ -12847,6 +12847,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
+                case INS_facge:
+                case INS_facgt:
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
                 case INS_fdiv:
                     if (id->idOpSize() == EA_8BYTE)
                     {
