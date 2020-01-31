@@ -2357,6 +2357,11 @@ if test x$host_win32 = xno; then
 	dnl *****************************
 	AC_CHECK_LIB(socket, socket, LIBS="$LIBS -lsocket")
 
+	dnl *****************************
+	dnl *** Checks for libunwind  ***
+	dnl *****************************
+	AC_CHECK_LIB(unwind, _Unwind_GetIP, LIBS="$LIBS -lunwind")
+
 	case "$host" in
 		*-*-*freebsd*)
 			dnl *****************************
