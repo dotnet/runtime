@@ -1499,7 +1499,7 @@ void StackFrameIterator::ResetCrawlFrame()
     m_crawl.isFirst = true;
     m_crawl.isInterrupted = false;
     m_crawl.hasFaulted = false;
-    m_crawl.isIPadjusted = false;           // can be removed
+    m_crawl.isIPadjusted = false;
 
     m_crawl.isNativeMarker = false;
     m_crawl.isProfilerDoStackSnapshot = !!(this->m_flags & PROFILER_DO_STACK_SNAPSHOT);

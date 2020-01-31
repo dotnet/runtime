@@ -142,4 +142,9 @@ int GetVersionResilientMethodHashCode(MethodDesc *pMD)
 
     return hashCode;
 }
+
+int GetVersionResilientModuleHashCode(Module* pModule)
+{
+    return ComputeNameHashCode(pModule->GetSimpleName());
+}
 #endif // DACCESS_COMPILE

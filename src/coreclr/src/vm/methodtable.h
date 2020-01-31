@@ -520,7 +520,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_VAR (type variable)
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_ARRAY
         SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_GENERICINST
-        SystemVClassificationTypeTypedReference,        // ELEMENT_TYPE_TYPEDBYREF
+        SystemVClassificationTypeStruct,                // ELEMENT_TYPE_TYPEDBYREF
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_I
         SystemVClassificationTypeInteger,               // ELEMENT_TYPE_U
@@ -543,7 +543,7 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_I4] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_PTR] == SystemVClassificationTypeInteger);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_VALUETYPE] == SystemVClassificationTypeStruct);
-    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeTypedReference);
+    _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_TYPEDBYREF] == SystemVClassificationTypeStruct);
     _ASSERTE((SystemVClassificationType)toSystemVAmd64ClassificationTypeMap[ELEMENT_TYPE_BYREF] == SystemVClassificationTypeIntegerByRef);
 
     return (((unsigned)eeType) < ELEMENT_TYPE_MAX) ? (toSystemVAmd64ClassificationTypeMap[(unsigned)eeType]) : SystemVClassificationTypeUnknown;

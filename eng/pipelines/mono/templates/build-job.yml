@@ -80,6 +80,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

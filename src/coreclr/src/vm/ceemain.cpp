@@ -683,6 +683,9 @@ void EEStartupHelper(COINITIEE fFlags)
         InitializeStartupFlags();
 
         MethodDescBackpatchInfoTracker::StaticInitialize();
+        CodeVersionManager::StaticInitialize();
+        TieredCompilationManager::StaticInitialize();
+        CallCountingManager::StaticInitialize();
 
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");

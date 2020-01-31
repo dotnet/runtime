@@ -9,7 +9,8 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests are flaky")]
+    [SkipOnMono("System.Net.Tests are flaky")]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseCookiesTests : HttpListenerResponseTestBase
     {

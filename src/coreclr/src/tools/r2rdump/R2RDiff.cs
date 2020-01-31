@@ -55,8 +55,18 @@ namespace R2RDump
             DiffR2RSections();
             DiffR2RMethods();
 
-            HashSet<string> commonMethods = new HashSet<string>(_leftDumper.Reader.Methods.Select(method => method.SignatureString)
-                .Intersect(_rightDumper.Reader.Methods.Select(method => method.SignatureString)));
+            Dictionary<string, ReadyToRunMethod> leftMethods = new Dictionary<string, ReadyToRunMethod>(_leftDumper.Reader.Methods
+                .Select(method => new KeyValuePair<string, ReadyToRunMethod>(method.SignatureString, method)));
+            Dictionary<string, ReadyToRunMethod> rightMethods = new Dictionary<string, ReadyToRunMethod>(_rightDumper.Reader.Methods
+                .Select(method => new KeyValuePair<string, ReadyToRunMethod>(method.SignatureString, method)));
+            Dictionary<string, MethodPair> commonMethods = new Dictionary<string, MethodPair>(leftMethods
+                .Select(kvp => new KeyValuePair<string, MethodPair>(kvp.Key,
+                    new MethodPair(kvp.Value, rightMethods.TryGetValue(kvp.Key, out ReadyToRunMethod rightMethod) ? rightMethod : null)))
+                .Where(kvp => kvp.Value.RightMethod != null));
+            if (_leftDumper.Options.DiffHideSameDisasm)
+            {
+                commonMethods = new Dictionary<string, MethodPair>(HideMethodsWithSameDisassembly(commonMethods));
+            }
             DumpCommonMethods(_leftDumper, commonMethods);
             DumpCommonMethods(_rightDumper, commonMethods);
         }
@@ -215,17 +225,90 @@ namespace R2RDump
         /// </summary>
         /// <param name="dumper">Output dumper to use</param>
         /// <param name="signatureFilter">Set of common signatures of methods to dump</param>
-        private void DumpCommonMethods(Dumper dumper, HashSet<string> signatureFilter)
+        private void DumpCommonMethods(Dumper dumper, Dictionary<string, MethodPair> signatureFilter)
         {
             IEnumerable<ReadyToRunMethod> filteredMethods = dumper
                 .Reader
                 .Methods
-                .Where(method => signatureFilter.Contains(method.SignatureString))
+                .Where(method => signatureFilter.ContainsKey(method.SignatureString))
                 .OrderBy(method => method.SignatureString);
 
             foreach (ReadyToRunMethod method in filteredMethods)
             {
                 dumper.DumpMethod(method);
+            }
+        }
+
+        /// <summary>
+        /// Filter out methods that have identical left / right disassembly.
+        /// </summary>
+        /// <param name="commonMethods">Enumeration of common methods to filter</param>
+        /// <returns>Filtered method enumeration</returns>
+        private IEnumerable<KeyValuePair<string, MethodPair>> HideMethodsWithSameDisassembly(IEnumerable<KeyValuePair<string, MethodPair>> commonMethods)
+        {
+            bool first = true;
+            foreach (KeyValuePair<string, MethodPair> commonMethod in commonMethods)
+            {
+                bool match = (commonMethod.Value.LeftMethod.RuntimeFunctions.Count == commonMethod.Value.RightMethod.RuntimeFunctions.Count);
+                if (match)
+                {
+                    for (int rtfIndex = 0; match && rtfIndex < commonMethod.Value.LeftMethod.RuntimeFunctions.Count; rtfIndex++)
+                    {
+                        RuntimeFunction leftRuntimeFunction = commonMethod.Value.LeftMethod.RuntimeFunctions[rtfIndex];
+                        RuntimeFunction rightRuntimeFunction = commonMethod.Value.RightMethod.RuntimeFunctions[rtfIndex];
+                        int leftOffset = 0;
+                        int rightOffset = 0;
+                        for (; ;)
+                        {
+                            bool leftAtEnd = (leftOffset >= leftRuntimeFunction.Size);
+                            bool rightAtEnd = (rightOffset >= rightRuntimeFunction.Size);
+                            if (leftAtEnd || rightAtEnd)
+                            {
+                                if (!leftAtEnd || !rightAtEnd)
+                                {
+                                    match = false;
+                                }
+                                break;
+                            }
+                            leftOffset += _leftDumper.Disassembler.GetInstruction(leftRuntimeFunction,
+                                _leftDumper.Reader.GetOffset(leftRuntimeFunction.StartAddress),
+                                leftOffset, out string leftInstruction);
+                            rightOffset += _rightDumper.Disassembler.GetInstruction(rightRuntimeFunction,
+                                _rightDumper.Reader.GetOffset(rightRuntimeFunction.StartAddress),
+                                rightOffset, out string rightInstruction);
+                            if (leftInstruction != rightInstruction)
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (match)
+                {
+                    if (first)
+                    {
+                        _writer.WriteLine("Methods with identical disasssbly skipped in common method diff:");
+                        first = false;
+                    }
+                    _writer.WriteLine(commonMethod.Key);
+                }
+                else
+                {
+                    yield return commonMethod;
+                }
+            }
+        }
+
+        struct MethodPair
+        {
+            public readonly ReadyToRunMethod LeftMethod;
+            public readonly ReadyToRunMethod RightMethod;
+
+            public MethodPair(ReadyToRunMethod leftMethod, ReadyToRunMethod rightMethod)
+            {
+                LeftMethod = leftMethod;
+                RightMethod = rightMethod;
             }
         }
     }
