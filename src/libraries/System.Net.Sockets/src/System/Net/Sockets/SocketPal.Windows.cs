@@ -97,7 +97,7 @@ namespace System.Net.Sockets
                     return error;
                 }
 
-                if (!Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.Inherit, 0))
+                if (!Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0))
                 {
                     // Returning SocketError for consistency, since the call site can deal with conversion, and
                     // the most common SetHandleInformation error (AccessDenied) is included in SocketError anyways:

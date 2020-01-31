@@ -14,8 +14,8 @@ internal static partial class Interop
         internal enum HandleFlags: uint
         {
             None = 0,
-            Inherit = 1,
-            ProtectFromClose = 2
+            HANDLE_FLAG_INHERIT = 1,
+            HANDLE_FLAG_PROTECT_FROM_CLOSE = 2
         }
 
         [DllImport(Libraries.Kernel32, SetLastError = true)]
