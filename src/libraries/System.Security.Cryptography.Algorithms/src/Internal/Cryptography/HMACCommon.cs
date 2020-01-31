@@ -41,7 +41,7 @@ namespace Internal.Cryptography
 
         public int HashSizeInBits => _hMacProvider.HashSizeInBytes * 8;
 
-        public void ChangeKey(byte[]? key)
+        public void ChangeKey(byte[] key)
         {
             ActualKey = ChangeKeyImpl(key) ?? key;
         }

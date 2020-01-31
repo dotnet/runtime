@@ -345,7 +345,7 @@ namespace System.Security.Cryptography
     {
         public HMACMD5() { }
         public HMACMD5(byte[] key) { }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
@@ -359,7 +359,7 @@ namespace System.Security.Cryptography
         public HMACSHA1(byte[] key) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public HMACSHA1(byte[] key, bool useManagedSha1) { }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
@@ -371,7 +371,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA256() { }
         public HMACSHA256(byte[] key) { }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
         protected override void HashCore(System.ReadOnlySpan<byte> source) { }
@@ -383,7 +383,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA384() { }
         public HMACSHA384(byte[] key) { }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         public bool ProduceLegacyHmacValues { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
     {
         public HMACSHA512() { }
         public HMACSHA512(byte[] key) { }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         public bool ProduceLegacyHmacValues { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
         protected override void HashCore(byte[] rgb, int ib, int cb) { }

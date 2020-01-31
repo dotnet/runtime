@@ -27,14 +27,14 @@ namespace System.Security.Cryptography
 
             this.HashName = HashAlgorithmNames.MD5;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.MD5, key, BlockSize);
-            base.Key = _hMacCommon.ActualKey;
+            base.Key = _hMacCommon.ActualKey!;
             // this not really needed as it'll initialize BlockSizeValue with same value it has which is 64.
             // we just want to be explicit in all HMAC extended classes
             BlockSizeValue = BlockSize;
             HashSizeValue = _hMacCommon.HashSizeInBits;
         }
 
-        public override byte[]? Key
+        public override byte[] Key
         {
             get
             {
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
                 }
 
                 _hMacCommon.ChangeKey(value);
-                base.Key = _hMacCommon.ActualKey;
+                base.Key = _hMacCommon.ActualKey!;
             }
         }
 
