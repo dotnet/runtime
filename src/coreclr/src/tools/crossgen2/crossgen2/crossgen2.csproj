@@ -9,13 +9,7 @@
     <Platforms>x64;x86</Platforms>
     <PlatformTargets Condition="'$(ArchGroup)' != ''">$(ArchGroup)</PlatformTargets>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-
-    <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
-         the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
-         binaries are up to date and which are stale. -->
-    <OutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(BinDir)/crossgen2</OutputPath>
-    <GenerateDependencyFile>false</GenerateDependencyFile>
-    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <OutputPath>$(BinDir)/crossgen2</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
