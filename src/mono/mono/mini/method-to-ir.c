@@ -6292,6 +6292,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_save_args (cfg, sig, inline_args);
 	}
 
+	if (cfg->method == method && cfg->self_init && cfg->compile_aot && !COMPILE_LLVM (cfg)) {
+		MonoMethod *wrapper;
+		MonoInst *args [2];
+		int idx;
+
+		/*
+		 * Emit code to initialize this method by calling the init wrapper emitted by LLVM.
+		 * This is not efficient right now, but its only used for the methods which fail
+		 * LLVM compilation.
+		 * FIXME: Optimize this
+		 */
+		g_assert (!cfg->gshared);
+		wrapper = mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD);
+		/* Emit this into the entry bb so it comes before the GC safe point which depends on an inited GOT */
+		cfg->cbb = cfg->bb_entry;
+		idx = mono_aot_get_method_index (cfg->method);
+		EMIT_NEW_ICONST (cfg, args [0], idx);
+		/* Dummy */
+		EMIT_NEW_ICONST (cfg, args [1], 0);
+		mono_emit_method_call (cfg, wrapper, args, NULL);
+	}
+
 	/* FIRST CODE BLOCK */
 	NEW_BBLOCK (cfg, tblock);
 	tblock->cil_code = ip;
