@@ -603,7 +603,7 @@ namespace System.Net.Http.Functional.Tests
                 client.Timeout = TimeSpan.FromMilliseconds(1);
                 Task<HttpResponseMessage>[] tasks = Enumerable.Range(0, 3).Select(_ => client.GetAsync(CreateFakeUri(), completionOption)).ToArray();
                 Assert.All(tasks, task => {
-                    TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                    OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
                     TimeoutException timeoutException = (TimeoutException)e.InnerException;
                     Assert.NotNull(timeoutException);
                     Assert.NotNull(timeoutException.InnerException);
@@ -623,7 +623,7 @@ namespace System.Net.Http.Functional.Tests
                 CancellationToken token = cts.Token;
                 cts.Cancel();
                 Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, token);
-                TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
                 Assert.Null(e.InnerException);
             }
         }
@@ -639,7 +639,7 @@ namespace System.Net.Http.Functional.Tests
                 CancellationTokenSource cts = new CancellationTokenSource();
                 Task<HttpResponseMessage> task = client.GetAsync(CreateFakeUri(), completionOption, cts.Token);
                 cts.Cancel();
-                TaskCanceledException e = Assert.Throws<TaskCanceledException>(() => task.GetAwaiter().GetResult());
+                OperationCanceledException e = Assert.ThrowsAny<OperationCanceledException>(() => task.GetAwaiter().GetResult());
                 Assert.Null(e.InnerException);
             }
         }
