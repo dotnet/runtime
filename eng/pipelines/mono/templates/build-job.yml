@@ -89,6 +89,9 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if ne(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if eq(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

@@ -9,7 +9,7 @@ parameters:
   liveLibrariesBuildConfig: ''
   strategy: ''
   pool: ''
-  llvm: ''
+  llvm: false
 
   # arcade-specific parameters
   condition: true
@@ -47,7 +47,10 @@ jobs:
 
     variables:
     - name: buildProductArtifactName
-      value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if ne(parameters.llvm, true) }}:
+        value: 'MonoProduct_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      ${{ if eq(parameters.llvm, true) }}:
+        value: 'MonoProduct_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
 
     - name: buildProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/mono/$(osGroup).$(archType).$(buildConfigUpper)'
