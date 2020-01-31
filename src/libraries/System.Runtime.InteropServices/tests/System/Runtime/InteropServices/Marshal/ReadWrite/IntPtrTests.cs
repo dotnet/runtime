@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 

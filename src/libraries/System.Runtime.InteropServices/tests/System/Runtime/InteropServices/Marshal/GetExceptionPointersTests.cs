@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Runtime.InteropServices.Tests
 {

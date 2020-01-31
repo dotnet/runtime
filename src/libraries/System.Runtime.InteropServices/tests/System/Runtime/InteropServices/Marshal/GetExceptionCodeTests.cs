@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
