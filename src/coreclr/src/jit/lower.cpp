@@ -3688,9 +3688,18 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTree* frameAddr =
             new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
+#ifdef _TARGET_X86_
+        // On x86 targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+        // This is because the callee pops stack arguments, and we need to keep track of this during stack
+        // walking
+        const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
+        GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
+        GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
+#else
+        GenTreeCall::Use* args = comp->gtNewCallArgs(frameAddr);
+#endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
-        GenTree* helperCall =
-            comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, comp->gtNewCallArgs(frameAddr));
+        GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
 
         comp->fgMorphTree(helperCall);
         BlockRange().InsertBefore(insertBefore, LIR::SeqTree(comp, helperCall));
