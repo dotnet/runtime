@@ -3642,7 +3642,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (length >= 0)
                     {
                         retNode = gtNewIconNode(length);
-                        if (str == nullptr) // can be NULL for dynamic context
+                        if (str != nullptr) // can be NULL for dynamic context
                         {
                             JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
                         }
