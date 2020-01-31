@@ -77,9 +77,8 @@ namespace System.Net.Security.Tests
                 catch (Exception ex)
                 {
                     // if we cannot connect skip the test instead of failing.
-                    new SkipTestException($"Unable to connect to '{host}': {ex.Message}");
+                    throw new SkipTestException($"Unable to connect to '{host}': {ex.Message}");
                 }
-
 
                 using (SslStream sslStream = new SslStream(client.GetStream(), false, RemoteHttpsCertValidation, null))
                 {
