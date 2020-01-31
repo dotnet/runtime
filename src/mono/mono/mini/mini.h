@@ -1226,6 +1226,8 @@ typedef enum {
 	JIT_FLAG_INTERP = (1 << 9),
 	/* Allow AOT to use all current CPU instructions */
 	JIT_FLAG_USE_CURRENT_CPU = (1 << 10),
+	/* Generate code to self-init the method for AOT */
+	JIT_FLAG_SELF_INIT = (1 << 11)
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1441,6 +1443,7 @@ typedef struct {
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
+	guint            self_init : 1;
 	guint            domainvar_inited : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
