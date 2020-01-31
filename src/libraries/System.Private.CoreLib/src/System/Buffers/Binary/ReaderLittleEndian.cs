@@ -103,11 +103,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt16LittleEndian(ReadOnlySpan<byte> source, out short value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out short tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
 
@@ -118,11 +120,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt32LittleEndian(ReadOnlySpan<byte> source, out int value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out int tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
 
@@ -133,11 +137,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt64LittleEndian(ReadOnlySpan<byte> source, out long value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out long tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
 
@@ -149,11 +155,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16LittleEndian(ReadOnlySpan<byte> source, out ushort value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out ushort tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
 
@@ -165,11 +173,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32LittleEndian(ReadOnlySpan<byte> source, out uint value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out uint tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
 
@@ -181,11 +191,13 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64LittleEndian(ReadOnlySpan<byte> source, out ulong value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
-            if (!BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                return MemoryMarshal.TryRead(source, out value);
             }
+
+            bool success = MemoryMarshal.TryRead(source, out ulong tmp);
+            value = ReverseEndianness(tmp);
             return success;
         }
     }
