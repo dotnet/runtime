@@ -80,6 +80,9 @@ namespace BinderTracingTests
             foreach (var method in methods)
             {
                 BinderTestAttribute attribute = method.GetCustomAttribute<BinderTestAttribute>();
+                if (attribute.Isolate && Environment.GetEnvironmentVariable("COMPlus_GCStress") != null)
+                    continue;
+
                 bool success = attribute.Isolate
                     ? RunTestInSeparateProcess(method)
                     : RunSingleTest(method);
