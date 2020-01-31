@@ -25,6 +25,7 @@ using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
 
@@ -185,9 +186,12 @@ namespace System.Reflection.Emit
                 assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
             }
 
-            _internalAssemblyBuilder = (InternalAssemblyBuilder)nCreateDynamicAssembly(name,
-                                                                                       ref stackMark,
-                                                                                       access);
+            Assembly? retAssembly = null;
+            CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
+                                  new StackCrawlMarkHandle(ref stackMark),
+                                  (int)access,
+                                  ObjectHandleOnStack.Create(ref retAssembly));
+            _internalAssemblyBuilder = (InternalAssemblyBuilder)retAssembly;
 
             _assemblyData = new AssemblyBuilderData(_internalAssemblyBuilder, access);
 
@@ -215,7 +219,7 @@ namespace System.Reflection.Emit
 
             // We are only setting the name in the managed ModuleBuilderData here.
             // The name in the underlying metadata will be set when the
-            // manifest module is created during nCreateDynamicAssembly.
+            // manifest module is created during CreateDynamicAssembly.
 
             // This name needs to stay in sync with that used in
             // Assembly::Init to call ReflectionModule::Create (in VM)
@@ -250,11 +254,11 @@ namespace System.Reflection.Emit
             return InternalDefineDynamicAssembly(name, access, ref stackMark, assemblyAttributes);
         }
 
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern Assembly nCreateDynamicAssembly(AssemblyName name,
-                                                              ref StackCrawlMark stackMark,
-                                                              AssemblyBuilderAccess access);
+        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern void CreateDynamicAssembly(ObjectHandleOnStack name,
+                                                         StackCrawlMarkHandle stackMark,
+                                                         int access,
+                                                         ObjectHandleOnStack retAssembly);
 
         private static readonly object s_assemblyBuilderLock = new object();
 
