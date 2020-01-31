@@ -23,11 +23,12 @@ parameters:
 jobs:
   - template: /eng/common/templates/job/job.yml
     parameters:
-      name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if eq(parameters.framework, 'netcoreapp') }}:
+      ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
         displayName: ${{ format('Libraries {0} {1}{2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      ${{ if ne(parameters.framework, 'netcoreapp') }}:
+        name: ${{ format('libraries_{0}_{1}{2}_{3}_{4}', parameters.name, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
         displayName: ${{ format('Libraries {0} {1} {2} {3} {4}', parameters.displayName, parameters.osGroup, parameters.framework, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('libraries_{0}_{1}_{2}{3}_{4}_{5}', parameters.name, parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       enableTelemetry: ${{ parameters.isOfficialBuild }} # TODO: figure out if it's needed
       container: ${{ parameters.container }}
@@ -41,10 +42,12 @@ jobs:
         - _msbuildCommonParameters: ''
         - _stripSymbolsArg: ''
         - _runtimeOSArg: ''
-        - _finalFrameworkArg: -framework ${{ parameters.framework }}
+        - _finalFrameworkArg: ''
         - _buildScript: $(_buildScriptFileName)$(scriptExt)
         - _warnAsErrorArg: ''
         - _testScopeArg: ''
+        - _extraHelixArguments: ''
+        - _crossBuildPropertyArg: ''
 
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -66,8 +69,13 @@ jobs:
         - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
           - _runtimeOSArg: -os ${{ parameters.osGroup }}
 
+        - ${{ if ne(parameters.framework, '') }}:
+          - _finalFrameworkArg: -framework ${{ parameters.framework }}
+          - _extraHelixArguments: /p:TargetGroup=${{ parameters.framework }}
+
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
+          - _extraHelixArguments: /p:BuildAllConfigurations=true
 
         - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
           - _skipTestHostCopy: true
@@ -83,10 +91,7 @@ jobs:
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - _runtimeDownloadPath: '$(Build.SourcesDirectory)/artifacts/transport/${{ parameters.runtimeFlavor }}'
           - _runtimeArtifactName: '$(runtimeFlavorName)Product_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.liveRuntimeBuildConfig }}'
-          - ${{ if ne(parameters.container, '') }}:
-            - _runtimeArtifactsPathArg: '/p:RuntimeArtifactsPath=${_RUNTIMEDOWNLOADPATH}'
-          - ${{ if eq(parameters.container, '') }}:
-            - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
+          - _runtimeArtifactsPathArg: ' /p:RuntimeArtifactsPath=$(_runtimeDownloadPath)'
 
           # WebAssembly uses linux implementation detail
           - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:

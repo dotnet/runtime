@@ -13,10 +13,10 @@ Module Name:
 #ifndef __gc_record_h__
 #define __gc_record_h__
 
-//#define max_generation 2
-
+// We have 3 generations [0-2] that can be condemned
+// All non-SOH generations are logically Gen 2.
 // We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
-// We assume that 2 bits are enough to represent the generation.
+// We assume that 2 bits are enough to represent a generation that can be condemned.
 #define bits_generation 2
 #define generation_mask (~(~0u << bits_generation))
 //=======================note !!!===================================//
@@ -333,7 +333,7 @@ int index_of_highest_set_bit (size_t value);
 class gc_history_per_heap
 {
 public:
-    gc_generation_data gen_data[max_generation+2];
+    gc_generation_data gen_data[total_generation_count];
     maxgen_size_increase maxgen_size_info;
     gen_to_condemn_tuning gen_to_condemn_reasons;
 

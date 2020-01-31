@@ -5126,7 +5126,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
 
     _ASSERTE(pTargetMD != NULL);
 
-    StaticAccessCheckContext accessContext(pTargetMD, pTargetMT);
+    AccessCheckContext accessContext(pTargetMD, pTargetMT);
 
     if (!ClassLoader::CanAccess(
             &accessContext,

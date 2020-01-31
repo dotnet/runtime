@@ -23,14 +23,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
             {
                 dataBuilder.AddSymbol(this);
 
-                dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.StringHandle, _token.Module, _signatureContext);
+                dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.StringHandle, _token.Module, _signatureContext);
                 dataBuilder.EmitUInt(_token.TokenRid);
             }
 

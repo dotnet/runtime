@@ -9,23 +9,28 @@
 DumpDataTarget::DumpDataTarget(pid_t pid) :
     m_ref(1),
     m_pid(pid),
+#ifndef HAVE_PROCESS_VM_READV
     m_fd(-1),
+#endif
     m_crashInfo(nullptr)
 {
 }
 
 DumpDataTarget::~DumpDataTarget()
 {
+#ifndef HAVE_PROCESS_VM_READV
     if (m_fd != -1)
     {
         close(m_fd);
         m_fd = -1;
     }
+#endif
 }
 
 bool
 DumpDataTarget::Initialize(CrashInfo * crashInfo)
 {
+#ifndef HAVE_PROCESS_VM_READV
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
 
@@ -35,6 +40,7 @@ DumpDataTarget::Initialize(CrashInfo * crashInfo)
         fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
+#endif
     m_crashInfo = crashInfo;
     return true;
 }
@@ -149,14 +155,20 @@ DumpDataTarget::ReadVirtual(
     /* [in] */ ULONG32 size,
     /* [optional][out] */ ULONG32 *done)
 {
+#ifdef HAVE_PROCESS_VM_READV
+    iovec local{ buffer, size };
+    iovec remote{ (void*)(ULONG_PTR)address, size };
+    ssize_t read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
+#else
     assert(m_fd != -1);
     ssize_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
+#endif
     if (read == -1)
     {
         *done = 0;
         return E_FAIL;
     }
-    *done = read;
+    *done = (ULONG32)read;
     return S_OK;
 }
 

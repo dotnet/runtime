@@ -55,16 +55,20 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0; i < 100; i++)
             {
-                StringBuilder builder1 = new StringBuilder();
-                StringBuilder builder2 = new StringBuilder();
+                var builder1 = new StringBuilder();
+                var builder2 = new StringBuilder();
+
                 for (int j = 0; j < validCharLength; j++)
                 {
                     char c = validChars[random.Next(validChars.Count)];
                     builder1.Append(c);
                     builder2.Append(c);
                 }
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
 
                 string input = builder1.ToString();
                 Match match = regex.Match(input);
@@ -94,18 +98,26 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0; i < 500; i++)
             {
-                StringBuilder builder1 = new StringBuilder();
-                StringBuilder builder2 = new StringBuilder();
+                var builder1 = new StringBuilder();
+                var builder2 = new StringBuilder();
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
+
                 for (int j = 0; j < validCharLength; j++)
                 {
                     char c = validChars[random.Next(validChars.Count)];
                     builder1.Append(c);
                     builder2.Append(c);
                 }
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
+
                 string input = builder1.ToString();
 
                 Match match = regex.Match(input);
@@ -143,16 +155,21 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0; i < 100; i++)
             {
-                StringBuilder builder1 = new StringBuilder();
-                StringBuilder builder2 = new StringBuilder();
+                var builder1 = new StringBuilder();
+                var builder2 = new StringBuilder();
+
                 for (int j = 0; j < validCharLength; j++)
                 {
                     char c = validChars[random.Next(validChars.Count)];
                     builder1.Append(c);
                     builder2.Append(c);
                 }
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
+
                 string input = builder1.ToString();
                 Match match = regex.Match(input);
 
@@ -173,18 +190,26 @@ namespace System.Text.RegularExpressions
 
             for (int i = 0; i < 100; i++)
             {
-                StringBuilder builder1 = new StringBuilder();
-                StringBuilder builder2 = new StringBuilder();
+                var builder1 = new StringBuilder();
+                var builder2 = new StringBuilder();
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
+
                 for (int j = 0; j < validCharLength; j++)
                 {
                     char c = validChars[random.Next(validChars.Count)];
                     builder1.Append(c);
                     builder2.Append(c);
                 }
+
                 for (int j = 0; j < invalidCharLength; j++)
+                {
                     builder1.Append(invalidChars[random.Next(invalidChars.Count)]);
+                }
+
                 string input = builder1.ToString();
 
                 Match match = regex.Match(input);

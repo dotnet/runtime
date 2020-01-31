@@ -64,9 +64,9 @@ namespace System.Reflection.TypeLoading.Ecma
                 //
                 // Pragmatically speaking, searching the entire assembly should get us the same result and avoids writing a significant
                 // code path that will get almost no test coverage as this is an obscure case not produced by mainstream tools..
-                RoDefinitionType type = module.GetEcmaAssembly().GetTypeCore(ns, name, ignoreCase: false, out Exception e);
+                RoDefinitionType? type = module.GetEcmaAssembly().GetTypeCore(ns, name, ignoreCase: false, out Exception? e);
                 if (type == null)
-                    throw e;
+                    throw e!;
                 return type;
             }
 
@@ -77,37 +77,37 @@ namespace System.Reflection.TypeLoading.Ecma
                     {
                         AssemblyReferenceHandle arh = (AssemblyReferenceHandle)scope;
                         RoAssembly assembly = arh.ResolveAssembly(module);
-                        RoDefinitionType type = assembly.GetTypeCore(ns, name, ignoreCase: false, out Exception e);
+                        RoDefinitionType? type = assembly.GetTypeCore(ns, name, ignoreCase: false, out Exception? e);
                         if (type == null)
-                            throw e;
+                            throw e!;
                         return type;
                     }
 
                 case HandleKind.TypeReference:
                     {
                         RoDefinitionType outerType = ((TypeReferenceHandle)scope).ResolveTypeRef(module);
-                        RoDefinitionType nestedType = outerType.GetNestedTypeCore(name);
+                        RoDefinitionType? nestedType = outerType.GetNestedTypeCore(name);
                         return nestedType ?? throw new TypeLoadException(SR.Format(SR.Format(SR.TypeNotFound, outerType.ToString() + "[]", outerType.Assembly.FullName)));
                     }
 
                 case HandleKind.ModuleDefinition:
                     {
-                        RoDefinitionType type = module.GetTypeCore(ns, name, ignoreCase: false, out Exception e);
+                        RoDefinitionType? type = module.GetTypeCore(ns, name, ignoreCase: false, out Exception? e);
                         if (type == null)
-                            throw e;
+                            throw e!;
                         return type;
                     }
 
                 case HandleKind.ModuleReference:
                     {
                         string moduleName = ((ModuleReferenceHandle)scope).GetModuleReference(module.Reader).Name.GetString(module.Reader);
-                        RoModule targetModule = module.GetRoAssembly().GetRoModule(moduleName);
+                        RoModule? targetModule = module.GetRoAssembly().GetRoModule(moduleName);
                         if (targetModule == null)
                             throw new BadImageFormatException(SR.Format(SR.BadImageFormat_TypeRefModuleNotInManifest, module.Assembly.FullName, $"0x{handle.GetToken():x8}"));
 
-                        RoDefinitionType type = targetModule.GetTypeCore(ns, name, ignoreCase: false, out Exception e);
+                        RoDefinitionType? type = targetModule.GetTypeCore(ns, name, ignoreCase: false, out Exception? e);
                         if (type == null)
-                            throw e;
+                            throw e!;
                         return type;
                     }
 
@@ -148,13 +148,13 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public static RoAssembly ResolveAssembly(this AssemblyReferenceHandle handle, EcmaModule module)
         {
-            RoAssembly assembly = handle.TryResolveAssembly(module, out Exception e);
+            RoAssembly? assembly = handle.TryResolveAssembly(module, out Exception? e);
             if (assembly == null)
-                throw e;
+                throw e!;
             return assembly;
         }
 
-        public static RoAssembly TryResolveAssembly(this AssemblyReferenceHandle handle, EcmaModule module, out Exception e)
+        public static RoAssembly? TryResolveAssembly(this AssemblyReferenceHandle handle, EcmaModule module, out Exception? e)
         {
             e = null;
             RoAssembly assembly = handle.ResolveToAssemblyOrExceptionAssembly(module);

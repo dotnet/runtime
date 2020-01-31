@@ -8,14 +8,16 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Abs.Vector64.Byte.cs" />
-    <Compile Include="Abs.Vector64.UInt16.cs" />
-    <Compile Include="Abs.Vector64.UInt32.cs" />
+    <Compile Include="Abs.Vector64.Int16.cs" />
+    <Compile Include="Abs.Vector64.Int32.cs" />
+    <Compile Include="Abs.Vector64.SByte.cs" />
     <Compile Include="Abs.Vector64.Single.cs" />
-    <Compile Include="Abs.Vector128.Byte.cs" />
+    <Compile Include="Abs.Vector128.Int16.cs" />
+    <Compile Include="Abs.Vector128.Int32.cs" />
+    <Compile Include="Abs.Vector128.SByte.cs" />
     <Compile Include="Abs.Vector128.Single.cs" />
-    <Compile Include="Abs.Vector128.UInt16.cs" />
-    <Compile Include="Abs.Vector128.UInt32.cs" />
+    <Compile Include="AbsScalar.Vector64.Double.cs" />
+    <Compile Include="AbsScalar.Vector64.Single.cs" />
     <Compile Include="AbsoluteCompareGreaterThan.Vector64.Single.cs" />
     <Compile Include="AbsoluteCompareGreaterThan.Vector128.Single.cs" />
     <Compile Include="AbsoluteCompareGreaterThanOrEqual.Vector64.Single.cs" />
@@ -38,7 +40,6 @@
     <Compile Include="AbsoluteDifference.Vector128.Single.cs" />
     <Compile Include="AbsoluteDifference.Vector128.UInt16.cs" />
     <Compile Include="AbsoluteDifference.Vector128.UInt32.cs" />
-    <Compile Include="AbsScalar.Vector64.Single.cs" />
     <Compile Include="Add.Vector64.Byte.cs" />
     <Compile Include="Add.Vector64.Int16.cs" />
     <Compile Include="Add.Vector64.Int32.cs" />
@@ -55,14 +56,20 @@
     <Compile Include="Add.Vector128.UInt16.cs" />
     <Compile Include="Add.Vector128.UInt32.cs" />
     <Compile Include="Add.Vector128.UInt64.cs" />
+    <Compile Include="AddScalar.Vector64.Double.cs" />
+    <Compile Include="AddScalar.Vector64.Int64.cs" />
     <Compile Include="AddScalar.Vector64.Single.cs" />
+    <Compile Include="AddScalar.Vector64.UInt64.cs" />
     <Compile Include="BitwiseSelect.Vector64.Byte.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Double.cs" />
     <Compile Include="BitwiseSelect.Vector64.Int16.cs" />
     <Compile Include="BitwiseSelect.Vector64.Int32.cs" />
+    <Compile Include="BitwiseSelect.Vector64.Int64.cs" />
     <Compile Include="BitwiseSelect.Vector64.SByte.cs" />
     <Compile Include="BitwiseSelect.Vector64.Single.cs" />
     <Compile Include="BitwiseSelect.Vector64.UInt16.cs" />
     <Compile Include="BitwiseSelect.Vector64.UInt32.cs" />
+    <Compile Include="BitwiseSelect.Vector64.UInt64.cs" />
     <Compile Include="BitwiseSelect.Vector128.Byte.cs" />
     <Compile Include="BitwiseSelect.Vector128.Double.cs" />
     <Compile Include="BitwiseSelect.Vector128.Int16.cs" />
@@ -176,12 +183,15 @@
     <Compile Include="LeadingZeroCount.Vector128.UInt16.cs" />
     <Compile Include="LeadingZeroCount.Vector128.UInt32.cs" />
     <Compile Include="LoadVector64.Byte.cs" />
+    <Compile Include="LoadVector64.Double.cs" />
     <Compile Include="LoadVector64.Int16.cs" />
     <Compile Include="LoadVector64.Int32.cs" />
+    <Compile Include="LoadVector64.Int64.cs" />
     <Compile Include="LoadVector64.SByte.cs" />
     <Compile Include="LoadVector64.Single.cs" />
     <Compile Include="LoadVector64.UInt16.cs" />
     <Compile Include="LoadVector64.UInt32.cs" />
+    <Compile Include="LoadVector64.UInt64.cs" />
     <Compile Include="LoadVector128.Byte.cs" />
     <Compile Include="LoadVector128.Double.cs" />
     <Compile Include="LoadVector128.Int16.cs" />

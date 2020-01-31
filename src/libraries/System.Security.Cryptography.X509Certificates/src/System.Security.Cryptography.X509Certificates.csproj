@@ -749,16 +749,12 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

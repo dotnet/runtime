@@ -44,29 +44,92 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend Const OptionCompareTextFlags As CompareOptions = (CompareOptions.IgnoreCase Or CompareOptions.IgnoreWidth Or CompareOptions.IgnoreKanaType)
 
+        Private Const ResourceMsgDefault As String = "Message text unavailable.  Resource file 'Microsoft.VisualBasic resources' not found."
+        Private Const VBDefaultErrorID As String = "ID95"
         Friend Shared m_achIntlSpace() As Char = {chSpace, chIntlSpace}
         Private Shared ReadOnly s_voidType As Type = System.Type.GetType("System.Void")
         Private Shared s_VBRuntimeAssembly As System.Reflection.Assembly
 
-        '*****************************************************************************
-        ';GetResourceString
-        '
-        'Summary: Retrieves a resource string and formats it by replacing placeholders
-        '         with params. For example if the unformatted string is
-        '         "Hello, {0}" then GetString("StringID", "World") will return "Hello, World"
-        '         This one is exposed because I have to be able to get at localized error
-        '         strings from the MY template
-        '  Param: ID - Identifier for the string to be retrieved
-        '  Param: Args - An array of params used to replace placeholders.
-        'Returns: The resource string if found or an error message string
-        '*****************************************************************************
+        Private Shared Function GetFallbackMessage(ByVal name As String, ByVal ParamArray args() As Object) As String
+            'last-ditch effort; just give back name
+            Return name
+        End Function
+
         Friend Shared Function GetResourceString(ByVal ResourceId As vbErrors) As String
-            Dim id as String = "ID" & CStr(ResourceId)
+            Dim id As String = "ID" & CStr(ResourceId)
             Return SR.GetResourceString(id, id)
         End Function
 
-        Friend Shared Function GetResourceString(ByVal resourceKey As String, ByVal ParamArray args() As String) As String
-            Return SR.Format(resourceKey, args)
+        <System.ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)>
+        Friend Shared Function GetResourceString(ByVal ResourceKey As String) As String
+
+            Dim s As String = Nothing
+
+            Try
+                s = SR.GetResourceString(ResourceKey)
+                ' this may be unknown error, so try getting default message
+                If s Is Nothing Then
+                    s = SR.GetResourceString(VBDefaultErrorID)
+                End If
+
+                'if we have found nothing, get a fallback message.
+                If s Is Nothing Then
+                    s = GetFallbackMessage(ResourceKey)
+                End If
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+            Catch
+                s = ResourceMsgDefault
+            End Try
+
+            Return s
+        End Function
+
+        ''' <summary>
+        ''' Retrieves a resource string and formats it by replacing placeholders with parameters.
+        ''' </summary>
+        ''' <param name="ResourceKey">The resource string identifier</param>
+        ''' <param name="Args">An array of parameters used to replace placeholders</param>
+        ''' <returns>The resource string if found or an error message string</returns>
+        Public Shared Function GetResourceString(ByVal ResourceKey As String, ByVal ParamArray Args() As String) As String
+
+            System.Diagnostics.Debug.Assert(Not ResourceKey = "", "ResourceKey is missing")
+            System.Diagnostics.Debug.Assert(Not Args Is Nothing, "No Args")
+
+            Dim UnformattedString As String = Nothing
+            Dim FormattedString As String = Nothing
+            Try
+                'Get unformatted string which may have place holders ie "Hello, {0}. How is {1}?"
+                UnformattedString = GetResourceString(ResourceKey)
+
+                'Replace placeholders with items from the passed in array
+                FormattedString = String.Format(System.Threading.Thread.CurrentThread.CurrentCulture, UnformattedString, Args)
+
+                'Rethrow hosting exceptions
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+
+            Catch ex As Exception
+                System.Diagnostics.Debug.Fail("Unable to get and format string for ResourceKey: " & ResourceKey)
+            Finally
+                System.Diagnostics.Debug.Assert(Not UnformattedString = "", "Unable to get string for ResourceKey: " & ResourceKey)
+                System.Diagnostics.Debug.Assert(Not FormattedString = "", "Unable to format string for ResourceKey: " & ResourceKey)
+            End Try
+
+            'Return the string if we have one otherwise return a default error message
+            If Not FormattedString = "" Then
+                Return FormattedString
+            Else
+                Return UnformattedString 'will contain an error string from the attempt to load via the GetResourceString() overload we call internally
+            End If
         End Function
 
         Friend Shared Function StdFormat(ByVal s As String) As String

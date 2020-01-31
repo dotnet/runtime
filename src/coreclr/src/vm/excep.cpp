@@ -2367,7 +2367,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             // "numCurrentFrames" can be zero if the user created an EDI using
                             // an unthrown exception.
                             StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace[numCurrentFrames - 1];
-                            refLastElementFromForeignStackTrace.fIsLastFrameFromForeignStackTrace = TRUE;
+                            refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
                         }
                     }
 
@@ -3555,7 +3555,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         // When we are building stack trace as we encounter managed frames during exception dispatch,
         // then none of those frames represent a stack trace from a foreign exception (as they represent
         // the current exception). Hence, set the corresponding flag to FALSE.
-        pStackTraceElem->fIsLastFrameFromForeignStackTrace = FALSE;
+        pStackTraceElem->flags = 0;
 
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
@@ -3563,6 +3563,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && pStackTraceElem->ip != 0)
         {
             pStackTraceElem->ip -= 1;
+            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
         }
 
         ++m_dFrameCount;

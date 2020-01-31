@@ -2581,7 +2581,7 @@ public:
 
     GenTree* gtNewIndexRef(var_types typ, GenTree* arrayOp, GenTree* indexOp);
 
-    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset);
+    GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
 
     GenTree* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -4340,6 +4340,7 @@ public:
 
 #if defined(DEBUG)
     unsigned impInlinedCodeSize;
+    bool     fgPrintInlinedMethods;
 #endif
 
     //-------------------------------------------------------------------------
@@ -5602,10 +5603,6 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
     bool gtIsActiveCSE_Candidate(GenTree* tree);
 
-#ifdef DEBUG
-    bool fgPrintInlinedMethods;
-#endif
-
     bool fgIsBigOffset(size_t offset);
 
     bool fgNeedReturnSpillTemp();
@@ -6397,8 +6394,8 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
     bool gtIsVtableRef(GenTree* tree);
-    GenTree* getArrayLengthFromAllocation(GenTree* tree);
-    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree);
+    GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
+    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -6415,6 +6412,14 @@ public:
                                      unsigned nullCheckLclNum,
                                      bool     isInsideTry,
                                      bool     checkSideEffectSummary);
+#if DEBUG
+    void optCheckFlagsAreSet(unsigned    methodFlag,
+                             const char* methodFlagStr,
+                             unsigned    bbFlag,
+                             const char* bbFlagStr,
+                             GenTree*    tree,
+                             BasicBlock* basicBlock);
+#endif
 
 #if ASSERTION_PROP
     /**************************************************************************
@@ -7646,12 +7651,15 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector64FloatHandle;
+        CORINFO_CLASS_HANDLE Vector64DoubleHandle;
         CORINFO_CLASS_HANDLE Vector64IntHandle;
         CORINFO_CLASS_HANDLE Vector64UShortHandle;
         CORINFO_CLASS_HANDLE Vector64UByteHandle;
         CORINFO_CLASS_HANDLE Vector64ShortHandle;
         CORINFO_CLASS_HANDLE Vector64ByteHandle;
+        CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
+        CORINFO_CLASS_HANDLE Vector64ULongHandle;
 #endif // defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;
@@ -8684,6 +8692,7 @@ public:
 #define MAX_STRESS_WEIGHT 100
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
+    bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
 
 #ifdef DEBUG
 
@@ -8709,6 +8718,7 @@ public:
     }
 
     const char* compGetTieringName() const;
+    const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt()
     {

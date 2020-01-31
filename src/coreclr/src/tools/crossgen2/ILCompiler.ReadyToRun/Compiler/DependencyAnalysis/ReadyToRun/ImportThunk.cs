@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly Kind _thunkKind;
 
-        public ImportThunk(ReadyToRunHelper helperId, ReadyToRunCodegenNodeFactory factory, Import instanceCell, bool useVirtualCall)
+        public ImportThunk(ReadyToRunHelper helperId, NodeFactory factory, Import instanceCell, bool useVirtualCall)
         {
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
             _instanceCell = instanceCell;

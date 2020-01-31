@@ -41,7 +41,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     baseassemblyspec.cpp
     binder.cpp
     castcache.cpp
-    callcounter.cpp
+    callcounting.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -143,6 +143,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     baseassemblyspec.inl
     binder.h
     castcache.h
+    callcounting.h
     ceeload.h
     ceeload.inl
     class.h
@@ -409,7 +410,6 @@ set(VM_HEADERS_WKS
     assemblyspec.hpp
     assemblyspecbase.h
     cachelinealloc.h
-    callcounter.h
     callhelpers.h
     callsiteinspect.h
     ceemain.h
@@ -589,7 +589,6 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
-    extensibleclassfactory.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -618,7 +617,6 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
-    extensibleclassfactory.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h

@@ -3,7 +3,7 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: netcoreapp
+  framework: ''
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   timeoutInMinutes: 150
@@ -34,7 +34,10 @@ jobs:
       displayName: 'Test Build'
 
       dependsOn:
-      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if notIn(parameters.framework, 'allConfigurations', 'net472') }}:
+        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      - ${{ if in(parameters.framework, 'allConfigurations', 'net472') }}:
+        - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', parameters.framework, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
       variables:
         - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}

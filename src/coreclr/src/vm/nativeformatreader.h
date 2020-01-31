@@ -48,7 +48,7 @@ namespace NativeFormat
 
     class NativeReader
     {
-        PTR_BYTE _base;
+        PTR_CBYTE _base;
         uint _size;
 
     public:
@@ -58,7 +58,7 @@ namespace NativeFormat
             _size = 0;
         }
 
-        NativeReader(PTR_BYTE base_, uint size)
+        NativeReader(PTR_CBYTE base_, uint size)
         {
             _base = base_;
             _size = size;
@@ -216,7 +216,7 @@ namespace NativeFormat
         {
             EnsureOffsetInRange(offset, 0);
 
-            PTR_BYTE data = (_base + offset);
+            PTR_CBYTE data = (_base + offset);
             if ((*data & 1) == 0)
             {
                 return offset + 1;

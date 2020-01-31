@@ -4091,9 +4091,11 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
         for (ULONG32 i = 0; i < numMap; i++)
         {
             if (codeOffset >= map[i].nativeStartOffset &&
-                (((LONG)map[i].ilOffset == ICorDebugInfo::EPILOG &&
-                  !map[i].nativeEndOffset) ||
-                 codeOffset < map[i].nativeEndOffset))
+                // Found the entry if it is the epilog or the last entry and nativeEndOffset == 0. For methods that don't
+                // have a epilog (i.e. IL_Throw is the last instruction) the last map entry has a valid IL offset (not EPILOG)
+                // and nativeEndOffset == 0.
+                ((((LONG)map[i].ilOffset == ICorDebugInfo::EPILOG || i == (numMap - 1)) && map[i].nativeEndOffset == 0) ||
+                    codeOffset < map[i].nativeEndOffset))
             {
                 hits++;
 
