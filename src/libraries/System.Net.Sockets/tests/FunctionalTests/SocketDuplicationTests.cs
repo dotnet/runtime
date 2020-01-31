@@ -18,6 +18,8 @@ namespace System.Net.Sockets.Tests
 {
     // Test cases for DuplicateAndClose, Socket(socketInformation), Socket.UseOnlyOverlappedIO,
     // and asynchronous IO behavior for duplicate sockets.
+    // Since the constructor Socket(socketInformation) is strongly coupled
+    // with the rest of the duplication logic, it's being tested here instead of CreateSocketTests.
     public class SocketDuplicationTests
     {
         private readonly ArraySegment<byte> _receiveBuffer = new ArraySegment<byte>(new byte[32]);
@@ -73,6 +75,22 @@ namespace System.Net.Sockets.Tests
 
             using Socket clone = new Socket(info);
             Assert.Equal(blocking, clone.Blocking);
+        }
+
+        [Theory]
+        [InlineData(null)] // ProtocolInformation == null
+        [InlineData(1)] // ProtocolInformation too short
+        [InlineData(1000)] // corrupt ProtocolInformation
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SocketCtr_InvalidProtocolInformation_ThrowsArgumentException(int? protocolInfoLength)
+        {
+            SocketInformation invalidInfo = new SocketInformation();
+            if (protocolInfoLength != null)
+            {
+                invalidInfo.ProtocolInformation = new byte[protocolInfoLength.Value];
+            }
+
+            Assert.Throws<ArgumentException>(() => new Socket(invalidInfo));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]

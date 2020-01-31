@@ -65,12 +65,12 @@ namespace System.Net.Sockets
             ref SocketType socketType,
             ref ProtocolType protocolType)
         {
-            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < Interop.Winsock.WSAProtocolInfo.Size)
+            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < Interop.Winsock.WSAPROTOCOL_INFOW.Size)
             {
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
 
-            fixed (byte* pinnedProtocolInformation = socketInformation.ProtocolInformation)
+            fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
                 // Sockets are non-inheritable in .NET Core.
                 // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
@@ -82,7 +82,7 @@ namespace System.Net.Sockets
                     (AddressFamily)(-1),
                     (SocketType)(-1),
                     (ProtocolType)(-1),
-                    (IntPtr)pinnedProtocolInformation,
+                    (IntPtr)protocolInfoBytes,
                     0,
                     Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
                     Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
@@ -99,21 +99,21 @@ namespace System.Net.Sockets
 
                 if (!Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.Inherit, 0))
                 {
+                    // Returning SocketError for consistency, since the call site can deal with conversion, and
+                    // the most common SetHandleInformation error (AccessDenied) is included in SocketError anyways:
                     SocketError error = GetLastSocketError();
                     if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
                     socket.Dispose();
 
-                    // Returning SocketError here for consistency,
-                    // the call site can handle it and pass the error code to SocketException()
                     return error;
                 }
 
                 if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
 
-                Interop.Winsock.WSAProtocolInfo protocolInfo = Marshal.PtrToStructure<Interop.Winsock.WSAProtocolInfo>((IntPtr)pinnedProtocolInformation);
-                addressFamily = protocolInfo.AddressFamily;
-                socketType = protocolInfo.SocketType;
-                protocolType = protocolInfo.ProtocolType;
+                Interop.Winsock.WSAPROTOCOL_INFOW* protocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
+                addressFamily = protocolInfo->iAddressFamily;
+                socketType = protocolInfo->iSocketType;
+                protocolType = protocolInfo->iProtocol;
 
                 return SocketError.Success;
             }
@@ -1321,12 +1321,13 @@ namespace System.Net.Sockets
         {
             socketInformation = new SocketInformation
             {
-                ProtocolInformation = new byte[Interop.Winsock.WSAProtocolInfo.Size]
+                ProtocolInformation = new byte[Interop.Winsock.WSAPROTOCOL_INFOW.Size]
             };
 
-            fixed (byte* pinnedBuffer = socketInformation.ProtocolInformation)
+            fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
-                int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, pinnedBuffer);
+                Interop.Winsock.WSAPROTOCOL_INFOW* lpProtocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
+                int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, lpProtocolInfo);
                 return result == 0 ? SocketError.Success : GetLastSocketError();
             }
         }

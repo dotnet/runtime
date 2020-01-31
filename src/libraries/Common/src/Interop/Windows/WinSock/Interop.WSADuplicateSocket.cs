@@ -11,46 +11,48 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal struct WSAProtocolChain
+        internal unsafe struct WSAPROTOCOLCHAIN
         {
+            private const int MAX_PROTOCOL_CHAIN = 7;
+
             internal int ChainLen;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst=7)]
-            internal uint[] ChainEntries;
+            internal fixed uint ChainEntries[MAX_PROTOCOL_CHAIN];
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
-        internal struct WSAProtocolInfo
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal unsafe struct WSAPROTOCOL_INFOW
         {
-            internal uint ServiceFlags1;
-            internal uint ServiceFlags2;
-            internal uint ServiceFlags3;
-            internal uint ServiceFlags4;
-            internal uint ProviderFlags;
-            internal Guid ProviderId;
-            internal uint CatalogEntryId;
-            internal WSAProtocolChain ProtocolChain;
-            internal int Version;
-            internal AddressFamily AddressFamily;
-            internal int MaxSockAddr;
-            internal int MinSockAddr;
-            internal SocketType SocketType;
-            internal ProtocolType ProtocolType;
-            internal int ProtocolMaxOffset;
-            internal int NetworkByteOrder;
-            internal int SecurityScheme;
-            internal uint MessageSize;
-            internal uint ProviderReserved;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
-            internal string ProtocolName;
+            private const int WSAPROTOCOL_LEN = 255;
 
-            public static readonly int Size = Marshal.SizeOf(typeof(WSAProtocolInfo));
+            internal uint dwServiceFlags1;
+            internal uint dwServiceFlags2;
+            internal uint dwServiceFlags3;
+            internal uint dwServiceFlags4;
+            internal uint dwProviderFlags;
+            internal Guid ProviderId;
+            internal uint dwCatalogEntryId;
+            internal WSAPROTOCOLCHAIN ProtocolChain;
+            internal int iVersion;
+            internal AddressFamily iAddressFamily;
+            internal int iMaxSockAddr;
+            internal int iMinSockAddr;
+            internal SocketType iSocketType;
+            internal ProtocolType iProtocol;
+            internal int iProtocolMaxOffset;
+            internal int iNetworkByteOrder;
+            internal int iSecurityScheme;
+            internal uint dwMessageSize;
+            internal uint dwProviderReserved;
+            internal fixed char szProtocol[WSAPROTOCOL_LEN + 1];
+
+            public static readonly int Size = sizeof(WSAPROTOCOL_INFOW);
         }
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern unsafe int WSADuplicateSocket(
             [In] SafeSocketHandle socketHandle,
             [In] uint targetProcessId,
-            [In] byte* lpProtocolInfo
+            [In] WSAPROTOCOL_INFOW* lpProtocolInfo
         );
     }
 }
