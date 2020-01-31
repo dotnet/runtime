@@ -5,18 +5,6 @@
 -notrait category=failing
 -notrait category=IgnoreForCI
 
-####################################################################
-##  System.Reflection.Tests
-####################################################################
-
-# SKIPPED
--nomethod System.Reflection.Tests.MemberInfoTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
-
-# relies on specific exception message
--nomethod System.Reflection.Tests.AssemblyTests.LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath
--nomethod System.Reflection.Tests.AssemblyTests.LoadFile_PartiallyQualifiedPath_ThrowsArgumentException
--nomethod System.Reflection.Tests.AssemblyTests.LoadFile_NoSuchPath_ThrowsFileNotFoundException
-
 # fails on Helix
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
 
