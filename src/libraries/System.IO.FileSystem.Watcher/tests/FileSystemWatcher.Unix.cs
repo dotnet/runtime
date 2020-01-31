@@ -16,28 +16,22 @@ using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
-    // Helper class to avoid issues with RemoteExecutor and _output and other properties.
-    internal class RunTestHelper
+    public partial class DangerousFileSystemWatcherTests
     {
-        private int _count;
-        private int _limit;
-        private string _path;
-
-        internal RunTestHelper(int count, int limit, string path)
+        [ConditionalFact]
+        [OuterLoop("Slow test with significant resource usage.")]
+        public void FileSystemWatcher_Unix_DoesNotLeak()
         {
-            _count = count;
-            _limit = limit;
-            _path = path;
-        }
+            Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out Interop.Sys.RLimit limits);
+            _output.WriteLine("File descriptor limit is {0}", limits.CurrentLimit);
+            _output.WriteLine($"Starting 100/200 test on {TestDirectory}");
 
-        internal void ExecuteTest()
-        {
-            RemoteInvokeOptions options = new RemoteInvokeOptions{ TimeOut = 600_000 };
-            RemoteExecutor.Invoke((countString, openFileLimitString, testDirectory) =>
+            RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 600_000 };
+            RemoteExecutor.Invoke((testDirectory) =>
             {
-                ulong maxFd = ulong.Parse(openFileLimitString);
-                int count = Int32.Parse(countString);
-                Interop.Sys.RLimit limits = new Interop.Sys.RLimit{ CurrentLimit = maxFd, MaximumLimit = maxFd};
+                ulong maxFd = 200;
+                int count = 100;
+                Interop.Sys.RLimit limits = new Interop.Sys.RLimit { CurrentLimit = maxFd, MaximumLimit = maxFd};
 
                 // Set open file limit to given value.
                 Assert.Equal(0, Interop.Sys.SetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, ref limits));
@@ -52,7 +46,6 @@ namespace System.IO.Tests
                         {
                             watcher.Created += (s, e) => { } ;
                             watcher.EnableRaisingEvents = true;
-                            watcher.EnableRaisingEvents = false;
                         }
                     }
                 }
@@ -60,27 +53,14 @@ namespace System.IO.Tests
                 {
                     // If we use all handles we may not have luck writing out errors.
                     // Try our best here. _output is not available within RemoteExec().
+                    // When we run out of fd, exception may be weird from OutOfMem to "unable load type".
                     Console.WriteLine($"Test failed for count={count}, limnit={maxFd} and path='{testDirectory}'.");
                     Console.WriteLine(e.Message);
                     return 1;
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, _count.ToString(), _limit.ToString(), _path, options).Dispose();
-        }
-    }
-
-    public partial class DangerousFileSystemWatcherTests
-    {
-        [ConditionalFact]
-        [OuterLoop("Slow test with significant resource usage.")]
-        public void FileSystemWatcher_Unix_DoesNotLeak()
-        {
-            Interop.Sys.GetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, out Interop.Sys.RLimit limits);
-            _output.WriteLine("File descriptor limit is {0}", limits.CurrentLimit);
-            _output.WriteLine($"Starting 100/200 test on {TestDirectory}");
-            RunTestHelper helper = new RunTestHelper(100, 200,  TestDirectory);
-            helper.ExecuteTest();
+            }, TestDirectory, options).Dispose();
         }
     }
 }
