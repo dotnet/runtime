@@ -46,9 +46,16 @@ namespace System.Net.Sockets
                                                                                                                 Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
             socket = new SafeSocketHandle(handle, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (socket.IsInvalid)
+            {
+                SocketError error = GetLastSocketError();
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                socket.Dispose();
+                return error;
+            }
 
-            return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            return SocketError.Success;
         }
 
         public static unsafe SocketError CreateSocket(
@@ -81,14 +88,27 @@ namespace System.Net.Sockets
                     Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
                 socket = new SafeSocketHandle(handle, ownsHandle: true);
-                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
 
                 if (socket.IsInvalid)
                 {
-                    return GetLastSocketError();
+                    SocketError error = GetLastSocketError();
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                    socket.Dispose();
+                    return error;
                 }
 
-                Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.Inherit, 0);
+                if (!Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.Inherit, 0))
+                {
+                    SocketError error = GetLastSocketError();
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
+                    socket.Dispose();
+
+                    // Returning SocketError here for consistency,
+                    // the call site can handle it and pass the error code to SocketException()
+                    return error;
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
 
                 Interop.Winsock.WSAProtocolInfo protocolInfo = Marshal.PtrToStructure<Interop.Winsock.WSAProtocolInfo>((IntPtr)pinnedProtocolInformation);
                 addressFamily = protocolInfo.AddressFamily;
