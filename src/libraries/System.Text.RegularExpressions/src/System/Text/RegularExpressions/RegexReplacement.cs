@@ -120,34 +120,25 @@ namespace System.Text.RegularExpressions
         {
             foreach (int r in _rules)
             {
-                if (r >= 0)
-                {
-                    // string lookup
-                    segments.Add(_strings[r].AsMemory());
-                }
-                else if (r < -Specials)
-                {
-                    // group lookup
-                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
-                }
-                else
-                {
-                    // special insertion patterns
-                    switch (-Specials - 1 - r)
+                // Get the segment to add.
+                ReadOnlyMemory<char> segment =
+                    r >= 0 ? _strings[r].AsMemory() : // string lookup
+                    r < -Specials ? match.GroupToStringImpl(-Specials - 1 - r) : // group lookup
+                    (-Specials - 1 - r) switch // special insertion patterns
                     {
-                        case LeftPortion:
-                            segments.Add(match.GetLeftSubstring());
-                            break;
-                        case RightPortion:
-                            segments.Add(match.GetRightSubstring());
-                            break;
-                        case LastGroup:
-                            segments.Add(match.LastGroupToStringImpl());
-                            break;
-                        case WholeString:
-                            segments.Add(match.Text.AsMemory());
-                            break;
-                    }
+                        LeftPortion => match.GetLeftSubstring(),
+                        RightPortion => match.GetRightSubstring(),
+                        LastGroup => match.LastGroupToStringImpl(),
+                        WholeString => match.Text.AsMemory(),
+                        _ => default
+                    };
+
+                // Add the segment if it's not empty.  A common case for it being empty
+                // is if the developer is using Regex.Replace as a way to implement
+                // Regex.Remove, where the replacement string is empty.
+                if (segment.Length != 0)
+                {
+                    segments.Add(segment);
                 }
             }
         }
@@ -161,34 +152,25 @@ namespace System.Text.RegularExpressions
             for (int i = _rules.Length - 1; i >= 0; i--)
             {
                 int r = _rules[i];
-                if (r >= 0)
-                {
-                    // string lookup
-                    segments.Add(_strings[r].AsMemory());
-                }
-                else if (r < -Specials)
-                {
-                    // group lookup
-                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
-                }
-                else
-                {
-                    // special insertion patterns
-                    switch (-Specials - 1 - r)
+
+                ReadOnlyMemory<char> segment =
+                    r >= 0 ? _strings[r].AsMemory() : // string lookup
+                    r < -Specials ? match.GroupToStringImpl(-Specials - 1 - r) : // group lookup
+                    (-Specials - 1 - r) switch // special insertion patterns
                     {
-                        case LeftPortion:
-                            segments.Add(match.GetLeftSubstring());
-                            break;
-                        case RightPortion:
-                            segments.Add(match.GetRightSubstring());
-                            break;
-                        case LastGroup:
-                            segments.Add(match.LastGroupToStringImpl());
-                            break;
-                        case WholeString:
-                            segments.Add(match.Text.AsMemory());
-                            break;
-                    }
+                        LeftPortion => match.GetLeftSubstring(),
+                        RightPortion => match.GetRightSubstring(),
+                        LastGroup => match.LastGroupToStringImpl(),
+                        WholeString => match.Text.AsMemory(),
+                        _ => default
+                    };
+
+                // Add the segment to the list if it's not empty.  A common case for it being
+                // empty is if the developer is using Regex.Replace as a way to implement
+                // Regex.Remove, where the replacement string is empty.
+                if (segment.Length != 0)
+                {
+                    segments.Add(segment);
                 }
             }
         }
