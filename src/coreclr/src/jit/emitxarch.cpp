@@ -458,7 +458,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     }
 #else  //!_TARGET_AMD64 = TARGET_X86
     return false;
-#endif //!TARGET_AMD64
+#endif //! TARGET_AMD64
 }
 
 // Returns true if using this register will require a REX.* prefix.
@@ -618,7 +618,7 @@ emitter::code_t emitter::AddRexPrefix(instruction ins, code_t code)
     return code | 0x4000000000ULL;
 }
 
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 bool isPrefix(BYTE b)
 {
@@ -880,7 +880,7 @@ void emitter::emitOutputPreEpilogNOP()
     }
 }
 
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 // Size of rex prefix in bytes
 unsigned emitter::emitGetRexPrefixSize(instruction ins)
@@ -4841,7 +4841,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
                 sz += 1;
         }
         else
-#endif //TARGET_X86
+#endif // TARGET_X86
         {
             sz = emitInsSizeCV(id, insCodeRM(ins));
         }
@@ -4913,7 +4913,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
         }
     }
     else
-#endif //TARGET_X86
+#endif // TARGET_X86
     {
         sz = emitInsSizeCV(id, insCodeMR(ins));
     }
@@ -7025,7 +7025,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
                         noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
                         sz++;
                     }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
                 }
 
                 break;
@@ -7061,7 +7061,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
             noway_assert(static_cast<int>(reinterpret_cast<intptr_t>(addr)) == (size_t)addr);
             sz++;
         }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
     }
     else
     {
@@ -9504,9 +9504,9 @@ GOT_DSP:
 #ifdef TARGET_AMD64
                         // all these opcodes only take a sign-extended 4-byte immediate
                         noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //TARGET_X86
+#else  // TARGET_X86
                         noway_assert(opsz <= 4);
-#endif //TARGET_X86
+#endif // TARGET_X86
 
                         switch (opsz)
                         {
@@ -9548,7 +9548,7 @@ GOT_DSP:
                     {
                         dst += emitOutputWord(dst, code | 0x0500);
                     }
-#else  //TARGET_AMD64
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -9566,7 +9566,7 @@ GOT_DSP:
                         dst += emitOutputWord(dst, code | 0x0400);
                     }
                     dst += emitOutputByte(dst, 0x25);
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, dsp);
                 }
                 break;
@@ -10552,7 +10552,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             }
         }
     }
-#endif //TARGET_X86
+#endif // TARGET_X86
 
     // Special case emitting AVX instructions
     if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
@@ -10748,9 +10748,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #ifdef TARGET_AMD64
             // all these opcodes only take a sign-extended 4-byte immediate
             noway_assert(opsz < 8 || ((int)cval == cval && !addc->cnsReloc));
-#else  //TARGET_X86
+#else  // TARGET_X86
             noway_assert(opsz <= 4);
-#endif //TARGET_X86
+#endif // TARGET_X86
 
             switch (opsz)
             {
@@ -10776,9 +10776,9 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // All static field and data section constant accesses should be marked as relocatable
         noway_assert(id->idIsDspReloc());
         dst += emitOutputLong(dst, 0);
-#else  //TARGET_X86
+#else  // TARGET_X86
         dst += emitOutputLong(dst, (int)target);
-#endif //TARGET_X86
+#endif // TARGET_X86
 
         if (id->idIsDspReloc())
         {
@@ -10792,7 +10792,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         // In future if ever there is a need to enable this special case, also enable the logic
         // that sets isMoffset to true on amd64.
         unreached();
-#else //TARGET_X86
+#else // TARGET_X86
 
         dst += emitOutputSizeT(dst, (ssize_t)target);
 
@@ -10801,7 +10801,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             emitRecordRelocation((void*)(dst - TARGET_POINTER_SIZE), target, IMAGE_REL_BASED_MOFFSET);
         }
 
-#endif //TARGET_X86
+#endif // TARGET_X86
     }
 
     // Now generate the constant value, if present
@@ -12558,7 +12558,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
 #ifdef TARGET_X86
                     dst += emitOutputWord(dst, code | 0x0500);
-#else  //TARGET_AMD64
+#else  // TARGET_AMD64
                     // Amd64: addr fits within 32-bits and can be encoded as a displacement relative to zero.
                     // This addr mode should never be used while generating relocatable ngen code nor if
                     // the addr can be encoded as pc-relative address.
@@ -12569,7 +12569,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     // This requires, specifying a SIB byte after ModRM byte.
                     dst += emitOutputWord(dst, code | 0x0400);
                     dst += emitOutputByte(dst, 0x25);
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
                     dst += emitOutputLong(dst, static_cast<int>(reinterpret_cast<intptr_t>(addr)));
                 }
                 goto DONE_CALL;

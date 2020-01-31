@@ -16396,7 +16396,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     // If generating relocatable code, icons should be reported for recording relocatons.
     return comp->opts.compReloc && IsIconHandle();
 }
-#endif //TARGET_X86
+#endif // TARGET_X86
 
 bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
 {

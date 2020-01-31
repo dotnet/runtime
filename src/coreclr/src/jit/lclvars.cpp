@@ -3520,7 +3520,7 @@ var_types LclVarDsc::lvaArgType()
 // Nothing to do; use the type as is.
 #else
     NYI("lvaArgType");
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
     return type;
 }
@@ -4773,7 +4773,7 @@ void Compiler::lvaFixVirtualFrameOffsets()
         // FP is used.
         delta += codeGen->genTotalFrameSize() - codeGen->genSPtoFPdelta();
     }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
     unsigned lclNum;
     for (lclNum = 0, varDsc = lvaTable; lclNum < lvaCount; lclNum++, varDsc++)
@@ -5581,7 +5581,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         stkOffs -= REGSIZE_BYTES;
     }
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
 
     int  preSpillSize    = 0;
     bool mustDoubleAlign = false;
@@ -5672,7 +5672,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs -= compVSQuirkStackPaddingNeeded;
         lvaIncrementFrameSize(compVSQuirkStackPaddingNeeded);
     }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARMARCH)
     if (lvaPSPSym != BAD_VAR_NUM)
@@ -6358,7 +6358,7 @@ bool Compiler::lvaIsCalleeSavedIntRegCountEven()
     unsigned regsPushed = compCalleeRegsPushed + (codeGen->isFramePointerUsed() ? 1 : 0);
     return (regsPushed % (16 / REGSIZE_BYTES)) == 0;
 }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 /*****************************************************************************
  *  lvaAlignFrame() :  After allocating everything on the frame, reserve any

@@ -257,7 +257,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
         tree->gtFlags &= ~GTF_UNSIGNED;
     }
-#endif //!TARGET_64BIT
+#endif //! TARGET_64BIT
 
 #ifdef TARGET_ARM
     else if ((dstType == TYP_FLOAT) && (srcType == TYP_DOUBLE) && (oper->gtOper == GT_CAST) &&
@@ -290,7 +290,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
             return fgMorphCastIntoHelper(tree, CORINFO_HELP_ULNG2DBL, oper);
         return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
     }
-#endif //TARGET_ARM
+#endif // TARGET_ARM
 
 #ifdef TARGET_AMD64
     // Do we have to do two step U4/8 -> R4/8 ?
@@ -351,7 +351,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     {
         return fgMorphCastIntoHelper(tree, CORINFO_HELP_LNG2DBL, oper);
     }
-#endif //TARGET_X86
+#endif // TARGET_X86
     else if (varTypeIsGC(srcType) != varTypeIsGC(dstType))
     {
         // We are casting away GC information.  we would like to just
@@ -12555,7 +12555,7 @@ DONE_MORPHING_CHILDREN:
                             // we need to properly re-sign-extend or truncate after adding two int constants above
                             cns1->AsIntCon()->TruncateOrSignExtend32();
                         }
-#endif //TARGET_64BIT
+#endif // TARGET_64BIT
 
                         tree->AsOp()->gtOp2 = cns1;
                         DEBUG_DESTROY_NODE(cns2);
@@ -12591,7 +12591,7 @@ DONE_MORPHING_CHILDREN:
                             // we need to properly re-sign-extend or truncate after adding two int constants above
                             cns1->AsIntCon()->TruncateOrSignExtend32();
                         }
-#endif //TARGET_64BIT
+#endif // TARGET_64BIT
 
                         if (cns1->OperGet() == GT_CNS_INT)
                         {
@@ -13762,7 +13762,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
                         // we need to properly re-sign-extend or truncate after multiplying two int constants above
                         add->AsIntCon()->TruncateOrSignExtend32();
                     }
-#endif //TARGET_64BIT
+#endif // TARGET_64BIT
                 }
             }
 

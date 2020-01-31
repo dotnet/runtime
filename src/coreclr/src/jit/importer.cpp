@@ -4717,7 +4717,7 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
     {
         tiIsVerifiableCode = FALSE;
     }
-#endif //TARGET_64BIT
+#endif // TARGET_64BIT
     verResetCurrentState(block, &verCurrentState);
     verConvertBBToThrowVerificationException(block DEBUGARG(logMsg));
 
@@ -8492,7 +8492,7 @@ DONE:
             Verify(false, "Stack should be empty after tailcall");
 #else  // TARGET_64BIT
             BADCODE("Stack should be empty after tailcall");
-#endif //!TARGET_64BIT
+#endif //! TARGET_64BIT
         }
 
         // assert(compCurBB is not a catch, finally or filter block);

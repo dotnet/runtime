@@ -825,7 +825,7 @@ unsigned short CodeGenInterface::genAddrRelocTypeHint(size_t addr)
 {
     return compiler->eeGetRelocTypeHint((void*)addr);
 }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 // Return true if an absolute indirect data address can be encoded as IP-relative.
 // offset. Note that this method should be used only when the caller knows that
@@ -911,11 +911,11 @@ bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
 
     // Else we need a relocation.
     return true;
-#else  //TARGET_X86
+#else  // TARGET_X86
     // On x86 there is no need to record or ask for relocations during jitting,
     // because all addrs fit within 32-bits.
     return false;
-#endif //TARGET_X86
+#endif // TARGET_X86
 }
 
 // Return true if a direct code address needs to be marked as relocatable.
@@ -938,13 +938,13 @@ bool CodeGenInterface::genCodeAddrNeedsReloc(size_t addr)
     // By default all direct code addresses go through relocation so that VM will setup
     // a jump stub if addr cannot be encoded as pc-relative offset.
     return true;
-#else  //TARGET_X86
+#else  // TARGET_X86
     // On x86 there is no need for recording relocations during jitting,
     // because all addrs fit within 32-bits.
     return false;
-#endif //TARGET_X86
+#endif // TARGET_X86
 }
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
 
 /*****************************************************************************
  *
@@ -3874,7 +3874,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         size = emitActualTypeSize(storeType);
 #ifdef TARGET_X86
         noway_assert(genTypeSize(storeType) == TARGET_POINTER_SIZE);
-#endif //TARGET_X86
+#endif // TARGET_X86
 
         regNumber srcRegNum = genMapRegArgNumToRegNum(argNum, storeType);
 
@@ -4239,7 +4239,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // On Arm, a long can be passed in register
             noway_assert(genTypeSize(genActualType(varDsc->TypeGet())) == TARGET_POINTER_SIZE);
 #endif
-#endif //TARGET_64BIT
+#endif // TARGET_64BIT
 
             noway_assert(varDsc->lvIsInReg() && !regArgTab[argNum].circular);
 
@@ -7432,7 +7432,7 @@ void CodeGen::genFnProlog()
         compiler->unwindPush(REG_FPBASE);
 #ifdef USING_SCOPE_INFO
         psiAdjustStackLevel(REGSIZE_BYTES);
-#endif                 // USING_SCOPE_INFO
+#endif               // USING_SCOPE_INFO
 #ifndef TARGET_AMD64 // On AMD64, establish the frame pointer after the "sub rsp"
         genEstablishFramePointer(0, /*reportUnwindData*/ true);
 #endif // !TARGET_AMD64
@@ -7531,7 +7531,7 @@ void CodeGen::genFnProlog()
         bool reportUnwindData = compiler->compLocallocUsed || compiler->opts.compDbgEnC;
         genEstablishFramePointer(compiler->codeGen->genSPtoFPdelta(), reportUnwindData);
     }
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
 
 //-------------------------------------------------------------------------
 //
@@ -8098,7 +8098,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        true);         // isJump
             // clang-format on
             CLANG_FORMAT_COMMENT_ANCHOR;
-#endif //TARGET_ARMARCH
+#endif // TARGET_ARMARCH
         }
 #if FEATURE_FASTTAILCALL
         else
@@ -8513,7 +8513,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
 #else
             assert(!"Fast tail call as epilog+jmp");
             unreached();
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
         }
 #endif // FEATURE_FASTTAILCALL
     }

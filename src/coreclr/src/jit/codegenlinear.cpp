@@ -1153,7 +1153,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
         }
-#endif //TARGET_ARM
+#endif // TARGET_ARM
 #endif // FEATURE_ARG_SPLIT
         else
         {

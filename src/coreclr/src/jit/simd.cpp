@@ -1763,7 +1763,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
     {
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
     }
-#else  // !defined(_TARGET_XARCH)_ && !defined(TARGET_ARM64)
+#else // !defined(_TARGET_XARCH)_ && !defined(TARGET_ARM64)
     assert(!"Abs intrinsic on non-xarch target not implemented");
 #endif // !TARGET_XARCH
 

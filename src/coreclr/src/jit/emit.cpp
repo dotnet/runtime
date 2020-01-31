@@ -1393,7 +1393,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     if (EA_IS_DSP_RELOC(opsz)
 #ifndef TARGET_AMD64
         && emitComp->opts.compReloc
-#endif //TARGET_AMD64
+#endif // TARGET_AMD64
         )
     {
         /* Mark idInfo()->idDspReloc to remember that the            */
@@ -7019,7 +7019,7 @@ void emitter::emitNxtIG(bool extend)
 target_ssize_t emitter::emitGetInsSC(instrDesc* id)
 {
 #ifdef TARGET_ARM // should it be TARGET_ARMARCH? Why do we need this? Note that on ARM64 we store scaled immediates
-                    // for some formats
+                  // for some formats
     if (id->idIsLclVar())
     {
         int varNum = id->idAddr()->iiaLclVar.lvaVarNum();

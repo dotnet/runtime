@@ -730,7 +730,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
 
     return result;
 }
-#endif //TARGET_AMD64 || TARGET_ARM64
+#endif // TARGET_AMD64 || TARGET_ARM64
 
 /*****************************************************************************/
 

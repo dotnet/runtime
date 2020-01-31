@@ -5281,7 +5281,7 @@ void Lowering::DoPhase()
         {
             decomp.DecomposeBlock(block);
         }
-#endif //!TARGET_64BIT
+#endif //! TARGET_64BIT
 
         LowerBlock(block);
     }

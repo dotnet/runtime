@@ -2473,7 +2473,7 @@ void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 {
     return;
 }
-#endif //!TARGET_AMD64
+#endif //! TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
 

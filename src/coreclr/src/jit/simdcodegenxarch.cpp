@@ -3238,4 +3238,4 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
 }
 
 #endif // FEATURE_SIMD
-#endif //TARGET_XARCH
+#endif // TARGET_XARCH
