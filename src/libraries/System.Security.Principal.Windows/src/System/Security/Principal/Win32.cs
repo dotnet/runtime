@@ -217,7 +217,7 @@ namespace System.Security.Principal
             // We don't know the real size of the referenced domains yet, so we need to set an initial
             // size based on the LSA_REFERENCED_DOMAIN_LIST structure, then resize it to include all of
             // the domains.
-            referencedDomains.Initialize((uint)Marshal.SizeOf<Interop.LSA_REFERENCED_DOMAIN_LIST>());
+            referencedDomains!.Initialize((uint)Marshal.SizeOf<Interop.LSA_REFERENCED_DOMAIN_LIST>());
             Interop.LSA_REFERENCED_DOMAIN_LIST domainList = referencedDomains.Read<Interop.LSA_REFERENCED_DOMAIN_LIST>(0);
 
             unsafe

@@ -580,11 +580,9 @@ namespace System.Security.Principal
                     NTAccount? ntAccount = User!.Translate(typeof(NTAccount)) as NTAccount;
                     _name = ntAccount!.ToString();
                 });
-
-                Debug.Assert(_name != null);
             }
 
-            return _name;
+            return _name!;
         }
 
         public SecurityIdentifier? Owner
