@@ -2,11 +2,10 @@
 
   <PropertyGroup>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
-    <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</CoreCLRConfiguration>
     <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(BuildOS)</MonoOSGroup>
-    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(Configuration)</MonoConfiguration>
     <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(BuildOS)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+
     <LibrariesOSGroupConfigurationArchitecture Condition="'$(LibrariesOSGroupConfigurationArchitecture)' == ''">$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesOSGroupConfigurationArchitecture>
   </PropertyGroup>
 

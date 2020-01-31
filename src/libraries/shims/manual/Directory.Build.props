@@ -25,7 +25,7 @@
   <ItemGroup>
     <ReferencePath
       Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)System.Private.CoreLib.dll" />
+      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 
   <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">
