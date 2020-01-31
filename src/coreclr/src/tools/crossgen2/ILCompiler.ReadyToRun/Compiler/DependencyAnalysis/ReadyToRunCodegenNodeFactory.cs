@@ -17,7 +17,6 @@ using Internal.Text;
 using Internal.TypeSystem.Ecma;
 using Internal.CorConstants;
 using Internal.ReadyToRunConstants;
-using System.Reflection.PortableExecutable;
 
 namespace ILCompiler.DependencyAnalysis
 {

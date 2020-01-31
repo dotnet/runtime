@@ -135,10 +135,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
             }
 
-            ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
-            builder.RequireInitialPointerAlignment();
-            builder.AddSymbol(this);
-
             ImmutableArray<DebugDirectoryEntry> entries = _module.PEReader.ReadDebugDirectory();
             Debug.Assert(entries != null && _debugEntryIndex < entries.Length);
 
@@ -147,9 +143,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             PEMemoryBlock block = _module.PEReader.GetSectionData(sourceDebugEntry.DataRelativeVirtualAddress);
             byte[] result = new byte[sourceDebugEntry.DataSize];
             block.GetContent(0, sourceDebugEntry.DataSize).CopyTo(result);
-            builder.EmitBytes(result);
 
-            return builder.ToObjectData();
+            return new ObjectData(result, Array.Empty<Relocation>(), _module.Context.Target.PointerSize, new ISymbolDefinitionNode[] { this });
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

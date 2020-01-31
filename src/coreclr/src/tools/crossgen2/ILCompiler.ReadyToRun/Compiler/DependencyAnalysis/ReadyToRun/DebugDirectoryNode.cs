@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using Internal.Text;
 using Internal.TypeSystem.Ecma;
@@ -112,6 +113,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     builder.EmitReloc(factory.DebugDirectoryEntry(_module, i), RelocType.IMAGE_REL_FILE_ABSOLUTE);
                 }
             }
+
+            Debug.Assert(builder.CountBytes == Size);
 
             return builder.ToObjectData();
         }
