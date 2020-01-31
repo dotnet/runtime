@@ -38,7 +38,7 @@ namespace System.IO.Pipes.Tests
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
             // different working and/or temp directories.
             string pipeName = "/tmp/" + Path.GetRandomFileName();
-            bool isRoot = String.CompareOrdinal(Environment.UserName, "root") == 0;
+            bool isRoot = Environment.UserName == "root";
 
             _output.WriteLine("Starting as {0} on '{1}'", Environment.UserName, pipeName);
 
