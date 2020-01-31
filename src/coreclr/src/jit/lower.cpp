@@ -3240,7 +3240,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 #else  // !_TARGET_X86_
         // In case of helper dispatched tail calls, "thisptr" will be the third arg.
         // The first two args are: real call target and addr of args copy routine.
-        const unsigned argNum  = 2;
+        const unsigned    argNum  = 2;
 #endif // !_TARGET_X86_
 
         fgArgTabEntry* thisArgTabEntry = comp->gtArgEntryByArgNum(call, argNum);
@@ -3507,7 +3507,7 @@ void Lowering::InsertPInvokeMethodProlog()
 #if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
     GenTreeCall::Use* argList = comp->gtNewCallArgs(frameAddr);
 #else
-    GenTreeCall::Use*  argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
+    GenTreeCall::Use*     argList = comp->gtNewCallArgs(frameAddr, PhysReg(REG_SECRET_STUB_PARAM));
 #endif
 
     GenTree* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL, argList);
@@ -3689,14 +3689,14 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
             new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
 #ifdef _TARGET_X86_
-        // On x86 targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+        // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
         // This is because the callee pops stack arguments, and we need to keep track of this during stack
         // walking
         const unsigned    numStkArgBytes = call->fgArgInfo->GetNextSlotNum() * TARGET_POINTER_SIZE;
         GenTree*          stackBytes     = comp->gtNewIconNode(numStkArgBytes, TYP_INT);
         GenTreeCall::Use* args           = comp->gtNewCallArgs(frameAddr, stackBytes);
 #else
-        GenTreeCall::Use* args = comp->gtNewCallArgs(frameAddr);
+        GenTreeCall::Use* args    = comp->gtNewCallArgs(frameAddr);
 #endif
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
         GenTree* helperCall = comp->gtNewHelperCallNode(CORINFO_HELP_JIT_PINVOKE_BEGIN, TYP_VOID, args);
