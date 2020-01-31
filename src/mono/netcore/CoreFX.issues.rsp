@@ -5,9 +5,6 @@
 -notrait category=failing
 -notrait category=IgnoreForCI
 
-# fails on Helix
--nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
-
 ####################################################################
 ##  System.Runtime.Tests
 ####################################################################
