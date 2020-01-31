@@ -1,5 +1,12 @@
 {
   "runtimes": {
+    "Unix" : {      
+    },
+    "WebAssembly" : {
+      "#import": [
+        "Linux"
+      ]
+    },
     "Linux": {
       "#import": [
           "Unix"

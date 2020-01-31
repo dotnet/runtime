@@ -1,4 +1,4 @@
-<Project>
+<Project TreatAsLocalProperty="OSGroup">
   <PropertyGroup>
     <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
   </PropertyGroup>
@@ -44,7 +44,7 @@
   <Import Sdk="Microsoft.DotNet.Build.Tasks.TargetFramework.Sdk" Project="Sdk.props" />
   
   <PropertyGroup>
-    <OSGroup>$(TargetFrameworkSuffix)</OSGroup>
+    <OSGroup Condition="'$(TargetFramework)' != ''">$(TargetFrameworkSuffix)</OSGroup>
     <HostArch>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant)</HostArch>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm'">arm</ArchGroup>
     <ArchGroup Condition="'$(ArchGroup)' == '' and '$(HostArch)' == 'arm64'">arm64</ArchGroup>
