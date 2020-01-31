@@ -410,16 +410,12 @@ namespace System.Buffers.Binary.Tests
                 US0 = ushort.MaxValue,
                 UI0 = uint.MaxValue,
                 UL0 = ulong.MaxValue,
-                F0 = float.MaxValue,
-                D0 = double.MaxValue,
                 S1 = short.MinValue,
                 I1 = int.MinValue,
                 L1 = long.MinValue,
                 US1 = ushort.MinValue,
                 UI1 = uint.MinValue,
-                UL1 = ulong.MinValue,
-                F1 = float.MinValue,
-                D1 = double.MinValue
+                UL1 = ulong.MinValue
             };
 
             WriteInt16BigEndian(spanBE, testExplicitStruct.S0);
@@ -428,18 +424,14 @@ namespace System.Buffers.Binary.Tests
             WriteUInt16BigEndian(spanBE.Slice(14), testExplicitStruct.US0);
             WriteUInt32BigEndian(spanBE.Slice(16), testExplicitStruct.UI0);
             WriteUInt64BigEndian(spanBE.Slice(20), testExplicitStruct.UL0);
-            WriteSingleBigEndian(spanBE.Slice(28), testExplicitStruct.F0);
-            WriteDoubleBigEndian(spanBE.Slice(32), testExplicitStruct.D0);
-            WriteInt16BigEndian(spanBE.Slice(40), testExplicitStruct.S1);
-            WriteInt32BigEndian(spanBE.Slice(42), testExplicitStruct.I1);
-            WriteInt64BigEndian(spanBE.Slice(46), testExplicitStruct.L1);
-            WriteUInt16BigEndian(spanBE.Slice(54), testExplicitStruct.US1);
-            WriteUInt32BigEndian(spanBE.Slice(56), testExplicitStruct.UI1);
-            WriteUInt64BigEndian(spanBE.Slice(60), testExplicitStruct.UL1);
-            WriteSingleBigEndian(spanBE.Slice(68), testExplicitStruct.F1);
-            WriteDoubleBigEndian(spanBE.Slice(72), testExplicitStruct.D1);
+            WriteInt16BigEndian(spanBE.Slice(28), testExplicitStruct.S1);
+            WriteInt32BigEndian(spanBE.Slice(30), testExplicitStruct.I1);
+            WriteInt64BigEndian(spanBE.Slice(34), testExplicitStruct.L1);
+            WriteUInt16BigEndian(spanBE.Slice(42), testExplicitStruct.US1);
+            WriteUInt32BigEndian(spanBE.Slice(44), testExplicitStruct.UI1);
+            WriteUInt64BigEndian(spanBE.Slice(48), testExplicitStruct.UL1);
 
-            Assert.Equal(80, spanBE.Length);
+            Assert.Equal(56, spanBE.Length);
 
             ReadOnlySpan<byte> readOnlySpanBE = new ReadOnlySpan<byte>(spanBE.ToArray());
 
@@ -452,16 +444,12 @@ namespace System.Buffers.Binary.Tests
                 readStructAndReverse.US0 = ReverseEndianness(readStructAndReverse.US0);
                 readStructAndReverse.UI0 = ReverseEndianness(readStructAndReverse.UI0);
                 readStructAndReverse.UL0 = ReverseEndianness(readStructAndReverse.UL0);
-                readStructAndReverse.F0 = ReverseSingleEndianness(readStructAndReverse.F0);
-                readStructAndReverse.D0 = ReverseDoubleEndianness(readStructAndReverse.D0);
                 readStructAndReverse.S1 = ReverseEndianness(readStructAndReverse.S1);
                 readStructAndReverse.I1 = ReverseEndianness(readStructAndReverse.I1);
                 readStructAndReverse.L1 = ReverseEndianness(readStructAndReverse.L1);
                 readStructAndReverse.US1 = ReverseEndianness(readStructAndReverse.US1);
                 readStructAndReverse.UI1 = ReverseEndianness(readStructAndReverse.UI1);
                 readStructAndReverse.UL1 = ReverseEndianness(readStructAndReverse.UL1);
-                readStructAndReverse.F1 = ReverseSingleEndianness(readStructAndReverse.F1);
-                readStructAndReverse.D1 = ReverseDoubleEndianness(readStructAndReverse.D1);
             }
 
             var readStructFieldByField = new TestHelpers.TestStructExplicit
@@ -472,16 +460,12 @@ namespace System.Buffers.Binary.Tests
                 US0 = ReadUInt16BigEndian(spanBE.Slice(14)),
                 UI0 = ReadUInt32BigEndian(spanBE.Slice(16)),
                 UL0 = ReadUInt64BigEndian(spanBE.Slice(20)),
-                F0 = ReadSingleBigEndian(spanBE.Slice(28)),
-                D0 = ReadDoubleBigEndian(spanBE.Slice(32)),
-                S1 = ReadInt16BigEndian(spanBE.Slice(40)),
-                I1 = ReadInt32BigEndian(spanBE.Slice(42)),
-                L1 = ReadInt64BigEndian(spanBE.Slice(46)),
-                US1 = ReadUInt16BigEndian(spanBE.Slice(54)),
-                UI1 = ReadUInt32BigEndian(spanBE.Slice(56)),
-                UL1 = ReadUInt64BigEndian(spanBE.Slice(60)),
-                F1 = ReadSingleBigEndian(spanBE.Slice(68)),
-                D1 = ReadDoubleBigEndian(spanBE.Slice(72))
+                S1 = ReadInt16BigEndian(spanBE.Slice(28)),
+                I1 = ReadInt32BigEndian(spanBE.Slice(30)),
+                L1 = ReadInt64BigEndian(spanBE.Slice(34)),
+                US1 = ReadUInt16BigEndian(spanBE.Slice(42)),
+                UI1 = ReadUInt32BigEndian(spanBE.Slice(44)),
+                UL1 = ReadUInt64BigEndian(spanBE.Slice(48))
             };
 
             TestHelpers.TestStructExplicit readStructAndReverseFromReadOnlySpan = MemoryMarshal.Read<TestHelpers.TestStructExplicit>(readOnlySpanBE);
@@ -493,16 +477,12 @@ namespace System.Buffers.Binary.Tests
                 readStructAndReverseFromReadOnlySpan.US0 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.US0);
                 readStructAndReverseFromReadOnlySpan.UI0 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.UI0);
                 readStructAndReverseFromReadOnlySpan.UL0 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.UL0);
-                readStructAndReverseFromReadOnlySpan.F0 = ReverseSingleEndianness(readStructAndReverseFromReadOnlySpan.F0);
-                readStructAndReverseFromReadOnlySpan.D0 = ReverseDoubleEndianness(readStructAndReverseFromReadOnlySpan.D0);
                 readStructAndReverseFromReadOnlySpan.S1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.S1);
                 readStructAndReverseFromReadOnlySpan.I1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.I1);
                 readStructAndReverseFromReadOnlySpan.L1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.L1);
                 readStructAndReverseFromReadOnlySpan.US1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.US1);
                 readStructAndReverseFromReadOnlySpan.UI1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.UI1);
                 readStructAndReverseFromReadOnlySpan.UL1 = ReverseEndianness(readStructAndReverseFromReadOnlySpan.UL1);
-                readStructAndReverseFromReadOnlySpan.F1 = ReverseSingleEndianness(readStructAndReverseFromReadOnlySpan.F1);
-                readStructAndReverseFromReadOnlySpan.D1 = ReverseDoubleEndianness(readStructAndReverseFromReadOnlySpan.D1);
             }
 
             var readStructFieldByFieldFromReadOnlySpan = new TestHelpers.TestStructExplicit
@@ -513,16 +493,12 @@ namespace System.Buffers.Binary.Tests
                 US0 = ReadUInt16BigEndian(readOnlySpanBE.Slice(14)),
                 UI0 = ReadUInt32BigEndian(readOnlySpanBE.Slice(16)),
                 UL0 = ReadUInt64BigEndian(readOnlySpanBE.Slice(20)),
-                F0 = ReadSingleBigEndian(readOnlySpanBE.Slice(28)),
-                D0 = ReadDoubleBigEndian(readOnlySpanBE.Slice(32)),
-                S1 = ReadInt16BigEndian(readOnlySpanBE.Slice(40)),
-                I1 = ReadInt32BigEndian(readOnlySpanBE.Slice(42)),
-                L1 = ReadInt64BigEndian(readOnlySpanBE.Slice(46)),
-                US1 = ReadUInt16BigEndian(readOnlySpanBE.Slice(54)),
-                UI1 = ReadUInt32BigEndian(readOnlySpanBE.Slice(56)),
-                UL1 = ReadUInt64BigEndian(readOnlySpanBE.Slice(60)),
-                F1 = ReadSingleBigEndian(readOnlySpanBE.Slice(68)),
-                D1 = ReadDoubleBigEndian(readOnlySpanBE.Slice(72)),
+                S1 = ReadInt16BigEndian(readOnlySpanBE.Slice(28)),
+                I1 = ReadInt32BigEndian(readOnlySpanBE.Slice(30)),
+                L1 = ReadInt64BigEndian(readOnlySpanBE.Slice(34)),
+                US1 = ReadUInt16BigEndian(readOnlySpanBE.Slice(42)),
+                UI1 = ReadUInt32BigEndian(readOnlySpanBE.Slice(44)),
+                UL1 = ReadUInt64BigEndian(readOnlySpanBE.Slice(48))
             };
 
             Assert.Equal(testExplicitStruct, readStructAndReverse);
@@ -530,20 +506,6 @@ namespace System.Buffers.Binary.Tests
 
             Assert.Equal(testExplicitStruct, readStructAndReverseFromReadOnlySpan);
             Assert.Equal(testExplicitStruct, readStructFieldByFieldFromReadOnlySpan);
-        }
-
-        // Note there are no public APIs in the product for ReverseEndianness(float or double)
-
-        private static float ReverseSingleEndianness(float value)
-        {
-            return BitConverter.Int32BitsToSingle(
-                ReverseEndianness(BitConverter.SingleToInt32Bits(value)));
-        }
-
-        private static double ReverseDoubleEndianness(double value)
-        {
-            return BitConverter.Int64BitsToDouble(
-                ReverseEndianness(BitConverter.DoubleToInt64Bits(value)));
         }
 
         private static TestStruct s_testStruct = new TestStruct

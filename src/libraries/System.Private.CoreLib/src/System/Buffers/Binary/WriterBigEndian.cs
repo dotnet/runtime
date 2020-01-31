@@ -10,8 +10,14 @@ namespace System.Buffers.Binary
     public static partial class BinaryPrimitives
     {
         /// <summary>
-        /// Writes a Double into a span of bytes as big endian.
+        /// Writes a <see cref="double" /> into a span of bytes, as big endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain an <see cref="double" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDoubleBigEndian(Span<byte> destination, double value)
         {
@@ -66,8 +72,14 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes a Single into a span of bytes as big endian.
+        /// Writes a <see cref="float" /> into a span of bytes, as big endian.
         /// </summary>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="destination" /> is too small to contain an <see cref="float" />.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSingleBigEndian(Span<byte> destination, float value)
         {
@@ -125,9 +137,14 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes a Double into a span of bytes as big endian.
+        /// Writes a <see cref="double" /> into a span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain an <see cref="double" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteDoubleBigEndian(Span<byte> destination, double value)
         {
@@ -183,9 +200,14 @@ namespace System.Buffers.Binary
         }
 
         /// <summary>
-        /// Writes a Single into a span of bytes as big endian.
+        /// Writes a <see cref="float" /> into a span of bytes, as big endian.
         /// </summary>
-        /// <returns>If the span is too small to contain the value, return false.</returns>
+        /// <param name="destination">The span of bytes where the value is to be written, as big endian.</param>
+        /// <param name="value">The value to write into the span of bytes.</param>
+        /// <returns>
+        /// <see langword="true" /> if the span is large enough to contain an <see cref="float" />; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryWriteSingleBigEndian(Span<byte> destination, float value)
         {

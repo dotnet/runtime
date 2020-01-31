@@ -267,25 +267,17 @@ namespace System
             [FieldOffset(20)]
             public ulong UL0;
             [FieldOffset(28)]
-            public float F0;
-            [FieldOffset(32)]
-            public double D0;
-            [FieldOffset(40)]
             public short S1;
-            [FieldOffset(42)]
+            [FieldOffset(30)]
             public int I1;
-            [FieldOffset(46)]
+            [FieldOffset(34)]
             public long L1;
-            [FieldOffset(54)]
+            [FieldOffset(42)]
             public ushort US1;
-            [FieldOffset(56)]
+            [FieldOffset(44)]
             public uint UI1;
-            [FieldOffset(60)]
+            [FieldOffset(48)]
             public ulong UL1;
-            [FieldOffset(68)]
-            public float F1;
-            [FieldOffset(72)]
-            public double D1;
         }
 
         [StructLayout(LayoutKind.Sequential)]
