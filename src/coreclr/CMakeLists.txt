@@ -129,7 +129,7 @@ endif(CLR_CROSS_COMPONENTS_BUILD)
 #-------------------
 include(pgosupport.cmake)
 
-add_subdirectory(src/librariesshims)
+add_subdirectory(src/libraries-native)
 
 #-----------------------------------------
 # Add Projects

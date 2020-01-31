@@ -57,19 +57,17 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_icushim.c
 )
 
-if (NOT EXCLUDE_VERSION_HEADER_FILE)
-    list(APPEND NATIVEGLOBALIZATION_SOURCES
-        ${VERSION_FILE_PATH}
-    )
-endif()
-
 include_directories(${UTYPES_H})
 
-if (BUILD_GLOBALIZATION_SHARED_LIBRARY)
+if (CORECLR_BUILD)
+ include_directories("../Common")
+endif()
 
+if (GEN_SHARED_LIB)
     add_library(System.Globalization.Native
         SHARED
         ${NATIVEGLOBALIZATION_SOURCES}
+        ${VERSION_FILE_PATH}
     )
 
     target_link_libraries(System.Globalization.Native
@@ -77,7 +75,6 @@ if (BUILD_GLOBALIZATION_SHARED_LIBRARY)
     )
 
     install_library_and_symbols (System.Globalization.Native)
-
 endif()
 
 add_library(System.Globalization.Native-Static
@@ -92,7 +89,7 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    if (BUILD_GLOBALIZATION_SHARED_LIBRARY)
+    if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
