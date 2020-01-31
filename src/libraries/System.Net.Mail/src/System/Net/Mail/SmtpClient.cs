@@ -1080,16 +1080,15 @@ namespace System.Net.Mail
 
         private void Abort()
         {
-            // Try-catch commented out to identify exception that is causing
-            // https://github.com/dotnet/corefx/issues/40711.
-
-            // try
-            // {
+            try
+            {
                 _transport.Abort();
-            // }
-            // catch
-            // {
-            // }
+            }
+            catch (ObjectDisposedException)
+            {
+                // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                // catch additional exception types here if need demonstrates.
+            }
         }
 
         public void Dispose()
