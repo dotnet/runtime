@@ -138,6 +138,12 @@
 
 #include "metadataexports.h"
 
+#ifdef FEATURE_PERFTRACING
+#include "eventpipeprovider.h"
+#include "eventpipemetadatagenerator.h"
+#include "eventpipeeventpayload.h"
+#endif // FEATURE_PERFTRACING
+
 //---------------------------------------------------------------------------------------
 // Helpers
 
@@ -559,6 +565,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo11)
     {
         *pInterface = static_cast<ICorProfilerInfo11 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo12)
+    {
+        *pInterface = static_cast<ICorProfilerInfo12 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -7014,6 +7024,168 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProviderHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeCreateProvider.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    if (szName == NULL || pProviderHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeProvider *pProvider = EventPipe::CreateProvider(szName, NULL, NULL);
+        if (pProvider == NULL)
+        {
+            hr = E_FAIL;
+        }
+        else
+        {
+            *pProviderHandle = reinterpret_cast<EVENTPIPE_PROVIDER>(pProvider);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
+    EVENTPIPE_PROVIDER provHandle,
+    const WCHAR *szName, 
+    UINT32 eventID,
+    UINT64 keywords,
+    UINT32 eventVersion,
+    UINT32 level,
+    BOOL needStack,
+    UINT32 cParamDescs,
+    COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+    EVENTPIPE_EVENT *pEventHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeDefineEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
+    if (pProvider == NULL || szName == NULL || pEventHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pParamDescs == NULL && cParamDescs > 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                      && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
+                      && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
+            "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
+        EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
+        
+        size_t metadataLength;
+        NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
+            eventID,
+            szName,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            params,
+            cParamDescs,
+            &metadataLength);
+
+        // Add the event.
+        EventPipeEvent *pEvent = pProvider->AddEvent(
+            eventID,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            needStack,
+            pMetadata,
+            (unsigned int)metadataLength);
+
+        *pEventHandle = reinterpret_cast<EVENTPIPE_EVENT>(pEvent);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
+    EVENTPIPE_EVENT eventHandle,
+    COR_PRF_EVENT_DATA data[],
+    UINT32 cData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeWriteEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
+
+    if (pEvent == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
+                    && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size)
+                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA), 
+        "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
+
+    EventData *pEventData = reinterpret_cast<EventData *>(data);
+    EventPipe::WriteEvent(*pEvent, pEventData, cData, pActivityId, pRelatedActivityId);
+
+    return S_OK;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
 /*
  * GetStringLayout
  *
@@ -10675,4 +10847,3 @@ LExit:
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
-
