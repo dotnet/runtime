@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition
     internal struct CompositionResult<T>
     {
         private readonly IEnumerable<CompositionError>? _errors;
-        private readonly T _value;
+        [AllowNull] private readonly T _value;
 
         public CompositionResult(T value)
             : this(value, null)
