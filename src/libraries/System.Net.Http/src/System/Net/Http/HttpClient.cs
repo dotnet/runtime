@@ -492,14 +492,14 @@ namespace System.Net.Http
             CancellationTokenSource cts;
             bool disposeCts;
             bool hasTimeout = _timeout != s_infiniteTimeout;
-            long timeoutTime = 0;
+            long timeoutTime = long.MaxValue;
             if (hasTimeout || cancellationToken.CanBeCanceled)
             {
                 disposeCts = true;
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    timeoutTime = Environment.TickCount64 + (long) _timeout.TotalMilliseconds;
+                    timeoutTime = Environment.TickCount64 + (long)_timeout.TotalMilliseconds;
                     cts.CancelAfter(_timeout);
                 }
             }
@@ -515,15 +515,15 @@ namespace System.Net.Http
             {
                 sendTask = base.SendAsync(request, cts.Token);
             }
-            catch (OperationCanceledException e) when (TimeoutFired(cancellationToken, timeoutTime))
+            catch (Exception e)
             {
                 HandleFinishSendAsyncCleanup(cts, disposeCts);
-                ThrowTimeoutException(e);
-                throw;
-            }
-            catch
-            {
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+
+                if (e is OperationCanceledException operationException && TimeoutFired(cancellationToken, timeoutTime))
+                {
+                    throw CreateTimeoutException(operationException);
+                }
+
                 throw;
             }
 
@@ -554,15 +554,15 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (OperationCanceledException e) when (TimeoutFired(callerToken, timeoutTime))
-            {
-                response?.Dispose();
-                ThrowTimeoutException(e);
-                throw;
-            }
             catch (Exception e)
             {
                 response?.Dispose();
+
+                if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
+                {
+                    throw CreateTimeoutException(operationException);
+                }
+
                 HandleFinishSendAsyncError(e, cts);
                 throw;
             }
@@ -586,13 +586,13 @@ namespace System.Net.Http
                 if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
                 return response;
             }
-            catch (OperationCanceledException e) when (TimeoutFired(callerToken, timeoutTime))
-            {
-                ThrowTimeoutException(e);
-                throw;
-            }
             catch (Exception e)
             {
+                if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
+                {
+                    throw CreateTimeoutException(operationException);
+                }
+
                 HandleFinishSendAsyncError(e, cts);
                 throw;
             }
@@ -602,13 +602,12 @@ namespace System.Net.Http
             }
         }
 
-        private bool TimeoutFired(CancellationToken callerToken, long timeoutTime) => !callerToken.IsCancellationRequested && timeoutTime > 0 && Environment.TickCount64 >= timeoutTime;
+        private bool TimeoutFired(CancellationToken callerToken, long timeoutTime) => !callerToken.IsCancellationRequested && Environment.TickCount64 >= timeoutTime;
 
-        private static void ThrowTimeoutException(OperationCanceledException originalException)
+        private TaskCanceledException CreateTimeoutException(OperationCanceledException originalException)
         {
-            var timeoutException = new TimeoutException(SR.net_http_request_timedout, originalException);
-            var newTaskCancelledException = new TaskCanceledException(originalException.Message, timeoutException, originalException.CancellationToken);
-            throw newTaskCancelledException;
+            return new TaskCanceledException(string.Format(SR.net_http_request_timedout, _timeout.TotalSeconds),
+                new TimeoutException(originalException.Message, originalException), originalException.CancellationToken);
         }
 
         private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
