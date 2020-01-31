@@ -628,7 +628,7 @@ namespace System.Diagnostics.Tracing
                 if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
                 {
                     data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)filterData->Ptr, data, 0, data.Length);
+                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
                 }
                 command = (ControllerCommand)filterData->Type;
                 return true;
