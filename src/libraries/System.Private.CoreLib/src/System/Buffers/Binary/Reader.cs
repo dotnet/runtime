@@ -118,23 +118,5 @@ namespace System.Buffers.Binary
             return ((ulong)ReverseEndianness((uint)value) << 32)
                 + ReverseEndianness((uint)(value >> 32));
         }
-
-        // Note: ReverseEndianness(float) and ReverseEndianness(double)
-        // are not intended to be public APIs as these would produce invalid
-        // floating point numbers.
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float ReverseEndianness(float value)
-        {
-            return BitConverter.Int32BitsToSingle(
-                ReverseEndianness(BitConverter.SingleToInt32Bits(value)));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static double ReverseEndianness(double value)
-        {
-            return BitConverter.Int64BitsToDouble(
-                ReverseEndianness(BitConverter.DoubleToInt64Bits(value)));
-        }
     }
 }

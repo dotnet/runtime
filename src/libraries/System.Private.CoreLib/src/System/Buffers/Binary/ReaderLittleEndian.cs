@@ -15,12 +15,9 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ReadDoubleLittleEndian(ReadOnlySpan<byte> source)
         {
-            double result = MemoryMarshal.Read<double>(source);
-            if (!BitConverter.IsLittleEndian)
-            {
-                result = ReverseEndianness(result);
-            }
-            return result;
+            return !BitConverter.IsLittleEndian ?
+                BitConverter.Int64BitsToDouble(ReverseEndianness(MemoryMarshal.Read<long>(source))) :
+                MemoryMarshal.Read<double>(source);
         }
 
         /// <summary>
@@ -71,12 +68,9 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float ReadSingleLittleEndian(ReadOnlySpan<byte> source)
         {
-            float result = MemoryMarshal.Read<float>(source);
-            if (!BitConverter.IsLittleEndian)
-            {
-                result = ReverseEndianness(result);
-            }
-            return result;
+            return !BitConverter.IsLittleEndian ?
+                BitConverter.Int32BitsToSingle(ReverseEndianness(MemoryMarshal.Read<int>(source))) :
+                MemoryMarshal.Read<float>(source);
         }
 
         /// <summary>
@@ -131,12 +125,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadDoubleLittleEndian(ReadOnlySpan<byte> source, out double value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (!BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out long tmp);
+                value = BitConverter.Int64BitsToDouble(ReverseEndianness(tmp));
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -196,12 +192,14 @@ namespace System.Buffers.Binary
         /// <returns>If the span is too small to contain a Single, return false.</returns>
         public static bool TryReadSingleLittleEndian(ReadOnlySpan<byte> source, out float value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (!BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out int tmp);
+                value = BitConverter.Int32BitsToSingle(ReverseEndianness(tmp));
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
