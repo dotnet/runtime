@@ -12378,6 +12378,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
+                case INS_crc32b:
+                case INS_crc32h:
+                case INS_crc32cb:
+                case INS_crc32ch:
+                case INS_crc32x:
+                case INS_crc32cx:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_crc32w:
+                case INS_crc32cw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
