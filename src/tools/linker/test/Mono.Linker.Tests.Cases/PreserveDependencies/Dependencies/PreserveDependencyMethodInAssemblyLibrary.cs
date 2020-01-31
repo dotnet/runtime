@@ -4,5 +4,9 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies {
 		public PreserveDependencyMethodInAssemblyLibrary ()
 		{
 		}
+
+		private void Foo ()
+		{
+		}
 	}
 }
