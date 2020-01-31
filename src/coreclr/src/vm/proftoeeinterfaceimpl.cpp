@@ -7108,7 +7108,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
     EX_TRY
     {
         static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
-                        &&offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name), 
+                      && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
+                      && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
             "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
         EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
         
@@ -7172,7 +7173,8 @@ HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
     }
 
     static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
-                    && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size), 
+                    && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size)
+                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA), 
         "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
 
     EventData *pEventData = reinterpret_cast<EventData *>(data);
