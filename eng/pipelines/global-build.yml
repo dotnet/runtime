@@ -46,6 +46,7 @@ jobs:
     - OSX_x64
     jobParameters:
       testGroup: innerloop
+      runtimeConfig: debug
 
 #
 # Build the combined runtime repo
@@ -58,3 +59,4 @@ jobs:
     - Linux_x64
     jobParameters:
       testGroup: innerloop
+      runtimeConfig: release
