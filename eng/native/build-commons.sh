@@ -113,7 +113,7 @@ build_native()
         fi
 
         engNativeDir="$__RepoRootDir/eng/native"
-        __CMakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $__CMakeArgs"
+        __CMakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
         nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $__CMakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand

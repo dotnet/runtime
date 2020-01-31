@@ -285,10 +285,6 @@ include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 
-if (NOT CLR_CMAKE_PLATFORM_WASM)
-	add_subdirectory(System.IO.Ports.Native)
-endif()
-
 if(CMAKE_C_COMPILER_ID STREQUAL Clang)
     add_compile_options(-Weverything)
 endif()
@@ -296,9 +292,7 @@ endif()
 add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_PLATFORM_WASM)
-    # In coreclr we currently link to it as part of the coreclr build.
-    # For libraries and mono build we need to the shared library until mono links to it.
-    set(BUILD_GLOBALIZATION_SHARED_LIBRARY ON)
+	add_subdirectory(System.IO.Ports.Native)
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)

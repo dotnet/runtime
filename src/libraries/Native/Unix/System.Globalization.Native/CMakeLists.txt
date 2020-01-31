@@ -60,7 +60,7 @@ set(NATIVEGLOBALIZATION_SOURCES
 include_directories(${UTYPES_H})
 
 if (CORECLR_BUILD)
- include_directories("../Common")
+    include_directories("../Common")
 endif()
 
 if (GEN_SHARED_LIB)
@@ -97,13 +97,5 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
                 "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
             VERBATIM
         )
-    else()
-        add_custom_command(TARGET System.Globalization.Native-Static POST_BUILD
-            COMMENT "Verifying System.Globalization.Native-Static.so dependencies"
-            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
-                $<TARGET_FILE:System.Globalization.Native-Static>
-                "Verification failed. System.Globalization.Native-Static.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
-            VERBATIM
-        )
-    endif(BUILD_GLOBALIZATION_SHARED_LIBRARY)
+    endif()
 endif()
