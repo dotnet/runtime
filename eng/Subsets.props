@@ -147,6 +147,7 @@
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" />
     <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
   </ItemGroup>
 

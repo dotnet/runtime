@@ -8,7 +8,7 @@
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86</Platforms>
-    <PlatformTargets Condition="'$(BuildArch)' != ''">$(BuildArch)</PlatformTargets>
+    <PlatformTargets Condition="'$(ArchGroup)' != ''">$(ArchGroup)</PlatformTargets>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
     <!-- We're binplacing these into an existing publish layout so that F5 build in VS updates
@@ -16,7 +16,7 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />

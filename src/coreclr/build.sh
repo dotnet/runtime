@@ -86,8 +86,6 @@ build_cross_architecture_components()
     mkdir -p "$intermediatesForBuild"
     mkdir -p "$crossArchBinDir"
 
-    generate_event_logging_sources "$intermediatesForBuild" "the crossarch build system"
-
     __SkipCrossArchBuild=1
     # check supported cross-architecture components host(__HostArch)/target(__BuildArch) pair
     if [[ ("$__BuildArch" == "arm" || "$__BuildArch" == "armel") && ("$__CrossArch" == "x86" || "$__CrossArch" == "x64") ]]; then
@@ -144,33 +142,10 @@ build_CoreLib_ni()
     fi
 }
 
-build_Crossgen2()
-{
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then
-        echo "Managed build unsupported."
-        return
-    fi
-
-    echo "Commencing build of managed components for $__BuildOS.$__BuildArch.$__BuildType"
-
-    if [[ "$__BuildManagedTools" -eq "1" ]]; then
-        echo "Publishing crossgen2 for $__DistroRid"
-        "$__RepoRootDir/dotnet.sh" publish --self-contained -r $__DistroRid -c $__BuildType -o "$__BinDir/crossgen2" "$__ProjectRoot/src/tools/crossgen2/crossgen2/crossgen2.csproj" /nologo /p:BuildArch=$__BuildArch
-
-        local exit_code="$?"
-        if [[ "$exit_code" != 0 ]]; then
-            echo "${__ErrMsgPrefix}Failed to build crossgen2."
-            exit "$exit_code"
-        fi
-    fi
-}
-
 handle_arguments_local() {
     case "$1" in
         crossgenonly|-crossgenonly)
-            __SkipMSCorLib=1
-            __SkipCoreCLR=1
-            __CrossgenOnly=1
+            __SkipNative=1
             ;;
 
         disableoss|-disableoss)
@@ -204,21 +179,12 @@ handle_arguments_local() {
             __PgoInstrument=1
             ;;
 
-        skipcoreclr|-skipcoreclr)
-            # Accept "skipcoreclr" for backwards-compatibility.
-            __SkipCoreCLR=1
-            ;;
-
         skipcrossarchnative|-skipcrossarchnative)
             __SkipCrossArchNative=1
             ;;
 
         skipcrossgen|-skipcrossgen)
-            __SkipCrossgen=1
-            ;;
-
-        skipmanagedtools|-skipmanagedtools)
-            __BuildManagedTools=0
+            __SkipMSCorLib=1
             ;;
 
         skipmscorlib|-skipmscorlib)
@@ -258,7 +224,6 @@ __CodeCoverage=0
 __IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
-__BuildManagedTools=1
 __Compiler=clang
 __CompilerMajorVersion=
 __CompilerMinorVersion=
@@ -281,9 +246,9 @@ __ProjectDir="$__ProjectRoot"
 __RootBinDir="$__RepoRootDir/artifacts"
 __SignTypeArg=""
 __SkipConfigure=0
-__SkipCoreCLR=0
+__SkipNative=0
 __SkipCrossArchNative=0
-__SkipCrossgen=0
+__SkipMSCorLib=0
 __SkipGenerateVersion=0
 __SkipMSCorLib=0
 __SkipManaged=0
@@ -350,9 +315,6 @@ check_prereqs
 # Restore the package containing profile counts for profile-guided optimizations
 restore_optdata
 
-# Generate event logging infrastructure sources
-generate_event_logging
-
 # Build the coreclr (native) components.
 __CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
@@ -360,30 +322,25 @@ if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
-if [[ "$__SkipCoreCLR" == 1 ]]; then
+if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
     build_native "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "CoreCLR component"
-fi
 
-# Build cross-architecture components
-if [[ "$__SkipCrossArchNative" != 1 ]]; then
-    if [[ "$__CrossBuild" == 1 ]]; then
-        build_cross_architecture_components
+    # Build cross-architecture components
+    if [[ "$__SkipCrossArchNative" != 1 ]]; then
+        if [[ "$__CrossBuild" == 1 ]]; then
+            build_cross_architecture_components
+        fi
     fi
 fi
 
-# Build Crossgen2
-
-build_Crossgen2
 
 # Crossgen System.Private.CoreLib
 
 if [[ "$__SkipMSCorLib" != 1 ]]; then
     # The cross build generates a crossgen with the target architecture.
     if [[ "$__CrossBuild" == 0 ]]; then
-
-
         # The architecture of host pc must be same architecture with target.
         if [[ "$__HostArch" == "$__BuildArch" ]]; then
             build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
