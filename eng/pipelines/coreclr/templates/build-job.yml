@@ -84,9 +84,13 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
+    - name: officialBuildIdArcadeArg
+      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '-officialbuildid=$(Build.BuildNumber)'
+      - name: officialBuildIdArcadeArg
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
@@ -119,13 +123,17 @@ jobs:
         parameters:
           installDotnet: true
 
-    # Build
+    # Build CoreCLR
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
-        displayName: Build product
+      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+        displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(enforcePgoArg)
-        displayName: Build product
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
+        displayName: Build CoreCLR Runtime
+
+    # Build managed components
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+      displayName: Build System.Private.CoreLib and managed tools
 
     # Build native test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
@@ -176,7 +184,7 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Build packages
-    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
       displayName: Build packages
 
     # Save packages using the prepare-signed-artifacts format.

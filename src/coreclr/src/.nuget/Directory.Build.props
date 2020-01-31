@@ -108,9 +108,16 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
-    <When Condition="'$(OSRid)' == 'linux-musl'">
+    <When Condition="'$(_runtimeOSFamily)' == 'alpine'">
       <PropertyGroup>
         <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-musl-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(RuntimeOS)' == 'linux-musl'">
+      <PropertyGroup>
+        <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
