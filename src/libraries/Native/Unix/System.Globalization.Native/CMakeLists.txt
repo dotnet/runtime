@@ -92,11 +92,21 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    add_custom_command(TARGET System.Globalization.Native POST_BUILD
-        COMMENT "Verifying System.Globalization.Native.so dependencies"
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
-            $<TARGET_FILE:System.Globalization.Native>
-            "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
-        VERBATIM
-    )
+    if (BUILD_GLOBALIZATION_SHARED_LIBRARY)
+        add_custom_command(TARGET System.Globalization.Native POST_BUILD
+            COMMENT "Verifying System.Globalization.Native.so dependencies"
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                $<TARGET_FILE:System.Globalization.Native>
+                "Verification failed. System.Globalization.Native.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+            VERBATIM
+        )
+    else()
+        add_custom_command(TARGET System.Globalization.Native-Static POST_BUILD
+            COMMENT "Verifying System.Globalization.Native-Static.so dependencies"
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+                $<TARGET_FILE:System.Globalization.Native-Static>
+                "Verification failed. System.Globalization.Native-Static.so has undefined dependencies. These are likely ICU APIs that need to be added to icushim.h."
+            VERBATIM
+        )
+    endif(BUILD_GLOBALIZATION_SHARED_LIBRARY)
 endif()
