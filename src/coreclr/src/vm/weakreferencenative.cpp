@@ -521,10 +521,7 @@ void FinalizeWeakReference(Object * obj)
     }
 
     // Release the spin lock
-    if (!isRuntimeSuspended)
-    {
-        ReleaseWeakHandleSpinLock(pThis, handle);
-    }
+    ReleaseWeakHandleSpinLock(pThis, handle);
 
     if (handleToDestroy != NULL)
     {
