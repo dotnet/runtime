@@ -511,6 +511,11 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
+			if (member == "*") {
+				MarkEntireType (td);
+				return;
+			}
+
 			if (MarkDependencyMethod (td, member, signature))
 				return;
 
