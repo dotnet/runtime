@@ -296,6 +296,9 @@ endif()
 add_subdirectory(System.Native)
 
 if (NOT CLR_CMAKE_PLATFORM_WASM)
+    # In coreclr we currently link to it as part of the coreclr build.
+    # For libraries and mono build we need to the shared library until mono links to it.
+    set(BUILD_GLOBALIZATION_SHARED_LIBRARY ON)
     add_subdirectory(System.Globalization.Native)
     add_subdirectory(System.Net.Security.Native)
     add_subdirectory(System.Security.Cryptography.Native)

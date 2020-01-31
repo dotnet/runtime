@@ -57,24 +57,32 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_icushim.c
 )
 
+if (NOT EXCLUDE_VERSION_HEADER_FILE)
+    list(APPEND NATIVEGLOBALIZATION_SOURCES
+        ${VERSION_FILE_PATH}
+    )
+endif()
+
 include_directories(${UTYPES_H})
 
-add_library(System.Globalization.Native
-    SHARED
-    ${NATIVEGLOBALIZATION_SOURCES}
-    ${VERSION_FILE_PATH}
-)
+if (BUILD_GLOBALIZATION_SHARED_LIBRARY)
 
-target_link_libraries(System.Globalization.Native
-    dl
-)
+    add_library(System.Globalization.Native
+        SHARED
+        ${NATIVEGLOBALIZATION_SOURCES}
+    )
 
-install_library_and_symbols (System.Globalization.Native)
+    target_link_libraries(System.Globalization.Native
+        dl
+    )
+
+    install_library_and_symbols (System.Globalization.Native)
+
+endif()
 
 add_library(System.Globalization.Native-Static
     STATIC
     ${NATIVEGLOBALIZATION_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

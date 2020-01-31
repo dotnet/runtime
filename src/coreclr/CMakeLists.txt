@@ -129,6 +129,8 @@ endif(CLR_CROSS_COMPONENTS_BUILD)
 #-------------------
 include(pgosupport.cmake)
 
+add_subdirectory(src/librariesshims)
+
 #-----------------------------------------
 # Add Projects
 #     - project which require platform header not clr's
