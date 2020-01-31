@@ -72,11 +72,11 @@ ULONG32*,ref uint,unsigned int*
 LONG*,int*,long*
 char*,byte*
 const char**,byte**
-WCHAR**,short**,wchar_t**
+WCHAR**,char**,wchar_t**
 LPCSTR,byte*,const char*
-LPWSTR,short*,wchar_t*
-LPCWSTR,short*,const wchar_t*
-wchar_t*,short*
+LPWSTR,char*,wchar_t*
+LPCWSTR,char*,const wchar_t*
+wchar_t*,char*
 const wchar_t*,String
 
 DWORD**,ref uint*,unsigned int**

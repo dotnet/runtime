@@ -84,7 +84,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValidStringRef(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate short* __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
+        delegate char* __getStringLiteral(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __shouldEnforceCallvirtRestriction(IntPtr _this, IntPtr* ppException, CORINFO_MODULE_STRUCT_* scope);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -96,7 +96,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate CORINFO_CLASS_STRUCT_* __getTypeInstantiationArgument(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, uint index);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate int __appendClassName(IntPtr _this, IntPtr* ppException, short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly);
+        delegate int __appendClassName(IntPtr _this, IntPtr* ppException, char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         [return: MarshalAs(UnmanagedType.Bool)]delegate bool __isValueClass(IntPtr _this, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -230,7 +230,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate HRESULT __GetErrorHRESULT(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate uint __GetErrorMessage(IntPtr _this, IntPtr* ppException, short* buffer, uint bufferLength);
+        delegate uint __GetErrorMessage(IntPtr _this, IntPtr* ppException, char* buffer, uint bufferLength);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate int __FilterException(IntPtr _this, IntPtr* ppException, _EXCEPTION_POINTERS* pExceptionPointers);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -244,7 +244,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getEEInfo(IntPtr _this, IntPtr* ppException, ref CORINFO_EE_INFO pEEInfoOut);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate short* __getJitTimeLogFilename(IntPtr _this, IntPtr* ppException);
+        delegate char* __getJitTimeLogFilename(IntPtr _this, IntPtr* ppException);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate mdToken __getMethodDefFromMethod(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* hMethod);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -862,7 +862,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static short* _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        static char* _getStringLiteral(IntPtr thisHandle, IntPtr* ppException, CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
         {
             var _this = GetThis(thisHandle);
             try
@@ -872,7 +872,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(short*);
+                return default(char*);
             }
         }
 
@@ -946,7 +946,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly)
+        static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, [MarshalAs(UnmanagedType.Bool)]bool fNamespace, [MarshalAs(UnmanagedType.Bool)]bool fFullInst, [MarshalAs(UnmanagedType.Bool)]bool fAssembly)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1875,7 +1875,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static uint _GetErrorMessage(IntPtr thisHandle, IntPtr* ppException, short* buffer, uint bufferLength)
+        static uint _GetErrorMessage(IntPtr thisHandle, IntPtr* ppException, char* buffer, uint bufferLength)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1969,7 +1969,7 @@ namespace Internal.JitInterface
             }
         }
 
-        static short* _getJitTimeLogFilename(IntPtr thisHandle, IntPtr* ppException)
+        static char* _getJitTimeLogFilename(IntPtr thisHandle, IntPtr* ppException)
         {
             var _this = GetThis(thisHandle);
             try
@@ -1979,7 +1979,7 @@ namespace Internal.JitInterface
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                return default(short*);
+                return default(char*);
             }
         }
 
