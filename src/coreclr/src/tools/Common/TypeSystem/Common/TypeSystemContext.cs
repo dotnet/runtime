@@ -66,11 +66,16 @@ namespace Internal.TypeSystem
             return null;
         }
 
-        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
+        internal virtual ModuleDesc ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound = true)
         {
             if (throwIfNotFound)
                 throw new NotSupportedException();
             return null;
+        }
+
+        ModuleDesc IModuleResolver.ResolveModule(IAssemblyDesc referencingModule, string fileName, bool throwIfNotFound)
+        {
+            return ResolveModule(referencingModule, fileName, throwIfNotFound);
         }
 
         //
