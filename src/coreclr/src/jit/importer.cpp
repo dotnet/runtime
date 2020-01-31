@@ -19633,8 +19633,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Don't inline if inlining into root method is disabled.
-    if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
+    // Don't inline if inlining into this method is disabled.
+    if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
         return;
@@ -20009,7 +20009,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    const bool doPrint = JitConfig.JitPrintDevirtualizedMethods() == 1;
+    // Optionally, print info on devirtualization
+    Compiler* const rootCompiler = impInlineRoot();
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodName,
+                                                                           rootCompiler->info.compClassName,
+                                                                           &rootCompiler->info.compMethodInfo->args);
+
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.

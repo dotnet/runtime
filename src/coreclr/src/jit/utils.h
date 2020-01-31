@@ -164,8 +164,8 @@ public:
         DEFAULT_CAPACITY = 50
     };
 
-    // Does the range include this method's hash?
-    bool Contains(class ICorJitInfo* info, CORINFO_METHOD_HANDLE method);
+    // Does the range include this hash?
+    bool Contains(unsigned hash);
 
     // Ensure the range string has been parsed.
     void EnsureInit(const WCHAR* rangeStr, unsigned capacity = DEFAULT_CAPACITY)
@@ -185,10 +185,13 @@ public:
     {
         return m_badChar != 0;
     }
+
     size_t BadCharIndex() const
     {
         return m_badChar - 1;
     }
+
+    void Dump();
 
 private:
     struct Range

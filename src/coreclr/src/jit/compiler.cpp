@@ -3355,98 +3355,44 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 #undef STRESS_MODE
 };
 
+//------------------------------------------------------------------------
+// compStressCompile: determine if a stress mode should be enabled
+//
+// Argumemnts:
+//   stressArea - stress mode to possibly enable
+//   weight - percent of time this mode should be turned on
+//     (range 0 to 100); weight 0 effectively disables
+//
+// Returns:
+//   true if this stress mode is enabled
+//
+// Notes:
+//   Methods may be excluded from stress via name or hash.
+//
+//   Particular stress modes may be disabled or forcibly enabled.
+//
+//   With JitStress=2, some stress modes are enabled regardless of weight;
+//   these modes are the ones after COUNT_VARN in the enumeration.
+//
+//   For other modes or for nonzero JitStress values, stress will be
+//   enabled selectively for roughly weight% of methods.
+//
 bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 {
-    unsigned hash;
-    DWORD    stressLevel;
-
     // This can be called early, before info is fully set up.
-    if (info.compMethodName == nullptr)
+    if ((info.compMethodName == nullptr) || (info.compFullName == nullptr))
     {
         return false;
     }
 
-    if (!bRangeAllowStress)
+    // Inlinees defer to the root method for stress, so that we can
+    // more easily isolate methods that cause stress failures.
+    if (compIsForInlining())
     {
-        return false;
+        return impInlineRoot()->compStressCompile(stressArea, weight);
     }
 
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
-    {
-        return false;
-    }
-
-    bool         doStress = false;
-    const WCHAR* strStressModeNames;
-
-    // Does user explicitly prevent using this STRESS_MODE through the command line?
-    const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
-    if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
-    {
-        doStress = false;
-        goto _done;
-    }
-
-    // Does user explicitly set this STRESS_MODE through the command line?
-    strStressModeNames = JitConfig.JitStressModeNames();
-    if (strStressModeNames != nullptr)
-    {
-        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
-        {
-            doStress = true;
-            goto _done;
-        }
-
-        // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
-        // don't allow this stress mode to turn on.
-        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
-
-        if (onlyEnableMode)
-        {
-            doStress = false;
-            goto _done;
-        }
-    }
-
-    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
-    // !=2: Vary stress. Performance will be slightly/moderately degraded
-    // 2:   Check-all stress. Performance will be REALLY horrible
-    stressLevel = getJitStressLevel();
-
-    assert(weight <= MAX_STRESS_WEIGHT);
-
-    /* Check for boundary conditions */
-
-    if (stressLevel == 0 || weight == 0)
-    {
-        return false;
-    }
-
-    // Should we allow unlimited stress ?
-    if (stressArea > STRESS_COUNT_VARN && stressLevel == 2)
-    {
-        doStress = true;
-        goto _done;
-    }
-
-    if (weight == MAX_STRESS_WEIGHT)
-    {
-        doStress = true;
-        goto _done;
-    }
-
-    // Get a hash which can be compared with 'weight'
-
-    assert(stressArea != 0);
-    hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
-
-    assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
-    doStress = (hash < weight);
-
-_done:
+    const bool doStress = compStressCompileHelper(stressArea, weight);
 
     if (doStress && !compActiveStressModes[stressArea])
     {
@@ -3458,6 +3404,93 @@ _done:
     }
 
     return doStress;
+}
+
+//------------------------------------------------------------------------
+// compStressCompileHelper: helper to determine if a stress mode should be enabled
+//
+// Argumemnts:
+//   stressArea - stress mode to possibly enable
+//   weight - percent of time this mode should be turned on
+//     (range 0 to 100); weight 0 effectively disables
+//
+// Returns:
+//   true if this stress mode is enabled
+//
+// Notes:
+//   See compStressCompile
+//
+bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
+{
+    if (!bRangeAllowStress)
+    {
+        return false;
+    }
+
+    if (!JitConfig.JitStressOnly().isEmpty() &&
+        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    {
+        return false;
+    }
+
+    // Does user explicitly prevent using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
+    if ((strStressModeNamesNot != nullptr) &&
+        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user explicitly set this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
+    if (strStressModeNames != nullptr)
+    {
+        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
+        {
+            return true;
+        }
+
+        // This stress mode name did not match anything in the stress
+        // mode whitelist. If user has requested only enable mode,
+        // don't allow this stress mode to turn on.
+        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
+
+        if (onlyEnableMode)
+        {
+            return false;
+        }
+    }
+
+    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
+    // !=2: Vary stress. Performance will be slightly/moderately degraded
+    // 2:   Check-all stress. Performance will be REALLY horrible
+    const int stressLevel = getJitStressLevel();
+
+    assert(weight <= MAX_STRESS_WEIGHT);
+
+    // Check for boundary conditions
+    if (stressLevel == 0 || weight == 0)
+    {
+        return false;
+    }
+
+    // Should we allow unlimited stress ?
+    if ((stressArea > STRESS_COUNT_VARN) && (stressLevel == 2))
+    {
+        return true;
+    }
+
+    if (weight == MAX_STRESS_WEIGHT)
+    {
+        return true;
+    }
+
+    // Get a hash which can be compared with 'weight'
+    assert(stressArea != 0);
+    const unsigned hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
+
+    assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
+    return (hash < weight);
 }
 
 #endif // DEBUG
@@ -4021,6 +4054,14 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 }
 #endif // _TARGET_ARMARCH_
 
+//------------------------------------------------------------------------
+// compGetTieringName: get a string describing tiered compilation settings
+//   for this method
+//
+// Returns:
+//   String describing tiering decisions for this method, including cases
+//   where the jit codegen will differ from what the runtime requested.
+//
 const char* Compiler::compGetTieringName() const
 {
     bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
@@ -4072,6 +4113,49 @@ const char* Compiler::compGetTieringName() const
     {
         return "Unknown optimization level";
     }
+}
+
+//------------------------------------------------------------------------
+// compGetStressMessage: get a string describing jitstress capability
+//   for this method
+//
+// Returns:
+//   An empty string if stress is not enabled, else a string describing
+//   if this method is subject to stress or is excluded by name or hash.
+//
+const char* Compiler::compGetStressMessage() const
+{
+    // Add note about stress where appropriate
+    const char* stressMessage = "";
+
+#ifdef DEBUG
+    // Is stress enabled via mode name or level?
+    if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
+    {
+        // Is the method being jitted excluded from stress via range?
+        if (bRangeAllowStress)
+        {
+            // Or is it excluded via name?
+            if (!JitConfig.JitStressOnly().isEmpty() ||
+                !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName,
+                                                    &info.compMethodInfo->args))
+            {
+                // Not excluded -- stress can happen
+                stressMessage = " JitStress";
+            }
+            else
+            {
+                stressMessage = " NoJitStress(Only)";
+            }
+        }
+        else
+        {
+            stressMessage = " NoJitStress(Range)";
+        }
+    }
+#endif // DEBUG
+
+    return stressMessage;
 }
 
 void Compiler::compFunctionTraceStart()
@@ -5007,7 +5091,7 @@ bool Compiler::skipMethod()
     // So, the logic below relies on the fact that a null range string
     // passed to ConfigMethodRange represents the set of all methods.
 
-    if (!fJitRange.Contains(info.compCompHnd, info.compMethodHnd))
+    if (!fJitRange.Contains(info.compMethodHash()))
     {
         return true;
     }
@@ -5224,7 +5308,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compCompHnd, info.compMethodHnd);
+    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
 
 #endif // DEBUG
 
@@ -5991,11 +6075,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
 
 #ifdef DEBUG
-    if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining())
+    if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x %s\n", Compiler::jitTotalMethodCompiled,
+        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName());
+               compGetTieringName(), compGetStressMessage());
     }
     if (compIsForInlining())
     {
