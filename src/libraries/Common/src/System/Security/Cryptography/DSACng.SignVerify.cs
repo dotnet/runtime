@@ -41,6 +41,7 @@ namespace System.Security.Cryptography
                 }
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override unsafe bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
             {
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
@@ -68,6 +69,7 @@ namespace System.Security.Cryptography
                 byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
                 return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
             }
+#endif
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
@@ -80,6 +82,11 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(rgbSignature));
                 }
 
+#if !INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
+                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(rgbHash, stackBuf);
+                ReadOnlySpan<byte> signature = rgbSignature;
+#else
                 return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
             }
 
@@ -96,6 +103,7 @@ namespace System.Security.Cryptography
 
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
                 ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
+#endif
 
                 using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {

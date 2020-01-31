@@ -234,6 +234,7 @@ namespace System.Security.Cryptography
                 }
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override bool TryCreateSignatureCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
             {
                 SafeDsaHandle key = GetKey();
@@ -290,6 +291,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
             }
+#endif
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
@@ -301,6 +303,7 @@ namespace System.Security.Cryptography
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override bool VerifySignatureCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
             {
                 SafeDsaHandle key = GetKey();
@@ -323,6 +326,7 @@ namespace System.Security.Cryptography
 
                 return Interop.Crypto.DsaVerify(key, hash, signature);
             }
+#endif
 
             private void ThrowIfDisposed()
             {

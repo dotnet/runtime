@@ -89,6 +89,7 @@ namespace System.Security.Cryptography
                 return converted;
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
             {
                 ThrowIfDisposed();
@@ -138,6 +139,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
             }
+#endif
 
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {
@@ -149,12 +151,18 @@ namespace System.Security.Cryptography
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+#else
+            public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+#endif
             {
                 ThrowIfDisposed();
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
+#endif
                     // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
                     // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
                     // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
@@ -166,11 +174,13 @@ namespace System.Security.Cryptography
                     }
 
                     signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
                 }
                 else if (signatureFormat != DSASignatureFormat.Rfc3279DerSequence)
                 {
                     throw new ArgumentOutOfRangeException(nameof(signatureFormat));
                 }
+#endif
 
                 SafeEcKeyHandle key = _key.Value;
                 int verifyResult = Interop.Crypto.EcDsaVerify(hash, signature, key);

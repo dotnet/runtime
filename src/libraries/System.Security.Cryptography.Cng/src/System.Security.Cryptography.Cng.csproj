@@ -202,9 +202,6 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\ErrorCodeHelper.cs">
       <Link>Internal\Cryptography\Windows\ErrorCodeHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs">
-      <Link>Internal\Cryptography\AsymmetricAlgorithmHelpers.Der.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\CngCommon.Hash.cs">
       <Link>Internal\Cryptography\CngCommon.Hash.cs</Link>
     </Compile>

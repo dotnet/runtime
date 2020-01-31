@@ -48,6 +48,7 @@ namespace System.Security.Cryptography
             }
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
         protected override unsafe bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
         {
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
@@ -72,6 +73,7 @@ namespace System.Security.Cryptography
             byte[] signature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(destination.Slice(0, bytesWritten));
             return Helpers.TryCopyToDestination(signature, destination, out bytesWritten);
         }
+#endif
 
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
@@ -83,10 +85,11 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }
 
-        protected override unsafe bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+        protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
         {
             if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
             {
@@ -96,10 +99,13 @@ namespace System.Security.Cryptography
             {
                 throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }
-
+#endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
+                unsafe
+                {
+                    return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
+                }
             }
         }
     }
