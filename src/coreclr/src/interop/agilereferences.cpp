@@ -29,7 +29,7 @@ HRESULT CreateAgileReference<IUnknown>(
     _In_ IUnknown* object,
     _Outptr_ IAgileReference** agileReference)
 {
-    // [TODO] Handle this on pre-Windows 8.1 plaforms
+    // [TODO] Fail gracefully on pre-Windows 8.1 plaforms.
     _ASSERTE(object != nullptr && agileReference != nullptr);
     return ::RoGetAgileReference(AGILEREFERENCE_DEFAULT, __uuidof(object), object, agileReference);
 }

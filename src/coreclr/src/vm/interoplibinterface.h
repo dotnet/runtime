@@ -11,7 +11,7 @@
 // Native calls for the managed ComWrappers API
 class ComWrappersNative
 {
-public:
+public: // Native QCalls for the abstract ComWrappers managed type.
     static void QCALLTYPE GetIUnknownImpl(
         _Out_ void** fpQueryInterface,
         _Out_ void** fpAddRef,
@@ -31,7 +31,10 @@ public:
     static void QCALLTYPE RegisterForReferenceTrackerHost(
         _In_ QCall::ObjectHandleOnStack comWrappersImpl);
 
+public: // Lifetime management for COM Wrappers
     static void DestroyManagedObjectComWrapper(_In_ void* wrapper);
+    static void DestroyExternalComObjectContext(_In_ void* context);
+    static void MarkExternalComObjectContextCollected(_In_ void* context);
 };
 
 #endif // FEATURE_COMINTEROP

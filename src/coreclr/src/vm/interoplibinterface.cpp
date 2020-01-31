@@ -28,9 +28,28 @@ namespace
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext
     {
+        static DWORD InvalidSyncBlockIndex = 0;
+        static DWORD CollectedFlag = ~0;
+
         void* Identity;
         DWORD SyncBlockIndex;
+        DWORD IsCollected;
+
+        void MarkCollected()
+        {
+            _ASSERTE(GCHeapUtilities::IsGCInProgress());
+            SyncBlockIndex = InvalidSyncBlockIndex;
+            IsCollected = CollectedFlag;
+        }
+
+        bool IsActive() const
+        {
+            return (IsCollected != CollectedFlag)
+                && (SyncBlockIndex != InvalidSyncBlockIndex);
+        }
     };
+
+    static_assert((sizeof(ExternalObjectContext) % sizeof(void*)) == 0, "Keep context pointer size aligned");
 
     // Holder for a External Object Context
     struct ExtObjCxtHolder
@@ -189,7 +208,7 @@ namespace
             GCX_FORBID();
 
             ExternalObjectContext* cxt = Find(key);
-            if (Traits::IsNull(cxt))
+            if (cxt == NULL)
                 cxt = Add(newCxt);
 
             RETURN cxt;
@@ -316,6 +335,7 @@ namespace
         // Check the object's SyncBlock for a managed object wrapper.
         SyncBlock* syncBlock = gc.instRef->GetSyncBlock();
         InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+        _ASSERTE(syncBlock->IsPrecious());
 
         // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
         if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
@@ -424,7 +444,7 @@ namespace
 
         if (extObjCxt != NULL)
         {
-            if (extObjCxt->SyncBlockIndex == 0)
+            if (!extObjCxt->IsActive())
             {
                 // [TODO] We are in a bad spot?
             }
@@ -433,6 +453,7 @@ namespace
         }
         else
         {
+            // Create context for the possibly new external COM object.
             ExtObjCxtHolder newContext;
             hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), (void**)&newContext);
             if (FAILED(hr))
@@ -443,18 +464,31 @@ namespace
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
+            // Update the new context with the object details.
             newContext->Identity = (void*)identity;
             newContext->SyncBlockIndex = gc.objRef->GetSyncBlockIndex();
 
+            // Attempt to insert the new context into the cache.
             {
                 ExtObjCxtCache::LockHolder lock(cache);
                 extObjCxt = cache->FindOrAdd(identity, newContext);
             }
 
-            // Detach from the holder if the returned context matches the new context
-            // since it means the new context was inserted.
+            // If the returned context matches the new context it means the
+            // new context was inserted.
             if (extObjCxt == newContext)
+            {
+                // Update the object's SyncBlock with a handle to the context for runtime cleanup.
+                SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
+                InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+                _ASSERTE(syncBlock->IsPrecious());
+                (void)interopInfo->TrySetExternalComObjectContext((void**)extObjCxt);
+
+                // Detach from the holder to avoid cleanup.
                 (void)newContext.Detach();
+            }
+
+            _ASSERTE(extObjCxt->IsActive());
         }
 
         GCPROTECT_END();
@@ -483,7 +517,6 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_ANY;
             PRECONDITION(mem != NULL);
         }
         CONTRACTL_END;
@@ -496,7 +529,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_PREEMPTIVE;
+            MODE_ANY;
             PRECONDITION(handle != NULL);
         }
         CONTRACTL_END;
@@ -527,6 +560,8 @@ namespace InteropLibImports
 
         *trackerTarget = NULL;
 
+        // Switch to Cooperative mode since object references
+        // are being manipulated.
         {
             GCX_COOP();
 
@@ -723,13 +758,51 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     CONTRACTL
     {
         NOTHROW;
-        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(wrapper != NULL);
     }
     CONTRACTL_END;
 
     InteropLib::Com::DestroyWrapperForObject(wrapper);
+}
+
+void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* context)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        MODE_ANY;
+        PRECONDITION(context != NULL);
+    }
+    CONTRACTL_END;
+
+#ifdef _DEBUG
+    ExternalObjectContext* context = static_cast<ExternalObjectContext*>(contextRaw);
+    _ASSERTE(!context->IsActive());
+#endif
+
+    InteropLib::Com::DestroyWrapperForExternal(context);
+}
+
+void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* contextRaw)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(context != NULL);
+        PRECONDITION(GCHeapUtilities::IsGCInProgress());
+    }
+    CONTRACTL_END;
+
+    ExternalObjectContext* context = static_cast<ExternalObjectContext*>(contextRaw);
+    _ASSERTE(context->IsActive());
+    context->MarkCollected();
+
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+    _ASSERTE(cache != NULL);
+    cache->Remove(context);
 }
 
 #endif // FEATURE_COMINTEROP

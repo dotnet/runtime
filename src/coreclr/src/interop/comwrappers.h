@@ -176,11 +176,11 @@ struct ComHolder
     ComHolder(_In_ const ComHolder&) = delete;
     ComHolder& operator=(_In_ const ComHolder&) = delete;
 
-    ComHolder(_In_ ComHolder&& other)
+    ComHolder(_Inout_ ComHolder&& other)
         : p{ other.Detach() }
     { }
 
-    ComHolder& operator=(_In_ ComHolder&& other)
+    ComHolder& operator=(_Inout_ ComHolder&& other)
     {
         Release();
         p = other.Detach();

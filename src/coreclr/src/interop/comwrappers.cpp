@@ -12,14 +12,14 @@ namespace ABI
     //---------------------------------------------------------------------------------
     // Dispatch section of the ManagedObjectWrapper (MOW)
     //
-    // Within the dispatch section, the ManagedObjectWrapper itself is inserted at all 16 byte
+    // Within the dispatch section, the ManagedObjectWrapper itself is inserted at a defined
     // aligned location. This allows the simple masking of the any ComInterfaceDispatch* to get
-    // access to the ManagedObjectWrapper by masking the lower 4 bits. Below is a sketch of how
-    // the dispatch section would appear in a 32-bit process.
+    // access to the ManagedObjectWrapper by masking the lower N bits. Below is a sketch of how
+    // the dispatch section would appear in a 32-bit process for a 16 bit alignment.
     //
     //           16 byte aligned                            Vtable
     //           +-----------+
-    //           | MOW this |
+    //           | MOW this  |
     //           +-----------+                              +-----+
     //  COM IP-->| VTable ptr|----------------------------->|slot1|
     //           +-----------+           +-----+            +-----+
@@ -27,13 +27,13 @@ namespace ABI
     //           +-----------+           +-----+            +     +
     //           | VTable ptr|           | ....|            | ... |
     //           +-----------+           +     +            +     +
-    //           | MOW  this |           |slotN|            |slotN|
+    //           | MOW this  |           |slotN|            |slotN|
     //           +           +           +-----+            +-----+
     //           |  ....     |
     //           +-----------+
     //
     // A 16 byte alignment permits a ratio of 3:1 COM vtables to ManagedObjectWrapper 'this'
-    // pointers in 32-bit process, but in 64-bit process the mapping is unfortunately only 1:1.
+    // pointers in a 32-bit process, but in a 64-bit process the mapping is only 1:1.
     // See the dispatch section building API below for an example of how indexing works.
     //--------------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ namespace ABI
         return (reinterpret_cast<intptr_t>(disp) & DispatchThisPtrMask) != 0;
     }
 
-    // Given the number of dispatch entries compute the needed number of 'this' pointer entries.
+    // Given the number of dispatch entries, compute the needed number of 'this' pointer entries.
     constexpr size_t ComputeThisPtrForDispatchSection(_In_ size_t dispatchCount)
     {
         return (dispatchCount / ABI::EntriesPerThisPtr) + ((dispatchCount % ABI::EntriesPerThisPtr) == 0 ? 0 : 1);
@@ -68,18 +68,18 @@ namespace ABI
     {
         _ASSERTE(section != nullptr);
 
-        // If the dispatch section is not properly aligned by default, we use
-        // utilize the padding to make sure the dispatch section can be aligned.
+        // If the dispatch section is not properly aligned by default, we
+        // utilize the padding to make sure the dispatch section is aligned.
         while ((reinterpret_cast<intptr_t>(section) % ABI::DispatchAlignmentThisPtr) != 0)
         {
-            // Check if there is padding to attempt an alignment
+            // Check if there is padding to attempt an alignment.
             if (extraPadding <= 0)
                 return nullptr;
 
             extraPadding -= sizeof(void*);
 
 #ifdef _DEBUG
-            // Poison unused sections of the section
+            // Poison unused portions of the section.
             std::memset(section, 0xff, sizeof(void*));
 #endif
 
@@ -102,13 +102,13 @@ namespace ABI
         _In_ size_t entrySetCount,
         _In_ const EntrySet* entrySets)
     {
-        // Define dispatch section iterator
+        // Define dispatch section iterator.
         const void** currDisp = reinterpret_cast<const void**>(dispatchSection);
 
-        // Keep rolling count of dispatch entries
+        // Keep rolling count of dispatch entries.
         int32_t dispCount = 0;
 
-        // Iterate over all interface entry sets
+        // Iterate over all interface entry sets.
         const EntrySet* curr = entrySets;
         const EntrySet* end = entrySets + entrySetCount;
         for (; curr != end; ++curr)
@@ -116,7 +116,7 @@ namespace ABI
             const ComInterfaceEntry* currEntry = curr->start;
             int32_t entryCount = curr->count;
 
-            // Update dispatch section with 'this' pointer and vtables
+            // Update dispatch section with 'this' pointer and vtables.
             for (int32_t i = 0; i < entryCount; ++i, ++dispCount, ++currEntry)
             {
                 // Insert the 'this' pointer at the appropriate locations
@@ -143,7 +143,7 @@ namespace ABI
         return reinterpret_cast<ComInterfaceDispatch*>(dispatchSection);
     }
 
-    // Given the entry index, compute the dispatch index
+    // Given the entry index, compute the dispatch index.
     ComInterfaceDispatch* IndexIntoDispatchSection(_In_ int32_t i, _In_ ComInterfaceDispatch* dispatches)
     {
         // Convert the supplied zero based index into what it represents as a count.
@@ -192,7 +192,7 @@ namespace
         return wrapper->Release();
     }
 
-    // Hard-coded ManagedObjectWrapper IUnknown vtable
+    // Hard-coded ManagedObjectWrapper IUnknown vtable.
     const struct
     {
         decltype(&ManagedObjectWrapper_QueryInterface) QueryInterface;
@@ -299,11 +299,11 @@ HRESULT ManagedObjectWrapper::Create(
 {
     _ASSERTE(objectHandle != nullptr && mow != nullptr);
 
-    // Maximum number of runtime supplied vtables
+    // Maximum number of runtime supplied vtables.
     ComInterfaceEntry runtimeDefinedLocal[4];
     int32_t runtimeDefinedCount = 0;
 
-    // Check if the caller will provide the IUnknown table
+    // Check if the caller will provide the IUnknown table.
     if ((flags & CreateComInterfaceFlags::CallerDefinedIUnknown) == CreateComInterfaceFlags::None)
     {
         ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
@@ -311,7 +311,7 @@ HRESULT ManagedObjectWrapper::Create(
         curr.Vtable = &ManagedObjectWrapper_IUnknownImpl;
     }
 
-    // Check if the caller wants tracker support
+    // Check if the caller wants tracker support.
     if ((flags & CreateComInterfaceFlags::TrackerSupport) == CreateComInterfaceFlags::TrackerSupport)
     {
         ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
@@ -321,23 +321,23 @@ HRESULT ManagedObjectWrapper::Create(
 
     _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefinedLocal));
 
-    // Compute size for ManagedObjectWrapper instance
+    // Compute size for ManagedObjectWrapper instance.
     const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ComInterfaceEntry);
     const size_t totalDefinedCount = static_cast<size_t>(runtimeDefinedCount) + userDefinedCount;
 
-    // Compute the total entry size of dispatch section
+    // Compute the total entry size of dispatch section.
     const size_t totalDispatchSectionCount = ABI::ComputeThisPtrForDispatchSection(totalDefinedCount) + totalDefinedCount;
     const size_t totalDispatchSectionSize = totalDispatchSectionCount * sizeof(void*);
 
-    // Allocate memory for the ManagedObjectWrapper
+    // Allocate memory for the ManagedObjectWrapper.
     char* wrapperMem = (char*)InteropLibImports::MemAlloc(sizeof(ManagedObjectWrapper) + totalRuntimeDefinedSize + totalDispatchSectionSize + ABI::AlignmentThisPtrMaxPadding, AllocScenario::ManagedObjectWrapper);
     if (wrapperMem == nullptr)
         return E_OUTOFMEMORY;
 
-    // Compute Runtime defined offset
+    // Compute Runtime defined offset.
     char* runtimeDefinedOffset = wrapperMem + sizeof(ManagedObjectWrapper);
 
-    // Copy in runtime supplied COM interface entries
+    // Copy in runtime supplied COM interface entries.
     ComInterfaceEntry* runtimeDefined = nullptr;
     if (0 < runtimeDefinedCount)
     {
@@ -345,7 +345,7 @@ HRESULT ManagedObjectWrapper::Create(
         runtimeDefined = reinterpret_cast<ComInterfaceEntry*>(runtimeDefinedOffset);
     }
 
-    // Compute the dispatch section offset and ensure it is aligned
+    // Compute the dispatch section offset and ensure it is aligned.
     char* dispatchSectionOffset = runtimeDefinedOffset + totalRuntimeDefinedSize;
     dispatchSectionOffset = ABI::AlignDispatchSection(dispatchSectionOffset, ABI::AlignmentThisPtrMaxPadding);
     if (dispatchSectionOffset == nullptr)
@@ -657,7 +657,6 @@ namespace InteropLib
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
 
-            // This should never happen.
             // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
             _ASSERTE(wrapper != nullptr);
 
@@ -692,7 +691,6 @@ namespace InteropLib
         {
             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
 
-            // This should never happen.
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
 

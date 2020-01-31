@@ -1937,6 +1937,10 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     RCW* pRCW = pInteropInfo->GetRawRCW();
     if (pRCW)
         pRCW->MinorCleanup();
+
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+        ComWrappersNative::MarkExternalComObjectContextCollected(eoc);
 }
 
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
@@ -1981,7 +1985,15 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     void* mocw;
     if (pInteropInfo->TryGetManagedObjectComWrapper(&mocw))
     {
+        (void)pInteropInfo->TrySetManagedObjectComWrapper(NULL, mocw);
         ComWrappersNative::DestroyManagedObjectComWrapper(mocw);
+    }
+
+    void* eoc;
+    if (pInteropInfo->TryGetExternalComObjectContext(&eoc))
+    {
+        (void)pInteropInfo->TrySetExternalComObjectContext(NULL, eoc);
+        ComWrappersNative::DestroyExternalComObjectContext(eoc);
     }
 }
 
