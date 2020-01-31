@@ -5268,8 +5268,8 @@ void emitter::emitIns_R_R_R(
             }
             else
             {
-                assert(insOptsNone(opt));
                 // Scalar operation
+                assert(insOptsNone(opt));
                 assert(size == EA_8BYTE); // Only Int64/UInt64 supported
                 fmt = IF_DV_3E;
             }
