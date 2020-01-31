@@ -199,5 +199,9 @@
       </ItemGroup>
     </When>
   </Choose>
-
+  
+  <PropertyGroup Condition="'$(ExcludeCurrentFrameworks)' == 'true'">
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netcoreapp5.0'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net472'">true</ExcludeFromPackage>
+  </PropertyGroup>
 </Project>
