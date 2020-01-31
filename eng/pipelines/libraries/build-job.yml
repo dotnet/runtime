@@ -85,13 +85,13 @@ jobs:
               ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
             displayName: Install Emscripten
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
-
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
             parameters:
-              installDotnet: false
+              installDotnet: true
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
+          displayName: Restore
 
         - script: $(_buildScript)
                 $(_buildAction)

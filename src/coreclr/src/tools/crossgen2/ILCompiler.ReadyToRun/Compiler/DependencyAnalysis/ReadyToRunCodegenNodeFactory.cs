@@ -179,7 +179,8 @@ namespace ILCompiler.DependencyAnalysis
             SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
             ResourceData win32Resources,
-            AttributePresenceFilterNode attributePresenceFilterNode)
+            AttributePresenceFilterNode attributePresenceFilterNode,
+            HeaderNode headerNode)
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
@@ -190,6 +191,7 @@ namespace ILCompiler.DependencyAnalysis
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
             AttributePresenceFilter = attributePresenceFilterNode;
+            Header = headerNode;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
@@ -347,6 +349,8 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
+
+        public InliningInfoNode InliningInfoTable;
 
         public AttributePresenceFilterNode AttributePresenceFilter;
 
@@ -548,8 +552,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            Header = new HeaderNode(Target);
-
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
@@ -585,6 +587,9 @@ namespace ILCompiler.DependencyAnalysis
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+
+            InliningInfoTable = new InliningInfoNode(Target, InputModuleContext.GlobalContext);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, InliningInfoTable, InliningInfoTable);
 
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are

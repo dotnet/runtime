@@ -189,7 +189,7 @@ namespace R2RDump
         /// </summary>
         internal override void DumpDisasm(RuntimeFunction rtf, int imageOffset)
         {
-            int indent = (_options.Naked ? 11 : 32);
+            int indent = (_options.Naked ? _options.HideOffsets ? 4 : 11 : 32);
             string indentString = new string(' ', indent);
             int rtfOffset = 0;
             int codeOffset = rtf.CodeOffset;
@@ -225,7 +225,6 @@ namespace R2RDump
                  */
                 _writer.Write(instr);
 
-                CoreDisTools.ClearOutputBuffer();
                 rtfOffset += instrSize;
                 codeOffset += instrSize;
             }
@@ -320,10 +319,10 @@ namespace R2RDump
                         }
                         int unwindRva = NativeReader.ReadInt32(_r2r.Image, ref rtfOffset);
                         _writer.WriteLine($"Index: {rtfIndex}");
-                        _writer.WriteLine($"\tStartRva: 0x{startRva:X8}");
+                        _writer.WriteLine($"        StartRva: 0x{startRva:X8}");
                         if (endRva != -1)
-                            _writer.WriteLine($"\tEndRva: 0x{endRva:X8}");
-                        _writer.WriteLine($"\tUnwindRva: 0x{unwindRva:X8}");
+                            _writer.WriteLine($"        EndRva: 0x{endRva:X8}");
+                        _writer.WriteLine($"        UnwindRva: 0x{unwindRva:X8}");
                         rtfIndex++;
                     }
                     break;
@@ -391,6 +390,18 @@ namespace R2RDump
                     NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.Image, attributesStartOffset, attributesEndOffset);
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
+                    break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_INLINING_INFO:
+                    int iiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int iiEndOffset = iiOffset + section.Size;
+                    InliningInfoSection inliningInfoSection = new InliningInfoSection(_r2r, iiOffset, iiEndOffset);
+                    _writer.WriteLine(inliningInfoSection.ToString());
+                    break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_INLINING_INFO2:
+                    int ii2Offset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int ii2EndOffset = ii2Offset + section.Size;
+                    InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
+                    _writer.WriteLine(inliningInfoSection2.ToString());
                     break;
             }
         }

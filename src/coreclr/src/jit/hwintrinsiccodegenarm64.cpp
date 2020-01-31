@@ -156,6 +156,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SIZE(node->gtSIMDSize);
         opt      = genGetSimdInsOpt(emitSize, intrin.baseType);
+
+        if ((opt == INS_OPTS_1D) && (intrin.category == HW_Category_SimpleSIMD))
+        {
+            opt = INS_OPTS_NONE;
+        }
     }
 
     genConsumeHWIntrinsicOperands(node);
@@ -273,14 +278,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_AdvSimd_CompareLessThan:
             case NI_AdvSimd_CompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_CompareLessThan:
+            case NI_AdvSimd_Arm64_CompareLessThanScalar:
             case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_CompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
             case NI_AdvSimd_AbsoluteCompareLessThan:
             case NI_AdvSimd_AbsoluteCompareLessThanOrEqual:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThan:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanScalar:
             case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqual:
+            case NI_AdvSimd_Arm64_AbsoluteCompareLessThanOrEqualScalar:
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 

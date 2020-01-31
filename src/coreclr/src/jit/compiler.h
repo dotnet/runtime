@@ -4340,6 +4340,7 @@ public:
 
 #if defined(DEBUG)
     unsigned impInlinedCodeSize;
+    bool     fgPrintInlinedMethods;
 #endif
 
     //-------------------------------------------------------------------------
@@ -5601,10 +5602,6 @@ private:
     bool gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call);
     bool gtIsTypeHandleToRuntimeTypeHandleHelper(GenTreeCall* call, CorInfoHelpFunc* pHelper = nullptr);
     bool gtIsActiveCSE_Candidate(GenTree* tree);
-
-#ifdef DEBUG
-    bool fgPrintInlinedMethods;
-#endif
 
     bool fgIsBigOffset(size_t offset);
 
@@ -7654,12 +7651,15 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector64FloatHandle;
+        CORINFO_CLASS_HANDLE Vector64DoubleHandle;
         CORINFO_CLASS_HANDLE Vector64IntHandle;
         CORINFO_CLASS_HANDLE Vector64UShortHandle;
         CORINFO_CLASS_HANDLE Vector64UByteHandle;
         CORINFO_CLASS_HANDLE Vector64ShortHandle;
         CORINFO_CLASS_HANDLE Vector64ByteHandle;
+        CORINFO_CLASS_HANDLE Vector64LongHandle;
         CORINFO_CLASS_HANDLE Vector64UIntHandle;
+        CORINFO_CLASS_HANDLE Vector64ULongHandle;
 #endif // defined(_TARGET_ARM64_)
         CORINFO_CLASS_HANDLE Vector128FloatHandle;
         CORINFO_CLASS_HANDLE Vector128DoubleHandle;
@@ -8692,6 +8692,7 @@ public:
 #define MAX_STRESS_WEIGHT 100
 
     bool compStressCompile(compStressArea stressArea, unsigned weightPercentage);
+    bool compStressCompileHelper(compStressArea stressArea, unsigned weightPercentage);
 
 #ifdef DEBUG
 
@@ -8717,6 +8718,7 @@ public:
     }
 
     const char* compGetTieringName() const;
+    const char* compGetStressMessage() const;
 
     codeOptimize compCodeOpt()
     {

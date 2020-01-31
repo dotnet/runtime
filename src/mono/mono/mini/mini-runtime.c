@@ -3734,6 +3734,8 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.weak_memory_model = FALSE;
 	else if (!strcmp (option, "weak-memory-model"))
 		mini_debug_options.weak_memory_model = TRUE;
+	else if (!strcmp (option, "top-runtime-invoke-unhandled"))
+		mini_debug_options.top_runtime_invoke_unhandled = TRUE;
 	else if (!strncmp (option, "thread-dump-dir=", 16))
 		mono_set_thread_dump_dir(g_strdup(option + 16));
 	else if (!strncmp (option, "aot-skip=", 9)) {

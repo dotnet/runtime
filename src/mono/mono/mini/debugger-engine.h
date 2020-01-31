@@ -251,6 +251,7 @@ typedef struct {
 
 	int (*ss_create_init_args) (SingleStepReq *ss_req, SingleStepArgs *args);
 	void (*ss_args_destroy) (SingleStepArgs *ss_args);
+	int (*handle_multiple_ss_requests)(void);
 } DebuggerEngineCallbacks;
 
 

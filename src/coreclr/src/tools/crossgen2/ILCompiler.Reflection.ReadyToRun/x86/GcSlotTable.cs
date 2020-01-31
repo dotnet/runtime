@@ -56,30 +56,30 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                 {
                     if (StackOffset < 0)
                     {
-                        sb.AppendLine($"\t\t\t[{Register}-{-StackOffset}]");
+                        sb.AppendLine($"            [{Register}-{-StackOffset}]");
                     }
                     else
                     {
-                        sb.AppendLine($"\t\t\t[{Register}+{StackOffset}]");
+                        sb.AppendLine($"            [{Register}+{StackOffset}]");
                     }
                 }
                 else
                 {
-                    sb.AppendLine($"\t\t\tBeginOffset: {BeginOffset}");
-                    sb.AppendLine($"\t\t\tEndOffset: {EndOffset}");
+                    sb.AppendLine($"            BeginOffset: {BeginOffset}");
+                    sb.AppendLine($"            EndOffset: {EndOffset}");
                     if (Register.Equals("BP"))
                     {
-                        sb.AppendLine($"\t\t\t[{Register}-{-StackOffset}]");
+                        sb.AppendLine($"            [{Register}-{-StackOffset}]");
                     }
                     else
                     {
-                        sb.AppendLine($"\t\t\t[{Register}+{-StackOffset}]");
+                        sb.AppendLine($"            [{Register}+{-StackOffset}]");
                     }
                 }
 
-                sb.AppendLine($"\t\t\tFlags: {Flags}");
+                sb.AppendLine($"            Flags: {Flags}");
 
-                sb.Append($"\t\t\tLowBits: ");
+                sb.Append($"            LowBits: ");
                 if ((Flags & GcSlotFlags.GC_SLOT_UNTRACKED) != 0)
                 {
                     if((LowBits & pinned_OFFSET_FLAG) != 0) sb.Append("pinned ");
@@ -111,12 +111,12 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\t\tGcSlots:");
-            sb.AppendLine($"\t\t\t-------------------------");
+            sb.AppendLine($"        GcSlots:");
+            sb.AppendLine($"            -------------------------");
             foreach (GcSlot slot in GcSlots)
             {
                 sb.Append(slot.ToString());
-                sb.AppendLine($"\t\t\t-------------------------");
+                sb.AppendLine($"            -------------------------");
             }
 
             return sb.ToString();

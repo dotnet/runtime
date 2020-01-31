@@ -30,7 +30,7 @@ void Compiler::fgInit()
     fgFirstBBScratch = nullptr;
 
 #ifdef DEBUG
-    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
+    fgPrintInlinedMethods = false;
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
@@ -21909,6 +21909,10 @@ void Compiler::fgInline()
     {
         printf("*************** In fgInline()\n");
     }
+
+    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods().contains(info.compMethodName, info.compClassName,
+                                                                        &info.compMethodInfo->args);
+
 #endif // DEBUG
 
     BasicBlock* block = fgFirstBB;

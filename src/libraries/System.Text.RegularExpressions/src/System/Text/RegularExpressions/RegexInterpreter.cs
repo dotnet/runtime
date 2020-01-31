@@ -404,51 +404,51 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
+            if (0 != (_code.Anchors & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)))
             {
                 if (!_code.RightToLeft)
                 {
-                    if ((0 != (_code.Anchors & RegexFCD.Beginning) && runtextpos > runtextbeg) ||
-                        (0 != (_code.Anchors & RegexFCD.Start) && runtextpos > runtextstart))
+                    if ((0 != (_code.Anchors & RegexPrefixAnalyzer.Beginning) && runtextpos > runtextbeg) ||
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.Start) && runtextpos > runtextstart))
                     {
                         runtextpos = runtextend;
                         return false;
                     }
-                    if (0 != (_code.Anchors & RegexFCD.EndZ) && runtextpos < runtextend - 1)
+                    if (0 != (_code.Anchors & RegexPrefixAnalyzer.EndZ) && runtextpos < runtextend - 1)
                     {
                         runtextpos = runtextend - 1;
                     }
-                    else if (0 != (_code.Anchors & RegexFCD.End) && runtextpos < runtextend)
+                    else if (0 != (_code.Anchors & RegexPrefixAnalyzer.End) && runtextpos < runtextend)
                     {
                         runtextpos = runtextend;
                     }
                 }
                 else
                 {
-                    if ((0 != (_code.Anchors & RegexFCD.End) && runtextpos < runtextend) ||
-                        (0 != (_code.Anchors & RegexFCD.EndZ) && (runtextpos < runtextend - 1 ||
+                    if ((0 != (_code.Anchors & RegexPrefixAnalyzer.End) && runtextpos < runtextend) ||
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.EndZ) && (runtextpos < runtextend - 1 ||
                                                                (runtextpos == runtextend - 1 && CharAt(runtextpos) != '\n'))) ||
-                        (0 != (_code.Anchors & RegexFCD.Start) && runtextpos < runtextstart))
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.Start) && runtextpos < runtextstart))
                     {
                         runtextpos = runtextbeg;
                         return false;
                     }
-                    if (0 != (_code.Anchors & RegexFCD.Beginning) && runtextpos > runtextbeg)
+                    if (0 != (_code.Anchors & RegexPrefixAnalyzer.Beginning) && runtextpos > runtextbeg)
                     {
                         runtextpos = runtextbeg;
                     }
                 }
 
-                if (_code.BMPrefix != null)
+                if (_code.BoyerMoorePrefix != null)
                 {
-                    return _code.BMPrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
+                    return _code.BoyerMoorePrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
                 }
 
                 return true; // found a valid start or end anchor
             }
-            else if (_code.BMPrefix != null)
+            else if (_code.BoyerMoorePrefix != null)
             {
-                runtextpos = _code.BMPrefix.Scan(runtext!, runtextpos, runtextbeg, runtextend);
+                runtextpos = _code.BoyerMoorePrefix.Scan(runtext!, runtextpos, runtextbeg, runtextend);
 
                 if (runtextpos == -1)
                 {
@@ -458,14 +458,10 @@ namespace System.Text.RegularExpressions
 
                 return true;
             }
-            else if (_code.FCPrefix == null)
+            else if (_code.LeadingCharClasses is null)
             {
                 return true;
             }
-
-            _rightToLeft = _code.RightToLeft;
-            _caseInsensitive = _code.FCPrefix.GetValueOrDefault().CaseInsensitive;
-            string set = _code.FCPrefix.GetValueOrDefault().Prefix;
 
             // We now loop through looking for the first matching character.  This is a hot loop, so we lift out as many
             // branches as we can.  Each operation requires knowing whether this is a) right-to-left vs left-to-right, and
@@ -474,14 +470,20 @@ namespace System.Text.RegularExpressions
             // everything were combined with multiple branches on each operation.  We can also then use spans to avoid bounds
             // checks in at least the forward iteration direction where the JIT is able to detect the pattern.
 
+            // TODO https://github.com/dotnet/runtime/issues/1349:
+            // LeadingCharClasses may contain multiple sets, one for each of the first N characters in the expression,
+            // but the interpreter currently only uses the first set for the first character.  In fact, we currently
+            // only run the analysis that can produce multiple sets if RegexOptions.Compiled was set.
+
+            string set = _code.LeadingCharClasses[0].CharClass;
             if (RegexCharClass.IsSingleton(set))
             {
                 char ch = RegexCharClass.SingletonChar(set);
 
-                if (!_rightToLeft)
+                if (!_code.RightToLeft)
                 {
                     ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                    if (!_caseInsensitive)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
                         // singleton, left-to-right, case-sensitive
                         int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
@@ -509,7 +511,7 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    if (!_caseInsensitive)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
                         // singleton, right-to-left, case-sensitive
                         for (int i = runtextpos - 1; i >= runtextbeg; i--)
@@ -540,15 +542,15 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                if (!_rightToLeft)
+                if (!_code.RightToLeft)
                 {
                     ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                    if (!_caseInsensitive)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
                         // set, left-to-right, case-sensitive
                         for (int i = 0; i < span.Length; i++)
                         {
-                            if (RegexCharClass.CharInClass(span[i], set, ref _code.FCPrefixAsciiLookup))
+                            if (RegexCharClass.CharInClass(span[i], set, ref _code.LeadingCharClassAsciiLookup))
                             {
                                 runtextpos += i;
                                 return true;
@@ -561,7 +563,7 @@ namespace System.Text.RegularExpressions
                         TextInfo ti = _culture.TextInfo;
                         for (int i = 0; i < span.Length; i++)
                         {
-                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.FCPrefixAsciiLookup))
+                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.LeadingCharClassAsciiLookup))
                             {
                                 runtextpos += i;
                                 return true;
@@ -573,12 +575,12 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    if (!_caseInsensitive)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
                         // set, right-to-left, case-sensitive
                         for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            if (RegexCharClass.CharInClass(runtext![i], set, ref _code.FCPrefixAsciiLookup))
+                            if (RegexCharClass.CharInClass(runtext![i], set, ref _code.LeadingCharClassAsciiLookup))
                             {
                                 runtextpos = i + 1;
                                 return true;
@@ -591,7 +593,7 @@ namespace System.Text.RegularExpressions
                         TextInfo ti = _culture.TextInfo;
                         for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.FCPrefixAsciiLookup))
+                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.LeadingCharClassAsciiLookup))
                             {
                                 runtextpos = i + 1;
                                 return true;
