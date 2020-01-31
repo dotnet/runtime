@@ -250,7 +250,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                if (default(TValue)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (default(TValue) != null)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     for (int i = 0; i < _count; i++)
@@ -344,7 +344,7 @@ namespace System.Collections.Generic
                     int i = GetBucket(hashCode);
                     Entry[]? entries = _entries;
                     uint collisionCount = 0;
-                    if (default(TKey)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (default(TKey) != null)
                     {
                         // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
 
@@ -495,7 +495,7 @@ namespace System.Collections.Generic
 
             if (comparer == null)
             {
-                if (default(TKey)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (default(TKey) != null)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     while (true)
@@ -658,7 +658,7 @@ namespace System.Collections.Generic
             _version++;
 
             // Value types never rehash
-            if (default(TKey)! == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -720,7 +720,7 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes)
         {
             // Value types never rehash
-            Debug.Assert(!forceNewHashCodes || default(TKey)! == null); // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            Debug.Assert(!forceNewHashCodes || default(TKey) == null);
             Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
@@ -729,7 +729,7 @@ namespace System.Collections.Generic
             int count = _count;
             Array.Copy(_entries, entries, count);
 
-            if (default(TKey)! == null && forceNewHashCodes) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(TKey) == null && forceNewHashCodes)
             {
                 for (int i = 0; i < count; i++)
                 {

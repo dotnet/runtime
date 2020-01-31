@@ -2043,6 +2043,7 @@ init_amodule_got (MonoAotModule *amodule)
 			}
 		} else if (ji->type == MONO_PATCH_INFO_AOT_MODULE) {
 			amodule->shared_got [i] = amodule;
+		} else if (ji->type == MONO_PATCH_INFO_NONE) {
 		} else {
 			amodule->shared_got [i] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, ji, FALSE, error);
 			mono_error_assert_ok (error);
@@ -4031,7 +4032,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
  * decode_patches:
  *
  *    Decode a list of patches identified by the got offsets in GOT_OFFSETS. Return an array of
- * MonoJumpInfo structures allocated from MP.
+ * MonoJumpInfo structures allocated from MP. GOT entries already loaded have their
+ * ji->type set to MONO_PATCH_INFO_NONE.
  */
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets)
@@ -4061,6 +4063,7 @@ decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean
 		/* See load_method () for SFLDA */
 		if (got && got [got_offsets [i]] && ji->type != MONO_PATCH_INFO_SFLDA) {
 			/* Already loaded */
+			ji->type = MONO_PATCH_INFO_NONE;
 		} else {
 			res = decode_patch (amodule, mp, ji, p, &p);
 			if (!res)
@@ -4597,7 +4600,8 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 			 * been initialized by load_method () for a static cctor before the cctor has
 			 * finished executing (#23242).
 			 */
-			if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
+			if (ji->type == MONO_PATCH_INFO_NONE) {
+			} else if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
 				/* In llvm-only made, we might encounter shared methods */
 				if (mono_llvm_only && ji->type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
 					g_assert (context);
@@ -5347,7 +5351,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-
 				const MonoJitICallId jit_icall_id = (MonoJitICallId)ji->data.jit_icall_id;
 				switch (jit_icall_id) {
 
@@ -5394,7 +5397,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				g_assert (target);
 			}
 
-			amodule->got [got_slots [pindex]] = target;
+			if (ji->type != MONO_PATCH_INFO_NONE)
+				amodule->got [got_slots [pindex]] = target;
 		}
 
 		g_free (got_slots);

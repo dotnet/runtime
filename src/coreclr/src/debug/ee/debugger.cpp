@@ -15309,6 +15309,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
+    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
+    {
+        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
+        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
+        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
+        // FuncEval to avoid the issue.
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+    }
+
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
     DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);

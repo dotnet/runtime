@@ -259,6 +259,9 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+#endif
             PublishProfileData();
         }
 
@@ -338,6 +341,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             _profileDataNode = null;
+            _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
         }
 
@@ -751,10 +755,6 @@ namespace Internal.JitInterface
                 // Call may not be inlined
                 return CorInfoInline.INLINE_NEVER;
             }
-        }
-
-        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
-        {
         }
 
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
