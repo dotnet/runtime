@@ -5044,7 +5044,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     }
     CONTRACTL_END;
 
-    StaticAccessCheckContext accessContext(NULL, pAskingMT);
+    AccessCheckContext accessContext(NULL, pAskingMT);
 
     if (!ClassLoader::CanAccessClass(&accessContext,
                                      pTargetMT,                 //the desired class

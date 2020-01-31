@@ -4651,7 +4651,7 @@ HCIMPL2(void, JIT_ThrowMethodAccessException, CORINFO_METHOD_HANDLE caller, CORI
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowMethodAccessException(&accessContext, GetMethod(callee));
 
@@ -4670,7 +4670,7 @@ HCIMPL2(void, JIT_ThrowFieldAccessException, CORINFO_METHOD_HANDLE caller, CORIN
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
 
@@ -4689,7 +4689,7 @@ HCIMPL2(void, JIT_ThrowClassAccessException, CORINFO_METHOD_HANDLE caller, CORIN
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
 
