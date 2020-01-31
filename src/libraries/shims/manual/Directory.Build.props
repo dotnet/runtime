@@ -16,9 +16,7 @@
     <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
     <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)/</RefPath>
     <CoreCLROSGroup>$(BuildOS)</CoreCLROSGroup>
-    <CoreCLRConfiguration>$(Configuration)</CoreCLRConfiguration>
     <MonoOSGroup>$(BuildOS)</MonoOSGroup>
-    <MonoConfiguration>$(Configuration)</MonoConfiguration>
     <TargetFrameworks>netcoreapp5.0</TargetFrameworks>
   </PropertyGroup>
 
