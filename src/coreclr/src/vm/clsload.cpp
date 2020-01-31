@@ -4438,7 +4438,7 @@ static MethodTable* GetEnclosingMethodTable(MethodTable *pMT)
     RETURN pMT->LoadEnclosingMethodTable();
 }
 
-StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod)
+AccessCheckContext::AccessCheckContext(MethodDesc* pCallerMethod)
 {
     CONTRACTL
     {
@@ -4452,7 +4452,7 @@ StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod)
     m_pCallerAssembly = m_pCallerMT->GetAssembly();
 }
 
-StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType)
+AccessCheckContext::AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType)
 {
     CONTRACTL
     {
@@ -5147,7 +5147,7 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
             //  recursively check whether the enclosing class can access the desired target member.
             MethodTable * pEnclosingMT = GetEnclosingMethodTable(pCurrentMT);
 
-            StaticAccessCheckContext accessContext(pContext->GetCallerMethod(),
+            AccessCheckContext accessContext(pContext->GetCallerMethod(),
                                                    pEnclosingMT,
                                                    pContext->GetCallerAssembly());
 

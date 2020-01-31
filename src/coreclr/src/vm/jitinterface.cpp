@@ -1695,7 +1695,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 pField);
 
             _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
-            StaticAccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
+            AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
             BOOL canAccess = ClassLoader::CanAccess(
                 &accessContext,
@@ -5001,7 +5001,7 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
                                               pCalleeForSecurity.GetMethodTable());
 
         _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
-        StaticAccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
+        AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
         BOOL canAccessType = ClassLoader::CanAccessClass(&accessContext,
                                                          pCalleeForSecurity.GetMethodTable(),
@@ -5582,7 +5582,7 @@ void CEEInfo::getCallInfo(
                                                   pCalleeForSecurity);
 
             _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
-            StaticAccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
+            AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
             canAccessMethod = ClassLoader::CanAccess(&accessContext,
                                                      calleeTypeForSecurity.GetMethodTable(),
@@ -5604,7 +5604,7 @@ void CEEInfo::getCallInfo(
                 }
 
                 _ASSERTE(pCallerForSecurity != NULL && callerTypeForSecurity != NULL);
-                StaticAccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
+                AccessCheckContext accessContext(pCallerForSecurity, callerTypeForSecurity.GetMethodTable());
 
                 MethodTable* pTypeParamMT = typeParam.GetMethodTable();
 
@@ -5738,7 +5738,7 @@ void CEEInfo::ThrowExceptionForHelper(const CORINFO_HELPER_DESC * throwHelper)
     _ASSERTE(throwHelper->args[0].argType == CORINFO_HELPER_ARG_TYPE_Method);
     MethodDesc *pCallerMD = GetMethod(throwHelper->args[0].methodHandle);
 
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     switch (throwHelper->helperNum)
     {
@@ -12917,7 +12917,7 @@ PCODE UnsafeJitFunction(NativeCodeVersion nativeCodeVersion, COR_ILMETHOD_DECODE
                                                   TRUE /*Throw on error*/,
                                                   pMethodForSecurity);
 
-            StaticAccessCheckContext accessContext(pMethodForSecurity, ownerTypeForSecurity.GetMethodTable());
+            AccessCheckContext accessContext(pMethodForSecurity, ownerTypeForSecurity.GetMethodTable());
 
             // We now do an access check from pMethodForSecurity to pMethodForSecurity, its sole purpose is to
             // verify that pMethodForSecurity/ownerTypeForSecurity has access to all its parameters.

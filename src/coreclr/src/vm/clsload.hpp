@@ -299,26 +299,14 @@ public:
 
 };
 
-//-------------------------------------------------------------------------------------------
-//
-// TODO: Clean this up
-//
-// Introducing AccessCheckContext so that we can defer caller resolution as much as possible.
-// Stack walk is expensive and we should avoid it if we can determine accessibility without
-// knowing the caller. For example, public transparent APIs without link demand should always
-// be accessible.
-// We will have two types of AccessCheckContext.
-//   1. StaticAccessCheckContext is used by JIT and other places where the caller is statically known.
-//   2. RefSecContext is used by reflection and resolves the caller by performing a stack walk.
-//
-//-------------------------------------------------------------------------------------------
-#define AccessCheckContext StaticAccessCheckContext
+//******************************************************************************
+// AccessCheckContext encapsulates input of an accessibility check
 
-class StaticAccessCheckContext
+class AccessCheckContext
 {
 public:
 
-    StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType, Assembly* pCallerAssembly)
+    AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType, Assembly* pCallerAssembly)
         : m_pCallerMethod(pCallerMethod),
           m_pCallerMT(pCallerType),
           m_pCallerAssembly(pCallerAssembly)
@@ -333,9 +321,9 @@ public:
         CONTRACTL_END;
     }
 
-    StaticAccessCheckContext(MethodDesc* pCallerMethod);
+    AccessCheckContext(MethodDesc* pCallerMethod);
 
-    StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType);
+    AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType);
 
     MethodDesc* GetCallerMethod()
     {
