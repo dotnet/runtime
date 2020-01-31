@@ -355,12 +355,6 @@ public:
         return m_pCallerAssembly;
     }
 
-    bool IsCalledFromInterop()
-    {
-        WRAPPER_NO_CONTRACT;
-        return false;
-    }
-
 private:
     MethodDesc*     m_pCallerMethod;
     MethodTable*    m_pCallerMT;

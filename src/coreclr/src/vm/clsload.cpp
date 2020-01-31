@@ -4556,10 +4556,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
             return TRUE;
     }
 
-    // Always allow interop (NULL) callers full access.
-    if (pContext->IsCalledFromInterop())
-        return TRUE;
-
     // No Access
     if (m_fThrowIfTargetIsInaccessible)
     {
@@ -5022,10 +5018,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
         }
         else
         {
-            // Always allow interop callers full access.
-            if (pContext->IsCalledFromInterop())
-                return TRUE;
-
             Assembly* pCurrentAssembly = pContext->GetCallerAssembly();
             _ASSERTE(pCurrentAssembly != NULL);
 
@@ -5072,10 +5064,6 @@ BOOL ClassLoader::CanAccessClass(                   // True if access is legal, 
             // If we don't grant assembly or friend access to the target class, and that class has assembly
             // protection, we can fail the request now.  Otherwise we can check to make sure a public member
             // of the outer class is allowed, since we have satisfied the target's accessibility rules.
-
-            // Always allow interop callers full access.
-            if (pContext->IsCalledFromInterop())
-                return TRUE;
 
             if (AssemblyOrFriendAccessAllowed(pContext->GetCallerAssembly(), pTargetAssembly, NULL, NULL, pTargetClass))
                 dwProtection = (dwProtection == tdNestedFamANDAssem) ? mdFamily : mdPublic;
@@ -5150,9 +5138,6 @@ BOOL ClassLoader::CanAccess(                            // TRUE if access is all
         // to the target. And if the pCurrentMT == NULL, the current class is global, and so there
         // is no enclosing class.
         MethodTable* pCurrentMT = pContext->GetCallerMT();
-
-        // if this is called from interop, the CheckAccessMember call above should have already succeeded.
-        _ASSERTE(!pContext->IsCalledFromInterop());
 
         BOOL isNestedClass = (pCurrentMT && pCurrentMT->GetClass()->IsNested());
 
@@ -5250,10 +5235,6 @@ BOOL ClassLoader::CheckAccessMember(                // TRUE if access is allowed
     {
         return TRUE;
     }
-
-    // Always allow interop callers full access.
-    if (pContext->IsCalledFromInterop())
-        return TRUE;
 
     MethodTable* pCurrentMT = pContext->GetCallerMT();
 
