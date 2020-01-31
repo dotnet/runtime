@@ -88,5 +88,16 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Utils.CopyArray(array1, array2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Utils.CopyArray(array2, array1));
         }
+
+        [Fact]
+        public void GetResourceString()
+        {
+            if (System.Threading.Thread.CurrentThread.CurrentCulture.Name == "en-US")
+            {
+                Assert.Equal("Argument '42' is not a valid value.", Utils.GetResourceString("Argument_InvalidValue1", "42"));
+                Assert.Equal("Argument '42' is not a valid value.", Utils.GetResourceString(ResourceKey: "Argument_InvalidValue1", Args: new[] { "42" }));
+                Assert.Equal("Application-defined or object-defined error.", Utils.GetResourceString("UnrecognizedResourceKey"));
+            }
+        }
     }
 }

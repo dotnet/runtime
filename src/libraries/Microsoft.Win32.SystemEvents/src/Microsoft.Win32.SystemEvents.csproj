@@ -2,6 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <Nullable>enable</Nullable>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_SystemEvents</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>net461-Debug;net461-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
   </PropertyGroup>
@@ -123,8 +124,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs">
       <Link>Common\Interop\Windows\WtsApi32\Interop.WTSUnRegisterSessionNotification.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Win32\PowerModeChangedEventArgs.cs" />
     <Compile Include="Microsoft\Win32\PowerModeChangedEventHandler.cs" />

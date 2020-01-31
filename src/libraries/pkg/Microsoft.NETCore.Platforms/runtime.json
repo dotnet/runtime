@@ -1346,6 +1346,40 @@
         "tizen.4.0.0-x86"
       ]
     },
+    "tizen.5.5.0": {
+      "#import": [
+        "tizen.5.0.0"
+      ]
+    },
+    "tizen.5.5.0-armel": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-armel"
+      ]
+    },
+    "tizen.5.5.0-x86": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-x86"
+      ]
+    },
+    "tizen.6.0.0": {
+      "#import": [
+        "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-armel": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-armel"
+      ]
+    },
+    "tizen.6.0.0-x86": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-x86"
+      ]
+    },
     "ubuntu": {
       "#import": [
         "debian"

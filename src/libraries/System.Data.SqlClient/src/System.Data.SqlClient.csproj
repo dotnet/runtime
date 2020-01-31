@@ -280,12 +280,10 @@
     <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetCoreApp.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != 'AnyOS' and '$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetStandard.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetStandard.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
   <ItemGroup Condition="('$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true') and '$(TargetsWindows)' == 'true'">
@@ -316,8 +314,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->

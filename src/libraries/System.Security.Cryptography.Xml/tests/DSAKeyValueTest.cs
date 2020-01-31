@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/17001", TestPlatforms.OSX)]
         public void GetXml()
         {
             DSAKeyValue dsa = new DSAKeyValue();
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue(17001, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/17001", TestPlatforms.OSX)]
         public void GetXml_SameDsa()
         {
             using (DSA dsa = DSA.Create())

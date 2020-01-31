@@ -32,6 +32,7 @@
 #include "comdelegate.h"
 #include "siginfo.hpp"
 #include "typekey.h"
+#include "castcache.h"
 
 #include "caparser.h"
 #include "ecall.h"
@@ -668,11 +669,6 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -1566,10 +1562,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
@@ -1978,14 +1975,21 @@ void SystemDomain::LoadBaseSystemClasses()
     // We have delayed allocation of mscorlib's static handles until we load the object class
     MscorlibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
-    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
-
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
         MscorlibBinder::LoadPrimitiveType((CorElementType)et);
 
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+
+    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot

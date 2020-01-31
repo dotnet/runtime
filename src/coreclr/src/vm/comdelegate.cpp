@@ -903,8 +903,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                              &gc.target,
                              pCurMethod,
                              methodType.GetMethodTable(),
-                             fIsOpenDelegate,
-                             TRUE);
+                             fIsOpenDelegate);
 
                 pMatchingMethod = pCurMethod;
                 goto done;
@@ -979,8 +978,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                      &gc.refFirstArg,
                      method,
                      pMethMT,
-                     fIsOpenDelegate,
-                     !(flags & DBF_SkipSecurityChecks));
+                     fIsOpenDelegate);
     }
     else
         result = FALSE;
@@ -999,8 +997,7 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                OBJECTREF     *pRefFirstArg,
                                MethodDesc    *pTargetMethod,
                                MethodTable   *pExactMethodType,
-                               BOOL           fIsOpenDelegate,
-                               BOOL           fCheckSecurity)
+                               BOOL           fIsOpenDelegate)
 {
     CONTRACTL
     {
@@ -1018,37 +1015,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
     // keeps track of the real (i.e. non-wrapper) delegate whether or not this is required.
     DELEGATEREF refRealDelegate = NULL;
     GCPROTECT_BEGIN(refRealDelegate);
-
-    // Security checks (i.e. whether the creator of the delegate is allowed to access the target method) are the norm. They are only
-    // disabled when:
-    //   1. this is called by deserialization to recreate an existing delegate instance, where such checks are unwarranted.
-    //   2. this is called from DynamicMethod.CreateDelegate which doesn't need access check.
-    if (fCheckSecurity)
-    {
-        MethodTable *pInstanceMT = pExactMethodType;
-        bool targetPossiblyRemoted = false;
-
-        if (fIsOpenDelegate)
-        {
-            _ASSERTE(pRefFirstArg == NULL || *pRefFirstArg == NULL);
-
-        }
-        else
-        {
-            // closed-static is OK and we can check the target in the closed-instance case
-            pInstanceMT = (*pRefFirstArg == NULL ? NULL : (*pRefFirstArg)->GetMethodTable());
-        }
-
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetPossiblyRemoted));
-
-        // Check visibility of the target method. If it's an instance method, we have to pass the type
-        // of the instance being accessed which we get from the first argument or from the method itself.
-        // The type of the instance is necessary for visibility checks of protected methods.
-        InvokeUtil::CheckAccessMethod(&sCtx,
-                                      pExactMethodType,
-                                      pTargetMethod->IsStatic() ? NULL : pInstanceMT,
-                                      pTargetMethod);
-    }
 
     // If we didn't wrap the real delegate in a wrapper delegate then the real delegate is the one passed in.
     if (refRealDelegate == NULL)

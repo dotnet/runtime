@@ -36,7 +36,7 @@ namespace SciMark2
         ///  held in compress-row format.  If the size of the matrix
         ///  in MxN with nz nonzeros, then the val[] is the nz nonzeros,
         ///  with its ith entry in column col[i].  The integer vector row[]
-        ///  is of size M+1 and row[i] points to the begining of the
+        ///  is of size M+1 and row[i] points to the beginning of the
         ///  ith row in col[].  
         public static void matmult(double[] y, double[] val, int[] row, int[] col, double[] x, int NUM_ITERATIONS)
         {

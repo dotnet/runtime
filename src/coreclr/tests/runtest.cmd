@@ -185,7 +185,7 @@ if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
-set NEXTCMD=python "%~dp0runtest.py" %__RuntestPyArgs%
+set NEXTCMD=python "%__ProjectDir%\runtest.py" %__RuntestPyArgs%
 echo !NEXTCMD!
 !NEXTCMD!
 

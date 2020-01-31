@@ -13,9 +13,6 @@ namespace System
     {
         public static int IndexOf<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
 
@@ -52,14 +49,11 @@ namespace System
         // Adapted from IndexOf(...)
         public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -125,13 +119,10 @@ namespace System
 
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -215,14 +206,11 @@ namespace System
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -322,14 +310,11 @@ namespace System
 
         public static int IndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -428,9 +413,6 @@ namespace System
 
         public static int IndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
 
@@ -490,12 +472,9 @@ namespace System
 
         public static int LastIndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -574,13 +553,10 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {
@@ -680,13 +656,10 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {
@@ -786,9 +759,6 @@ namespace System
 
         public static int LastIndexOfAny<T>(ref T searchSpace, int searchSpaceLength, ref T value, int valueLength) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(searchSpaceLength >= 0);
             Debug.Assert(valueLength >= 0);
 
@@ -807,9 +777,6 @@ namespace System
 
         public static bool SequenceEqual<T>(ref T first, ref T second, int length) where T : IEquatable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(!RuntimeHelpers.IsBitwiseEquatable<T>() || !(Unsafe.SizeOf<T>() == sizeof(byte) || Unsafe.SizeOf<T>() == sizeof(char)));
-
             Debug.Assert(length >= 0);
 
             if (Unsafe.AreSame(ref first, ref second))
@@ -902,9 +869,6 @@ namespace System
         public static int SequenceCompareTo<T>(ref T first, int firstLength, ref T second, int secondLength)
             where T : IComparable<T>
         {
-            // The optimized implementation should be used for these types
-            Debug.Assert(typeof(T) != typeof(byte) && typeof(T) != typeof(char));
-
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);
 

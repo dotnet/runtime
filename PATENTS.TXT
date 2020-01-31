@@ -23,8 +23,7 @@ this promise.
 Definitions: 
 
 "Covered Code" means those Microsoft .NET libraries and runtime components as 
-made available by Microsoft at https://github.com/dotnet/coreclr, 
-https://github.com/dotnet/corefx and https://github.com/dotnet/corert.
+made available by Microsoft at https://github.com/dotnet/runtime.
 
 ".NET Patents" are those patent claims, both currently owned by Microsoft and 
 acquired in the future, that are necessarily infringed by Covered Code. .NET 

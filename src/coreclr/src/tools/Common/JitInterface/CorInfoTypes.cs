@@ -115,7 +115,7 @@ namespace Internal.JitInterface
         public CORINFO_CLASS_STRUCT_* retTypeClass;   // if the return type is a value class, this is its handle (enums are normalized)
         public CORINFO_CLASS_STRUCT_* retTypeSigClass;// returns the value class as it is in the sig (enums are not converted to primitives)
         public byte _retType;
-        public byte flags;    // used by IL stubs code
+        public CorInfoSigInfoFlags flags;    // used by IL stubs code
         public ushort numArgs;
         public CORINFO_SIG_INST sigInst;  // information about how type variables are being instantiated in generic code
         public CORINFO_ARG_LIST_STRUCT_* args;
@@ -384,10 +384,11 @@ namespace Internal.JitInterface
         CORINFO_CONTEXTFLAGS_MASK = 0x01
     };
 
-    public enum CorInfoSigInfoFlags
+    public enum CorInfoSigInfoFlags : byte
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
+        CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION = 0x04,
     };
 
     // These are returned from getMethodOptions
@@ -1149,20 +1150,6 @@ namespace Internal.JitInterface
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-        // Internal flags - never returned outside of the classification implementation.
-
-        // This value represents a very special type with two eightbytes.
-        // First ByRef, second Integer (platform int).
-        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect
-        // the special TypedReference type and specialize its classification.
-        // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr.
-        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-        SystemVClassificationTypeTypedReference     = 8,
-        SystemVClassificationTypeMAX                = 9
     };
 
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR

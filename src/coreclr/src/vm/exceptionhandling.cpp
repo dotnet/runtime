@@ -1333,7 +1333,12 @@ void ExceptionTracker::InitializeCrawlFrameForExplicitFrame(CrawlFrame* pcfThisF
 
     INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
 
+    // Clear various flags
     pcfThisFrame->isFrameless = false;
+    pcfThisFrame->isInterrupted = false;
+    pcfThisFrame->hasFaulted = false;
+    pcfThisFrame->isIPadjusted = false;
+
     pcfThisFrame->pFrame = pFrame;
     pcfThisFrame->pFunc = pFrame->GetFunction();
 
@@ -1416,6 +1421,12 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
 
     INDEBUG(memset(pcfThisFrame, 0xCC, sizeof(*pcfThisFrame)));
     pcfThisFrame->pRD = pRD;
+
+    // Clear various flags
+    pcfThisFrame->pFunc = NULL;
+    pcfThisFrame->isInterrupted = false;
+    pcfThisFrame->hasFaulted = false;
+    pcfThisFrame->isIPadjusted = false;
 
 #ifdef FEATURE_INTERPRETER
     pcfThisFrame->pFrame = NULL;
@@ -1571,7 +1582,6 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
 
     pcfThisFrame->pThread = pThread;
-    pcfThisFrame->hasFaulted = false;
 
     Frame* pTopFrame = pThread->GetFrame();
     pcfThisFrame->isIPadjusted = (FRAME_TOP != pTopFrame) && (pTopFrame->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr());

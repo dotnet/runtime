@@ -81,23 +81,27 @@ namespace System.Net.NetworkInformation
             if (index != 0)
             {
                 uint size = 0;
-                SafeLocalAllocHandle buffer = null;
 
-                uint result = Interop.IpHlpApi.GetPerAdapterInfo(index, SafeLocalAllocHandle.Zero, ref size);
+                uint result = Interop.IpHlpApi.GetPerAdapterInfo(index, IntPtr.Zero, ref size);
                 while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
                 {
                     // Now we allocate the buffer and read the network parameters.
-                    using (buffer = SafeLocalAllocHandle.LocalAlloc((int)size))
+                    IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                    try
                     {
                         result = Interop.IpHlpApi.GetPerAdapterInfo(index, buffer, ref size);
                         if (result == Interop.IpHlpApi.ERROR_SUCCESS)
                         {
                             Interop.IpHlpApi.IpPerAdapterInfo ipPerAdapterInfo =
-                                Marshal.PtrToStructure<Interop.IpHlpApi.IpPerAdapterInfo>(buffer.DangerousGetHandle());
+                                Marshal.PtrToStructure<Interop.IpHlpApi.IpPerAdapterInfo>(buffer);
 
                             _autoConfigEnabled = ipPerAdapterInfo.autoconfigEnabled;
                             _autoConfigActive = ipPerAdapterInfo.autoconfigActive;
                         }
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(buffer);
                     }
                 }
 

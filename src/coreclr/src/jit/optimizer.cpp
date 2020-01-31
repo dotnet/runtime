@@ -4073,6 +4073,13 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
         return;
     }
 
+    // block can't be the scratch bb, since we prefer to keep flow
+    // out of the scratch bb as BBJ_ALWAYS or BBJ_NONE.
+    if (fgBBisScratch(block))
+    {
+        return;
+    }
+
     // It has to be a forward jump
     //  TODO-CQ: Check if we can also optimize the backwards jump as well.
     //
@@ -4257,8 +4264,10 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     }
 
     // Flag the block that received the copy as potentially having an array/vtable
-    // reference if the block copied from did; this is a conservative guess.
-    if (auto copyFlags = bTest->bbFlags & (BBF_HAS_VTABREF | BBF_HAS_IDX_LEN))
+    // reference, nullcheck, object/array allocation if the block copied from did;
+    // this is a conservative guess.
+    if (auto copyFlags = bTest->bbFlags &
+                         (BBF_HAS_VTABREF | BBF_HAS_IDX_LEN | BBF_HAS_NULLCHECK | BBF_HAS_NEWOBJ | BBF_HAS_NEWARRAY))
     {
         block->bbFlags |= copyFlags;
     }

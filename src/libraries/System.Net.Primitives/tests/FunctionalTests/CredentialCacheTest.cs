@@ -203,7 +203,7 @@ namespace System.Net.Primitives.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>("authenticationType", () => cc.Add("host", 500, null, new NetworkCredential())); //Null authenticationType
 
             var exception = Record.Exception(() => cc.Add("", 500, "authenticationType", new NetworkCredential()));
-            // On full framework we get exception.ParamName as null while it is "host" on netcore
+            // On .NET Framework we get exception.ParamName as null while it is "host" on netcore
             Assert.NotNull(exception);
             Assert.True(exception is ArgumentException);
             ArgumentException ae = exception as ArgumentException;
@@ -291,7 +291,7 @@ namespace System.Net.Primitives.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>("authenticationType", () => cc.GetCredential("host", 500, null)); //Null authenticationType
 
             var exception = Record.Exception(() => cc.GetCredential("", 500, "authenticationType")); //Empty host
-            // On full framework we get exception.ParamName as null while it is "host" on netcore
+            // On .NET Framework we get exception.ParamName as null while it is "host" on netcore
             Assert.NotNull(exception);
             Assert.True(exception is ArgumentException);
             ArgumentException ae = exception as ArgumentException;
@@ -449,7 +449,7 @@ namespace System.Net.Primitives.Functional.Tests
             // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
                     // if WDigestAvailable == false, it will throw ArgumentException.
@@ -493,7 +493,7 @@ namespace System.Net.Primitives.Functional.Tests
             // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
-                if (PlatformDetection.IsFullFramework)
+                if (PlatformDetection.IsNetFramework)
                 {
                     // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
                     // if WDigestAvailable == false, it will throw ArgumentException.

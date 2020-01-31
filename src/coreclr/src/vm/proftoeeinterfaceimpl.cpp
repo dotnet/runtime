@@ -2503,7 +2503,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
@@ -4978,7 +4978,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -6517,7 +6517,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
         ILCodeVersion ilCodeVersion = NULL;
         {
-            CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
 
             ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -8386,7 +8386,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
         if ((pParam->pData->infoFlags & COR_PRF_SNAPSHOT_X86_OPTIMIZED) != 0)
         {
 #ifndef _TARGET_X86_
-            // If check in the begining of DoStackSnapshot (to return E_INVALIDARG) should
+            // If check in the beginning of DoStackSnapshot (to return E_INVALIDARG) should
             // make this unreachable
             _ASSERTE(!"COR_PRF_SNAPSHOT_X86_OPTIMIZED on non-X86 should be unreachable!");
 #else

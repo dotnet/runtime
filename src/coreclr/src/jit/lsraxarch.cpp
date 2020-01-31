@@ -787,9 +787,22 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
 #endif
             return false;
 
+        case GT_ADD:
+        case GT_SUB:
+        case GT_DIV:
+        {
+            return !varTypeIsFloating(tree->TypeGet()) || !compiler->canUseVexEncoding();
+        }
+
         // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
         case GT_MUL:
+        {
+            if (varTypeIsFloating(tree->TypeGet()))
+            {
+                return !compiler->canUseVexEncoding();
+            }
             return (!tree->gtGetOp2()->isContainedIntOrIImmed() && !tree->gtGetOp1()->isContainedIntOrIImmed());
+        }
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:

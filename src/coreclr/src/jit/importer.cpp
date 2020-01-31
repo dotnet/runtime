@@ -3632,7 +3632,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
-                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen);
+                GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }
             else
@@ -5815,6 +5815,9 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Return Value:
 //   Number of IL bytes matched and imported, -1 otherwise
 //
+// Notes:
+//   pResolvedToken is known to be a value type; ref type boxing
+//   is handled in the CEE_BOX clause.
 
 int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp)
 {
@@ -5854,15 +5857,46 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             // box + br_true/false
             if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
             {
-                if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
+                GenTree* const treeToBox       = impStackTop().val;
+                bool           canOptimize     = true;
+                GenTree*       treeToNullcheck = nullptr;
+
+                // Can the thing being boxed cause a side effect?
+                if ((treeToBox->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    // Is this a side effect we can replicate cheaply?
+                    if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
+                        treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
+                    {
+                        // Yes, we just need to perform a null check.
+                        treeToNullcheck = treeToBox->AsOp()->gtOp1;
+                    }
+                    else
+                    {
+                        canOptimize = false;
+                    }
+                }
+
+                if (canOptimize)
                 {
                     CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
                     if (boxHelper == CORINFO_HELP_BOX)
                     {
-                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n");
+                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as %sconstant\n",
+                                treeToNullcheck == nullptr ? "" : "nullcheck+");
                         impPopStack();
 
-                        impPushOnStack(gtNewIconNode(1), typeInfo(TI_INT));
+                        GenTree* result = gtNewIconNode(1);
+
+                        if (treeToNullcheck != nullptr)
+                        {
+                            GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, treeToNullcheck);
+                            compCurBB->bbFlags |= BBF_HAS_NULLCHECK;
+                            optMethodFlags |= OMF_HAS_NULLCHECK;
+                            result = gtNewOperNode(GT_COMMA, TYP_INT, nullcheck, result);
+                        }
+
+                        impPushOnStack(result, typeInfo(TI_INT));
                         return 0;
                     }
                 }
@@ -11476,7 +11510,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             case CEE_RET:
                 prefixFlags &= ~PREFIX_TAILCALL; // ret without call before it
             RET:
-                if (!impReturnInstruction(block, prefixFlags, opcode))
+                if (!impReturnInstruction(prefixFlags, opcode))
                 {
                     return; // abort
                 }
@@ -12985,6 +13019,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
                             {
                                 op1->ChangeOper(GT_NULLCHECK);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
                                 op1->gtType = TYP_BYTE;
                             }
                             else
@@ -13027,7 +13063,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 if (tiVerificationNeeded)
                 {
-                    // Dup could start the begining of delegate creation sequence, remember that
+                    // Dup could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 1;
                     impStackTop(0);
                 }
@@ -13348,7 +13384,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (tiVerificationNeeded)
                 {
-                    // LDFTN could start the begining of delegate creation sequence, remember that
+                    // LDFTN could start the beginning of delegate creation sequence, remember that
                     delegateCreateStart = codeAddr - 2;
 
                     // check any constraints on the callee's class and type parameters
@@ -15197,7 +15233,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                 GenTree* boxPayloadAddress =
                                     gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
                                 GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
-                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                block->bbFlags |= BBF_HAS_NULLCHECK;
+                                optMethodFlags |= OMF_HAS_NULLCHECK;
+                                GenTree* result = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
                                 impPushOnStack(result, tiRetVal);
                                 break;
                             }
@@ -15557,23 +15595,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_THROW:
 
-                if (compIsForInlining())
-                {
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // TODO: Will this be too strict, given that we will inline many basic blocks?
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-                    /* Do we have just the exception on the stack ?*/
-
-                    if (verCurrentState.esStackDepth != 1)
-                    {
-                        /* if not, just don't inline the method */
-
-                        compInlineResult->NoteFatal(InlineObservation::CALLEE_THROW_WITH_INVALID_STACK);
-                        return;
-                    }
-                }
-
                 if (tiVerificationNeeded)
                 {
                     tiRetVal = impStackTop().seTypeInfo;
@@ -15584,10 +15605,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                block->bbSetRunRarely(); // any block with a throw is rare
-                /* Pop the exception object and create the 'throw' helper call */
+                // Any block with a throw is rarely executed.
+                block->bbSetRunRarely();
 
+                // Pop the exception object and create the 'throw' helper call
                 op1 = gtNewHelperCallNode(CORINFO_HELP_THROW, TYP_VOID, gtNewCallArgs(impPopStack().val));
+
+            // Fall through to clear out the eval stack.
 
             EVAL_APPEND:
                 if (verCurrentState.esStackDepth > 0)
@@ -15976,14 +16000,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (opts.OptimizationEnabled())
                 {
                     /* Use GT_ARR_LENGTH operator so rng check opts see this */
-                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length);
-
-                    /* Mark the block as containing a length expression */
-
-                    if (op1->gtOper == GT_LCL_VAR)
-                    {
-                        block->bbFlags |= BBF_HAS_IDX_LEN;
-                    }
+                    GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_Array__length, block);
 
                     op1 = arrLen;
                 }
@@ -16222,7 +16239,7 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 //    registers return values to suitable temps.
 //
 // Arguments:
-//     op -- call returning a struct in a registers
+//     op -- call returning a struct in registers
 //     hClass -- class handle for struct
 //
 // Returns:
@@ -16246,11 +16263,20 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE 
 }
 #endif // FEATURE_MULTIREG_RET
 
-// do import for a return
-// returns false if inlining was aborted
-// opcode can be ret or call in the case of a tail.call
-bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& opcode)
+//------------------------------------------------------------------------
+// impReturnInstruction: import a return or an explicit tail call
+//
+// Arguments:
+//     prefixFlags -- active IL prefixes
+//     opcode -- [in, out] IL opcode
+//
+// Returns:
+//     True if import was successful (may fail for some inlinees)
+//
+bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 {
+    const bool isTailCall = (prefixFlags & PREFIX_TAILCALL) != 0;
+
     if (tiVerificationNeeded)
     {
         verVerifyThisPtrInitialised();
@@ -16302,7 +16328,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                       (varTypeIsStruct(op2) && varTypeIsStruct(info.compRetType)));
 
 #ifdef DEBUG
-            if (opts.compGcChecks && info.compRetType == TYP_REF)
+            if (!isTailCall && opts.compGcChecks && (info.compRetType == TYP_REF))
             {
                 // DDB 3483  : JIT Stress: early termination of GC ref's life time in exception code path
                 // VSW 440513: Incorrect gcinfo on the return value under COMPlus_JitGCChecks=1 for methods with
@@ -16709,7 +16735,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
     }
 
     // We must have imported a tailcall and jumped to RET
-    if (prefixFlags & PREFIX_TAILCALL)
+    if (isTailCall)
     {
 #if defined(FEATURE_CORECLR) || !defined(_TARGET_AMD64_)
         // Jit64 compat:
@@ -19607,8 +19633,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Don't inline if inlining into root method is disabled.
-    if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
+    // Don't inline if inlining into this method is disabled.
+    if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
         return;
@@ -19983,7 +20009,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    const bool doPrint = JitConfig.JitPrintDevirtualizedMethods() == 1;
+    // Optionally, print info on devirtualization
+    Compiler* const rootCompiler = impInlineRoot();
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodName,
+                                                                           rootCompiler->info.compClassName,
+                                                                           &rootCompiler->info.compMethodInfo->args);
+
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.

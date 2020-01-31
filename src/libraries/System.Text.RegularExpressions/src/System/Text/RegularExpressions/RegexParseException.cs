@@ -11,14 +11,10 @@ namespace System.Text.RegularExpressions
     {
         private readonly RegexParseError _error; // tests access this via private reflection
 
-        /// <summary>
-        /// The error that happened during parsing.
-        /// </summary>
+        /// <summary>Gets the error that happened during parsing.</summary>
         public RegexParseError Error => _error;
 
-        /// <summary>
-        /// The offset in the supplied pattern.
-        /// </summary>
+        /// <summary>Gets the offset in the supplied pattern.</summary>
         public int Offset { get; }
 
         public RegexParseException(RegexParseError error, int offset, string message) : base(message)
@@ -27,14 +23,10 @@ namespace System.Text.RegularExpressions
             Offset = offset;
         }
 
-        private RegexParseException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.SetType(typeof(ArgumentException)); // To maintain serialization support with netfx.
+            info.SetType(typeof(ArgumentException)); // To maintain serialization support with .NET Framework.
         }
     }
 }

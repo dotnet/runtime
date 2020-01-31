@@ -23,11 +23,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     (ushort)options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ConnectionOpenDelegate(
+            QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.ConnectionOpenDelegate(
                 _nativeObjPtr,
                 MsQuicConnection.NativeCallbackHandler,
                 IntPtr.Zero,
-                out IntPtr connectionPtr));
+                out IntPtr connectionPtr),
+                "Could not open the connection.");
 
             return connectionPtr;
         }
@@ -50,11 +51,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                                     (ushort)options.MaxUnidirectionalStreams);
             }
 
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.ListenerOpenDelegate(
+            QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.ListenerOpenDelegate(
                 _nativeObjPtr,
                 MsQuicListener.NativeCallbackHandler,
                 IntPtr.Zero,
-                out IntPtr listenerPointer));
+                out IntPtr listenerPointer),
+                "Could not open listener.");
 
             return listenerPointer;
         }
@@ -121,11 +123,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
           QUIC_PARAM_SESSION param,
           MsQuicNativeMethods.QuicBuffer buf)
         {
-            MsQuicStatusException.ThrowIfFailed(MsQuicApi.Api.UnsafeSetParam(
+            QuicExceptionHelpers.ThrowIfFailed(MsQuicApi.Api.UnsafeSetParam(
                 _nativeObjPtr,
                 (uint)QUIC_PARAM_LEVEL.SESSION,
                 (uint)param,
-                buf));
+                buf),
+                "Could not set parameter on session.");
         }
 
         ~MsQuicSession()

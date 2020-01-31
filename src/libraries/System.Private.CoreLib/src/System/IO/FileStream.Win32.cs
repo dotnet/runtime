@@ -42,7 +42,7 @@ namespace System.IO
             {
                 Debug.Assert(_path != null);
                 return ValidateFileHandle(
-                    Interop.Kernel32.CreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
+                    Interop.Kernel32.CreateFile(_path, fAccess, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
             }
         }
 

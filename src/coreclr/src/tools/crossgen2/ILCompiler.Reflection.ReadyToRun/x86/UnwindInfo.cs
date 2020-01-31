@@ -24,7 +24,7 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"\tFunctionLength: {FunctionLength}");
+            sb.AppendLine($"    FunctionLength: {FunctionLength}");
             return sb.ToString();
         }
     }

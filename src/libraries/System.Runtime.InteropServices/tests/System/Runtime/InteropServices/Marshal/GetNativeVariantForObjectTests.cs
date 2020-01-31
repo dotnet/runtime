@@ -183,7 +183,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/31077")]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();

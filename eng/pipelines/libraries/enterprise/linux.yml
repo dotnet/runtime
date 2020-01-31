@@ -50,8 +50,7 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash /repo/src/coreclr/build.sh -release -skiptests -clang9
-    docker exec linuxclient bash /repo/libraries.sh /p:CoreCLRConfiguration=Release
+    docker exec linuxclient bash -c '/repo/src/coreclr/build.sh -release -skipnuget -clang9 && /repo/libraries.sh /p:CoreCLRConfiguration=Release'
   displayName: Build product sources
 
 - bash: |

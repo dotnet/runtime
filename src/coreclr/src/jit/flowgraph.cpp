@@ -30,7 +30,7 @@ void Compiler::fgInit()
     fgFirstBBScratch = nullptr;
 
 #ifdef DEBUG
-    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods() == 1;
+    fgPrintInlinedMethods = false;
 #endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
@@ -419,23 +419,31 @@ BasicBlock* Compiler::fgNewBasicBlock(BBjumpKinds jumpKind)
     return block;
 }
 
-/*****************************************************************************
- *
- *  Ensures that fgFirstBB is a scratch BasicBlock that we have added.
- *  This can be used to add initialization code (without worrying
- *  about other blocks jumping to it).
- *
- *  Callers have to be careful that they do not mess up the order of things
- *  added to fgEnsureFirstBBisScratch in a way as to change semantics.
- */
-
+//------------------------------------------------------------------------
+// fgEnsureFirstBBisScratch: Ensure that fgFirstBB is a scratch BasicBlock
+//
+// Returns:
+//   Nothing. May allocate a new block and alter the value of fgFirstBB.
+//
+// Notes:
+//   This should be called before adding on-entry initialization code to
+//   the method, to ensure that fgFirstBB is not part of a loop.
+//
+//   Does nothing, if fgFirstBB is already a scratch BB. After calling this,
+//   fgFirstBB may already contain code. Callers have to be careful
+//   that they do not mess up the order of things added to this block and
+//   inadvertently change semantics.
+//
+//   We maintain the invariant that a scratch BB ends with BBJ_NONE or
+//   BBJ_ALWAYS, so that when adding independent bits of initialization,
+//   callers can generally append to the fgFirstBB block without worring
+//   about what code is there already.
+//
+//   Can be called at any time, and can be called multiple times.
+//
 void Compiler::fgEnsureFirstBBisScratch()
 {
-    // This method does not update predecessor lists and so must only be called before they are computed.
-    assert(!fgComputePredsDone);
-
     // Have we already allocated a scratch block?
-
     if (fgFirstBBisScratch())
     {
         return;
@@ -453,6 +461,15 @@ void Compiler::fgEnsureFirstBBisScratch()
             block->inheritWeight(fgFirstBB);
         }
 
+        // The first block has an implicit ref count which we must
+        // remove. Note the ref count could be greater that one, if
+        // the first block is not scratch and is targeted by a
+        // branch.
+        assert(fgFirstBB->bbRefs >= 1);
+        fgFirstBB->bbRefs--;
+
+        // The new scratch bb will fall through to the old first bb
+        fgAddRefPred(fgFirstBB, block);
         fgInsertBBbefore(fgFirstBB, block);
     }
     else
@@ -466,6 +483,9 @@ void Compiler::fgEnsureFirstBBisScratch()
 
     block->bbFlags |= (BBF_INTERNAL | BBF_IMPORTED);
 
+    // This new first BB has an implicit ref, and no others.
+    block->bbRefs = 1;
+
     fgFirstBBScratch = fgFirstBB;
 
 #ifdef DEBUG
@@ -476,6 +496,12 @@ void Compiler::fgEnsureFirstBBisScratch()
 #endif
 }
 
+//------------------------------------------------------------------------
+// fgFirstBBisScratch: Check if fgFirstBB is a scratch block
+//
+// Returns:
+//   true if fgFirstBB is a scratch block.
+//
 bool Compiler::fgFirstBBisScratch()
 {
     if (fgFirstBBScratch != nullptr)
@@ -497,6 +523,15 @@ bool Compiler::fgFirstBBisScratch()
     }
 }
 
+//------------------------------------------------------------------------
+// fgBBisScratch: Check if a given block is a scratch block.
+//
+// Arguments:
+//   block - block in question
+//
+// Returns:
+//   true if this block is the first block and is a scratch block.
+//
 bool Compiler::fgBBisScratch(BasicBlock* block)
 {
     return fgFirstBBisScratch() && (block == fgFirstBB);
@@ -8244,7 +8279,7 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
     // Convert the BBJ_RETURN to BBJ_ALWAYS, jumping to genReturnBB.
     block->bbJumpKind = BBJ_ALWAYS;
     block->bbJumpDest = genReturnBB;
-    block->bbJumpDest->bbRefs++;
+    fgAddRefPred(genReturnBB, block);
 
 #ifdef DEBUG
     if (verbose)
@@ -8531,7 +8566,7 @@ private:
         newReturnBB->bbRefs     = 1; // bbRefs gets update later, for now it should be 1
         comp->fgReturnCount++;
 
-        newReturnBB->bbFlags |= BBF_INTERNAL;
+        newReturnBB->bbFlags |= (BBF_INTERNAL | BBF_JMP_TARGET);
 
         noway_assert(newReturnBB->bbNext == nullptr);
 
@@ -10633,11 +10668,11 @@ void Compiler::fgUnreachableBlock(BasicBlock* block)
     }
 #endif // DEBUG
 
-    noway_assert(block->bbPrev != nullptr); // Can use this function to remove the first block
+    noway_assert(block->bbPrev != nullptr); // Can't use this function to remove the first block
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-    assert(!block->bbPrev->isBBCallAlwaysPair()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
-#endif                                            // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+    assert(!block->isBBCallAlwaysPairTail()); // can't remove the BBJ_ALWAYS of a BBJ_CALLFINALLY / BBJ_ALWAYS pair
+#endif                                        // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
 
     /* First walk the statement trees in this basic block and delete each stmt */
 
@@ -11025,8 +11060,8 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
     {
         noway_assert(block->isEmpty());
 
-        /* The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it) */
-        noway_assert((bPrev == nullptr) || !bPrev->isBBCallAlwaysPair());
+        // The block cannot follow a non-retless BBJ_CALLFINALLY (because we don't know who may jump to it).
+        noway_assert(!block->isBBCallAlwaysPairTail());
 
         /* This cannot be the last basic block */
         noway_assert(block != fgLastBB);
@@ -11268,7 +11303,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
                 if ((bPrev->bbJumpDest == bPrev->bbNext) &&
                     !fgInDifferentRegions(bPrev, bPrev->bbJumpDest)) // We don't remove a branch from Hot -> Cold
                 {
-                    if ((bPrev == fgFirstBB) || !bPrev->bbPrev->isBBCallAlwaysPair())
+                    if ((bPrev == fgFirstBB) || !bPrev->isBBCallAlwaysPairTail())
                     {
                         // It's safe to change the jump type
                         bPrev->bbJumpKind = BBJ_NONE;
@@ -11637,6 +11672,8 @@ bool Compiler::fgExpandRarelyRunBlocks()
 
                 // Check for a BBJ_CALLFINALLY followed by a rarely run paired BBJ_ALWAYS
                 //
+                // TODO-Cleanup: How can this be hit? If bbPrev starts a CallAlwaysPair, then this
+                // block must be BBJ_ALWAYS, not BBJ_CALLFINALLY.
                 if (bPrev->isBBCallAlwaysPair())
                 {
                     /* Is the next block rarely run? */
@@ -13102,6 +13139,7 @@ void Compiler::fgComputeBlockAndEdgeWeights()
     const bool usingProfileWeights = fgIsUsingProfileWeights();
     const bool isOptimizing        = opts.OptimizationEnabled();
 
+    fgModified             = false;
     fgHaveValidEdgeWeights = false;
     fgCalledCount          = BB_UNITY_WEIGHT;
 
@@ -13872,7 +13910,7 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             // A GOTO cannot be to the next block since that
             // should have been fixed by the  optimization above
             // An exception is made for a jump from Hot to Cold
-            noway_assert(block->bbJumpDest != block->bbNext || ((bPrev != nullptr) && bPrev->isBBCallAlwaysPair()) ||
+            noway_assert(block->bbJumpDest != block->bbNext || block->isBBCallAlwaysPairTail() ||
                          fgInDifferentRegions(block, block->bbNext));
 
             /* Cannot remove the first BB */
@@ -14550,7 +14588,7 @@ bool Compiler::fgOptimizeBranchToNext(BasicBlock* block, BasicBlock* bNext, Basi
             if (!(block->bbFlags & BBF_KEEP_BBJ_ALWAYS))
             {
                 // We can't remove if the BBJ_ALWAYS is part of a BBJ_CALLFINALLY pair
-                if ((bPrev == nullptr) || !bPrev->isBBCallAlwaysPair())
+                if (!block->isBBCallAlwaysPairTail())
                 {
                     /* the unconditional jump is to the next BB  */
                     block->bbJumpKind = BBJ_NONE;
@@ -16918,7 +16956,7 @@ void Compiler::fgDebugCheckUpdate()
 #if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
             // With funclets, we never get rid of the BBJ_ALWAYS part of a BBJ_CALLFINALLY/BBJ_ALWAYS pair,
             // even if we can prove that the finally block never returns.
-            && (prev == NULL || block->bbJumpKind != BBJ_ALWAYS || !prev->isBBCallAlwaysPair())
+            && !block->isBBCallAlwaysPairTail()
 #endif // FEATURE_EH_FUNCLETS
                 )
         {
@@ -16965,7 +17003,7 @@ void Compiler::fgDebugCheckUpdate()
             }
         }
 
-        bool prevIsCallAlwaysPair = ((prev != nullptr) && prev->isBBCallAlwaysPair());
+        bool prevIsCallAlwaysPair = block->isBBCallAlwaysPairTail();
 
         // Check for an unnecessary jumps to the next block
         bool doAssertOnJumpToNextBlock = false; // unless we have a BBJ_COND or BBJ_ALWAYS we can not assert
@@ -21871,6 +21909,10 @@ void Compiler::fgInline()
     {
         printf("*************** In fgInline()\n");
     }
+
+    fgPrintInlinedMethods = JitConfig.JitPrintInlinedMethods().contains(info.compMethodName, info.compClassName,
+                                                                        &info.compMethodInfo->args);
+
 #endif // DEBUG
 
     BasicBlock* block = fgFirstBB;
@@ -22890,13 +22932,13 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
             if (InlineeCompiler->fgFirstBB->bbStmtList != nullptr)
             {
                 stmtAfter = fgInsertStmtListAfter(iciBlock, stmtAfter, InlineeCompiler->fgFirstBB->firstStmt());
-
-                // Copy inlinee bbFlags to caller bbFlags.
-                const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
-                noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
-                noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
-                iciBlock->bbFlags |= inlineeBlockFlags;
             }
+
+            // Copy inlinee bbFlags to caller bbFlags.
+            const unsigned __int64 inlineeBlockFlags = InlineeCompiler->fgFirstBB->bbFlags;
+            noway_assert((inlineeBlockFlags & BBF_HAS_JMP) == 0);
+            noway_assert((inlineeBlockFlags & BBF_KEEP_BBJ_ALWAYS) == 0);
+            iciBlock->bbFlags |= inlineeBlockFlags;
 
 #ifdef DEBUG
             if (verbose)
@@ -23146,6 +23188,11 @@ _Done:
 #endif // DEBUG
         // Replace the call with the return expression
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
+
+        if (bottomBlock != nullptr)
+        {
+            bottomBlock->bbFlags |= InlineeCompiler->fgLastBB->bbFlags & BBF_SPLIT_GAINED;
+        }
     }
 
     //

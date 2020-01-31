@@ -37,7 +37,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             NativeWriter hashtableWriter = new NativeWriter();
 
             Section hashtableSection = hashtableWriter.NewSection();
@@ -47,15 +46,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Dictionary<byte[], BlobVertex> uniqueFixups = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
             Dictionary<byte[], BlobVertex> uniqueSignatures = new Dictionary<byte[], BlobVertex>(ByteArrayComparer.Instance);
 
-            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 if (method.Method.HasInstantiation || method.Method.OwningType.HasInstantiation)
                 {
-                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
+                    int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
                     bool enforceOwningType = false;
                     ModuleToken moduleToken = method.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
-                    if (moduleToken.Module != r2rFactory.InputModuleContext.GlobalContext)
+                    if (moduleToken.Module != factory.InputModuleContext.GlobalContext)
                     {
                         enforceOwningType = true;
                     }

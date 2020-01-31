@@ -28,7 +28,18 @@ namespace System.Text.Json
                     return WriteEndObject(ref state);
                 }
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+                if (options.ReferenceHandling.ShouldWritePreservedReferences())
+                {
+                    if (WriteReference(ref state, writer, options, ClassType.Object, state.Current.CurrentValue))
+                    {
+                        return WriteEndObject(ref state);
+                    }
+                }
+                else
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Object, writer, options);
+                }
+
                 state.Current.MoveToNextProperty = true;
             }
 

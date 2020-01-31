@@ -48,8 +48,6 @@ namespace System
         // RedHat family covers RedHat and CentOS
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsNotRedHatFamily => !IsRedHatFamily;
-        public static bool IsRedHatFamily6 => IsRedHatFamilyAndVersion(6);
-        public static bool IsNotRedHatFamily6 => !IsRedHatFamily6;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;

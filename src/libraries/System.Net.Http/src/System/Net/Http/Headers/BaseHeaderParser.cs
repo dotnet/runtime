@@ -13,6 +13,14 @@ namespace System.Net.Http.Headers
         {
         }
 
+        /// <summary>
+        /// Parses a full header or a segment of a multi-value header.
+        /// </summary>
+        /// <param name="value">The header value string to parse.</param>
+        /// <param name="startIndex">The index to begin parsing at.</param>
+        /// <param name="storeValue"></param>
+        /// <param name="parsedValue">The resulting value parsed.</param>
+        /// <returns>If a value could be parsed, the number of characters used to parse that value. Otherwise, 0.</returns>
         protected abstract int GetParsedValueLength(string value, int startIndex, object storeValue,
             out object parsedValue);
 

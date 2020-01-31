@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Security.Claims
@@ -27,13 +28,13 @@ namespace System.Security.Claims
             UserData = 128,
         }
 
-        private readonly byte[] _userSerializationData;
+        private readonly byte[]? _userSerializationData;
 
         private readonly string _issuer;
         private readonly string _originalIssuer;
-        private Dictionary<string, string> _properties;
+        private Dictionary<string, string>? _properties;
 
-        private readonly ClaimsIdentity _subject;
+        private readonly ClaimsIdentity? _subject;
         private readonly string _type;
         private readonly string _value;
         private readonly string _valueType;
@@ -56,7 +57,7 @@ namespace System.Security.Claims
         /// <param name="reader">a <see cref="BinaryReader"/> pointing to a <see cref="Claim"/>.</param>
         /// <param name="subject"> the value for <see cref="Claim.Subject"/>, which is the <see cref="ClaimsIdentity"/> that has these claims.</param>
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
-        public Claim(BinaryReader reader, ClaimsIdentity subject)
+        public Claim(BinaryReader reader, ClaimsIdentity? subject)
         {
             if (reader == null)
             {
@@ -157,7 +158,7 @@ namespace System.Security.Claims
         /// <seealso cref="ClaimTypes"/>
         /// <seealso cref="ClaimValueTypes"/>
         public Claim(string type, string value)
-            : this(type, value, ClaimValueTypes.String, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, (ClaimsIdentity)null)
+            : this(type, value, ClaimValueTypes.String, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, (ClaimsIdentity?)null)
         {
         }
 
@@ -176,8 +177,8 @@ namespace System.Security.Claims
         /// <seealso cref="ClaimsIdentity"/>
         /// <seealso cref="ClaimTypes"/>
         /// <seealso cref="ClaimValueTypes"/>
-        public Claim(string type, string value, string valueType)
-            : this(type, value, valueType, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, (ClaimsIdentity)null)
+        public Claim(string type, string value, string? valueType)
+            : this(type, value, valueType, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, (ClaimsIdentity?)null)
         {
         }
 
@@ -196,8 +197,8 @@ namespace System.Security.Claims
         /// <seealso cref="ClaimsIdentity"/>
         /// <seealso cref="ClaimTypes"/>
         /// <seealso cref="ClaimValueTypes"/>
-        public Claim(string type, string value, string valueType, string issuer)
-            : this(type, value, valueType, issuer, issuer, (ClaimsIdentity)null)
+        public Claim(string type, string value, string? valueType, string? issuer)
+            : this(type, value, valueType, issuer, issuer, (ClaimsIdentity?)null)
         {
         }
 
@@ -216,8 +217,8 @@ namespace System.Security.Claims
         /// <seealso cref="ClaimsIdentity"/>
         /// <seealso cref="ClaimTypes"/>
         /// <seealso cref="ClaimValueTypes"/>
-        public Claim(string type, string value, string valueType, string issuer, string originalIssuer)
-            : this(type, value, valueType, issuer, originalIssuer, (ClaimsIdentity)null)
+        public Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer)
+            : this(type, value, valueType, issuer, originalIssuer, (ClaimsIdentity?)null)
         {
         }
 
@@ -234,7 +235,7 @@ namespace System.Security.Claims
         /// <seealso cref="ClaimsIdentity"/>
         /// <seealso cref="ClaimTypes"/>
         /// <seealso cref="ClaimValueTypes"/>
-        public Claim(string type, string value, string valueType, string issuer, string originalIssuer, ClaimsIdentity subject)
+        public Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject)
             : this(type, value, valueType, issuer, originalIssuer, subject, null, null)
         {
         }
@@ -251,7 +252,7 @@ namespace System.Security.Claims
         /// <param name="subject">The subject that this claim describes.</param>
         /// <param name="propertyKey">This allows adding a property when adding a Claim.</param>
         /// <param name="propertyValue">The value associated with the property.</param>
-        internal Claim(string type, string value, string valueType, string issuer, string originalIssuer, ClaimsIdentity subject, string propertyKey, string propertyValue)
+        internal Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject, string? propertyKey, string? propertyValue)
         {
             if (type == null)
             {
@@ -273,7 +274,7 @@ namespace System.Security.Claims
             if (propertyKey != null)
             {
                 _properties = new Dictionary<string, string>();
-                _properties[propertyKey] = propertyValue;
+                _properties[propertyKey] = propertyValue!;
             }
         }
 
@@ -284,7 +285,7 @@ namespace System.Security.Claims
         /// <remarks><see cref="Claim.Subject"/>will be set to 'null'.</remarks>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
         protected Claim(Claim other)
-            : this(other, (other == null ? (ClaimsIdentity)null : other._subject))
+            : this(other, (other == null ? (ClaimsIdentity?)null : other._subject))
         {
         }
 
@@ -295,7 +296,7 @@ namespace System.Security.Claims
         /// <param name="subject">the <see cref="ClaimsIdentity"/> to assign to <see cref="Claim.Subject"/>.</param>
         /// <remarks><see cref="Claim.Subject"/>will be set to 'subject'.</remarks>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
-        protected Claim(Claim other, ClaimsIdentity subject)
+        protected Claim(Claim other, ClaimsIdentity? subject)
         {
             if (other == null)
                 throw new ArgumentNullException(nameof(other));
@@ -320,7 +321,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Contains any additional data provided by a derived type, typically set when calling <see cref="WriteTo(BinaryWriter, byte[])"/>.
         /// </summary>
-        protected virtual byte[] CustomSerializationData
+        protected virtual byte[]? CustomSerializationData
         {
             get
             {
@@ -367,7 +368,7 @@ namespace System.Security.Claims
         /// <summary>
         /// Gets the subject of the <see cref="Claim"/>.
         /// </summary>
-        public ClaimsIdentity Subject
+        public ClaimsIdentity? Subject
         {
             get { return _subject; }
         }
@@ -403,7 +404,7 @@ namespace System.Security.Claims
         /// </summary>
         public virtual Claim Clone()
         {
-            return Clone((ClaimsIdentity)null);
+            return Clone((ClaimsIdentity?)null);
         }
 
         /// <summary>
@@ -411,7 +412,7 @@ namespace System.Security.Claims
         /// </summary>
         /// <param name="identity">the value for <see cref="Claim.Subject"/>, which is the <see cref="ClaimsIdentity"/> that has these claims.</param>
         /// <remarks><see cref="Claim.Subject"/> will be set to 'identity'.</remarks>
-        public virtual Claim Clone(ClaimsIdentity identity)
+        public virtual Claim Clone(ClaimsIdentity? identity)
         {
             return new Claim(this, identity);
         }
@@ -432,7 +433,7 @@ namespace System.Security.Claims
         /// <param name="writer">the <see cref="BinaryWriter"/> to use for data storage.</param>
         /// <param name="userData">additional data provided by derived type.</param>
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
-        protected virtual void WriteTo(BinaryWriter writer, byte[] userData)
+        protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
             if (writer == null)
             {
@@ -514,7 +515,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
             {
-                writer.Write(_properties.Count);
+                writer.Write(_properties!.Count);
                 foreach (var kvp in _properties)
                 {
                     writer.Write(kvp.Key);
@@ -524,7 +525,7 @@ namespace System.Security.Claims
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
             {
-                writer.Write(userData.Length);
+                writer.Write(userData!.Length);
                 writer.Write(userData);
             }
 

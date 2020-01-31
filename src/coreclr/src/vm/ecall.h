@@ -98,6 +98,9 @@ class ECall
         static void DynamicallyAssignFCallImpl(PCODE impl, DWORD index);
 
         static void PopulateManagedStringConstructors();
+
+        static void PopulateManagedCastHelpers();
+
 #ifdef DACCESS_COMPILE
         // Enumerates all gFCallMethods for minidumps.
         static void EnumFCallMethods();

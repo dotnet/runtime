@@ -684,13 +684,12 @@ const char* refCntWtd2str(unsigned refCntWtd)
 #if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
-// Contains: check if the range includes a particular method
+// Contains: check if the range includes a particular hash
 //
 // Arguments:
-//    info   -- jit interface pointer
-//    method -- method handle for the method of interest
+//    hash -- hash value to check
 
-bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method)
+bool ConfigMethodRange::Contains(unsigned hash)
 {
     _ASSERT(m_inited == 1);
 
@@ -699,10 +698,6 @@ bool ConfigMethodRange::Contains(ICorJitInfo* info, CORINFO_METHOD_HANDLE method
     {
         return true;
     }
-
-    // Check the hash. Note we can't use the cached hash here since
-    // we may not be asking about the method currently being jitted.
-    const unsigned hash = info->getMethodHash(method);
 
     for (unsigned i = 0; i < m_lastRange; i++)
     {
@@ -756,16 +751,31 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
 
     while ((*p != 0) && (lastRange < m_entries))
     {
-        while (*p == L' ')
+        while ((*p == L' ') || (*p == L','))
         {
             p++;
         }
 
         int i = 0;
 
-        while (L'0' <= *p && *p <= L'9')
+        while (((L'0' <= *p) && (*p <= L'9')) || ((L'A' <= *p) && (*p <= L'F')) || ((L'a' <= *p) && (*p <= L'f')))
         {
-            int j = 10 * i + ((*p++) - L'0');
+            int n = 0;
+
+            if ((L'0' <= *p) && (*p <= L'9'))
+            {
+                n = (*p++) - L'0';
+            }
+            else if ((L'A' <= *p) && (*p <= L'F'))
+            {
+                n = (*p++) - L'A';
+            }
+            else if ((L'a' <= *p) && (*p <= L'f'))
+            {
+                n = (*p++) - L'a';
+            }
+
+            int j = 16 * i + n;
 
             // Check for overflow
             if ((m_badChar != 0) && (j <= i))
@@ -832,6 +842,33 @@ void ConfigMethodRange::InitRanges(const WCHAR* rangeStr, unsigned capacity)
     assert(lastRange <= m_entries);
     m_lastRange = lastRange;
     m_inited    = 1;
+}
+
+//------------------------------------------------------------------------
+// Dump: dump hash ranges to stdout
+//
+// Arguments:
+//    hash -- hash value to check
+
+void ConfigMethodRange::Dump()
+{
+    if (m_inited != 1)
+    {
+        printf("<uninitialized method range>\n");
+        return;
+    }
+
+    if (m_lastRange == 0)
+    {
+        printf("<empty method range>\n");
+        return;
+    }
+
+    printf("<method range with %d entries>\n", m_lastRange);
+    for (unsigned i = 0; i < m_lastRange; i++)
+    {
+        printf("%i [%u-%u]\n", i, m_ranges[i].m_low, m_ranges[i].m_high);
+    }
 }
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)

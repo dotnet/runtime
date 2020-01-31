@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly SignatureContext _signatureContext;
 
         public DelayLoadHelperMethodImport(
-            ReadyToRunCodegenNodeFactory factory, 
+            NodeFactory factory, 
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             MethodWithToken method,
@@ -51,8 +51,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Require compilation of the canonical version for instantiating stubs
                 MethodDesc canonMethod = _method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-                ISymbolNode canonMethodNode = r2rFactory.MethodEntrypoint(
+                ISymbolNode canonMethodNode = factory.MethodEntrypoint(
                     new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
                     isUnboxingStub: false,
                     isInstantiatingStub: false,

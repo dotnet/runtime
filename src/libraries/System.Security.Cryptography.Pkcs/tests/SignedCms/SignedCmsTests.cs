@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
             SignedCms cms = new SignedCms(SubjectIdentifierType.NoSignature, contentInfo, detached);
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(() => cms.ComputeSignature());
             }
@@ -761,7 +761,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                         IncludeOption = X509IncludeOption.None,
                     });
 
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.Throws<NullReferenceException>(sign);
             }
@@ -1275,10 +1275,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
         [Theory]
         [InlineData(Oids.Pkcs7Data, "0102", false)]
-        // NetFX PKCS7: The length exceeds the payload, so this fails.
+        // .NET Framework PKCS7: The length exceeds the payload, so this fails.
         [InlineData("0.0", "0102", true)]
         [InlineData("0.0", "04020102", false)]
-        // NetFX PKCS7: The payload exceeds the length, so this fails.
+        // .NET Framework PKCS7: The payload exceeds the length, so this fails.
         [InlineData("0.0", "0402010203", true)]
         [InlineData("0.0", "010100", false)]
         [InlineData(Oids.Pkcs7Hashed, "010100", false)]
@@ -1297,7 +1297,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 catch (CryptographicException) when (netfxProblem)
                 {
                     // When no signed or unsigned attributes are present and the signer uses
-                    // IssuerAndSerial as the identifier type, NetFx uses an older PKCS7 encoding
+                    // IssuerAndSerial as the identifier type, .NET Framework uses an older PKCS7 encoding
                     // of the current CMS one.  The older encoding fails on these inputs because of a
                     // difference in PKCS7 vs CMS encoding of values using types other than Pkcs7Data.
                     return;

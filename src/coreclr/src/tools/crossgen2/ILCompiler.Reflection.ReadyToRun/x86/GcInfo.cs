@@ -52,14 +52,19 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\tCodeLength: {CodeLength} bytes");
-            sb.AppendLine($"\tInfoHdr:");
+            sb.AppendLine($"    CodeLength: {CodeLength} bytes");
+            sb.AppendLine($"    InfoHdr:");
             sb.AppendLine($"{Header}");
             sb.AppendLine($"{SlotTable}");
 
-            sb.AppendLine($"\tSize: {Size} bytes");
+            sb.AppendLine($"    Size: {Size} bytes");
 
             return sb.ToString();
+        }
+
+        public string GetRegisterName(int registerNumber)
+        {
+            return ((x86.Registers)registerNumber).ToString();
         }
 
         private void AddNewTransition(BaseGcTransition transition)

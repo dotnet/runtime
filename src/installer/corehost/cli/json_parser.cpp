@@ -84,9 +84,11 @@ bool json_parser_t::parse_json(const pal::string_t& context)
     // UTF-8 and the host expects wide strings.  m_document will store
     // data in UTF-16 (with pal::char_t as the character type), but it
     // has to know that data is encoded in UTF-8 to convert during parsing.
-    m_document.Parse<rapidjson::ParseFlag::kParseStopWhenDoneFlag, rapidjson::UTF8<>>(m_json.data());
+    constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag
+                         | rapidjson::ParseFlag::kParseCommentsFlag;
+    m_document.Parse<flags, rapidjson::UTF8<>>(m_json.data());
 #else
-    m_document.ParseInsitu(m_json.data());
+    m_document.ParseInsitu<rapidjson::ParseFlag::kParseCommentsFlag>(m_json.data());
 #endif
 
     if (m_document.HasParseError())
@@ -116,7 +118,7 @@ bool json_parser_t::parse_stream(pal::istream_t& stream,
 {
     if (!stream.good())
     {
-        trace::error(_X("Cannot use stream for resource [%s]"), context.c_str());
+        trace::error(_X("Cannot use stream for resource [%s]: %s"), context.c_str(), pal::strerror(errno));
         return false;
     }
 

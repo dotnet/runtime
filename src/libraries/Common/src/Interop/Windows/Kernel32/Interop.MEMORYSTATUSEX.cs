@@ -12,15 +12,15 @@ internal static partial class Interop
         internal struct MEMORYSTATUSEX
         {
             // The length field must be set to the size of this data structure.
-            internal int length;
-            internal int memoryLoad;
-            internal ulong totalPhys;
-            internal ulong availPhys;
-            internal ulong totalPageFile;
-            internal ulong availPageFile;
-            internal ulong totalVirtual;
-            internal ulong availVirtual;
-            internal ulong availExtendedVirtual;
+            internal uint dwLength;
+            internal uint dwMemoryLoad;
+            internal ulong ullTotalPhys;
+            internal ulong ullAvailPhys;
+            internal ulong ullTotalPageFile;
+            internal ulong ullAvailPageFile;
+            internal ulong ullTotalVirtual;
+            internal ulong ullAvailVirtual;
+            internal ulong ullAvailExtendedVirtual;
         }
     }
 }

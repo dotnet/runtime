@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using AstUtils = System.Linq.Expressions.Utils;
 using static System.Linq.Expressions.CachedReflectionInfo;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Dynamic
 {
@@ -47,7 +48,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the get operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryGetMember(GetMemberBinder binder, out object result)
+        public virtual bool TryGetMember(GetMemberBinder binder, out object? result)
         {
             result = null;
             return false;
@@ -61,7 +62,7 @@ namespace System.Dynamic
         /// <param name="binder">The binder provided by the call site.</param>
         /// <param name="value">The value to set.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        public virtual bool TrySetMember(SetMemberBinder binder, object value) => false;
+        public virtual bool TrySetMember(SetMemberBinder binder, object? value) => false;
 
         /// <summary>
         /// Provides the implementation of deleting a member.  Derived classes can override
@@ -82,7 +83,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the invocation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+        public virtual bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
         {
             result = null;
             return false;
@@ -97,7 +98,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the conversion.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryConvert(ConvertBinder binder, out object result)
+        public virtual bool TryConvert(ConvertBinder binder, out object? result)
         {
             result = null;
             return false;
@@ -113,7 +114,7 @@ namespace System.Dynamic
         /// <param name="result">The created instance.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryCreateInstance(CreateInstanceBinder binder, object[] args, out object result)
+        public virtual bool TryCreateInstance(CreateInstanceBinder binder, object?[]? args, [NotNullWhen(true)] out object? result)
         {
             result = null;
             return false;
@@ -129,7 +130,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the invocation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryInvoke(InvokeBinder binder, object[] args, out object result)
+        public virtual bool TryInvoke(InvokeBinder binder, object?[]? args, out object? result)
         {
             result = null;
             return false;
@@ -145,7 +146,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
+        public virtual bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object? result)
         {
             result = null;
             return false;
@@ -160,7 +161,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryUnaryOperation(UnaryOperationBinder binder, out object result)
+        public virtual bool TryUnaryOperation(UnaryOperationBinder binder, out object? result)
         {
             result = null;
             return false;
@@ -176,7 +177,7 @@ namespace System.Dynamic
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
+        public virtual bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
         {
             result = null;
             return false;
@@ -192,7 +193,7 @@ namespace System.Dynamic
         /// <param name="value">The value to set.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate")]
-        public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object value) => false;
+        public virtual bool TrySetIndex(SetIndexBinder binder, object[] indexes, object? value) => false;
 
         /// <summary>
         /// Provides the implementation of performing a delete index operation.  Derived classes
@@ -232,7 +233,7 @@ namespace System.Dynamic
                         DynamicObject_TryGetMember,
                         binder,
                         s_noArgs,
-                        (MetaDynamic @this, GetMemberBinder b, DynamicMetaObject e) => b.FallbackGetMember(@this, e)
+                        (MetaDynamic @this, GetMemberBinder b, DynamicMetaObject? e) => b.FallbackGetMember(@this, e)
                     );
                 }
 
@@ -250,7 +251,7 @@ namespace System.Dynamic
                         binder,
                         s_noArgs,
                         value.Expression,
-                        (MetaDynamic @this, SetMemberBinder b, DynamicMetaObject e) => b.FallbackSetMember(@this, localValue, e)
+                        (MetaDynamic @this, SetMemberBinder b, DynamicMetaObject? e) => b.FallbackSetMember(@this, localValue, e)
                     );
                 }
 
@@ -265,7 +266,7 @@ namespace System.Dynamic
                         DynamicObject_TryDeleteMember,
                         binder,
                         s_noArgs,
-                        (MetaDynamic @this, DeleteMemberBinder b, DynamicMetaObject e) => b.FallbackDeleteMember(@this, e)
+                        (MetaDynamic @this, DeleteMemberBinder b, DynamicMetaObject? e) => b.FallbackDeleteMember(@this, e)
                     );
                 }
 
@@ -280,7 +281,7 @@ namespace System.Dynamic
                         DynamicObject_TryConvert,
                         binder,
                         s_noArgs,
-                        (MetaDynamic @this, ConvertBinder b, DynamicMetaObject e) => b.FallbackConvert(@this, e)
+                        (MetaDynamic @this, ConvertBinder b, DynamicMetaObject? e) => b.FallbackConvert(@this, e)
                     );
                 }
 
@@ -313,7 +314,7 @@ namespace System.Dynamic
                         new GetBinderAdapter(binder),
                         s_noArgs,
                         binder.FallbackInvokeMember(this, args, null),
-                        (MetaDynamic @this, GetMemberBinder ignored, DynamicMetaObject e) => binder.FallbackInvoke(e, args, null)
+                        (MetaDynamic @this, GetMemberBinder ignored, DynamicMetaObject? e) => binder.FallbackInvoke(e!, args, null)
                     ),
                     null
                 );
@@ -331,7 +332,7 @@ namespace System.Dynamic
                         DynamicObject_TryCreateInstance,
                         binder,
                         GetExpressions(args),
-                        (MetaDynamic @this, CreateInstanceBinder b, DynamicMetaObject e) => b.FallbackCreateInstance(@this, localArgs, e)
+                        (MetaDynamic @this, CreateInstanceBinder b, DynamicMetaObject? e) => b.FallbackCreateInstance(@this, localArgs, e)
                     );
                 }
 
@@ -348,7 +349,7 @@ namespace System.Dynamic
                         DynamicObject_TryInvoke,
                         binder,
                         GetExpressions(args),
-                        (MetaDynamic @this, InvokeBinder b, DynamicMetaObject e) => b.FallbackInvoke(@this, localArgs, e)
+                        (MetaDynamic @this, InvokeBinder b, DynamicMetaObject? e) => b.FallbackInvoke(@this, localArgs, e)
                     );
                 }
 
@@ -365,7 +366,7 @@ namespace System.Dynamic
                         DynamicObject_TryBinaryOperation,
                         binder,
                         new[] { arg.Expression },
-                        (MetaDynamic @this, BinaryOperationBinder b, DynamicMetaObject e) => b.FallbackBinaryOperation(@this, localArg, e)
+                        (MetaDynamic @this, BinaryOperationBinder b, DynamicMetaObject? e) => b.FallbackBinaryOperation(@this, localArg, e)
                     );
                 }
 
@@ -380,7 +381,7 @@ namespace System.Dynamic
                         DynamicObject_TryUnaryOperation,
                         binder,
                         s_noArgs,
-                        (MetaDynamic @this, UnaryOperationBinder b, DynamicMetaObject e) => b.FallbackUnaryOperation(@this, e)
+                        (MetaDynamic @this, UnaryOperationBinder b, DynamicMetaObject? e) => b.FallbackUnaryOperation(@this, e)
                     );
                 }
 
@@ -397,7 +398,7 @@ namespace System.Dynamic
                         DynamicObject_TryGetIndex,
                         binder,
                         GetExpressions(indexes),
-                        (MetaDynamic @this, GetIndexBinder b, DynamicMetaObject e) => b.FallbackGetIndex(@this, localIndexes, e)
+                        (MetaDynamic @this, GetIndexBinder b, DynamicMetaObject? e) => b.FallbackGetIndex(@this, localIndexes, e)
                     );
                 }
 
@@ -416,7 +417,7 @@ namespace System.Dynamic
                         binder,
                         GetExpressions(indexes),
                         value.Expression,
-                        (MetaDynamic @this, SetIndexBinder b, DynamicMetaObject e) => b.FallbackSetIndex(@this, localIndexes, localValue, e)
+                        (MetaDynamic @this, SetIndexBinder b, DynamicMetaObject? e) => b.FallbackSetIndex(@this, localIndexes, localValue, e)
                     );
                 }
 
@@ -433,14 +434,14 @@ namespace System.Dynamic
                         DynamicObject_TryDeleteIndex,
                         binder,
                         GetExpressions(indexes),
-                        (MetaDynamic @this, DeleteIndexBinder b, DynamicMetaObject e) => b.FallbackDeleteIndex(@this, localIndexes, e)
+                        (MetaDynamic @this, DeleteIndexBinder b, DynamicMetaObject? e) => b.FallbackDeleteIndex(@this, localIndexes, e)
                     );
                 }
 
                 return base.BindDeleteIndex(binder, indexes);
             }
 
-            private delegate DynamicMetaObject Fallback<TBinder>(MetaDynamic @this, TBinder binder, DynamicMetaObject errorSuggestion);
+            private delegate DynamicMetaObject Fallback<TBinder>(MetaDynamic @this, TBinder binder, DynamicMetaObject? errorSuggestion);
 
 #pragma warning disable CA1825 // used in reference comparison, requires unique object identity
             private static readonly Expression[] s_noArgs = new Expression[0];
@@ -464,11 +465,11 @@ namespace System.Dynamic
             /// </summary>
             private static Expression ReferenceArgAssign(Expression callArgs, Expression[] args)
             {
-                ReadOnlyCollectionBuilder<Expression> block = null;
+                ReadOnlyCollectionBuilder<Expression>? block = null;
 
                 for (int i = 0; i < args.Length; i++)
                 {
-                    ParameterExpression variable = args[i] as ParameterExpression;
+                    ParameterExpression? variable = args[i] as ParameterExpression;
                     ContractUtils.Requires(variable != null, nameof(args));
 
                     if (variable.IsByRef)
@@ -503,7 +504,7 @@ namespace System.Dynamic
             /// to be passed to the method as an object[], or NoArgs to signify that
             /// the target method takes no object[] parameter.
             /// </summary>
-            private static Expression[] BuildCallArgs<TBinder>(TBinder binder, Expression[] parameters, Expression arg0, Expression arg1)
+            private static Expression[] BuildCallArgs<TBinder>(TBinder binder, Expression[] parameters, Expression arg0, Expression? arg1)
                 where TBinder : DynamicMetaObjectBinder
             {
                 if (!object.ReferenceEquals(parameters, s_noArgs))
@@ -531,7 +532,7 @@ namespace System.Dynamic
             /// Helper method for generating a MetaObject which calls a
             /// specific method on Dynamic that returns a result
             /// </summary>
-            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback<TBinder> fallback, Fallback<TBinder> fallbackInvoke)
+            private DynamicMetaObject CallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, Fallback<TBinder> fallback, Fallback<TBinder>? fallbackInvoke)
                 where TBinder : DynamicMetaObjectBinder
             {
                 //
@@ -561,7 +562,7 @@ namespace System.Dynamic
             /// to the method as an object[] or NoArgs to signify that
             /// the target method takes no parameters.
             /// </summary>
-            private DynamicMetaObject BuildCallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, DynamicMetaObject fallbackResult, Fallback<TBinder> fallbackInvoke)
+            private DynamicMetaObject BuildCallMethodWithResult<TBinder>(MethodInfo method, TBinder binder, Expression[] args, DynamicMetaObject fallbackResult, Fallback<TBinder>? fallbackInvoke)
                 where TBinder : DynamicMetaObjectBinder
             {
                 if (!IsOverridden(method))
@@ -859,7 +860,7 @@ namespace System.Dynamic
                 return Expression.Convert(Expression, typeof(DynamicObject));
             }
 
-            private new DynamicObject Value => (DynamicObject)base.Value;
+            private new DynamicObject Value => (DynamicObject)base.Value!;
 
             // It is okay to throw NotSupported from this binder. This object
             // is only used by DynamicObject.GetMember--it is not expected to
@@ -872,7 +873,7 @@ namespace System.Dynamic
                 {
                 }
 
-                public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
+                public override DynamicMetaObject FallbackGetMember(DynamicMetaObject target, DynamicMetaObject? errorSuggestion)
                 {
                     throw new NotSupportedException();
                 }

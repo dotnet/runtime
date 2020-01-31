@@ -44,7 +44,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
-        [ActiveIssue(37899)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/37899")]
         public async Task ServerAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
