@@ -53,7 +53,8 @@ restore_optdata()
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
-                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs
+                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs \
+                                               /nodereuse:false
         local exit_code="$?"
         if [[ "$exit_code" != 0 ]]; then
             echo "${__ErrMsgPrefix}Failed to restore the optimization data package."

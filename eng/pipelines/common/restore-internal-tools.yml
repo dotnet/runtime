@@ -8,7 +8,7 @@ steps:
       inputs:
         packageType: sdk
         useGlobalJson: true
-        installationPath: $(Agent.ToolsDirectory)/dotnet
+        installationPath: $(Agent.TempDirectory)/_dotnet
 
   - task: NuGetAuthenticate@0
     inputs:

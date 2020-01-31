@@ -479,12 +479,12 @@ namespace System.Runtime.CompilerServices
 
         private static bool IsCompatibleObject(object? value)
         {
-            return ((value is T) || (value == null && default(T)! == null));
+            return ((value is T) || (value == null && default(T) == null));
         }
 
         private static void ValidateNullValue(object? value, string argument)
         {
-            if (value == null && default(T)! != null)
+            if (value == null && default(T) != null)
             {
                 throw Error.InvalidNullValue(typeof(T), argument);
             }

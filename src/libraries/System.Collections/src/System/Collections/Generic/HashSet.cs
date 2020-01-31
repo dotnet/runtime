@@ -267,7 +267,7 @@ namespace System.Collections.Generic
                 {
                     int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (default(T) != null)
                     {
                         // see note at "HashSet" level describing why "- 1" appears in for loop
                         for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
@@ -369,7 +369,7 @@ namespace System.Collections.Generic
                     hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
                     bucket = hashCode % _buckets!.Length;
 
-                    if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                    if (default(T) != null)
                     {
                         for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                         {
@@ -1342,7 +1342,7 @@ namespace System.Collections.Generic
                 hashCode = value == null ? 0 : InternalGetHashCode(value.GetHashCode());
                 bucket = hashCode % _buckets!.Length;
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (default(T) != null)
                 {
                     for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
                     {
@@ -1578,7 +1578,7 @@ namespace System.Collections.Generic
             {
                 int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                if (default(T)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (default(T) != null)
                 {
                     // see note at "HashSet" level describing why "- 1" appears in for loop
                     for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
