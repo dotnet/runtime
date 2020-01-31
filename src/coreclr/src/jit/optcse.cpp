@@ -3280,10 +3280,25 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-            return true; // Also CSE these Comparison Operators
+            return true; // Allow the CSE of Comparison operators
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            return true; // allow SIMD intrinsics to be CSE-ed
+
+#endif // FEATURE_SIMD
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return true; // allow Hardware Intrinsics to be CSE-ed
+
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_INTRINSIC:
-            return true; // Intrinsics
+             return true; // allow Intrinsics to be CSE-ed
+
+        case GT_OBJ:
+            return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)
 
         case GT_COMMA:
             return true; // Allow GT_COMMA nodes to be CSE-ed.

@@ -1889,8 +1889,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(arg0VN != NoVN && arg1VN != NoVN);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments carry no exceptions.
     assert(arg1VN == VNNormalValue(arg1VN)); // Arguments carry no exceptions.
- //   assert(VNFuncArity(func) == 2);  // or HWI_Shuffle
-    assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
+    assert(VNFuncArity(func) == 2);  // or HWI_Shuffle
+    assert(func != VNF_MapSelect);           // Precondition: use the special function VNForMapSelect defined for that.
 
     ValueNum resultVN;
 
@@ -6746,8 +6746,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
-        // If this is a struct assignment, with a constant rhs, it is an initBlk, and it is not
-        // really useful to value number the constant.
+        // If this is a struct assignment, with a constant rhs, (i,.e. an initBlk),
+        // it is not useful to value number the constant.
         if (tree->TypeGet() != TYP_STRUCT)
         {
             fgValueNumberTreeConst(tree);
@@ -7059,8 +7059,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         unsigned memorySsaNum;
 #endif
 
-        // Allow SIMD types to be value numbered
-        if ((oper == GT_ASG) && (tree->TypeGet() != TYP_STRUCT))
+        // Allow assignments for all enregisterable types to be value numbered (SIMD types)
+        if ((oper == GT_ASG) && varTypeIsEnregisterable(tree))
         {
             GenTree* lhs = tree->AsOp()->gtOp1;
             GenTree* rhs = tree->AsOp()->gtOp2;
@@ -7630,7 +7630,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
         }
         // Other kinds of assignment: initblk and copyblk.
-        else if (oper == GT_ASG && varTypeIsStruct(tree))
+        else if (oper == GT_ASG && (tree->TypeGet() == TYP_STRUCT))
         {
             fgValueNumberBlockAssignment(tree);
         }
@@ -7959,18 +7959,21 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberIntrinsic(tree);
         }
+
 #ifdef FEATURE_SIMD
         else if (tree->OperGet() == GT_SIMD)
         {
-        fgValueNumberSimd(tree);
+            fgValueNumberSimd(tree);
         }
 #endif // FEATURE_SIMD
+
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperGet() == GT_HWINTRINSIC)
         {
             fgValueNumberHWIntrinsic(tree);
         }
 #endif // FEATURE_HW_INTRINSICS
+
         else // Look up the VNFunc for the node
         {
             VNFunc vnf = GetVNFuncForNode(tree);
@@ -8364,31 +8367,40 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
 void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
 {
     assert(tree->OperGet() == GT_HWINTRINSIC);
-    assert(tree->AsOp()->gtOp1 != nullptr);
-
-    // HWINTRINSIC unary or binary operator.
-
-    ValueNumPair op1vnp;
-    ValueNumPair op1Xvnp;
-    vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
-    if (tree->AsOp()->gtOp2 == nullptr)
+    // There are some HWINTRINSICS that have zero args, i.e.  NI_Vector128_Zero
+    if (tree->AsOp()->gtOp1 == nullptr)
     {
         // Unary SIMD nodes have a nullptr for op2.
-        excSetPair = op1Xvnp;
-        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree), op1vnp);
+        excSetPair = ValueNumStore::VNPForEmptyExcSet();
+        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree));
     }
     else
     {
-        ValueNumPair op2vnp;
-        ValueNumPair op2Xvnp;
-        vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+        // HWINTRINSIC unary or binary operator.
 
-        excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-        normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree), op1vnp, op2vnp);
+        ValueNumPair op1vnp;
+        ValueNumPair op1Xvnp;
+        vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
+        if (tree->AsOp()->gtOp2 == nullptr)
+        {
+            // Unary SIMD nodes have a nullptr for op2.
+            excSetPair = op1Xvnp;
+            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree), op1vnp);
+        }
+        else
+        {
+            ValueNumPair op2vnp;
+            ValueNumPair op2Xvnp;
+            vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+            excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+            normalPair = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree), op1vnp, op2vnp);
+        }
     }
     tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
 }
@@ -9491,7 +9503,7 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
     GenTreeBoundsChk* node = tree->AsBoundsChk();
     assert(node != nullptr);
 
-    ValueNumPair vnpIndex = node->gtIndex->gtVNPair;
+    ValueNumPair vnpIndex  = node->gtIndex->gtVNPair;
     ValueNumPair vnpArrLen = node->gtArrLen->gtVNPair;
 
     // Unpack, Norm,Exc for the tree's VN
@@ -9504,7 +9516,7 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
     // Construct the exception set for bounds check
     ValueNumPair boundsChkExcSet = vnStore->VNPExcSetSingleton(
         vnStore->VNPairForFunc(TYP_REF, VNF_IndexOutOfRangeExc, vnStore->VNPNormalPair(vnpIndex),
-            vnStore->VNPNormalPair(vnpArrLen)));
+                               vnStore->VNPNormalPair(vnpArrLen)));
 
     // Combine the new Overflow exception with the original exception set of tree
     ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, boundsChkExcSet);
