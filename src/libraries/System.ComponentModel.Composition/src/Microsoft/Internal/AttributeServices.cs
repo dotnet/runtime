@@ -4,7 +4,6 @@
 
 using System.Linq;
 using System.Reflection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Internal
 {

@@ -10,7 +10,7 @@ namespace System.Composition.Diagnostics
 {
     internal sealed class DebuggerTraceWriter : TraceWriter
     {
-        private const string s_sourceName = "System.ComponentModel.Composition";
+        private static readonly string s_sourceName = typeof(DebuggerTraceWriter).Assembly.GetName().Name!;
 
         public override bool CanWriteInformation
         {
