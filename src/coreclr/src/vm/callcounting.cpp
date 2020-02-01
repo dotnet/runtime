@@ -1275,10 +1275,13 @@ void CallCountingManager::DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemo
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+    if (s_callCountingManagers != PTR_NULL)
     {
-        PTR_CallCountingManager callCountingManager = *it;
-        callCountingManager->m_callCountingStubAllocator.EnumerateHeapRanges(flags);
+        for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+        {
+            PTR_CallCountingManager callCountingManager = *it;
+            callCountingManager->m_callCountingStubAllocator.EnumerateHeapRanges(flags);
+        }
     }
 }
 
