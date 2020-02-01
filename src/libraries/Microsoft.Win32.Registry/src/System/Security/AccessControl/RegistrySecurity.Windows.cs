@@ -9,7 +9,7 @@ namespace System.Security.AccessControl
 {
     public sealed partial class RegistrySecurity : NativeObjectSecurity
     {
-        private static Exception? _HandleErrorCodeCore(int errorCode, string name, SafeHandle handle, object context)
+        private static Exception? _HandleErrorCodeCore(int errorCode, string? name, SafeHandle? handle, object? context)
         {
             Exception? exception = null;
 
