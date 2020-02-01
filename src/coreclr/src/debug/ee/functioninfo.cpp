@@ -933,7 +933,7 @@ void DebuggerJitInfo::LazyInitBounds()
         LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
         // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        CodeVersionManager::TableLockHolder lockHolder(mdesc->GetCodeVersionManager());
         Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
         if (!m_fAttemptInit)
@@ -1059,7 +1059,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
     // Pick a unique initial value (-10) so that the 1st doesn't accidentally match.
     int ilPrevOld = -10;
 
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(m_nativeCodeVersion.GetMethodDesc()->GetCodeVersionManager()->LockOwnedByCurrentThread());
 
     InstrumentedILOffsetMapping mapping;
 
@@ -1606,8 +1606,8 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     NativeCodeVersion nativeCodeVersion;
     if (fd->IsVersionable())
     {
+        CodeVersionManager::TableLockHolder lockHolder(fd->GetCodeVersionManager());
         CodeVersionManager *pCodeVersionManager = fd->GetCodeVersionManager();
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
         nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(fd, startAddr);
         if (nativeCodeVersion.IsNull())
         {
@@ -2087,7 +2087,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
     CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
     // grab the code version lock to iterate available versions of the code
     {
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
         NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(pMethodDesc);
 
         for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)

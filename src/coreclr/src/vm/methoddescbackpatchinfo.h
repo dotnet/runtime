@@ -79,11 +79,7 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    static void StaticInitialize()
-    {
-        WRAPPER_NO_CONTRACT;
-        s_lock.Init(CrstMethodDescBackpatchInfoTracker);
-    }
+    static void StaticInitialize();
 #endif
 
     void Initialize(LoaderAllocator *pLoaderAllocator)
@@ -94,17 +90,17 @@ public:
 
 #ifdef _DEBUG
 public:
-    static bool IsLockOwnedByCurrentThread();
+    static bool IsLockedByCurrentThread();
 #endif
 
 public:
-    class ConditionalLockHolder : private CrstHolderWithState
+    class ConditionalLockHolder : CrstHolderWithState
     {
     public:
         ConditionalLockHolder(bool acquireLock = true)
             : CrstHolderWithState(
 #ifndef DACCESS_COMPILE
-                acquireLock ? &s_lock : nullptr
+                acquireLock ? &MethodDescBackpatchInfoTracker::s_lock : nullptr
 #else
                 nullptr
 #endif
@@ -112,9 +108,6 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
         }
-
-        ConditionalLockHolder(const ConditionalLockHolder &) = delete;
-        ConditionalLockHolder &operator =(const ConditionalLockHolder &) = delete;
     };
 
 public:
@@ -134,6 +127,8 @@ public:
     void AddSlotAndPatch_Locked(MethodDesc *pMethodDesc, LoaderAllocator *pLoaderAllocatorOfSlot, TADDR slot, EntryPointSlots::SlotType slotType, PCODE currentEntryPoint);
 public:
 #endif
+
+    friend class ConditionalLockHolder;
 
     DISABLE_COPY(MethodDescBackpatchInfoTracker);
 };
