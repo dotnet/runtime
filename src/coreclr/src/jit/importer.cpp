@@ -5953,21 +5953,19 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                             CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
                             impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
 
-                            const TypeCompareState compareBoxIsInst =
-                                info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
-                                                                          pResolvedToken->hClass);
-                            CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
-                            impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
-
-                            const TypeCompareState compareBoxUnbox =
-                                info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
-                                                                          pResolvedToken->hClass);
-
-                            // If so, box + isinst + unbox.any is a nop.
-                            if (compareBoxIsInst == TypeCompareState::Must && compareBoxUnbox == TypeCompareState::Must)
+                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                pResolvedToken->hClass) == TypeCompareState::Must)
                             {
-                                JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
-                                return 2 + sizeof(mdToken) * 2;
+                                CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                                impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                                // If so, box + isinst + unbox.any is a nop.
+                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
+                                    pResolvedToken->hClass) == TypeCompareState::Must)
+                                {
+                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                    return 2 + sizeof(mdToken) * 2;
+                                }
                             }
                         }
                         break;
