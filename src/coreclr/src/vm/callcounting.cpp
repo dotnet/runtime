@@ -817,7 +817,6 @@ void CallCountingManager::CompleteCallCounting()
     {
         CodeVersionManager *codeVersionManager = appDomain->GetCodeVersionManager();
 
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
         // Backpatching entry point slots requires cooperative GC mode, see
@@ -994,7 +993,6 @@ void CallCountingManager::StopAndDeleteAllCallCountingStubs()
     TieredCompilationManager *tieredCompilationManager = GetAppDomain()->GetTieredCompilationManager();
     bool scheduleTieringBackgroundWork = false;
     {
-        MethodDescBackpatchInfoTracker::PollForDebuggerSuspension();
         MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
