@@ -284,6 +284,8 @@ namespace ILCompiler.PEWriter
 
             ApplyMachineOSOverride(outputStream);
 
+            CopyTimeStampFromInputImage(outputStream);
+
             _written = true;
         }
 
@@ -398,6 +400,23 @@ namespace ILCompiler.PEWriter
 
             outputStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
             outputStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
+        }
+
+        /// <summary>
+        /// Copy over the timestamp from IL image for determinism.
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        private void CopyTimeStampFromInputImage(Stream outputStream)
+        {
+            byte[] patchedTimestamp = BitConverter.GetBytes(_peReader.PEHeaders.CoffHeader.TimeDateStamp);
+            int seekSize =
+                DosHeaderSize +
+                PESignatureSize +
+                sizeof(short) +     // Machine
+                sizeof(short);      //NumberOfSections
+
+            outputStream.Seek(seekSize, SeekOrigin.Begin);
+            outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
         }
 
         /// <summary>
