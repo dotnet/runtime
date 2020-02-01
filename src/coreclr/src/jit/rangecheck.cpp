@@ -773,12 +773,12 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
 // Compute the range for a binary operation.
 Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool monIncreasing DEBUGARG(int indent))
 {
-    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_UMOD));
+    assert(binop->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD));
 
     GenTree* op1 = binop->gtGetOp1();
     GenTree* op2 = binop->gtGetOp2();
 
-    if (binop->OperIs(GT_AND, GT_RSH, GT_UMOD))
+    if (binop->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         if (!op2->IsIntCnsFitsInI32())
         {
@@ -797,14 +797,14 @@ Range RangeCheck::ComputeRangeForBinOp(BasicBlock* block, GenTreeOp* binop, bool
             // x % cns -> [0..cns-1]
             icon = static_cast<int>(op2->AsIntCon()->IconValue()) - 1;
         }
-        else if (binop->OperIs(GT_RSH) && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp2()->IsIntCnsFitsInI32())
+        else if (binop->OperIs(GT_RSH, GT_LSH) && op1->OperIs(GT_AND) && op1->AsOp()->gtGetOp2()->IsIntCnsFitsInI32())
         {
             // (x & cns1) >> cns2 -> [0..cns1>>cns2]
             int icon1 = static_cast<int>(op1->AsOp()->gtGetOp2()->AsIntCon()->IconValue());
             int icon2 = static_cast<int>(op2->AsIntCon()->IconValue());
             if (icon1 >= 0 && icon2 >= 0 && icon2 < 32)
             {
-                icon = icon1 >> icon2;
+                icon = binop->OperIs(GT_RSH) ? (icon1 >> icon2) : (icon1 << icon2);
             }
         }
 
@@ -1074,8 +1074,8 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTree* expr)
     {
         overflows = DoesBinOpOverflow(block, expr->AsOp());
     }
-    // GT_AND, GT_UMOD and GT_RSH don't overflow
-    else if (expr->OperIs(GT_AND, GT_RSH, GT_UMOD))
+    // GT_AND, GT_UMOD, GT_LSH and GT_RSH don't overflow
+    else if (expr->OperIs(GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         overflows = false;
     }
@@ -1165,7 +1165,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreas
         MergeAssertion(block, expr, &range DEBUGARG(indent + 1));
     }
     // compute the range for binary operation
-    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_UMOD))
+    else if (expr->OperIs(GT_ADD, GT_AND, GT_RSH, GT_LSH, GT_UMOD))
     {
         range = ComputeRangeForBinOp(block, expr->AsOp(), monIncreasing DEBUGARG(indent + 1));
     }
