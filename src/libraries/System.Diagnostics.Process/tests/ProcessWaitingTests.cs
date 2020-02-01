@@ -161,13 +161,28 @@ namespace System.Diagnostics.Tests
             p.Start();
 
             // Verify we can try to wait for the process to exit multiple times
-            var token = new CancellationToken(canceled: true);
+
+            // First test with an already canceled token. Because the token is already canceled,
+            // WaitForExitAsync should complete synchronously
             for (int i = 0; i < 2; i++)
             {
+                var token = new CancellationToken(canceled: true);
                 Task t = p.WaitForExitAsync(token);
 
-                // The token is already canceled, so WaitForExitAsync should complete synchronously
                 Assert.Equal(TaskStatus.Canceled, t.Status);
+
+                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                Assert.Equal(token, ex.CancellationToken);
+                Assert.False(p.HasExited);
+            }
+
+            // Next, test with a token that is canceled after the task is created to
+            // exercise event hookup and async cancellation
+            using (var cts = new CancellationTokenSource())
+            {
+                CancellationToken token = cts.Token;
+                Task t = p.WaitForExitAsync(token);
+                cts.Cancel();
 
                 OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
                 Assert.Equal(token, ex.CancellationToken);
@@ -187,8 +202,10 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.HasExited);
             }
 
-            await p.WaitForExitAsync(token);
+            // Waiting on an already exited process should complete synchronously
             Assert.True(p.HasExited);
+            Task task = p.WaitForExitAsync();
+            Assert.Equal(TaskStatus.RanToCompletion, task.Status);
         }
 
         [Theory]
