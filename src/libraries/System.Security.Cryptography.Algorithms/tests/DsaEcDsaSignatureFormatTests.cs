@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography.EcDsa.Tests;
-using System.Text;
-using System.Threading;
+using System.Security.Cryptography.Dsa.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -19,9 +14,14 @@ namespace System.Security.Cryptography.Algorithms.Tests
 {
     public abstract class DsaEcDsaSignatureFormatTests
     {
-        private static readonly HashAlgorithmName[] s_hashNames = new HashAlgorithmName[] { HashAlgorithmName.SHA256, HashAlgorithmName.SHA512, HashAlgorithmName.MD5 };
+        private static readonly HashAlgorithmName[] s_hashNames =
+        {
+            HashAlgorithmName.SHA256,
+            HashAlgorithmName.SHA512
+        };
+
         // 1 test case per hash
-        private static readonly int NumberOfTestCases = 1 * s_hashNames.Length;
+        private static readonly int NumberOfTestCases = s_hashNames.Length;
 
         /// <summary>
         /// Is it signing or verifying?
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             return GetTestData(TestCases(1, minLength).Single());
         }
 
-        private static ECDsa[] s_ecDsaKeys = new ECDsa[]
+        private static readonly ECDsa[] s_ecDsaKeys =
         {
             ECDsa.Create(),
             ECDsa.Create(),
@@ -103,12 +103,13 @@ namespace System.Security.Cryptography.Algorithms.Tests
             ECDsa.Create(),
         };
 
-        private static DSA[] s_dsaKeys = new DSA[]
+        private static readonly DSA[] s_dsaKeys =
         {
-            DSA.Create(),
-            DSA.Create(),
-            DSA.Create(),
-            DSA.Create(),
+            DSA.Create(DSATestData.GetDSA1024Params()),
+            DSA.Create(DSATestData.Dsa512Parameters),
+            DSA.Create(DSATestData.Dsa576Parameters),
+            // If the platform doesn't support FIPS 186-3 (macOS), just use the 1024 key again.
+            DSA.Create(DSAFactory.SupportsFips186_3 ? DSATestData.GetDSA2048Params() : DSATestData.GetDSA1024Params()),
         };
 
         private static AsymmetricAlgorithm GetKey(int keyId, bool isEcDsa)
@@ -121,20 +122,23 @@ namespace System.Security.Cryptography.Algorithms.Tests
         protected TestData GetTestData(TestDataInfo testInfo)
         {
             // Cloning data so that tests can freely modify it while we can pass original reference to test info
-            return TestData.Create(GetKey(testInfo.KeyId, IsEcDsa()), testInfo.Hash, testInfo.Data.ToArray(), doNotComputeSignatures: IsSigner());
+            return TestData.Create(
+                GetKey(testInfo.KeyId, IsEcDsa()),
+                testInfo.Hash,
+                testInfo.Data.ToArray(),
+                doNotComputeSignatures: IsSigner());
         }
 
-        private static int s_keyId = 0;
         private static IEnumerable<TestDataInfo> TestCases(int n, int minLength = 0)
         {
-            var rand = new Random();
+            var rand = new Random(n);
 
             for (int i = 0; i < n; i++)
             {
                 byte[] data = new byte[minLength + rand.Next(1024)];
                 rand.NextBytes(data);
                 HashAlgorithmName hashName = s_hashNames[i % s_hashNames.Length];
-                yield return new TestDataInfo(Interlocked.Increment(ref s_keyId), data, hashName);
+                yield return new TestDataInfo(n, data, hashName);
             }
         }
 
