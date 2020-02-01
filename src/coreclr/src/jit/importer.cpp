@@ -5954,14 +5954,16 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                             impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
 
                             if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
-                                pResolvedToken->hClass) == TypeCompareState::Must)
+                                                                          pResolvedToken->hClass) ==
+                                TypeCompareState::Must)
                             {
                                 CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
                                 impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
 
                                 // If so, box + isinst + unbox.any is a nop.
                                 if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
-                                    pResolvedToken->hClass) == TypeCompareState::Must)
+                                                                              pResolvedToken->hClass) ==
+                                    TypeCompareState::Must)
                                 {
                                     JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
                                     return 2 + sizeof(mdToken) * 2;
