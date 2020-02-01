@@ -47,6 +47,7 @@ namespace System.Threading
         /// <summary>
         /// Implemented: int, long, float, double, Object, IntPtr
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int Exchange(ref int location1, int value);
 
@@ -78,6 +79,7 @@ namespace System.Threading
         /// <summary>
         /// Implemented: int, long, float, double, Object, IntPtr
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
 
@@ -120,6 +122,7 @@ namespace System.Threading
         /// <summary>
         /// Implemented: int, long
         /// </summary>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int ExchangeAdd(ref int location1, int value);
 
@@ -141,6 +144,7 @@ namespace System.Threading
             return Interlocked.CompareExchange(ref location, 0, 0);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
 

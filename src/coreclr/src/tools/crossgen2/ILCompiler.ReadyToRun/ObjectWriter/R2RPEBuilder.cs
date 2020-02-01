@@ -217,6 +217,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.SetCorHeader(symbol, headerSize);
         }
 
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _sectionBuilder.SetDebugDirectory(symbol, size);
+        }
+
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
         {
             _sectionBuilder.SetWin32Resources(symbol, resourcesSize);
@@ -256,6 +261,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
         }
 
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            return _sectionBuilder.GetSymbolFilePosition(symbol);
+        }
+
         /// <summary>
         /// Emit built sections into the R2R PE file.
         /// </summary>
@@ -273,6 +283,8 @@ namespace ILCompiler.PEWriter
             UpdateSectionRVAs(outputStream);
 
             ApplyMachineOSOverride(outputStream);
+
+            CopyTimeStampFromInputImage(outputStream);
 
             _written = true;
         }
@@ -388,6 +400,23 @@ namespace ILCompiler.PEWriter
 
             outputStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
             outputStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
+        }
+
+        /// <summary>
+        /// Copy over the timestamp from IL image for determinism.
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        private void CopyTimeStampFromInputImage(Stream outputStream)
+        {
+            byte[] patchedTimestamp = BitConverter.GetBytes(_peReader.PEHeaders.CoffHeader.TimeDateStamp);
+            int seekSize =
+                DosHeaderSize +
+                PESignatureSize +
+                sizeof(short) +     // Machine
+                sizeof(short);      //NumberOfSections
+
+            outputStream.Seek(seekSize, SeekOrigin.Begin);
+            outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
         }
 
         /// <summary>

@@ -49,7 +49,7 @@ namespace System.IO.IsolatedStorage
         /// </summary>
         public static string GetUserRootDirectory(this IsolatedStorageFile isf)
         {
-            // CoreFX and NetFX use the same internal property
+            // .NET Core and .NET Framework use the same internal property
             return (string)s_rootDirectoryProperty.GetValue(isf);
         }
 

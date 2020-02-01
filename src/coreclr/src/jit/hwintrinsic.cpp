@@ -9,11 +9,11 @@
 
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
 // clang-format off
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     {NI_##id, name, InstructionSet_##isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistxarch.h"
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     {NI_##isa##_##name, #name, InstructionSet_##isa, ival, static_cast<unsigned>(size), numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, static_cast<HWIntrinsicFlag>(flag)},
 #include "hwintrinsiclistarm64.h"
@@ -115,7 +115,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     else if (simdType == TYP_SIMD32)
     {
         switch (simdBaseType)
@@ -144,8 +144,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#endif // _TARGET_XARCH_
-#ifdef _TARGET_ARM64_
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM64
     else if (simdType == TYP_SIMD8)
     {
         switch (simdBaseType)
@@ -168,7 +168,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleForHWSIMD(var_types simdType, va
                 assert(!"Didn't find a class handle for simdType");
         }
     }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
     return NO_CLASS_HANDLE;
 }
@@ -436,7 +436,7 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* immO
     // AVX2 Gather intrinsics no not need the range-check
     // because their imm-parameter have discrete valid values that are handle by managed code
     if (mustExpand && !HWIntrinsicInfo::HasFullRangeImm(intrinsic) && HWIntrinsicInfo::isImmOp(intrinsic, immOp)
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         && !HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic)
 #endif
             )
@@ -677,7 +677,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, op3, intrinsic, baseType, simdSize);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                 if (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256)
                 {
                     assert(varTypeIsSIMD(op2->TypeGet()));

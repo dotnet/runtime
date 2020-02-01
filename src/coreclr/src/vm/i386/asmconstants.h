@@ -12,7 +12,7 @@
 // a compile-time assert, check out USE_COMPILE_TIME_CONSTANT_FINDER.
 // TODO: put the constant finder in a common place so other platforms can use it.
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #error this file should only be used on an X86 platform
 #endif
 
@@ -264,9 +264,6 @@ ASMCONSTANTS_C_ASSERT(ComPlusCallMethodDesc__m_pComPlusCallInfo == offsetof(ComP
 ASMCONSTANTS_C_ASSERT(ComPlusCallInfo__m_pRetThunk == offsetof(ComPlusCallInfo, m_pRetThunk))
 
 #endif // FEATURE_COMINTEROP
-
-#define               NonTrivialInterfaceCastFlags (0x00080000 + 0x40000000 + 0x00400000)
-ASMCONSTANTS_C_ASSERT(NonTrivialInterfaceCastFlags == MethodTable::public_enum_flag_NonTrivialInterfaceCast)
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)

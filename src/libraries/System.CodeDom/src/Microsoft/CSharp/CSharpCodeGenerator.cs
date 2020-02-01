@@ -125,6 +125,7 @@ namespace Microsoft.CSharp
                         break;
                     case '\u2028':
                     case '\u2029':
+                    case '\u0085':
                         AppendEscapedChar(b, value[i]);
                         break;
 

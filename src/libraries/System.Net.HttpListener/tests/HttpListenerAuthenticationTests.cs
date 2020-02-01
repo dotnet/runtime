@@ -13,7 +13,8 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnCoreClr("System.Net.Tests are inestable")]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TargetFrameworkMonikers.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerAuthenticationTests : IDisposable
     {
@@ -106,7 +107,7 @@ namespace System.Net.Tests
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20098", TestPlatforms.Unix)]
+        [Theory]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]

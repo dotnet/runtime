@@ -58,7 +58,6 @@ INLINE_OBSERVATION(NOT_PROFITABLE_INLINE,     bool,   "unprofitable inline",    
 INLINE_OBSERVATION(RANDOM_REJECT,             bool,   "random reject",                 FATAL,       CALLEE)
 INLINE_OBSERVATION(STACK_CRAWL_MARK,          bool,   "uses stack crawl mark",         FATAL,       CALLEE)
 INLINE_OBSERVATION(STFLD_NEEDS_HELPER,        bool,   "stfld needs helper",            FATAL,       CALLEE)
-INLINE_OBSERVATION(THROW_WITH_INVALID_STACK,  bool,   "throw with invalid stack",      FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_ARGUMENTS,        bool,   "too many arguments",            FATAL,       CALLEE)
 INLINE_OBSERVATION(TOO_MANY_LOCALS,           bool,   "too many locals",               FATAL,       CALLEE)
 INLINE_OBSERVATION(EXPLICIT_TAIL_PREFIX,      bool,   "explicit tail prefix in callee",FATAL,       CALLEE)

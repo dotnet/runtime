@@ -11,14 +11,14 @@
 class LongFile
 {
 private:
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         static const WCHAR* ExtendedPrefix;
         static const WCHAR* DevicePathPrefix;
         static const WCHAR* UNCPathPrefix;
         static const WCHAR* UNCExtendedPathPrefix;
         static const WCHAR VolumeSeparatorChar;
 		#define UNCPATHPREFIX W("\\\\")
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
         static const WCHAR DirectorySeparatorChar;
         static const WCHAR AltDirectorySeparatorChar;
 public:
@@ -31,7 +31,7 @@ public:
 
         static HRESULT NormalizePath(SString& path);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         static void NormalizeDirectorySeparators(SString& path);
 #endif
 };
@@ -60,11 +60,11 @@ LoadLibraryExWrapper(
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
             _ASSERTE(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
             LongFile::NormalizeDirectorySeparators(path);
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 
             ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
         }
@@ -657,7 +657,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 }
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 BOOL
 CopyFileExWrapper(
@@ -764,10 +764,10 @@ FindFirstFileExWrapper(
 
     return ret;
 }
-#endif //!FEATURE_PAL
+#endif //!TARGET_UNIX
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 #if ! defined(DACCESS_COMPILE) && !defined(SELF_NO_HOST)
 extern HINSTANCE            g_pMSCorEE;
@@ -822,13 +822,13 @@ BOOL PAL_GetPALDirectoryWrapper(SString& pbuffer)
     return retval;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
 //Implementation of LongFile Helpers
 const WCHAR LongFile::DirectorySeparatorChar = W('\\');
 const WCHAR LongFile::AltDirectorySeparatorChar = W('/');
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 const WCHAR LongFile::VolumeSeparatorChar = W(':');
 const WCHAR* LongFile::ExtendedPrefix = W("\\\\?\\");
 const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
@@ -1003,7 +1003,7 @@ HRESULT LongFile::NormalizePath(SString & path)
 {
     return S_OK;
 }
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 
 BOOL LongFile::ContainsDirectorySeparator(SString & path)
 {

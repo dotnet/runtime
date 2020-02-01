@@ -175,14 +175,6 @@ inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 }
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-inline CallCounter * MethodDesc::GetCallCounter()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetLoaderAllocator()->GetCallCounter();
-}
-#endif
-
 #ifndef CROSSGEN_COMPILE
 inline MethodDescBackpatchInfoTracker * MethodDesc::GetBackpatchInfoTracker()
 {

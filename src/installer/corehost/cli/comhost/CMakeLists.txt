@@ -39,7 +39,7 @@ if (WIN32)
     set(WINLIBS wintrust.lib)
 
     # Specify non-default Windows libs to be used for Arm/Arm64 builds
-    if (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64)
+    if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
         list(APPEND WINLIBS Advapi32.lib Ole32.lib OleAut32.lib)
     endif()
 

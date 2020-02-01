@@ -10,7 +10,7 @@
 // ===========================================================================
 
 
-#if !defined(FEATURE_PAL)
+#if !defined(HOST_UNIX)
 
 #ifndef __PALCLR_H__
 #define __PALCLR_H__
@@ -19,11 +19,11 @@
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
 // of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
 // as u"" (char16_t)
-#ifdef PLATFORM_UNIX
+#ifdef HOST_UNIX
 #define W(str)  u##str
-#else // PLATFORM_UNIX
+#else // HOST_UNIX
 #define W(str)  L##str
-#endif // PLATFORM_UNIX
+#endif // HOST_UNIX
 
 #include <windef.h>
 
@@ -70,11 +70,11 @@
 // usage pattern is:
 //
 // int get_scratch_register() {
-// #if defined(_TARGET_X86_)
+// #if defined(TARGET_X86)
 //     return eax;
-// #elif defined(_TARGET_AMD64_)
+// #elif defined(TARGET_AMD64)
 //     return rax;
-// #elif defined(_TARGET_ARM_)
+// #elif defined(TARGET_ARM)
 //     return r0;
 // #else
 //     PORTABILITY_ASSERT("scratch register");
@@ -99,7 +99,7 @@
 // The message in these two macros should not contain any keywords like TODO
 // or NYI. It should be just the brief description of the problem.
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 // Finished ports - compile-time errors
 #define PORTABILITY_WARNING(message)    NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
 #define PORTABILITY_ASSERT(message)     NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
@@ -589,7 +589,7 @@
 #define SET_UNALIGNED_VAL64(_pObject, _Value) SET_UNALIGNED_64(_pObject, VAL64((UINT64)_Value))
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define VALPTR(x) VAL64(x)
 #define GET_UNALIGNED_PTR(x) GET_UNALIGNED_64(x)
 #define GET_UNALIGNED_VALPTR(x) GET_UNALIGNED_VAL64(x)
@@ -625,4 +625,4 @@
 
 #include "palclr_win.h"
 
-#endif // !defined(FEATURE_PAL)
+#endif // !defined(HOST_UNIX)

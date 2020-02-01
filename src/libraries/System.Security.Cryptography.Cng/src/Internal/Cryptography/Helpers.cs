@@ -101,16 +101,16 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Retrieve a well-known CNG string property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
+        /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
         public static string GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             byte[] value = ncryptHandle.GetProperty(propertyName, options);
             if (value == null)
-                return null;   // Desktop compat: return null if key not present.
+                return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
-                return string.Empty; // Desktop compat: return empty if property value is 0-length.
+                return string.Empty; // .NET Framework compat: return empty if property value is 0-length.
             unsafe
             {
                 fixed (byte* pValue = &value[0])
@@ -122,19 +122,19 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Retrieve a well-known CNG dword property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
+        /// Retrieve a well-known CNG dword property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
         public static int GetPropertyAsDword(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             byte[] value = ncryptHandle.GetProperty(propertyName, options);
             if (value == null)
-                return 0;   // Desktop compat: return 0 if key not present.
+                return 0;   // .NET Framework compat: return 0 if key not present.
             return BitConverter.ToInt32(value, 0);
         }
 
         /// <summary>
-        /// Retrieve a well-known CNG pointer property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
+        /// Retrieve a well-known CNG pointer property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
         public static IntPtr GetPropertyAsIntPtr(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)

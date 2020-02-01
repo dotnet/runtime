@@ -588,11 +588,11 @@ void CLRLifoSemaphore::Create(INT32 initialSignalCount, INT32 maximumSignalCount
     _ASSERTE(initialSignalCount <= maximumSignalCount);
     _ASSERTE(m_handle == nullptr);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     HANDLE h = WszCreateSemaphore(nullptr, 0, maximumSignalCount, nullptr);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     HANDLE h = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, maximumSignalCount);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     if (h == nullptr)
     {
         ThrowOutOfMemory();
@@ -634,12 +634,12 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
         // Wait for a signal
         BOOL waitSuccessful;
         {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
             // Do a prioritized wait to get LIFO waiter release order
             DWORD waitResult = PAL_WaitForSingleObjectPrioritized(m_handle, timeoutMs);
             _ASSERTE(waitResult == WAIT_OBJECT_0 || waitResult == WAIT_TIMEOUT);
             waitSuccessful = waitResult == WAIT_OBJECT_0;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
             // I/O completion ports release waiters in LIFO order, see
             // https://msdn.microsoft.com/en-us/library/windows/desktop/aa365198(v=vs.85).aspx
             DWORD numberOfBytes;
@@ -648,7 +648,7 @@ bool CLRLifoSemaphore::WaitForSignal(DWORD timeoutMs)
             waitSuccessful = GetQueuedCompletionStatus(m_handle, &numberOfBytes, &completionKey, &overlapped, timeoutMs);
             _ASSERTE(waitSuccessful || GetLastError() == WAIT_TIMEOUT);
             _ASSERTE(overlapped == nullptr);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
         }
 
         if (!waitSuccessful)
@@ -781,7 +781,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
         counts = countsBeforeUpdate;
     }
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // For now, the spinning changes are disabled on ARM64. The spin loop below replicates how UnfairSemaphore used to spin.
     // Once more tuning is done on ARM64, it should be possible to come up with a spinning scheme that works well everywhere.
     int spinCountPerProcessor = spinCount;
@@ -821,13 +821,13 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
             break;
         }
     }
-#else // !_TARGET_ARM64_
+#else // !TARGET_ARM64
     const UINT32 Sleep0Threshold = 10;
     YieldProcessorNormalizationInfo normalizationInfo;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // The PAL's wait subsystem is quite slow, spin more to compensate for the more expensive wait
     spinCount *= 2;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     for (UINT32 i = 0; i < spinCount; ++i)
     {
         // Wait
@@ -872,7 +872,7 @@ bool CLRLifoSemaphore::Wait(DWORD timeoutMs, UINT32 spinCount, UINT32 processorC
             counts = countsBeforeUpdate;
         }
     }
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
     // Unregister as a spinner, and acquire the semaphore or register as a waiter
     counts = m_counts.VolatileLoadWithoutBarrier();
@@ -965,10 +965,10 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
     }
 
     // Wake waiters
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     BOOL released = ReleaseSemaphore(m_handle, countOfWaitersToWake, nullptr);
     _ASSERTE(released);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     while (--countOfWaitersToWake >= 0)
     {
         while (!PostQueuedCompletionStatus(m_handle, 0, 0, nullptr))
@@ -977,7 +977,7 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
             ClrSleepEx(1, false);
         }
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 void CLRMutex::Create(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwner, LPCTSTR lpName)

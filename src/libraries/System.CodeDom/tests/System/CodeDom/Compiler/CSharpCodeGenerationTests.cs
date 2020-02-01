@@ -1054,7 +1054,8 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Fact]
-        public void CharEncoding()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", ~TargetFrameworkMonikers.NetFramework)]
+        public void CharEncodingNetFx()
         {
             string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
 
@@ -1067,6 +1068,24 @@ namespace System.CodeDom.Compiler.Tests
             AssertEqual(main,
                  "public static void Main() { " +
                  "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \u0085 \U00010F00\"); " +
+                 "}");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", TargetFrameworkMonikers.NetFramework)]
+        public void CharEncoding()
+        {
+            string chars = "\u1234 \u4567 \uABCD \r \n \t \\ \" \' \0 \u2028 \u2029 \u0084 \u0085 \U00010F00";
+
+            var main = new CodeEntryPointMethod();
+            main.Statements.Add(
+                new CodeMethodInvokeExpression(
+                    new CodeMethodReferenceExpression(new CodeTypeReferenceExpression(typeof(Console)), "WriteLine"),
+                    new CodeExpression[] { new CodePrimitiveExpression(chars) }));
+
+            AssertEqual(main,
+                 "public static void Main() { " +
+                 "     System.Console.WriteLine(\"\u1234 \u4567 \uABCD \\r \\n \\t \\\\ \\\" \\' \\0 \\u2028 \\u2029 \u0084 \\u0085 \U00010F00\"); " +
                  "}");
         }
 
@@ -3447,6 +3466,23 @@ namespace System.CodeDom.Compiler.Tests
                               System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[] dict2 = new System.Collections.Generic.Dictionary<int, System.Collections.Generic.List<string>>[] { null};
                           }
                       }
+                  }");
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1913", TargetFrameworkMonikers.NetFramework)]
+        public void SpecialNewLineCharactersInStringsDoneCorrectly()
+        {
+            var cd = new CodeTypeDeclaration("ClassWithStringFields") { IsClass = true };
+
+            var field = new CodeMemberField("System.String", "StringWithSpecialNewLines");
+            field.Attributes = MemberAttributes.Public | MemberAttributes.Static;
+            field.InitExpression = new CodePrimitiveExpression("\u0085\u2028\u2029");
+            cd.Members.Add(field);
+
+            AssertEqual(cd,
+                @"public class ClassWithStringFields {
+                      public static string StringWithSpecialNewLines = ""\u0085\u2028\u2029"";
                   }");
         }
     }

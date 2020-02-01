@@ -70,14 +70,12 @@ jobs:
     dependsOn:
     - ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-      - ${{ format('libraries_build_{0}_{1}{2}_{3}_{4}', 'netcoreapp', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
     container: ${{ parameters.container }}
-
-    ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 150 # 2.5 hrs
+    timeoutInMinutes: 90 # 1.5 hrs
 
     steps:
 
@@ -150,7 +148,7 @@ jobs:
         HelixTargetQueues: ${{ join(' ', parameters.helixQueues) }}
         ${{ if ne(variables['System.TeamProject'], 'internal') }}:
           Creator: $(Creator)
-        WorkItemTimeout: 2:00 # 2 hours
+        WorkItemTimeout: 1:30 # 1:30 hours
         WorkItemDirectory: '$(artifactsDirectory)'
         CorrelationPayloadDirectory: '$(coreClrRepoRoot)/tests/scripts'
         ${{ if ne(parameters.osName, 'Windows_NT') }}:

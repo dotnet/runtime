@@ -214,14 +214,14 @@ namespace System.Text.Json
 
         /// <summary>
         ///   Converts the text value of this instance, which should encode binary data as base-64 digits, to an equivalent 8-bit unsigned <see cref="byte"/> array.
-        ///   The return value indicates wether the conversion succeeded.
+        ///   The return value indicates whether the conversion succeeded.
         /// </summary>
         /// <param name="value">
         ///   When this method returns, contains the <see cref="byte"/> array equivalent of the text contained in this instance,
         ///   if the conversion succeeded.
         /// </param>
         /// <returns>
-        ///   <see langword="true"/> if text was converted successfully; othwerwise returns <see langword="false"/>.
+        ///   <see langword="true"/> if text was converted successfully; otherwise returns <see langword="false"/>.
         /// </returns>
         internal bool TryGetBytesFromBase64([NotNullWhen(true)] out byte[]? value)
         {

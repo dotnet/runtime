@@ -901,7 +901,7 @@ InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE module, mdToken meta
 InfoAccessType emptyStringLiteral(void** ppValue);
 
 // (static fields only) given that 'field' refers to thread local store,
-// return the ID (TLS index), which is used to find the begining of the
+// return the ID (TLS index), which is used to find the beginning of the
 // TLS data area for the particular DLL 'field' is associated with.
 DWORD getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection = NULL);
 

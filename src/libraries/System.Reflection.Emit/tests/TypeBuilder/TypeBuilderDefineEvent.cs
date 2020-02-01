@@ -21,6 +21,9 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "TestEvent", EventAttributes.None, typeof(EmptyGenericStruct<int>).GetGenericArguments()[0], "TestEvent", EventAttributes.None };
             yield return new object[] { "TestEvent", EventAttributes.None, typeof(EmptyGenericStruct<>).GetGenericArguments()[0], "TestEvent", EventAttributes.None };
             yield return new object[] { "TestEvent", EventAttributes.None, Helpers.DynamicType(TypeAttributes.Public).AsType(), "TestEvent", EventAttributes.None };
+            yield return new object[] { "\uDC00", (EventAttributes)0x8000, typeof(int), "\uFFFD", (EventAttributes)0x8000 };
+            yield return new object[] { "\uD800", EventAttributes.None, typeof(int), "\uFFFD", EventAttributes.None };
+            yield return new object[] { "1A\0\t\v\r\n\n\uDC81\uDC91", EventAttributes.None, typeof(int).MakePointerType(), "1A", EventAttributes.None };
         }
 
         [Theory]
@@ -50,15 +53,6 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(expectedAttributes, eventInfo.Attributes);
             Assert.Equal((expectedAttributes & EventAttributes.SpecialName) != 0, eventInfo.IsSpecialName);
             Assert.Null(eventInfo.EventHandlerType);
-        }
-
-        [Fact]
-        public void DefineProperty_InvalidUnicodeChars()
-        {
-            // TODO: move into TestData when #7166 is fixed
-            DefineEvent("\uDC00", (EventAttributes)0x8000, typeof(int), "\uFFFD", (EventAttributes)0x8000);
-            DefineEvent("\uD800", EventAttributes.None, typeof(int), "\uFFFD", EventAttributes.None);
-            DefineEvent("1A\0\t\v\r\n\n\uDC81\uDC91", EventAttributes.None, typeof(int*), "1A", EventAttributes.None);
         }
 
         [Fact]

@@ -396,9 +396,9 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         return -6;
     }
 
-    CFIndex count = SecTrustGetCertificateCount(existingTrust);
+    CFIndex certificateCount = SecTrustGetCertificateCount(existingTrust);
 
-    for (CFIndex i = 0; i < count; i++)
+    for (CFIndex i = 0; i < certificateCount; i++)
     {
         SecCertificateRef item = SecTrustGetCertificateAtIndex(existingTrust, i);
         CFArrayAppendValue(certs, item);
@@ -433,6 +433,23 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         osStatus = SecTrustEvaluate(trust, &trustResult);
+
+        if (trustResult == kSecTrustResultRecoverableTrustFailure && osStatus == noErr && certificateCount > 1)
+        {
+            // If we get recoverable failure, let's try it again with full anchor list.
+            // We already stored just the first certificate into anchors; now we store the rest.
+            for (CFIndex i = 1; i < certificateCount; i++)
+            {
+                CFArrayAppendValue(anchors, SecTrustGetCertificateAtIndex(existingTrust, i));
+            }
+
+            osStatus = SecTrustSetAnchorCertificates(trust, anchors);
+            if (osStatus == noErr)
+            {
+                memset(&trustResult, 0, sizeof(SecTrustResultType));
+                osStatus = SecTrustEvaluate(trust, &trustResult);
+            }
+        }
 #pragma clang diagnostic pop
 
         if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)

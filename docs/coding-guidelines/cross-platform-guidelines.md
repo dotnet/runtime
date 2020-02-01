@@ -1,11 +1,11 @@
 Cross-Platform Guidelines
 =========================
 
-This page provides a FAQ for how we handle cross-platform code in CoreFX. (For structuring of interop code, see [interop guidelines](interop-guidelines.md).)
+This page provides a FAQ for how we handle cross-platform code in dotnet/runtime. (For structuring of interop code, see [interop guidelines](interop-guidelines.md).)
 
 #### Should assemblies be binary-compatible across platforms (e.g. exact same System.IO.dll on Windows, Linux, and Mac)?
 
-Our expectation is that the majority (estimating around 70%) of CoreFX assemblies will have no platform-specific code. These assemblies should be binary-compatible across platforms.
+Our expectation is that the majority (estimating around 70%) of dotnet/runtime assemblies will have no platform-specific code. These assemblies should be binary-compatible across platforms.
 
 In some cases, the managed binary will be used across all platforms, but it'll come with its own native library that'll be compiled once per platform.
 

@@ -32,16 +32,16 @@ namespace Internal.Cryptography.Pal
         protected void ParsePkcs12(byte[] data)
         {
             // RFC7292 specifies BER instead of DER
-            AsnReader reader = new AsnReader(data, AsnEncodingRules.BER);
-            ReadOnlyMemory<byte> encodedData = reader.PeekEncodedValue();
+            AsnValueReader reader = new AsnValueReader(data, AsnEncodingRules.BER);
+            ReadOnlySpan<byte> encodedData = reader.PeekEncodedValue();
 
             // Windows compatibility: Ignore trailing data.
             if (encodedData.Length != data.Length)
             {
-                reader = new AsnReader(encodedData, AsnEncodingRules.BER);
+                reader = new AsnValueReader(encodedData, AsnEncodingRules.BER);
             }
 
-            PfxAsn.Decode(reader, out PfxAsn pfxAsn);
+            PfxAsn.Decode(ref reader, data, out PfxAsn pfxAsn);
 
             if (pfxAsn.AuthSafe.ContentType != Oids.Pkcs7Data)
             {
@@ -337,15 +337,15 @@ namespace Internal.Cryptography.Pal
             // and one plain (contains encrypted keys)
             ContentInfoAsn[] rented = ArrayPool<ContentInfoAsn>.Shared.Rent(10);
 
-            AsnReader outer = new AsnReader(authSafeContents, AsnEncodingRules.BER);
-            AsnReader reader = outer.ReadSequence();
+            AsnValueReader outer = new AsnValueReader(authSafeContents.Span, AsnEncodingRules.BER);
+            AsnValueReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
             int i = 0;
 
             while (reader.HasData)
             {
                 GrowIfNeeded(ref rented, i);
-                ContentInfoAsn.Decode(reader, out rented[i]);
+                ContentInfoAsn.Decode(ref reader, authSafeContents, out rented[i]);
                 i++;
             }
 
@@ -668,13 +668,13 @@ namespace Internal.Cryptography.Pal
                 contentData = Helpers.DecodeOctetStringAsMemory(contentData);
             }
 
-            AsnReader outer = new AsnReader(contentData, AsnEncodingRules.BER);
-            AsnReader reader = outer.ReadSequence();
+            AsnValueReader outer = new AsnValueReader(contentData.Span, AsnEncodingRules.BER);
+            AsnValueReader reader = outer.ReadSequence();
             outer.ThrowIfNotEmpty();
 
             while (reader.HasData)
             {
-                SafeBagAsn.Decode(reader, out SafeBagAsn bag);
+                SafeBagAsn.Decode(ref reader, contentData, out SafeBagAsn bag);
 
                 if (bag.BagId == Oids.Pkcs12CertBag)
                 {

@@ -282,13 +282,13 @@ namespace System.Security.Cryptography.Pkcs
         private static List<Pkcs12SafeBag> ReadBags(ReadOnlyMemory<byte> serialized)
         {
             List<SafeBagAsn> serializedBags = new List<SafeBagAsn>();
-            AsnReader reader = new AsnReader(serialized, AsnEncodingRules.BER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            AsnValueReader reader = new AsnValueReader(serialized.Span, AsnEncodingRules.BER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
 
             reader.ThrowIfNotEmpty();
             while (sequenceReader.HasData)
             {
-                SafeBagAsn.Decode(sequenceReader, out SafeBagAsn serializedBag);
+                SafeBagAsn.Decode(ref sequenceReader, serialized, out SafeBagAsn serializedBag);
                 serializedBags.Add(serializedBag);
             }
 
