@@ -11,7 +11,7 @@ using Xunit.Sdk;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
-    [SkipOnCoreClr("Test failures on stress tests")]
+    [SkipOnCoreClr("Test failures on stress tests", RuntimeTestModes.CheckedRuntime)]
     [SkipOnMono("Test failures on stress tests")]
     public class RegistrationBuilderAttributedOverrideUnitTests
     {
