@@ -22315,7 +22315,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
     Compiler*            comp      = data->compiler;
     CORINFO_CLASS_HANDLE retClsHnd = NO_CLASS_HANDLE;
 
-    if (tree->OperGet() == GT_RET_EXPR)
+    while (tree->OperGet() == GT_RET_EXPR)
     {
         // We are going to copy the tree from the inlinee,
         // so record the handle now.
@@ -22327,8 +22327,15 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
         // Skip through chains of GT_RET_EXPRs (say from nested inlines)
         // to the actual tree to use.
-        GenTree*  inlineCandidate = tree->gtRetExprVal();
-        var_types retType         = tree->TypeGet();
+        //
+        // Also we might as well try and fold the return value.
+        // Eg returns of constant bools will have CASTS.
+        // This folding may uncover more GT_RET_EXPRs, so we loop around
+        // until we've got something distinct.
+        //
+        GenTree* inlineCandidate = tree->gtRetExprVal();
+        inlineCandidate          = comp->gtFoldExpr(inlineCandidate);
+        var_types retType        = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22597,6 +22604,64 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
                 }
             }
         }
+    }
+    else if (tree->OperGet() == GT_JTRUE)
+    {
+        // See if this jtrue is now foldable.
+        BasicBlock* block    = comp->compCurBB;
+        GenTree*    condTree = tree->AsOp()->gtOp1;
+        assert(tree == block->lastStmt()->GetRootNode());
+
+        if (condTree->OperGet() == GT_CNS_INT)
+        {
+            JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
+            noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
+
+            // It would be nice to assert that "tree" is side-effect
+            // free, before we bash it.
+            //
+            // But we expect to see the GTF_CALL flag set, because
+            // this tree is an ancestor of an inline return
+            // value placeholder, and those always have GTF_CALL set,
+            // since if inlining fails we'd swap the call back in
+            // place.
+            //
+            // So, check that at least everything else is clear.
+            assert((tree->gtFlags & (GTF_SIDE_EFFECT & ~GTF_CALL)) == 0);
+
+            tree->gtBashToNOP();
+
+            BasicBlock* bTaken    = nullptr;
+            BasicBlock* bNotTaken = nullptr;
+
+            if (condTree->AsIntCon()->gtIconVal != 0)
+            {
+                block->bbJumpKind = BBJ_ALWAYS;
+                bTaken            = block->bbJumpDest;
+                bNotTaken         = block->bbNext;
+            }
+            else
+            {
+                block->bbJumpKind = BBJ_NONE;
+                bTaken            = block->bbNext;
+                bNotTaken         = block->bbJumpDest;
+            }
+
+            comp->fgRemoveRefPred(bNotTaken, block);
+
+            // If that was the last ref, a subsequent flow-opt pass
+            // will clean up the now-unreachable bNotTaken, and any
+            // other transitively unreachable blocks.
+            if (bNotTaken->bbRefs == 0)
+            {
+                JITDUMP("... it looks like BB%02u is now unreachable!\n", bNotTaken->bbNum);
+            }
+        }
+    }
+    else
+    {
+        GenTree* foldedTree = comp->gtFoldExpr(tree);
+        *pTree              = foldedTree;
     }
 
     return WALK_CONTINUE;
