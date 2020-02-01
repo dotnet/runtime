@@ -496,11 +496,6 @@ void FinalizeWeakReference(Object * obj)
 
     WEAKREFERENCEREF pThis((WeakReferenceObject *)(obj));
 
-    // Note:
-    // We need to revisit the implementation of FinalizeWeakReference() in case of concurrent ScanForFinalization
-    // ThreadSuspend::g_pSuspensionThread is set before SuspendRuntime is called, during that time interval, 
-    // there could be managed code running calling WeakReferenceNative::SetTarget() and missed the synchronization.
-
     OBJECTHANDLE handle = ThreadSuspend::SysIsSuspended() ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
     bool isWeakWinRTHandle = false;
