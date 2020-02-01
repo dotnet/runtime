@@ -599,7 +599,7 @@ private:
 
         m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl : val.LclNum());
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
         // is 32 bits we will quirk the size to 64 bits. Some PInvoke signatures incorrectly specify
         // a ByRef to an INT32 when they actually write a SIZE_T or INT64. There are cases where
@@ -615,7 +615,7 @@ private:
                         varTypeName(varDsc->TypeGet()));
             }
         }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
         // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
@@ -809,7 +809,7 @@ private:
             return;
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
         {
             // TODO-ADDR: For now we ignore all stack parameters of varargs methods,
@@ -900,7 +900,7 @@ private:
             return;
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (m_compiler->info.compIsVarArgs && varDsc->lvIsParam && !varDsc->lvIsRegArg)
         {
             // TODO-ADDR: For now we ignore all stack parameters of varargs methods,

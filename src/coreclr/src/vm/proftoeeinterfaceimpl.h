@@ -702,9 +702,9 @@ protected:
 
     HRESULT SetupThreadForReJIT();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     HRESULT ProfilerEbpWalker(Thread * pThreadToSnapshot, LPCONTEXT pctxSeed, StackSnapshotCallback * callback, void * clientData);
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 };
 
 #endif // PROFILING_SUPPORTED

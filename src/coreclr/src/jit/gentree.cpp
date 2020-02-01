@@ -707,14 +707,14 @@ int GenTree::GetRegisterDstCount() const
         return (const_cast<GenTree*>(this))->AsPutArgSplit()->gtNumRegs;
     }
 #endif
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     else if (OperIsMultiRegOp())
     {
         // A MultiRegOp is a GT_MUL_LONG, GT_PUTARG_REG, or GT_BITCAST.
         // For the latter two (ARM-only), they only have multiple registers if they produce a long value
         // (GT_MUL_LONG always produces a long value).
         CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         return (TypeGet() == TYP_LONG) ? 2 : 1;
 #else
         assert(OperIs(GT_MUL_LONG));
@@ -1979,7 +1979,7 @@ AGAIN:
                 break;
             case GT_CNS_LNG:
                 bits = (UINT64)tree->AsLngCon()->gtLconVal;
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
                 add = genTreeHashAdd(uhi32(bits), ulo32(bits));
@@ -1987,7 +1987,7 @@ AGAIN:
                 break;
             case GT_CNS_DBL:
                 bits = *(UINT64*)(&tree->AsDblCon()->gtDconVal);
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
                 add = genTreeHashAdd(uhi32(bits), ulo32(bits));
@@ -2009,7 +2009,7 @@ AGAIN:
         // clang-format off
         // narrow 'add' into a 32-bit 'val'
         unsigned val;
-#ifdef _HOST_64BIT_
+#ifdef HOST_64BIT
         val = genTreeHashAdd(uhi32(add), ulo32(add));
 #else // 32-bit host
         val = add;
@@ -2542,7 +2542,7 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
         if (op1->GetCostSz() != 0)
         {
             costSz += op1->GetCostSz();
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             if (callArgsInRegs) // push is smaller than mov to reg
 #endif
             {
@@ -2583,7 +2583,7 @@ unsigned Compiler::gtSetCallArgsOrder(const GenTreeCall::UseList& args, bool lat
         if (argNode->GetCostSz() != 0)
         {
             costSz += argNode->GetCostSz();
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
             if (lateArgs) // push is smaller than mov to reg
 #endif
             {
@@ -2769,7 +2769,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
         return false;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (varTypeIsFloating(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
@@ -2882,7 +2882,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
 
         addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         // addrmodeCount is the count of items that we used to form
         // an addressing mode.  The maximum value is 4 when we have
         // all of these:   { base, idx, cns, mul }
@@ -2974,7 +2974,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 }
             }
         }
-#elif defined _TARGET_ARM_
+#elif defined TARGET_ARM
         if (base)
         {
             *pCostEx += base->GetCostEx();
@@ -3013,7 +3013,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 }
             }
         }
-#elif defined _TARGET_ARM64_
+#elif defined TARGET_ARM64
         if (base)
         {
             *pCostEx += base->GetCostEx();
@@ -3076,7 +3076,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // we have already found either a non-ADD op1 or a non-constant op2.
         gtWalkOp(&op1, &op2, nullptr, true);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
         // gtWalkOp on both operands of the original GT_ADD.
         // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
@@ -3086,7 +3086,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // into the addressing mode.
         // Walk op2 looking for non-overflow GT_ADDs of constants.
         gtWalkOp(&op2, &op1, nullptr, true);
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
 
         // OK we are done walking the tree
         // Now assert that op1 and op2 correspond with base and idx
@@ -3237,7 +3237,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     {
         switch (oper)
         {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             case GT_CNS_LNG:
                 costSz = 9;
                 costEx = 4;
@@ -3279,7 +3279,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 goto COMMON_CNS;
             }
 
-#elif defined _TARGET_XARCH_
+#elif defined TARGET_XARCH
 
             case GT_CNS_LNG:
                 costSz = 10;
@@ -3305,13 +3305,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 1;
                     costEx = 1;
                 }
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
                 else if (iconNeedsReloc || !con->FitsInI32())
                 {
                     costSz = 10;
                     costEx = 3;
                 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 else
                 {
                     costSz = 4;
@@ -3320,7 +3320,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 goto COMMON_CNS;
             }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
             case GT_CNS_LNG:
             case GT_CNS_STR:
             case GT_CNS_INT:
@@ -3390,7 +3390,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 1;
                     }
                 }
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
                 // increase costSz for floating point locals
                 if (isflt)
                 {
@@ -3404,7 +3404,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
 
             case GT_CLS_VAR:
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                 // We generate movw/movt/ldr
                 level  = 1;
                 costEx = 3 + IND_COST_EX; // 6
@@ -3505,7 +3505,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_CAST:
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                     costEx = 1;
                     costSz = 1;
                     if (isflt || varTypeIsFloating(op1->TypeGet()))
@@ -3513,7 +3513,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx = 3;
                         costSz = 4;
                     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                     costEx = 1;
                     costSz = 2;
                     if (isflt || varTypeIsFloating(op1->TypeGet()))
@@ -3521,7 +3521,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx = 2;
                         costSz = 4;
                     }
-#elif defined(_TARGET_XARCH_)
+#elif defined(TARGET_XARCH)
                     costEx = 1;
                     costSz = 2;
 
@@ -3651,7 +3651,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
                 case GT_HWINTRINSIC:
                 {
                     if (tree->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
@@ -3669,7 +3669,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                 }
                 break;
-#endif // FEATURE_HW_INTRINSICS && _TARGET_XARCH_
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
                 case GT_BLK:
                 case GT_IND:
@@ -3700,9 +3700,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         {
                             costEx += 1;
                         }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                         costSz += 2;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
                     }
 
                     // Can we form an addressing mode with this indirection?
@@ -3751,7 +3751,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         /* Indirection of an enregister LCL_VAR, don't increase costEx/costSz */
                         goto DONE;
                     }
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                     else if (op1->IsCnsIntOrI())
                     {
                         // Indirection of a CNS_INT, subtract 1 from costEx
@@ -3780,13 +3780,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         costEx = 1;
         costSz = 1;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         if (isflt)
         {
             costSz += 2;
         }
 #endif
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         if (varTypeIsLong(op1->TypeGet()))
         {
             /* Operations on longs are more expensive */
@@ -3854,7 +3854,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz += 3;
                     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     if ((tree->gtType == TYP_LONG) || tree->gtOverflow())
                     {
                         /* We use imulEAX for TYP_LONG and overflow multiplications */
@@ -3864,7 +3864,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         /* The 64-bit imul instruction costs more */
                         costEx += 4;
                     }
-#endif //  _TARGET_X86_
+#endif //  TARGET_X86
                 }
                 break;
 
@@ -4065,7 +4065,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 if (!op2->IsCnsIntOrI())
                 {
                     costEx += 3;
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
                     // Variable sized LONG shifts require the use of a helper call
                     //
                     if (tree->gtType == TYP_LONG)
@@ -4075,7 +4075,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costEx += 3 * IND_COST_EX;
                         costSz += 4;
                     }
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
                 }
                 break;
 
@@ -4324,7 +4324,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             }
             else
             {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                 if (tree->AsCall()->IsVirtualStub())
                 {
                     // We generate movw/movt/ldr
@@ -4343,7 +4343,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costSz += 2;
 #endif
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                 costSz += 3;
 #endif
             }
@@ -5345,7 +5345,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicId);
 
-#if FEATURE_FIXED_OUT_ARGS && !defined(_TARGET_64BIT_)
+#if FEATURE_FIXED_OUT_ARGS && !defined(TARGET_64BIT)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
@@ -5359,7 +5359,7 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
             // tree walk of the argument tree, so we just do it when morphing, instead, even though we'll
             // mark non-argument trees (that will still get converted to calls, anyway).
             return (this->TypeGet() == TYP_LONG) && (gtGetOp2()->OperGet() != GT_CNS_INT);
-#endif // FEATURE_FIXED_OUT_ARGS && !_TARGET_64BIT_
+#endif // FEATURE_FIXED_OUT_ARGS && !TARGET_64BIT
 
         default:
             return false;
@@ -5889,7 +5889,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
 
 GenTree* Compiler::gtNewLconNode(__int64 value)
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     GenTree* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_LONG, value);
 #else
     GenTree* node = new (this, GT_CNS_LNG) GenTreeLngCon(value);
@@ -6111,7 +6111,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
 
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
     // Initialize the multi-reg long return info if necessary
     if (varTypeIsLong(node))
     {
@@ -6125,7 +6125,7 @@ GenTreeCall* Compiler::gtNewCallNode(
         // must be a long returned in two registers
         assert(retTypeDesc->GetReturnRegCount() == 2);
     }
-#endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
     return node;
 }
@@ -6603,12 +6603,12 @@ void GenTreeIntCon::FixupInitBlkValue(var_types asgType)
         if (size >= 4)
         {
             cns |= cns << 16;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             if (size == 8)
             {
                 cns |= cns << 32;
             }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             // Make the type match for evaluation types.
             gtType = asgType;
@@ -6797,7 +6797,7 @@ GenTree* Compiler::gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg
     assert(arg != nullptr);
 
     GenTree* node = nullptr;
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     // A PUTARG_REG could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
     if (type == TYP_LONG)
@@ -6831,7 +6831,7 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
     assert(arg != nullptr);
 
     GenTree* node = nullptr;
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     // A BITCAST could be a MultiRegOp on arm since we could move a double register to two int registers.
     node = new (this, GT_BITCAST) GenTreeMultiRegOp(GT_BITCAST, type, arg, nullptr);
 #else
@@ -8196,7 +8196,7 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 bool GenTree::gtSetFlags() const
 {
     //
-    // When FEATURE_SET_FLAGS (_TARGET_ARM_) is active the method returns true
+    // When FEATURE_SET_FLAGS (TARGET_ARM) is active the method returns true
     //    when the gtFlags has the flag GTF_SET_FLAGS set
     // otherwise the architecture will be have instructions that typically set
     //    the flags and this method will return true.
@@ -9831,7 +9831,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 goto DASH;
 
             case GT_MUL:
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
             case GT_MUL_LONG:
 #endif
                 if (tree->gtFlags & GTF_MUL_64RSLT)
@@ -10078,7 +10078,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
             if (tree->gtOper == GT_RUNTIMELOOKUP)
             {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 printf(" 0x%llx", dspPtr(tree->AsRuntimeLookup()->gtHnd));
 #else
                 printf(" 0x%x", dspPtr(tree->AsRuntimeLookup()->gtHnd));
@@ -10165,7 +10165,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     }
 #endif
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     if (tree->OperIsMultiRegOp() && (tree->AsMultiRegOp()->gtOtherReg != REG_NA))
     {
         printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
@@ -10237,12 +10237,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "OutArgs";
             }
 #endif // FEATURE_FIXED_OUT_ARGS
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             else if (lclNum == lvaPromotedStructAssemblyScratchVar)
             {
                 ilName = "PromotedStructScratch";
             }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 #if !defined(FEATURE_EH_FUNCLETS)
             else if (lclNum == lvaShadowSPslotsVar)
             {
@@ -10431,7 +10431,7 @@ void Compiler::gtDispConst(GenTree* tree)
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
                     printf(" %ld", dspIconVal);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 }
                 else if ((tree->AsIntCon()->gtIconVal & 0xFFFFFFFF00000000LL) != 0)
                 {
@@ -10665,13 +10665,13 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     {
                         LclVarDsc*  fieldVarDsc = &lvaTable[i];
                         const char* fieldName;
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
                         if (varTypeIsLong(varDsc))
                         {
                             fieldName = (i == 0) ? "lo" : "hi";
                         }
                         else
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
                         {
                             fldHnd    = info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd);
@@ -10967,7 +10967,7 @@ void Compiler::gtDispTree(GenTree*     tree,
             {
                 switch (tree->AsBlk()->gtBlkOpKind)
                 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                     case GenTreeBlk::BlkOpKindRepInstr:
                         printf(" (RepInstr)");
                         break;
@@ -10975,7 +10975,7 @@ void Compiler::gtDispTree(GenTree*     tree,
                     case GenTreeBlk::BlkOpKindUnroll:
                         printf(" (Unroll)");
                         break;
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
                     case GenTreeBlk::BlkOpKindHelper:
                         printf(" (Helper)");
                         break;
@@ -11426,7 +11426,7 @@ void Compiler::gtGetArgMsg(
         }
         else
         {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             if (curArgTabEntry->IsSplit())
             {
                 regNumber firstReg = curArgTabEntry->GetRegNum();
@@ -11488,7 +11488,7 @@ void Compiler::gtGetArgMsg(
                 }
                 return;
             }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 #if FEATURE_FIXED_OUT_ARGS
             if (listCount == -1)
             {
@@ -11556,7 +11556,7 @@ void Compiler::gtGetLateArgMsg(
         {
             sprintf_s(bufp, bufLength, "this in %s%c", compRegVarName(argReg), 0);
         }
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         else if (curArgTabEntry->IsSplit())
         {
             regNumber firstReg = curArgTabEntry->GetRegNum();
@@ -11618,7 +11618,7 @@ void Compiler::gtGetLateArgMsg(
             }
             return;
         }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
         else
         {
 #if FEATURE_MULTIREG_ARGS
@@ -14155,12 +14155,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             }
 #endif
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             // Some operations are performed as 64 bit instead of 32 bit so the upper 32 bits
             // need to be discarded. Since constant values are stored as ssize_t and the node
             // has TYP_INT the result needs to be sign extended rather than zero extended.
             i1 = INT32(i1);
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             /* Also all conditional folding jumps here since the node hanging from
              * GT_JTRUE has to be a GT_CNS_INT - value 0 or 1 */
@@ -16316,7 +16316,7 @@ bool GenTreeIntConCommon::ImmedValCanBeFolded(Compiler* comp, genTreeOps op)
     return !ImmedValNeedsReloc(comp) || (op == GT_EQ) || (op == GT_NE);
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 // Returns true if this absolute address fits within the base of an addr mode.
 // On Amd64 this effectively means, whether an absolute indirect address can
 // be encoded as 32-bit offset relative to IP or zero.
@@ -16374,7 +16374,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     }
 }
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 // Returns true if this absolute address fits within the base of an addr mode.
 // On x86 all addresses are 4-bytes and can be directly encoded in an addr mode.
 bool GenTreeIntConCommon::FitsInAddrBase(Compiler* comp)
@@ -16396,7 +16396,7 @@ bool GenTreeIntConCommon::AddrNeedsReloc(Compiler* comp)
     // If generating relocatable code, icons should be reported for recording relocatons.
     return comp->opts.compReloc && IsIconHandle();
 }
-#endif //_TARGET_X86_
+#endif // TARGET_X86
 
 bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pObj, GenTree** pStatic, FieldSeqNode** pFldSeq)
 {
@@ -16668,7 +16668,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         {
                             isHWSIMD = false;
                         }
-#if defined(_TARGET_ARM64_) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
                         else
                         {
                             assert(simdHandle == m_simdHandleCache->Vector64FloatHandle);
@@ -16692,7 +16692,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
                         break;
-#endif // defined(_TARGET_ARM64_) && defined(FEATURE_HW_INTRINSICS)
+#endif // defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
                     default:
                         break;
                 }
@@ -16789,7 +16789,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                 }
                 break;
-#endif // _TARGET_XARCH_ && FEATURE_HW_INTRINSICS
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
             default:
                 break;
         }
@@ -16798,7 +16798,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
     unsigned size = genTypeSize(simdType);
     if (isHWSIMD)
     {
-#if defined(_TARGET_XARCH_) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
         switch (simdType)
         {
             case TYP_SIMD16:
@@ -16822,7 +16822,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
             default:
                 break;
         }
-#endif // _TARGET_XARCH_ && FEATURE_HW_INTRINSICS
+#endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
         JITDUMP("Coudn't find the matching SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
                 varTypeName(baseType));
     }
@@ -18099,18 +18099,18 @@ bool GenTree::isCommutativeHWIntrinsic() const
 {
     assert(gtOper == GT_HWINTRINSIC);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     return HWIntrinsicInfo::IsCommutative(AsHWIntrinsic()->gtHWIntrinsicId);
 #else
     return false;
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 }
 
 bool GenTree::isContainableHWIntrinsic() const
 {
     assert(gtOper == GT_HWINTRINSIC);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     switch (AsHWIntrinsic()->gtHWIntrinsicId)
     {
         case NI_SSE_LoadAlignedVector128:
@@ -18134,7 +18134,7 @@ bool GenTree::isContainableHWIntrinsic() const
     }
 #else
     return false;
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 }
 
 bool GenTree::isRMWHWIntrinsic(Compiler* comp)
@@ -18142,7 +18142,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     assert(gtOper == GT_HWINTRINSIC);
     assert(comp != nullptr);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     if (!comp->canUseVexEncoding())
     {
         return HWIntrinsicInfo::HasRMWSemantics(AsHWIntrinsic()->gtHWIntrinsicId);
@@ -18175,7 +18175,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
     }
 #else
     return false;
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewSimdHWIntrinsicNode(var_types      type,
@@ -18303,7 +18303,7 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoad()
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // Some xarch instructions have MemoryLoad sematics
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryLoad)
@@ -18338,14 +18338,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
             }
         }
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryStore()
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // Some xarch instructions have MemoryStore sematics
     HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(gtHWIntrinsicId);
     if (category == HW_Category_MemoryStore)
@@ -18373,14 +18373,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
             }
         }
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     return OperIsMemoryLoad() || OperIsMemoryStore();
 #else
     return false;
@@ -18469,7 +18469,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
                 m_regType[i] = comp->GetEightByteType(structDesc, i);
             }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
             // a non-HFA struct returned using two registers
             //
@@ -18524,7 +18524,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 //
 void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 {
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
 
     // Setups up a ReturnTypeDesc for returning a long using two registers
     //
@@ -18532,11 +18532,11 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
     m_regType[0] = TYP_INT;
     m_regType[1] = TYP_INT;
 
-#else // not (_TARGET_X86_ or _TARGET_ARM_)
+#else // not (TARGET_X86 or TARGET_ARM)
 
     m_regType[0] = TYP_LONG;
 
-#endif // _TARGET_X86_ or _TARGET_ARM_
+#endif // TARGET_X86 or TARGET_ARM
 
 #ifdef DEBUG
     m_inited = true;
@@ -18609,7 +18609,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
     }
 
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
 
     if (idx == 0)
     {
@@ -18620,7 +18620,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         resultReg = REG_LNGRET_HI;
     }
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     var_types regType = GetReturnRegType(idx);
     if (varTypeIsIntegralOrI(regType))
@@ -18652,7 +18652,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
     }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     var_types regType = GetReturnRegType(idx);
     if (varTypeIsIntegralOrI(regType))

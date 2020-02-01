@@ -10,9 +10,9 @@
 
 
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #error Should only include "cgenx86.h" for X86 builds
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef __cgenx86_h__
 #define __cgenx86_h__
@@ -545,10 +545,10 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 // #define JIT_GetSharedGCStaticBaseNoCtor
 // #define JIT_GetSharedNonGCStaticBaseNoCtor
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define JIT_NewCrossContext         JIT_NewCrossContext
 #define JIT_Stelem_Ref              JIT_Stelem_Ref
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Call counting

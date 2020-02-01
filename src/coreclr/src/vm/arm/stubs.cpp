@@ -532,9 +532,9 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
     do
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         pvControlPc = Thread::VirtualUnwindCallFrame(&ctx, &nonVolRegPtrs);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #ifdef DACCESS_COMPILE
         HRESULT hr = DacVirtualUnwind(threadId, &ctx, &nonVolRegPtrs);
         if (FAILED(hr))
@@ -550,7 +550,7 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
         }
 #endif // DACCESS_COMPILE
         pvControlPc = GetIP(&ctx);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         if (funCallDepth > 0)
         {
             --funCallDepth;
@@ -1328,7 +1328,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     ThumbReg regScratch = ThumbReg(6);
     ThumbReg regR9 = ThumbReg(9);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // Erect frame to perform call to GetThread
     psl->ThumbEmitProlog(1, sizeof(ArgumentRegisters), FALSE); // Save r4 for aligned stack
 
@@ -1339,7 +1339,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     psl->ThumbEmitGetThread(regThread);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     for (int reg = 0; reg < 4; reg++)
         psl->ThumbEmitLoadRegIndirect(ThumbReg(reg), thumbRegSp, offsetof(ArgumentRegisters, r) + sizeof(*ArgumentRegisters::r) * reg);
 #endif
@@ -1367,7 +1367,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     psl->ThumbEmitMovConstant(regScratch, 0);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfReturnAddress - negSpace);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     DWORD cbSavedRegs = sizeof(ArgumentRegisters) + 2 * 4; // r0-r3, r4, lr
     psl->ThumbEmitAdd(regScratch, thumbRegSp, cbSavedRegs);
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfCallSiteSP - negSpace);
@@ -1381,7 +1381,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
     // leave current Thread in R4
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     psl->ThumbEmitEpilog();
 #else
     // Return. The return address has been restored into LR at this point.
@@ -1395,7 +1395,7 @@ Stub *GenerateInitPInvokeFrameHelper()
 
 void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     ThumbEmitMovConstant(ThumbReg(0), (TADDR)GetThread);
 
@@ -1406,7 +1406,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
         ThumbEmitMovRegReg(dest, ThumbReg(0));
     }
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
     // mrc p15, 0, dest, c13, c0, 2
     Emit16(0xee1d);
@@ -1418,7 +1418,7 @@ void StubLinkerCPU::ThumbEmitGetThread(ThumbReg dest)
 
     ThumbEmitLoadRegIndirect(dest, dest, (g_TlsIndex & 0x7FFF0000) >> 16);
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 #endif // CROSSGEN_COMPILE
 

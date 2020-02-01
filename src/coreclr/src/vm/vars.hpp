@@ -20,7 +20,7 @@ typedef LPVOID  DictionaryEntry;
 /* Define the implementation dependent size types */
 
 #ifndef _INTPTR_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef __int64             intptr_t;
 #else
 typedef int                 intptr_t;
@@ -29,7 +29,7 @@ typedef int                 intptr_t;
 #endif
 
 #ifndef _UINTPTR_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef unsigned __int64    uintptr_t;
 #else
 typedef unsigned int        uintptr_t;
@@ -38,7 +38,7 @@ typedef unsigned int        uintptr_t;
 #endif
 
 #ifndef _PTRDIFF_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef __int64             ptrdiff_t;
 #else
 typedef int                 ptrdiff_t;
@@ -48,7 +48,7 @@ typedef int                 ptrdiff_t;
 
 
 #ifndef _SIZE_T_DEFINED
-#ifdef  BIT64
+#ifdef  HOST_64BIT
 typedef unsigned __int64 size_t;
 #else
 typedef unsigned int     size_t;
@@ -523,9 +523,9 @@ enum FWStatus
 
 EXTERN DWORD g_FinalizerWaiterStatus;
 
-#if defined(FEATURE_PAL) && defined(FEATURE_EVENT_TRACE)
+#if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 //
@@ -638,10 +638,10 @@ inline bool CORDebuggerAttached()
 //
 EXTERN HINSTANCE g_hInstShim;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 GVAL_DECL(SIZE_T, g_runtimeLoadedBaseAddress);
 GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
 #ifndef MAXULONG

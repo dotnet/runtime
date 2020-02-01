@@ -61,9 +61,9 @@
 
 #include "nativeoverlapped.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 

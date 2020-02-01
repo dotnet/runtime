@@ -167,9 +167,9 @@
 #include "disassembler.h"
 #include "jithost.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 #include "stubhelpers.h"
@@ -217,10 +217,10 @@
 #include "diagnosticserver.h"
 #include "eventpipe.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Included for referencing __security_cookie
 #include "process.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_GDBJIT
 #include "gdbjit.h"
@@ -319,7 +319,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
         AppX::SetIsAppXProcess(!!(startupFlags & STARTUP_APPX_APP_MODEL));
 #endif
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // The sooner we do this, the sooner we avoid probing registry entries.
         // (Perf Optimization for VSWhidbey:113373.)
         REGUTIL::InitOptionalConfigCache();
@@ -399,7 +399,7 @@ HRESULT EnsureEEStarted(COINITIEE flags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // This is our Ctrl-C, Ctrl-Break, etc. handler.
 static BOOL WINAPI DbgCtrlCHandler(DWORD dwCtrlType)
 {
@@ -510,12 +510,12 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // On Unix, the GS cookie is stored in a read only data segment
     DWORD newProtection = PAGE_READWRITE;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     DWORD newProtection = PAGE_EXECUTE_READWRITE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     DWORD oldProtection;
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), newProtection, &oldProtection))
@@ -523,12 +523,12 @@ void InitGSCookie()
         ThrowLastError();
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
     oldProtection = PAGE_READONLY;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
     assert(((oldProtection & (PAGE_READWRITE|PAGE_WRITECOPY|PAGE_EXECUTE_READWRITE|
                               PAGE_EXECUTE_WRITECOPY|PAGE_WRITECOMBINE)) == 0));
@@ -538,10 +538,10 @@ void InitGSCookie()
     pf = NULL;
 
     GSCookie val = (GSCookie)(__security_cookie ^ GetTickCount());
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     // REVIEW: Need something better for PAL...
     GSCookie val = (GSCookie)GetTickCount();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef _DEBUG
     // In _DEBUG, always use the same value to make it easier to search for the cookie
@@ -610,7 +610,7 @@ do { \
 
 
 #ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 void EESocketCleanupHelper()
 {
     CONTRACTL
@@ -630,7 +630,7 @@ void EESocketCleanupHelper()
     DiagnosticServer::Shutdown();
 #endif // FEATURE_PERFTRACING
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 #endif // CROSSGEN_COMPILE
 
 void EEStartupHelper(COINITIEE fFlags)
@@ -657,7 +657,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         ::SetConsoleCtrlHandler(DbgCtrlCHandler, TRUE/*add*/);
 #endif
 
@@ -674,9 +674,9 @@ void EEStartupHelper(COINITIEE fFlags)
         // Need to do this as early as possible. Used by creating object handle
         // table inside Ref_Initialization() before GC is initialized.
         NumaNodeInfo::InitNumaNodeInfo();
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         CPUGroupInfo::EnsureInitialized();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
@@ -696,9 +696,9 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #endif // FEATURE_PERFTRACING
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         PAL_SetShutdownCallback(EESocketCleanupHelper);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_GDBJIT
         // Initialize gdbjit
@@ -746,9 +746,9 @@ void EEStartupHelper(COINITIEE fFlags)
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "===================EEStartup Starting===================");
 
 #ifndef CROSSGEN_COMPILE
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         IfFailGoLog(EnsureRtlFunctions());
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         InitEventStore();
 #endif
 
@@ -800,7 +800,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Cross-process named objects are not supported in PAL
         // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp.272)
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
         // Initialize the sweeper thread.
         if (g_pConfig->GetZapBBInstr() != NULL)
         {
@@ -814,7 +814,7 @@ void EEStartupHelper(COINITIEE fFlags)
             _ASSERTE(hBBSweepThread);
             g_BBSweep.SetBBSweepThreadHandle(hBBSweepThread);
         }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_INTERPRETER
         Interpreter::Initialize();
@@ -822,7 +822,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         StubManager::InitializeStubManagers();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         {
             // Record mscorwks geometry
             PEDecoder pe(g_pMSCorEE);
@@ -831,7 +831,7 @@ void EEStartupHelper(COINITIEE fFlags)
             g_runtimeVirtualSize = (SIZE_T)pe.GetVirtualSize();
             InitCodeAllocHint(g_runtimeLoadedBaseAddress, g_runtimeVirtualSize, GetRandomInt(64));
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // CROSSGEN_COMPILE
 
@@ -884,12 +884,12 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (!RegisterOutOfProcessWatsonCallbacks())
         {
             IfFailGo(E_FAIL);
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
         if(!NingenEnabled())
@@ -1145,7 +1145,7 @@ HRESULT EEStartup(COINITIEE fFlags)
     {
 #ifndef CROSSGEN_COMPILE
         InitializeClrNotifications();
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         InitializeJITNotificationTable();
         DacGlobals::Initialize();
 #endif
@@ -2248,15 +2248,15 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             SIZE_T cchParentCultureName=LOCALE_NAME_MAX_LENGTH;
             sCulture.Set(id);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
             {
                 hr = HRESULT_FROM_GetLastError();
             }
             sParentCulture.CloseBuffer();
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
             sParentCulture = sCulture;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         }
         // (LPCWSTR) to restrict the size to null terminated size
         pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
@@ -2363,18 +2363,18 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 #endif
     if (Result == 0)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // This thread isn't set up to use a non-default culture. Let's grab the default
         // one and return that.
 
         Result = ::GetUserDefaultLocaleName(*pLocale, LOCALE_NAME_MAX_LENGTH);
 
         _ASSERTE(Result != 0);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         static const WCHAR enUS[] = W("en-US");
         memcpy(*pLocale, enUS, sizeof(enUS));
         Result = sizeof(enUS);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
     return Result;
 }

@@ -4,7 +4,7 @@
 //
 
 
-#ifndef _TARGET_ARM64_
+#ifndef TARGET_ARM64
 #error Should only include "cGenCpu.h" for ARM64 builds
 #endif
 
@@ -14,9 +14,9 @@
 #define INSTRFMT_K64
 #include <stublink.h>
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
 EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
