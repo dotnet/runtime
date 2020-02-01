@@ -1371,7 +1371,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 {
     if (enregisterLocalVars && !VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
+        // We assume that the kill set includes at least some callee-trash registers, but
+        // that it doesn't include any callee-save registers.
         assert((fpCalleeKillSet & RBM_FLT_CALLEE_TRASH) != RBM_NONE);
+        assert((fpCalleeKillSet & RBM_FLT_CALLEE_SAVED) == RBM_NONE);
 
         // We only need to save the upper half of any large vector vars that are currently live.
         VARSET_TP       liveLargeVectors(VarSetOps::Intersection(compiler, currentLiveVars, largeVectorVars));
