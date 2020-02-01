@@ -44,15 +44,14 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(16945)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/16945")]
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
-            // TODO #5185: Harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
             const int AckTimeout = 10000;
@@ -126,7 +125,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecv_Stream_TCP(IPAddress listenAt, bool useMultipleBuffers)
@@ -242,7 +241,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendRecv_Stream_TCP_LargeMultiBufferSends(IPAddress listenAt)
@@ -293,7 +292,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendRecv_Stream_TCP_AlternateBufferAndBufferList(IPAddress listenAt)
@@ -394,7 +393,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecv_Stream_TCP_MultipleConcurrentReceives(IPAddress listenAt, bool useMultipleBuffers)
@@ -492,7 +491,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress listenAt, bool useMultipleBuffers)
@@ -560,7 +559,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(LoopbacksAndBuffers))]
         public async Task SendRecvPollSync_TcpListener_Socket(IPAddress listenAt, bool pollBeforeOperation)
@@ -804,7 +803,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task SendRecv_DisposeDuringPendingReceive_ThrowsSocketException()
         {
@@ -1212,7 +1211,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1253,7 +1252,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1325,7 +1324,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -1354,7 +1353,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {
@@ -1422,14 +1421,13 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SendReceiveUdpClient : MemberDatas
     {
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress loopbackAddress)
         {
             IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
 
-            // TODO #5185: harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
             const int AckTimeout = 20000;
@@ -1503,7 +1501,7 @@ namespace System.Net.Sockets.Tests
 
     public sealed class SendReceiveListener : MemberDatas
     {
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
@@ -1772,7 +1770,53 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
+        {
+            if (UsesSync) return;
+
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                await client.ConnectAsync(listener.LocalEndPoint);
+                using (Socket server = await listener.AcceptAsync())
+                {
+                    await Task.Run(async delegate // escape the xunit sync context / task scheduler
+                    {
+                        const int SendDelayMs = 100;
+
+                        Task sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        await client.ReceiveAsync(new byte[1], SocketFlags.None);
+                        sendTask.GetAwaiter().GetResult(); // should have already completed
+
+                        // We may now be executing here as part of the continuation invoked synchronously
+                        // when the client ReceiveAsync task was completed. Validate that if socket callbacks block
+                        // (undesirably), other operations on that socket can still be processed.
+                        var mre = new ManualResetEventSlim();
+                        sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        Task receiveTask = client
+                            .ReceiveAsync(new byte[1], SocketFlags.None)
+                            .ContinueWith(t => { mre.Set(); return t; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
+                            .Unwrap();
+                        mre.Wait(); // block waiting for other operations on this socket to complete
+
+                        sendTask.GetAwaiter().GetResult();
+                        await sendTask;
+                        await receiveTask;
+                    });
+                }
+            }
+        }
     }
+
     public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
     {
         public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }

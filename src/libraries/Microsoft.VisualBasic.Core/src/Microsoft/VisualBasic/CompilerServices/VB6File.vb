@@ -106,7 +106,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Dim FieldType As System.Type = field_info.FieldType
 
             If FieldType Is Nothing Then
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Empty")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Empty")), vbErrors.IllegalFuncCall)
             End If
 
             If FieldType.IsArray() Then
@@ -193,16 +193,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Case TypeCode.Char
                         m_oFile.PutChar(0, CharType.FromObject(vValue))
                     Case TypeCode.DBNull
-                        Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "DBNull")), vbErrors.IllegalFuncCall)
+                        Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "DBNull")), vbErrors.IllegalFuncCall)
                     Case Else 'Case TypeCode.Object
                         If FieldType Is GetType(Object) Then
                             m_oFile.PutObject(vValue, 0)
                         ElseIf FieldType Is GetType(System.Exception) Then
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Exception")), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Exception")), vbErrors.IllegalFuncCall)
                         ElseIf FieldType Is GetType(System.Reflection.Missing) Then
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Missing")), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Missing")), vbErrors.IllegalFuncCall)
                         Else
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, FieldType.Name)), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, FieldType.Name)), vbErrors.IllegalFuncCall)
                         End If
                 End Select
             End If
@@ -227,7 +227,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             FieldType = field_info.FieldType
 
             If FieldType Is Nothing Then
-                Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Empty")), vbErrors.IllegalFuncCall)
+                Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Empty")), vbErrors.IllegalFuncCall)
             End If
 
             If FieldType.IsArray() Then
@@ -293,17 +293,17 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Case TypeCode.Char
                         vValue = m_oFile.GetChar(0)
                     Case TypeCode.DBNull
-                        Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "DBNull")), vbErrors.IllegalFuncCall)
+                        Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "DBNull")), vbErrors.IllegalFuncCall)
                     Case Else
                         'Case TypeCode.Object
                         If FieldType Is GetType(Object) Then
                             m_oFile.GetObject(vValue)
                         ElseIf FieldType Is GetType(System.Exception) Then
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Exception")), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Exception")), vbErrors.IllegalFuncCall)
                         ElseIf FieldType Is GetType(System.Reflection.Missing) Then
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, "Missing")), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, "Missing")), vbErrors.IllegalFuncCall)
                         Else
-                            Throw VbMakeException(New ArgumentException(GetResourceString(SR.Argument_UnsupportedFieldType2, field_info.Name, FieldType.Name)), vbErrors.IllegalFuncCall)
+                            Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_UnsupportedFieldType2, field_info.Name, FieldType.Name)), vbErrors.IllegalFuncCall)
                         End If
                 End Select
             End If
@@ -368,7 +368,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If access <> OpenAccess.Read AndAlso
                access <> OpenAccess.ReadWrite AndAlso
                access <> OpenAccess.Write Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Access"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Access"))
             End If
             m_access = access
 
@@ -376,7 +376,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 share <> OpenShare.LockRead AndAlso
                 share <> OpenShare.LockReadWrite AndAlso
                 share <> OpenShare.LockWrite) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Share"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Share"))
             End If
 
             m_share = share
@@ -946,7 +946,7 @@ NewLine:
             ElseIf cDims = 2 Then
                 SecondBound = arr.GetUpperBound(1)
             ElseIf cDims <> 0 Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_UnsupportedArrayDimensions))
+                Throw New ArgumentException(SR.Argument_UnsupportedArrayDimensions)
             End If
 
             SetRecord(RecordNumber)
@@ -1662,7 +1662,7 @@ NewLine:
                 ArrUBoundY = -1
                 ArrUBoundX = -1
             ElseIf (arr.GetUpperBound(0) > FirstBound) Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_ArrayDimensionsDontMatch))
+                Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
             End If
 
             If typ Is Nothing Then
@@ -1682,7 +1682,7 @@ NewLine:
                 iUpperElementY = FirstBound
                 If Not arr Is Nothing Then
                     If arr.Rank <> 2 OrElse arr.GetUpperBound(1) <> SecondBound Then
-                        Throw New ArgumentException(GetResourceString(SR.Argument_ArrayDimensionsDontMatch))
+                        Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
                     End If
                     ArrUBoundY = arr.GetUpperBound(0)
                     ArrUBoundX = arr.GetUpperBound(1)
@@ -1702,7 +1702,7 @@ NewLine:
                     End If
                 End If
                 If FixedStringLength = 0 Then
-                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidFixedLengthString))
+                    Throw New ArgumentException(SR.Argument_InvalidFixedLengthString)
                 ElseIf FixedStringLength > 0 Then
                     FixedBlankString = StrDup(FixedStringLength, " "c)
                     FixedCharArray = FixedBlankString.ToCharArray() 'Used for padding
@@ -1849,7 +1849,7 @@ NewLine:
 
                             If ByteLength > System.Int16.MaxValue Then
                                 'Size for strings is 2 bytes, thus the Short.MaxValue limitation
-                                Throw VbMakeException(New ArgumentException(GetResourceString(SR.FileIO_StringLengthExceeded)), vbErrors.IllegalFuncCall)
+                                Throw VbMakeException(New ArgumentException(SR.FileIO_StringLengthExceeded), vbErrors.IllegalFuncCall)
                             End If
 
                             'Do a length check and write out the length if not fixed length
@@ -1913,7 +1913,7 @@ NewLine:
             Dim iUpperElementY As Integer
 
             If arr Is Nothing Then
-                Throw New ArgumentException(GetResourceString(SR.Argument_ArrayNotInitialized))
+                Throw New ArgumentException(SR.Argument_ArrayNotInitialized)
             End If
 
             If typ Is Nothing Then
@@ -2031,7 +2031,7 @@ NewLine:
                             arr.SetValue(obj, iElementY, iElementX)
                         End If
                     Catch Ex As IndexOutOfRangeException
-                        Throw New ArgumentException(GetResourceString(SR.Argument_ArrayDimensionsDontMatch))
+                        Throw New ArgumentException(SR.Argument_ArrayDimensionsDontMatch)
                     End Try
                 Next iElementY
             Next iElementX
@@ -2172,7 +2172,7 @@ NewLine:
                             ElseIf typ Is GetType(System.Reflection.Missing) Then
                                 s = "Error 448"
                             Else
-                                Throw New ArgumentException(GetResourceString(SR.Argument_UnsupportedIOType1, VBFriendlyName(typ)))
+                                Throw New ArgumentException(SR.Format(SR.Argument_UnsupportedIOType1, VBFriendlyName(typ)))
                             End If
                     End Select
                 End If
@@ -2671,7 +2671,7 @@ SkipWhiteSpaceExit:
         Private Sub ValidateReadable()
             If (m_access <> OpenAccess.ReadWrite) AndAlso (m_access <> OpenAccess.Read) Then
                 Dim JustNeedTheMessage As New NullReferenceException ' We don't have access to the localized resources for this string.
-                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(GetResourceString(SR.FileOpenedNoRead)))
+                Throw New NullReferenceException(JustNeedTheMessage.Message, New IO.IOException(SR.FileOpenedNoRead))
             End If
         End Sub
 

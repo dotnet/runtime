@@ -136,7 +136,7 @@ namespace ILCompiler.PEWriter
         /// <param name="relocationType">Relocation type to process</param>
         /// <param name="sourceRVA">RVA representing the address to relocate</param>
         /// <param name="targetRVA">RVA representing the relocation target</param>
-        public void ProcessRelocation(RelocType relocationType, int sourceRVA, int targetRVA)
+        public void ProcessRelocation(RelocType relocationType, int sourceRVA, int targetRVA, int filePosWhenPlaced)
         {
             int relocationLength = 0;
             long delta = 0;
@@ -201,6 +201,13 @@ namespace ILCompiler.PEWriter
                     {
                         relocationLength = 4;
                         delta = targetRVA & 0xfff;
+                        break;
+                    }
+
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
+                    {
+                        relocationLength = 4;
+                        delta = filePosWhenPlaced;
                         break;
                     }
 

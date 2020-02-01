@@ -92,7 +92,7 @@ public:
             MODE_ANY;
         }
         CONTRACTL_END;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         _ASSERTE(dwOffset % sizeof(DWORD) == 0); // should be dword aligned. That'll save us 2 bits.
         m_w.WriteEncodedI32(dwOffset / sizeof(DWORD));
 #else
@@ -175,7 +175,7 @@ public:
     void DoEncodedStackOffset(signed & dwOffset)
     {
         SUPPORTS_DAC;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         dwOffset = m_r.ReadEncodedI32() * sizeof(DWORD);
 #else
         // Non x86 platforms don't need it to be dword aligned.

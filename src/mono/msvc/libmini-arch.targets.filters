@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="arch_wasm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-wasm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\wasm</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-wasm.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\wasm</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-wasm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\wasm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-wasm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\wasm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_x86_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-x86.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-x86.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-x86.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-x86.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-x86-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-x86-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\x86</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_amd64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-amd64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-amd64.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-amd64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-amd64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-amd64-gsharedvt.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-amd64-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-amd64-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\amd64</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_ppc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-ppc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\ppc</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-ppc.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\ppc</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-ppc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\ppc</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-ppc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\ppc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-arm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_arm64_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm64.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-arm64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm64.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arm64-gsharedvt.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-arm64-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-arm64-gsharedvt.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\arm64</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_mips_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-mips.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\mips</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-mips.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\mips</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-mips.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\mips</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-mips.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\mips</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_sparc_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-sparc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\sparc</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-sparc.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\sparc</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-sparc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\sparc</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-sparc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\sparc</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup Label="arch_s390x_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-s390x.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\s390x</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-s390x.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\s390x</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\support-s390x.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\arch\s390x</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\exceptions-s390x.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\s390x</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tramp-s390x.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\arch\s390x</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch">
+      <UniqueIdentifier>{819510FE-1354-40D8-93CA-2FF5EB410FED}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch">
+      <UniqueIdentifier>{9FD04D2D-B4F4-4EC6-82FF-26A2333D4467}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\wasm">
+      <UniqueIdentifier>{B6D0ED07-1561-4C73-97E6-3E0688E3FDB3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\wasm">
+      <UniqueIdentifier>{1EBAD4C5-455D-425F-B036-9D31C3A1D5B5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\x86">
+      <UniqueIdentifier>{4F64FA1A-0E4D-46ED-97DE-6913D02E6210}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\x86">
+      <UniqueIdentifier>{195D3978-2A6F-4319-8E1C-D0DB1210F6B2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\amd64">
+      <UniqueIdentifier>{257C0357-BA3E-4E1C-9C35-466AB8436E8C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\amd64">
+      <UniqueIdentifier>{54DD5925-EFC1-4795-A72F-567572A55127}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\ppc">
+      <UniqueIdentifier>{93654968-5AC2-47D6-B75A-2B2B389E755F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\ppc">
+      <UniqueIdentifier>{BC2E6DB6-BE05-4CA1-8B7A-C6E479CF18B8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\arm">
+      <UniqueIdentifier>{AD618FB9-5A86-4FB0-8954-D521472E4ABA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\arm">
+      <UniqueIdentifier>{BEB75A74-7D5B-46FF-A3C8-54CD43CB3169}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\arm64">
+      <UniqueIdentifier>{215EE8BC-34C7-443B-913D-6C66A12D5423}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\arm64">
+      <UniqueIdentifier>{62141C1C-2506-47B6-87FC-A5BEC57E25C4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\mips">
+      <UniqueIdentifier>{EAD92105-5ECB-4307-B7B1-E46505F8F663}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\mips">
+      <UniqueIdentifier>{36B76A9F-133A-4A05-BB24-8AF688194DF2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\sparc">
+      <UniqueIdentifier>{9388C690-91E7-4FA1-86EE-FF8D2B146B23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\sparc">
+      <UniqueIdentifier>{271C5D45-30DD-490B-B8F1-00BB955EAF71}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\arch\s390x">
+      <UniqueIdentifier>{E241E01E-29A9-4029-AD16-7A9E33B3153C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\arch\s390x">
+      <UniqueIdentifier>{906B3D7C-D6B7-4EA6-A2B5-2B385C9C2A6C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

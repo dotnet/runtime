@@ -369,42 +369,44 @@ namespace System.IO
             }
         }
 
-        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+        // Default values indicate "no change".  Use defaults so that we don't force callsites to be aware of the default values
+        private static unsafe void SetFileTime(
+            string fullPath,
+            bool asDirectory,
+            long creationTime = -1,
+            long lastAccessTime = -1,
+            long lastWriteTime = -1,
+            long changeTime = -1,
+            uint fileAttributes = 0)
         {
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                if (!Interop.Kernel32.SetFileTime(handle, creationTime: time.ToFileTime()))
+                var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
+                {
+                    CreationTime = creationTime,
+                    LastAccessTime = lastAccessTime,
+                    LastWriteTime = lastWriteTime,
+                    ChangeTime = changeTime,
+                    FileAttributes = fileAttributes
+                };
+
+                if (!Interop.Kernel32.SetFileInformationByHandle(handle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
                 }
             }
         }
+
+        public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
+           => SetFileTime(fullPath, asDirectory, creationTime: time.ToFileTime());
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
-            {
-                if (!Interop.Kernel32.SetFileTime(handle, lastAccessTime: time.ToFileTime()))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
-                }
-            }
-        }
+           => SetFileTime(fullPath, asDirectory, lastAccessTime: time.ToFileTime());
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
-        {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
-            {
-                if (!Interop.Kernel32.SetFileTime(handle, lastWriteTime: time.ToFileTime()))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
-                }
-            }
-        }
+           => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
 
         public static string[] GetLogicalDrives()
-        {
-            return DriveInfoInternal.GetLogicalDrives();
-        }
+            => DriveInfoInternal.GetLogicalDrives();
     }
 }

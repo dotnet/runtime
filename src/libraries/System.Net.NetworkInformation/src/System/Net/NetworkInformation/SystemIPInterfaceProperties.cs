@@ -27,7 +27,7 @@ namespace System.Net.NetworkInformation
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;
         private readonly InternalIPAddressCollection _dhcpServers;
 
-        internal SystemIPInterfaceProperties(Interop.IpHlpApi.FIXED_INFO fixedInfo, Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        internal SystemIPInterfaceProperties(in Interop.IpHlpApi.FIXED_INFO fixedInfo, in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
         {
             _adapterFlags = ipAdapterAddresses.flags;
             _dnsSuffix = ipAdapterAddresses.dnsSuffix;

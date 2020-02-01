@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
+#nullable enable
 internal static partial class Interop
 {
     internal static partial class Crypt32
@@ -22,7 +23,7 @@ internal static partial class Interop
             public int cbData;
             public IntPtr pbData;
 
-            public string OID
+            public string? OID
             {
                 get
                 {
@@ -30,7 +31,7 @@ internal static partial class Interop
                 }
             }
 
-            public string Name
+            public string? Name
             {
                 get
                 {

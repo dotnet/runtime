@@ -27,10 +27,10 @@
 #include "corprof.h"
 #include "eeprofinterfaces.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Included for referencing __report_gsfailure
 #include "process.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
@@ -118,7 +118,7 @@ inline UINT64 ShiftToHi32Bits(UINT32 x)
     return ret.QuadPart;
 }
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
 /*********************************************************************/
 HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
 {
@@ -133,7 +133,7 @@ HCIMPL2_VV(INT64, JIT_LMul, INT64 val1, INT64 val2)
     return (val1 * val2);
 }
 HCIMPLEND
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !TARGET_X86 || TARGET_UNIX
 
 /*********************************************************************/
 HCIMPL2_VV(INT64, JIT_LMulOvf, INT64 val1, INT64 val2)
@@ -448,7 +448,7 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
 }
 HCIMPLEND
 
-#if !defined(BIT64) && !defined(_TARGET_X86_)
+#if !defined(HOST_64BIT) && !defined(TARGET_X86)
 /*********************************************************************/
 HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
 {
@@ -472,7 +472,7 @@ HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
     return num >> (shift & 0x3F);
 }
 HCIMPLEND
-#endif // !BIT64 && !_TARGET_X86_
+#endif // !HOST_64BIT && !TARGET_X86
 
 #include <optdefault.h>
 
@@ -527,7 +527,7 @@ ftype BankersRound(ftype value)
     if ((value -(integerPart +0.5)) == 0.0)
     {
         // round to even
-#if defined(_TARGET_ARM_) && defined(FEATURE_CORESYSTEM)
+#if defined(TARGET_ARM) && defined(FEATURE_CORESYSTEM)
         // @ARMTODO: On ARM when building on CoreSystem (where we link against the system CRT) an attempt to
         // use fmod(float, float) fails to link (apparently this is converted to a reference to fmodf, which
         // is not included in the system CRT). Use the double version instead.
@@ -571,7 +571,7 @@ HCIMPLEND
 // Call fast Dbl2Lng conversion - used by functions below
 FORCEINLINE INT64 FastDbl2Lng(double val)
 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     FCALL_CONTRACT;
     return HCCALL1_V(JIT_Dbl2Lng, val);
 #else
@@ -641,7 +641,7 @@ HCIMPL1_V(UINT64, JIT_Dbl2ULngOvf, double val)
 HCIMPLEND
 
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
 
 HCIMPL1_V(INT64, JIT_Dbl2Lng, double val)
 {
@@ -742,7 +742,7 @@ HCIMPL2_VV(double, JIT_DblRem, double dividend, double divisor)
 }
 HCIMPLEND
 
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !TARGET_X86 || TARGET_UNIX
 
 #include <optdefault.h>
 
@@ -2188,365 +2188,7 @@ BOOL ObjIsInstanceOf(Object* pObject, TypeHandle toTypeHnd, BOOL throwCastExcept
     return ObjIsInstanceOfCore(pObject, toTypeHnd, throwCastException);
 }
 
-//
-// This optimization is intended for all non-framed casting helpers
-//
-
-#include <optsmallperfcritical.h>
-
-HCIMPL2(Object*, JIT_ChkCastClass_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    FCALL_CONTRACT;
-
-    //
-    // casts pObject to type pMT
-    //
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    PTR_VOID pMT = pObject->GetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    } while (pMT);
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-//
-// This helper assumes that the check for the trivial cases has been inlined by the JIT.
-//
-HCIMPL2(Object*, JIT_ChkCastClassSpecial_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        // This assumes that the check for the trivial cases has been inlined by the JIT.
-        PRECONDITION(pObject != NULL);
-        PRECONDITION(pObject->GetMethodTable() != pTargetMT);
-    } CONTRACTL_END;
-
-    PTR_VOID pMT = MethodTable::GetParentMethodTableOrIndirection(pObject->GetMethodTable());
-
-    while (pMT)
-    {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_IsInstanceOfClass_Portable, MethodTable* pTargetMT, Object* pObject)
-{
-    FCALL_CONTRACT;
-
-    //
-    // casts pObject to type pMT
-    //
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    PTR_VOID pMT = pObject->GetMethodTable();
-
-    do {
-        if (pMT == pTargetMT)
-            return pObject;
-
-        pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
-    } while (pMT);
-
-    if (!pObject->GetMethodTable()->HasTypeEquivalence())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE(pTargetMT), pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_ChkCastInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pInterfaceMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (NULL == pObject)
-    {
-        return pObject;
-    }
-
-    if (pObject->GetMethodTable()->ImplementsInterfaceInline(pInterfaceMT))
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastInterface, pInterfaceMT, pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object*, JIT_IsInstanceOfInterface_Portable, MethodTable *pInterfaceMT, Object* pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(pInterfaceMT->IsInterface());
-    } CONTRACTL_END;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    if (pObject->GetMethodTable()->ImplementsInterfaceInline(pInterfaceMT))
-    {
-        return pObject;
-    }
-
-    if (!pObject->GetMethodTable()->InstanceRequiresNonTrivialInterfaceCast())
-    {
-        return NULL;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfInterface, pInterfaceMT, pObject);
-}
-HCIMPLEND
-
-HCIMPL2(Object *, JIT_ChkCastArray, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(TypeHandle(type).IsArray());
-    } CONTRACTL_END;
-
-    if (pObject == NULL)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    TypeHandle::CastResult result = ObjIsInstanceOfCached(pObject, th);
-    if (result == TypeHandle::CanCast)
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    Object* pRet = HCCALL2(JITutil_ChkCastAny_NoCacheLookup, type, pObject);
-    // Make sure that the fast helper have not lied
-    _ASSERTE(result != TypeHandle::CannotCast);
-    return pRet;
-}
-HCIMPLEND
-
-
-HCIMPL2(Object *, JIT_IsInstanceOfArray, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-     CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(TypeHandle(type).IsArray());
-    } CONTRACTL_END;
-
-    if (pObject == NULL)
-    {
-        return NULL;
-    }
-
-    OBJECTREF refObj = ObjectToOBJECTREF(pObject);
-    VALIDATEOBJECTREF(refObj);
-    MethodTable *pMT = refObj->GetMethodTable();
-
-    if (!pMT->IsArray())
-    {
-        // We know that the clsHnd is an array so check the object.  If it is not an array return null
-        return NULL;
-    }
-    else
-    {
-        TypeHandle th = TypeHandle(type);
-        TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, th);
-
-        switch (result) {
-        case TypeHandle::CanCast:
-            return pObject;
-        case TypeHandle::CannotCast:
-            return NULL;
-        default:
-            // fall through to the slow helper
-            break;
-        }
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, pObject);
-}
-HCIMPLEND
-
-/*********************************************************************/
-// IsInstanceOf test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the IsInstanceOfInterface, IsInstanceOfClass, and IsIsntanceofArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == obj)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    switch (ObjIsInstanceOfCached(obj, th)) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, type, obj);
-}
-HCIMPLEND
-
-// ChkCast test used for unusual cases (naked type parameters, variant generic types)
-// Unlike the ChkCastInterface, ChkCastClass, and ChkCastArray functions,
-// this test must deal with all kinds of type tests
-HCIMPL2(Object *, JIT_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *pObject)
-{
-    FCALL_CONTRACT;
-
-    if (NULL == pObject)
-    {
-        return NULL;
-    }
-
-    TypeHandle th = TypeHandle(type);
-    TypeHandle::CastResult result = ObjIsInstanceOfCached(pObject, th);
-    if (result == TypeHandle::CanCast)
-    {
-        return pObject;
-    }
-
-    ENDFORBIDGC();
-    Object* pRet = HCCALL2(JITutil_ChkCastAny_NoCacheLookup, type, pObject);
-    // Make sure that the fast helper have not lied
-    _ASSERTE(result != TypeHandle::CannotCast);
-    return pRet;
-}
-HCIMPLEND
-
-
-NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfInterface, MethodTable *pInterfaceMT, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    MethodTable* pMT = obj->GetMethodTable();
-    TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, pInterfaceMT);
-
-    switch (result) {
-    case TypeHandle::CanCast:
-        return obj;
-    case TypeHandle::CannotCast:
-        return NULL;
-    default:
-        // fall through to the slow helper
-        break;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE(pInterfaceMT), obj);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object *, JITutil_ChkCastInterface, MethodTable *pInterfaceMT, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    MethodTable* pMT = obj->GetMethodTable();
-    TypeHandle::CastResult result = CastCache::TryGetFromCache(pMT, pInterfaceMT);
-
-    if (result == TypeHandle::CanCast)
-    {
-        return obj;
-    }
-
-    ENDFORBIDGC();
-    return HCCALL2(JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE(pInterfaceMT), obj);
-}
-HCIMPLEND
-
-
-#include <optdefault.h>
-
-
-//
-// Framed helpers
-//
-NOINLINE HCIMPL2(Object *, JITutil_ChkCastAny, CORINFO_CLASS_HANDLE type, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    // This case should be handled by frameless helper
-     _ASSERTE(obj != NULL);
-
-    OBJECTREF oref = ObjectToOBJECTREF (obj);
-    VALIDATEOBJECTREF(oref);
-
-    TypeHandle clsHnd(type);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd, TRUE))
-    {
-        UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object *, JITutil_IsInstanceOfAny, CORINFO_CLASS_HANDLE type, Object *obj)
-{
-    FCALL_CONTRACT;
-
-    // This case should be handled by frameless helper
-     _ASSERTE(obj != NULL);
-
-    OBJECTREF oref = ObjectToOBJECTREF (obj);
-    VALIDATEOBJECTREF(oref);
-
-    TypeHandle clsHnd(type);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
-    if (!ObjIsInstanceOf(OBJECTREFToObject(oref), clsHnd))
-        oref = NULL;
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(oref);
-}
-HCIMPLEND
-
-NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2563,13 +2205,14 @@ NOINLINE HCIMPL2(Object*, JITutil_ChkCastAny_NoCacheLookup, CORINFO_CLASS_HANDLE
     {
         UNREACHABLE(); //ObjIsInstanceOf will throw if cast can't be done
     }
+    HELPER_METHOD_POLL();
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
 }
 HCIMPLEND
 
-NOINLINE HCIMPL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
+HCIMPL2(Object*, IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
@@ -2584,6 +2227,7 @@ NOINLINE HCIMPL2(Object*, JITutil_IsInstanceOfAny_NoCacheLookup, CORINFO_CLASS_H
     HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
     if (!ObjIsInstanceOfCore(OBJECTREFToObject(oref), clsHnd))
         oref = NULL;
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(oref);
@@ -3057,7 +2701,7 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
     if (size < 0)
         COMPlusThrow(kOverflowException);
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // Even though ECMA allows using a native int as the argument to newarr instruction
     // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
     // platforms we can't create an array whose size exceeds 32 bits.
@@ -3094,7 +2738,7 @@ OBJECTREF allocNewMDArr(TypeHandle typeHnd, unsigned dwNumArgs, va_list args)
 
     INT32* fwdArgList;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     fwdArgList = (INT32*)args;
 
     // reverse the order
@@ -3252,7 +2896,7 @@ HCIMPL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object *va
             }
         }
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
         SetObjectReference((OBJECTREF*)&array->m_Array[idx], ObjectToOBJECTREF(val));
 #else
         // The performance gain of the optimized JIT_Stelem_Ref in
@@ -4600,10 +4244,10 @@ HCIMPL1(void, IL_Throw,  Object* obj)
 
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
-#if defined(_DEBUG) && defined(_TARGET_X86_)
+#if defined(_DEBUG) && defined(TARGET_X86)
     __helperframe.InsureInit(false, NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
-#endif // defined(_DEBUG) && defined(_TARGET_X86_)
+#endif // defined(_DEBUG) && defined(TARGET_X86)
 
 
     if (oref == 0)
@@ -4960,21 +4604,21 @@ void DoJITFailFast ()
         _ASSERTE(!"About to FailFast. set ComPlus_AssertOnFailFast=0 if this is expected");
 #endif
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Use the function provided by the C runtime.
     //
     // Ideally, this function is called directly from managed code so
     // that the address of the managed function will be included in the
     // error log. However, this function is also used by the stackwalker.
     // To keep things simple, we just call it from here.
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     __report_gsfailure();
-#else // !defined(_TARGET_X86_)
+#else // !defined(TARGET_X86)
     // On AMD64/IA64/ARM, we need to pass a stack cookie, which will be saved in the context record
     // that is used to raise the buffer-overrun exception by __report_gsfailure.
     __report_gsfailure((ULONG_PTR)0);
-#endif // defined(_TARGET_X86_)
-#else // FEATURE_PAL
+#endif // defined(TARGET_X86)
+#else // TARGET_UNIX
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
         // Fire an ETW FailFast event
@@ -4986,7 +4630,7 @@ void DoJITFailFast ()
     }
 
     TerminateProcess(GetCurrentProcess(), STATUS_STACK_BUFFER_OVERRUN);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 HCIMPL0(void, JIT_FailFast)
@@ -5007,7 +4651,7 @@ HCIMPL2(void, JIT_ThrowMethodAccessException, CORINFO_METHOD_HANDLE caller, CORI
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowMethodAccessException(&accessContext, GetMethod(callee));
 
@@ -5026,7 +4670,7 @@ HCIMPL2(void, JIT_ThrowFieldAccessException, CORINFO_METHOD_HANDLE caller, CORIN
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowFieldAccessException(&accessContext, reinterpret_cast<FieldDesc *>(callee));
 
@@ -5045,7 +4689,7 @@ HCIMPL2(void, JIT_ThrowClassAccessException, CORINFO_METHOD_HANDLE caller, CORIN
     MethodDesc* pCallerMD = GetMethod(caller);
 
     _ASSERTE(pCallerMD != NULL);
-    StaticAccessCheckContext accessContext(pCallerMD);
+    AccessCheckContext accessContext(pCallerMD);
 
     ThrowTypeAccessException(&accessContext, TypeHandle(callee).GetMethodTable());
 
@@ -5300,7 +4944,7 @@ HCIMPLEND
 
 extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_ARM) || defined(TARGET_AMD64)
 // The JIT expects this helper to preserve the return value on AMD64 and ARM. We should eventually
 // switch other platforms to the same convention since it produces smaller code.
 extern "C" FCDECL0(VOID, JIT_RareDisableHelperWorker);
@@ -5458,7 +5102,7 @@ HCIMPLEND
 //
 //========================================================================
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 /**********************************************************************/
 /* Fills out portions of an InlinedCallFrame for JIT64    */
@@ -5484,7 +5128,7 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
     return pThread;
 }
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
@@ -5525,7 +5169,7 @@ VMHELPDEF hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_COUNT] =
 #include "jithelpers.h"
 };
 
-#if defined(_DEBUG) && (defined(_TARGET_AMD64_) || defined(_TARGET_X86_)) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
 #define HELPERCOUNTDEF(lpv) { (LPVOID)(lpv), NULL, 0 },
 
 VMHELPCOUNTDEF hlpFuncCountTable[CORINFO_HELP_COUNT+1] =
@@ -5562,9 +5206,9 @@ void InitJITHelpers2()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
     SetJitHelperFunction(CORINFO_HELP_INIT_PINVOKE_FRAME, (void *)GenerateInitPInvokeFrameHelper()->GetEntryPoint());
-#endif // _TARGET_X86_ || _TARGET_ARM_
+#endif // TARGET_X86 || TARGET_ARM
 
     ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(GetThread), ECall::InternalGetCurrentThread);
 
@@ -5580,7 +5224,7 @@ void InitJITHelpers2()
     g_pJitGenericHandleCache = tempGenericHandleCache.Extract();
 }
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM)
 
 NOINLINE void DoCopy(CONTEXT * ctx, void * pvTempStack, size_t cbTempStack, Thread * pThread, Frame * pNewFrame)
 {
@@ -5634,7 +5278,7 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_COOPERATIVE
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     Thread *pThread = GetThread();
 
@@ -5691,10 +5335,10 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
     BYTE   rgFrameBuffer[sizeof(FrameWithCookie<TailCallFrame>)];
     Frame * pNewFrame = NULL;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #  define STACK_ADJUST_FOR_RETURN_ADDRESS  (sizeof(void*))
 #  define STACK_ALIGN_MASK                 (0xF)
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #  define STACK_ADJUST_FOR_RETURN_ADDRESS  (0)
 #  define STACK_ALIGN_MASK                 (0x7)
 #else
@@ -5831,13 +5475,13 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
 #undef STACK_ADJUST_FOR_RETURN_ADDRESS
 #undef STACK_ALIGN_MASK
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     PORTABILITY_ASSERT("TODO: Implement JIT_TailCall for PAL");
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 }
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM_
+#endif // TARGET_AMD64 || TARGET_ARM
 
 //========================================================================
 //
@@ -5845,7 +5489,7 @@ void F_CALL_VA_CONV JIT_TailCall(PCODE copyArgs, PCODE target, ...)
 //
 //========================================================================
 
-#if defined(_DEBUG) && (defined(_TARGET_AMD64_) || defined(_TARGET_X86_)) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && (defined(TARGET_AMD64) || defined(TARGET_X86)) && !defined(TARGET_UNIX)
 // *****************************************************************************
 //  JitHelperLogging usage:
 //      1) Ngen using:
@@ -5952,12 +5596,12 @@ void InitJitHelperLogging()
     if ((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitHelperLogging) != 0))
     {
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         IMAGE_DOS_HEADER *pDOS = (IMAGE_DOS_HEADER *)g_pMSCorEE;
         _ASSERTE(pDOS->e_magic == VAL16(IMAGE_DOS_SIGNATURE) && pDOS->e_lfanew != 0);
 
         IMAGE_NT_HEADERS *pNT = (IMAGE_NT_HEADERS*)((LPBYTE)g_pMSCorEE + VAL32(pDOS->e_lfanew));
-#ifdef BIT64
+#ifdef HOST_64BIT
         _ASSERTE(pNT->Signature == VAL32(IMAGE_NT_SIGNATURE)
             && pNT->FileHeader.SizeOfOptionalHeader == VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))
             && pNT->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC) );
@@ -5966,7 +5610,7 @@ void InitJitHelperLogging()
             && pNT->FileHeader.SizeOfOptionalHeader == VAL16(sizeof(IMAGE_OPTIONAL_HEADER32))
             && pNT->OptionalHeader.Magic == VAL16(IMAGE_NT_OPTIONAL_HDR_MAGIC) );
 #endif
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         // Make the static hlpFuncTable read/write for purposes of writing the logging thunks
         DWORD dwOldProtect;
@@ -5997,7 +5641,7 @@ void InitJitHelperLogging()
                     hlpFuncCount->pfnRealHelper = hlpFunc->pfnHelper;
                     hlpFuncCount->helperName = hlpFunc->name;
                     hlpFuncCount->count = 0;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     ULONGLONG           uImageBase;
                     PT_RUNTIME_FUNCTION   pFunctionEntry;
                     pFunctionEntry  = RtlLookupFunctionEntry((ULONGLONG)hlpFunc->pfnHelper, &uImageBase, NULL);
@@ -6011,10 +5655,10 @@ void InitJitHelperLogging()
                     {
                         hlpFuncCount->helperSize = 0;
                     }
-#else // _TARGET_X86_
+#else // TARGET_X86
                     // How do I get this for x86?
                     hlpFuncCount->helperSize = 0;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                     pSl->EmitJITHelperLoggingThunk(GetEEFuncEntryPoint(hlpFunc->pfnHelper), (LPVOID)hlpFuncCount);
                     Stub* pStub = pSl->Link(pHeap);
@@ -6042,7 +5686,7 @@ void InitJitHelperLogging()
 #pragma warning(pop)
 #endif /*_PREFAST_*/
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     ULONGLONG           uImageBase;
                     PT_RUNTIME_FUNCTION   pFunctionEntry;
                     pFunctionEntry  = RtlLookupFunctionEntry((ULONGLONG)hlpFunc->pfnHelper, &uImageBase, NULL);
@@ -6057,7 +5701,7 @@ void InitJitHelperLogging()
                         // if we can't get a function entry for this we'll just pretend the size is 0
                         hlpFuncCount->helperSize = 0;
                     }
-#else // _TARGET_X86_
+#else // TARGET_X86
                     // Is the address in mscoree.dll at all? (All helpers are in
                     // mscoree.dll)
                     if (dynamicHlpFunc->pfnHelper >= (LPBYTE*)g_pMSCorEE && dynamicHlpFunc->pfnHelper < (LPBYTE*)g_pMSCorEE + VAL32(pNT->OptionalHeader.SizeOfImage))
@@ -6071,7 +5715,7 @@ void InitJitHelperLogging()
                         hlpFuncCount->helperSize -= sizeof(Stub);
                     }
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                     pSl->EmitJITHelperLoggingThunk(GetEEFuncEntryPoint(dynamicHlpFunc->pfnHelper), (LPVOID)hlpFuncCount);
                     Stub* pStub = pSl->Link(pHeap);
@@ -6089,4 +5733,4 @@ void InitJitHelperLogging()
 
     return;
 }
-#endif // _DEBUG && (_TARGET_AMD64_ || _TARGET_X86_)
+#endif // _DEBUG && (TARGET_AMD64 || TARGET_X86)

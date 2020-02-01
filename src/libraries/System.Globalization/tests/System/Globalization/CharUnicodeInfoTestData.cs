@@ -13,10 +13,8 @@ namespace System.Globalization.Tests
         private static readonly Lazy<List<CharUnicodeInfoTestCase>> s_testCases = new Lazy<List<CharUnicodeInfoTestCase>>(() =>
         {
             List<CharUnicodeInfoTestCase> testCases = new List<CharUnicodeInfoTestCase>();
-            string fileName =
-                CharUnicodeInfo.GetUnicodeCategory('\u10D0') == UnicodeCategory.LowercaseLetter  ? "UnicodeData.11.0.txt" :
-                CharUnicodeInfo.GetUnicodeCategory('\u037f') == UnicodeCategory.OtherNotAssigned ? "UnicodeData6.3.txt"   : "UnicodeData.8.0.txt";
-            Stream stream = typeof(CharUnicodeInfoGetUnicodeCategoryTests).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
+            string fileName = "UnicodeData.txt";
+            Stream stream = typeof(CharUnicodeInfoTestData).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (!reader.EndOfStream)

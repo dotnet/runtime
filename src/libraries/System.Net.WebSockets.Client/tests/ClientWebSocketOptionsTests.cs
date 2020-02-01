@@ -44,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.Null(cws.Options.Proxy);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {
@@ -62,8 +62,8 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(28027)]
-        [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/28027")]
+        [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_ConnectThruProxy_Success(Uri server)
         {
@@ -162,7 +162,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool callbackInvoked = false;
@@ -198,7 +198,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             using (X509Certificate2 clientCert = Test.Common.Configuration.Certificates.GetClientCertificate())
@@ -234,7 +234,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             if (PlatformDetection.IsWindows7)
             {
-                return; // [ActiveIssue(27846)]
+                return; // see https://github.com/dotnet/runtime/issues/1491#issuecomment-376392057 for more details
             }
 
             bool connectionAccepted = false;

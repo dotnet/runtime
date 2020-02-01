@@ -332,7 +332,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             // If we are here, then we tried to invoke realpath
             // against a directory.
             //
@@ -354,7 +354,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
                      palError = ERROR_PATH_NOT_FOUND;
                  }
             }
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
 
             goto LExit;
         }
@@ -362,7 +362,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     }
     else
     {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         bool fSetFilename = true;
         // Since realpath implementation cannot handle inexistent filenames,
         // check if we are going to truncate the "/" corresponding to the
@@ -386,7 +386,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             fSetFilename = false;
         }
         else
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
             *pchSeparator = '\0';
 
         if (!RealPathHelper(lpExistingPath, lpBuffer))
@@ -394,7 +394,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             // If we are here, then we tried to invoke realpath
             // against a directory after stripping out the filename
             // from the original path.
@@ -417,21 +417,21 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
                      palError = ERROR_PATH_NOT_FOUND;
                  }
             }
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
 
             goto LExit;
         }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         if (fSetFilename == true)
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
             lpFilename = pchSeparator + 1;
     }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     if (lpFilename == NULL)
         goto LExit;
-#endif // _AMD64_
+#endif // HOST_AMD64
 
     if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {

@@ -993,7 +993,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
             ' Throw the final exception if there were exceptions during copy / move.
             If Exceptions.Count > 0 Then
-                Dim IOException As New IO.IOException(Utils.GetResourceString(SR.IO_CopyMoveRecursive))
+                Dim IOException As New IO.IOException(SR.IO_CopyMoveRecursive)
                 For Each Entry As DictionaryEntry In Exceptions
                     IOException.Data.Add(Entry.Key, Entry.Value)
                 Next

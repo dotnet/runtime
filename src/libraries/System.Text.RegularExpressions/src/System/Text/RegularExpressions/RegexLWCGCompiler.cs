@@ -13,14 +13,18 @@ namespace System.Text.RegularExpressions
         private static readonly Type[] s_paramTypes = new Type[] { typeof(RegexRunner) };
         private static int s_regexCount = 0;
 
+        public RegexLWCGCompiler() : base(persistsAssembly: false)
+        {
+        }
+
         /// <summary>The top-level driver. Initializes everything then calls the Generate* methods.</summary>
         public RegexRunnerFactory FactoryInstanceFromCode(RegexCode code, RegexOptions options, bool hasTimeout)
         {
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
-            _fcPrefix = code.FCPrefix;
-            _bmPrefix = code.BMPrefix;
+            _leadingCharClasses = code.LeadingCharClasses;
+            _boyerMoorePrefix = code.BoyerMoorePrefix;
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
             _options = options;
@@ -35,10 +39,7 @@ namespace System.Text.RegularExpressions
             DynamicMethod findFirstCharMethod = DefineDynamicMethod("FindFirstChar" + regexnumString, typeof(bool), typeof(CompiledRegexRunner));
             GenerateFindFirstChar();
 
-            DynamicMethod initTrackCountMethod = DefineDynamicMethod("InitTrackCount" + regexnumString, null, typeof(CompiledRegexRunner));
-            GenerateInitTrackCount();
-
-            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, initTrackCountMethod);
+            return new CompiledRegexRunnerFactory(goMethod, findFirstCharMethod, _trackcount);
         }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>

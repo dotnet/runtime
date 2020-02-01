@@ -204,7 +204,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #19338", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19338", TargetFrameworkMonikers.NetFramework)]
         public void EqualsNullIsFalse()
         {
             // Note: this null refs on desktop

@@ -1,0 +1,73 @@
+# GCSettings.SetGCLatencyMode is not implemented
+-nomethod System.Tests.GCTests.LatencyRoundtrips_LowLatency
+
+# Type.GetTypeFromCLSID is not implemented
+-nomethod System.Tests.TypeTestsNetcore.*
+
+# these math functions should be portable, e.g. see HAVE_COMPATIBLE_EXP in coreclr
+-nomethod System.Tests.MathFTests.Acosh
+-nomethod System.Tests.MathFTests.Atanh
+-nomethod System.Tests.MathFTests.Asinh
+-nomethod System.Tests.MathTests.Acosh
+-nomethod System.Tests.MathTests.Atanh
+-nomethod System.Tests.MathTests.Asinh
+-nomethod Microsoft.VisualBasic.Tests.ConversionTests.Val
+
+# segfault
+-nomethod Microsoft.VisualBasic.Tests.FileSystemTests.Input_Object_Write
+
+# TODO: investigate (too many failures or stuck)
+-nomethod System.Threading.Tests.WaitHandleTests.SignalAndWait
+-nomethod System.Threading.Tests.WaitHandleTests.WaitAll_SameNames
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignatureWinRT
+-nonamespace System.IO.Pipes.Tests
+-nonamespace System.IO.Tests
+-nonamespace System.Net
+-nonamespace System.Threading.Tasks.Dataflow.Tests
+-nonamespace System.Security.Cryptography.Pkcs
+-nonamespace System.Runtime.InteropServices.WindowsRuntime
+-nonamespace System.Management.Tests
+-nonamespace System.Data.SqlClient.Tests
+-nonamespace System.Threading.Overlapped.Tests
+-nonamespace System.ComponentModel.Composition
+-nonamespace BasicEventSourceTests
+-nonamespace System.ComponentModel.TypeConverterTests
+
+-nomethod System.Diagnostics.Tests.CounterSampleTests.*
+-nomethod Tests.Integration.DiscoveryTests.DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute
+-nomethod WindowAndCursorProps.*
+-nomethod System.Diagnostics.Tests.ProcessStartInfoTests.StartInfo_BadVerb
+-nomethod System.Diagnostics.Tests.ProcessStartInfoTests.StartInfo_BadExe
+-nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_Executes
+-nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_WorkingDirectory
+-nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
+-nomethod System.DirectoryServices.AccountManagement.Tests.PrincipalContextTests.Ctor_ContextType
+-nomethod System.DirectoryServices.AccountManagement.Tests.PrincipalContextTests.ValidateCredentials_Invoke_ReturnsExpected
+-nomethod System.DirectoryServices.AccountManagement.Tests.ComputerPrincipalTest.Ctor_MachineContext_NoException
+-nomethod System.DirectoryServices.ActiveDirectory.Tests.DomainControllerTests.GetDomainController_InvalidIPV6
+-nomethod System.DirectoryServices.Tests.DirectoryEntryTests.DeleteTree_NoObject_ThrowsCOMException
+-nomethod System.DirectoryServices.ActiveDirectory.Tests.ForestTests.GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException
+-nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStream
+-nomethod System.Reflection.Internal.Tests.AbstractMemoryBlockTests.FileStreamUnix
+-nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.*
+-nomethod System.Reflection.Tests.AssemblyNameTests.GetAssemblyName_LockedFile
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.*
+-nomethod System.Resources.Tests.ResourceManagerTests.*
+-nomethod MonoTests.System.Runtime.Caching.HostFileChangeMonitorTest.*
+-nomethod SafeHandle_4000_Tests.SafeHandle_DangerousReleasePreservesLastError
+-nomethod System.Security.Cryptography.X509Certificates.Tests.FindTests.*
+-nomethod OverlappedTests.PackPosTest1
+-nomethod OverlappedTests.PackPosTest
+-nomethod ThreadPoolBoundHandleTests.*
+-nomethod System.Threading.Tests.EventWaitHandleTests.*
+-nomethod System.Threading.Tests.MutexTests.*
+-nomethod System.Threading.Tests.SemaphoreTests.*
+-nomethod System.Threading.Threads.Tests.ThreadTests.*
+-nomethod System.ComponentModel.TypeConverterTests
+-nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
+-nomethod System.Tests.StringTests.NormalizationTest
+-nomethod System.Globalization.Tests.StringNormalizationAllTests.Normalize
+-nomethod System.Globalization.Tests.StringNormalizationTests.IsNormalized
+
+# * Assertion at method-to-ir.c:12425, condition `var->opcode == OP_REGOFFSET' not met
+-nomethod System.Runtime.Tests.NullableMetadataTests.ShimsHaveOnlyTypeForwards

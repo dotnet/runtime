@@ -939,7 +939,7 @@ namespace System.Collections.Concurrent
                     ThrowValueNullException();
                 }
             }
-            else if (default(TValue)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            else if (default(TValue) != null)
             {
                 ThrowValueNullException();
             }

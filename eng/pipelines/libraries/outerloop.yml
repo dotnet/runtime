@@ -61,10 +61,9 @@ jobs:
       jobParameters:
         isOfficialBuild: ${{ variables['isOfficialBuild'] }}
         isFullMatrix: ${{ variables['isFullMatrix'] }}
-        framework: netcoreapp
         runTests: true
         testScope: outerloop
-        liveCoreClrBuildConfig: release
+        liveRuntimeBuildConfig: release
   
   - ${{ if eq(variables['isFullMatrix'], false) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -73,7 +72,7 @@ jobs:
         buildConfig: Debug
         platforms:
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-          - Windows_NT_x86
+          - Windows_NT_x64
         - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
           - Linux_x64
           - Linux_musl_x64
@@ -83,10 +82,9 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netcoreapp
           runTests: true
           testScope: outerloop
-          liveCoreClrBuildConfig: release
+          liveRuntimeBuildConfig: release
 
   - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
     - template: /eng/pipelines/common/platform-matrix.yml
@@ -101,6 +99,6 @@ jobs:
         jobParameters:
           isOfficialBuild: ${{ variables['isOfficialBuild'] }}
           isFullMatrix: ${{ variables['isFullMatrix'] }}
-          framework: netfx
+          framework: net472
           runTests: true
           testScope: outerloop

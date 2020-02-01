@@ -11,6 +11,7 @@ namespace ILCompiler
     public class CommandLineOptions
     {
         public FileInfo[] InputFilePaths { get; set; }
+        public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
         public FileInfo OutputFilePath { get; set; }
         public bool Optimize { get; set; }
@@ -60,6 +61,13 @@ namespace ILCompiler
                     { 
                         Arity = arbitraryArity
                     } 
+                },
+                new Option(new[] { "--mibc", "-m" }, "Mibc file(s) for profile guided optimization")
+                {
+                    Argument = new Argument<string[]>()
+                    {
+                        Arity = arbitraryArity
+                    }
                 },
                 new Option(new[] { "--outputfilepath", "--out", "-o" }, "Output file path")
                 {

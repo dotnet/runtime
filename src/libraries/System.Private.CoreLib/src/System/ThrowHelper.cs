@@ -478,7 +478,7 @@ namespace System
         internal static void IfNullAndNullsAreIllegalThenThrow<T>(object? value, ExceptionArgument argName)
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            if (!(default(T)! == null) && value == null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!(default(T) == null) && value == null)
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
@@ -684,6 +684,10 @@ namespace System
                     return "arrayIndex";
                 case ExceptionArgument.year:
                     return "year";
+                case ExceptionArgument.codePoint:
+                    return "codePoint";
+                case ExceptionArgument.str:
+                    return "str";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -933,6 +937,8 @@ namespace System
         elementType,
         arrayIndex,
         year,
+        codePoint,
+        str,
     }
 
     //

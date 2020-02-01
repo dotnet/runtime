@@ -76,7 +76,6 @@ namespace System
             {
                 Debug.Assert(option == SpecialFolderOption.Create);
 
-                // TODO #11151: Replace with Directory.CreateDirectory once we have access to System.IO.FileSystem here.
                 Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;

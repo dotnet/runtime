@@ -1459,7 +1459,7 @@ CHECK PEDecoder::CheckILOnly() const
             CHECK(CheckILOnlyBaseRelocations());
         }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (!IsMapped())
         {
             CHECK(CheckILOnlyEntryPoint());
@@ -1511,7 +1511,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
 
     // The only allowed DLL Imports are MscorEE.dll:_CorExeMain,_CorDllMain
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // On win64, when the image is LoadLibrary'd, we whack the import and IAT directories. We have to relax
     // the verification for mapped images. Ideally, we would only do it for a post-LoadLibrary image.
     if (IsMapped() && !HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT))
@@ -1604,7 +1604,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // jmp dword ptr ds:[XXXX]
 #define JMP_DWORD_PTR_DS_OPCODE { 0xFF, 0x25 }
 #define JMP_DWORD_PTR_DS_OPCODE_SIZE   2        // Size of opcode
@@ -1678,7 +1678,7 @@ CHECK PEDecoder::CheckILOnlyBaseRelocations() const
     CHECK_OK;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 CHECK PEDecoder::CheckILOnlyEntryPoint() const
 {
     CONTRACT_CHECK
@@ -1721,7 +1721,7 @@ CHECK PEDecoder::CheckILOnlyEntryPoint() const
 
     CHECK_OK;
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 
@@ -3110,7 +3110,7 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 		STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 #endif
 
-#if defined(DACCESS_COMPILE) || defined(FEATURE_PAL)
+#if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)
     return TRUE;
 #else
 
@@ -3181,7 +3181,7 @@ ErrExit:
 
     return fSuccess;
 
-#endif // DACCESS_COMPILE || FEATURE_PAL
+#endif // DACCESS_COMPILE || TARGET_UNIX
 }
 
 #endif // _DEBUG

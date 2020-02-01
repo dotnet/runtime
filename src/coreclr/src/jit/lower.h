@@ -96,10 +96,10 @@ private:
     void ContainCheckCompare(GenTreeOp* node);
     void ContainCheckBinary(GenTreeOp* node);
     void ContainCheckBoundsChk(GenTreeBoundsChk* node);
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 #ifdef FEATURE_SIMD
     void ContainCheckSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
@@ -124,7 +124,7 @@ private:
     // Call Lowering
     // ------------------------------
     void LowerCall(GenTree* call);
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
     GenTree* DecomposeLongCompare(GenTree* cmp);
 #endif
     GenTree* OptimizeConstCompare(GenTree* cmp);
@@ -150,7 +150,7 @@ private:
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* info, var_types type);
     void LowerArg(GenTreeCall* call, GenTree** ppTree);
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     GenTree* LowerFloatArg(GenTree** pArg, fgArgTabEntry* info);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
@@ -221,7 +221,7 @@ private:
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     GenTree* PreferredRegOptionalOperand(GenTree* tree);
 
     // ------------------------------------------------------------------
@@ -273,7 +273,7 @@ private:
             regOptionalOperand->SetRegOptional();
         }
     }
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
 
     // Per tree node member functions
     void LowerStoreIndir(GenTreeIndir* node);

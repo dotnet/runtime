@@ -80,9 +80,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Section section = writer.NewSection();
             VertexArray vertexArray = new VertexArray(section);
             section.Place(vertexArray);
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
 
-            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 MemoryStream methodDebugBlob = new MemoryStream();
                 
@@ -108,7 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 BlobVertex debugBlob = new BlobVertex(methodDebugBlob.ToArray());
 
-                vertexArray.Set(r2rFactory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
+                vertexArray.Set(factory.RuntimeFunctionsTable.GetIndex(method), new DebugInfoVertex(debugBlob));
             }
 
             vertexArray.ExpandLayout();

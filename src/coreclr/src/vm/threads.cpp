@@ -92,7 +92,7 @@ CrstStatic g_DeadlockAwareCrst;
 #if defined(_DEBUG)
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     LIMITED_METHOD_CONTRACT;
 
     DWORD id = GetThreadId(h);
@@ -100,9 +100,9 @@ BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId )
     // OS call GetThreadId may fail, and return 0.  In this case we can not
     // make a decision if the two match or not.  Instead, we ignore this check.
     return id == 0 || id == osId;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return TRUE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 #endif // _DEBUG
 
@@ -448,7 +448,7 @@ void Thread::ChooseThreadCPUGroupAffinity()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
          return;
 
@@ -468,7 +468,7 @@ void Thread::ChooseThreadCPUGroupAffinity()
     CPUGroupInfo::SetThreadGroupAffinity(GetThreadHandle(), &groupAffinity, NULL);
     m_wCPUGroup = groupAffinity.Group;
     m_pAffinityMask = groupAffinity.Mask;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 void Thread::ClearThreadCPUGroupAffinity()
@@ -479,7 +479,7 @@ void Thread::ClearThreadCPUGroupAffinity()
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (!CPUGroupInfo::CanEnableGCCPUGroups() || !CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
          return;
 
@@ -497,7 +497,7 @@ void Thread::ClearThreadCPUGroupAffinity()
 
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 DWORD Thread::StartThread()
@@ -861,16 +861,16 @@ void DestroyThread(Thread *th)
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker::PopTrackers((void*)-1);
 #else // !FEATURE_EH_FUNCLETS
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     PTR_ThreadExceptionState pExState = th->GetExceptionState();
     if (pExState->IsExceptionInProgress())
     {
         GCX_COOP();
         pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
     }
-#else // !_TARGET_X86_
+#else // !TARGET_X86
 #error Unsupported platform
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // FEATURE_EH_FUNCLETS
 
     if (g_fEEShutDown == 0)
@@ -897,16 +897,16 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTracker::PopTrackers((void*)-1);
 #else // !FEATURE_EH_FUNCLETS
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     PTR_ThreadExceptionState pExState = GetExceptionState();
     if (pExState->IsExceptionInProgress())
     {
         GCX_COOP();
         pExState->GetCurrentExceptionTracker()->UnwindExInfo((void *)-1);
     }
-#else // !_TARGET_X86_
+#else // !TARGET_X86
 #error Unsupported platform
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // FEATURE_EH_FUNCLETS
 
 #ifdef FEATURE_COMINTEROP
@@ -1110,7 +1110,7 @@ void InitThreadManager()
     }
 #endif // FEATURE_WRITEBARRIER_COPY
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     _ASSERTE(GetThread() == NULL);
 
     PTEB Teb = NtCurrentTeb();
@@ -1126,7 +1126,7 @@ void InitThreadManager()
     g_TlsIndex = (DWORD)(_tls_index + (offsetOfCurrentThreadInfo << 16) + 0x80000000);
 
     _ASSERTE(g_TrapReturningThreads == 0);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     g_debuggerWordTLSIndex = TlsAlloc();
@@ -1418,10 +1418,10 @@ Thread::Thread()
     m_ppvHJRetAddrPtr = (VOID**) 0xCCCCCCCCCCCCCCCC;
     m_pvHJRetAddr = (VOID*) 0xCCCCCCCCCCCCCCCC;
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     X86_ONLY(m_LastRedirectIP = 0);
     X86_ONLY(m_SpinCount = 0);
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 #endif // FEATURE_HIJACK
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
@@ -1489,7 +1489,7 @@ Thread::Thread()
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
-#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(PLATFORM_UNIX) // GCCOVER
+#if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
     m_fPreemptiveGCDisabledForGCStress = false;
 #endif
 
@@ -1553,10 +1553,10 @@ Thread::Thread()
 
     m_fGCSpecial = FALSE;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     m_wCPUGroup = 0;
     m_pAffinityMask = 0;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     m_pAllLoggedTypes = NULL;
 
@@ -1591,11 +1591,11 @@ BOOL Thread::InitThread(BOOL fInternal)
         // log will not allocate memory at these critical times an avoid deadlock.
     STRESS_LOG2(LF_ALWAYS, LL_ALWAYS, "SetupThread  managed Thread %p Thread Id = %x\n", this, GetThreadId());
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // workaround: Remove this when we flow impersonation token to host.
     BOOL    reverted = FALSE;
     HANDLE  threadToken = INVALID_HANDLE_VALUE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     if (m_ThreadHandle == INVALID_HANDLE_VALUE)
     {
@@ -1613,7 +1613,7 @@ BOOL Thread::InitThread(BOOL fInternal)
         // Thread is created when or after the physical thread started running
         HANDLE curProcess = ::GetCurrentProcess();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
         // If we're impersonating on NT, then DuplicateHandle(GetCurrentThread()) is going to give us a handle with only
         // THREAD_TERMINATE, THREAD_QUERY_INFORMATION, and THREAD_SET_INFORMATION. This doesn't include
@@ -1648,7 +1648,7 @@ BOOL Thread::InitThread(BOOL fInternal)
 
         EnsureResetThreadToken resetToken(threadToken, reverted);
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         if (::DuplicateHandle(curProcess, ::GetCurrentThread(), curProcess, &hDup,
                               0 /*ignored*/, FALSE /*inherit*/, DUPLICATE_SAME_ACCESS))
@@ -1677,12 +1677,12 @@ BOOL Thread::InitThread(BOOL fInternal)
     m_random.Init();
 
     // Set floating point mode to round to nearest
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     (void) _controlfp_s( NULL, _RC_NEAR, _RC_CHOP|_RC_UP|_RC_DOWN|_RC_NEAR );
 
     m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     if (m_CacheStackBase == 0)
     {
@@ -1988,7 +1988,7 @@ void Thread::HandleThreadStartupFailure()
     RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken)
 {
     WRAPPER_NO_CONTRACT;
@@ -2019,7 +2019,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken)
     }
     return;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 
 // We don't want ::CreateThread() calls scattered throughout the source.  So gather
@@ -2040,19 +2040,19 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     //
     _ASSERTE(stackSize <= 0xFFFFFFFF);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HandleHolder token;
     BOOL bReverted = FALSE;
     bRet = RevertIfImpersonated(&bReverted, &token);
     if (bRet != TRUE)
         return bRet;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     m_StateNC = (ThreadStateNoConcurrency)((ULONG)m_StateNC | TSNC_CLRCreatedThread);
     bRet = CreateNewOSThread(stackSize, start, args);
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     UndoRevert(bReverted, token);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     if (pName != NULL)
         SetThreadName(m_ThreadHandle, pName);
 
@@ -2171,7 +2171,7 @@ BOOL Thread::GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize)
         }
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (!fSizesGot)
     {
         HINSTANCE hInst = WszGetModuleHandle(NULL);
@@ -2188,7 +2188,7 @@ BOOL Thread::GetProcessDefaultStackSize(SIZE_T* reserveSize, SIZE_T* commitSize)
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     if (!fSizesGot) {
         //return some somewhat-reasonable numbers
@@ -2210,7 +2210,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     SIZE_T  ourId = 0;
 #else
     DWORD   ourId = 0;
@@ -2225,14 +2225,14 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
         sizeToCommitOrReserve = GetDefaultStackSizeSetting();
     }
 
-#ifndef FEATURE_PAL // the PAL does its own adjustments as necessary
+#ifndef TARGET_UNIX // the PAL does its own adjustments as necessary
     if (sizeToCommitOrReserve != 0 && sizeToCommitOrReserve <= GetOsPageSize())
     {
         // On Windows, passing a value that is <= one page size bizarrely causes the OS to use the default stack size instead of
         // a minimum, which is undesirable. This adjustment fixes that issue to use a minimum stack size (typically 64 KB).
         sizeToCommitOrReserve = GetOsPageSize() + 1;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Make sure we have all our handles, in case someone tries to suspend us
     // as we are starting up.
@@ -2242,7 +2242,7 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
         return FALSE;
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     h = ::PAL_CreateThread64(NULL     /*=SECURITY_ATTRIBUTES*/,
 #else
     h = ::CreateThread(      NULL     /*=SECURITY_ATTRIBUTES*/,
@@ -3203,21 +3203,10 @@ DWORD Thread::DoAppropriateWait(AppropriateWaitFunc func, void *args,
 //--------------------------------------------------------------------
 DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis, BOOL bAlertable)
 {
-    STATIC_CONTRACT_THROWS;
-    // The true contract for GC trigger should be the following.  But this puts a very strong restriction
-    // on contract for functions that call EnablePreemptiveGC.
-    //if (GetThread() && !ThreadStore::HoldingThreadStore(GetThread())) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
-    STATIC_CONTRACT_GC_TRIGGERS;
+    STANDARD_VM_CONTRACT;
 
     DWORD flags = 0;
     DWORD dwReturn=WAIT_ABANDONED;
-
-    Thread* pThread = GetThread();
-    // If pThread is NULL, we'd better shut down.
-    if (pThread == NULL)
-        _ASSERTE (g_fEEShutDown);
-
-    DWORD lastError = 0;
 
     // If we're going to pump, we cannot use WAIT_ALL.  That's because the wait would
     // only be satisfied if a message arrives while the handles are signalled.  If we
@@ -3244,8 +3233,12 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
     if (bAlertable)
         flags |= COWAIT_ALERTABLE;
 
-    HRESULT hr = S_OK;
-    hr = CoWaitForMultipleHandles(flags, millis, numWaiters, phEvent, &dwReturn);
+    // CoWaitForMultipleHandles does not support more than 63 handles. It returns RPC_S_CALLPENDING for more than 63 handles
+    // that is impossible to differentiate from timeout.
+    if (numWaiters > 63)
+        COMPlusThrow(kNotSupportedException, W("NotSupported_MaxWaitHandles_STA"));
+
+    HRESULT hr = CoWaitForMultipleHandles(flags, millis, numWaiters, phEvent, &dwReturn);
 
     if (hr == RPC_S_CALLPENDING)
     {
@@ -3259,13 +3252,9 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         dwReturn = WAIT_FAILED;
     }
     else
-{
+    {
         dwReturn += WAIT_OBJECT_0;  // success -- bias back
-                }
-
-    lastError = ::GetLastError();
-
-    ::SetLastError(lastError);
+    }
 
     return dwReturn;
 }
@@ -3277,11 +3266,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
                                          DWORD timeout, WaitMode mode)
 {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     BOOL alertable = (mode & WaitMode_Alertable) != 0;
 
@@ -3490,7 +3475,7 @@ retry:
         {
             ThrowOutOfMemory();
         }
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         else if (errorCode == ERROR_NOT_SUPPORTED)
         {
             // "Wait for any" and "wait for all" operations on multiple wait handles are not supported when a cross-process sync
@@ -4698,7 +4683,7 @@ BOOL Thread::PrepareApartmentAndContext()
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     m_OSThreadId = ::PAL_GetCurrentOSThreadId();
 #else
     m_OSThreadId = ::GetCurrentThreadId();
@@ -4944,7 +4929,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
             {
                 // We should never be attempting to CoUninitialize another thread than
                 // the currently running thread.
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
                 _ASSERTE(m_OSThreadId == ::PAL_GetCurrentOSThreadId());
 #else
                 _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
@@ -4998,7 +4983,7 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Don't use the TS_Unstarted state bit to check for this, it's cleared far
     // too late in the day for us. Instead check whether we're in the correct
     // thread context.
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (m_OSThreadId != ::PAL_GetCurrentOSThreadId())
 #else
     if (m_OSThreadId != ::GetCurrentThreadId())
@@ -6051,7 +6036,7 @@ BOOL StartUniqueStackMap ()
     return StartUniqueStackMapHelper();
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 size_t UpdateStackHash(size_t hash, size_t retAddr)
 {
@@ -6073,7 +6058,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
     size_t hash = 0;
     int    idx  = 0;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
     static size_t moduleBase = (size_t) -1;
     static size_t moduleTop = (size_t) -1;
@@ -6118,7 +6103,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
         stackTop++;
     }
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 
     CONTEXT ctx;
     ClrCaptureContext(&ctx);
@@ -6169,7 +6154,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
             stackTrace [idx] = uRetAddrForHash;
         }
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     stackTrace [0] = idx;
 
@@ -6242,7 +6227,7 @@ BOOL Thread::UniqueStack(void* stackStart)
 
     void* stopPoint = pThread->m_CacheStackBase;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Find the stop point (most jitted function)
     Frame* pFrame = pThread->GetFrame();
     for(;;)
@@ -6260,7 +6245,7 @@ BOOL Thread::UniqueStack(void* stackStart)
         }
         pFrame = pFrame->Next();
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // Get hash of all return addresses between here an the top most jitted function
     stackTraceHash = getStackHash (stackTrace, (size_t*) stackStart, (size_t*) stopPoint,
@@ -6310,14 +6295,14 @@ BOOL Thread::UniqueStack(void* stackStart)
     return fUnique;
 }
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 
 BOOL Thread::UniqueStack(void* stackStart)
 {
     return FALSE;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // STRESS_HEAP
 
@@ -6340,7 +6325,7 @@ void * Thread::GetStackLowerBound()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
- #ifndef FEATURE_PAL
+ #ifndef TARGET_UNIX
    MEMORY_BASIC_INFORMATION lowerBoundMemInfo;
     SIZE_T dwRes;
 
@@ -6354,9 +6339,9 @@ void * Thread::GetStackLowerBound()
     {
         return NULL;
     }
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return PAL_GetStackLimit();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 /*
@@ -6402,11 +6387,11 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
         // be sufficient to allow a typical non-recursive call chain to execute, including potential exception handling and
         // garbage collection. Used for probing for available stack space through RuntimeImports.EnsureSufficientExecutionStack,
         // among other things.
-#ifdef BIT64
+#ifdef HOST_64BIT
         const UINT_PTR MinExecutionStackSize = 128 * 1024;
-#else // !BIT64
+#else // !HOST_64BIT
         const UINT_PTR MinExecutionStackSize = 64 * 1024;
-#endif // BIT64
+#endif // HOST_64BIT
         _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
         if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
             MinExecutionStackSize)
@@ -6472,7 +6457,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // TODO: we need to measure what the stack usage needs are at the limits in the hosted scenario for host callbacks
 
     if (Thread::IsSetThreadStackGuaranteeInUse(fScope))
@@ -6480,7 +6465,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // <TODO> Tune this as needed </TODO>
         ULONG uGuardSize = SIZEOF_DEFAULT_STACK_GUARANTEE;
         int   EXTRA_PAGES = 0;
-#if defined(BIT64)
+#if defined(HOST_64BIT)
         // Free Build EH Stack Stats:
         // --------------------------------
         // currently the maximum stack usage we'll face while handling a SO includes:
@@ -6508,11 +6493,11 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
             uGuardSize += (ThreadGuardPages * GetOsPageSize());
         }
 
-#else // BIT64
+#else // HOST_64BIT
 #ifdef _DEBUG
         uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
 #endif // _DEBUG
-#endif // BIT64
+#endif // HOST_64BIT
 
         LOG((LF_EH, LL_INFO10000, "STACKOVERFLOW: setting thread stack guarantee to 0x%x\n", uGuardSize));
 
@@ -6522,7 +6507,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         }
     }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return S_OK;
 }
@@ -6559,9 +6544,9 @@ UINT_PTR Thread::GetLastNormalStackAddress(UINT_PTR StackLimit)
     // allowed to fault at the very end of that page.  So, as a result, the last normal stack address is
     // one page sooner.
     return StackLimit + (cbStackGuarantee
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             + GetOsPageSize()
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
             + HARD_GUARD_REGION_SIZE);
 }
 
@@ -6577,7 +6562,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 #define LOG_FLAG(flags, name)  \
     if (flags & name) \
@@ -6622,7 +6607,7 @@ static void DebugLogMBIFlags(UINT uState, UINT uProtect)
     }
 
 #undef LOG_FLAG
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 
@@ -6738,11 +6723,11 @@ BOOL Thread::IsSPBeyondLimit()
 
 NOINLINE void AllocateSomeStack(){
     LIMITED_METHOD_CONTRACT;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     const size_t size = 0x200;
-#else   //_TARGET_X86_
+#else   //TARGET_X86
     const size_t size = 0x400;
-#endif  //_TARGET_X86_
+#endif  //TARGET_X86
 
     INT8* mem = (INT8*)_alloca(size);
     // Actually touch the memory we just allocated so the compiler can't
@@ -6751,7 +6736,7 @@ NOINLINE void AllocateSomeStack(){
     VolatileStore<INT8>(mem, 0);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 // static // private
 BOOL Thread::DoesRegionContainGuardPage(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
@@ -6793,7 +6778,7 @@ BOOL Thread::DoesRegionContainGuardPage(UINT_PTR uLowAddress, UINT_PTR uHighAddr
     return FALSE;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 /*
  * DetermineIfGuardPagePresent
@@ -6824,7 +6809,7 @@ BOOL Thread::DetermineIfGuardPagePresent()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     BOOL bStackGuarded = FALSE;
     UINT_PTR uStackBase = (UINT_PTR)GetCachedStackBase();
     UINT_PTR uStackLimit = (UINT_PTR)GetCachedStackLimit();
@@ -6838,9 +6823,9 @@ BOOL Thread::DetermineIfGuardPagePresent()
     LOG((LF_EH, LL_INFO10000, "Thread::DetermineIfGuardPagePresent: stack guard page: %s\n", bStackGuarded ? "PRESENT" : "MISSING"));
 
     return bStackGuarded;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return TRUE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 /*
@@ -6879,7 +6864,7 @@ UINT_PTR Thread::GetStackGuarantee()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // There is a new API available on new OS's called SetThreadStackGuarantee. It allows you to change the size of
     // the guard region on a per-thread basis. If we're running on an OS that supports the API, then we must query
     // it to see if someone has changed the size of the guard region for this thread.
@@ -6896,12 +6881,12 @@ UINT_PTR Thread::GetStackGuarantee()
     {
         return cbNewStackGuarantee;
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return SIZEOF_DEFAULT_STACK_GUARANTEE;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 //
 // MarkPageAsGuard
@@ -7038,7 +7023,7 @@ lFatalError:
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_STACKOVERFLOW);
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -7075,12 +7060,12 @@ bool Thread::InitRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, bool validCo
             if (!ret)
             {
                 SetIP(pctx, 0);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 pRD->ControlPC = pctx->Eip;
                 pRD->PCTAddr = (TADDR)&(pctx->Eip);
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
                 // nothing more to do here, on Win64 setting the IP to 0 is enough.
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
                 // nothing more to do here, on Win64 setting the IP to 0 is enough.
 #else
                 PORTABILITY_ASSERT("NYI for platform Thread::InitRegDisplay");
@@ -7105,12 +7090,12 @@ void Thread::FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx)
 
     ::FillRegDisplay(pRD, pctx);
 
-#if defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#if defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
     CONSISTENCY_CHECK(!pRD->_pThread || pRD->_pThread == this);
     pRD->_pThread = this;
 
     CheckRegDisplaySP(pRD);
-#endif // defined(DEBUG_REGDISPLAY) && !defined(_TARGET_X86_)
+#endif // defined(DEBUG_REGDISPLAY) && !defined(TARGET_X86)
 }
 
 
@@ -7282,9 +7267,9 @@ void Thread::DoExtraWorkForFinalizer()
 
     if (RequireSyncBlockCleanup())
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         InteropSyncBlockInfo::FlushStandbyList();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
         RCW::FlushStandbyList();

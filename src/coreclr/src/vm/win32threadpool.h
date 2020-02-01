@@ -51,7 +51,7 @@ const int MaxFreeCPThreadsPerCPU=2;                 //  upper limit on number of
 const int CpuUtilizationHigh=95;                    // remove threads when above this
 const int CpuUtilizationLow =80;                    // inject more threads if below this
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 extern HANDLE (WINAPI *g_pufnCreateIoCompletionPort)(HANDLE FileHandle,
 											  HANDLE ExistingCompletionPort,
 											  ULONG_PTR CompletionKey,
@@ -67,7 +67,7 @@ extern int (WINAPI * g_pufnNtQuerySystemInformation) (SYSTEM_INFORMATION_CLASS S
                                                       PVOID SystemInformation,
                                                       ULONG SystemInformationLength,
                                                       PULONG ReturnLength OPTIONAL);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #define FILETIME_TO_INT64(t) (*(__int64*)&(t))
 #define MILLI_TO_100NANO(x)  ((x) * 10000)        // convert from milliseond to 100 nanosecond unit
@@ -141,10 +141,10 @@ public:
         Counts GetCleanCounts()
         {
             LIMITED_METHOD_CONTRACT;
-#ifdef BIT64
+#ifdef HOST_64BIT
             // VolatileLoad x64 bit read is atomic
             return DangerousGetDirtyCounts();
-#else // !BIT64
+#else // !HOST_64BIT
             // VolatileLoad may result in torn read
             Counts result;
 #ifndef DACCESS_COMPILE
@@ -154,7 +154,7 @@ public:
             result.AsLongLong = 0; //prevents prefast warning for DAC builds
 #endif
             return result;
-#endif // !BIT64
+#endif // !HOST_64BIT
         }
 
         //
@@ -321,10 +321,10 @@ public:
 
     static BOOL HaveTimerInfosToFlush() { return TimerInfosToBeRecycled != NULL; }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey);
     static void StoreOverlappedInfoInThread(Thread* pThread, DWORD dwErrorCode, DWORD dwNumBytes, size_t key, LPOVERLAPPED lpOverlapped);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Enable filtering of correlation ETW events for cases handled at a higher abstraction level
 
@@ -617,7 +617,7 @@ private:
         Volatile<LONG> lock;   		// this is the spin lock
         DWORD         count;  		// count of number of elements in the list
         Entry*        root;   		// ptr to first element of recycled list
-#ifndef BIT64
+#ifndef HOST_64BIT
 		DWORD         filler;       // Pad the structure to a multiple of the 16.
 #endif
 
@@ -739,21 +739,21 @@ public:
 
             DWORD processorNumber = 0;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 	        if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
                 processorNumber = CPUGroupInfo::CalculateCurrentProcessorNumber();
             else
                 // Turns out GetCurrentProcessorNumber can return a value greater than the number of processors reported by
                 // GetSystemInfo, if we're running in WOW64 on a machine with >32 processors.
         	    processorNumber = GetCurrentProcessorNumber()%NumberOfProcessors;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
             if (PAL_HasGetCurrentProcessorNumber())
             {
                 // On linux, GetCurrentProcessorNumber which uses sched_getcpu() can return a value greater than the number
                 // of processors reported by sysconf(_SC_NPROCESSORS_ONLN) when using OpenVZ kernel.
                 processorNumber = GetCurrentProcessorNumber()%NumberOfProcessors;
             }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
             return pRecycledListPerProcessor[processorNumber][memType];
     	}
     };
@@ -773,8 +773,6 @@ public:
     static WorkRequest* DequeueWorkRequest();
 
     static void ExecuteWorkRequest(bool* foundWork, bool* wasNotRecalled);
-
-    static DWORD WINAPI ExecuteHostRequest(PVOID pArg);
 
 #ifndef DACCESS_COMPILE
 
@@ -914,7 +912,7 @@ public:
 
     static void WINAPI DeregisterWait(WaitInfo* pArgs);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // holds the aggregate of system cpu usage of all processors
     typedef struct _PROCESS_CPU_INFORMATION
     {
@@ -942,7 +940,7 @@ public:
 #else
     static int GetCPUBusyTime_NT(PAL_IOCP_CPU_INFORMATION* pOldInfo);
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 private:
     static BOOL IsIoPending();

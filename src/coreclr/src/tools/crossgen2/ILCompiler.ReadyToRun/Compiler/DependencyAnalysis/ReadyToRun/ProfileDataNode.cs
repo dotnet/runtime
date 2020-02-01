@@ -78,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void OnMarked(NodeFactory factory)
         {
-            ((ReadyToRunCodegenNodeFactory)factory).ProfileDataSection.AddEmbeddedObject(this);
+            factory.ProfileDataSection.AddEmbeddedObject(this);
         }
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)

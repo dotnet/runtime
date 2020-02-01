@@ -108,9 +108,9 @@ protected:
     bool      m_genAlignLoops;
 
 private:
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     static const insFlags instInfo[INS_count];
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     static const BYTE instInfo[INS_count];
 #else
 #error Unsupported target architecture
@@ -188,15 +188,15 @@ public:
     int genSPtoFPdelta() const;
     int genTotalFrameSize() const;
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value) = 0;
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const      = 0;
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
     regNumber genGetThisArgReg(GenTreeCall* call) const;
 
-#ifdef _TARGET_XARCH_
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_XARCH
+#ifdef TARGET_AMD64
     // There are no reloc hints on x86
     unsigned short genAddrRelocTypeHint(size_t addr);
 #endif
@@ -357,7 +357,7 @@ public:
         m_cgInterruptible = value;
     }
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 
     bool GetHasTailCalls()
     {
@@ -367,13 +367,13 @@ public:
     {
         m_cgHasTailCalls = value;
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
 private:
     bool m_cgInterruptible;
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     bool m_cgHasTailCalls;
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
     //  The following will be set to true if we've determined that we need to
     //  generate a full-blown pointer register map for the current method.

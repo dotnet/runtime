@@ -350,7 +350,7 @@ namespace System.Diagnostics.Tests
             }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [ActiveIssue(12696)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/12696")]
         [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
@@ -1111,7 +1111,7 @@ namespace System.Diagnostics.Tests
 
             int expected = ERROR_BAD_EXE_FORMAT;
 
-            // Windows Nano bug see #10290
+            // Windows Nano bug see https://github.com/dotnet/corefx/issues/10290
             if (PlatformDetection.IsWindowsNanoServer)
                 expected = ERROR_SUCCESS;
 

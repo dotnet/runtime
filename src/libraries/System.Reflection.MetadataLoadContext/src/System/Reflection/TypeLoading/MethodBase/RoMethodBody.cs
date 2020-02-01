@@ -17,9 +17,9 @@ namespace System.Reflection.TypeLoading
         public abstract override int LocalSignatureMetadataToken { get; }
 
         // Unlike most apis, this one does not copy the byte array.
-        public sealed override byte[] GetILAsByteArray() => _lazyIL ?? (_lazyIL = ComputeIL());
-        protected abstract byte[] ComputeIL();
-        private volatile byte[] _lazyIL;
+        public sealed override byte[]? GetILAsByteArray() => _lazyIL ?? (_lazyIL = ComputeIL());
+        protected abstract byte[]? ComputeIL();
+        private volatile byte[]? _lazyIL;
 
         public abstract override IList<LocalVariableInfo> LocalVariables { get; }
         public abstract override IList<ExceptionHandlingClause> ExceptionHandlingClauses { get; }

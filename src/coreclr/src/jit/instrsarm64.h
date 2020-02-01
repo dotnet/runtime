@@ -18,7 +18,7 @@
  *
 ******************************************************************************/
 
-#if !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM64)
 #error Unexpected target type
 #endif
 

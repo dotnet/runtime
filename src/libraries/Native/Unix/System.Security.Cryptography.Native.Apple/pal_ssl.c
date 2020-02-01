@@ -354,10 +354,14 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
     return OSStatusToPAL_TlsIo(status);
 }
 
-int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore)
+int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
 {
-    if (sslContext == NULL || notBefore == NULL)
+    if (pOSStatus != NULL)
+        *pOSStatus = noErr;
+
+    if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
         return -1;
+
     if (cfHostname == NULL)
         return -2;
 
@@ -380,6 +384,7 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
     if (osStatus != noErr)
     {
         CFRelease(certs);
+        *pOSStatus = osStatus;
         return -5;
     }
 
@@ -391,9 +396,9 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         return -6;
     }
 
-    CFIndex count = SecTrustGetCertificateCount(existingTrust);
+    CFIndex certificateCount = SecTrustGetCertificateCount(existingTrust);
 
-    for (CFIndex i = 0; i < count; i++)
+    for (CFIndex i = 0; i < certificateCount; i++)
     {
         SecCertificateRef item = SecTrustGetCertificateAtIndex(existingTrust, i);
         CFArrayAppendValue(certs, item);
@@ -428,11 +433,59 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         osStatus = SecTrustEvaluate(trust, &trustResult);
+
+        if (trustResult == kSecTrustResultRecoverableTrustFailure && osStatus == noErr && certificateCount > 1)
+        {
+            // If we get recoverable failure, let's try it again with full anchor list.
+            // We already stored just the first certificate into anchors; now we store the rest.
+            for (CFIndex i = 1; i < certificateCount; i++)
+            {
+                CFArrayAppendValue(anchors, SecTrustGetCertificateAtIndex(existingTrust, i));
+            }
+
+            osStatus = SecTrustSetAnchorCertificates(trust, anchors);
+            if (osStatus == noErr)
+            {
+                memset(&trustResult, 0, sizeof(SecTrustResultType));
+                osStatus = SecTrustEvaluate(trust, &trustResult);
+            }
+        }
 #pragma clang diagnostic pop
+
+        if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
+        {
+            // If evaluation succeeded but result is not trusted try to get details.
+            CFDictionaryRef detailsAndStuff = SecTrustCopyResult(trust);
+
+            if (detailsAndStuff != NULL)
+            {
+                CFArrayRef details = CFDictionaryGetValue(detailsAndStuff, CFSTR("TrustResultDetails"));
+
+                if (details != NULL && CFArrayGetCount(details) > 0)
+                {
+                    CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
+
+                    OSStatus status = 0;
+                    // look for first failure to keep it simple. Normally, there will be exactly one.
+                    for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
+                    {
+                        CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
+                        if (status != noErr)
+                        {
+                            *pOSStatus = status;
+                            break;
+                        }
+                    }
+                }
+
+                CFRelease(detailsAndStuff);
+            }
+        }
 
         if (osStatus != noErr)
         {
             ret = -7;
+            *pOSStatus = osStatus;
         }
         else if (trustResult == kSecTrustResultUnspecified || trustResult == kSecTrustResultProceed)
         {
@@ -446,6 +499,10 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
         {
             ret = -8;
         }
+    }
+    else
+    {
+        *pOSStatus = osStatus;
     }
 
     if (trust != NULL)
