@@ -1390,7 +1390,10 @@ namespace System.Diagnostics
             // CASE 3.2: PROCESS EXITS BEFORE REGISTERING HANDLER
             // (See CASE 1.2)
 
-            if (!Associated) { throw new InvalidOperationException(SR.NoAssociatedProcess); }
+            if (!Associated)
+            {
+                throw new InvalidOperationException(SR.NoAssociatedProcess);
+            }
 
             if (!HasExited)
             {
