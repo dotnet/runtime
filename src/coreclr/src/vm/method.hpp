@@ -44,7 +44,6 @@ class DynamicMethodDesc;
 class ReJitManager;
 class CodeVersionManager;
 class PrepareCodeConfig;
-class CallCounter;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
@@ -210,7 +209,7 @@ class MethodDesc
 
 public:
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     static const int ALIGNMENT_SHIFT = 3;
 #else
     static const int ALIGNMENT_SHIFT = 2;
@@ -509,9 +508,6 @@ public:
 
 #ifdef FEATURE_CODE_VERSIONING
     CodeVersionManager* GetCodeVersionManager();
-#endif
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCounter* GetCallCounter();
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -1346,7 +1342,7 @@ private:
     PCODE GetEntryPointToBackpatch_Locked()
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch()
@@ -1359,7 +1355,7 @@ private:
     void SetEntryPointToBackpatch_Locked(PCODE entryPoint)
     {
         WRAPPER_NO_CONTRACT;
-        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockedByCurrentThread());
+        _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
         _ASSERTE(entryPoint != NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -2199,7 +2195,6 @@ public:
     VersionedPrepareCodeConfig(NativeCodeVersion codeVersion);
     HRESULT FinishConfiguration();
     virtual PCODE IsJitCancellationRequested();
-    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
     virtual COR_ILMETHOD* GetILHeader();
     virtual CORJIT_FLAGS GetJitCompilationFlags();
 private:
@@ -2318,9 +2313,9 @@ public:
 
     static BOOL IsCompactEntryPointAtAddress(PCODE addr);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     static int GetCompactEntryPointMaxCount ();
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 #endif // HAS_COMPACT_ENTRYPOINTS
 
     FORCEINLINE PTR_MethodTable GetMethodTable()
@@ -2495,7 +2490,7 @@ class StoredSigMethodDesc : public MethodDesc
 
     RelativePointer<TADDR>           m_pSig;
     DWORD           m_cSig;
-#ifdef BIT64
+#ifdef HOST_64BIT
     // m_dwExtendedFlags is not used by StoredSigMethodDesc itself.
     // It is used by child classes. We allocate the space here to get
     // optimal layout.
@@ -2554,7 +2549,7 @@ class FCallMethodDesc : public MethodDesc
 #endif
 
     DWORD   m_dwECallID;
-#ifdef BIT64
+#ifdef HOST_64BIT
     DWORD   m_padding;
 #endif
 
@@ -2594,7 +2589,7 @@ protected:
     RelativePointer<PTR_CUTF8>           m_pszMethodName;
     PTR_DynamicResolver m_pResolver;
 
-#ifndef BIT64
+#ifndef HOST_64BIT
     // We use m_dwExtendedFlags from StoredSigMethodDesc on WIN64
     DWORD               m_dwExtendedFlags;   // see DynamicMethodDesc::ExtendedFlags enum
 #endif
@@ -2878,12 +2873,12 @@ public:
         // Various attributes needed at runtime.
         WORD        m_wFlags;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         // Size of outgoing arguments (on stack). Note that in order to get the @n stdcall name decoration,
         // it may be necessary to subtract 4 as the hidden large structure pointer parameter does not count.
         // See code:kStdCallWithRetBuf
         WORD        m_cbStackArgumentSize;
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
         // This field gets set only when this MethodDesc is marked as PreImplemented
         RelativePointer<PTR_MethodDesc> m_pStubMD;
@@ -3154,7 +3149,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         // thiscall passes the this pointer in ECX
         if (unmgdCallConv == pmCallConvThiscall)
         {
@@ -3171,10 +3166,10 @@ public:
         {
             _ASSERTE(ndirect.m_cbStackArgumentSize == cbDstBuffer);
         }
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     WORD GetStackArgumentSize() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3185,7 +3180,7 @@ public:
         // the outgoing marshalling buffer.
         return ndirect.m_cbStackArgumentSize;
     }
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
     VOID InitEarlyBoundNDirectTarget();
 
@@ -3214,7 +3209,7 @@ public:
         WRAPPER_NO_CONTRACT;
 
         return (IsClassConstructorTriggeredAtLinkTime() &&
-                (IsZapped() || GetDomain()->IsSharedDomain() || SystemDomain::GetCurrentDomain()->IsCompilationDomain()));
+                (IsZapped() || SystemDomain::GetCurrentDomain()->IsCompilationDomain()));
     }
 #endif //!DACCESS_COMPILE
 };  //class NDirectMethodDesc
@@ -3277,7 +3272,7 @@ struct ComPlusCallInfo
         return &m_pILStub;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Size of outgoing arguments (on stack). This is currently used only
     // on x86 when we have an InlinedCallFrame representing a CLR->COM call.
     WORD        m_cbStackArgumentSize;
@@ -3311,7 +3306,7 @@ struct ComPlusCallInfo
 
     LPVOID      m_pRetThunk;
 
-#else // _TARGET_X86_
+#else // TARGET_X86
     void InitStackArgumentSize()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3321,7 +3316,7 @@ struct ComPlusCallInfo
     {
         LIMITED_METHOD_CONTRACT;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // This field gets set only when this MethodDesc is marked as PreImplemented
     RelativePointer<PTR_MethodDesc> m_pStubMD;
@@ -3381,7 +3376,7 @@ public:
         FastInterlockOr(reinterpret_cast<DWORD *>(&m_pComPlusCallInfo->m_flags), newFlags);
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     WORD GetStackArgumentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3393,12 +3388,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_pComPlusCallInfo->SetStackArgumentSize(cbDstBuffer);
     }
-#else // _TARGET_X86_
+#else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)
     {
         LIMITED_METHOD_CONTRACT;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 };
 #endif // FEATURE_COMINTEROP
 

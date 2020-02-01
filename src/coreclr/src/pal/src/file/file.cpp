@@ -332,7 +332,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
         {
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             // If we are here, then we tried to invoke realpath
             // against a directory.
             //
@@ -354,7 +354,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
                      palError = ERROR_PATH_NOT_FOUND;
                  }
             }
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
 
             goto LExit;
         }
@@ -362,7 +362,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
     }
     else
     {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         bool fSetFilename = true;
         // Since realpath implementation cannot handle inexistent filenames,
         // check if we are going to truncate the "/" corresponding to the
@@ -386,7 +386,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             fSetFilename = false;
         }
         else
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
             *pchSeparator = '\0';
 
         if (!RealPathHelper(lpExistingPath, lpBuffer))
@@ -394,7 +394,7 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
             WARN("realpath() failed with error %d\n", errno);
             palError = FILEGetLastErrorFromErrno();
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             // If we are here, then we tried to invoke realpath
             // against a directory after stripping out the filename
             // from the original path.
@@ -417,21 +417,21 @@ CorUnix::InternalCanonicalizeRealPath(LPCSTR lpUnixPath, PathCharString& lpBuffe
                      palError = ERROR_PATH_NOT_FOUND;
                  }
             }
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
 
             goto LExit;
         }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         if (fSetFilename == true)
-#endif // defined(_AMD64_)
+#endif // defined(HOST_AMD64)
             lpFilename = pchSeparator + 1;
     }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     if (lpFilename == NULL)
         goto LExit;
-#endif // _AMD64_
+#endif // HOST_AMD64
 
     if (!lpBuffer.Append("/",1) || !lpBuffer.Append(lpFilename, strlen(lpFilename)))
     {
@@ -1720,6 +1720,131 @@ done:
 
     LOGEXIT("GetFileAttributesExW returns BOOL %d\n", bRet);
     PERF_EXIT(GetFileAttributesExW);
+    return bRet;
+}
+
+/*++
+Function:
+  SetFileAttributesA
+
+Notes:
+  Used for setting read-only attribute on file only.
+
+--*/
+BOOL
+PALAPI
+SetFileAttributesA(
+           IN LPCSTR lpFileName,
+           IN DWORD dwFileAttributes)
+{
+    CPalThread *pThread;
+    struct stat stat_data;
+    mode_t new_mode;
+
+    DWORD dwLastError = 0;
+    BOOL  bRet = FALSE;
+    LPSTR unixFileName = NULL;
+
+    PERF_ENTRY(SetFileAttributesA);
+    ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
+        lpFileName?lpFileName:"NULL",
+        lpFileName?lpFileName:"NULL", dwFileAttributes);
+
+    pThread = InternalGetCurrentThread();
+
+    /* Windows behavior for SetFileAttributes is that any valid attributes
+    are set on a file and any invalid attributes are ignored. SetFileAttributes
+    returns success and does not set an error even if some or all of the
+    attributes are invalid. If all the attributes are invalid, SetFileAttributes
+    sets a file's attribute to NORMAL. */
+
+    /* If dwFileAttributes does not contain READONLY or NORMAL, set it to NORMAL
+    and print a warning message. */
+    if ( !(dwFileAttributes & (FILE_ATTRIBUTE_READONLY |FILE_ATTRIBUTE_NORMAL)) )
+    {
+        dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+        WARN("dwFileAttributes(%#x) contains attributes that are either not supported "
+            "or cannot be set via SetFileAttributes.\n");
+    }
+
+    if ( (dwFileAttributes & FILE_ATTRIBUTE_NORMAL) &&
+         (dwFileAttributes != FILE_ATTRIBUTE_NORMAL) )
+    {
+        WARN("Ignoring FILE_ATTRIBUTE_NORMAL -- it must be used alone\n");
+    }
+
+    if (lpFileName == NULL)
+    {
+        dwLastError = ERROR_FILE_NOT_FOUND;
+        goto done;
+    }
+
+    if ((unixFileName = strdup(lpFileName)) == NULL)
+    {
+        ERROR("strdup() failed\n");
+        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
+        goto done;
+    }
+
+    FILEDosToUnixPathA( unixFileName );
+    if ( stat(unixFileName, &stat_data) != 0 )
+    {
+        TRACE("stat failed on %s; errno is %d (%s)\n",
+             unixFileName, errno, strerror(errno));
+        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+        goto done;
+    }
+
+    new_mode = stat_data.st_mode;
+    TRACE("st_mode is %#x\n", new_mode);
+
+    /* if we can't do GetFileAttributes on it, don't do SetFileAttributes */
+    if ( !(new_mode & S_IFREG) && !(new_mode & S_IFDIR) )
+    {
+        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
+              new_mode & S_IFMT);
+        dwLastError = ERROR_ACCESS_DENIED;
+        goto done;
+    }
+
+    /* set or unset the "read-only" attribute */
+    if (dwFileAttributes & FILE_ATTRIBUTE_READONLY)
+    {
+        /* remove the write bit from everybody */
+        new_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
+    }
+    else
+    {
+        /* give write permission to the owner if the owner
+         * already has read permission */
+        if ( new_mode & S_IRUSR )
+        {
+            new_mode |= S_IWUSR;
+        }
+    }
+    TRACE("new mode is %#x\n", new_mode);
+
+    bRet = TRUE;
+    if ( new_mode != stat_data.st_mode )
+    {
+        if ( chmod(unixFileName, new_mode) != 0 )
+        {
+            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
+            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
+            bRet = FALSE;
+        }
+    }
+
+done:
+    if (dwLastError)
+    {
+        pThread->SetLastError(dwLastError);
+    }
+
+    free(unixFileName);
+
+    LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
+    PERF_EXIT(SetFileAttributesA);
     return bRet;
 }
 
@@ -3575,131 +3700,6 @@ done:
 }
 
 
-/*++
-Function:
-  SetFileAttributesA
-
-Notes:
-  Used for setting read-only attribute on file only.
-
---*/
-BOOL
-PALAPI
-SetFileAttributesA(
-           IN LPCSTR lpFileName,
-           IN DWORD dwFileAttributes)
-{
-    CPalThread *pThread;
-    struct stat stat_data;
-    mode_t new_mode;
-
-    DWORD dwLastError = 0;
-    BOOL  bRet = FALSE;
-    LPSTR unixFileName = NULL;
-
-    PERF_ENTRY(SetFileAttributesA);
-    ENTRY("SetFileAttributesA(lpFileName=%p (%s), dwFileAttributes=%#x)\n",
-        lpFileName?lpFileName:"NULL",
-        lpFileName?lpFileName:"NULL", dwFileAttributes);
-
-    pThread = InternalGetCurrentThread();
-
-    /* Windows behavior for SetFileAttributes is that any valid attributes
-    are set on a file and any invalid attributes are ignored. SetFileAttributes
-    returns success and does not set an error even if some or all of the
-    attributes are invalid. If all the attributes are invalid, SetFileAttributes
-    sets a file's attribute to NORMAL. */
-
-    /* If dwFileAttributes does not contain READONLY or NORMAL, set it to NORMAL
-    and print a warning message. */
-    if ( !(dwFileAttributes & (FILE_ATTRIBUTE_READONLY |FILE_ATTRIBUTE_NORMAL)) )
-    {
-        dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-        WARN("dwFileAttributes(%#x) contains attributes that are either not supported "
-            "or cannot be set via SetFileAttributes.\n");
-    }
-
-    if ( (dwFileAttributes & FILE_ATTRIBUTE_NORMAL) &&
-         (dwFileAttributes != FILE_ATTRIBUTE_NORMAL) )
-    {
-        WARN("Ignoring FILE_ATTRIBUTE_NORMAL -- it must be used alone\n");
-    }
-
-    if (lpFileName == NULL)
-    {
-        dwLastError = ERROR_FILE_NOT_FOUND;
-        goto done;
-    }
-
-    if ((unixFileName = strdup(lpFileName)) == NULL)
-    {
-        ERROR("strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-
-    FILEDosToUnixPathA( unixFileName );
-    if ( stat(unixFileName, &stat_data) != 0 )
-    {
-        TRACE("stat failed on %s; errno is %d (%s)\n",
-             unixFileName, errno, strerror(errno));
-        dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
-        goto done;
-    }
-
-    new_mode = stat_data.st_mode;
-    TRACE("st_mode is %#x\n", new_mode);
-
-    /* if we can't do GetFileAttributes on it, don't do SetFileAttributes */
-    if ( !(new_mode & S_IFREG) && !(new_mode & S_IFDIR) )
-    {
-        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
-              new_mode & S_IFMT);
-        dwLastError = ERROR_ACCESS_DENIED;
-        goto done;
-    }
-
-    /* set or unset the "read-only" attribute */
-    if (dwFileAttributes & FILE_ATTRIBUTE_READONLY)
-    {
-        /* remove the write bit from everybody */
-        new_mode &= ~(S_IWUSR | S_IWGRP | S_IWOTH);
-    }
-    else
-    {
-        /* give write permission to the owner if the owner
-         * already has read permission */
-        if ( new_mode & S_IRUSR )
-        {
-            new_mode |= S_IWUSR;
-        }
-    }
-    TRACE("new mode is %#x\n", new_mode);
-
-    bRet = TRUE;
-    if ( new_mode != stat_data.st_mode )
-    {
-        if ( chmod(unixFileName, new_mode) != 0 )
-        {
-            ERROR("chmod(%s, %#x) failed\n", unixFileName, new_mode);
-            dwLastError = FILEGetLastErrorFromErrnoAndFilename(unixFileName);
-            bRet = FALSE;
-        }
-    }
-
-done:
-    if (dwLastError)
-    {
-        pThread->SetLastError(dwLastError);
-    }
-
-    free(unixFileName);
-
-    LOGEXIT("SetFileAttributesA returns BOOL %d\n", bRet);
-    PERF_EXIT(SetFileAttributesA);
-    return bRet;
-}
-
 PAL_ERROR
 CorUnix::InternalCreatePipe(
     CPalThread *pThread,
@@ -4171,161 +4171,4 @@ void FILECleanupStdHandles(void)
     {
         CloseHandle(stderr_handle);
     }
-}
-
-/*++
-Function:
-  GetFileInformationByHandle
-
-See MSDN doc.
---*/
-BOOL
-PALAPI
-GetFileInformationByHandle(
-             IN HANDLE hFile,
-             OUT LPBY_HANDLE_FILE_INFORMATION lpFileInformation)
-{
-    CPalThread *pThread;
-    BOOL bRet = FALSE;
-    DWORD dwLastError = 0;
-
-    IPalObject *pFileObject = NULL;
-    CFileProcessLocalData *pLocalData = NULL;
-    IDataLock *pLocalDataLock = NULL;
-
-    DWORD dwAttr = 0;
-    struct stat stat_data;
-
-    PERF_ENTRY(GetFileInformationByHandle);
-    ENTRY("GetFileInformationByHandle(hFile=%p, lpFileInformation=%p)\n",
-          hFile, lpFileInformation);
-
-    pThread = InternalGetCurrentThread();
-
-    if (INVALID_HANDLE_VALUE == hFile)
-    {
-        ERROR( "Invalid file handle\n" );
-        dwLastError = ERROR_INVALID_HANDLE;
-        goto done;
-    }
-
-    dwLastError = g_pObjectManager->ReferenceObjectByHandle(
-        pThread,
-        hFile,
-        &aotFile,
-        &pFileObject
-        );
-
-    if (NO_ERROR != dwLastError)
-    {
-        goto done;
-    }
-
-    dwLastError = pFileObject->GetProcessLocalData(
-        pThread,
-        ReadLock,
-        &pLocalDataLock,
-        reinterpret_cast<void**>(&pLocalData)
-        );
-
-    if (NO_ERROR != dwLastError)
-    {
-        goto done;
-    }
-
-    if ( fstat(pLocalData->unix_fd, &stat_data) != 0 )
-    {
-        if ((dwLastError = FILEGetLastErrorFromErrno()) == ERROR_INTERNAL_ERROR)
-        {
-            ASSERT("fstat() not expected to fail with errno:%d (%s)\n",
-                   errno, strerror(errno));
-        }
-        goto done;
-    }
-
-    if ( (stat_data.st_mode & S_IFMT) == S_IFDIR )
-    {
-        dwAttr |= FILE_ATTRIBUTE_DIRECTORY;
-    }
-    else if ( (stat_data.st_mode & S_IFMT) != S_IFREG )
-    {
-        ERROR("Not a regular file or directory, S_IFMT is %#x\n",
-              stat_data.st_mode & S_IFMT);
-        dwLastError = ERROR_ACCESS_DENIED;
-        goto done;
-    }
-
-    if ( UTIL_IsReadOnlyBitsSet( &stat_data ) )
-    {
-        dwAttr |= FILE_ATTRIBUTE_READONLY;
-    }
-
-    /* finally, if nothing is set... */
-    if ( dwAttr == 0 )
-    {
-        dwAttr = FILE_ATTRIBUTE_NORMAL;
-    }
-
-    lpFileInformation->dwFileAttributes = dwAttr;
-
-    /* get the file times */
-    lpFileInformation->ftCreationTime =
-        FILEUnixTimeToFileTime( stat_data.st_ctime,
-                                ST_CTIME_NSEC(&stat_data) );
-    lpFileInformation->ftLastAccessTime =
-        FILEUnixTimeToFileTime( stat_data.st_atime,
-                                ST_ATIME_NSEC(&stat_data) );
-    lpFileInformation->ftLastWriteTime =
-        FILEUnixTimeToFileTime( stat_data.st_mtime,
-                                ST_MTIME_NSEC(&stat_data) );
-
-    /* if Unix mtime is greater than atime, return mtime
-       as the last access time */
-    if (CompareFileTime(&lpFileInformation->ftLastAccessTime,
-                        &lpFileInformation->ftLastWriteTime) < 0)
-    {
-         lpFileInformation->ftLastAccessTime = lpFileInformation->ftLastWriteTime;
-    }
-
-    /* if Unix ctime is greater than mtime, return mtime
-       as the create time */
-    if (CompareFileTime(&lpFileInformation->ftLastWriteTime,
-                        &lpFileInformation->ftCreationTime) < 0)
-    {
-         lpFileInformation->ftCreationTime = lpFileInformation->ftLastWriteTime;
-    }
-
-    lpFileInformation->dwVolumeSerialNumber = stat_data.st_dev;
-
-    /* Get the file size. GetFileSize is not used because it gets the
-       size of an already-open file */
-    lpFileInformation->nFileSizeLow = (DWORD) stat_data.st_size;
-#if SIZEOF_OFF_T > 4
-    lpFileInformation->nFileSizeHigh = (DWORD)(stat_data.st_size >> 32);
-#else
-    lpFileInformation->nFileSizeHigh = 0;
-#endif
-
-    lpFileInformation->nNumberOfLinks = stat_data.st_nlink;
-    lpFileInformation->nFileIndexHigh = 0;
-    lpFileInformation->nFileIndexLow = stat_data.st_ino;
-
-    bRet = TRUE;
-
-done:
-    if (NULL != pLocalDataLock)
-    {
-        pLocalDataLock->ReleaseLock(pThread, FALSE);
-    }
-
-    if (NULL != pFileObject)
-    {
-        pFileObject->ReleaseReference(pThread);
-    }
-
-    if (dwLastError) pThread->SetLastError(dwLastError);
-
-    LOGEXIT("GetFileInformationByHandle returns BOOL %d\n", bRet);
-    PERF_EXIT(GetFileInformationByHandle);
-    return bRet;
 }

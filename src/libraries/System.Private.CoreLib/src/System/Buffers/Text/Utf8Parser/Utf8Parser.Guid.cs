@@ -117,7 +117,7 @@ namespace System.Buffers.Text
                     return false;
                 }
 
-                source = source.Slice(1); // skip begining
+                source = source.Slice(1); // skip beginning
             }
 
             if (!TryParseUInt32X(source, out uint i1, out int justConsumed))

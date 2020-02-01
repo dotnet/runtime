@@ -52,10 +52,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, Array.Empty<ISymbolDefinitionNode>());
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             List<EntryPoint> ridToEntryPoint = new List<EntryPoint>();
 
-            foreach (MethodWithGCInfo method in r2rFactory.EnumerateCompiledMethods())
+            foreach (MethodWithGCInfo method in factory.EnumerateCompiledMethods())
             {
                 if (method.Method is EcmaMethod ecmaMethod)
                 {
@@ -69,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         ridToEntryPoint.Add(EntryPoint.Null);
                     }
 
-                    int methodIndex = r2rFactory.RuntimeFunctionsTable.GetIndex(method);
+                    int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
                     ridToEntryPoint[(int)rid] = new EntryPoint(methodIndex, method);
                 }
             }

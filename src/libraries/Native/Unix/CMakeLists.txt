@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.14.2)
+cmake_policy(SET CMP0042 NEW)
+
 project(CoreFX C)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Emscripten)
@@ -20,7 +22,7 @@ set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../_version.c")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
 # We mark the function which needs exporting with DLLEXPORT
 add_compile_options(-fvisibility=hidden)
@@ -279,6 +281,7 @@ function(install_library_and_symbols targetName)
 endfunction()
 
 include(configure.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 
 add_subdirectory(System.IO.Compression.Native)
 

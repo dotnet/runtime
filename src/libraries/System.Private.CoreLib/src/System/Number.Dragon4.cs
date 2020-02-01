@@ -119,11 +119,11 @@ namespace System
                     // 3) Set the margin value to the loweset mantissa bit's scale.
 
                     // scaledValue      = 2 * 2 * mantissa * 2^exponent
-                    scaledValue = new BigInteger(4 * mantissa);
+                    BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
                     scaledValue.ShiftLeft((uint)(exponent));
 
                     // scale            = 2 * 2 * 1
-                    scale = new BigInteger(4);
+                    BigInteger.SetUInt32(out scale, 4);
 
                     // scaledMarginLow  = 2 * 2^(exponent - 1)
                     BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
@@ -136,16 +136,16 @@ namespace System
                     // In order to track the mantissa data as an integer, we store it as is with a large scale
 
                     // scaledValue      = 2 * 2 * mantissa
-                    scaledValue = new BigInteger(4 * mantissa);
+                    BigInteger.SetUInt64(out scaledValue, 4 * mantissa);
 
                     // scale            = 2 * 2 * 2^(-exponent)
                     BigInteger.Pow2((uint)(-exponent + 2), out scale);
 
                     // scaledMarginLow  = 2 * 2^(-1)
-                    scaledMarginLow = new BigInteger(1);
+                    BigInteger.SetUInt32(out scaledMarginLow, 1);
 
                     // scaledMarginHigh = 2 * 2 * 2^(-1)
-                    optionalMarginHigh = new BigInteger(2);
+                    BigInteger.SetUInt32(out optionalMarginHigh, 2);
                 }
 
                 // The high and low margins are different
@@ -161,11 +161,11 @@ namespace System
                     // 3) Set the margin value to the lowest mantissa bit's scale.
 
                     // scaledValue     = 2 * mantissa*2^exponent
-                    scaledValue = new BigInteger(2 * mantissa);
+                    BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
                     scaledValue.ShiftLeft((uint)(exponent));
 
                     // scale           = 2 * 1
-                    scale = new BigInteger(2);
+                    BigInteger.SetUInt32(out scale, 2);
 
                     // scaledMarginLow = 2 * 2^(exponent-1)
                     BigInteger.Pow2((uint)(exponent), out scaledMarginLow);
@@ -175,13 +175,13 @@ namespace System
                     // In order to track the mantissa data as an integer, we store it as is with a large scale
 
                     // scaledValue     = 2 * mantissa
-                    scaledValue = new BigInteger(2 * mantissa);
+                    BigInteger.SetUInt64(out scaledValue, 2 * mantissa);
 
                     // scale           = 2 * 2^(-exponent)
                     BigInteger.Pow2((uint)(-exponent + 1), out scale);
 
                     // scaledMarginLow = 2 * 2^(-1)
-                    scaledMarginLow = new BigInteger(1);
+                    BigInteger.SetUInt32(out scaledMarginLow, 1);
                 }
 
                 // The high and low margins are equal
@@ -223,7 +223,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -261,7 +261,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -320,7 +320,7 @@ namespace System
 
                 if (pScaledMarginHigh != &scaledMarginLow)
                 {
-                    BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                    BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                 }
             }
 
@@ -376,7 +376,7 @@ namespace System
 
                     if (pScaledMarginHigh != &scaledMarginLow)
                     {
-                        BigInteger.Multiply(ref scaledMarginLow, 2, ref *pScaledMarginHigh);
+                        BigInteger.Multiply(ref scaledMarginLow, 2, out *pScaledMarginHigh);
                     }
 
                     digitExponent--;

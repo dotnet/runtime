@@ -131,7 +131,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
     else
         PathToTempJit = PathToOriginalJit;
 
-#ifndef FEATURE_PAL // No file version APIs in the PAL
+#ifndef TARGET_UNIX // No file version APIs in the PAL
     // Do a quick version check
     DWORD dwHandle = 0;
     DWORD fviSize  = GetFileVersionInfoSizeA(PathToTempJit, &dwHandle);
@@ -156,7 +156,7 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         }
         delete[] fviData;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Load Library
     hLib = ::LoadLibraryA(PathToTempJit);
@@ -320,12 +320,12 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         if (jitResult == CORJIT_SKIPPED)
         {
             // For altjit, treat SKIPPED as OK
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
             {
                 jitResult = CORJIT_OK;
             }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
             if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
             {
                 jitResult = CORJIT_OK;

@@ -26,7 +26,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class Derived : Base { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ClassExportsAreNotInherited()
         {
             var cc = CreateContainer(typeof(Derived));
@@ -35,7 +35,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void PropertyExportsAreNotInherited()
         {
             var cc = CreateContainer(typeof(Derived));
@@ -47,7 +47,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class ExportingDerived : Base { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ExportsAtTheClassLevelAreAppliedIgnoringBaseExports()
         {
             var cc = CreateContainer(typeof(ExportingDerived));
@@ -88,7 +88,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class NonOverridingImporter : BaseImporter { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ImportsOnOverriddenPropertiesOverrideImportsOnTheBase()
         {
             var c = CreateContainer(typeof(Exporter), typeof(OverridingImporter), typeof(NonOverridingImporter));
@@ -99,7 +99,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void LooseImportsOnDerivedPropertiesOverrideImportsOnTheBase()
         {
             var c = CreateContainer(typeof(Exporter));
@@ -112,7 +112,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ImportsOnBaseAreInherited()
         {
             var c = CreateContainer(typeof(Exporter), typeof(NonOverridingImporter));
@@ -122,7 +122,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void LooseImportsOnBaseAreInherited()
         {
             var c = CreateContainer(typeof(Exporter));
@@ -138,7 +138,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class DiscoverableDerived : NotDiscoverableBase { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void PartNotDiscoverableAttributeIsNotInherited()
         {
             var c = CreateContainer(typeof(DiscoverableDerived));
@@ -153,7 +153,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class SharedDerived : SharedBase { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void PartMetadataIsNotInherited()
         {
             var c = CreateContainer(typeof(SharedDerived));
@@ -174,7 +174,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class InheritsImportsSatisfied : HasImportsSatisfied { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void OnImportsSatisfiedAttributeIsInherited()
         {
             var c = CreateContainer(typeof(InheritsImportsSatisfied));
@@ -193,7 +193,7 @@ namespace System.Composition.Lightweight.UnitTests
         public class ABHandler : AHandler { }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void MetadataIsOnlyDrawnFromTheTypeToWhichItIsApplied()
         {
             var c = CreateContainer(typeof(ABHandler));
@@ -215,7 +215,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void ExportsOnOverridePropertiesOverrideExportsOnTheBase()
         {
             var c = CreateContainer(typeof(DerivedOverrideExporter));

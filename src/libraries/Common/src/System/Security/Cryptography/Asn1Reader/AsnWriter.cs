@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
     /// <summary>
@@ -18,9 +19,9 @@ namespace System.Security.Cryptography.Asn1
     /// </summary>
     internal sealed partial class AsnWriter : IDisposable
     {
-        private byte[] _buffer;
+        private byte[] _buffer = null!;
         private int _offset;
-        private Stack<(Asn1Tag, int, UniversalTagNumber)> _nestingStack;
+        private Stack<(Asn1Tag, int, UniversalTagNumber)>? _nestingStack;
 
         /// <summary>
         ///   The <see cref="AsnEncodingRules"/> in use by this writer.
@@ -60,7 +61,7 @@ namespace System.Security.Cryptography.Asn1
                 // clearSize: 0 because it was already cleared.
                 CryptoPool.Return(_buffer, clearSize: 0);
 #endif
-                _buffer = null;
+                _buffer = null!;
             }
 
             _offset = -1;
@@ -245,7 +246,7 @@ namespace System.Security.Cryptography.Asn1
                 // While the ArrayPool may have similar logic, make sure we don't run into a lot of
                 // "grow a little" by asking in 1k steps.
                 int blocks = checked(_offset + pendingCount + (BlockSize - 1)) / BlockSize;
-                byte[] oldBytes = _buffer;
+                byte[]? oldBytes = _buffer;
                 _buffer = CryptoPool.Rent(BlockSize * blocks);
 
                 if (oldBytes != null)

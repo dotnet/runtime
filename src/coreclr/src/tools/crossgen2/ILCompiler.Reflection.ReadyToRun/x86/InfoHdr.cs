@@ -93,60 +93,60 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\t\tPrologSize: {PrologSize}");
-            sb.AppendLine($"\t\tEpilogSize: {EpilogSize}");
-            sb.AppendLine($"\t\tEpilogCount: {EpilogCount}");
-            sb.Append("\t\tEpilogAtEnd: ");
+            sb.AppendLine($"        PrologSize: {PrologSize}");
+            sb.AppendLine($"        EpilogSize: {EpilogSize}");
+            sb.AppendLine($"        EpilogCount: {EpilogCount}");
+            sb.Append("        EpilogAtEnd: ");
             sb.AppendLine(EpilogAtEnd ? "yes" : "no");
 
-            sb.Append($"\t\tCallee-saved regs  = ");
+            sb.Append($"        Callee-saved regs  = ");
             if (EdiSaved) sb.Append("EDI");
             if (EsiSaved) sb.Append("ESI");
             if (EbxSaved) sb.Append("EBX");
             if (EbpSaved) sb.Append("EBP");
             sb.AppendLine();
 
-            sb.Append($"\t\tEbpFrame: ");
+            sb.Append($"        EbpFrame: ");
             sb.AppendLine(EbpFrame ? "yes" : "no");
-            sb.Append($"\t\tFully Interruptible: ");
+            sb.Append($"        Fully Interruptible: ");
             sb.AppendLine(Interruptible ? "yes" : "no");
-            sb.Append($"\t\tDoubleAlign: ");
+            sb.Append($"        DoubleAlign: ");
             sb.AppendLine(DoubleAlign ? "yes" : "no");
-            sb.AppendLine($"\t\tArguments Size: {ArgCount} DWORDs");
-            sb.AppendLine($"\t\tStack Frame Size: {FrameSize} DWORDs");
-            sb.AppendLine($"\t\tUntrackedCnt: {UntrackedCnt}");
-            sb.AppendLine($"\t\tVarPtrTableSize: {VarPtrTableSize}");
+            sb.AppendLine($"        Arguments Size: {ArgCount} DWORDs");
+            sb.AppendLine($"        Stack Frame Size: {FrameSize} DWORDs");
+            sb.AppendLine($"        UntrackedCnt: {UntrackedCnt}");
+            sb.AppendLine($"        VarPtrTableSize: {VarPtrTableSize}");
 
-            if (Security) sb.AppendLine($"\t\tSecurity Check Obj: yes");
-            if (Handlers) sb.AppendLine($"\t\tHandlers: yes");
-            if (Localloc) sb.AppendLine($"\t\tLocalloc: yes");
-            if (EditNcontinue) sb.AppendLine($"\t\tEditNcontinue: yes");
-            if (Varargs) sb.AppendLine($"\t\tVarargs: yes");
-            if (ProfCallbacks) sb.AppendLine($"\t\tProfCallbacks: yes");
+            if (Security) sb.AppendLine($"        Security Check Obj: yes");
+            if (Handlers) sb.AppendLine($"        Handlers: yes");
+            if (Localloc) sb.AppendLine($"        Localloc: yes");
+            if (EditNcontinue) sb.AppendLine($"        EditNcontinue: yes");
+            if (Varargs) sb.AppendLine($"        Varargs: yes");
+            if (ProfCallbacks) sb.AppendLine($"        ProfCallbacks: yes");
 
-            sb.AppendLine($"\t\tGenericsContext: {GenericsContext}");
-            sb.AppendLine($"\t\tGenericsContextIsMethodDesc: {GenericsContextIsMethodDesc}");
-            sb.AppendLine($"\t\tReturnKind: {ReturnKind}");
-            sb.AppendLine($"\t\tRevPInvokeOffset: {RevPInvokeOffset}");
+            sb.AppendLine($"        GenericsContext: {GenericsContext}");
+            sb.AppendLine($"        GenericsContextIsMethodDesc: {GenericsContextIsMethodDesc}");
+            sb.AppendLine($"        ReturnKind: {ReturnKind}");
+            sb.AppendLine($"        RevPInvokeOffset: {RevPInvokeOffset}");
 
             if (GsCookieOffset != INVALID_GS_COOKIE_OFFSET)
             {
-                sb.Append("\t\tGuardStack cookie = [");
+                sb.Append("        GuardStack cookie = [");
                 sb.Append(EbpFrame ? "EBP-" : "ESP+");
                 sb.AppendLine($"{GsCookieOffset}]\n");
             }
             if (SyncStartOffset != INVALID_GS_COOKIE_OFFSET)
             {
-                sb.AppendLine($"\t\tSync region = [{SyncStartOffset},{SyncEndOffset}]");
+                sb.AppendLine($"        Sync region = [{SyncStartOffset},{SyncEndOffset}]");
             }
 
-            sb.Append($"\t\tEpilogs:");
+            sb.Append($"        Epilogs:");
             foreach (int epilog in Epilogs)
             {
                 sb.AppendLine($" {epilog}");
             }
             if (HasArgTabOffset)
-                sb.AppendLine($"\t\tArgTabOffset: {ArgTabOffset}");
+                sb.AppendLine($"        ArgTabOffset: {ArgTabOffset}");
 
             return sb.ToString();
         }
@@ -276,7 +276,8 @@ namespace ILCompiler.Reflection.ReadyToRun.x86
                                 break;
 
                             case (byte)InfoHdrAdjust.NEXT_OPCODE:
-                                encoding = (byte)(image[offset++] & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
+                                nextByte = image[offset++];
+                                encoding = (byte)(nextByte & (int)InfoHdrAdjustConstants.ADJ_ENCODING_MAX);
                                 // encoding here always corresponds to codes in InfoHdrAdjust2 set
 
                                 if (encoding < (int)InfoHdrAdjustConstants.SET_RET_KIND_MAX)

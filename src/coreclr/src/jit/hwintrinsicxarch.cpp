@@ -528,6 +528,132 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_AsVector:
+        {
+            assert(sig->numArgs == 1);
+
+            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            {
+                // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector128.ToVector256
+                return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, mustExpand);
+            }
+
+            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
+
+            // We fold away the cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both the same TYP_SIMD.
+
+            retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+            break;
+        }
+
+        case NI_Vector128_AsVector2:
+        case NI_Vector128_AsVector3:
+        {
+            // TYP_SIMD8 and TYP_SIMD12 currently only expose "safe" versions
+            // which zero the upper elements and so are implemented in managed.
+            unreached();
+        }
+
+        case NI_Vector128_AsVector4:
+        {
+            // We fold away the cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both the same TYP_SIMD or the
+            // return type is a smaller TYP_SIMD that shares the same register.
+
+            retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+            break;
+        }
+
+        case NI_Vector128_AsVector128:
+        {
+            assert(sig->numArgs == 1);
+
+            switch (getSIMDTypeForSize(simdSize))
+            {
+                case TYP_SIMD8:
+                case TYP_SIMD12:
+                {
+                    // TYP_SIMD8 and TYP_SIMD12 currently only expose "safe" versions
+                    // which zero the upper elements and so are implemented in managed.
+                    unreached();
+                }
+
+                case TYP_SIMD16:
+                {
+                    // We fold away the cast here, as it only exists to satisfy
+                    // the type system. It is safe to do this here since the retNode type
+                    // and the signature return type are both the same TYP_SIMD.
+
+                    retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                    SetOpLclRelatedToSIMDIntrinsic(retNode);
+                    assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+                    break;
+                }
+
+                case TYP_SIMD32:
+                {
+                    // Vector<T> is TYP_SIMD32, so we should treat this as a call to Vector256.GetLower
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, mustExpand);
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            break;
+        }
+
+        case NI_Vector256_AsVector:
+        case NI_Vector256_AsVector256:
+        {
+            assert(sig->numArgs == 1);
+
+            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            {
+                // We fold away the cast here, as it only exists to satisfy
+                // the type system. It is safe to do this here since the retNode type
+                // and the signature return type are both the same TYP_SIMD.
+
+                retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
+                SetOpLclRelatedToSIMDIntrinsic(retNode);
+                assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+
+                break;
+            }
+
+            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                // We support Vector256 but Vector<T> is only 16-bytes, so we should
+                // treat this method as a call to Vector256.GetLower or Vector128.ToVector256
+
+                if (intrinsic == NI_Vector256_AsVector)
+                {
+                    return impBaseIntrinsic(NI_Vector256_GetLower, clsHnd, method, sig, mustExpand);
+                }
+                else
+                {
+                    assert(intrinsic == NI_Vector256_AsVector256);
+                    return impBaseIntrinsic(NI_Vector128_ToVector256, clsHnd, method, sig, mustExpand);
+                }
+            }
+
+            break;
+        }
+
         case NI_Vector128_Count:
         case NI_Vector256_Count:
         {
@@ -543,7 +669,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -551,7 +677,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
@@ -602,7 +728,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -610,7 +736,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_AVX))
             {

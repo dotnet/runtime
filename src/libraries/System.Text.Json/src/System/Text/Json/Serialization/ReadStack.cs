@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -13,11 +14,19 @@ namespace System.Text.Json
     {
         internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
+        internal static byte[] s_idMetadataPropertyName = { (byte)'$', (byte)'i', (byte)'d' };
+        internal static byte[] s_refMetadataPropertyName = { (byte)'$', (byte)'r', (byte)'e', (byte)'f' };
+        internal static byte[] s_valuesMetadataPropertyName = { (byte)'$', (byte)'v', (byte)'a', (byte)'l', (byte)'u', (byte)'e', (byte)'s' };
+
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
 
         private List<ReadStackFrame> _previous;
         public int _index;
+
+        // The bag of preservable references. It needs to be kept in the state and never in JsonSerializerOptions because
+        // the options should not have any per-serialization state since every serialization shares the same immutable state on the options.
+        public DefaultReferenceResolver ReferenceResolver;
 
         public void Push()
         {
@@ -70,7 +79,7 @@ namespace System.Text.Json
         private void AppendStackFrame(StringBuilder sb, in ReadStackFrame frame)
         {
             // Append the property name.
-            string propertyName = GetPropertyName(frame);
+            string? propertyName = GetPropertyName(frame);
             AppendPropertyName(sb, propertyName);
 
             if (frame.JsonClassInfo != null)
@@ -82,11 +91,11 @@ namespace System.Text.Json
                 }
                 else if (frame.IsProcessingEnumerable())
                 {
-                    IList list = frame.TempEnumerableValues;
+                    IList? list = frame.TempEnumerableValues;
                     if (list == null && frame.ReturnValue != null)
                     {
 
-                        list = (IList)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
+                        list = (IList?)frame.JsonPropertyInfo?.GetValueAsObject(frame.ReturnValue);
                     }
                     if (list != null)
                     {
@@ -98,7 +107,7 @@ namespace System.Text.Json
             }
         }
 
-        private void AppendPropertyName(StringBuilder sb, string propertyName)
+        private void AppendPropertyName(StringBuilder sb, string? propertyName)
         {
             if (propertyName != null)
             {
@@ -116,17 +125,17 @@ namespace System.Text.Json
             }
         }
 
-        private string GetPropertyName(in ReadStackFrame frame)
+        private string? GetPropertyName(in ReadStackFrame frame)
         {
             // Attempt to get the JSON property name from the frame.
-            byte[] utf8PropertyName = frame.JsonPropertyName;
+            byte[]? utf8PropertyName = frame.JsonPropertyName;
             if (utf8PropertyName == null)
             {
                 // Attempt to get the JSON property name from the JsonPropertyInfo.
                 utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
             }
 
-            string propertyName;
+            string? propertyName;
             if (utf8PropertyName != null)
             {
                 propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);

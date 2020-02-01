@@ -6,20 +6,21 @@
     <MajorVersion>5</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <!-- Always use shipping version instead of dummy version -->
-    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
+
+    <!-- Set assembly version to align with major and minor version,
+         as for the patches and revisions should be manually updated per assembly if it is serviced. -->
+    <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
     <!-- Enable to remove prerelease label. -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <!-- TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024 -->
-    <!-- <UsingToolIbcOptimization>true</UsingToolIbcOptimization> -->
+    <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and ('$(ConfigurationGroup)' == 'Release' or '$(Configuration)' == 'Release')">true</EnableNgenOptimization>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
     <!-- Blob storage container that has the "Latest" channel to publish to. -->
@@ -29,45 +30,75 @@
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
     <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
     <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
+    <!--
+      The NETStandard.Library targeting pack uses this patch version, which does not match the
+      runtime's. After publishing a new version of the NETStandard targeting pack in a servicing
+      release, increase this number by one.
+    -->
+    <NETStandardPatchVersion>0</NETStandardPatchVersion>
   </PropertyGroup>
+
+  <!--
+    Servicing build settings for Setup/Installer packages. Instructions:
+
+    * To enable a package build for the current patch release, set PatchVersion to match the current
+      patch version of that package. ("major.minor.patch".) This is normally the same as
+      PatchVersion above, but not always. Notably, NETStandard has its own patch version.
+    * When the PatchVersion property above is incremented at the beginning of the next servicing
+      release, all packages listed below automatically stop building because the property no longer
+      matches the metadata. (Do not delete the items!)
+
+    If the PatchVersion below is never changed from '0', the package will build in the 'master'
+    branch, and during a forked RTM release ("X.Y.0"). It will stop building for "X.Y.1" unless
+    manually enabled by updating the metadata.
+  -->
+  <ItemGroup>
+    <!-- Targeting packs are only patched in extreme cases. -->
+    <ProjectServicingConfiguration Include="Microsoft.NETCore.App.Ref" PatchVersion="0" />
+    <ProjectServicingConfiguration Include="NETStandard.Library.Ref" PatchVersion="0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.19617.1</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.19617.1</MicrosoftDotNetBuildTasksFeedVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.19617.1</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>5.0.0-beta.19617.1</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.19617.1</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.19617.1</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19617.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.19617.1</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.19617.1</MicrosoftDotNetRemoteExecutorVersion>
-    <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.19617.1</MicrosoftDotNetVersionToolsTasksVersion>
+    <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20079.8</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20079.8</MicrosoftDotNetBuildTasksFeedVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20079.8</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenAPIVersion>5.0.0-beta.20079.8</MicrosoftDotNetGenAPIVersion>
+    <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20079.8</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20079.8</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20079.8</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20079.8</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20079.8</MicrosoftDotNetRemoteExecutorVersion>
+    <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20079.8</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.19562.8</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.19563.6</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreDotNetHostVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-alpha.1.20080.9</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>2.1.0</MicrosoftExtensionsDependencyModelVersion>
     <MicrosoftDotNetPlatformAbstractionsVersion>3.0.0</MicrosoftDotNetPlatformAbstractionsVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-alpha1.19563.3</MicrosoftNETCoreILAsmVersion>
-    <MicrosoftNETSdkILVersion>5.0.0-alpha1.19563.3</MicrosoftNETSdkILVersion>
+    <MicrosoftNETSdkILVersion>5.0.0-alpha.1.20076.2</MicrosoftNETSdkILVersion>
     <!-- Libraries dependencies -->
     <SystemTextJsonVersion>5.0.0-alpha.1.19563.6</SystemTextJsonVersion>
     <SystemTextEncodingsWebVersion>5.0.0-alpha.1.19563.6</SystemTextEncodingsWebVersion>
     <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
-    <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.19608.5</SystemComponentModelTypeConverterTestDataVersion>
-    <SystemDrawingCommonTestDataVersion>5.0.0-beta.19608.5</SystemDrawingCommonTestDataVersion>
-    <SystemIOCompressionTestDataVersion>5.0.0-beta.19608.5</SystemIOCompressionTestDataVersion>
-    <SystemIOPackagingTestDataVersion>5.0.0-beta.19608.5</SystemIOPackagingTestDataVersion>
-    <SystemNetTestDataVersion>5.0.0-beta.19608.5</SystemNetTestDataVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.19608.5</SystemSecurityCryptographyX509CertificatesTestDataVersion>
-    <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.19608.5</SystemWindowsExtensionsTestDataVersion>
+    <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.20072.1</SystemComponentModelTypeConverterTestDataVersion>
+    <SystemDrawingCommonTestDataVersion>5.0.0-beta.20072.1</SystemDrawingCommonTestDataVersion>
+    <SystemIOCompressionTestDataVersion>5.0.0-beta.20072.1</SystemIOCompressionTestDataVersion>
+    <SystemIOPackagingTestDataVersion>5.0.0-beta.20072.1</SystemIOPackagingTestDataVersion>
+    <SystemNetTestDataVersion>5.0.0-beta.20072.1</SystemNetTestDataVersion>
+    <SystemPrivateRuntimeUnicodeDataVersion>5.0.0-beta.20072.1</SystemPrivateRuntimeUnicodeDataVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataVersion>5.0.0-beta.20072.1</SystemSecurityCryptographyX509CertificatesTestDataVersion>
+    <SystemWindowsExtensionsTestDataVersion>5.0.0-beta.20072.1</SystemWindowsExtensionsTestDataVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryVersion>2.2.0-prerelease.19564.1</NETStandardLibraryVersion>
     <!-- dotnet-optimization dependencies -->
     <optimizationwindows_ntx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxVersion>
-    <optimizationIBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationIBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreFxVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreFxVersion>
+    <optimizationwindows_ntx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreCLRVersion>
+    <optimizationlinuxx64IBCCoreCLRVersion>99.99.99-master-20190716.1</optimizationlinuxx64IBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20190716.1</optimizationPGOCoreCLRVersion>
     <!-- Not auto-updated. -->
     <MicrosoftTargetingPackPrivateWinRTVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTVersion>
@@ -85,7 +116,7 @@
     <!-- sni -->
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkVersion>16.5.0-preview-20191216-02</MicrosoftNETTestSdkVersion>
+    <MicrosoftNETTestSdkVersion>16.5.0-preview-20200130-01</MicrosoftNETTestSdkVersion>
     <XUnitVersion>2.4.1</XUnitVersion>
     <TraceEventVersion>2.0.5</TraceEventVersion>
     <NewtonsoftJsonVersion>12.0.3</NewtonsoftJsonVersion>
@@ -104,7 +135,8 @@
     <MicrosoftPrivateIntellisensePackage>microsoft.private.intellisense</MicrosoftPrivateIntellisensePackage>
     <MicrosoftDotNetXUnitConsoleRunnerPackage>Microsoft.DotNet.XUnitConsoleRunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
     <MicrosoftNETCoreAppPackage>Microsoft.NETCore.App</MicrosoftNETCoreAppPackage>
-    <optimizationIBCCoreCLRPackage>optimization.IBC.CoreCLR</optimizationIBCCoreCLRPackage>
+    <WindowsOptimizationIBCCoreCLRPackage>optimization.windows_nt-x64.IBC.CoreCLR</WindowsOptimizationIBCCoreCLRPackage>
+    <LinuxOptimizationIBCCoreCLRPackage>optimization.linux-x64.IBC.CoreCLR</LinuxOptimizationIBCCoreCLRPackage>
     <optimizationPGOCoreCLRPackage>optimization.PGO.CoreCLR</optimizationPGOCoreCLRPackage>
     <MicrosoftDotNetBuildTasksFeedPackage>Microsoft.DotNet.Build.Tasks.Feed</MicrosoftDotNetBuildTasksFeedPackage>
     <MicrosoftNETCoreTargetsPackage>Microsoft.NETCore.Targets</MicrosoftNETCoreTargetsPackage>

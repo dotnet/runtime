@@ -993,7 +993,7 @@ Debugger::~Debugger()
     _ASSERTE(!"Debugger dtor should not be called.");
 }
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 typedef void (*PFN_HIJACK_FUNCTION) (void);
 
 // Given the start address and the end address of a function, return a MemoryRange for the function.
@@ -1013,22 +1013,22 @@ MemoryRange Debugger::s_hijackFunction[kMaxHijackFunctions] =
                                RedirectedHandledJITCaseForDbgThreadControl_StubEnd),
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForUserSuspend_Stub,
                                RedirectedHandledJITCaseForUserSuspend_StubEnd)
-#if defined(HAVE_GCCOVER) && defined(_TARGET_AMD64_)
+#if defined(HAVE_GCCOVER) && defined(TARGET_AMD64)
      ,
      GetMemoryRangeForFunction(RedirectedHandledJITCaseForGCStress_Stub,
                                RedirectedHandledJITCaseForGCStress_StubEnd)
-#endif // HAVE_GCCOVER && _TARGET_AMD64_
+#endif // HAVE_GCCOVER && TARGET_AMD64
     };
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
 // Save the necessary information for the debugger to recognize an IP in one of the thread redirection
 // functions.
 void Debugger::InitializeHijackFunctionAddress()
 {
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Advertise hijack address for the DD Hijack primitive
     m_rgHijackFunction = Debugger::s_hijackFunction;
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 }
 
 // For debug-only builds, we'll have a debugging feature to count
@@ -1388,10 +1388,10 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
     m_bpInfoSegment->m_breakpointInstruction[0] = 0x16;
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     USHORT *bp = (USHORT*)&m_bpInfoSegment->m_breakpointInstruction;
     *bp = CORDbg_BREAK_INSTRUCTION;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     m_thread = pEvalInfo->vmThreadToken.GetRawPtr();
     m_evalType = pEvalInfo->funcEvalType;
     m_methodToken = pEvalInfo->funcMetadataToken;
@@ -1837,7 +1837,7 @@ void Debugger::SendCreateProcess(DebuggerLockHolder * pDbgLockHolder)
     pDbgLockHolder->Acquire();
 }
 
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 
 HANDLE g_hContinueStartupEvent = INVALID_HANDLE_VALUE;
 
@@ -1884,16 +1884,16 @@ void NotifyDebuggerOfStartup()
     g_hContinueStartupEvent = NULL;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void Debugger::CleanupTransportSocket(void)
 {
-#if defined(FEATURE_PAL) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if defined(TARGET_UNIX) && defined(FEATURE_DBGIPC_TRANSPORT_VM)
     if (g_pDbgTransport != NULL)
     {
         g_pDbgTransport->AbortConnection();
     }
-#endif // FEATURE_PAL && FEATURE_DBGIPC_TRANSPORT_VM
+#endif // TARGET_UNIX && FEATURE_DBGIPC_TRANSPORT_VM
 }
 
 //---------------------------------------------------------------------------------------
@@ -1926,10 +1926,10 @@ HRESULT Debugger::Startup(void)
 
     _ASSERTE(g_pEEInterface != NULL);
 
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
     // This may block while an attach occurs.
     NotifyDebuggerOfStartup();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     {
         DebuggerLockHolder dbgLockHolder(this);
 
@@ -2078,7 +2078,7 @@ HRESULT Debugger::Startup(void)
     #endif
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // Signal the debugger (via dbgshim) and wait until it is ready for us to
     // continue. This needs to be outside the lock and after the transport is
     // initialized.
@@ -2090,7 +2090,7 @@ HRESULT Debugger::Startup(void)
         // in startup code or Main.
        MarkDebuggerAttachedInternal();
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     // We don't bother changing this process's permission.
     // A managed debugger will have the SE_DEBUG permission which will allow it to open our process handle,
@@ -2603,7 +2603,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
         fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
         newAddress));
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     newAddress = newAddress|THUMB_CODE;
 #endif
 
@@ -3634,7 +3634,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
 
     CodeVersionManager *pCodeVersionManager = module->GetCodeVersionManager();
     {
-        CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
         if (!ilCodeVersion.IsDefaultVersion())
         {
@@ -4390,19 +4390,19 @@ SIZE_T GetSetFrameHelper::GetSizeOfElement(CorElementType cet)
         {
         case ELEMENT_TYPE_I8:
         case ELEMENT_TYPE_U8:
-#if defined(BIT64)
+#if defined(HOST_64BIT)
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
-#endif // BIT64
+#endif // HOST_64BIT
         case ELEMENT_TYPE_R8:
                return 8;
 
         case ELEMENT_TYPE_I4:
         case ELEMENT_TYPE_U4:
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
         case ELEMENT_TYPE_I:
         case ELEMENT_TYPE_U:
-#endif // !BIT64
+#endif // !HOST_64BIT
         case ELEMENT_TYPE_R4:
             return 4;
 
@@ -6760,13 +6760,13 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
         reinterpret_cast<ULONG64>(s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress) :
         reinterpret_cast<ULONG64>(reinterpret_cast<PVOID>(GetIP(pExceptionInfo->ContextRecord)));
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_AMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
 #else
 #error Unknown processor.
@@ -6809,7 +6809,7 @@ DebuggerLaunchSetting Debugger::GetDbgJITDebugLaunchSetting()
     }
     CONTRACTL_END;
 
-#if FEATURE_PAL
+#if TARGET_UNIX
     DebuggerLaunchSetting setting = DLS_ATTACH_DEBUGGER;
 #else
     BOOL bAuto = FALSE;
@@ -6862,7 +6862,7 @@ DebuggerLaunchSetting Debugger::GetDbgJITDebugLaunchSetting()
     {
         setting = DLS_ATTACH_DEBUGGER;
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return setting;
 }
@@ -6896,7 +6896,7 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     DWORD pid = GetCurrentProcessId();
 
     SString ssDebuggerString;
@@ -6915,9 +6915,9 @@ bool Debugger::GetCompleteDebuggerLaunchString(SString * pStrArgsBuf)
     pStrArgsBuf->Printf(ssDebuggerString, pid, GetUnmanagedAttachEvent(), GetDebuggerLaunchJitInfo(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
     return true;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return false;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 // Proxy code for EDA
@@ -6988,7 +6988,7 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     LOG((LF_CORDB, LL_INFO10000, "D::EDA: thread 0x%x is launching the debugger.\n", GetCurrentThreadId()));
 
     _ASSERTE(HasLazyData());
@@ -7054,9 +7054,9 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
     LOG((LF_CORDB, LL_INFO10000, "D::EDA: debugger launched successfully.\n"));
     return S_OK;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return E_ABORT;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -8465,7 +8465,7 @@ FramePointer GetHandlerFramePointer(BYTE *pStack)
 {
     FramePointer handlerFP;
 
-#if !defined(_TARGET_ARM_) && !defined(_TARGET_ARM64_)
+#if !defined(TARGET_ARM) && !defined(TARGET_ARM64)
     // Refer to the comment in DispatchUnwind() to see why we have to add
     // sizeof(LPVOID) to the handler ebp.
     handlerFP = FramePointer::MakeFramePointer(LPVOID(pStack + sizeof(void*)));
@@ -8473,7 +8473,7 @@ FramePointer GetHandlerFramePointer(BYTE *pStack)
     // ARM is similar to IA64 in that it uses the establisher frame as the
     // handler. in this case we don't need to add sizeof(void*) to the FP.
     handlerFP = FramePointer::MakeFramePointer((LPVOID)pStack);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     return handlerFP;
 }
@@ -11962,7 +11962,7 @@ HRESULT Debugger::GetAndSendInterceptCommand(DebuggerIPCEvent *event)
                                                               csi.m_activeFrame.MethodToken,
                                                               csi.m_activeFrame.md,
                                                               foundOffset,
-#if defined (_TARGET_ARM_ )|| defined (_TARGET_ARM64_ )
+#if defined (TARGET_ARM )|| defined (TARGET_ARM64 )
                                                               // ARM requires the caller stack pointer, not the current stack pointer
                                                               CallerStackFrame::FromRegDisplay(&(csi.m_activeFrame.registers)),
 #else
@@ -12181,9 +12181,9 @@ void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
     case ELEMENT_TYPE_ARRAY:
     case ELEMENT_TYPE_SZARRAY:
         _ASSERTE(th.IsArray());
-        res->ArrayTypeData.arrayRank = th.AsArray()->GetRank();
+        res->ArrayTypeData.arrayRank = th.GetRank();
         TypeHandleToBasicTypeInfo(pAppDomain,
-                                  th.AsArray()->GetArrayElementTypeHandle(),
+                                  th.GetArrayElementTypeHandle(),
                                   &(res->ArrayTypeData.arrayTypeArg));
         break;
 
@@ -12698,7 +12698,7 @@ bool Debugger::IsThreadAtSafePlaceWorker(Thread *thread)
         CONTEXT ctx;
         ZeroMemory(&rd, sizeof(rd));
         ZeroMemory(&ctx, sizeof(ctx));
-#if defined(_TARGET_X86_) && !defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
         rd.ControlPC = ctx.Eip;
         rd.PCTAddr = (TADDR)&(ctx.Eip);
 #else
@@ -13476,9 +13476,9 @@ void STDCALL ExceptionHijackWorker(
     // call SetThreadContext on ourself to fix us.
 }
 
-#if defined(FEATURE_EH_FUNCLETS) && !defined(FEATURE_PAL)
+#if defined(FEATURE_EH_FUNCLETS) && !defined(TARGET_UNIX)
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 // ----------------------------------------------------------------------------
 // EmptyPersonalityRoutine
 //
@@ -13507,7 +13507,7 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
     LIMITED_METHOD_CONTRACT;
     return ExceptionContinueSearch;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 //---------------------------------------------------------------------------------------
 // Personality routine for unwinder the assembly hijack stub on 64-bit.
@@ -13547,7 +13547,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
                                   IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                  )
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     CONTEXT * pHijackContext = NULL;
 
     // Get the 1st parameter (the Context) from hijack worker.
@@ -13575,7 +13575,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
     // exactly the behavior we want.
     return ExceptionCollidedUnwind;
 }
-#endif // FEATURE_EH_FUNCLETS && !FEATURE_PAL
+#endif // FEATURE_EH_FUNCLETS && !TARGET_UNIX
 
 
 // UEF Prototype from excep.cpp
@@ -13835,15 +13835,15 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: in first chance hijack filter.\n", tid));
     SPEW(fprintf(stderr, "0x%x D::FCHF: pExceptionRecord=0x%p (%d), pContext=0x%p (%d)\n", tid, pExceptionRecord, sizeof(EXCEPTION_RECORD),
         pContext, sizeof(CONTEXT)));
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%p, Rip=0x%p, Rsp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Rip, pContext->Rsp,
         pContext->EFlags));
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Eip=0x%08x, Esp=0x%08x, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Eip, pContext->Esp,
         pContext->EFlags));
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
@@ -13956,7 +13956,7 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     }
 }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
 void GenericHijackFuncHelper()
 {
 #if DOSPEW
@@ -14049,14 +14049,14 @@ void GenericHijackFuncHelper()
 // This is the function that a thread is hijacked to by the Right Side during a variety of debug events. This function
 // must be naked.
 //
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 __declspec(naked)
 #endif // defined (_x86_)
 void Debugger::GenericHijackFunc(void)
 {
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     _asm
     {
         push ebp
@@ -14067,7 +14067,7 @@ void Debugger::GenericHijackFunc(void)
     // We can't have C++ classes w/ dtors in a declspec naked, so just have call into a helper.
     GenericHijackFuncHelper();
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     _asm
     {
         mov esp,ebp
@@ -14088,7 +14088,7 @@ void Debugger::GenericHijackFunc(void)
 
 
 
-//#ifdef _TARGET_X86_
+//#ifdef TARGET_X86
 //
 // This is the function that is called when we determine that a first chance exception hijack has
 // begun and memory is prepared for the RS to tell the LS what to do
@@ -15309,6 +15309,15 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
+    if (MethodDescBackpatchInfoTracker::IsLockOwnedByAnyThread())
+    {
+        // A thread may have suspended for the debugger while holding the slot backpatching lock while trying to enter
+        // cooperative GC mode. If the FuncEval calls a method that is eligible for slot backpatching (virtual or interface
+        // methods that are eligible for tiering), the FuncEval may deadlock on trying to acquire the same lock. Fail the
+        // FuncEval to avoid the issue.
+        return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
+    }
+
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
     DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
@@ -15364,17 +15373,17 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         // the thread's registers.
 
         // Set the first argument to point to the DebuggerEval.
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         filterContext->Eax = (DWORD)pDE;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
         filterContext->Rdi = (SIZE_T)pDE;
 #else // UNIX_AMD64_ABI
         filterContext->Rcx = (SIZE_T)pDE;
 #endif // !UNIX_AMD64_ABI
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         filterContext->R0 = (DWORD)pDE;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         filterContext->X0 = (SIZE_T)pDE;
 #else
         PORTABILITY_ASSERT("Debugger::FuncEvalSetup is not implemented on this platform.");
@@ -15468,15 +15477,15 @@ HRESULT Debugger::FuncEvalSetupReAbort(Thread *pThread, Thread::ThreadAbortReque
 
     ::SetIP(filterContext, (UINT_PTR)GetEEFuncEntryPoint(::FuncEvalHijack));
 
-#ifdef _TARGET_X86_ // reliance on filterContext->Eip & Eax
+#ifdef TARGET_X86 // reliance on filterContext->Eip & Eax
     // Set EAX to point to the DebuggerEval.
     filterContext->Eax = (DWORD)pDE;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     // Set RCX to point to the DebuggerEval.
     filterContext->Rcx = (SIZE_T)pDE;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     filterContext->R0 = (DWORD)pDE;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     filterContext->X0 = (SIZE_T)pDE;
 #else
     PORTABILITY_ASSERT("FuncEvalSetupReAbort (Debugger.cpp) is not implemented on this platform.");
@@ -16176,7 +16185,7 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
 
     if (success)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // Grab Eip - 1
         LPVOID address = (((BYTE*)GetIP(&ctx)) - 1);
 
@@ -16202,11 +16211,11 @@ BOOL Debugger::IsThreadContextInvalid(Thread *pThread)
             // Do nothing.  The default return value is FALSE.
         }
         EX_END_CATCH(SwallowAllExceptions);
-#else // _TARGET_X86_
+#else // TARGET_X86
         // Non-x86 can detect whether the thread is suspended after an exception is hit but before
         // the kernel has dispatched the exception to user mode by trap frame reporting.
         // See Thread::IsContextSafeToRedirect().
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     }
     else
     {
@@ -16677,7 +16686,7 @@ void DebuggerHeap::Destroy()
         m_hHeap = NULL;
     }
 #endif
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (m_execMemAllocator != NULL)
     {
         delete m_execMemAllocator;
@@ -16730,7 +16739,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
     }
 #endif
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     m_execMemAllocator = new (nothrow) DebuggerHeapExecutableMemoryAllocator();
     ASSERT(m_execMemAllocator != NULL);
     if (m_execMemAllocator == NULL)
@@ -16743,7 +16752,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
 }
 
 // Only use canaries on x86 b/c they throw of alignment on Ia64.
-#if defined(_DEBUG) && defined(_TARGET_X86_)
+#if defined(_DEBUG) && defined(TARGET_X86)
 #define USE_INTEROPSAFE_CANARY
 #endif
 
@@ -16823,7 +16832,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     bool allocateOnHeap = true;
     HANDLE hExecutableHeap = NULL;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (m_fExecutable)
     {
         allocateOnHeap = false;
@@ -16833,7 +16842,7 @@ void *DebuggerHeap::Alloc(DWORD size)
     {
         hExecutableHeap  = ClrGetProcessHeap();
     }
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     hExecutableHeap  = ClrGetProcessExecutableHeap();
 #endif
 
@@ -16876,7 +16885,7 @@ void *DebuggerHeap::Realloc(void *pMem, DWORD newSize, DWORD oldSize)
     _ASSERTE(newSize != 0);
     _ASSERTE(oldSize != 0);
 
-#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && !defined(FEATURE_PAL)
+#if defined(USE_INTEROPSAFE_HEAP) && !defined(USE_INTEROPSAFE_CANARY) && !defined(TARGET_UNIX)
     // No canaries in this case.
     // Call into realloc.
     void *ret;
@@ -16929,11 +16938,11 @@ void DebuggerHeap::Free(void *pMem)
 #else
     if (pMem != NULL)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         HANDLE hProcessExecutableHeap  = ClrGetProcessExecutableHeap();
         _ASSERTE(hProcessExecutableHeap != NULL);
         ClrHeapFree(hProcessExecutableHeap, NULL, pMem);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         if(!m_fExecutable)
         {
             HANDLE hProcessHeap  = ClrGetProcessHeap();
@@ -16945,7 +16954,7 @@ void DebuggerHeap::Free(void *pMem)
             INDEBUG(int ret =) m_execMemAllocator->Free(pMem);
             _ASSERTE(ret == 0);
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
 #endif
 }

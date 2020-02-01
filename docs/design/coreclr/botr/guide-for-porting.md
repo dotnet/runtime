@@ -171,7 +171,7 @@ both the JIT and VM.
     1.  The `this` pointer is always passed in the same register regardless of
         other parameters.
 
-    2.  Various stub types will require an extra “secret” parameter. Perf
+    2.  Various stub types will require an extra "secret" parameter. Perf
         details typically drive exactly where these are placed.
 
     3.  When executing managed code it must be possible to hijack the return
@@ -220,7 +220,7 @@ Notable components
 1.  The JIT. The jit maintains the largest concentration of architecture
     specific logic in the stack. This is not surprising. See [Porting RyuJit](porting-ryujit.md)
     for guidance.
-    
+
 2.  The CLR PAL. When porting to a non-Windows OS, the PAL will be the first component
     that needs to be ported.
 
@@ -228,8 +228,8 @@ Notable components
     very machine specific paths.
 
 4.  The unwinder. The unwinder is used to unwind stacks on non-Windows platforms.
-    It is located in https://github.com/dotnet/runtime/tree/master/src/coreclr/src/unwinder .
-    
+    It is located in https://github.com/dotnet/runtime/tree/master/src/coreclr/src/unwinder.
+
 4.  System.Private.CoreLib/System.Reflection. There is little to no architecture
     specific work here that is necessary for bringup. Nice-to-have work involves
     adding support for the architecture in the
@@ -237,7 +237,7 @@ Notable components
     and logic that manipulates it.
 
 5.  PE File format changes to add a new architecture. Also, the C# compiler likely
-    also needs a new switch to generate machine specific code for the new 
+    also needs a new switch to generate machine specific code for the new
     architecture.
 
 6.  Crossgen/Crossgen2 - As the AOT compilers that produce machine specific logic
@@ -267,12 +267,12 @@ there are also architecture specific components.
 4. jitsupport.cpp - Depending on how the features of the CPU are exposed, there
    may need to be code to call OS apis to gather information about CPU features.
 
-5. pal arch directory - https://github.com/davidwrighton/runtime/tree/master/src/coreclr/src/pal/src/arch
+5. pal arch directory - https://github.com/dotnet/runtime/tree/master/src/coreclr/src/pal/src/arch
    This directory primarily contains assembly stubs for architecture specific
    handling of signals and exceptions.
 
 In addition to the PAL source code, there is a comprehensive set of PAL tests located
-in https://github.com/dotnet/runtime/tree/master/src/coreclr/src/pal/tests
+in https://github.com/dotnet/runtime/tree/master/src/coreclr/src/pal/tests.
 
 CLR VM
 ------
@@ -323,7 +323,7 @@ There are many reasons for which the runtime requires various assembly stubs.
 Here is an annotated list of the stubs implemented for Unix on Arm64.
 
 1.  Only Performance. Some stubs have alternative implementations in C++ code
-    which are used if there isn’t an assembly stub. As compilers have gotten
+    which are used if there isn't an assembly stub. As compilers have gotten
     better, it has become more reasonable to just use the C++ versions. Often
     the biggest performance cost/win is due to fast paths being written that do
     not require setting up a stack frame. Most of the casting helpers fall in
@@ -333,7 +333,7 @@ Here is an annotated list of the stubs implemented for Unix on Arm64.
         `JIT_Stelem_Ref_Portable`.
 
 2.  General purpose correctness. Some helpers adjust the abi of whatever they
-    call in interesting ways, manipulate/parse the “secret” arguments, or do
+    call in interesting ways, manipulate/parse the "secret" arguments, or do
     other not quite compilable to standardized C concepts.
 
     1.  `CallDescrWorkerInternal` – Needed to support VM to managed function
@@ -433,7 +433,7 @@ set of functionality that is architecture specific, including but not limited to
 3.  The CalleeSavedRegisters, ArgumentRegisters, and FloatArgumentRegisters as
     needed to describe the calling convention for the platform
 
-4.  The ClrFlushInstructionCache function. If the architecture doesn’t actually
+4.  The ClrFlushInstructionCache function. If the architecture doesn't actually
     need to manually flush the icache, then this function is empty.
 
 5.  Various functions for decoding and manipulating jump instructions. These are
@@ -463,7 +463,7 @@ set of functionality that is architecture specific, including but not limited to
 
 This header is used to provide implementation of various stubs as used by
 virtual stub dispatch. These stubs are the lookup, resolver, and dispatch stubs
-as described in [Virtual Stub Dispatch](virtual-stub-dispatch.md). These are 
+as described in [Virtual Stub Dispatch](virtual-stub-dispatch.md). These are
 maintained in a separate file from the rest of cgencpu.h for historical reasons,
 and for reasons of size (there is quite a lot of logic here.)
 

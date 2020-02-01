@@ -11,28 +11,31 @@
     <Compile Include="System\Security\Cryptography\DataProtectionScope.cs" />
     <Compile Include="System\Security\Cryptography\ProtectedData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectData.cs">
-      <Link>Interop\Windows\Crypt32\Interop.CryptProtectData.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectData.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs">
-      <Link>Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptUnprotectData.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs">
-      <Link>Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptProtectDataFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.DATA_BLOB.cs">
-      <Link>Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
+      <Link>Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
-      <Link>Interop\Windows\Interop.Errors.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Internal\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HResults.cs">
+      <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
@@ -40,7 +43,6 @@
     <Reference Include="System.Security" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

@@ -1163,7 +1163,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToString_MatchesExpected_MemberData()
         {
-            // Randomly generated data on netfx with:
+            // Randomly generated data on .NET Framework with:
             //     using System;
             //     class Program
             //     {

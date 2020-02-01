@@ -35,7 +35,7 @@ The limitations of the current format are:
 
 # Structures
 
-The structures and accompanying constants are defined in the [readytorun.h](https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h) header file.
+The structures and accompanying constants are defined in the [readytorun.h](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/inc/readytorun.h) header file.
 
 ## READYTORUN_HEADER
 
@@ -119,6 +119,7 @@ enum ReadyToRunSectionType
     READYTORUN_SECTION_PROFILEDATA_INFO             = 111, // Added in V2.2
     READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
     READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
+    READYTORUN_SECTION_INLINING_INFO2               = 114, // Added in V4.1
 };
 ```
 
@@ -240,7 +241,7 @@ additional data determined by the flags.
 ### READYTORUN_IMPORT_SECTIONS::AuxiliaryData
 
 For slots resolved lazily via `READYTORUN_HELPER_DelayLoad_MethodCall` helper, auxiliary data are
-compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/coreclr/blob/6b9a3d3a87825b1a34bd8f114c9b181ce75b3b2e/src/inc/gcrefmap.h#L157) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
+compressed argument maps that allow precise GC stack scanning while the helper is running. The CoreCLR runtime class [`GCRefMapDecoder`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/gcrefmap.h#L157) is used to parse this information. This data would not be required for runtimes that allow conservative stack scanning.
 
 The auxiliary data table contains the exact same number of GC ref map records as there are method entries in the import section. To accelerate GC ref map lookup, the auxiliary data section starts with a lookup table holding the offset of every 1024-th method in the runtime function table within the linearized GC ref map.
 
@@ -253,7 +254,7 @@ The auxiliary data table contains the exact same number of GC ref map records as
 | 4 * (MethodCount / 1024 + 1) |  ... | Serialized GC ref map info
 
 The GCRef map is used to encode GC type of arguments for callsites. Logically, it is a sequence `<pos, token>` where `pos` is
-position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/coreclr/blob/6b9a3d3a87825b1a34bd8f114c9b181ce75b3b2e/src/inc/corcompile.h#L633) values):
+position of the reference in the stack frame and `token` is type of GC reference (one of [`GCREFMAP_XXX`](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/inc/corcompile.h#L627) values):
 
 | CORCOMPILE_GCREFMAP_TOKENS | Value | Stack frame entry interpretation
 |:---------------------------|------:|:--------------------------------
@@ -392,11 +393,11 @@ This section contains a native hashtable of all defined & export types within th
 |         0 | defined type
 |         1 | exported type
 
-The version-resilient hashing algorithm used for hashing the type names is implemented in [vm/versionresilienthashcode.cpp](https://github.com/dotnet/coreclr/blob/ec2a74e7649f1c0ecff32ce86724bf3ca80bfd46/src/vm/versionresilienthashcode.cpp#L75).
+The version-resilient hashing algorithm used for hashing the type names is implemented in [vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/8c6b1314c95857b9e2f5c222a10f2f089ee02dfe/src/coreclr/src/vm/versionresilienthashcode.cpp#L75).
 
 ## READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 
-This section contains a native hashtable of all generic method instantiations compiled into the R2R executable. The key is the method instance signature; the appropriate version-resilient hash code calculation is implemented in [vm/versionresilienthashcode.cpp](https://github.com/dotnet/coreclr/blob/ec2a74e7649f1c0ecff32ce86724bf3ca80bfd46/src/vm/versionresilienthashcode.cpp#L128); the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the runtime function table, the fixups blob and a blob encoding the method signature.
+This section contains a native hashtable of all generic method instantiations compiled into the R2R executable. The key is the method instance signature; the appropriate version-resilient hash code calculation is implemented in [vm/versionresilienthashcode.cpp](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/vm/versionresilienthashcode.cpp#L127); the value, represented by the `EntryPointWithBlobVertex` class, stores the method index in the runtime function table, the fixups blob and a blob encoding the method signature.
 
 ## READYTORUN_SECTION_INLINING_INFO
 
@@ -427,6 +428,19 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 ## READYTORUN_SECTION_ATTRIBUTEPRESENCE
 
 **TODO**: document attribute presence encoding
+
+## READYTORUN_SECTION_INLINING_INFO2
+
+The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+
+The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed by hashcode of the module name XORed with inlinee RID.
+
+The entry of the hashtable is a counted sequence of compressed unsigned integers:
+
+* RID of the inlinee shifted left by one bit. If the lowest bit is set, this is an inlinee from a foreign module. The _module override index_ (as defined above) follows as another compressed unsigned integer in that case.
+* RIDs of the inliners follow. They are encoded similarly to the way the inlinee is encoded (shifted left with the lowest bit indicating foreign RID). Instead of encoding the RID directly, RID delta (the difference between the previous RID and the current RID) is encoded. This allows better integer compression.
+
+Foreign RIDs are only present if a fragile inlining was allowed at compile time.
 
 # Native Format
 

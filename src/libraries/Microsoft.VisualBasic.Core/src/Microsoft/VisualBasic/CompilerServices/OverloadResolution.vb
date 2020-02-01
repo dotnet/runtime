@@ -2441,7 +2441,7 @@ skipargument:
 
             Debug.Assert(errors IsNot Nothing, "expected error table")
             errors.Add(
-                GetResourceString(
+                SR.Format(
                     resourceID,
                     substitution1,
                     VBFriendlyName(substitution2),
@@ -2456,7 +2456,7 @@ skipargument:
 
             Debug.Assert(errors IsNot Nothing, "expected error table")
             errors.Add(
-                GetResourceString(
+                SR.Format(
                     resourceID,
                     substitution1,
                     substitution2.ToString))
@@ -2469,7 +2469,7 @@ skipargument:
 
             Debug.Assert(errors IsNot Nothing, "expected error table")
             errors.Add(
-                GetResourceString(
+                SR.Format(
                     resourceID,
                     substitution1))
         End Sub
@@ -2477,8 +2477,7 @@ skipargument:
         Private Shared Sub ReportError(ByVal errors As List(Of String), ByVal resourceID As String)
 
             Debug.Assert(errors IsNot Nothing, "expected error table")
-            errors.Add(
-                GetResourceString(resourceID))
+            errors.Add(resourceID)
         End Sub
 
         Private Delegate Function ArgumentDetector(
@@ -2545,7 +2544,7 @@ skipargument:
 
             Debug.Assert(candidateReportCount > 0, "expected at least one candidate")
 
-            Dim message As String = GetResourceString(errorID, overloadedProcedureName, errorMessage.ToString)
+            Dim message As String = SR.Format(errorID, overloadedProcedureName, errorMessage.ToString)
             If candidateReportCount = 1 Then
                 'ParamArrays may cause only one candidate to get reported. In this case, reporting an
                 'ambiguity is misleading.
@@ -2823,7 +2822,7 @@ skipargument:
                     ElseIf rejectedForTypeArgumentCount > 0 Then
                         errorID = SR.NoTypeArgumentCountOverloadCandidates1
                     End If
-                    Throw New MissingMemberException(GetResourceString(errorID, methodName))
+                    Throw New MissingMemberException(SR.Format(errorID, methodName))
                 End If
                 Return Nothing
             End If

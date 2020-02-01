@@ -25,7 +25,9 @@ namespace ILCompiler
         {
             EnsureLoadableType(method.OwningType);
 
-            if (method.HasInstantiation)
+            // If this is an instantiated generic method, check the instantiation.
+            MethodDesc methodDef = method.GetMethodDefinition();
+            if (methodDef != method)
             {
                 foreach (var instType in method.Instantiation)
                     EnsureLoadableType(instType);
@@ -76,14 +78,11 @@ namespace ILCompiler
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }
 
-                    if (!parameterType.IsRuntimeDeterminedSubtype)
+                    LayoutInt elementSize = parameterType.GetElementSize();
+                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
                     {
-                        LayoutInt elementSize = parameterType.GetElementSize();
-                        if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
-                        {
-                            // Element size over 64k can't be encoded in the GCDesc
-                            ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
-                        }
+                        // Element size over 64k can't be encoded in the GCDesc
+                        ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);
                     }
 
                     if (((ArrayType)parameterizedType).Rank > 32)
@@ -105,17 +104,13 @@ namespace ILCompiler
             {
                 ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
             }
-            else if (type.IsGenericParameter)
-            {
-                return type;
-            }
             else
             {
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons or runtime determined subtypes
-                if (type.IsGenericDefinition || type.IsRuntimeDeterminedSubtype)
+                // Don't validate generic definitons
+                if (type.IsGenericDefinition)
                 {
                     return type;
                 }

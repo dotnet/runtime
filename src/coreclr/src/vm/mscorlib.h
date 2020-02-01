@@ -713,7 +713,6 @@ DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsRefer
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_METHOD_TABLE,        GetMethodTable,     NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_DATA,            GetRawData,         NoSig)
-DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_SZ_ARRAY_DATA,   GetRawSzArrayData,  NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_RAW_ARRAY_DATA,      GetRawArrayData, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_UNINITIALIZED_OBJECT, GetUninitializedObject, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_EQUALS,            EnumEquals, NoSig)
@@ -743,6 +742,9 @@ DEFINE_METHOD(UNSAFE,               PTR_READ_UNALIGNED,     ReadUnaligned, GM_Pt
 DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_PtrVoid_T_RetVoid)
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
 
+DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
+DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE, GetArrayDataReference, NoSig)
+
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_RefObject_Object_Object_RetObject)
@@ -752,7 +754,7 @@ DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
 
 DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
 DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 #endif
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
@@ -926,13 +928,14 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLL,           ResolveUnmana
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUNMANAGEDDLLUSINGEVENT, ResolveUnmanagedDllUsingEvent, SM_Str_AssemblyBase_IntPtr_RetIntPtr)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,             ResolveUsingResolvingEvent,    SM_IntPtr_AssemblyName_RetAssemblyBase)
 DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVESATELLITEASSEMBLY,      ResolveSatelliteAssembly,      SM_IntPtr_AssemblyName_RetAssemblyBase)
-DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,          AssemblyLoad)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,       OnAssemblyLoad, SM_Assembly_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,    OnResourceResolve, SM_Assembly_Str_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,        OnTypeResolve, SM_Assembly_Str_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,    OnAssemblyResolve, SM_Assembly_Str_RetAssembly)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,    StartAssemblyLoad,    SM_RefGuid_RefGuid_RetVoid)
-DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,     StopAssemblyLoad,     SM_RefGuid_RetVoid)
+DEFINE_FIELD(ASSEMBLYLOADCONTEXT,   ASSEMBLY_LOAD,              AssemblyLoad)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_LOAD,           OnAssemblyLoad,             SM_Assembly_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_RESOURCE_RESOLVE,        OnResourceResolve,          SM_Assembly_Str_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_TYPE_RESOLVE,            OnTypeResolve,              SM_Assembly_Str_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  ON_ASSEMBLY_RESOLVE,        OnAssemblyResolve,          SM_Assembly_Str_RetAssembly)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  START_ASSEMBLY_LOAD,        StartAssemblyLoad,          SM_RefGuid_RefGuid_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  STOP_ASSEMBLY_LOAD,         StopAssemblyLoad,           SM_RefGuid_RetVoid)
+DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  INITIALIZE_DEFAULT_CONTEXT, InitializeDefaultContext,   SM_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMETATADA, WinRT, WindowsRuntimeMetadata)
@@ -961,7 +964,6 @@ DEFINE_METHOD(DEBUGGER,             BREAK_CAN_THROW,        BreakCanThrow,      
 DEFINE_CLASS(BUFFER,                System,                 Buffer)
 DEFINE_METHOD(BUFFER,               MEMCPY_PTRBYTE_ARRBYTE, Memcpy,                 SM_PtrByte_Int_ArrByte_Int_Int_RetVoid)
 DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,                 SM_PtrByte_PtrByte_Int_RetVoid)
-DEFINE_METHOD(BUFFER,               BLOCKCOPY,              BlockCopy,              SM_Array_Int_Array_Int_Int_RetVoid)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMARSHAL, WinRT,  WindowsRuntimeMarshal)
@@ -1018,9 +1020,9 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    Validate
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT_ADDR,              GetStubContextAddr,             SM_RetIntPtr)
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 
@@ -1449,6 +1451,16 @@ DEFINE_FIELD_U(_count,                     GCHeapHashObject,                _cou
 DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _deletedCount)
 
 DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
+
+DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
+DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFCLASS,IsInstanceOfClass,           SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFINTERFACE,  IsInstanceOfInterface, SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTANY,       ChkCastAny,                  SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTINTERFACE, ChkCastInterface,            SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTCLASS,     ChkCastClass,                SM_PtrVoid_Obj_RetObj)
+DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_PtrVoid_Obj_RetObj)
 
 DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
 DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)

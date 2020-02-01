@@ -284,7 +284,7 @@ namespace System.Runtime.Loader
 
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Assembly.Load(assemblyName, ref stackMark, this);
+            return RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, this);
         }
 #endif
 
@@ -466,7 +466,7 @@ namespace System.Runtime.Loader
         ///
         /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
         ///
-        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/coreclr/design-docs/AssemblyLoadContext.ContextualReflection.md
+        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/design/features/AssemblyLoadContext.ContextualReflection.md
         /// </remarks>
         public static AssemblyLoadContext? CurrentContextualReflectionContext => s_asyncLocalCurrent?.Value;
 

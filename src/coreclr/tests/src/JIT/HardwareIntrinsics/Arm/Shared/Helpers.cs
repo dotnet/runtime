@@ -427,6 +427,874 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+
         public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+        public static sbyte CompareEqual(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static sbyte CompareGreaterThan(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static sbyte CompareGreaterThanOrEqual(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static sbyte CompareLessThan(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static sbyte CompareLessThanOrEqual(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static sbyte CompareTest(sbyte left, sbyte right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (sbyte)result;
+        }
+
+        public static byte CompareEqual(byte left, byte right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static byte CompareGreaterThan(byte left, byte right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static byte CompareGreaterThanOrEqual(byte left, byte right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static byte CompareLessThan(byte left, byte right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static byte CompareLessThanOrEqual(byte left, byte right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static byte CompareTest(byte left, byte right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (byte)result;
+        }
+
+        public static short CompareEqual(short left, short right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static short CompareGreaterThan(short left, short right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static short CompareGreaterThanOrEqual(short left, short right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static short CompareLessThan(short left, short right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static short CompareLessThanOrEqual(short left, short right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static short CompareTest(short left, short right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (short)result;
+        }
+
+        public static ushort CompareEqual(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static ushort CompareGreaterThan(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static ushort CompareGreaterThanOrEqual(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static ushort CompareLessThan(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static ushort CompareLessThanOrEqual(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static ushort CompareTest(ushort left, ushort right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (ushort)result;
+        }
+
+        public static int CompareEqual(int left, int right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static int CompareGreaterThan(int left, int right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static int CompareGreaterThanOrEqual(int left, int right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static int CompareLessThan(int left, int right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static int CompareLessThanOrEqual(int left, int right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static int CompareTest(int left, int right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (int)result;
+        }
+
+        public static uint CompareEqual(uint left, uint right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static uint CompareGreaterThan(uint left, uint right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static uint CompareGreaterThanOrEqual(uint left, uint right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static uint CompareLessThan(uint left, uint right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static uint CompareLessThanOrEqual(uint left, uint right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static uint CompareTest(uint left, uint right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (uint)result;
+        }
+
+        public static long CompareEqual(long left, long right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static long CompareGreaterThan(long left, long right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static long CompareGreaterThanOrEqual(long left, long right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static long CompareLessThan(long left, long right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static long CompareLessThanOrEqual(long left, long right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static long CompareTest(long left, long right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (long)result;
+        }
+
+        public static ulong CompareEqual(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static ulong CompareGreaterThan(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static ulong CompareGreaterThanOrEqual(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static ulong CompareLessThan(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static ulong CompareLessThanOrEqual(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static ulong CompareTest(ulong left, ulong right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (ulong)result;
+        }
+
+        public static double AbsoluteCompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double AbsoluteCompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float AbsoluteCompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left == right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareGreaterThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareGreaterThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left > right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareGreaterThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareGreaterThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left >= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareLessThan(double left, double right)
+        {
+            long result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareLessThan(float left, float right)
+        {
+            int result = 0;
+
+            if (left < right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareLessThanOrEqual(double left, double right)
+        {
+            long result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareLessThanOrEqual(float left, float right)
+        {
+            int result = 0;
+
+            if (left <= right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static double CompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+        public static byte Abs(sbyte value) => value < 0 ? (byte)-value : (byte)value;
+        public static ushort Abs(short value) => value < 0 ? (ushort)-value : (ushort)value;
+        public static uint Abs(int value) => value < 0 ? (uint)-value : (uint)value;
+        public static ulong Abs(long value) => value < 0 ? (ulong)-value : (ulong)value;
+        public static float Abs(float value) => Math.Abs(value);
+        public static double Abs(double value) => Math.Abs(value);
+
+        public static byte AbsoluteDifference(sbyte left, sbyte right) => (byte)Math.Abs((long)left - (long)right);
+        public static ushort AbsoluteDifference(short left, short right) => (ushort)Math.Abs((long)left - (long)right);
+        public static uint AbsoluteDifference(int left, int right) => (uint)Math.Abs((long)left - (long)right);
+        public static byte AbsoluteDifference(byte left, byte right) => (byte)Math.Abs((long)left - (long)right);
+        public static ushort AbsoluteDifference(ushort left, ushort right) => (ushort)Math.Abs((long)left - (long)right);
+        public static uint AbsoluteDifference(uint left, uint right) => (uint)Math.Abs((long)left - (long)right);
+        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
+        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
+
+        public static sbyte Add(sbyte left, sbyte right) => (sbyte)(left + right);
+        public static byte Add(byte left, byte right) => (byte)(left + right);
+        public static short Add(short left, short right) => (short)(left + right);
+        public static ushort Add(ushort left, ushort right) => (ushort)(left + right);
+        public static int Add(int left, int right) => (int)(left + right);
+        public static uint Add(uint left, uint right) => (uint)(left + right);
+        public static long Add(long left, long right) => (long)(left + right);
+        public static ulong Add(ulong left, ulong right) => (ulong)(left + right);
+        public static float Add(float left, float right) => (float)(left + right);
+        public static double Add(double left, double right) => (double)(left + right);
     }
 }

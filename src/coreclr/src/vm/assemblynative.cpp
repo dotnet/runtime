@@ -31,87 +31,84 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/clrprivbindercoreclr.h"
 
-FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAFE,
-        StringObject* codeBaseUNSAFE,
-        AssemblyBaseObject* requestingAssemblyUNSAFE,
-        StackCrawlMark* stackMark,
-        CLR_BOOL fThrowOnFileNotFound,
-        AssemblyLoadContextBaseObject *assemblyLoadContextUNSAFE)
+/* static */
+void QCALLTYPE AssemblyNative::InternalLoad(QCall::ObjectHandleOnStack assemblyName,
+                                            QCall::ObjectHandleOnStack requestingAssembly,
+                                            QCall::StackCrawlMarkHandle stackMark,
+                                            BOOL fThrowOnFileNotFound,
+                                            QCall::ObjectHandleOnStack assemblyLoadContext,
+                                            QCall::ObjectHandleOnStack retAssembly)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    struct _gc
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    // Workaround for https://github.com/dotnet/runtime/issues/2240
+    FrameWithCookie<ProtectValueClassFrame> workaround;
+
+    if (assemblyName.Get() == NULL)
     {
-        ASSEMBLYNAMEREF        assemblyName;
-        STRINGREF              codeBase;
-        ASSEMBLYREF            requestingAssembly;
-        ASSEMBLYREF            rv;
-        ASSEMBLYLOADCONTEXTREF assemblyLoadContext;
-    } gc;
-
-    gc.assemblyName        = (ASSEMBLYNAMEREF)        assemblyNameUNSAFE;
-    gc.codeBase            = (STRINGREF)              codeBaseUNSAFE;
-    gc.requestingAssembly  = (ASSEMBLYREF)            requestingAssemblyUNSAFE;
-    gc.rv                  = NULL;
-    gc.assemblyLoadContext = (ASSEMBLYLOADCONTEXTREF) assemblyLoadContextUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (gc.assemblyName == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-
+    }
     ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
+    ICLRPrivBinder *pBinderContext = NULL;
 
-    INT_PTR ptrLoadContextBinder = (gc.assemblyLoadContext != NULL) ? gc.assemblyLoadContext->GetNativeAssemblyLoadContext() : NULL;
-
-    if(gc.assemblyName->GetSimpleName() == NULL)
+    if (assemblyLoadContext.Get() != NULL)
     {
-        if (gc.codeBase == NULL)
-            COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
+        INT_PTR nativeAssemblyLoadContext = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyLoadContext();
+        pBinderContext = reinterpret_cast<ICLRPrivBinder*>(nativeAssemblyLoadContext);
     }
-    else
-    {
-        // Compute parent assembly
-        if (gc.requestingAssembly != NULL)
-        {
-            pRefAssembly = gc.requestingAssembly->GetAssembly();
-        }
-        else if (ptrLoadContextBinder == NULL)
-        {
-            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-        }
 
-        if (pRefAssembly)
-        {
-            pParentAssembly = pRefAssembly->GetDomainAssembly();
-        }
+    AssemblySpec spec;
+    ASSEMBLYNAMEREF assemblyNameRef = NULL;
+
+    GCPROTECT_BEGIN(assemblyNameRef);
+    assemblyNameRef = (ASSEMBLYNAMEREF)assemblyName.Get();
+    if (assemblyNameRef->GetSimpleName() == NULL)
+    {
+        COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
+    }
+
+    // Compute parent assembly
+    if (requestingAssembly.Get() != NULL)
+    {
+        pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
+    }
+    else if (pBinderContext == NULL)
+    {
+        pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
+    }
+    if (pRefAssembly)
+    {
+        pParentAssembly = pRefAssembly->GetDomainAssembly();
     }
 
     // Initialize spec
-    AssemblySpec spec;
     spec.InitializeSpec(pStackingAllocator,
-                        &gc.assemblyName,
+                        &assemblyNameRef,
                         FALSE);
+    GCPROTECT_END();
+
+    spec.SetCodeBase(NULL);
 
     if (!spec.HasUniqueIdentity())
     {   // Insuficient assembly name for binding (e.g. ContentType=WindowsRuntime cannot bind by assembly name)
         EEFileLoadException::Throw(&spec, COR_E_NOTSUPPORTED);
     }
 
-    if (gc.codeBase != NULL)
-        spec.SetCodeBase(pStackingAllocator, &gc.codeBase);
-
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 
     // Have we been passed the reference to the binder against which this load should be triggered?
     // If so, then use it to set the fallback load context binder.
-    if (ptrLoadContextBinder != NULL)
+    if (pBinderContext != NULL)
     {
-        spec.SetFallbackLoadContextBinderForRequestingAssembly(reinterpret_cast<ICLRPrivBinder *>(ptrLoadContextBinder));
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(pBinderContext);
         spec.SetPreferFallbackLoadContextBinder();
     }
     else if (pRefAssembly != NULL)
@@ -123,20 +120,20 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     }
 
     Assembly *pAssembly;
-
     {
         GCX_PREEMP();
         pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
     }
 
     if (pAssembly != NULL)
-        gc.rv = (ASSEMBLYREF) pAssembly->GetExposedObject();
+    {
+        retAssembly.Set(pAssembly->GetExposedObject());
+    }
 
-    HELPER_METHOD_FRAME_END();
+    workaround.Pop();
 
-    return OBJECTREFToObject(gc.rv);
+    END_QCALL;
 }
-FCIMPLEND
 
 /* static */
 Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImage *pILImage, PEImage *pNIImage)
@@ -367,7 +364,7 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyLoadConte
     END_QCALL;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /*static */
 void QCALLTYPE AssemblyNative::LoadFromInMemoryModule(INT_PTR ptrNativeAssemblyLoadContext, INT_PTR hModule, QCall::ObjectHandleOnStack retLoadedAssembly)
 {

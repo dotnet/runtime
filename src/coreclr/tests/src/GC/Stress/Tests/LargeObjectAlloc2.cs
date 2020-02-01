@@ -75,7 +75,7 @@ namespace LargeObjectTest
             return true;
         }
 
-        public static int Main()
+        public static int Main(string[] args)
         {
             int loop = 0;
 

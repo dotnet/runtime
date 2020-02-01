@@ -24,7 +24,7 @@
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
@@ -109,14 +109,13 @@
   <PropertyGroup>
     <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
   </PropertyGroup>
 
   <!--
     Helper Paths
   -->
   <PropertyGroup>
-    <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
+    <CommonPath>$([MSBuild]::NormalizeDirectory('$(LibrariesProjectRoot)', 'Common', 'src'))</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
   </PropertyGroup>
 
@@ -241,6 +240,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CrossLoaderAllocatorHashHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DependentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\GCHeapHash.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\QCallHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
@@ -251,6 +251,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyDependencyResolver.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
@@ -283,11 +284,21 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs">
+      <Link>Common\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs">
+      <Link>Common\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Char8.cs" />
@@ -310,7 +321,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-    <Compile Include="$(IntermediateOutputPath)../../../Eventing/$(BuildArch)/$(Configuration)/NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' AND '$(BuildingInsideVisualStudio)' != 'true' " />
+
+    <!-- This file should be generated in such a way that VS can regenerate it, rather than with python (src\coreclr\src\scripts\genRuntimeEventSources.py) -->
+    <!-- For now, help VS users figure out how to be successful -->
+    <Compile Include="### Build from the command line once to generate NativeRuntimeEventSource.cs ###"
+            Condition="'$(FeaturePerfTracing)' == 'true' and
+                       '$(BuildingInsideVisualStudio)' == 'true' and
+                       !exists('$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs')"/>
+    <Compile Include="$(IntermediateOutputPath)..\..\..\Eventing\$(BuildArch)\$(Configuration)\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true' ">
+      <Link>src\System\Diagnostics\Eventing\Generated\NativeRuntimeEventSource.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
@@ -382,7 +402,9 @@
     <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs" /> <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"> <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
@@ -403,15 +425,16 @@
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
-    <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
-    <Compile Include="$(CommonPath)\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)\System\SR.cs" />
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
   </ItemGroup>
-  <Import Project="$(CoreLibSharedDir)System.Private.CoreLib.Shared.projitems" Label="Shared" />
+  <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
   </PropertyGroup>
-  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true'">
+  <!-- PYTHON will not be defined when building in VS-->
+  <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true' and '$(BuildingInsideVisualStudio)' != 'true'">
     <!-- Compiler Definition Verification -->
     <PropertyGroup>
       <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
@@ -432,16 +455,7 @@
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
-  </Target>
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
 
-  <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
-  <Target Name="AddUntrackedResourcesForSourceLink"
-          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
-          BeforeTargets="CoreCompile"
-          DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;_GenerateResxSource" >
-    <ItemGroup>
-      <EmbeddedFiles Include="@(GeneratedResxSource)" />
-    </ItemGroup>
-  </Target>  
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 </Project>

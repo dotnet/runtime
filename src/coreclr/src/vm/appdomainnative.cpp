@@ -19,33 +19,37 @@
 #include "clr/fs/path.h"
 using namespace clr::fs;
 
-FCIMPL3(Object*, AppDomainNative::CreateDynamicAssembly, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access)
+// static
+void QCALLTYPE AppDomainNative::CreateDynamicAssembly(QCall::ObjectHandleOnStack assemblyName, QCall::StackCrawlMarkHandle stackMark, INT32 access, QCall::ObjectHandleOnStack retAssembly)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-    ASSEMBLYREF refRetVal = NULL;
+    BEGIN_QCALL
+
+    GCX_COOP();
 
     //<TODO>
     // @TODO: there MUST be a better way to do this...
     //</TODO>
     CreateDynamicAssemblyArgs   args;
+    ZeroMemory(&args, sizeof(args));
 
-    args.assemblyName           = (ASSEMBLYNAMEREF) assemblyNameUNSAFE;
+    GCPROTECT_BEGIN((CreateDynamicAssemblyArgsGC&)args);
+
+    args.assemblyName           = (ASSEMBLYNAMEREF)assemblyName.Get();
     args.loaderAllocator        = NULL;
 
     args.access                 = access;
     args.stackMark              = stackMark;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT((CreateDynamicAssemblyArgsGC&)args);
-
     Assembly *pAssembly = Assembly::CreateDynamic(GetAppDomain(), &args);
 
-    refRetVal = (ASSEMBLYREF) pAssembly->GetExposedObject();
+    retAssembly.Set(pAssembly->GetExposedObject());
 
-    HELPER_METHOD_FRAME_END();
-    return OBJECTREFToObject(refRetVal);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
-FCIMPLEND
 
 #ifdef FEATURE_APPX
 // static

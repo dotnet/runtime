@@ -83,13 +83,13 @@
 #pragma warning(disable:4244)
 #endif // _MSC_VER
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_64BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_32BIT
-#else // !_TARGET_64BIT_
+#else // !TARGET_64BIT
 #define COR_VTABLE_PTRSIZED     COR_VTABLE_32BIT
 #define COR_VTABLE_NOT_PTRSIZED COR_VTABLE_64BIT
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
 #define CEE_FILE_GEN_GROWTH_COLLECTIBLE 2048
 
@@ -3251,14 +3251,6 @@ void Module::FreeClassTables()
                         }
                     }
                 }
-                else if (th.IsArray())
-                {
-                    ComCallWrapperTemplate *pTemplate = th.AsArray()->GetComCallWrapperTemplate();
-                    if (pTemplate != NULL)
-                    {
-                        pTemplate->Release();
-                    }
-                }
 #endif // FEATURE_COMINTEROP
 
                 // We need to call destruct on instances of EEClass whose "canonical" dependent lives in this table
@@ -3922,7 +3914,7 @@ ILStubCache* Module::GetILStubCache()
 
     // Use per-LoaderAllocator cache for modules when not NGENing
     BaseDomain *pDomain = GetDomain();
-    if (!IsSystem() && !pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem() && !pDomain->AsAppDomain()->IsCompilationDomain())
         return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
@@ -6276,7 +6268,7 @@ using GetTokenForVTableEntry_t = mdToken(STDMETHODCALLTYPE*)(HMODULE module, BYT
 
 static HMODULE GetIJWHostForModule(Module* module)
 {
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
     PEDecoder* pe = module->GetFile()->GetLoadedIL();
 
     BYTE* baseAddress = (BYTE*)module->GetFile()->GetIJWBase();
@@ -9876,7 +9868,7 @@ void Module::RestoreMethodTablePointerRaw(MethodTable ** ppMT,
 
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10090,7 +10082,7 @@ PTR_Module Module::RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Mo
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10141,7 +10133,7 @@ void Module::RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, M
 
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10202,7 +10194,7 @@ void Module::RestoreTypeHandlePointerRaw(TypeHandle *pHandle, Module* pContainin
 
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10321,7 +10313,7 @@ void Module::RestoreMethodDescPointerRaw(PTR_MethodDesc * ppMD, Module *pContain
     {
         GCX_PREEMP();
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10418,7 +10410,7 @@ void Module::RestoreFieldDescPointer(RelativeFixupPointer<PTR_FieldDesc> * ppFD)
 
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         CONSISTENCY_CHECK((CORCOMPILE_UNTAG_TOKEN(fixup)>>32) == 0);
 #endif
 
@@ -10658,12 +10650,12 @@ CORCOMPILE_DEBUG_ENTRY Module::GetMethodDebugInfoOffset(MethodDesc *pMD)
 
     DWORD codeRVA = GetNativeImage()->
         GetDataRva((const TADDR)pMD->GetNativeCode());
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     // Since the Thumb Bit is set on ARM, the RVA calculated above will have it set as well
     // and will result in the failure of checks in the loop below. Hence, mask off the
     // bit before proceeding ahead.
     codeRVA = ThumbCodeToDataPointer<DWORD, DWORD>(codeRVA);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     for (;;)
     {
@@ -11806,7 +11798,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     // Get the command line.
     LPCWSTR osCommandLine = GetCommandLineW();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // On Windows, osCommandLine contains the executable and all arguments.
     s_pCommandLine = osCommandLine;
 #else

@@ -13,6 +13,9 @@
   <PropertyGroup>
     <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
     <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
+
+    <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. -->
+    <AssemblyVersion />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">

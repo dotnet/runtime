@@ -11,7 +11,7 @@ namespace System.ServiceProcess.Tests
     {
         private const string KeyIsoSvcName = "KEYISO";
 
-        [ActiveIssue(19223)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19223")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19223
         public static void GetServices()
         {
@@ -69,7 +69,7 @@ namespace System.ServiceProcess.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not throw")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not throw")]
         public static void Initialize_GetNames()
         {
             Assert.Throws<InvalidOperationException>(() => new ServiceController().ServiceName);

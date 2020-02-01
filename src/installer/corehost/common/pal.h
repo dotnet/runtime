@@ -153,6 +153,7 @@ namespace pal
     inline void err_fputs(const char_t* message) { ::fputws(message, stderr); ::fputwc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf(buffer, count, format, vl); }
+    inline const char_t* strerror(int errnum) { return ::_wcserror(errnum); }
 
     bool pal_utf8string(const string_t& str, std::vector<char>* out);
     bool utf8_palstring(const std::string& str, string_t* out);
@@ -209,6 +210,7 @@ namespace pal
     inline void err_fputs(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
     inline void out_vprintf(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
+    inline const char_t* strerror(int errnum) { return ::strerror(errnum); }
 
     inline bool pal_utf8string(const string_t& str, std::vector<char>* out) { out->assign(str.begin(), str.end()); out->push_back('\0'); return true; }
     inline bool utf8_palstring(const std::string& str, string_t* out) { out->assign(str); return true; }

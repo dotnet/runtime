@@ -30,7 +30,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
 {
     FCALL_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     Thread *pThread = GetThread();
     size_t key=0;
 
@@ -82,9 +82,9 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     if (*lpOverlapped != NULL && ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue))
         FireEtwThreadPoolIODequeue(*lpOverlapped, OverlappedDataObject::GetOverlapped(*lpOverlapped), GetClrInstanceId());
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     *lpOverlapped = NULL;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return;
 }
@@ -112,7 +112,7 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
 
     if (userObject != NULL)
     {
-        if (userObject->GetMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
+        if (userObject->GetMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].AsMethodTable())
         {
             BASEARRAYREF asArray = (BASEARRAYREF) userObject;
             OBJECTREF *pObj = (OBJECTREF*)(asArray->GetDataPtr());

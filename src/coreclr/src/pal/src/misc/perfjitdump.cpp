@@ -39,13 +39,13 @@ namespace
         JIT_DUMP_MAGIC = 0x4A695444,
         JIT_DUMP_VERSION = 1,
 
-#if defined(_X86_)
+#if defined(HOST_X86)
         ELF_MACHINE = EM_386,
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
         ELF_MACHINE = EM_ARM,
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
         ELF_MACHINE = EM_X86_64,
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         ELF_MACHINE = EM_AARCH64,
 #else
 #error ELF_MACHINE unsupported for target

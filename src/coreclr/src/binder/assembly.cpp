@@ -152,13 +152,13 @@ namespace BINDER_SPACE
     /* static */
     PEKIND Assembly::GetSystemArchitecture()
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return peI386;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         return peAMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
         return peARM;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         return peARM64;
 #else
         PORTABILITY_ASSERT("Assembly::GetSystemArchitecture");

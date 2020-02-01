@@ -9,7 +9,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeAccessTokenHandle : System.Runtime.InteropServices.SafeHandle
     {
-        public SafeAccessTokenHandle(System.IntPtr handle) : base (default(System.IntPtr), default(bool)) { }
+        public SafeAccessTokenHandle(System.IntPtr handle) : base(default(System.IntPtr), default(bool)) { }
         public static Microsoft.Win32.SafeHandles.SafeAccessTokenHandle InvalidHandle { get { throw null; } }
         public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
@@ -264,6 +264,8 @@ namespace System.Security.Principal
         public static System.Security.Principal.WindowsIdentity GetCurrent(System.Security.Principal.TokenAccessLevels desiredAccess) { throw null; }
         public static void RunImpersonated(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Action action) { }
         public static T RunImpersonated<T>(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, System.Func<T> func) { throw null; }
+        public static System.Threading.Tasks.Task RunImpersonatedAsync(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, Func<System.Threading.Tasks.Task> func) { throw null; }
+        public static System.Threading.Tasks.Task<T> RunImpersonatedAsync<T>(Microsoft.Win32.SafeHandles.SafeAccessTokenHandle safeAccessTokenHandle, Func<System.Threading.Tasks.Task<T>> func) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }

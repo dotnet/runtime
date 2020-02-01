@@ -35,9 +35,9 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef FEATURE_COMINTEROP
 #include "winrttypenameconverter.h"
@@ -51,11 +51,11 @@ EXTERN_C __declspec(thread) ThreadLocalInfo gCurrentThreadInfo;
 #else // !__GNUC__
 EXTERN_C __thread ThreadLocalInfo gCurrentThreadInfo;
 #endif // !__GNUC__
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 EXTERN_C UINT32 _tls_index;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 UINT32 _tls_index = 0;
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
 
@@ -1143,12 +1143,12 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 
         *ppUnk = static_cast<ICLRRuntimeHost4 *>(this);
     }
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     else if (riid == IID_IPrivateManagedExceptionReporting)
     {
         *ppUnk = static_cast<IPrivateManagedExceptionReporting *>(this);
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     else
         return (E_NOINTERFACE);
     AddRef();
@@ -1156,7 +1156,7 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
 }
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pParams)
 {
     CONTRACTL
@@ -1179,7 +1179,7 @@ HRESULT CorHost2::GetBucketParametersForCurrentException(BucketParameters *pPara
 
     return hr;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 HRESULT CorHost2::CreateObject(REFIID riid, void **ppUnk)
 {
@@ -2028,11 +2028,11 @@ SIZE_T STDMETHODCALLTYPE CExecutionEngine::ClrVirtualQuery(LPCVOID lpAddress,
 }
 #define ClrVirtualQuery EEVirtualQuery
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
 static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
 #undef ClrVirtualProtect
 
@@ -2077,7 +2077,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
    //
    // We assert if either of the two conditions above are true.
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
    // We do this check in debug/checked builds only
 
     // Do we have the UEF details?
@@ -2147,7 +2147,7 @@ BOOL STDMETHODCALLTYPE CExecutionEngine::ClrVirtualProtect(LPVOID lpAddress,
                 "Do not virtual protect the section in which UEF lives!");
         }
     }
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
     return EEVirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }

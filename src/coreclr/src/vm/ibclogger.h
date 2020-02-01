@@ -323,7 +323,7 @@ public:
 private:
     ThreadLocalIBCInfo* m_pInfo;
     bool                m_fDisabled;  // true if this holder actually disable the logging
-                                      // false when this is a nested occurance and logging was already disabled
+                                      // false when this is a nested occurrence and logging was already disabled
 };
 
 //

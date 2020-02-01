@@ -45,7 +45,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.SECURITY_LOGON_SESSION_DATA.cs">
       <Link>Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Interop.GetCurrentProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentThread.cs">
@@ -66,7 +66,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle.cs">
       <Link>Common\Interop\Interop.DuplicateHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaGetLogonSessionData.cs">
@@ -119,15 +119,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.LSA_STRING.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.LSA_STRING.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Interop.LocalFree.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs">
       <Link>Common\Interop\Windows\SspiCli\Interop.AuthenticationPackageNames.cs</Link>

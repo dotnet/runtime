@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
             {
                 Debug.Assert(BlockSizeValue == 128);
 
-                // Values which were legal in desktop RijndaelManaged but not here in this wrapper type
+                // Values which were legal in .NET Framework RijndaelManaged but not here in this wrapper type
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 

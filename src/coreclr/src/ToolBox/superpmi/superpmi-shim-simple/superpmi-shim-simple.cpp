@@ -59,7 +59,7 @@ void SetLogFilePath()
 }
 
 extern "C"
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
         BOOL
@@ -68,13 +68,13 @@ extern "C"
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
             if (0 != PAL_InitializeDLL())
             {
                 fprintf(stderr, "Error: Fail to PAL_InitializeDLL\n");
                 exit(1);
             }
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
             Logger::Initialize();
             SetLogFilePath();

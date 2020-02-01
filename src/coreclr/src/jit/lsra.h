@@ -482,7 +482,7 @@ public:
 
     void init(regNumber reg)
     {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
         // The Zero register, or the SP
         if ((reg == REG_ZR) || (reg == REG_SP))
         {
@@ -690,7 +690,7 @@ public:
         InsertAtBottom
     };
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     void addResolutionForDouble(BasicBlock*     block,
                                 GenTree*        insertionPoint,
                                 Interval**      sourceIntervals,
@@ -744,7 +744,7 @@ private:
     // Hence the "SmallFPSet" has 5 elements.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #ifdef UNIX_AMD64_ABI
     // On System V the RDI and RSI are not callee saved. Use R12 ans R13 as callee saved registers.
     static const regMaskTP LsraLimitSmallIntSet =
@@ -755,15 +755,15 @@ private:
         (RBM_EAX | RBM_ECX | RBM_EBX | RBM_ETW_FRAMED_EBP | RBM_ESI | RBM_EDI);
 #endif // !UNIX_AMD64_ABI
     static const regMaskTP LsraLimitSmallFPSet = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // On ARM, we may need two registers to set up the target register for a virtual call, so we need
     // to have at least the maximum number of arg registers, plus 2.
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #else
@@ -973,7 +973,7 @@ private:
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* getSecondHalfRegRec(RegRecord* regRec);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
@@ -1290,7 +1290,7 @@ private:
 
         // Spilling
         LSRA_EVENT_SPILL, LSRA_EVENT_SPILL_EXTENDED_LIFETIME, LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL,
-        LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL, LSRA_EVENT_KILL_GC_REF, LSRA_EVENT_DONE_KILL_GC_REFS,
+        LSRA_EVENT_RESTORE_PREVIOUS_INTERVAL_AFTER_SPILL, LSRA_EVENT_DONE_KILL_GC_REFS, LSRA_EVENT_NO_GC_KILLS,
 
         // Block boundaries
         LSRA_EVENT_START_BB, LSRA_EVENT_END_BB,
@@ -1448,13 +1448,13 @@ private:
     VARSET_TP exceptVars;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         return (type == TYP_SIMD32);
     }
     static const var_types LargeVectorSaveType = TYP_SIMD16;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
@@ -1462,9 +1462,9 @@ private:
         return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
     static const var_types LargeVectorSaveType = TYP_DOUBLE;
-#else // !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
+#else // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 #error("Unknown target architecture for FEATURE_SIMD")
-#endif // !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
+#endif // !defined(TARGET_AMD64) && !defined(TARGET_ARM64)
 
     // Set of large vector (TYP_SIMD32 on AVX) variables.
     VARSET_TP largeVectorVars;
@@ -1520,9 +1520,9 @@ private:
 
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     int BuildRMWUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
-#endif // !_TARGET_XARCH_
+#endif // !TARGET_XARCH
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
     int BuildNode(GenTree* tree);
@@ -1542,12 +1542,12 @@ private:
 
     int BuildStoreLoc(GenTree* tree);
     int BuildReturn(GenTree* tree);
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // This method, unlike the others, returns the number of sources, since it may be called when
     // 'tree' is contained.
     int BuildShiftRotate(GenTree* tree);
-#endif // _TARGET_XARCH_
-#ifdef _TARGET_ARM_
+#endif // TARGET_XARCH
+#ifdef TARGET_ARM
     int BuildShiftLongCarry(GenTree* tree);
 #endif
     int BuildPutArgReg(GenTreeUnOp* node);
@@ -1561,14 +1561,14 @@ private:
     int BuildGCWriteBarrier(GenTree* tree);
     int BuildCast(GenTreeCast* cast);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTree* tree);
     int BuildMul(GenTree* tree);
     void SetContainsAVXFlags(unsigned sizeOfSIMDVector = 0);
-#endif // defined(_TARGET_XARCH_)
+#endif // defined(TARGET_XARCH)
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // Move the last use bit, if any, from 'fromTree' to 'toTree'; 'fromTree' must be contained.
     void CheckAndMoveRMWLastUse(GenTree* fromTree, GenTree* toTree)
     {
@@ -1588,7 +1588,7 @@ private:
         fromTree->gtFlags &= ~GTF_VAR_DEATH;
         toTree->gtFlags |= GTF_VAR_DEATH;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifdef FEATURE_SIMD
     int BuildSIMD(GenTreeSIMD* tree);

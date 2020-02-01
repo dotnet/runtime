@@ -13,7 +13,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public class PrecodeHelperImport : Import
     {
-        public PrecodeHelperImport(ReadyToRunCodegenNodeFactory factory, Signature signature)
+        public PrecodeHelperImport(NodeFactory factory, Signature signature)
             : base(factory.PrecodeImports, signature)
         {
         }

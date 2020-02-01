@@ -40,6 +40,12 @@ namespace BinderTracingTests
             ValidateNestedBinds(expected.NestedBinds, actual.NestedBinds);
         }
 
+        public static string GetAssemblyInAppPath(string assemblyName)
+        {
+            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            return Path.Combine(appPath, $"{assemblyName}.dll");
+        }
+
         public static string GetAssemblyInSubdirectoryPath(string assemblyName)
         {
             return Path.Combine(GetSubdirectoryPath(), $"{assemblyName}.dll");

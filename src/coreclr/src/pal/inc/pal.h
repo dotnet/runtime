@@ -95,25 +95,19 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 #define _M_ARM64 1
 #endif
 
-#if defined(_M_IX86) && !defined(_X86_)
-#define _X86_
-#elif defined(_M_AMD64) && !defined(_AMD64_)
-#define _AMD64_
-#elif defined(_M_ARM) && !defined(_ARM_)
-#define _ARM_
-#elif defined(_M_ARM64) && !defined(_ARM64_)
-#define _ARM64_
+#if defined(_M_IX86) && !defined(HOST_X86)
+#define HOST_X86
+#elif defined(_M_AMD64) && !defined(HOST_AMD64)
+#define HOST_AMD64
+#elif defined(_M_ARM) && !defined(HOST_ARM)
+#define HOST_ARM
+#elif defined(_M_ARM64) && !defined(HOST_ARM64)
+#define HOST_ARM64
 #endif
 
 #endif // !_MSC_VER
 
 /******************* ABI-specific glue *******************************/
-
-#ifdef __APPLE__
-// Both PowerPC, i386 and x86_64 on Mac OS X use 16-byte alignment.
-#define STACK_ALIGN_BITS             4
-#define STACK_ALIGN_REQ             (1 << STACK_ALIGN_BITS)
-#endif
 
 #define MAX_PATH 260
 #define _MAX_PATH 260
@@ -137,11 +131,7 @@ typedef PVOID NATIVE_LIBRARY_HANDLE;
 //  Note that the named locale APIs (eg CompareStringExEx) are recommended.
 //
 
-#define LANG_CHINESE                     0x04
 #define LANG_ENGLISH                     0x09
-#define LANG_JAPANESE                    0x11
-#define LANG_KOREAN                      0x12
-#define LANG_THAI                        0x1e
 
 /******************* Compiler-specific glue *******************************/
 #ifndef THROW_DECL
@@ -312,7 +302,7 @@ PAL_IsDebuggerPresent();
 
 #ifndef PAL_STDCPP_COMPAT
 
-#if BIT64 || _MSC_VER >= 1400
+#if HOST_64BIT || _MSC_VER >= 1400
 typedef __int64 time_t;
 #else
 typedef long time_t;
@@ -546,25 +536,6 @@ PALAPI
 PAL_PerfJitDump_Finish();
 
 /******************* winuser.h Entrypoints *******************************/
-PALIMPORT
-LPSTR
-PALAPI
-CharNextA(
-            IN LPCSTR lpsz);
-
-PALIMPORT
-LPSTR
-PALAPI
-CharNextExA(
-        IN WORD CodePage,
-        IN LPCSTR lpCurrentChar,
-        IN DWORD dwFlags);
-
-#ifndef UNICODE
-#define CharNext CharNextA
-#define CharNextEx CharNextExA
-#endif
-
 
 #define MB_OK                   0x00000000L
 #define MB_OKCANCEL             0x00000001L
@@ -767,31 +738,6 @@ MoveFileExW(
 #define MoveFileEx MoveFileExA
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-CreateDirectoryW(
-         IN LPCWSTR lpPathName,
-         IN LPSECURITY_ATTRIBUTES lpSecurityAttributes);
-
-#ifdef UNICODE
-#define CreateDirectory CreateDirectoryW
-#else
-#define CreateDirectory CreateDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-RemoveDirectoryW(
-         IN LPCWSTR lpPathName);
-
-#ifdef UNICODE
-#define RemoveDirectory RemoveDirectoryW
-#else
-#define RemoveDirectory RemoveDirectoryA
-#endif
-
 typedef struct _BY_HANDLE_FILE_INFORMATION {
     DWORD dwFileAttributes;
     FILETIME ftCreationTime;
@@ -923,19 +869,6 @@ GetFileAttributesExW(
 #define GetFileAttributesEx GetFileAttributesExW
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-SetFileAttributesW(
-           IN LPCWSTR lpFileName,
-           IN DWORD dwFileAttributes);
-
-#ifdef UNICODE
-#define SetFileAttributes SetFileAttributesW
-#else
-#define SetFileAttributes SetFileAttributesA
-#endif
-
 typedef struct _OVERLAPPED {
     ULONG_PTR Internal;
     ULONG_PTR InternalHigh;
@@ -1012,20 +945,6 @@ PALAPI GetFileSizeEx(
         OUT  PLARGE_INTEGER lpFileSize);
 
 PALIMPORT
-BOOL
-PALAPI
-GetFileInformationByHandle(
-        IN HANDLE hFile,
-        OUT BY_HANDLE_FILE_INFORMATION* lpFileInformation);
-
-PALIMPORT
-LONG
-PALAPI
-CompareFileTime(
-        IN CONST FILETIME *lpFileTime1,
-        IN CONST FILETIME *lpFileTime2);
-
-PALIMPORT
 VOID
 PALAPI
 GetSystemTimeAsFileTime(
@@ -1084,31 +1003,6 @@ GetFullPathNameW(
 #endif
 
 PALIMPORT
-DWORD
-PALAPI
-GetLongPathNameW(
-         IN LPCWSTR lpszShortPath,
-                 OUT LPWSTR lpszLongPath,
-         IN DWORD cchBuffer);
-
-#ifdef UNICODE
-#define GetLongPathName GetLongPathNameW
-#endif
-
-PALIMPORT
-DWORD
-PALAPI
-GetShortPathNameW(
-         IN LPCWSTR lpszLongPath,
-                 OUT LPWSTR lpszShortPath,
-         IN DWORD cchBuffer);
-
-#ifdef UNICODE
-#define GetShortPathName GetShortPathNameW
-#endif
-
-
-PALIMPORT
 UINT
 PALAPI
 GetTempFileNameW(
@@ -1155,19 +1049,6 @@ GetCurrentDirectoryW(
 #define GetCurrentDirectory GetCurrentDirectoryW
 #else
 #define GetCurrentDirectory GetCurrentDirectoryA
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
-SetCurrentDirectoryW(
-            IN LPCWSTR lpPathName);
-
-
-#ifdef UNICODE
-#define SetCurrentDirectory SetCurrentDirectoryW
-#else
-#define SetCurrentDirectory SetCurrentDirectoryA
 #endif
 
 PALIMPORT
@@ -1603,7 +1484,7 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifdef _X86_
+#ifdef HOST_X86
 
 //
 // ***********************************************************************************
@@ -1729,7 +1610,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
 // copied from winnt.h
 
 #define CONTEXT_AMD64   0x100000
@@ -1980,7 +1861,7 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
 } KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
 #define CONTEXT_ARM   0x00200000L
 
@@ -2160,7 +2041,7 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
     };
 } IMAGE_ARM_RUNTIME_FUNCTION_ENTRY, * PIMAGE_ARM_RUNTIME_FUNCTION_ENTRY;
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
 #define CONTEXT_ARM64   0x00400000L
 
@@ -2464,13 +2345,13 @@ PALIMPORT BOOL PALAPI PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_
 #define PAL_CS_NATIVE_DATA_SIZE 76
 #elif defined(__APPLE__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 120
-#elif defined(__FreeBSD__) && defined(_X86_)
+#elif defined(__FreeBSD__) && defined(HOST_X86)
 #define PAL_CS_NATIVE_DATA_SIZE 12
 #elif defined(__FreeBSD__) && defined(__x86_64__)
 #define PAL_CS_NATIVE_DATA_SIZE 24
-#elif defined(__linux__) && defined(_ARM_)
+#elif defined(__linux__) && defined(HOST_ARM)
 #define PAL_CS_NATIVE_DATA_SIZE 80
-#elif defined(__linux__) && defined(_ARM64_)
+#elif defined(__linux__) && defined(HOST_ARM64)
 #define PAL_CS_NATIVE_DATA_SIZE 116
 #elif defined(__linux__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
@@ -3053,7 +2934,7 @@ enum {
 //
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     DWORD EndAddress;
 #endif
     DWORD UnwindData;
@@ -3338,7 +3219,7 @@ BitScanReverse64(
 
 FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 {
-#ifdef _ARM64_
+#ifdef HOST_ARM64
     // On arm64, most of the __sync* functions generate a code sequence like:
     //   loop:
     //     ldaxr (load acquire exclusive)
@@ -3351,7 +3232,7 @@ FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
     // require the load to occur after the store. This memory barrier should be used following a call to a __sync* function to
     // prevent that reordering. Code generated for arm32 includes a 'dmb' after 'cbnz', so no issue there at the moment.
     __sync_synchronize();
-#endif // _ARM64_
+#endif // HOST_ARM64
 }
 
 /*++
@@ -3658,7 +3539,7 @@ InterlockedBitTestAndSet(
     return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 #define InterlockedExchangePointer(Target, Value) \
     ((PVOID)InterlockedExchange64((PLONG64)(Target), (LONGLONG)(Value)))
 
@@ -3696,11 +3577,11 @@ VOID
 PALAPI
 YieldProcessor()
 {
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     __asm__ __volatile__(
         "rep\n"
         "nop");
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     __asm__ __volatile__( "yield");
 #else
     return;
@@ -3781,26 +3662,6 @@ VOID
 PALAPI
 RtlCaptureContext(
   OUT PCONTEXT ContextRecord
-);
-
-PALIMPORT
-UINT
-PALAPI
-GetWriteWatch(
-  IN DWORD dwFlags,
-  IN PVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize,
-  OUT PVOID *lpAddresses,
-  IN OUT PULONG_PTR lpdwCount,
-  OUT PULONG lpdwGranularity
-);
-
-PALIMPORT
-UINT
-PALAPI
-ResetWriteWatch(
-  IN LPVOID lpBaseAddress,
-  IN SIZE_T dwRegionSize
 );
 
 PALIMPORT
@@ -3987,7 +3848,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
    defines */
 #ifndef PAL_STDCPP_COMPAT
 #define exit          PAL_exit
-#define atexit        PAL_atexit
 #define printf        PAL_printf
 #define vprintf       PAL_vprintf
 #define wprintf       PAL_wprintf
@@ -4060,7 +3920,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define malloc        PAL_malloc
 #define free          PAL_free
 #define _strdup       PAL__strdup
-#define _getcwd       PAL__getcwd
 #define _open         PAL__open
 #define _pread        PAL__pread
 #define _close        PAL__close
@@ -4069,10 +3928,10 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define strnlen       PAL_strnlen
 #define wcsnlen       PAL_wcsnlen
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #define _mm_getcsr    PAL__mm_getcsr
 #define _mm_setcsr    PAL__mm_setcsr
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 #endif // !PAL_STDCPP_COMPAT
 
@@ -4099,13 +3958,6 @@ typedef unsigned int wint_t;
 #endif
 
 #ifndef PAL_STDCPP_COMPAT
-
-typedef struct {
-    int quot;
-    int rem;
-} div_t;
-
-PALIMPORT div_t div(int numer, int denom);
 
 #if defined(_DEBUG)
 
@@ -4267,9 +4119,9 @@ unsigned int __cdecl _rotl(unsigned int value, int shift)
 #endif // !HAS_ROTL
 
 // On 64 bit unix, make the long an int.
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define _lrotl _rotl
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if !HAS_ROTR
 
@@ -4394,9 +4246,6 @@ PALIMPORT char * __cdecl _strdup(const char *);
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT PAL_NORETURN void __cdecl exit(int);
-int __cdecl atexit(void (__cdecl *function)(void));
-
-PALIMPORT char * __cdecl _fullpath(char *, const char *, size_t);
 
 #ifndef PAL_STDCPP_COMPAT
 
@@ -4408,7 +4257,6 @@ PALIMPORT time_t __cdecl time(time_t *);
 
 #endif // !PAL_STDCPP_COMPAT
 
-PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
 PALIMPORT DLLEXPORT int __cdecl _open(const char *szPath, int nFlags, ...);
 PALIMPORT DLLEXPORT size_t __cdecl _pread(int fd, void *buf, size_t nbytes, ULONG64 offset);
 PALIMPORT DLLEXPORT int __cdecl _close(int);
@@ -5072,13 +4920,6 @@ public:
 #define EXCEPTION_INVALID_HANDLE            STATUS_INVALID_HANDLE
 
 #define CONTROL_C_EXIT                      STATUS_CONTROL_C_EXIT
-
-/*  These are from the <FCNTL.H> file in windows.
-    They are needed for _open_osfhandle.*/
-#define _O_RDONLY   0x0000
-#define _O_APPEND   0x0008
-#define _O_TEXT     0x4000
-#define _O_BINARY   0x8000
 
 /******************* HRESULT types ****************************************/
 

@@ -190,8 +190,8 @@
       <Link>System\Data\SQLTypes\SQLResource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\NotImplemented.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
@@ -217,14 +217,14 @@
   </ItemGroup>
   <!-- SqlFileStream Windows Netcoreapp only -->
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs">
-      <Link>Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs">
       <Link>System\IO\PathInternal.Windows.cs</Link>
@@ -232,8 +232,8 @@
     <Compile Include="$(CommonPath)System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs" Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
       <Link>Common\System\Runtime\InteropServices\SuppressGCTransitionAttribute.internal.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
@@ -280,12 +280,10 @@
     <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetCoreApp.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetCoreApp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != 'AnyOS' and '$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetStandard.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.NetStandard.cs" />
   </ItemGroup>
   <!-- Manage the SNI toggle for Windows netstandard and UWP -->
   <ItemGroup Condition="('$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true') and '$(TargetsWindows)' == 'true'">
@@ -316,8 +314,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->
@@ -361,8 +359,8 @@
     <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs">
       <Link>Common\System\Net\Security\NetEventSource.Security.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\GlobalSSPI.cs">
       <Link>Common\Interop\Windows\SspiCli\GlobalSSPI.cs</Link>

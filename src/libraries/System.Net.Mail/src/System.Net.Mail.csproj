@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
@@ -234,8 +233,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SECURITY_STATUS.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs">
       <Link>Common\Interop\Windows\SspiCli\SecPkgContext_StreamSizes.cs</Link>
@@ -292,10 +291,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.Globalization.Extensions" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NetworkInformation" />
@@ -304,7 +300,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -312,8 +307,6 @@
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Reference Include="System.Memory" />

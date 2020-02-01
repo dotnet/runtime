@@ -17,7 +17,7 @@
 // PLEASE READ!
 //
 // There are strict rules for how to implement ICorProfilerInfo* methods.  Please read
-// https://github.com/dotnet/runtime/blob/master/docs/coreclr/botr/profilability.md
+// https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/profilability.md
 // to understand the rules and why they exist.
 //
 // As a reminder, here is a short summary of your responsibilities.  Every PUBLIC
@@ -137,6 +137,12 @@
 #include "profdetach.h"
 
 #include "metadataexports.h"
+
+#ifdef FEATURE_PERFTRACING
+#include "eventpipeprovider.h"
+#include "eventpipemetadatagenerator.h"
+#include "eventpipeeventpayload.h"
+#endif // FEATURE_PERFTRACING
 
 //---------------------------------------------------------------------------------------
 // Helpers
@@ -385,44 +391,6 @@ MethodDesc *FunctionIdToMethodDesc(FunctionID functionID)
     return pMethodDesc;
 }
 
-// (See comments for ArrayKindFromTypeHandle below.)
-typedef enum
-{
-    ARRAY_KIND_TYPEDESC,        // Normal, garden-variety typedesc array
-    ARRAY_KIND_METHODTABLE,  // Weirdo array with its own unshared methodtable (e.g., System.Object[])
-    ARRAY_KIND_NOTARRAY,       // Not an array
-} ARRAY_KIND;
-
-//---------------------------------------------------------------------------------------
-//
-// A couple Info calls need to understand what constitutes an "array", and what
-// kinds of arrays there are.  ArrayKindFromTypeHandle tries to put some of this
-// knowledge in a single place
-//
-// Arguments:
-//      th - TypeHandle to inspect
-//
-// Return Value:
-//      ARRAY_KIND describing th
-//
-
-inline ARRAY_KIND ArrayKindFromTypeHandle(TypeHandle th)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (th.IsArray())
-    {
-        return ARRAY_KIND_TYPEDESC;
-    }
-
-    if (!th.IsTypeDesc() && th.GetMethodTable()->IsArray())
-    {
-        return ARRAY_KIND_METHODTABLE;
-    }
-
-    return ARRAY_KIND_NOTARRAY;
-}
-
 #ifdef PROFILING_SUPPORTED
 
 //---------------------------------------------------------------------------------------
@@ -597,6 +565,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     else if (id == IID_ICorProfilerInfo11)
     {
         *pInterface = static_cast<ICorProfilerInfo11 *>(this);
+    }
+    else if (id == IID_ICorProfilerInfo12)
+    {
+        *pInterface = static_cast<ICorProfilerInfo12 *>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -1726,86 +1698,42 @@ HRESULT ProfToEEInterfaceImpl::IsArrayClass(
 
     TypeHandle th = TypeHandle::FromPtr((void *)classId);
 
-    ARRAY_KIND arrayKind = ArrayKindFromTypeHandle(th);
-
-    // If this is indeed an array class, get some info about it
-    switch (arrayKind)
+    if (th.IsArray())
     {
-        default:
+        // Fill in the type if they want it
+        if (pBaseElemType != NULL)
         {
-            _ASSERTE(!"Unexpected return from ArrayKindFromTypeHandle()");
-            hr = E_UNEXPECTED;
-            break;
+            *pBaseElemType = th.GetArrayElementTypeHandle().GetVerifierCorElementType();
         }
 
-        case ARRAY_KIND_TYPEDESC:
+        // If this is an array of classes and they wish to have the base type
+        // If there is no associated class with this type, then there's no problem
+        // because GetClass returns NULL which is the default we want to return in
+        // this case.
+        // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
+        if (pBaseClassId != NULL)
         {
-            // This is actually an array, so cast it up
-            ArrayTypeDesc *pArr = th.AsArray();
-
-            // Fill in the type if they want it
-            if (pBaseElemType != NULL)
-            {
-                *pBaseElemType = pArr->GetArrayElementTypeHandle().GetVerifierCorElementType();
-            }
-
-            // If this is an array of classes and they wish to have the base type
-            // If there is no associated class with this type, then there's no problem
-            // because GetClass returns NULL which is the default we want to return in
-            // this case.
-            // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = TypeHandleToClassID(pArr->GetTypeParam());
-            }
-
-            // If they want the number of dimensions of the array
-            if (pcRank != NULL)
-            {
-                *pcRank = (ULONG) pArr->GetRank();
-            }
-
-            // S_OK indicates that this was indeed an array
-            hr = S_OK;
-            break;
+            *pBaseClassId = TypeHandleToClassID(th.GetArrayElementTypeHandle());
         }
-        case ARRAY_KIND_METHODTABLE:
+
+        // If they want the number of dimensions of the array
+        if (pcRank != NULL)
         {
-            MethodTable *pArrMT = th.GetMethodTable();
-
-            // Fill in the type if they want it
-            if (pBaseElemType != NULL)
-            {
-                *pBaseElemType = pArrMT->GetArrayElementType();
-            }
-
-            // If this is an array of classes and they wish to have the base type.
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = TypeHandleToClassID(pArrMT->GetArrayElementTypeHandle());
-            }
-
-            // If they want the number of dimensions of the array
-            if (pcRank != NULL)
-            {
-                *pcRank = (ULONG) pArrMT->GetRank();
-            }
-
-            // S_OK indicates that this was indeed an array
-            hr = S_OK;
-            break;
+            *pcRank = (ULONG) th.GetRank();
         }
-        case ARRAY_KIND_NOTARRAY:
+
+        // S_OK indicates that this was indeed an array
+        hr = S_OK;
+    }
+    else
+    {
+        if (pBaseClassId != NULL)
         {
-            if (pBaseClassId != NULL)
-            {
-                *pBaseClassId = NULL;
-            }
-
-            // This is not an array, S_FALSE indicates so.
-            hr = S_FALSE;
-            break;
+            *pBaseClassId = NULL;
         }
+
+        // This is not an array, S_FALSE indicates so.
+        hr = S_FALSE;
     }
 
     return hr;
@@ -2585,7 +2513,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
@@ -3835,17 +3763,14 @@ HRESULT ProfToEEInterfaceImpl::GetClassIDInfo2(ClassID classId,
     //
     // Do not do arrays via this API
     //
-    ARRAY_KIND arrayKind = ArrayKindFromTypeHandle(typeHandle);
-    if (arrayKind == ARRAY_KIND_TYPEDESC || arrayKind == ARRAY_KIND_METHODTABLE)
+    if (typeHandle.IsArray())
     {
         return CORPROF_E_CLASSID_IS_ARRAY;
     }
 
-    _ASSERTE (arrayKind == ARRAY_KIND_NOTARRAY);
-
     if (typeHandle.IsTypeDesc())
     {
-        // Not an array, but still a typedesc?  We don't know how to
+        // a typedesc?  We don't know how to
         // deal with those.
         return CORPROF_E_CLASSID_IS_COMPOSITE;
     }
@@ -5063,7 +4988,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+                CodeVersionManager::LockHolder codeVersioningLockHolder;
 
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -6602,7 +6527,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
         ILCodeVersion ilCodeVersion = NULL;
         {
-            CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+            CodeVersionManager::LockHolder codeVersioningLockHolder;
 
             ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -7099,6 +7024,168 @@ HRESULT ProfToEEInterfaceImpl::SetEnvironmentVariable(const WCHAR *szName, const
     return SetEnvironmentVariableW(szName, szValue) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 }
 
+HRESULT ProfToEEInterfaceImpl::EventPipeCreateProvider(const WCHAR *szName, EVENTPIPE_PROVIDER *pProviderHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeCreateProvider.\n"));
+
+#ifdef FEATURE_PERFTRACING
+    if (szName == NULL || pProviderHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        EventPipeProvider *pProvider = EventPipe::CreateProvider(szName, NULL, NULL);
+        if (pProvider == NULL)
+        {
+            hr = E_FAIL;
+        }
+        else
+        {
+            *pProviderHandle = reinterpret_cast<EVENTPIPE_PROVIDER>(pProvider);
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeDefineEvent(
+    EVENTPIPE_PROVIDER provHandle,
+    const WCHAR *szName, 
+    UINT32 eventID,
+    UINT64 keywords,
+    UINT32 eventVersion,
+    UINT32 level,
+    BOOL needStack,
+    UINT32 cParamDescs,
+    COR_PRF_EVENTPIPE_PARAM_DESC pParamDescs[],
+    EVENTPIPE_EVENT *pEventHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach | kP2EETriggers,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeDefineEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
+    if (pProvider == NULL || szName == NULL || pEventHandle == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    if (pParamDescs == NULL && cParamDescs > 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        static_assert(offsetof(EventPipeParameterDesc, Type) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, type)
+                      && offsetof(EventPipeParameterDesc, Name) == offsetof(COR_PRF_EVENTPIPE_PARAM_DESC, name)
+                      && sizeof(EventPipeParameterDesc) == sizeof(COR_PRF_EVENTPIPE_PARAM_DESC),
+            "Layouts of EventPipeParameterDesc type and COR_PRF_EVENTPIPE_PARAM_DESC type do not match!");
+        EventPipeParameterDesc *params = reinterpret_cast<EventPipeParameterDesc *>(pParamDescs);
+        
+        size_t metadataLength;
+        NewArrayHolder<BYTE> pMetadata = EventPipeMetadataGenerator::GenerateEventMetadata(
+            eventID,
+            szName,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            params,
+            cParamDescs,
+            &metadataLength);
+
+        // Add the event.
+        EventPipeEvent *pEvent = pProvider->AddEvent(
+            eventID,
+            keywords,
+            eventVersion,
+            (EventPipeEventLevel)level,
+            needStack,
+            pMetadata,
+            (unsigned int)metadataLength);
+
+        *pEventHandle = reinterpret_cast<EVENTPIPE_EVENT>(pEvent);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
+HRESULT ProfToEEInterfaceImpl::EventPipeWriteEvent(
+    EVENTPIPE_EVENT eventHandle,
+    COR_PRF_EVENT_DATA data[],
+    UINT32 cData,
+    LPCGUID pActivityId,
+    LPCGUID pRelatedActivityId)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_ASYNC_EX(kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: EventPipeWriteEvent.\n"));
+#ifdef FEATURE_PERFTRACING
+    EventPipeEvent *pEvent = reinterpret_cast<EventPipeEvent *>(eventHandle);
+
+    if (pEvent == NULL)
+    {
+        return E_INVALIDARG;
+    }
+
+    static_assert(offsetof(EventData, Ptr) == offsetof(COR_PRF_EVENT_DATA, ptr)
+                    && offsetof(EventData, Size) == offsetof(COR_PRF_EVENT_DATA, size)
+                    && sizeof(EventData) == sizeof(COR_PRF_EVENT_DATA), 
+        "Layouts of EventData type and COR_PRF_EVENT_DATA type do not match!");
+
+    EventData *pEventData = reinterpret_cast<EventData *>(data);
+    EventPipe::WriteEvent(*pEvent, pEventData, cData, pActivityId, pRelatedActivityId);
+
+    return S_OK;
+#elif // FEATURE_PERFTRACING
+    return E_NOTIMPL;
+#endif // FEATURE_PERFTRACING
+}
+
 /*
  * GetStringLayout
  *
@@ -7463,7 +7550,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
     UINT_PTR currentIP = 0;
     REGDISPLAY *pRegDisplay = pCf->GetRegisterSet();
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     CONTEXT builtContext;
 #endif
 
@@ -7515,7 +7602,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
     if (pData->infoFlags & COR_PRF_SNAPSHOT_REGISTER_CONTEXT)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         //
         // X86 stack walking does not keep the context up-to-date during the
         // walk.  Instead it keeps the REGDISPLAY up-to-date.  Thus, we need to
@@ -7549,7 +7636,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     return SWA_ABORT;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
@@ -7883,7 +7970,7 @@ Loop:
         }
     }
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //*****************************************************************************
 //  The profiler stackwalk Wrapper
@@ -8052,7 +8139,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         pThreadToSnapshot = (Thread *)thread;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if ((infoFlags & ~(COR_PRF_SNAPSHOT_REGISTER_CONTEXT | COR_PRF_SNAPSHOT_X86_OPTIMIZED)) != 0)
 #else
     if ((infoFlags & ~(COR_PRF_SNAPSHOT_REGISTER_CONTEXT)) != 0)
@@ -8470,8 +8557,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
     {
         if ((pParam->pData->infoFlags & COR_PRF_SNAPSHOT_X86_OPTIMIZED) != 0)
         {
-#ifndef _TARGET_X86_
-            // If check in the begining of DoStackSnapshot (to return E_INVALIDARG) should
+#ifndef TARGET_X86
+            // If check in the beginning of DoStackSnapshot (to return E_INVALIDARG) should
             // make this unreachable
             _ASSERTE(!"COR_PRF_SNAPSHOT_X86_OPTIMIZED on non-X86 should be unreachable!");
 #else
@@ -8481,7 +8568,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
                              pParam->pctxSeed,
                              pParam->pData->callback,
                              pParam->pData->clientData);
-#endif  // _TARGET_X86_
+#endif  // TARGET_X86
         }
         else
         {
@@ -10760,4 +10847,3 @@ LExit:
 #endif // PROFILING_SUPPORTED
 }
 HCIMPLEND
-

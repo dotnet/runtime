@@ -44,7 +44,7 @@
 /*         Portability macros               */
 /********************************************/
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 #define AMD64_FIRST_ARG(x)  x ,
 #define AMD64_ARG(x)        , x
 #define AMD64_ONLY(x)       x
@@ -58,7 +58,7 @@
 #define NOT_AMD64_ARG(x)    , x
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #define X86_FIRST_ARG(x)    x ,
 #define X86_ARG(x)          , x
 #define X86_ONLY(x)         x
@@ -72,7 +72,7 @@
 #define NOT_X86_ARG(x)      , x
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define BIT64_ARG(x)  , x
 #define BIT64_ONLY(x) x
 #define NOT_BIT64(x)
@@ -82,9 +82,9 @@
 #define BIT64_ONLY(x)
 #define NOT_BIT64(x)    x
 #define NOT_BIT64_ARG(x)    , x
-#endif // BIT64
+#endif // HOST_64BIT
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 #define ARM_FIRST_ARG(x)  x ,
 #define ARM_ARG(x)        , x
 #define ARM_ONLY(x)       x
@@ -98,7 +98,7 @@
 #define NOT_ARM_ARG(x)    , x
 #endif
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 #define ARM64_FIRST_ARG(x)  x ,
 #define ARM64_ARG(x)        , x
 #define ARM64_ONLY(x)       x
@@ -112,27 +112,27 @@
 #define NOT_ARM64_ARG(x)    , x
 #endif
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define LOG2_PTRSIZE 3
 #else
 #define LOG2_PTRSIZE 2
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     #define INVALID_POINTER_CC 0xcccccccccccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcdcdcdcdcd
     #define FMT_ADDR           " %08x`%08x "
     #define LFMT_ADDR          W(" %08x`%08x ")
     #define DBG_ADDR(ptr)      (((UINT_PTR) (ptr)) >> 32), (((UINT_PTR) (ptr)) & 0xffffffff)
-#else // BIT64
+#else // HOST_64BIT
     #define INVALID_POINTER_CC 0xcccccccc
     #define INVALID_POINTER_CD 0xcdcdcdcd
     #define FMT_ADDR           " %08x "
     #define LFMT_ADDR          W(" %08x ")
     #define DBG_ADDR(ptr)      ((UINT_PTR)(ptr))
-#endif // BIT64
+#endif // HOST_64BIT
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     #define ALIGN_ACCESS        ((1<<LOG2_PTRSIZE)-1)
 #endif
 

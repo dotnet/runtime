@@ -11,6 +11,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using ILCompiler.Win32Resources;
 using Internal.IL;
 using Internal.JitInterface;
+using Internal.ReadyToRunConstants;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -77,7 +78,7 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public override CompilationBuilder UseJitPath(string jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
             _jitPath = jitPath;
             return this;
@@ -114,7 +115,8 @@ namespace ILCompiler
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
             AttributePresenceFilterNode attributePresenceFilterNode = null;
-            
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(_inputModule);
+
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are
             // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
@@ -141,15 +143,24 @@ namespace ILCompiler
                 return true;
             });
 
-            ReadyToRunCodegenNodeFactory factory = new ReadyToRunCodegenNodeFactory(
+            ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
+            if (_inputModule.IsPlatformNeutral)
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
+            flags |= _compilationGroup.GetReadyToRunFlags();
+
+            var header = new HeaderNode(_context.Target, flags);
+
+            NodeFactory factory = new NodeFactory(
                 _context,
                 _compilationGroup,
                 _nameMangler,
                 moduleTokenResolver,
                 signatureContext,
                 corHeaderNode,
+                debugDirectoryNode,
                 win32Resources,
-                attributePresenceFilterNode);
+                attributePresenceFilterNode,
+                header);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
@@ -179,7 +190,7 @@ namespace ILCompiler
                 corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
             corJitFlags.Add(CorJitFlag.CORJIT_FLAG_FEATURE_SIMD);
-            var jitConfig = new JitConfigProvider(corJitFlags, _ryujitOptions, _jitPath);
+            JitConfigProvider.Initialize(corJitFlags, _ryujitOptions, _jitPath);
 
             return new ReadyToRunCodegenCompilation(
                 graph,
@@ -188,7 +199,6 @@ namespace ILCompiler
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
-                jitConfig,
                 _inputFilePath,
                 new ModuleDesc[] { _inputModule },
                 _resilient,

@@ -13,7 +13,7 @@
         // COREDISTOOLS disassembler only supports amd64 and x86, so if this is
         // CoreCLR but not amd64 and not x86, we will fall out of this check and not
         // set USE_DISASSEMBLER.
-        #if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+        #if defined(TARGET_AMD64) || defined(TARGET_X86)
             #undef USE_COREDISTOOLS_DISASSEMBLER
             #define USE_COREDISTOOLS_DISASSEMBLER 1
         #endif
@@ -66,13 +66,13 @@ private:
     typedef DIS ExternalDisassembler;
 #endif // USE_COREDISTOOLS_DISASSEMBLER || USE_MSVC_DISASSEMBLER
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 public:
     static bool IsRexPrefix(UINT8 potentialRexByte);
     static UINT8 DecodeModFromModRm(UINT8 modRm);
     static UINT8 DecodeRegOrOpCodeFromModRm(UINT8 modRm);
     static UINT8 DecodeRmFromModRm(UINT8 modRm);
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 public:
     static bool IsAvailable();

@@ -128,6 +128,172 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 #>
         public static float BitwiseSelect(float op1, float op2, float op3) => BitConverter.Int32BitsToSingle(BitwiseSelect(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2), BitConverter.SingleToInt32Bits(op3)));
+
         public static double BitwiseSelect(double op1, double op2, double op3) => BitConverter.Int64BitsToDouble(BitwiseSelect(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2), BitConverter.DoubleToInt64Bits(op3)));
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong" })
+        {
+
+        foreach ((string methodName, string compareOp) in new (string, string)[] {
+          ("CompareEqual", "=="),
+          ("CompareGreaterThan", ">"),
+          ("CompareGreaterThanOrEqual", ">="),
+          ("CompareLessThan", "<"),
+          ("CompareLessThanOrEqual", "<=") })
+        {
+#>
+        public static <#= typeName #> <#= methodName #>(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach ((string methodName, string compareOp) in ... )
+#>
+        public static <#= typeName #> CompareTest(<#= typeName #> left, <#= typeName #> right)
+        {
+            long result = 0;
+
+            if ((left & right) != 0)
+            {
+                result = -1;
+            }
+
+            return (<#= typeName #>)result;
+        }
+
+<#
+        } // foreach (string typeName in ... )
+
+        foreach ((string methodName, string compareOp, bool absoluteCompare) in new (string, string, bool)[] {
+          ("AbsoluteCompareGreaterThan", ">", true),
+          ("AbsoluteCompareGreaterThanOrEqual", ">=", true),
+          ("AbsoluteCompareLessThan", "<", true),
+          ("AbsoluteCompareLessThanOrEqual", "<=", true),
+          ("CompareEqual", "==", false),
+          ("CompareGreaterThan", ">", false),
+          ("CompareGreaterThanOrEqual", ">=", false),
+          ("CompareLessThan", "<", false),
+          ("CompareLessThanOrEqual", "<=", false),
+        })
+        {
+#>
+        public static double <#= methodName #>(double left, double right)
+        {
+            long result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float <#= methodName #>(float left, float right)
+        {
+            int result = 0;
+
+<#
+            if (absoluteCompare)
+            {
+#>
+            left = Math.Abs(left);
+            right = Math.Abs(right);
+
+<#
+            }
+#>
+            if (left <#= compareOp #> right)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        }
+#>
+        public static double CompareTest(double left, double right)
+        {
+            long result = 0;
+
+            if ((BitConverter.DoubleToInt64Bits(left) & BitConverter.DoubleToInt64Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int64BitsToDouble(result);
+        }
+
+        public static float CompareTest(float left, float right)
+        {
+            int result = 0;
+
+            if ((BitConverter.SingleToInt32Bits(left) & BitConverter.SingleToInt32Bits(right)) != 0)
+            {
+                result = -1;
+            }
+
+            return BitConverter.Int32BitsToSingle(result);
+        }
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "long",   unsigned: "ulong") })
+        {
+#>
+        public static <#= type.unsigned #> Abs(<#= type.name #> value) => value < 0 ? (<#= type.unsigned #>)-value : (<#= type.unsigned #>)value;
+<#
+        }
+#>
+        public static float Abs(float value) => Math.Abs(value);
+        public static double Abs(double value) => Math.Abs(value);
+
+<#
+        foreach (var type in new[] { (name: "sbyte",  unsigned: "byte"),
+                                     (name: "short",  unsigned: "ushort"),
+                                     (name: "int",    unsigned: "uint"),
+                                     (name: "byte",   unsigned: "byte"),
+                                     (name: "ushort", unsigned: "ushort"),
+                                     (name: "uint",   unsigned: "uint") })
+        {
+#>
+        public static <#= type.unsigned #> AbsoluteDifference(<#= type.name #> left, <#= type.name #> right) => (<#= type.unsigned #>)Math.Abs((long)left - (long)right);
+<#
+        }
+#>
+        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
+        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
+
+<#
+        foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
+        {
+#>
+        public static <#= typeName #> Add(<#= typeName #> left, <#= typeName #> right) => (<#= typeName #>)(left + right);
+<#
+        }
+#>
     }
 }

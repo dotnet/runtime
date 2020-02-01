@@ -33,7 +33,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => GenericParameter.GetCustomAttributes().ToTrueCustomAttributes(GetEcmaModule());
         internal sealed override bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => GenericParameter.GetCustomAttributes().IsCustomAttributeDefined(ns, name, GetEcmaModule());
-        internal sealed override CustomAttributeData TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => GenericParameter.GetCustomAttributes().TryFindCustomAttribute(ns, name, GetEcmaModule());
+        internal sealed override CustomAttributeData? TryFindCustomAttribute(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => GenericParameter.GetCustomAttributes().TryFindCustomAttribute(ns, name, GetEcmaModule());
 
         public sealed override int MetadataToken => Handle.GetToken();
 
@@ -56,8 +56,8 @@ namespace System.Reflection.TypeLoading.Ecma
             return constraints;
         }
 
-        protected abstract override RoType ComputeDeclaringType();
-        public abstract override MethodBase DeclaringMethod { get; }
+        protected abstract override RoType? ComputeDeclaringType();
+        public abstract override MethodBase? DeclaringMethod { get; }
 
         internal GenericParameterHandle Handle { get; }
         internal EcmaModule GetEcmaModule() => _ecmaModule;

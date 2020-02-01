@@ -60,7 +60,7 @@ namespace System.IO.Packaging
             //is not present, we base our decision on byte order marking. Previously, reader was an XmlTextReader, which would
             //take that into account and return the correct value.
 
-            //However, we can't use XmlTextReader, as it is not in COREFX.  Therefore, if there is no XmlDeclaration, or the encoding
+            //However, we can't use XmlTextReader, as it is not in the libraries.  Therefore, if there is no XmlDeclaration, or the encoding
             //attribute is not set, then we will throw now exception, and UTF-8 will be assumed.
 
             //TODO: in the future, we can do the work to detect the BOM, and throw an exception if the file is in an invalid encoding.

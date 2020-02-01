@@ -263,12 +263,13 @@ namespace System.Globalization
                         result[resultPos++] = icuFormatString[i++];
                         while (i < icuFormatString.Length)
                         {
-                            char current = icuFormatString[i++];
+                            char current = icuFormatString[i];
                             result[resultPos++] = current;
                             if (current == '\'')
                             {
                                 break;
                             }
+                            i++;
                         }
                         break;
 

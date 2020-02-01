@@ -1,7 +1,6 @@
 # Copyright (c) .NET Foundation and contributors. All rights reserved.
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-cmake_minimum_required (VERSION 2.6)
 project(winrthost)
 
 set(DOTNET_PROJECT_NAME "winrthost")
@@ -30,7 +29,7 @@ include(../lib.cmake)
 add_definitions(-DFEATURE_LIBHOST=1)
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
     target_link_libraries(winrthost Advapi32.lib Ole32.lib OleAut32.lib)
 endif()
 

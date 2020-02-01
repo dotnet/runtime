@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>library</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC;CORECLR;V2</DefineConstants>
+    <DefineConstants>$(DefineConstants);V2</DefineConstants>
     <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>

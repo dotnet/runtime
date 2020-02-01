@@ -30,6 +30,12 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </ProjectReference>
+    <ProjectReference Include="AssemblyToLoad.csproj" Link="AssemblyToLoad_V2.dll">
+      <Properties>AssemblyV2=true</Properties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
   </ItemGroup>
 
   <Target Name="MoveDependentAssembliesToSubdirectory" AfterTargets="CopyFilesToOutputDirectory">

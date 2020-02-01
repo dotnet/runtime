@@ -14,6 +14,7 @@ parameters:
   variables: {}
   pool: ''
   isOfficialBuild: false
+  condition: true
 
 ### Product build
 jobs:
@@ -29,6 +30,7 @@ jobs:
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
+    condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -67,6 +69,10 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: clangArg
           value: ''
+      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+        - name: clangArg
+          value: ''
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       # Variables used to publish packages to blob feed
       - name: dotnetfeedUrl
@@ -78,16 +84,9 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
-    - name: ibcOptimizeArg
-      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '-officialbuildid=$(Build.BuildNumber)'
-      # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
-      # # IBCMerge is currently Windows-only and x86/x64-only
-      # - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'x86'))) }}:
-      #   - name: ibcOptimizeArg
-      #     value: '-ibcoptimize'
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
@@ -111,33 +110,21 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
     # # Install internal tools on official builds
     # # Since our internal tools are behind an authenticated feed,
     # # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
     # # We can't do this from within the build, so we need to do this as a separate step.
-    # - ${{ if and(and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')), eq(parameters.osGroup, 'Windows_NT')) }}:
-    #     - task: DotNetCoreInstaller@0
-    #       inputs:
-    #         packageType: 'sdk'
-    #         version: '2.1.503'
-    #     - task: DotNetCoreCLI@2
-    #       displayName: Restore internal tools
-    #       inputs:
-    #         command: restore
-    #         feedsToUse: config
-    #         projects: '$(Build.SourcesDirectory)/eng/common/internal/Tools.csproj'
-    #         nugetConfigPath: 'eng/internal/NuGet.config'
-    #         restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-    #         verbosityRestore: 'normal'
-    #         externalFeedCredentials: 'dotnet-core-internal-tooling'
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
+        parameters:
+          installDotnet: true
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build product
 
     # Build native test components
@@ -222,6 +209,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

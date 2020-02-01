@@ -72,7 +72,7 @@ namespace System.Reflection.TypeLoading.Ecma
         public static int GetToken(this StandaloneSignatureHandle handle) => MetadataTokens.GetToken(handle);
         public static int GetToken(this AssemblyFileHandle handle) => MetadataTokens.GetToken(handle);
 
-        public static string GetStringOrNull(this StringHandle handle, MetadataReader reader) => handle.IsNil ? null : reader.GetString(handle);
+        public static string? GetStringOrNull(this StringHandle handle, MetadataReader reader) => handle.IsNil ? null : reader.GetString(handle);
 
         public static bool Equals(this StringHandle handle, string value, MetadataReader reader) => reader.StringComparer.Equals(handle, value, ignoreCase: false);
 

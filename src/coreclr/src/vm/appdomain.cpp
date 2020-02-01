@@ -32,6 +32,7 @@
 #include "comdelegate.h"
 #include "siginfo.hpp"
 #include "typekey.h"
+#include "castcache.h"
 
 #include "caparser.h"
 #include "ecall.h"
@@ -60,9 +61,9 @@
 
 #include "nativeoverlapped.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 
@@ -668,11 +669,6 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -766,23 +762,8 @@ void BaseDomain::InitVSD()
 {
     STANDARD_VM_CONTRACT;
 
-    // This is a workaround for gcc, since it fails to successfully resolve
-    // "TypeIDMap::STARTING_SHARED_DOMAIN_ID" when used within the ?: operator.
-    UINT32 startingId;
-    if (IsSharedDomain())
-    {
-        startingId = TypeIDMap::STARTING_SHARED_DOMAIN_ID;
-    }
-    else
-    {
-        startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
-    }
-
-    // By passing false as the last parameter, interfaces loaded in the
-    // shared domain will not be given fat type ids if RequiresFatDispatchTokens
-    // is set. This is correct, as the fat dispatch tokens are only needed to solve
-    // uniqueness problems involving domain specific types.
-    m_typeIDMap.Init(startingId, 2, !IsSharedDomain());
+    UINT32 startingId = TypeIDMap::STARTING_UNSHARED_DOMAIN_ID;
+    m_typeIDMap.Init(startingId, 2);
 
 #ifndef CROSSGEN_COMPILE
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
@@ -1581,10 +1562,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
@@ -1988,12 +1970,10 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pNullableClass = MscorlibBinder::GetClass(CLASS__NULLABLE);
 
     // Load the Object array class.
-    g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass)).AsArray();
+    g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT] = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pObjectClass));
 
     // We have delayed allocation of mscorlib's static handles until we load the object class
     MscorlibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
-
-    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
 
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
@@ -2001,6 +1981,15 @@ void SystemDomain::LoadBaseSystemClasses()
 
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+
+    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot

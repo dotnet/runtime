@@ -3,7 +3,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Net\WebClient.cs" />
     <Compile Include="$(CommonPath)System\IO\DelegatingStream.cs">
@@ -26,16 +25,12 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebHeaderCollection" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>

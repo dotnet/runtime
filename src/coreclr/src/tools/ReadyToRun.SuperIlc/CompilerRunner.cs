@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.Build.Logging;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -136,6 +137,11 @@ namespace ReadyToRun.SuperIlc
         protected virtual ProcessParameters ExecutionProcess(IEnumerable<string> modules, IEnumerable<string> folders, bool noEtw)
         {
             ProcessParameters processParameters = new ProcessParameters();
+
+            if (!string.IsNullOrEmpty(_options.GCStress))
+            {
+                processParameters.EnvironmentOverrides["COMPlus_GCStress"] = _options.GCStress;
+            }
 
             if (_options.ExecutionTimeoutMinutes != 0)
             {
@@ -294,7 +300,8 @@ namespace ReadyToRun.SuperIlc
 
         public override ProcessParameters Construct()
         {
-            return _runner.ScriptExecutionProcess(_outputRoot, _scriptPath, _modules, _folders);
+            ProcessParameters processParameters = _runner.ScriptExecutionProcess(_outputRoot, _scriptPath, _modules, _folders);
+            return processParameters;
         }
     }
 

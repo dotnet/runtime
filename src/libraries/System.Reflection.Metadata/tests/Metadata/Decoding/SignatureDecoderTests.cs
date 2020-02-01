@@ -15,8 +15,8 @@ namespace System.Reflection.Metadata.Decoding.Tests
 {
     public partial class SignatureDecoderTests
     {
-        private static readonly string RuntimeAssemblyName = PlatformDetection.IsFullFramework ? "mscorlib" : "System.Runtime";
-        private static readonly string CollectionsAssemblyName = PlatformDetection.IsFullFramework ? "mscorlib" : "System.Collections";
+        private static readonly string RuntimeAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Runtime";
+        private static readonly string CollectionsAssemblyName = PlatformDetection.IsNetFramework ? "mscorlib" : "System.Collections";
 
         [Fact]
         public unsafe void VerifyMultipleOptionalModifiers()

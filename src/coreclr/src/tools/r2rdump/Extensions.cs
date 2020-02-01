@@ -19,10 +19,10 @@ namespace R2RDump
             if (theThis.BoundsList.Count > 0)
                 writer.WriteLine("Debug Info");
 
-            writer.WriteLine("\tBounds:");
+            writer.WriteLine("    Bounds:");
             for (int i = 0; i < theThis.BoundsList.Count; ++i)
             {
-                writer.Write('\t');
+                writer.Write("    ");
                 if (!dumpOptions.Naked)
                 {
                     writer.Write($"Native Offset: 0x{theThis.BoundsList[i].NativeOffset:X}, ");
@@ -38,51 +38,51 @@ namespace R2RDump
             }
 
             if (theThis.VariablesList.Count > 0)
-                writer.WriteLine("\tVariable Locations:");
+                writer.WriteLine("    Variable Locations:");
 
             for (int i = 0; i < theThis.VariablesList.Count; ++i)
             {
                 var varLoc = theThis.VariablesList[i];
-                writer.WriteLine($"\tVariable Number: {varLoc.VariableNumber}");
-                writer.WriteLine($"\tStart Offset: 0x{varLoc.StartOffset:X}");
-                writer.WriteLine($"\tEnd Offset: 0x{varLoc.EndOffset:X}");
-                writer.WriteLine($"\tLoc Type: {varLoc.VariableLocation.VarLocType}");
+                writer.WriteLine($"    Variable Number: {varLoc.VariableNumber}");
+                writer.WriteLine($"    Start Offset: 0x{varLoc.StartOffset:X}");
+                writer.WriteLine($"    End Offset: 0x{varLoc.EndOffset:X}");
+                writer.WriteLine($"    Loc Type: {varLoc.VariableLocation.VarLocType}");
 
                 switch (varLoc.VariableLocation.VarLocType)
                 {
                     case VarLocType.VLT_REG:
                     case VarLocType.VLT_REG_FP:
                     case VarLocType.VLT_REG_BYREF:
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     case VarLocType.VLT_STK:
                     case VarLocType.VLT_STK_BYREF:
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data2}");
                         break;
                     case VarLocType.VLT_REG_REG:
-                        writer.WriteLine($"\tRegister 1: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tRegister 2: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Register 1: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Register 2: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
                         break;
                     case VarLocType.VLT_REG_STK:
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data3}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data3}");
                         break;
                     case VarLocType.VLT_STK_REG:
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data1}");
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
-                        writer.WriteLine($"\tRegister: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data3)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data1}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data2)}");
+                        writer.WriteLine($"    Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data3)}");
                         break;
                     case VarLocType.VLT_STK2:
-                        writer.WriteLine($"\tBase Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
-                        writer.WriteLine($"\tStack Offset: {varLoc.VariableLocation.Data2}");
+                        writer.WriteLine($"    Base Register: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Stack Offset: {varLoc.VariableLocation.Data2}");
                         break;
                     case VarLocType.VLT_FPSTK:
-                        writer.WriteLine($"\tOffset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Offset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     case VarLocType.VLT_FIXED_VA:
-                        writer.WriteLine($"\tOffset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
+                        writer.WriteLine($"    Offset: {DebugInfo.GetPlatformSpecificRegister(theThis.Machine, varLoc.VariableLocation.Data1)}");
                         break;
                     default:
                         throw new BadImageFormatException("Unexpected var loc type");
@@ -92,7 +92,7 @@ namespace R2RDump
             }
         }
 
-        public static void WriteTo(this R2RImportSection.ImportSectionEntry theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunImportSection.ImportSectionEntry theThis, TextWriter writer, DumpOptions options)
         {
             if (!options.Naked)
             {
@@ -110,9 +110,9 @@ namespace R2RDump
             }
         }
 
-        public static void WriteTo(this R2RSection theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunSection theThis, TextWriter writer, DumpOptions options)
         {
-            writer.WriteLine($"Type:  {Enum.GetName(typeof(R2RSection.SectionType), theThis.Type)} ({theThis.Type:D})");
+            writer.WriteLine($"Type:  {Enum.GetName(typeof(ReadyToRunSection.SectionType), theThis.Type)} ({theThis.Type:D})");
             if (!options.Naked)
             {
                 writer.WriteLine($"RelativeVirtualAddress: 0x{theThis.RelativeVirtualAddress:X8}");
@@ -120,7 +120,7 @@ namespace R2RDump
             writer.WriteLine($"Size: {theThis.Size} bytes");
         }
 
-        public static void WriteTo(this R2RMethod theThis, TextWriter writer, DumpOptions options)
+        public static void WriteTo(this ReadyToRunMethod theThis, TextWriter writer, DumpOptions options)
         {
             writer.WriteLine(theThis.SignatureString);
 
@@ -217,51 +217,12 @@ namespace R2RDump
             if (theThis.Method.GcInfo is ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo)
             {
                 writer.WriteLine("GC info:");
-                writer.WriteLine($@"    Version:                           {gcInfo.Version}");
-                writer.WriteLine($@"    ReturnKind:                        {gcInfo.ReturnKind}");
-                writer.WriteLine($@"    ValidRangeStart:                   0x{gcInfo.ValidRangeStart:X4}");
-                writer.WriteLine($@"    ValidRangeEnd:                     0x{gcInfo.ValidRangeEnd:X4}");
-                writer.WriteLine($@"    SecurityObjectStackSlot:           0x{gcInfo.SecurityObjectStackSlot:X4}");
-                writer.WriteLine($@"    GSCookieStackSlot:                 0x{gcInfo.GSCookieStackSlot:X4}");
-                writer.WriteLine($@"    PSPSymStackSlot:                   0x{gcInfo.PSPSymStackSlot:X4}");
-                writer.WriteLine($@"    GenericsInstContextStackSlot:      0x{gcInfo.GenericsInstContextStackSlot:X4}");
-                writer.WriteLine($@"    StackBaseRegister:                 {gcInfo.StackBaseRegister}");
-                writer.WriteLine($@"    SizeOfENCPreservedArea:            0x{gcInfo.SizeOfEditAndContinuePreservedArea:X4}");
-                writer.WriteLine($@"    ReversePInvokeFrameStackSlot:      0x{gcInfo.ReversePInvokeFrameStackSlot:X4}");
-                writer.WriteLine($@"    SizeOfStackOutgoingAndScratchArea: 0x{gcInfo.SizeOfStackOutgoingAndScratchArea:X4}");
-                writer.WriteLine($@"    NumSafePoints:                     {gcInfo.NumSafePoints}");
-                writer.WriteLine($@"    NumInterruptibleRanges:            {gcInfo.NumInterruptibleRanges}");
-
-                writer.WriteLine($@"    SafePointOffsets: {gcInfo.SafePointOffsets.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo.SafePointOffset safePoint in gcInfo.SafePointOffsets)
-                {
-                    writer.WriteLine($@"        Index: {safePoint.Index,2}; Value: 0x{safePoint.Value:X4}");
-                    if (gcInfo.LiveSlotsAtSafepoints != null)
-                        writer.WriteLine($@"        Live slots: {String.Join(", ", gcInfo.LiveSlotsAtSafepoints[safePoint.Index])}");
-                }
-
-                writer.WriteLine($@"    InterruptibleRanges: {gcInfo.InterruptibleRanges.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.InterruptibleRange range in gcInfo.InterruptibleRanges)
-                {
-                    writer.WriteLine($@"        Index: {range.Index,2}; StartOffset: 0x{range.StartOffset:X4}; StopOffset: 0x{range.StopOffset:X4}");
-                }
-
-                writer.WriteLine("    SlotTable:");
-                writer.WriteLine($@"        NumRegisters:  {gcInfo.SlotTable.NumRegisters}");
-                writer.WriteLine($@"        NumStackSlots: {gcInfo.SlotTable.NumStackSlots}");
-                writer.WriteLine($@"        NumUntracked:  {gcInfo.SlotTable.NumUntracked}");
-                writer.WriteLine($@"        NumSlots:      {gcInfo.SlotTable.NumSlots}");
-                writer.WriteLine($@"        GcSlots:       {gcInfo.SlotTable.GcSlots.Count}");
-                foreach (ILCompiler.Reflection.ReadyToRun.Amd64.GcSlotTable.GcSlot slot in gcInfo.SlotTable.GcSlots)
-                {
-                    writer.WriteLine($@"            Index: {slot.Index,2}; RegisterNumber: {slot.RegisterNumber,2}; Flags: {slot.Flags}");
-                }
-                writer.WriteLine();
+                writer.WriteLine(gcInfo.ToString());
             }
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.EHInfoRVA:X4}, #clauses = {theThis.EHInfo.EHClauses.Length}");
+                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
                 theThis.EHInfo.WriteTo(writer);
                 writer.WriteLine();
             }

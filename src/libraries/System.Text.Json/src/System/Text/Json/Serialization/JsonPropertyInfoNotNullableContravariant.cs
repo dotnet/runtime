@@ -29,7 +29,8 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                Set(state.Current.ReturnValue, (TDeclaredProperty)value);
+                Debug.Assert(Set != null);
+                Set(state.Current.ReturnValue, (TDeclaredProperty)value!);
             }
 
             return;
@@ -64,10 +65,11 @@ namespace System.Text.Json.Serialization
             TConverter value;
             if (IsPropertyPolicy)
             {
-                value = (TConverter)current.CurrentValue;
+                value = (TConverter)current.CurrentValue!;
             }
             else
             {
+                Debug.Assert(Get != null);
                 value = (TConverter)Get(current.CurrentValue);
             }
 
@@ -93,6 +95,7 @@ namespace System.Text.Json.Serialization
 
         protected override void OnWriteDictionary(ref WriteStackFrame current, Utf8JsonWriter writer)
         {
+            Debug.Assert(Converter != null);
             JsonSerializer.WriteDictionary(Converter, Options, ref current, writer);
         }
 
@@ -110,7 +113,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    value = (TConverter)current.CollectionEnumerator.Current;
+                    value = (TConverter)current.CollectionEnumerator.Current!;
                 }
 
                 if (value == null)
@@ -129,7 +132,7 @@ namespace System.Text.Json.Serialization
             return typeof(Dictionary<string, TRuntimeProperty>);
         }
 
-        public override void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object value)
+        public override void GetDictionaryKeyAndValueFromGenericDictionary(ref WriteStackFrame writeStackFrame, out string key, out object? value)
         {
             if (writeStackFrame.CollectionEnumerator is IEnumerator<KeyValuePair<string, TDeclaredProperty>> genericEnumerator)
             {
@@ -139,7 +142,7 @@ namespace System.Text.Json.Serialization
             else
             {
                 throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(
-                    writeStackFrame.JsonPropertyInfo.DeclaredPropertyType,
+                    writeStackFrame.JsonPropertyInfo!.DeclaredPropertyType,
                     writeStackFrame.JsonPropertyInfo.ParentClassType,
                     writeStackFrame.JsonPropertyInfo.PropertyInfo);
             }

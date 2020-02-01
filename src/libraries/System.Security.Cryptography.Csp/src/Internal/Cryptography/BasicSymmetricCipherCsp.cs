@@ -121,7 +121,7 @@ namespace Internal.Cryptography
             SafeKeyHandle safeKeyHandle;
             byte[] keyBlob = ToPlainTextKeyBlob(algId, rawKey);
             ImportKeyBlob(safeProvHandle, (CspProviderFlags)0, addNoSaltFlag, keyBlob, out safeKeyHandle);
-            // Note if plain text import fails, desktop falls back to "ExponentOfOneImport" which is not handled here
+            // Note if plain text import fails, .NET Framework falls back to "ExponentOfOneImport" which is not handled here
             return safeKeyHandle;
         }
 

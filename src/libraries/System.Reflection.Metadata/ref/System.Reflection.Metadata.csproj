@@ -1,11 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Metadata.cs" />
+    <Compile Include="System.Reflection.Metadata.Manual.cs" />
+    <None Include="ReferenceSourceExcludeApi.txt" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

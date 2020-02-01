@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="UserMacros">
+    <MONO_PATH_ENV>MONO_PATH=$(MONO_PATH)</MONO_PATH_ENV>
+    <MONO_CFG_DIR_ENV>MONO_CFG_DIR=$(MONO_CFG_DIR)</MONO_CFG_DIR_ENV>
+    <MONO_TOOLCHAIN_PATH_ENV>PATH=$(MONO_TOOLCHAIN_PATH)</MONO_TOOLCHAIN_PATH_ENV>
+    <MONO_LOG_LEVEL_ENV>MONO_LOG_LEVEL=</MONO_LOG_LEVEL_ENV>
+    <MONO_LOG_MASK_ENV>MONO_LOG_MASK=</MONO_LOG_MASK_ENV>
+  </PropertyGroup>
+  <ItemGroup>
+    <BuildMacro Include="MONO_PATH_ENV">
+      <Value>$(MONO_PATH_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_CFG_DIR_ENV">
+      <Value>$(MONO_CFG_DIR_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_TOOLCHAIN_PATH_ENV">
+      <Value>$(MONO_TOOLCHAIN_PATH_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_LOG_LEVEL_ENV">
+      <Value>$(MONO_LOG_LEVEL_ENV)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_LOG_MASK_ENV">
+      <Value>$(MONO_LOG_MASK_ENV)</Value>
+    </BuildMacro>
+  </ItemGroup>
+  <ItemDefinitionGroup />
+</Project>

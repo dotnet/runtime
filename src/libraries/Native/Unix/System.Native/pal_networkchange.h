@@ -6,7 +6,6 @@
 
 #include "pal_compiler.h"
 #include "pal_types.h"
-#include <linux/netlink.h>
 
 typedef enum
 {

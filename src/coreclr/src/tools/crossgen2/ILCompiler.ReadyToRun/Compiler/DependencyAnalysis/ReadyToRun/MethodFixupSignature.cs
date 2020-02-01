@@ -48,6 +48,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 150063499;
 
+        public bool IsUnboxingStub => _isUnboxingStub;
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
@@ -56,7 +58,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(data: Array.Empty<byte>(), relocs: null, alignment: 0, definedSymbols: null);
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
@@ -98,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupKind, method.Token.Module, _signatureContext);
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, method.Token.Module, _signatureContext);
 
             if (optimized && method.Token.TokenType == CorTokenType.mdtMethodDef)
             {

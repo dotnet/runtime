@@ -11,8 +11,8 @@ namespace Internal.TypeSystem.Interop
 {
     public static partial class MarshalHelpers
     {
-        internal static TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type, 
-                MarshallerKind kind, 
+        internal static TypeDesc GetNativeTypeFromMarshallerKind(TypeDesc type,
+                MarshallerKind kind,
                 MarshallerKind elementMarshallerKind,
 #if !READYTORUN
                 InteropStateManager interopStateManager,
@@ -121,7 +121,7 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                             interopStateManager,
 #endif
-                            marshalAs, 
+                            marshalAs,
                             isArrayElement: true);
 
                         return elementNativeType.MakePointerType();
@@ -195,8 +195,6 @@ namespace Internal.TypeSystem.Interop
             //
             // Determine MarshalerKind
             //
-            // This mostly resembles desktop CLR and .NET Native code as we need to match their behavior
-            // 
             if (type.IsPrimitive)
             {
                 switch (type.Category)
@@ -440,17 +438,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
-                TypeDesc parameterType = ((PointerType)type).ParameterType;
-
-                if ((!parameterType.IsEnum
-                    && !parameterType.IsPrimitive
-                    && !MarshalUtils.IsBlittableType(parameterType))
-                    || parameterType.IsGCPointer)
-                {
-                    // Pointers cannot reference marshaled structures.  Use ByRef instead.
-                    return MarshallerKind.Invalid;
-                }
-
                 if (nativeType == NativeTypeKind.Default)
                     return MarshallerKind.BlittableValue;
                 else

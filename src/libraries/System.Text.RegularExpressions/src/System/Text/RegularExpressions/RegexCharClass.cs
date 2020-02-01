@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 
@@ -407,15 +408,12 @@ namespace System.Text.RegularExpressions
             // Make sure the initial capacity for s_definedCategories is correct
             Debug.Assert(
                 s_definedCategories.Count == DefinedCategoriesCapacity,
-                "RegexCharClass s_definedCategories's initial capacity (DefinedCategoriesCapacity) is incorrect.",
-                "Expected (s_definedCategories.Count): {0}, Actual (DefinedCategoriesCapacity): {1}",
-                s_definedCategories.Count,
-                DefinedCategoriesCapacity);
+                $"Expected (s_definedCategories.Count): {s_definedCategories.Count}, Actual (DefinedCategoriesCapacity): {DefinedCategoriesCapacity}");
 
             // Make sure the s_propTable is correctly ordered
             int len = s_propTable.Length;
             for (int i = 0; i < len - 1; i++)
-                Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, "RegexCharClass s_propTable is out of order at (" + s_propTable[i][0] + ", " + s_propTable[i + 1][0] + ")");
+                Debug.Assert(string.Compare(s_propTable[i][0], s_propTable[i + 1][0], StringComparison.Ordinal) < 0, $"RegexCharClass s_propTable is out of order at ({s_propTable[i][0]}, {s_propTable[i + 1][0]})");
         }
 #endif
 
@@ -733,11 +731,11 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static char SingletonChar(string set)
         {
-            Debug.Assert(IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
+            Debug.Assert(IsSingleton(set) || IsSingletonInverse(set), "Tried to get the singleton char out of a non singleton character class");
             return set[SetStartIndex];
         }
 
-        public static bool IsMergeable(string? charClass) =>
+        public static bool IsMergeable(string charClass) =>
             charClass != null &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
@@ -748,12 +746,254 @@ namespace System.Text.RegularExpressions
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
 
+        /// <summary><c>true</c> if the set contains a single character only</summary>
+        /// <remarks>
+        /// This will happen not only from character classes manually written to contain a single character,
+        /// but much more frequently by the implementation/parser itself, e.g. when looking for \n as part of
+        /// finding the end of a line, when processing an alternation like "hello|hithere" where the first
+        /// character of both options is the same, etc.
+        /// </remarks>
+        public static bool IsSingleton(string set) =>
+            set[CategoryLengthIndex] == 0 &&
+            set[SetLengthIndex] == 2 &&
+            !IsNegated(set) &&
+            !IsSubtraction(set) &&
+            (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
+
         public static bool IsSingletonInverse(string set) =>
             set[CategoryLengthIndex] == 0 &&
             set[SetLengthIndex] == 2 &&
             IsNegated(set) &&
             !IsSubtraction(set) &&
             (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
+
+        /// <summary>Attempts to get a single range stored in the set.</summary>
+        /// <param name="set">The set.</param>
+        /// <param name="lowInclusive">The inclusive lower-bound of the range, if available.</param>
+        /// <param name="highInclusive">The inclusive upper-bound of the range, if available.</param>
+        /// <returns>true if the set contained a single range; otherwise, false.</returns>
+        /// <remarks>
+        /// <paramref name="lowInclusive"/> and <paramref name="highInclusive"/> will be equal if the
+        /// range is a singleton or singleton inverse. The range will need to be negated by the caller
+        /// if <see cref="IsNegated(string)"/> is true.
+        /// </remarks>
+        public static bool TryGetSingleRange(string set, out char lowInclusive, out char highInclusive)
+        {
+            if (set[CategoryLengthIndex] == 0 && // must not have any categories
+                set.Length == SetStartIndex + set[SetLengthIndex]) // and no subtraction
+            {
+                switch ((int)set[SetLengthIndex])
+                {
+                    case 1:
+                        lowInclusive = set[SetStartIndex];
+                        highInclusive = LastChar;
+                        return true;
+
+                    case 2:
+                        lowInclusive = set[SetStartIndex];
+                        highInclusive = (char)(set[SetStartIndex + 1] - 1);
+                        return true;
+                }
+            }
+
+            lowInclusive = highInclusive = '\0';
+            return false;
+        }
+
+        /// <summary>Gets all of the characters in the specified set, storing them into the provided span.</summary>
+        /// <param name="set">The character class.</param>
+        /// <param name="chars">The span into which the chars should be stored.</param>
+        /// <returns>
+        /// The number of stored chars.  If they won't all fit, 0 is returned.
+        /// </returns>
+        /// <remarks>
+        /// Only considers character classes that only contain sets (no categories), no negation,
+        /// and no subtraction... just simple sets containing starting/ending pairs.
+        /// </remarks>
+        public static int GetSetChars(string set, Span<char> chars)
+        {
+            // If the set is negated, it's likely to contain a large number of characters,
+            // so we don't even try.  We also get the characters by enumerating the set
+            // portion, so we validate that it's set up to enable that, e.g. no categories.
+            if (IsNegated(set) || !CanEasilyEnumerateSetContents(set))
+            {
+                return 0;
+            }
+
+            // Iterate through the pairs of ranges, storing each value in each range
+            // into the supplied span.  If they all won't fit, we give up and return 0.
+            // Otherwise we return the number found.  Note that we don't bother to handle
+            // the corner case where the last range's upper bound is LastChar (\uFFFF),
+            // based on it a) complicating things, and b) it being really unlikely to
+            // be part of a small set.
+            int setLength = set[SetLengthIndex];
+            int count = 0;
+            for (int i = SetStartIndex; i < SetStartIndex + setLength; i += 2)
+            {
+                int curSetEnd = set[i + 1];
+                for (int c = set[i]; c < curSetEnd; c++)
+                {
+                    if (count >= chars.Length)
+                    {
+                        return 0;
+                    }
+
+                    chars[count++] = (char)c;
+                }
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Determines whether two sets may overlap.
+        /// </summary>
+        /// <returns>false if the two sets do not overlap; true if they may.</returns>
+        /// <remarks>
+        /// If the method returns false, the caller can be sure the sets do not overlap.
+        /// If the method returns true, it's still possible the sets don't overlap.
+        /// </remarks>
+        public static bool MayOverlap(string set1, string set2)
+        {
+            // If the sets are identical, there's obviously overlap.
+            if (set1 == set2)
+            {
+                return true;
+            }
+
+            // If either set is all-inclusive, there's overlap by definition (unless
+            // the other set is empty, but that's so rare it's not worth checking.)
+            if (set1 == AnyClass || set2 == AnyClass)
+            {
+                return true;
+            }
+
+            // If one set is negated and the other one isn't, we're in one of two situations:
+            // - The remainder of the sets are identical, in which case these are inverses of
+            //   each other, and they don't overlap.
+            // - The remainder of the sets aren't identical, in which case there's very likely
+            //   overlap, and it's not worth spending more time investigating.
+            bool set1Negated = IsNegated(set1);
+            bool set2Negated = IsNegated(set2);
+            if (set1Negated != set2Negated)
+            {
+                return !set1.AsSpan(1).SequenceEqual(set2.AsSpan(1));
+            }
+
+            // If the sets are negated, since they're not equal, there's almost certainly overlap.
+            Debug.Assert(set1Negated == set2Negated);
+            if (set1Negated)
+            {
+                return true;
+            }
+
+            // Special-case some known, common classes that don't overlap.
+            if (KnownDistinctSets(set1, set2) ||
+                KnownDistinctSets(set2, set1))
+            {
+                return false;
+            }
+
+            // If set2 can be easily enumerated (e.g. no unicode categories), then enumerate it and
+            // check if any of its members are in set1.  Otherwise, the same for set1.
+            if (CanEasilyEnumerateSetContents(set2))
+            {
+                return MayOverlapByEnumeration(set1, set2);
+            }
+            else if (CanEasilyEnumerateSetContents(set1))
+            {
+                return MayOverlapByEnumeration(set2, set1);
+            }
+
+            // Assume that everything else might overlap.  In the future if it proved impactful, we could be more accurate here,
+            // at the exense of more computation time.
+            return true;
+
+            static bool KnownDistinctSets(string set1, string set2) =>
+                (set1 == SpaceClass || set1 == ECMASpaceClass) &&
+                (set2 == DigitClass || set2 == WordClass || set2 == ECMADigitClass || set2 == ECMAWordClass);
+
+            static bool MayOverlapByEnumeration(string set1, string set2)
+            {
+                Debug.Assert(!IsNegated(set1) && !IsNegated(set2));
+                for (int i = SetStartIndex; i < SetStartIndex + set2[SetLengthIndex]; i += 2)
+                {
+                    int curSetEnd = set2[i + 1];
+                    for (int c = set2[i]; c < curSetEnd; c++)
+                    {
+                        if (CharInClass((char)c, set1))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
+        private static bool CanEasilyEnumerateSetContents(string set) =>
+            set.Length > SetStartIndex &&
+            set[SetLengthIndex] > 0 &&
+            set[SetLengthIndex] % 2 == 0 &&
+            set[CategoryLengthIndex] == 0 &&
+            !IsSubtraction(set);
+
+        /// <summary>Provides results from <see cref="Analyze"/>.</summary>
+        internal struct CharClassAnalysisResults
+        {
+            /// <summary>true if we know for sure that the set contains only ASCII values; otherwise, false.</summary>
+            public bool ContainsOnlyAscii;
+            /// <summary>true if we know for sure that the set doesn't contain any ASCII values; otherwise, false.</summary>
+            public bool ContainsNoAscii;
+            /// <summary>true if we know for sure that all ASCII values are in the set; otherwise, false.</summary>
+            public bool AllAsciiContained;
+            /// <summary>true if we know for sure that all non-ASCII values are in the set; otherwise, false.</summary>
+            public bool AllNonAsciiContained;
+        }
+
+        /// <summary>Analyzes the set to determine some basic properties that can be used to optimize usage.</summary>
+        internal static CharClassAnalysisResults Analyze(string set)
+        {
+            if (!CanEasilyEnumerateSetContents(set))
+            {
+                // We can't make any strong claims about the set.
+                return default;
+            }
+
+#if DEBUG
+            for (int i = SetStartIndex; i < set.Length - 1; i += 2)
+            {
+                Debug.Assert(set[i] < set[i + 1]);
+            }
+#endif
+
+            if (IsNegated(set))
+            {
+                // We're negated: if the upper bound of the range is ASCII, that means everything
+                // above it is actually included, meaning all non-ASCII are in the class.
+                // Similarly if the lower bound is non-ASCII, that means in a negated world
+                // everything ASCII is included.
+                return new CharClassAnalysisResults
+                {
+                    AllNonAsciiContained = set[^1] < 128,
+                    AllAsciiContained = set[SetStartIndex] >= 128,
+                    ContainsNoAscii = false,
+                    ContainsOnlyAscii = false
+                };
+            }
+
+            // If the upper bound is ASCII, that means everything included in the class is ASCII.
+            // Similarly if the lower bound is non-ASCII, that means no ASCII is in the class.
+            return new CharClassAnalysisResults
+            {
+                AllNonAsciiContained = false,
+                AllAsciiContained = false,
+                ContainsOnlyAscii = set[^1] <= 128,
+                ContainsNoAscii = set[SetStartIndex] >= 128,
+            };
+        }
 
         internal static bool IsSubtraction(string charClass) =>
             charClass.Length > SetStartIndex +
@@ -1153,54 +1393,96 @@ namespace System.Text.RegularExpressions
             _canonical = true;
 
             List<SingleRange>? rangelist = _rangelist;
-            if (rangelist != null && rangelist.Count > 1)
+            if (rangelist != null)
             {
-                rangelist.Sort((x, y) => x.First.CompareTo(y.First));
-
-                // Find and eliminate overlapping or abutting ranges
-
-                bool done = false;
-                int i, j;
-
-                for (i = 1, j = 0; ; i++)
+                // Find and eliminate overlapping or abutting ranges.
+                if (rangelist.Count > 1)
                 {
-                    char last;
-                    for (last = rangelist[j].Last; ; i++)
+                    rangelist.Sort((x, y) => x.First.CompareTo(y.First));
+
+                    bool done = false;
+                    int j = 0;
+
+                    for (int i = 1; ; i++)
                     {
-                        if (i == rangelist.Count || last == LastChar)
+                        char last;
+                        for (last = rangelist[j].Last; ; i++)
                         {
-                            done = true;
+                            if (i == rangelist.Count || last == LastChar)
+                            {
+                                done = true;
+                                break;
+                            }
+
+                            SingleRange currentRange;
+                            if ((currentRange = rangelist[i]).First > last + 1)
+                            {
+                                break;
+                            }
+
+                            if (last < currentRange.Last)
+                            {
+                                last = currentRange.Last;
+                            }
+                        }
+
+                        rangelist[j] = new SingleRange(rangelist[j].First, last);
+
+                        j++;
+
+                        if (done)
+                        {
                             break;
                         }
 
-                        SingleRange currentRange;
-                        if ((currentRange = rangelist[i]).First > last + 1)
+                        if (j < i)
                         {
-                            break;
-                        }
-
-                        if (last < currentRange.Last)
-                        {
-                            last = currentRange.Last;
+                            rangelist[j] = rangelist[i];
                         }
                     }
 
-                    rangelist[j] = new SingleRange(rangelist[j].First, last);
-
-                    j++;
-
-                    if (done)
-                    {
-                        break;
-                    }
-
-                    if (j < i)
-                    {
-                        rangelist[j] = rangelist[i];
-                    }
+                    rangelist.RemoveRange(j, rangelist.Count - j);
                 }
 
-                rangelist.RemoveRange(j, rangelist.Count - j);
+                // If the class now represents a single negated character, but does so by including every
+                // other character, invert it to produce a normalized form recognized by IsSingletonInverse.
+                if (!_negate && _subtractor is null && (_categories is null || _categories.Length == 0))
+                {
+                    if (rangelist.Count == 2)
+                    {
+                        // There are two ranges in the list.  See if there's one missing element between them.
+                        if (rangelist[0].First == 0 &&
+                            rangelist[0].Last == (char)(rangelist[1].First - 2) &&
+                            rangelist[1].Last == LastChar)
+                        {
+                            char ch = (char)(rangelist[0].Last + 1);
+                            rangelist.RemoveAt(1);
+                            rangelist[0] = new SingleRange(ch, ch);
+                            _negate = true;
+                        }
+                    }
+                    else if (rangelist.Count == 1)
+                    {
+                        if (rangelist[0].First == 0)
+                        {
+                            // There's only one range in the list.  Does it include everything but the last char?
+                            if (rangelist[0].Last == LastChar - 1)
+                            {
+                                rangelist[0] = new SingleRange(LastChar, LastChar);
+                                _negate = true;
+                            }
+                        }
+                        else if (rangelist[0].First == 1)
+                        {
+                            // Or everything but the first char?
+                            if (rangelist[0].Last == LastChar)
+                            {
+                                rangelist[0] = new SingleRange('\0', '\0');
+                                _negate = true;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1237,25 +1519,29 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
-        public static readonly string[] Categories = new string[] {"Lu", "Ll", "Lt", "Lm", "Lo", InternalRegexIgnoreCase,
-                                                                     "Mn", "Mc", "Me",
-                                                                     "Nd", "Nl", "No",
-                                                                     "Zs", "Zl", "Zp",
-                                                                     "Cc", "Cf", "Cs", "Co",
-                                                                     "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po",
-                                                                     "Sm", "Sc", "Sk", "So",
-                                                                     "Cn" };
+        public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
+
+        private static string[] PopulateCategoryIdToName()
+        {
+            // Populate category reverse lookup used for diagnostic output
+
+            var temp = new List<KeyValuePair<string, string>>(s_definedCategories);
+            temp.RemoveAll(kvp => kvp.Value.Length != 1);
+            temp.Sort((kvp1, kvp2) => ((short)kvp1.Value[0]).CompareTo((short)kvp2.Value[0]));
+            return temp.ConvertAll(kvp => kvp.Key).ToArray();
+        }
 
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public static string SetDescription(string set)
         {
             int setLength = set[SetLengthIndex];
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
 
-            StringBuilder desc = new StringBuilder();
+            var desc = new StringBuilder();
 
             desc.Append('[');
 
@@ -1347,6 +1633,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a single character.
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public static string CharDescription(char ch)
         {
             if (ch == '\\')
@@ -1382,6 +1669,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
+        [ExcludeFromCodeCoverage]
         private static string CategoryDescription(char ch)
         {
             if (ch == SpaceConst)
@@ -1396,10 +1684,10 @@ namespace System.Text.RegularExpressions
 
             if ((short)ch < 0)
             {
-                return "\\P{" + Categories[(-((short)ch) - 1)] + "}";
+                return "\\P{" + CategoryIdToName[(-((short)ch) - 1)] + "}";
             }
 
-            return "\\p{" + Categories[(ch - 1)] + "}";
+            return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
         }
 #endif
 

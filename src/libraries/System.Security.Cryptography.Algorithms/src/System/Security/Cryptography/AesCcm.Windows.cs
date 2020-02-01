@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _keyHandle = s_aesCcm.BCryptImportKey(key);
+            _keyHandle = Interop.BCrypt.BCryptImportKey(s_aesCcm, key);
         }
 
         private void EncryptInternal(

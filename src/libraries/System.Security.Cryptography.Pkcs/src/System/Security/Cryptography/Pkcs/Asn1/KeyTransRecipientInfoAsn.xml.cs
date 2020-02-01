@@ -17,16 +17,16 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn Rid;
         internal System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn KeyEncryptionAlgorithm;
         internal ReadOnlyMemory<byte> EncryptedKey;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteInteger(Version);
             Rid.Encode(writer);
             KeyEncryptionAlgorithm.Encode(writer);
@@ -38,44 +38,41 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static KeyTransRecipientInfoAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out KeyTransRecipientInfoAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out KeyTransRecipientInfoAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out KeyTransRecipientInfoAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out KeyTransRecipientInfoAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out KeyTransRecipientInfoAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out KeyTransRecipientInfoAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
 
             if (!sequenceReader.TryReadInt32(out decoded.Version))
             {
                 sequenceReader.ThrowIfNotEmpty();
             }
 
-            System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn.Decode(sequenceReader, out decoded.Rid);
-            System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.KeyEncryptionAlgorithm);
+            System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn.Decode(ref sequenceReader, rebind, out decoded.Rid);
+            System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(ref sequenceReader, rebind, out decoded.KeyEncryptionAlgorithm);
 
-            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedKey))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out tmpSpan))
             {
-                decoded.EncryptedKey = tmpEncryptedKey;
+                decoded.EncryptedKey = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
             }
             else
             {

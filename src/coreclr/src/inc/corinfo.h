@@ -51,19 +51,19 @@ token validation.
 
 First of all class contruction comes in two flavors precise and 'beforeFieldInit'. In C# you get the former
 if you declare an explicit class constructor method and the later if you declaratively initialize static
-fields. Precise class construction guarentees that the .cctor is run precisely before the first access to any
-method or field of the class. 'beforeFieldInit' semantics guarentees only that the .cctor will be run some
-time before the first static field access (note that calling methods (static or insance) or accessing
+fields. Precise class construction guarantees that the .cctor is run precisely before the first access to any
+method or field of the class. 'beforeFieldInit' semantics guarantees only that the .cctor will be run some
+time before the first static field access (note that calling methods (static or instance) or accessing
 instance fields does not cause .cctors to be run).
 
 Next you need to know that there are two kinds of code generation that can happen in the JIT: appdomain
 neutral and appdomain specialized. The difference between these two kinds of code is how statics are handled.
-For appdomain specific code, the address of a particular static variable is embeded in the code. This makes
+For appdomain specific code, the address of a particular static variable is embedded in the code. This makes
 it usable only for one appdomain (since every appdomain gets a own copy of its statics). Appdomain neutral
 code calls a helper that looks up static variables off of a thread local variable. Thus the same code can be
-used by mulitple appdomains in the same process.
+used by multiple appdomains in the same process.
 
-Generics also introduce a similar issue. Code for generic classes might be specialised for a particular set
+Generics also introduce a similar issue. Code for generic classes might be specialized for a particular set
 of type arguments, or it could use helpers to access data that depends on type parameters and thus be shared
 across several instantiations of the generic type.
 
@@ -116,13 +116,13 @@ inserting any required runtime check or simply not inlining the function.
 
 #StaticFields
 
-The first 4 options are mutially exclusive
+The first 4 options are mutually exclusive
 
     * CORINFO_FLG_HELPER If the field has this set, then the JIT must call getFieldHelper and call the
         returned helper with the object ref (for an instance field) and a fieldDesc. Note that this should be
         able to handle ANY field so to get a JIT up quickly, it has the option of using helper calls for all
         field access (and skip the complexity below). Note that for statics it is assumed that you will
-        alwasy ask for the ADDRESSS helper and to the fetch in the JIT.
+        always ask for the ADDRESS helper and to the fetch in the JIT.
 
     * CORINFO_FLG_SHARED_HELPER This is currently only used for static fields. If this bit is set it means
         that the field is feched by a helper call that takes a module identifier (see getModuleDomainID) and
@@ -156,7 +156,7 @@ by addr = (*addr+sizeof(OBJECTREF))
 Instance fields
 
     * CORINFO_FLG_HELPER This is used if the class is MarshalByRef, which means that the object might be a
-        proxyt to the real object in some other appdomain or process. If the field has this set, then the JIT
+        proxy to the real object in some other appdomain or process. If the field has this set, then the JIT
         must call getFieldHelper and call the returned helper with the object ref. If the helper returned is
         helpers that are for structures the args are as follows
 
@@ -172,7 +172,7 @@ fieldDesc and value
     CORINFO_FLG_EnC This is to support adding new field for edit and continue. This field also indicates that
     a helper is needed to access this field. However this helper is always CORINFO_HELP_GETFIELDADDR, and
     this helper always takes the object and field handle and returns the address of the field. It is the
-                            JIT's responcibility to do the fetch or set.
+                            JIT's responsibility to do the fetch or set.
 
 -------------------------------------------------------------------------------
 
@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d84e90bd2 */
-    0xaec2498a,
-    0xca70,
-    0x408e,
-    {0x90, 0x3e, 0x1e, 0x6d, 0x84, 0xe9, 0x0b, 0xd2}
+SELECTANY const GUID JITEEVersionIdentifier = { /* abcf830c-56d1-4b33-a8ec-5063bb5495f1 */
+    0xabcf830c,
+    0x56d1,
+    0x4b33,
+    {0xa8, 0xec, 0x50, 0x63, 0xbb, 0x54, 0x95, 0xf1}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -237,7 +237,7 @@ SELECTANY const GUID JITEEVersionIdentifier = { /* aec2498a-ca70-408e-903e-1e6d8
 #define CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS       16
 
 // System V struct passing
-// The Classification types are described in the ABI spec at http://www.x86-64.org/documentation/abi.pdf
+// The Classification types are described in the ABI spec at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf
 enum SystemVClassificationType : unsigned __int8
 {
     SystemVClassificationTypeUnknown            = 0,
@@ -252,20 +252,6 @@ enum SystemVClassificationType : unsigned __int8
     // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-    // Internal flags - never returned outside of the classification implementation.
-
-    // This value represents a very special type with two eightbytes.
-    // First ByRef, second Integer (platform int).
-    // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-    // This is the classification counterpart for that element type. It is used to detect
-    // the special TypedReference type and specialize its classification.
-    // This type is represented as a struct with two fields. The classification needs to do
-    // special handling of it since the source/methadata type of the fieds is IntPtr.
-    // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-    // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-    SystemVClassificationTypeTypedReference     = 8,
-    SystemVClassificationTypeMAX                = 9,
 };
 
 // Represents classification information for a struct.
@@ -329,7 +315,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     // Return value:
     //     returns true if we the eightbyte at index slotIndex is of SSE type.
     //
-    // Follows the rules of the AMD64 System V ABI specification at www.x86-64.org/documentation/abi.pdf.
+    // Follows the rules of the AMD64 System V ABI specification at https://software.intel.com/sites/default/files/article/402129/mpx-linux64-abi.pdf.
     // Please refer to it for definitions/examples.
     //
     bool IsSseSlot(unsigned slotIndex) const
@@ -407,7 +393,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
     CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
-    CORINFO_HELP_NEWARR_1_R2R_DIRECT, // wrapper for R2R direct call, which extracts method table from ArrayTypeDesc
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
@@ -567,7 +552,7 @@ enum CorInfoHelpFunc
     /* Profiling enter/leave probe addresses */
     CORINFO_HELP_PROF_FCN_ENTER,        // record the entry to a method (caller)
     CORINFO_HELP_PROF_FCN_LEAVE,        // record the completion of current method (caller)
-    CORINFO_HELP_PROF_FCN_TAILCALL,     // record the completionof current method through tailcall (caller)
+    CORINFO_HELP_PROF_FCN_TAILCALL,     // record the completion of current method through tailcall (caller)
 
     /* Miscellaneous */
 
@@ -727,7 +712,7 @@ enum CorInfoType
 enum CorInfoTypeWithMod
 {
     CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
-    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indiate pinned
+    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -1529,7 +1514,7 @@ struct CORINFO_HELPER_DESC
 // thisTransform and constraint calls
 // ----------------------------------
 //
-// For evertyhing besides "constrained." calls "thisTransform" is set to
+// For everything besides "constrained." calls "thisTransform" is set to
 // CORINFO_NO_THIS_TRANSFORM.
 //
 // For "constrained." calls the EE attempts to resolve the call at compile
@@ -1782,7 +1767,7 @@ struct CORINFO_EH_CLAUSE
 enum CORINFO_OS
 {
     CORINFO_WINNT,
-    CORINFO_PAL,
+    CORINFO_UNIX,
 };
 
 struct CORINFO_CPU
@@ -1886,9 +1871,9 @@ struct CORINFO_String : public CORINFO_Object
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1912,9 +1897,9 @@ struct CORINFO_Array : public CORINFO_Object
 struct CORINFO_Array8 : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
     union
     {
@@ -1929,9 +1914,9 @@ struct CORINFO_Array8 : public CORINFO_Object
 struct CORINFO_RefArray : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1960,7 +1945,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */ + sizeof(unsigned __int32) /* alignpad */)
 #else
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */)
@@ -3203,7 +3188,7 @@ public:
                     ) = 0;
 
     // (static fields only) given that 'field' refers to thread local store,
-    // return the ID (TLS index), which is used to find the begining of the
+    // return the ID (TLS index), which is used to find the beginning of the
     // TLS data area for the particular DLL 'field' is associated with.
     virtual DWORD getFieldThreadLocalStoreID (
                     CORINFO_FIELD_HANDLE    field,

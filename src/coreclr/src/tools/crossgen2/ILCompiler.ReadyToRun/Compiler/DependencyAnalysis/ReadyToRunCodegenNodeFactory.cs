@@ -20,12 +20,6 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    // TODO-REFACTOR: rename this
-    public interface IEETypeNode
-    {
-        TypeDesc Type { get; }
-    }
-
     public struct NodeCache<TKey, TValue>
     {
         private Func<TKey, TValue> _creator;
@@ -49,24 +43,11 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    // TODO-REFACTOR: merge with the ReadyToRunCodegen factory
-    public abstract class NodeFactory
+    // To make the code future compatible to the composite R2R story
+    // do NOT attempt to pass and store _inputModule here
+    public sealed class NodeFactory
     {
         private bool _markingComplete;
-
-        public NodeFactory(CompilerTypeSystemContext context,
-            CompilationModuleGroup compilationModuleGroup,
-            NameMangler nameMangler,
-            MetadataManager metadataManager)
-        {
-            TypeSystemContext = context;
-            CompilationModuleGroup = compilationModuleGroup;
-            Target = context.Target;
-            NameMangler = nameMangler;
-            MetadataManager = metadataManager;
-
-            CreateNodeCaches();
-        }
 
         public CompilerTypeSystemContext TypeSystemContext { get; }
 
@@ -85,52 +66,22 @@ namespace ILCompiler.DependencyAnalysis
             _markingComplete = true;
         }
 
-        private void CreateNodeCaches()
-        {
-            _typeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateNecessaryTypeNode);
-            _constructedTypeSymbols = new NodeCache<TypeDesc, IEETypeNode>(CreateConstructedTypeNode);
-            _methodEntrypoints = new NodeCache<MethodDesc, IMethodNode>(CreateMethodEntrypointNode);
-            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromDictionaryNode);
-            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(CreateGenericLookupFromTypeNode);
-
-            _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
-            {
-                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
-            });
-        }
-
-        public abstract void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph);
-
-        protected abstract IMethodNode CreateMethodEntrypointNode(MethodDesc method);
-
-        protected abstract IEETypeNode CreateNecessaryTypeNode(TypeDesc type);
-
-        protected abstract IEETypeNode CreateConstructedTypeNode(TypeDesc type);
-
-        protected abstract ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey);
-
-        protected abstract ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey);
-
-        private NodeCache<TypeDesc, IEETypeNode> _typeSymbols;
-
-        public IEETypeNode NecessaryTypeSymbol(TypeDesc type)
-        {
-            return _typeSymbols.GetOrAdd(type);
-        }
-
-        private NodeCache<TypeDesc, IEETypeNode> _constructedTypeSymbols;
-
-        public IEETypeNode ConstructedTypeSymbol(TypeDesc type)
-        {
-            return _constructedTypeSymbols.GetOrAdd(type);
-        }
-
-        protected NodeCache<MethodDesc, IMethodNode> _methodEntrypoints;
-
-        // TODO-REFACTOR: we should try and get rid of this
         public IMethodNode MethodEntrypoint(MethodDesc method)
         {
-            return _methodEntrypoints.GetOrAdd(method);
+            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+            return MethodEntrypoint(
+                new MethodWithToken(method, moduleToken, constrainedType: null),
+                isUnboxingStub: false,
+                isInstantiatingStub: false,
+                isPrecodeImportRequired: false,
+                signatureContext: InputModuleContext);
+        }
+
+        private NodeCache<TypeDesc, AllMethodsOnTypeNode> _allMethodsOnType;
+
+        public AllMethodsOnTypeNode AllMethodsOnType(TypeDesc type)
+        {
+            return _allMethodsOnType.GetOrAdd(type);
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
@@ -154,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
 
-        protected struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
+        private struct ReadyToRunGenericHelperKey : IEquatable<ReadyToRunGenericHelperKey>
         {
             public readonly object Target;
             public readonly TypeSystemEntity DictionaryOwner;
@@ -179,7 +130,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        protected struct ReadOnlyDataBlobKey : IEquatable<ReadOnlyDataBlobKey>
+        private struct ReadOnlyDataBlobKey : IEquatable<ReadOnlyDataBlobKey>
         {
             public readonly Utf8String Name;
             public readonly byte[] Data;
@@ -200,49 +151,49 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode() => Name.GetHashCode();
         }
 
-        protected struct FieldRvaKey : IEquatable<FieldRvaKey>
+        private struct ModuleAndIntValueKey : IEquatable<ModuleAndIntValueKey>
         {
-            public readonly int Rva;
+            public readonly int IntValue;
             public readonly EcmaModule Module;
 
-            public FieldRvaKey(int rva, EcmaModule module)
+            public ModuleAndIntValueKey(int integer, EcmaModule module)
             {
-                Rva = rva;
+                IntValue = integer;
                 Module = module;
             }
 
-            public bool Equals(FieldRvaKey other) => Rva == other.Rva && Module.Equals(other.Module);
-            public override bool Equals(object obj) => obj is FieldRvaKey && Equals((FieldRvaKey)obj);
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module.Equals(other.Module);
+            public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
-                int hashCode = Rva * 0x5498341 + 0x832424;
+                int hashCode = IntValue * 0x5498341 + 0x832424;
                 return hashCode * 23 + Module.GetHashCode();
             }
         }
-    }
 
-    // To make the code future compatible to the composite R2R story
-    // do NOT attempt to pass and store _inputModule here
-    public sealed class ReadyToRunCodegenNodeFactory : NodeFactory
-    {
-        public ReadyToRunCodegenNodeFactory(
+        public NodeFactory(
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
             NameMangler nameMangler,
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
+            DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            AttributePresenceFilterNode attributePresenceFilterNode)
-            : base(context,
-                  compilationModuleGroup,
-                  nameMangler,
-                  new ReadyToRunTableManager(context))
+            AttributePresenceFilterNode attributePresenceFilterNode,
+            HeaderNode headerNode)
         {
+            TypeSystemContext = context;
+            CompilationModuleGroup = compilationModuleGroup;
+            Target = context.Target;
+            NameMangler = nameMangler;
+            MetadataManager = new ReadyToRunTableManager(context);
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
+            DebugDirectoryNode = debugDirectoryNode;
             AttributePresenceFilter = attributePresenceFilterNode;
+            Header = headerNode;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
@@ -251,7 +202,40 @@ namespace ILCompiler.DependencyAnalysis
 
         private void CreateNodeCaches()
         {
-            // Create node caches
+            _allMethodsOnType = new NodeCache<TypeDesc, AllMethodsOnTypeNode>(type =>
+            {
+                return new AllMethodsOnTypeNode(type);
+            });
+
+            _genericReadyToRunHelpersFromDict = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
+            {
+                return new DelayLoadHelperImport(
+                    this,
+                    HelperImports,
+                    GetGenericStaticHelper(helperKey.HelperId),
+                    TypeSignature(
+                        ReadyToRunFixupKind.Invalid,
+                        (TypeDesc)helperKey.Target,
+                        InputModuleContext));
+            });
+
+            _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
+            {
+                return new DelayLoadHelperImport(
+                    this,
+                    HelperImports,
+                    GetGenericStaticHelper(helperKey.HelperId),
+                    TypeSignature(
+                        ReadyToRunFixupKind.Invalid,
+                        (TypeDesc)helperKey.Target,
+                        InputModuleContext));
+            });
+
+            _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
+            {
+                return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
+            });
+
             _constructedHelpers = new NodeCache<ReadyToRunHelper, Import>(helperId =>
             {
                 return new Import(EagerImports, new ReadyToRunHelperSignature(helperId));
@@ -303,6 +287,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedCorHeaderNode(module);
             });
 
+            _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
+            {
+                if (key.IntValue < 0)
+                    return new NativeDebugDirectoryEntryNode(key.Module);
+                else
+                    return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
+            });
+
             _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
             {
                 return new CopiedMetadataBlobNode(module);
@@ -313,9 +305,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMethodILNode((EcmaMethod)method);
             });
 
-            _copiedFieldRvas = new NodeCache<FieldRvaKey, CopiedFieldRvaNode>(key =>
+            _copiedFieldRvas = new NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode>(key =>
             {
-                return new CopiedFieldRvaNode(key.Module, key.Rva);
+                return new CopiedFieldRvaNode(key.Module, key.IntValue);
             });
 
             _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
@@ -339,6 +331,8 @@ namespace ILCompiler.DependencyAnalysis
         public ModuleTokenResolver Resolver;
 
         public CopiedCorHeaderNode CopiedCorHeaderNode;
+
+        public DebugDirectoryNode DebugDirectoryNode;
 
         public Win32ResourcesNode Win32ResourcesNode;
 
@@ -367,6 +361,8 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
+
+        public InliningInfoNode InliningInfoTable;
 
         public AttributePresenceFilterNode AttributePresenceFilter;
 
@@ -566,10 +562,8 @@ namespace ILCompiler.DependencyAnalysis
             return _typeSignatures.GetOrAdd(fixupKey);
         }
 
-        public override void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
+        public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
-            Header = new HeaderNode(Target);
-
             var compilerIdentifierNode = new CompilerIdentifierNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.CompilerIdentifier, compilerIdentifierNode, compilerIdentifierNode);
 
@@ -605,6 +599,9 @@ namespace ILCompiler.DependencyAnalysis
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
+
+            InliningInfoTable = new InliningInfoNode(Target, InputModuleContext.GlobalContext);
+            Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, InliningInfoTable, InliningInfoTable);
 
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are
@@ -699,49 +696,12 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
             graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+            graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph);
-        }
-
-        protected override IEETypeNode CreateNecessaryTypeNode(TypeDesc type)
-        {
-            if (CompilationModuleGroup.ContainsType(type))
-            {
-                return new AvailableType(this, type);
-            }
-            else
-            {
-                return new ExternalTypeNode(this, type);
-            }
-        }
-
-        protected override IEETypeNode CreateConstructedTypeNode(TypeDesc type)
-        {
-            // Canonical definition types are *not* constructed types (call NecessaryTypeSymbol to get them)
-            Debug.Assert(!type.IsCanonicalDefinitionType(CanonicalFormKind.Any));
-
-            if (CompilationModuleGroup.ContainsType(type))
-            {
-                return new AvailableType(this, type);
-            }
-            else
-            {
-                return new ExternalTypeNode(this, type);
-            }
-        }
-
-        protected override IMethodNode CreateMethodEntrypointNode(MethodDesc method)
-        {
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
-            return MethodEntrypoint(
-                new MethodWithToken(method, moduleToken, constrainedType: null),
-                isUnboxingStub: false,
-                isInstantiatingStub: false,
-                isPrecodeImportRequired: false,
-                signatureContext: InputModuleContext);
         }
 
         private ReadyToRunHelper GetGenericStaticHelper(ReadyToRunHelperId helperId)
@@ -771,30 +731,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return r2rHelper;
-        }
-
-        protected override ISymbolNode CreateGenericLookupFromDictionaryNode(ReadyToRunGenericHelperKey helperKey)
-        {
-            return new DelayLoadHelperImport(
-                this,
-                HelperImports,
-                GetGenericStaticHelper(helperKey.HelperId),
-                TypeSignature(
-                    ReadyToRunFixupKind.Invalid,
-                    (TypeDesc)helperKey.Target,
-                    InputModuleContext));
-        }
-
-        protected override ISymbolNode CreateGenericLookupFromTypeNode(ReadyToRunGenericHelperKey helperKey)
-        {
-            return new DelayLoadHelperImport(
-                this,
-                HelperImports,
-                GetGenericStaticHelper(helperKey.HelperId),
-                TypeSignature(
-                    ReadyToRunFixupKind.Invalid,
-                    (TypeDesc)helperKey.Target,
-                    InputModuleContext));
         }
 
         struct DynamicHelperCellKey : IEquatable<DynamicHelperCellKey>
@@ -849,6 +785,13 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedCorHeaders.GetOrAdd(module);
         }
 
+        private NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode> _debugDirectoryEntries;
+
+        public DebugDirectoryEntryNode DebugDirectoryEntry(EcmaModule module, int debugDirEntryIndex)
+        {
+            return _debugDirectoryEntries.GetOrAdd(new ModuleAndIntValueKey(debugDirEntryIndex, module));
+        }
+
         private NodeCache<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs;
 
         public CopiedMetadataBlobNode CopiedMetadataBlob(EcmaModule module)
@@ -863,7 +806,7 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private NodeCache<FieldRvaKey, CopiedFieldRvaNode> _copiedFieldRvas;
+        private NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -881,7 +824,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            return _copiedFieldRvas.GetOrAdd(new FieldRvaKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
+            return _copiedFieldRvas.GetOrAdd(new ModuleAndIntValueKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
         }
 
         private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;
