@@ -7,7 +7,8 @@
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;net462;net47;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />

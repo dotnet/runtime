@@ -56,6 +56,7 @@
     <RuntimeOS Condition="'$(OSGroup)' == 'WebAssembly'">$(OSGroup.ToLowerInvariant())</RuntimeOS>
  
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
+    <Configuration Condition="'$(Configuration)'==''">Debug</Configuration>
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(BuildTargetFramework)-$(BuildOS)-$(Configuration)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->

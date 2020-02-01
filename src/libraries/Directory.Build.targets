@@ -200,8 +200,8 @@
     </When>
   </Choose>
   
-  <PropertyGroup Condition="'$(ExcludeCurrentFrameworks)' == 'true'">
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netcoreapp5.0'">true</ExcludeFromPackage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'net472'">true</ExcludeFromPackage>
+  <PropertyGroup>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreApp)' == 'true'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFramework)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 </Project>

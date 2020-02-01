@@ -10,7 +10,7 @@
     <Nullable>annotations</Nullable>
     <DefineConstants Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <TargetFrameworks>netstandard2.0-Unix;netstandard2.0-Windows_NT;netcoreapp2.1;netcoreapp2.1-Unix;netcoreapp2.1-Windows_NT;$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFrameworks>true</ExcludeCurrentFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
