@@ -54,10 +54,6 @@ LoaderAllocator::LoaderAllocator()
     m_pVirtualCallStubManager = NULL;
 #endif
 
-#ifdef FEATURE_TIERED_COMPILATION
-    m_callCountingManager = NULL;
-#endif
-
     m_fGCPressure = false;
     m_fTerminated = false;
     m_fUnloaded = false;
@@ -1215,13 +1211,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         m_interopDataHash.Init(0, NULL, false, &lock);
     }
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_TIERED_COMPILATION
-    if (g_pConfig->TieredCompilation())
-    {
-        m_callCountingManager = new CallCountingManager();
-    }
-#endif
 }
 
 
@@ -1334,14 +1323,6 @@ void LoaderAllocator::Terminate()
     m_InteropDataCrst.Destroy();
 #endif
     m_LoaderAllocatorReferences.RemoveAll();
-
-#ifdef FEATURE_TIERED_COMPILATION
-    if (m_callCountingManager != NULL)
-    {
-        delete m_callCountingManager;
-        m_callCountingManager = NULL;
-    }
-#endif
 
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
