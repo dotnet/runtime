@@ -10,12 +10,25 @@ public static class Tests
 {
     private static int returnCode = 100;
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox1<T>(T t) => t is int n ? n : -1;
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox2<T>(T t) => t is string n ? n.Length : -1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox3<T>(T t) => t is Struct1<int> n ? n.a : -1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox4<T>(T t) => t is Struct1<IDisposable> n ? n.GetHashCode() : -1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox5<T>(T t) => t is Class1<int> n ? n.a : -1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox6<T>(T t) => t is RefBase n ? n.a : -1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public static int BoxIsInstUnbox7<T>(T t) => t is object[] n ? n.Length : -1;
 
     public static void Expect(this int actual, int expected, [CallerLineNumber] int line = 0)
