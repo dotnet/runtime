@@ -1142,21 +1142,23 @@ namespace System.Text.RegularExpressions
 
                 LocalBuilder chLocal = _temp1Local;
                 LocalBuilder testLocal = _temp1Local;
-                LocalBuilder limitLocal = _temp2Local;
                 Label lDefaultAdvance = DefineLabel();
                 Label lAdvance = DefineLabel();
                 Label lStart = DefineLabel();
                 Label lPartialMatch = DefineLabel();
 
+                LocalBuilder limitLocal;
                 int beforefirst;
                 int last;
                 if (!_code.RightToLeft)
                 {
+                    limitLocal = _runtextendLocal;
                     beforefirst = -1;
                     last = _boyerMoorePrefix.Pattern.Length - 1;
                 }
                 else
                 {
+                    limitLocal = _runtextbegLocal!;
                     beforefirst = _boyerMoorePrefix.Pattern.Length;
                     last = 0;
                 }
@@ -1164,8 +1166,6 @@ namespace System.Text.RegularExpressions
                 int chLast = _boyerMoorePrefix.Pattern[last];
 
                 Mvfldloc(s_runtextField, _runtextLocal);
-                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
-                Stloc(limitLocal);
 
                 Ldloc(_runtextposLocal);
                 if (!_code.RightToLeft)
