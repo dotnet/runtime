@@ -509,7 +509,7 @@ namespace System.Reflection
             {
                 string s = GetFullyQualifiedName();
 
-#if !FEATURE_PAL
+#if !TARGET_UNIX
                 int i = s.LastIndexOf('\\');
 #else
                 int i = s.LastIndexOf(System.IO.Path.DirectorySeparatorChar);

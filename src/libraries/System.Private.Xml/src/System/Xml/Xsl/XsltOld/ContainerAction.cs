@@ -918,7 +918,7 @@ namespace System.Xml.Xsl.XsltOld
                         {
                             lang = ScriptingLanguage.CSharp;
                         }
-#if !FEATURE_PAL // visualbasic
+#if !TARGET_UNIX // visualbasic
                         else if (
                             string.Equals(langName, "vb", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(langName, "visualbasic", StringComparison.OrdinalIgnoreCase)
@@ -926,7 +926,7 @@ namespace System.Xml.Xsl.XsltOld
                         {
                             lang = ScriptingLanguage.VisualBasic;
                         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
                         else
                         {
                             throw XsltException.Create(SR.Xslt_ScriptInvalidLanguage, langName);

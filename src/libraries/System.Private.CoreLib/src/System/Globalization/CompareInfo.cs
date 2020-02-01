@@ -545,7 +545,7 @@ namespace System.Globalization
         {
             IntPtr byteOffset = IntPtr.Zero;
 
-#if BIT64
+#if TARGET_64BIT
             // Read 4 chars (64 bits) at a time from each string
             while ((uint)length >= 4)
             {
@@ -577,7 +577,7 @@ namespace System.Globalization
 #endif
 
             // Read 2 chars (32 bits) at a time from each string
-#if BIT64
+#if TARGET_64BIT
             if ((uint)length >= 2)
 #else
             while ((uint)length >= 2)

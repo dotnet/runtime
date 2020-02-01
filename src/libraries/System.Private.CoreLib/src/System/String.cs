@@ -217,7 +217,7 @@ namespace System
             if (numBytes == 0)
                 return Empty;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);

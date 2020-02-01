@@ -518,12 +518,12 @@ namespace System.Diagnostics.Tracing
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
 #endif // FEATURE_PERFTRACING
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             // Set the activity id via ETW.
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                 ref activityId);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
         }
 
@@ -538,7 +538,7 @@ namespace System.Diagnostics.Tracing
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = default;
 #if FEATURE_MANAGED_ETW
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 Interop.Advapi32.EventActivityIdControl(
                     Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
@@ -546,7 +546,7 @@ namespace System.Diagnostics.Tracing
                 EventPipeInternal.EventActivityIdControl(
                     (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
                 return retVal;
             }
@@ -578,7 +578,7 @@ namespace System.Diagnostics.Tracing
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.
 
-#if FEATURE_PERFTRACING && PLATFORM_WINDOWS
+#if FEATURE_PERFTRACING && TARGET_WINDOWS
             EventPipeInternal.EventActivityIdControl(
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
                     ref oldActivityThatWillContinue);
@@ -586,13 +586,13 @@ namespace System.Diagnostics.Tracing
             EventPipeInternal.EventActivityIdControl(
                 (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
-#endif // FEATURE_PERFTRACING && PLATFORM_WINDOWS
+#endif // FEATURE_PERFTRACING && TARGET_WINDOWS
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             Interop.Advapi32.EventActivityIdControl(
                 Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
 
             // We don't call the activityDying callback here because the caller has declared that
@@ -1469,7 +1469,7 @@ namespace System.Diagnostics.Tracing
                 // Set m_provider, which allows this.
                 m_etwProvider = etwProvider;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 #if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
@@ -1488,7 +1488,7 @@ namespace System.Diagnostics.Tracing
 
                     metadataHandle.Free();
                 }
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 #endif // FEATURE_MANAGED_ETW
 
 #if FEATURE_PERFTRACING

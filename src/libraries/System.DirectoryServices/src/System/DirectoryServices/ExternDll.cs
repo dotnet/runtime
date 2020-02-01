@@ -6,12 +6,12 @@ namespace System
 {
     internal static class ExternDll
     {
-#if FEATURE_PAL && !SILVERLIGHT
+#if TARGET_UNIX && !SILVERLIGHT
 
-#if !PLATFORM_UNIX
+#if !TARGET_UNIX
         internal const String DLLPREFIX = "";
         internal const String DLLSUFFIX = ".dll";
-#else // !PLATFORM_UNIX
+#else // !TARGET_UNIX
 #if __APPLE__
         internal const String DLLPREFIX = "lib";
         internal const String DLLSUFFIX = ".dylib";
@@ -25,13 +25,13 @@ namespace System
         internal const String DLLPREFIX = "lib";
         internal const String DLLSUFFIX = ".so";
 #endif
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
         public const string Kernel32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
         public const string User32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
         public const string Mscoree  = DLLPREFIX + "sscoree" + DLLSUFFIX;
 
-#elif FEATURE_PAL && SILVERLIGHT
+#elif TARGET_UNIX && SILVERLIGHT
 
         public const string Kernel32 = "coreclr";
         public const string User32 = "coreclr";
@@ -78,6 +78,6 @@ namespace System
         // system.data.oracleclient specific
         internal const string OciDll = "oci.dll";
         internal const string OraMtsDll = "oramts.dll";
-#endif //!FEATURE_PAL
+#endif //!TARGET_UNIX
     }
 }
