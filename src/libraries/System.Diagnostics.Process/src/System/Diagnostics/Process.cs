@@ -1349,7 +1349,8 @@ namespace System.Diagnostics
         /// Calling this method will set <see cref="EnableRaisingEvents"/> to <see langword="true" />.
         /// </remarks>
         /// <returns>
-        /// A task that will complete when the process has exited.
+        /// A task that will complete when the process has exited, cancellation has been requested,
+        /// or an error occurs.
         /// </returns>
         public async Task WaitForExitAsync(CancellationToken cancellationToken = default)
         {
