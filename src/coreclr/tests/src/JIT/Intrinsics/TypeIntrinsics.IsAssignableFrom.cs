@@ -95,6 +95,29 @@ public partial class Program
         IsFalse(typeof(IList<ClassD>).IsAssignableFrom(typeof(IEnumerable<ClassA>)));
         IsFalse(typeof(IList<ClassA>).IsAssignableFrom(typeof(IEnumerable<ClassA>)));
 
+        // Arrays
+        IsTrue(typeof(byte[]).IsAssignableFrom(typeof(sbyte[])));
+        IsTrue(typeof(sbyte[]).IsAssignableFrom(typeof(byte[])));
+        IsTrue(typeof(short[]).IsAssignableFrom(typeof(ushort[])));
+        IsTrue(typeof(ushort[]).IsAssignableFrom(typeof(short[])));
+        IsTrue(typeof(int[]).IsAssignableFrom(typeof(uint[])));
+        IsTrue(typeof(uint[]).IsAssignableFrom(typeof(int[])));
+        IsTrue(typeof(long[]).IsAssignableFrom(typeof(ulong[])));
+        IsTrue(typeof(ulong[]).IsAssignableFrom(typeof(long[])));
+        IsTrue(typeof(long[,]).IsAssignableFrom(typeof(ulong[,])));
+        IsTrue(typeof(ulong[,,]).IsAssignableFrom(typeof(long[,,])));
+        IsTrue(typeof(Struct1[]).IsAssignableFrom(typeof(Struct1[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(byte[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(sbyte[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(short[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(ushort[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(float[])));
+        IsFalse(typeof(int[]).IsAssignableFrom(typeof(double[])));
+        IsFalse(typeof(long[]).IsAssignableFrom(typeof(double[])));
+        IsFalse(typeof(Struct1[]).IsAssignableFrom(typeof(Struct2[])));
+        IsFalse(typeof(Struct1[]).IsAssignableFrom(typeof(GenericStruct1<int>[])));
+        IsFalse(typeof(GenericStruct1<uint>[]).IsAssignableFrom(typeof(GenericStruct1<int>[])));
+
         // Misc
         IsTrue (typeof(object).IsAssignableFrom(typeof(byte)));
         IsTrue (typeof(object).IsAssignableFrom(typeof(int)));
