@@ -151,22 +151,22 @@ namespace ILCompiler.DependencyAnalysis
             public override int GetHashCode() => Name.GetHashCode();
         }
 
-        private struct FieldRvaKey : IEquatable<FieldRvaKey>
+        private struct ModuleAndIntValueKey : IEquatable<ModuleAndIntValueKey>
         {
-            public readonly int Rva;
+            public readonly int IntValue;
             public readonly EcmaModule Module;
 
-            public FieldRvaKey(int rva, EcmaModule module)
+            public ModuleAndIntValueKey(int integer, EcmaModule module)
             {
-                Rva = rva;
+                IntValue = integer;
                 Module = module;
             }
 
-            public bool Equals(FieldRvaKey other) => Rva == other.Rva && Module.Equals(other.Module);
-            public override bool Equals(object obj) => obj is FieldRvaKey && Equals((FieldRvaKey)obj);
+            public bool Equals(ModuleAndIntValueKey other) => IntValue == other.IntValue && Module.Equals(other.Module);
+            public override bool Equals(object obj) => obj is ModuleAndIntValueKey && Equals((ModuleAndIntValueKey)obj);
             public override int GetHashCode()
             {
-                int hashCode = Rva * 0x5498341 + 0x832424;
+                int hashCode = IntValue * 0x5498341 + 0x832424;
                 return hashCode * 23 + Module.GetHashCode();
             }
         }
@@ -178,6 +178,7 @@ namespace ILCompiler.DependencyAnalysis
             ModuleTokenResolver moduleTokenResolver,
             SignatureContext signatureContext,
             CopiedCorHeaderNode corHeaderNode,
+            DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
             AttributePresenceFilterNode attributePresenceFilterNode,
             HeaderNode headerNode)
@@ -190,6 +191,7 @@ namespace ILCompiler.DependencyAnalysis
             Resolver = moduleTokenResolver;
             InputModuleContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
+            DebugDirectoryNode = debugDirectoryNode;
             AttributePresenceFilter = attributePresenceFilterNode;
             Header = headerNode;
             if (!win32Resources.IsEmpty)
@@ -285,6 +287,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedCorHeaderNode(module);
             });
 
+            _debugDirectoryEntries = new NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode>(key =>
+            {
+                if (key.IntValue < 0)
+                    return new NativeDebugDirectoryEntryNode(key.Module);
+                else
+                    return new CopiedDebugDirectoryEntryNode(key.Module, key.IntValue);
+            });
+
             _copiedMetadataBlobs = new NodeCache<EcmaModule, CopiedMetadataBlobNode>(module =>
             {
                 return new CopiedMetadataBlobNode(module);
@@ -295,9 +305,9 @@ namespace ILCompiler.DependencyAnalysis
                 return new CopiedMethodILNode((EcmaMethod)method);
             });
 
-            _copiedFieldRvas = new NodeCache<FieldRvaKey, CopiedFieldRvaNode>(key =>
+            _copiedFieldRvas = new NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode>(key =>
             {
-                return new CopiedFieldRvaNode(key.Module, key.Rva);
+                return new CopiedFieldRvaNode(key.Module, key.IntValue);
             });
 
             _copiedStrongNameSignatures = new NodeCache<EcmaModule, CopiedStrongNameSignatureNode>(module =>
@@ -321,6 +331,8 @@ namespace ILCompiler.DependencyAnalysis
         public ModuleTokenResolver Resolver;
 
         public CopiedCorHeaderNode CopiedCorHeaderNode;
+
+        public DebugDirectoryNode DebugDirectoryNode;
 
         public Win32ResourcesNode Win32ResourcesNode;
 
@@ -684,6 +696,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
             graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+            graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
@@ -772,6 +785,13 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedCorHeaders.GetOrAdd(module);
         }
 
+        private NodeCache<ModuleAndIntValueKey, DebugDirectoryEntryNode> _debugDirectoryEntries;
+
+        public DebugDirectoryEntryNode DebugDirectoryEntry(EcmaModule module, int debugDirEntryIndex)
+        {
+            return _debugDirectoryEntries.GetOrAdd(new ModuleAndIntValueKey(debugDirEntryIndex, module));
+        }
+
         private NodeCache<EcmaModule, CopiedMetadataBlobNode> _copiedMetadataBlobs;
 
         public CopiedMetadataBlobNode CopiedMetadataBlob(EcmaModule module)
@@ -786,7 +806,7 @@ namespace ILCompiler.DependencyAnalysis
             return _copiedMethodIL.GetOrAdd(method);
         }
 
-        private NodeCache<FieldRvaKey, CopiedFieldRvaNode> _copiedFieldRvas;
+        private NodeCache<ModuleAndIntValueKey, CopiedFieldRvaNode> _copiedFieldRvas;
 
         public CopiedFieldRvaNode CopiedFieldRva(FieldDesc field)
         {
@@ -804,7 +824,7 @@ namespace ILCompiler.DependencyAnalysis
                 throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
-            return _copiedFieldRvas.GetOrAdd(new FieldRvaKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
+            return _copiedFieldRvas.GetOrAdd(new ModuleAndIntValueKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
         }
 
         private NodeCache<EcmaModule, CopiedStrongNameSignatureNode> _copiedStrongNameSignatures;
