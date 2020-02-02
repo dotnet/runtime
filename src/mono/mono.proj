@@ -12,7 +12,7 @@
     <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
     <LocalDotnet Condition="'$(OS)' == 'Windows_NT'">$(LocalDotnetDir)\dotnet.exe</LocalDotnet>
     <LocalDotnet Condition="'$(LocalDotnet)' == ''">$(LocalDotnetDir)\dotnet</LocalDotnet>
-    <LocalDotnetRuntimeDir Condition="Exists($(LocalDotnet))">$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
+    <LocalDotnetRuntimeDir Condition="Exists('$(LocalDotnetDir)\shared\Microsoft.NETCore.App')">$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -117,6 +117,7 @@
   </Target>
 
   <Target Name="ValidateTestHost">
+    <Error Condition="!Exists('$(LocalDotnet)')" Text="'$(LocalDotnet)' doesn't exist." />
     <Error Condition="!Exists('$(TestHostPath)')" Text="'$(TestHostPath)' doesn't exist. Try to set Configuration, OSGroup and Platform variables if neccesary." />
   </Target>
 
