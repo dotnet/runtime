@@ -10,10 +10,8 @@
     <Compile Include="System.IO.Pipelines.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks.Extensions" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\System.Buffers\ref\System.Buffers.csproj" />
   </ItemGroup>
 </Project>
