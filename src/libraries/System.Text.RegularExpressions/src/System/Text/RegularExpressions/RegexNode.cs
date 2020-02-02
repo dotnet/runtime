@@ -175,6 +175,25 @@ namespace System.Text.RegularExpressions
             N = max;
         }
 
+        private void MakeLoopAtomic()
+        {
+            switch (Type)
+            {
+                case Oneloop:
+                    Type = Oneloopatomic;
+                    break;
+                case Notoneloop:
+                    Type = Notoneloopatomic;
+                    break;
+                case Setloop:
+                    Type = Setloopatomic;
+                    break;
+                default:
+                    Debug.Fail($"Unexpected type: {Type}");
+                    break;
+            }
+        }
+
         /// <summary>Performs additional optimizations on an entire tree prior to being used.</summary>
         /// <remarks>
         /// Some optimizations are performed by the parser while parsing, and others are performed
@@ -204,15 +223,9 @@ namespace System.Text.RegularExpressions
                         switch (node.Type)
                         {
                             case Oneloop:
-                                node.Type = Oneloopatomic;
-                                break;
-
                             case Notoneloop:
-                                node.Type = Notoneloopatomic;
-                                break;
-
                             case Setloop:
-                                node.Type = Setloopatomic;
+                                node.MakeLoopAtomic();
                                 break;
 
                             case Capture:
@@ -408,10 +421,7 @@ namespace System.Text.RegularExpressions
             return u;
         }
 
-        /// <summary>
-        /// Simple optimization. If an atomic subexpression contains only a {one/notone/set}loop,
-        /// change it to be an atomic {one/notone/set}loop and remove the atomic node.
-        /// </summary>
+        /// <summary>Remove unnecessary atomic nodes, and make appropriate descendents of the atomic node themselves atomic.</summary>
         private RegexNode ReduceAtomic()
         {
             Debug.Assert(Type == Atomic);
@@ -420,25 +430,59 @@ namespace System.Text.RegularExpressions
             RegexNode child = Child(0);
             switch (child.Type)
             {
-                case Oneloop:
-                    child.Type = Oneloopatomic;
-                    return child;
-
-                case Notoneloop:
-                    child.Type = Notoneloopatomic;
-                    return child;
-
-                case Setloop:
-                    child.Type = Setloopatomic;
-                    return child;
-
+                // If the child is already atomic, we can just remove the atomic node.
                 case Oneloopatomic:
                 case Notoneloopatomic:
                 case Setloopatomic:
                     return child;
-            }
 
-            return this;
+                // If an atomic subexpression contains only a {one/notone/set} loop,
+                // change it to be an atomic {one/notone/set}loop and remove the atomic node.
+                case Oneloop:
+                case Notoneloop:
+                case Setloop:
+                    child.MakeLoopAtomic();
+                    return child;
+
+                // If the end expression(s) of an atomic are loops, they can also be made atomic,
+                // since nothing can backtrack into the atomic and thus into them.  So, if the
+                // atomic node is wrapping a capture or a concatenate, recur into it (in the future
+                // this could also be expanded to alternations, recuring into each branch to
+                // mark the last node in each branch as atomic, and marking the alternation itself
+                // by wrapping it in an atomic node if it's not already in one; for now, though,
+                // that adds complication for a relatively rare case, and we're not doing anything
+                // here the developer of the regex couldn't do themselves).  The benefit of this
+                // is simply around improving the final code gen, rather than significantly improving
+                // the expression tree.
+                case Capture:
+                case Concatenate:
+                    {
+                        while (child != null)
+                        {
+                            child = child.Child(child.ChildCount() - 1);
+                            switch (child.Type)
+                            {
+                                case Capture:
+                                case Concatenate:
+                                    continue;
+
+                                case Oneloop:
+                                case Notoneloop:
+                                case Setloop:
+                                    child.MakeLoopAtomic();
+                                    goto default;
+
+                                default:
+                                    child = null!;
+                                    break;
+                            }
+                        }
+                    }
+                    goto default;
+
+                default:
+                    return this;
+            }
         }
 
         /// <summary>
@@ -1168,13 +1212,9 @@ namespace System.Text.RegularExpressions
                     switch (node.Type)
                     {
                         case Oneloop when CanBeMadeAtomic(node, subsequent, maxDepth - 1):
-                            node.Type = Oneloopatomic;
-                            break;
                         case Notoneloop when CanBeMadeAtomic(node, subsequent, maxDepth - 1):
-                            node.Type = Notoneloopatomic;
-                            break;
                         case Setloop when CanBeMadeAtomic(node, subsequent, maxDepth - 1):
-                            node.Type = Setloopatomic;
+                            node.MakeLoopAtomic();
                             break;
                         case Alternate:
                             // In the case of alternation, we can't change the alternation node itself
