@@ -5,6 +5,14 @@
   <PropertyGroup>
     <MonoObjDir>$(ArtifactsObjDir)mono/$(PlatformConfigPathPart)/</MonoObjDir>
     <MonoEnableLLVM Condition=" '$(MonoEnableLLVM)' == '' ">false</MonoEnableLLVM>
+    <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
+    <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
+    <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
+    <TestHostPath>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(OSGroup)-$(Configuration)-$(Platform)</TestHostPath>
+    <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
+    <LocalDotnet Condition="'$(OS)' == 'Windows_NT'">$(LocalDotnetDir)\dotnet.exe</LocalDotnet>
+    <LocalDotnet Condition="'$(LocalDotnet)' == ''">$(LocalDotnetDir)\dotnet</LocalDotnet>
+    <LocalDotnetRuntimeDir>$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -53,9 +61,6 @@
       <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
 
-      <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
-      <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
-      <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
@@ -81,23 +86,42 @@
 
   <Target Name="Test" />
 
-  <Target Name="RunSample">
-    <PropertyGroup>
-      <TestHostPath>$(ArtifactsDir)bin/testhost/$(NetCoreAppCurrent)-$(OSGroup)-$(Configuration)-$(Platform)</TestHostPath>
-      <DotNetExec Condition="'$(TargetsWindows)' == 'true'">dotnet.exe</DotNetExec>
-      <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
-    </PropertyGroup>
-
+  <!-- Copy Mono runtime bits to the local .dotnet dir for local experiments (temp solution) -->
+  <Target Name="PatchLocalDotnet" DependsOnTargets="ValidateTestHost">
     <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(BinDir)/*.*" />
+      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(TestHostPath)/shared/Microsoft.NETCore.App/$(NETCoreAppCurrentVersion).0" 
+        DestinationFolder="$(LocalDotnetRuntimeDir)"
+        SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
+  <Target Name="RunSample" DependsOnTargets="ValidateTestHost">
+    <ItemGroup>
+      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFolder="$(TestHostPath)\shared\Microsoft.NETCore.App\$(ProductVersion)" 
           SkipUnchangedFiles="true"/>
   
     <MSBuild Projects="$(MonoProjectRoot)netcore\sample\HelloWorld\HelloWorld.csproj" Targets="Restore;Build" />
-    <Exec Command="$(TestHostPath)/$(DotNetExec) $(MonoProjectRoot)netcore/sample/HelloWorld/bin/HelloWorld.dll" />
+    <Exec Command="$(TestHostPath)\$(LocalDotnet) $(MonoProjectRoot)netcore\sample\HelloWorld\bin\HelloWorld.dll" />
+  </Target>
+
+  <Target Name="RunBenchmarks">
+    <Error Condition="$(BenchmarksRepo) == ''" Text="BenchmarksRepo variable is not set" />
+    <Exec Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) --cli $(LocalDotnet)" />
+  </Target>
+
+  <Target Name="ValidateTestHost">
+    <Error Condition="!Exists('$(TestHostPath)')" Text="'$(TestHostPath)' doesn't exist. Try to set Configuration, OSGroup and Platform variables if neccesary." />
+  </Target>
+
+  <Target Name="Foo">
+    <Message Importance="High" Text="Fooo: $(OSGroup).$(Platform).$(Configuration)" />
   </Target>
 
 </Project>
