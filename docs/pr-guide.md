@@ -19,6 +19,7 @@ Every pull request will have automatically a single `area-*` label assigned. The
 If during the code review process a merge conflict occurs the area owner is responsible for its resolution. Pull requests should not be on hold due to the author's unwillingness to resolve code conflicts. GitHub makes this easier by allowing simple conflict resolution using the [conflict-editor](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/resolving-a-merge-conflict-on-github).
 
 ## Merging Pull Requests
+
 Anyone with write access can merge a pull request manually or by setting the [auto-merge](/labels/auto-merge) label when it satisfies all of the following conditions:
 
 * The PR has been approved by at least one reviewer and any other objections are addressed.
@@ -26,13 +27,25 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
     * You can trigger a rebuild by adding a comment like `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps tab.
     * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
- * In rare cases the pull request can be merged with failing tests if the person merging it also creates tracking issue for flaky tests.
 
 Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
+
+## Unrelated failure
+
+In case CI indicates failures which are **highly unlikely** to be caused by changes in the PR, the following actions should be taken:
+
+* An existing issue in the repository should be searched for. Usually the test method's or the test assembly's name (in case of a crash) are good parameters.
+* If there's an existing issue, a comment should be placed that includes a) the link to the build, b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`) and c) the Error message and Stack trace. This is necessary as retention policies are in place that recycle _old_ builds. In case the issue is already closed, it should be reopened and labels should be updated to reflect the current failure state. 
+* If there's no existing issue, an issue should be created with the same information outlined above.
+* In a follow-up Pull Request, the failing test(s) should be disabled with the corresponding issue number, e.g. `[ActiveIssue(x)]`, and the tracking issue should be labeled as `disabled-test`.
+* A comment should be placed in the original Pull Request that links to the created or updated issues.
+
+There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
 ## Blocking Pull Request Merging
 
 If for whatever reason you would like to move your pull request back to an in-progress status to avoid merging it in the current form, you can do that by adding [WIP] prefix to the pull request title.
 
 ## Old Pull Request Policy
+
 From time to time we will review older PR's (> 1 month) and check them for relevance. If we find the PR is inactive or no longer applies, we will close it. As the PR owner, you can simply reopen it if you feel your closed PR needs our attention.

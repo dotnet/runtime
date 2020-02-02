@@ -327,7 +327,7 @@ public:
 
 private:
     // Typeloader reorders fields of non-blitable types. This reordering differs between 32-bit and 64-bit platforms.
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     Object*     m_objref;
     INT64       m_data;
     INT32       m_flags;

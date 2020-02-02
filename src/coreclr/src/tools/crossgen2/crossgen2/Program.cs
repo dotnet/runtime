@@ -228,6 +228,15 @@ namespace ILCompiler
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
+                    List<string> mibcFiles = new List<string>();
+                    if (_commandLineOptions.Mibc != null)
+                    {
+                        foreach (var file in _commandLineOptions.Mibc)
+                        {
+                            mibcFiles.Add(file.FullName);
+                        }
+                    }
+
                     foreach (var referenceFile in _referenceFilePaths.Values)
                     {
                         try
@@ -263,7 +272,13 @@ namespace ILCompiler
                     // Examine profile guided information as appropriate
                     ProfileDataManager profileDataManager =
                         new ProfileDataManager(logger,
-                        referenceableModules);
+                        referenceableModules,
+                        inputModules,
+                        versionBubbleModules,
+                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        mibcFiles,
+                        typeSystemContext,
+                        compilationGroup);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
@@ -275,7 +290,7 @@ namespace ILCompiler
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in inputModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
+                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
                             if (!_commandLineOptions.InputBubble)
                             {

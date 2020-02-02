@@ -380,7 +380,8 @@ if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
     powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
         %OptDataProjectFilePath% /t:Restore^
-        %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+        %__CommonMSBuildArgs% %__UnprocessedBuildArgs%^
+        /nodereuse:false
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to restore the optimization data package.
         set __exitCode=!errorlevel!

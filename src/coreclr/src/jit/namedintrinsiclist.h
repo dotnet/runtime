@@ -27,15 +27,15 @@ enum NamedIntrinsic : unsigned short
     NI_Throw_PlatformNotSupportedException,
 
     NI_HW_INTRINSIC_START,
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
     NI_##id,
 #include "hwintrinsiclistxarch.h"
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, numarg, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag)     \
     NI_##isa##_##name,
 #include "hwintrinsiclistarm64.h"
-#endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+#endif // !defined(TARGET_XARCH) && !defined(TARGET_ARM64)
     NI_HW_INTRINSIC_END,
 #endif // FEATURE_HW_INTRINSICS
 

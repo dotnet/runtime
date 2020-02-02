@@ -909,11 +909,11 @@ BYTE* ILStubLinker::GenerateCodeWorker(BYTE* pbBuffer, ILInstruction* pInstrBuff
                 case 8:
                     {
                         UINT64 uVal = pInstrBuffer[i].uArg;
-#ifndef BIT64  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
+#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to store the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it here.
                         if ((instr == ILCodeStream::CEE_LDC_R8) && (((UINT32)uVal) == ILCodeStream::SPECIAL_VALUE_NAN_64_ON_32))
                             uVal = CLR_NAN_64;
-#endif // BIT64
+#endif // HOST_64BIT
                         SET_UNALIGNED_VAL64(pbBuffer, uVal);
                     }
                     break;
@@ -1289,7 +1289,7 @@ void ILCodeStream::EmitLDC(DWORD_PTR uConst)
 {
     WRAPPER_NO_CONTRACT;
     Emit(
-#ifdef BIT64
+#ifdef HOST_64BIT
         CEE_LDC_I8
 #else
         CEE_LDC_I4
@@ -1304,14 +1304,14 @@ void ILCodeStream::EmitLDC_R4(UINT32 uConst)
 void ILCodeStream::EmitLDC_R8(UINT64 uConst)
 {
     STANDARD_VM_CONTRACT;
-#ifndef BIT64  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
+#ifndef HOST_64BIT  // We don't have room on 32-bit platforms to stor the CLR_NAN_64 value, so
                 // we use a special value to represent CLR_NAN_64 and then recreate it later.
     CONSISTENCY_CHECK(((UINT32)uConst) != SPECIAL_VALUE_NAN_64_ON_32);
     if (uConst == CLR_NAN_64)
         uConst = SPECIAL_VALUE_NAN_64_ON_32;
     else
         CONSISTENCY_CHECK(FitsInU4(uConst));
-#endif // BIT64
+#endif // HOST_64BIT
     Emit(CEE_LDC_R8, 1, (UINT_PTR)uConst);
 }
 void ILCodeStream::EmitLDELEMA(int token)
@@ -2432,7 +2432,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
 
         case ELEMENT_TYPE_PTR:
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (pLoc->bIsCopyConstructed)
             {
                 // The only pointers that we don't transform to ELEMENT_TYPE_I are those that are
@@ -2443,7 +2443,7 @@ void ILStubLinker::TransformArgForJIT(LocalDesc *pLoc)
                 // because we are not supposed to make a copy.
             }
             else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
             {
                 pLoc->ElementType[0] = ELEMENT_TYPE_I;
                 pLoc->cbType = 1;

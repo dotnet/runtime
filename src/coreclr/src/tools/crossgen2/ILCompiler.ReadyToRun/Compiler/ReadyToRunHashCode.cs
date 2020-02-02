@@ -206,6 +206,13 @@ namespace ILCompiler
             return hashCode;
         }
 
+        public static int ModuleNameHashCode(ModuleDesc module)
+        {
+            IAssemblyDesc assembly = module.Assembly;
+            Debug.Assert(assembly == module);
+            return NameHashCode(assembly.GetName().Name);
+        }
+
         /// <summary>
         /// Bitwise left 32-bit rotation with wraparound.
         /// </summary>

@@ -415,7 +415,7 @@ extern HMODULE g_hThisInst;
 
 int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     g_hThisInst = WszGetModuleHandle(NULL);
 #endif
 
@@ -449,7 +449,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     HRESULT hr;
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     // This is required to properly display Unicode characters
     _setmode(_fileno(stdout), _O_U8TEXT);
 #endif
@@ -753,7 +753,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         {
             if (argc == 1)
             {
-#if !defined(PLATFORM_UNIX)
+#if !defined(TARGET_UNIX)
                 // When not running on Mac or Linux, which can have forward-slash pathnames, we know
                 // a command switch here means an invalid argument.
                 if (*argv[0] == W('-') || *argv[0] == W('/'))
@@ -761,7 +761,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
                     OutputErrf(W("Invalid parameter: %s\n"), *argv);
                     exit(INVALID_ARGUMENTS);
                 }
-#endif //!FEATURE_PAL
+#endif //!TARGET_UNIX
                 // The last thing on the command line is an assembly name or path, and
                 // because we got this far is not an argument like /nologo. Because this
                 // code works on Mac, with forward-slash pathnames, we can't assume
@@ -987,7 +987,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     return 0;
 }
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 int main(int argc, char *argv[])
 {
     if (0 != PAL_Initialize(argc, argv))
@@ -1013,4 +1013,4 @@ int main(int argc, char *argv[])
 
     return ret;
 }
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX

@@ -20,7 +20,7 @@ class FuncPtrStubs;
 #include "qcall.h"
 #include "ilstubcache.h"
 
-#include "callcounting.h"
+#include "callcounter.h"
 #include "methoddescbackpatchinfo.h"
 #include "crossloaderallocatorhash.h"
 
@@ -274,7 +274,7 @@ private:
     EEMarshalingData* m_pMarshalingData;
 
 #ifdef FEATURE_TIERED_COMPILATION
-    PTR_CallCountingManager m_callCountingManager;
+    CallCounter m_callCounter;
 #endif
 
 #ifndef CROSSGEN_COMPILE
@@ -594,10 +594,10 @@ public:
 
 #ifdef FEATURE_TIERED_COMPILATION
 public:
-    PTR_CallCountingManager GetCallCountingManager()
+    CallCounter* GetCallCounter()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_callCountingManager;
+        return &m_callCounter;
     }
 #endif // FEATURE_TIERED_COMPILATION
 

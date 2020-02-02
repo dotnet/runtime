@@ -170,7 +170,7 @@ PAL_strtoul(const char *szNumber, char **pszEnd, int nBase)
 
     ulResult = strtoul(szNumber, pszEnd, nBase);
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (ulResult > UINT32_MAX)
     {
         char ch = *szNumber;

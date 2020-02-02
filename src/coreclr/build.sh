@@ -53,7 +53,8 @@ restore_optdata()
         echo "Restoring the OptimizationData package"
         "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
                                                $OptDataProjectFilePath /t:Restore /m \
-                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs
+                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs \
+                                               /nodereuse:false
         local exit_code="$?"
         if [[ "$exit_code" != 0 ]]; then
             echo "${__ErrMsgPrefix}Failed to restore the optimization data package."
@@ -120,13 +121,15 @@ build_cross_architecture_components()
         return
     fi
 
-    export __CMakeBinDir="$crossArchBinDir"
-    export CROSSCOMPILE=0
+    __CMakeBinDir="$crossArchBinDir"
+    CROSSCOMPILE=0
+    export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
     build_native "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "cross-architecture components"
 
-    export CROSSCOMPILE=1
+    CROSSCOMPILE=1
+    export CROSSCOMPILE
 }
 
 build_CoreLib_ni()
@@ -135,7 +138,8 @@ build_CoreLib_ni()
     local __CoreLibILDir=$2
 
     if [[ "$__PartialNgen" == 1 ]]; then
-        export COMPlus_PartialNGen=1
+        COMPlus_PartialNGen=1
+        export COMPlus_PartialNGen
     fi
 
     if [[ -e "$__CrossGenCoreLibLog" ]]; then
@@ -454,8 +458,10 @@ __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 # Set the remaining variables based upon the determined build configuration
 __BinDir="$__RootBinDir/bin/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
 __PackagesBinDir="$__BinDir/.nuget"
-export __IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
-export __ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__BuildOS.$__BuildArch.$__BuildType"
+__ArtifactsIntermediatesDir="$__RepoRootDir/artifacts/obj/coreclr"
+export __IntermediatesDir __ArtifactsIntermediatesDir
+
 __CrossComponentBinDir="$__BinDir"
 
 __CrossArch="$__HostArch"
@@ -470,19 +476,22 @@ if [[ -z "$HOME" ]]; then
     if [[ ! -d "$__ProjectDir/temp_home" ]]; then
         mkdir temp_home
     fi
-    export HOME="$__ProjectDir"/temp_home
+    HOME="$__ProjectDir"/temp_home
+    export HOME
     echo "HOME not defined; setting it to $HOME"
 fi
 
 # Specify path to be set for CMAKE_INSTALL_PREFIX.
 # This is where all built CoreClr libraries will copied to.
-export __CMakeBinDir="$__BinDir"
+__CMakeBinDir="$__BinDir"
+export __CMakeBinDir
 
 # Make the directories necessary for build if they don't exist
 setup_dirs_local
 
 # Set up the directory for MSBuild debug logs.
-export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+export MSBUILDDEBUGPATH
 
 # Check prereqs.
 check_prereqs

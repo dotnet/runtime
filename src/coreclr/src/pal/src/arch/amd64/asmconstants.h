@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 #define CONTEXT_AMD64   0x100000
 
@@ -74,7 +74,7 @@
 #define CONTEXT_LastExceptionFromRip CONTEXT_LastExceptionToRip+8
 #define CONTEXT_Size CONTEXT_LastExceptionFromRip+8
 
-#else // BIT64
+#else // HOST_64BIT
 
 #define CONTEXT_ContextFlags 0
 #define CONTEXT_FLOATING_POINT 8
@@ -103,4 +103,4 @@
 #define CONTEXT_Xmm6 CONTEXT_Xmm5+16
 #define CONTEXT_Xmm7 CONTEXT_Xmm6+16
 
-#endif // BIT64
+#endif // HOST_64BIT

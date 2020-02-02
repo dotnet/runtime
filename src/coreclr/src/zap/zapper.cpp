@@ -265,11 +265,11 @@ void ZapperOptions::SetCompilerFlags(void)
     m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_RELOC);
     m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_PREJIT);
 
-#if defined(_TARGET_ARM_)
-# if defined(PLATFORM_UNIX)
+#if defined(TARGET_ARM)
+# if defined(TARGET_UNIX)
     m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS);
-# endif // defined(PLATFORM_UNIX)
-#endif // defined(_TARGET_ARM_)
+# endif // defined(TARGET_UNIX)
+#endif // defined(TARGET_ARM)
 }
 
 /* --------------------------------------------------------------------------- *
@@ -361,7 +361,7 @@ Zapper::Zapper(NGenOptions *pOptions, bool fromDllHost)
         //
         zo->m_ignoreProfileData = true;   // ignore any IBC profile data
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         //
         // On ARM, we retry compilation for large images when we hit overflow of IMAGE_REL_BASED_THUMB_BRANCH24 relocations.
         // Disable procedure spliting for retry because of it depends on IMAGE_REL_BASED_THUMB_BRANCH24 relocations.
@@ -393,7 +393,7 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
     m_pJitCompiler = NULL;
     m_pMetaDataDispenser = NULL;
     m_hJitLib = NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     m_hJitLegacy = NULL;
 #endif
 
@@ -662,7 +662,7 @@ Zapper::~Zapper()
     if (m_pEECompileInfo != NULL)
     {
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (m_hJitLegacy != NULL)
         {
             _ASSERTE(m_hJitLib != NULL);
@@ -740,7 +740,7 @@ void Zapper::CleanupAssembly()
 
 //**********************************************************************
 // To be used with GetSpecificCpuInfo()
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 #define CPU_X86_FAMILY(cpuType)     (((cpuType) & 0x0F00) >> 8)
 #define CPU_X86_MODEL(cpuType)      (((cpuType) & 0x00F0) >> 4)
@@ -1165,7 +1165,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
     // @TODO: This is a copy of SetCpuInfo() in vm\codeman.cpp. Unify the implementaion
 
@@ -1188,9 +1188,9 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     // .NET Core requires SSE2.
     m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE2);
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // If we're crossgenning CoreLib, allow generating non-VEX intrinsics. The generated code might
     // not actually be supported by the processor at runtime so we compensate for it by
     // not letting the get_IsSupported method to be intrinsically expanded in crossgen
@@ -1202,7 +1202,7 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     {
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_AES);
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PCLMULQDQ);
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_SSE3);
@@ -1215,9 +1215,9 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
         // CORJIT_FLAGS::CORJIT_FLAG_USE_BMI2 on purpose - these require VEX encodings
         // and the JIT doesn't support generating code for methods with mixed encodings.
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_LZCNT);
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     }
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
     if (   m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO)
         && m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE)
@@ -1288,7 +1288,7 @@ void Zapper::DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId)
         ThrowHR(HRESULT_FROM_WIN32(ERROR_INVALID_NAME));
     }
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     //
     // We always need a hash since our assembly module is separate from the manifest.
     // Use MD5 by default.

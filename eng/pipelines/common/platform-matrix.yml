@@ -119,7 +119,7 @@ jobs:
       archType: arm64
       platform: Linux_musl_arm64
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-406629a-20200121150126
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20200127195039
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}

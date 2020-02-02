@@ -9,7 +9,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Security.Tests
 {

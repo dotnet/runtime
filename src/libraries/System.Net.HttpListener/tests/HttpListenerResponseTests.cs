@@ -7,7 +7,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Tests
 {
@@ -58,8 +57,8 @@ namespace System.Net.Tests
         }
     }
 
-    [SkipOnCoreClr("System.Net.Tests are flaky")]
-    [SkipOnMono("System.Net.Tests are flaky")]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TargetFrameworkMonikers.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseTests : HttpListenerResponseTestBase
     {
@@ -115,8 +114,6 @@ namespace System.Net.Tests
         [InlineData(" \r \t \n", 123)]
         [InlineData("http://microsoft.com", 155)]
         [InlineData("  http://microsoft.com  ", 155)]
-        [SkipOnCoreClr("System.Net.Tests are flaky")]
-        [SkipOnMono("System.Net.Tests are flaky")]
         public async Task Redirect_Invoke_SetsRedirectionProperties(string url, int expectedNumberOfBytes)
         {
             string expectedUrl = url?.Trim() ?? "";

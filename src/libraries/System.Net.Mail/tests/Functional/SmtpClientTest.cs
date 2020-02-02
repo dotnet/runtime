@@ -16,7 +16,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Systen.Net.Mail.Tests;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions.Attributes;
 
 namespace System.Net.Mail.Tests
 {
