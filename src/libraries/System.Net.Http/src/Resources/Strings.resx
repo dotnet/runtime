@@ -522,4 +522,19 @@
   <data name="net_http_invalid_header_name" xml:space="preserve">
     <value>Received an invalid header name: '{0}'.</value>
   </data>
+  <data name="net_http_http3_connection_error" xml:space="preserve">
+    <value>The HTTP/3 server sent invalid data on the connection. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_http3_stream_error" xml:space="preserve">
+    <value>The HTTP/3 server sent invalid data on the stream. HTTP/3 error code '{0}' (0x{1}).</value>
+  </data>
+  <data name="net_http_retry_on_older_version" xml:space="preserve">
+    <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
+  </data>
+  <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
+    <value>Unable to write content to request stream; content would exceed Content-Length.</value>
+  </data>
+  <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
+  </data>
 </root>

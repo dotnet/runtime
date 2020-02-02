@@ -426,7 +426,7 @@ public:
 
     BOOL IsSafeTypeForMarshalling();
 
-    // Creates a new Template and caches it on the MethodTable/ArrayTypeDesc or class factory.
+    // Creates a new Template and caches it on the MethodTable or class factory.
     static ComCallWrapperTemplate *CreateTemplate(TypeHandle thClass, WinRTManagedClassFactory *pClsFact = NULL);
 
     // Creates a new Template for just one interface. Used for lazily created CCWs for interfaces with variance.
@@ -983,7 +983,7 @@ private:
     enum
     {
         NumVtablePtrs = 5,
-#ifdef BIT64
+#ifdef HOST_64BIT
         enum_ThisMask = ~0x3f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #else
         enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
@@ -1418,7 +1418,7 @@ public :
     #define GET_COM_REF(x)      ((ULONG)((x) & SimpleComCallWrapper::COM_REFCOUNT_MASK))
     #define GET_EXT_COM_REF(x)  ((ULONG)((x) & SimpleComCallWrapper::EXT_COM_REFCOUNT_MASK))
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     #define READ_REF(x)         (x)
 #else
     #define READ_REF(x)         (::InterlockedCompareExchange64((LONGLONG *)&x, 0, 0))

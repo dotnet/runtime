@@ -27,7 +27,7 @@ namespace System.Reflection.TypeLoading
         public sealed override int Position => _position;
         public abstract override int MetadataToken { get; }
 
-        public abstract override string Name { get; }
+        public abstract override string? Name { get; }
         public abstract override Type ParameterType { get; }
         public abstract override ParameterAttributes Attributes { get; }
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
@@ -35,14 +35,14 @@ namespace System.Reflection.TypeLoading
 
         public abstract override bool HasDefaultValue { get; }
         public sealed override object DefaultValue => throw new InvalidOperationException(SR.Arg_ReflectionOnlyParameterDefaultValue);
-        public abstract override object RawDefaultValue { get; }
+        public abstract override object? RawDefaultValue { get; }
 
         public abstract override Type[] GetOptionalCustomModifiers();
         public abstract override Type[] GetRequiredCustomModifiers();
 
         public abstract override string ToString();
 
-        public sealed override bool Equals(object obj)
+        public sealed override bool Equals(object? obj)
         {
             if (!(obj is RoParameter other))
                 return false;

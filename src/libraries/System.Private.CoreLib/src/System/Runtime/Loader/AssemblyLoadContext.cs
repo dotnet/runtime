@@ -284,7 +284,7 @@ namespace System.Runtime.Loader
 
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Assembly.Load(assemblyName, ref stackMark, this);
+            return RuntimeAssembly.InternalLoad(assemblyName, ref stackMark, this);
         }
 #endif
 
@@ -466,7 +466,7 @@ namespace System.Runtime.Loader
         ///
         /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
         ///
-        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/coreclr/design-docs/AssemblyLoadContext.ContextualReflection.md
+        /// For more details see https://github.com/dotnet/runtime/blob/master/docs/design/features/AssemblyLoadContext.ContextualReflection.md
         /// </remarks>
         public static AssemblyLoadContext? CurrentContextualReflectionContext => s_asyncLocalCurrent?.Value;
 
@@ -743,21 +743,28 @@ namespace System.Runtime.Loader
 
             string assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!, $"{assemblyName.Name}.dll");
 
-            if (Internal.IO.File.InternalExists(assemblyPath))
+            bool exists = Internal.IO.File.InternalExists(assemblyPath);
+            if (!exists && Path.IsCaseSensitive)
             {
-                return parentALC.LoadFromAssemblyPath(assemblyPath);
-            }
-            else if (Path.IsCaseSensitive)
-            {
-                assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
-
-                if (Internal.IO.File.InternalExists(assemblyPath))
+#if CORECLR
+                if (AssemblyLoadContext.IsTracingEnabled())
                 {
-                    return parentALC.LoadFromAssemblyPath(assemblyPath);
+                    AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, HResults.COR_E_FILENOTFOUND);
                 }
+#endif // CORECLR
+                assemblyPath = Path.Combine(parentDirectory, assemblyName.CultureName!.ToLowerInvariant(), $"{assemblyName.Name}.dll");
+                exists = Internal.IO.File.InternalExists(assemblyPath);
             }
 
-            return null;
+            Assembly? asm = exists ? parentALC.LoadFromAssemblyPath(assemblyPath) : null;
+#if CORECLR
+            if (AssemblyLoadContext.IsTracingEnabled())
+            {
+                AssemblyLoadContext.TraceSatelliteSubdirectoryPathProbed(assemblyPath, exists ? HResults.S_OK : HResults.COR_E_FILENOTFOUND);
+            }
+#endif // CORECLR
+
+            return asm;
         }
 
         internal IntPtr GetResolvedUnmanagedDll(Assembly assembly, string unmanagedDllName)

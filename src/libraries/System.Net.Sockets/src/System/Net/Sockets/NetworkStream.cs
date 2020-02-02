@@ -84,8 +84,7 @@ namespace System.Net.Sockets
 #endif
         }
 
-        // Socket - provides access to socket for stream closing
-        protected Socket Socket => _streamSocket;
+        public Socket Socket => _streamSocket;
 
         // Used by the class to indicate that the stream is m_Readable.
         protected bool Readable

@@ -85,7 +85,7 @@
     <Compile Include="System\Linq\ImmutableArrayExtensions.cs" />
     <Compile Include="Validation\Requires.cs" />
     <Compile Include="Validation\ValidatedNotNullAttribute.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\NonVersionableAttribute.cs">
+    <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
   </ItemGroup>

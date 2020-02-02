@@ -21,7 +21,7 @@ namespace System.Reflection.TypeLoading
             _reflectedType = reflectedType;
         }
 
-        public abstract override bool Equals(object obj);
+        public abstract override bool Equals(object? obj);
         public abstract override int GetHashCode();
 
         public sealed override Type DeclaringType => GetRoDeclaringType();
@@ -31,7 +31,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
         protected abstract string ComputeName();
-        private volatile string _lazyName;
+        private volatile string? _lazyName;
 
         public sealed override Module Module => GetRoModule();
         internal abstract RoModule GetRoModule();
@@ -66,7 +66,7 @@ namespace System.Reflection.TypeLoading
         private volatile MethodImplAttributes _lazyMethodImplAttributes = MethodImplAttributesSentinel;
 
         public sealed override MethodImplAttributes GetMethodImplementationFlags() => MethodImplementationFlags;
-        public abstract override MethodBody GetMethodBody();
+        public abstract override MethodBody? GetMethodBody();
 
         public sealed override bool ContainsGenericParameters
         {
@@ -92,11 +92,11 @@ namespace System.Reflection.TypeLoading
 
         private MethodSig<RoParameter> MethodSig => _lazyMethodSig ?? (_lazyMethodSig = ComputeMethodSig());
         protected abstract MethodSig<RoParameter> ComputeMethodSig();
-        private volatile MethodSig<RoParameter> _lazyMethodSig;
+        private volatile MethodSig<RoParameter>? _lazyMethodSig;
 
         private MethodSig<RoType> CustomModifiers => _lazyCustomModifiers ?? (_lazyCustomModifiers = ComputeCustomModifiers());
         protected abstract MethodSig<RoType> ComputeCustomModifiers();
-        private volatile MethodSig<RoType> _lazyCustomModifiers;
+        private volatile MethodSig<RoType>? _lazyCustomModifiers;
 
         public sealed override ICustomAttributeProvider ReturnTypeCustomAttributes => ReturnParameter;
         public sealed override Type ReturnType => ReturnParameter.ParameterType;
@@ -106,7 +106,7 @@ namespace System.Reflection.TypeLoading
         public sealed override Type[] GetGenericArguments() => GetGenericArgumentsOrParametersNoCopy().CloneArray<Type>();
         internal RoType[] GetGenericArgumentsOrParametersNoCopy() => _lazyGenericArgumentsOrParameters ?? (_lazyGenericArgumentsOrParameters = ComputeGenericArgumentsOrParameters());
         protected abstract RoType[] ComputeGenericArgumentsOrParameters();
-        private volatile RoType[] _lazyGenericArgumentsOrParameters;
+        private volatile RoType[]? _lazyGenericArgumentsOrParameters;
 
         internal abstract RoType[] GetGenericTypeParametersNoCopy();
         internal abstract RoType[] GetGenericTypeArgumentsNoCopy();
@@ -124,9 +124,9 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsSecurityTransparent => throw new InvalidOperationException(SR.InvalidOperation_IsSecurity);
 
         // Not valid in a ReflectionOnly context
-        public sealed override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
+        public sealed override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture) => throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
         public sealed override Delegate CreateDelegate(Type delegateType) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
-        public sealed override Delegate CreateDelegate(Type delegateType, object target) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
+        public sealed override Delegate CreateDelegate(Type delegateType, object? target) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
         public sealed override RuntimeMethodHandle MethodHandle => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         MethodBase IRoMethodBase.MethodBase => this;

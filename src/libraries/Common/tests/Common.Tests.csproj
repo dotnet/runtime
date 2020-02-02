@@ -87,8 +87,8 @@
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
       <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
@@ -99,8 +99,8 @@
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
@@ -139,8 +139,8 @@
     </Compile>
     <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
     <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs">
       <Link>System\IO\PathInternal.cs</Link>
@@ -154,14 +154,14 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\PathInternal.Windows.Tests.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
     <Compile Include="Tests\System\IO\Win32Marshal.Tests.cs" />
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.Windows.cs">
@@ -173,7 +173,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs">
       <Link>System\IO\PathInternal.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.PathConf.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs">
       <Link>Common\Interop\Unix\Interop.PathConf.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">

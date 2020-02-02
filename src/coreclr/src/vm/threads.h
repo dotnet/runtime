@@ -460,10 +460,10 @@ typedef Thread::ForbidSuspendThreadHolder ForbidSuspendThreadHolder;
 
 #else // CROSSGEN_COMPILE
 
-#if (defined(_TARGET_ARM_) && defined(FEATURE_EMULATE_SINGLESTEP))
+#if (defined(TARGET_ARM) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "armsinglestepper.h"
 #endif
-#if (defined(_TARGET_ARM64_) && defined(FEATURE_EMULATE_SINGLESTEP))
+#if (defined(TARGET_ARM64) && defined(FEATURE_EMULATE_SINGLESTEP))
 #include "arm64singlestepper.h"
 #endif
 
@@ -510,14 +510,14 @@ EXTERN_C void LeaveSyncHelper    (UINT_PTR caller, void *pAwareLock);
 // Used to capture information about the state of execution of a *SUSPENDED* thread.
 struct ExecutionState;
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
 // This is the type of the start function of a redirected thread pulled from
 // a HandledJITCase during runtime suspension
 typedef void (__stdcall *PFN_REDIRECTTARGET)();
 
 // Describes the weird argument sets during hijacking
 struct HijackArgs;
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -621,9 +621,9 @@ void InitThreadManager();
 #ifdef FEATURE_HIJACK
 
 EXTERN_C void WINAPI OnHijackTripThread();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning an FP value
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #endif // FEATURE_HIJACK
 
@@ -998,9 +998,9 @@ class Thread
     // MapWin32FaultToCOMPlusException needs access to Thread::IsAddrOfRedirectFunc()
     friend DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord);
     friend void STDCALL OnHijackWorker(HijackArgs * pArgs);
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     friend void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext);
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -1591,7 +1591,7 @@ public:
     // we fire the AllocationTick event. It's only for tooling purpose.
     TypeHandle m_thAllocContextObj;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     _NT_TIB *m_pTEB;
 public:
@@ -1603,7 +1603,7 @@ public:
         WRAPPER_NO_CONTRACT;
         return &GetTEB()->ExceptionList;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     inline void SetTHAllocContextObj(TypeHandle th) {LIMITED_METHOD_CONTRACT; m_thAllocContextObj = th; }
 
@@ -2426,9 +2426,9 @@ public:
         STR_SwitchedOut,
     };
 
-#if defined(FEATURE_HIJACK) && defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)
     bool InjectGcSuspension();
-#endif // FEATURE_HIJACK && PLATFORM_UNIX
+#endif // FEATURE_HIJACK && TARGET_UNIX
 
 #ifndef DISABLE_THREADSUSPEND
     // SuspendThread
@@ -2675,9 +2675,9 @@ public:
     BOOL           IsRudeAbort();
     BOOL           IsFuncEvalAbort();
 
-#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#if defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
     BOOL           IsSafeToInjectThreadAbort(PTR_CONTEXT pContextToCheck);
-#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#endif // defined(TARGET_AMD64) && defined(FEATURE_HIJACK)
 
     inline BOOL IsAbortRequested()
     {
@@ -2773,10 +2773,10 @@ public:
         return s_NextSelfAbortEndTime;
     }
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Tricks for resuming threads from fully interruptible code with a ThreadStop.
     BOOL           ResumeUnderControl(T_CONTEXT *pCtx);
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
     enum InducedThrowReason {
         InducedThreadStop = 1,
@@ -2839,7 +2839,7 @@ public:
     // ARM64 unix doesn't currently support any reliable hardware mechanism for single-stepping.
     // For each we emulate single step in software. This support is used only by the debugger.
 private:
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     ArmSingleStepper m_singleStepper;
 #else
     Arm64SingleStepper m_singleStepper;
@@ -2858,7 +2858,7 @@ public:
 
     void BypassWithSingleStep(const void* ip ARM_ARG(WORD opcode1) ARM_ARG(WORD opcode2) ARM64_ARG(uint32_t opcode))
     {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         m_singleStepper.Bypass((DWORD)ip, opcode1, opcode2);
 #else
         m_singleStepper.Bypass((uint64_t)ip, opcode);
@@ -3166,7 +3166,7 @@ public:
     static void SetCulture(OBJECTREF *CultureObj, BOOL bUICulture);
 
 private:
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
     // Used in suspension code to redirect a thread at a HandledJITCase
     BOOL RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt);
     BOOL RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, T_CONTEXT *pCurrentThreadCtx);
@@ -3187,7 +3187,7 @@ public:
 private:
     bool        m_fPreemptiveGCDisabledForGCStress;
 #endif // HAVE_GCCOVER && USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
 public:
 
@@ -3333,7 +3333,7 @@ public:
     // space to restore the guard page, so make sure you know what you're doing when you decide to call this.
     VOID RestoreGuardPage();
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
 private:
     // Redirecting of threads in managed code at suspension
 
@@ -3354,7 +3354,7 @@ private:
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
 private:
     //-------------------------------------------------------------
@@ -3477,15 +3477,15 @@ private:
     VOID       **m_ppvHJRetAddrPtr;       // place we bashed a new return address
     MethodDesc  *m_HijackedFunction;      // remember what we hijacked
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
     BOOL    HandledJITCase(BOOL ForTaskSwitchIn = FALSE);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     PCODE       m_LastRedirectIP;
     ULONG       m_SpinCount;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #endif // FEATURE_HIJACK
 
@@ -4038,11 +4038,11 @@ public:
    this fast, the table is not perfect (there can be collisions), but this should
    not cause false positives, but it may allow errors to go undetected  */
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define OBJREF_HASH_SHIFT_AMOUNT 3
-#else // BIT64
+#else // HOST_64BIT
 #define OBJREF_HASH_SHIFT_AMOUNT 2
-#endif // BIT64
+#endif // HOST_64BIT
 
         // For debugging, you may want to make this number very large, (8K)
         // should basically insure that no collisions happen
@@ -4643,10 +4643,10 @@ private:
 
     PTR_GCFrame m_pGCFrame; // The topmost GC Frame
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 public:
     void ChooseThreadCPUGroupAffinity();
     void ClearThreadCPUGroupAffinity();

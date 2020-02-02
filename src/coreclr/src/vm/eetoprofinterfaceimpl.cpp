@@ -16,7 +16,7 @@
 // PLEASE READ!
 //
 // There are strict rules for how to implement ICorProfilerCallback* wrappers.  Please read
-// https://github.com/dotnet/runtime/blob/master/docs/coreclr/botr/profilability.md
+// https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/profilability.md
 // to understand the rules and why they exist.
 //
 // As a reminder, here is a short summary of your responsibilities.  Every PUBLIC
@@ -979,7 +979,7 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
 
     if (m_pSavedAllocDataBlock)
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
         _ASSERTE((UINT_PTR)m_pSavedAllocDataBlock != 0xFFFFFFFFFFFFFFFF);
 #else
         _ASSERTE((UINT_PTR)m_pSavedAllocDataBlock != 0xFFFFFFFF);
@@ -5753,7 +5753,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
                 return hr;
         }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
             pData->arrULONG[i] = (pData->arrMemBlockSize[i] > UINT32_MAX) ? UINT32_MAX : (ULONG)pData->arrMemBlockSize[i];
@@ -5783,7 +5783,7 @@ HRESULT EEToProfInterfaceImpl::MovedReferences(GCReferencesData *pData)
                 return hr;
         }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Recompute sizes as ULONGs for legacy callback
         for (ULONG i = 0; i < pData->curIdx; i++)
             pData->arrULONG[i] = (pData->arrMemBlockSize[i] > UINT32_MAX) ? UINT32_MAX : (ULONG)pData->arrMemBlockSize[i];

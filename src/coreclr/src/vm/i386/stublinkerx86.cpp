@@ -27,9 +27,9 @@
 #include "dbginterface.h"
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #include "asmconstants.h"
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #include "class.h"
 #include "stublink.inl"
 
@@ -63,7 +63,7 @@ extern "C" VOID __cdecl ArrayOpStubNullException(void);
 extern "C" VOID __cdecl ArrayOpStubRangeException(void);
 extern "C" VOID __cdecl ArrayOpStubTypeMismatchException(void);
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #define EXCEPTION_HELPERS(base) \
     extern "C" VOID __cdecl base##_RSIRDI_ScratchArea(void); \
     extern "C" VOID __cdecl base##_ScratchArea(void); \
@@ -73,14 +73,14 @@ EXCEPTION_HELPERS(ArrayOpStubNullException);
 EXCEPTION_HELPERS(ArrayOpStubRangeException);
 EXCEPTION_HELPERS(ArrayOpStubTypeMismatchException);
 #undef EXCEPTION_HELPERS
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 #endif // !FEATURE_ARRAYSTUB_AS_IL
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #if defined(_DEBUG)
 extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
 #endif // _DEBUG
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #ifdef FEATURE_COMINTEROP
 Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
@@ -88,7 +88,7 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
 
 
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 BOOL IsPreservedReg (X86Reg reg)
 {
@@ -104,9 +104,9 @@ BOOL IsPreservedReg (X86Reg reg)
     return PreservedRegMask & (1 << reg);
 }
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //-----------------------------------------------------------------------
 // InstructionFormat for near Jump and short Jump
 //-----------------------------------------------------------------------
@@ -379,9 +379,9 @@ class X86NearJump : public InstructionFormat
 {
     public:
         X86NearJump() : InstructionFormat(  InstructionFormat::k8|InstructionFormat::k32
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                                           | InstructionFormat::k64Small | InstructionFormat::k64
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                                           )
         {
             LIMITED_METHOD_CONTRACT;
@@ -397,13 +397,13 @@ class X86NearJump : public InstructionFormat
 
                 case k32:
                     return 5;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 case k64Small:
                     return 5 + 2;
 
                 case k64:
                     return 12;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 default:
                     _ASSERTE(!"unexpected refsize");
                     return 0;
@@ -424,7 +424,7 @@ class X86NearJump : public InstructionFormat
                 pOutBuffer[0] = 0xe9;
                 *((__int32*)(pOutBuffer+1)) = (__int32)fixedUpReference;
             }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             else if (k64Small == refsize)
             {
                 UINT64 TargetAddress = (INT64)pOutBuffer + fixedUpReference + GetSizeOfInstruction(refsize, variationCode);
@@ -449,7 +449,7 @@ class X86NearJump : public InstructionFormat
                 pOutBuffer[10] = 0xFF;
                 pOutBuffer[11] = 0xE0;
             }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
             else
             {
                 _ASSERTE(!"unreached");
@@ -475,7 +475,7 @@ class X86NearJump : public InstructionFormat
                 case InstructionFormat::k32:
                     return sizeof(PVOID) <= sizeof(UINT32);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 case InstructionFormat::k64Small:
                     return FitsInI4(offset);
 
@@ -498,13 +498,13 @@ class X86NearJump : public InstructionFormat
                     return FitsInI1(offset);
 
                 case InstructionFormat::k32:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     return FitsInI4(offset);
 #else
                     return TRUE;
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 case InstructionFormat::k64Small:
                     // EmitInstruction emits a non-relative jmp for
                     // k64Small.  We don't have enough info to predict the
@@ -571,9 +571,9 @@ class X86Call : public InstructionFormat
     public:
         X86Call ()
             : InstructionFormat(  InstructionFormat::k32
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                                 | InstructionFormat::k64Small | InstructionFormat::k64
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                                 )
         {
             LIMITED_METHOD_CONTRACT;
@@ -588,13 +588,13 @@ class X86Call : public InstructionFormat
             case k32:
                 return 5;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case k64Small:
                 return 5 + 2;
 
             case k64:
                 return 10 + 2;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             default:
                 _ASSERTE(!"unexpected refsize");
@@ -613,7 +613,7 @@ class X86Call : public InstructionFormat
                 *((__int32*)(1+pOutBuffer)) = (__int32)fixedUpReference;
                 break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case k64Small:
                 UINT64 TargetAddress;
 
@@ -639,7 +639,7 @@ class X86Call : public InstructionFormat
                 pOutBuffer[10] = 0xff;
                 pOutBuffer[11] = 0xd0;
                 break;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             default:
                 _ASSERTE(!"unreached");
@@ -649,7 +649,7 @@ class X86Call : public InstructionFormat
 
 // For x86, the default CanReach implementation will suffice.  It only needs
 // to handle k32.
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         virtual BOOL CanReach(UINT refsize, UINT variationCode, BOOL fExternal, INT_PTR offset)
         {
             if (fExternal)
@@ -699,7 +699,7 @@ class X86Call : public InstructionFormat
                 }
             }
         }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 };
 
 
@@ -732,7 +732,7 @@ class X86PushImm32 : public InstructionFormat
         }
 };
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 //-----------------------------------------------------------------------
 // InstructionFormat for lea reg, [RIP relative].
 //-----------------------------------------------------------------------
@@ -813,9 +813,9 @@ class X64LeaRIP : public InstructionFormat
         }
 };
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 static BYTE gX64NearJumpSetup[sizeof(X64NearJumpSetup)];
 static BYTE gX64NearJumpExecute[sizeof(X64NearJumpExecute)];
 static BYTE gX64LeaRIP[sizeof(X64LeaRIP)];
@@ -840,7 +840,7 @@ static BYTE gX86PushImm32[sizeof(X86PushImm32)];
     new (gX86Call) X86Call();
     new (gX86PushImm32) X86PushImm32(InstructionFormat::k32);
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     new (gX64NearJumpSetup) X64NearJumpSetup();
     new (gX64NearJumpExecute) X64NearJumpExecute();
     new (gX64LeaRIP) X64LeaRIP();
@@ -855,7 +855,7 @@ VOID StubLinkerCPU::X86EmitMovRegReg(X86Reg destReg, X86Reg srcReg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 
     if (destReg >= kR8)
@@ -904,7 +904,7 @@ VOID StubLinkerCPU::X86EmitPushReg(X86Reg reg)
     X86Reg origReg = reg;
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (reg >= kR8)
     {
         Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
@@ -934,13 +934,13 @@ VOID StubLinkerCPU::X86EmitPopReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (reg >= kR8)
     {
         Emit8(REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT | REX_OPCODE_REG_EXT);
         reg = X86RegFromAMD64Reg(reg);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     Emit8(static_cast<UINT8>(0x58 + reg));
     Pop(sizeof(void*));
@@ -994,7 +994,7 @@ VOID StubLinkerCPU::X86EmitPushImmPtr(LPVOID value BIT64_ARG(X86Reg tmpReg /*=kR
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     X86EmitRegLoad(tmpReg, (UINT_PTR) value);
     X86EmitPushReg(tmpReg);
 #else
@@ -1010,7 +1010,7 @@ VOID StubLinkerCPU::X86EmitZeroOutReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // 32-bit results are zero-extended, so we only need the REX byte if
     // it's an extended register.
     if (reg >= kR8)
@@ -1052,7 +1052,7 @@ VOID StubLinkerCPU::X86EmitCmpRegImm32(X86Reg reg, INT32 imm32)
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 
     if (reg >= kR8)
@@ -1074,7 +1074,7 @@ VOID StubLinkerCPU::X86EmitCmpRegImm32(X86Reg reg, INT32 imm32)
     }
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //---------------------------------------------------------------
 // Emits:
 //    CMP [reg+offs], imm32
@@ -1097,9 +1097,9 @@ VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32
 }
 
 VOID StubLinkerCPU:: X64EmitCmp32RegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#else // _TARGET_AMD64_
+#else // TARGET_AMD64
 VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32)
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 {
     CONTRACTL
     {
@@ -1142,7 +1142,7 @@ VOID StubLinkerCPU:: X86EmitCmpRegIndexImm32(X86Reg reg, INT32 offs, INT32 imm32
 
 //---------------------------------------------------------------
 // Emits:
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 //  mov     rax, <target>
 //  add     rsp, imm32
 //  jmp     rax
@@ -1155,7 +1155,7 @@ VOID StubLinkerCPU::X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
     X86EmitAddEsp(imm32);
     EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
@@ -1167,7 +1167,7 @@ VOID StubLinkerCPU::X86EmitTailcallWithESPAdjust(CodeLabel *pTarget, INT32 imm32
 
 //---------------------------------------------------------------
 // Emits:
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 //  mov     rax, <target>
 //  pop     reg
 //  jmp     rax
@@ -1180,7 +1180,7 @@ VOID StubLinkerCPU::X86EmitTailcallWithSinglePop(CodeLabel *pTarget, X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpSetup&>(gX64NearJumpSetup), 0);
     X86EmitPopReg(reg);
     EmitLabelRef(pTarget, reinterpret_cast<X64NearJumpExecute&>(gX64NearJumpExecute), 0);
@@ -1227,9 +1227,9 @@ VOID StubLinkerCPU::X86EmitCall(CodeLabel *target, int iArgBytes)
     INDEBUG(Emit8(0x90));   // Emit a nop after the call in debug so that
                             // we know that this is a call that can directly call
                             // managed code
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     Pop(iArgBytes);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 }
 
 
@@ -1242,7 +1242,7 @@ VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-#if defined(_TARGET_AMD64_) || defined(UNIX_X86_ABI)
+#if defined(TARGET_AMD64) || defined(UNIX_X86_ABI)
         PRECONDITION(wArgBytes == 0);
 #endif
 
@@ -1260,7 +1260,7 @@ VOID StubLinkerCPU::X86EmitReturn(WORD wArgBytes)
     Pop(wArgBytes);
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //---------------------------------------------------------------
 // Emits:
 //    JMP <ofs8>   or
@@ -1271,7 +1271,7 @@ VOID StubLinkerCPU::X86EmitLeaRIP(CodeLabel *target, X86Reg reg)
     STANDARD_VM_CONTRACT;
     EmitLabelRef(target, reinterpret_cast<X64LeaRIP&>(gX64LeaRIP), reg);
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 
 
@@ -1330,7 +1330,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStore(X86Reg dstreg,
         X86EmitOp(0x89, srcreg, (X86Reg)kESP_Unsafe,  ofs);
 }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 //---------------------------------------------------------------
 // Emits:
 //    mov [RSP + <ofs>],<srcreg>
@@ -1360,7 +1360,7 @@ VOID StubLinkerCPU::X86EmitIndexRegStoreR12(__int32 ofs,
 
     X86EmitOp(0x89, srcreg, (X86Reg)kR12,  ofs, (X86Reg)0, 0, k64BitOp);
 }
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // Emits:
@@ -1458,14 +1458,14 @@ VOID StubLinkerCPU::X86EmitIndexLea(X86Reg dstreg, X86Reg srcreg, __int32 ofs)
     X86EmitOffsetModRM(0x8d, dstreg, srcreg, ofs);
 }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 VOID StubLinkerCPU::X86EmitIndexLeaRSP(X86Reg dstreg, X86Reg srcreg, __int32 ofs)
 {
     STANDARD_VM_CONTRACT;
 
     X86EmitOp(0x8d, dstreg, (X86Reg)kESP_Unsafe,  ofs, (X86Reg)0, 0, k64BitOp);
 }
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // Emits:
@@ -1588,7 +1588,7 @@ VOID StubLinkerCPU::X86EmitAddReg(X86Reg reg, INT32 imm32)
     if (imm32 == 0)
         return;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 
     if (reg >= kR8)
@@ -1633,7 +1633,7 @@ VOID StubLinkerCPU::X86EmitSubReg(X86Reg reg, INT32 imm32)
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 
     if (reg >= kR8)
@@ -1666,7 +1666,7 @@ VOID StubLinkerCPU::X86EmitSubRegReg(X86Reg destReg, X86Reg srcReg)
     X86EmitR2ROp(0x29, srcReg, destReg);
 }
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // movdqa destXmmreg, srcXmmReg
@@ -1847,7 +1847,7 @@ VOID StubLinkerCPU::X64EmitMovXmmWorker(BYTE prefix, BYTE opcode, X86Reg Xmmreg,
     EmitBytes(codeBuffer, nBytes);
 }
 
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
 //---------------------------------------------------------------
 // Emits a MOD/RM for accessing a dword at [<indexreg> + ofs32]
@@ -1859,7 +1859,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRM(BYTE opcode, X86Reg opcodereg, X86Reg ind
     BYTE    codeBuffer[7];
     BYTE*   code    = codeBuffer;
     int     nBytes  = 0;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     code++;
     //
     // code points to base X86 instruction,
@@ -1923,7 +1923,7 @@ VOID StubLinkerCPU::X86EmitOffsetModRmSIB(BYTE opcode, X86Reg opcodeOrReg, X86Re
     BYTE*   code    = codeBuffer;
     int     nBytes  = 0;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     _ASSERTE(!"NYI");
 #endif
     code[0] = opcode;
@@ -1973,7 +1973,7 @@ VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)
 
     UINT cbimm = sizeof(void*);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // amd64 zero-extends all 32-bit operations.  If the immediate will fit in
     // 32 bits, use the smaller encoding.
 
@@ -1993,7 +1993,7 @@ VOID StubLinkerCPU::X86EmitRegLoad(X86Reg reg, UINT_PTR imm)
         // the low 4 bytes.
         cbimm = sizeof(UINT32);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     Emit8(0xB8 | (BYTE)reg);
     EmitBytes((BYTE*)&imm, cbimm);
 }
@@ -2046,7 +2046,7 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (   k64BitOp == OperandSize
         || altreg    >= kR8
         || basereg   >= kR8
@@ -2080,7 +2080,7 @@ VOID StubLinkerCPU::X86EmitOp(WORD    opcode,
 
         Emit8(rex);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     BYTE modrmbyte = static_cast<BYTE>(altreg << 3);
     BOOL fNeedSIB  = FALSE;
@@ -2189,7 +2189,7 @@ VOID StubLinkerCPU::X86EmitR2ROp (WORD opcode,
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = 0;
 
     if (modrmreg >= kR8)
@@ -2209,7 +2209,7 @@ VOID StubLinkerCPU::X86EmitR2ROp (WORD opcode,
 
     if (rex)
         Emit8(REX_PREFIX_BASE | rex);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     Emit8((BYTE)opcode);
 
@@ -2236,7 +2236,7 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
     BYTE   *code = codeBuffer;
     int     nBytes;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = 0;
 
     if (k64BitOp == OperandSize)
@@ -2255,7 +2255,7 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
         nBytes = 1;
     }
     else
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     {
         nBytes = 0;
     }
@@ -2306,7 +2306,7 @@ VOID StubLinkerCPU::X86EmitDebugTrashReg(X86Reg reg)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE rex = REX_PREFIX_BASE | REX_OPERAND_SIZE_64BIT;
 
     if (reg >= kR8)
@@ -2345,7 +2345,7 @@ X86Reg GetX86ArgumentRegisterFromOffset(size_t ofs)
 }
 
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 static const X86Reg c_argRegs[] = {
     #define ARGUMENT_REGISTER(regname) k##regname,
     ENUM_ARGUMENT_REGISTERS()
@@ -2356,7 +2356,7 @@ static const X86Reg c_argRegs[] = {
 
 #ifndef CROSSGEN_COMPILE
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
 void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
 {
     STANDARD_VM_CONTRACT;
@@ -2367,7 +2367,7 @@ void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFun
         mov         rcx, &(pHelperFuncCount->count)
    lock inc        [rcx]
         pop         rcx
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         mov         rax, <pJitHelper>
         jmp         rax
 #else
@@ -2384,7 +2384,7 @@ void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFun
     BYTE lock_inc_RCX[] = { 0xf0, 0xff, 0x01 };
     EmitBytes(lock_inc_RCX, sizeof(lock_inc_RCX));
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // mov      rax, <pJitHelper>
     // pop      rcx
     // jmp      rax
@@ -2394,7 +2394,7 @@ void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFun
 #endif
     X86EmitTailcallWithSinglePop(NewExternalCodeLabel(pJitHelper), kECX);
 }
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
 VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedRegSet)
 {
@@ -2408,7 +2408,7 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     X86EmitPushRegs(preservedRegSet & ((1 << kEAX) | (1 << kEDX) | (1 << kECX)));
 
@@ -2431,12 +2431,12 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
         X86EmitDebugTrashReg(kECX);
 #endif // _DEBUG
 
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     BYTE code[] = { 0x65,0x48,0x8b,0x04,0x25 };    // mov dstreg, qword ptr gs:[IMM32]
     static const int regByteIndex = 3;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     BYTE code[] = { 0x64,0x8b,0x05 };              // mov dstreg, dword ptr fs:[IMM32]
     static const int regByteIndex = 2;
 #endif
@@ -2449,10 +2449,10 @@ VOID StubLinkerCPU::X86EmitCurrentThreadFetch(X86Reg dstreg, unsigned preservedR
 
     X86EmitIndexRegLoad(dstreg, dstreg, (g_TlsIndex & 0x7FFF0000) >> 16);
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 #if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
 VOID StubLinkerCPU::EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame)
@@ -2819,9 +2819,9 @@ VOID StubLinkerCPU::EmitRareSetup(CodeLabel *pRejoinPoint, BOOL fThrow)
 }
 
 //========================================================================
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 //========================================================================
-#if defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 //========================================================================
 //  Epilog for stubs that enter managed code from COM
 //
@@ -2928,9 +2928,9 @@ void StubLinkerCPU::EmitSharedComMethodStubEpilog(TADDR pFrameVptr,
 }
 
 //========================================================================
-#endif // defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
+#endif // defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
-#if !defined(FEATURE_STUBS_AS_IL) && defined(_TARGET_X86_)
+#if !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 /*==============================================================================
     Pushes a TransitionFrame on the stack
     If you make any changes to the prolog instruction sequence, be sure
@@ -3079,9 +3079,9 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
     EmitLabel(pLabel);
 #endif
 }
-#endif // !defined(FEATURE_STUBS_AS_IL) && defined(_TARGET_X86_)
+#endif // !defined(FEATURE_STUBS_AS_IL) && defined(TARGET_X86)
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // This method unboxes the THIS pointer and then calls pRealMD
 // If it's shared code for a method in a generic value class, then also extract the vtable pointer
 // and pass it as an extra argument.  Thus this stub generator really covers both
@@ -3112,9 +3112,9 @@ VOID StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     X86EmitAddReg(THIS_kREG, sizeof(void*));
     EmitTailJumpToMethod(pUnboxMD);
 }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
-#if defined(FEATURE_SHARE_GENERIC_CODE) && defined(_TARGET_AMD64_)
+#if defined(FEATURE_SHARE_GENERIC_CODE) && defined(TARGET_AMD64)
 VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg)
 {
     STANDARD_VM_CONTRACT;
@@ -3173,9 +3173,9 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 
     EmitTailJumpToMethod(pSharedMD);
 }
-#endif // defined(FEATURE_SHARE_GENERIC_CODE) && defined(_TARGET_AMD64_)
+#endif // defined(FEATURE_SHARE_GENERIC_CODE) && defined(TARGET_AMD64)
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 {
     if (pMD->HasStableEntryPoint())
@@ -3193,7 +3193,7 @@ VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 
 VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     EmitLoadMethodAddressIntoAX(pMD);
     Emit16(X86_INSTR_JMP_EAX);
 #else
@@ -3211,7 +3211,7 @@ VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
 #endif
 }
 
-#if defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(_TARGET_X86_)
+#if defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(TARGET_X86)
 // The stub generated by this method passes an extra dictionary argument before jumping to
 // shared-instantiation generic code.
 //
@@ -3279,7 +3279,7 @@ VOID StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
 
     EmitTailJumpToMethod(pMD);
 }
-#endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(_TARGET_X86_)
+#endif // defined(FEATURE_SHARE_GENERIC_CODE) && !defined(FEATURE_INSTANTIATINGSTUB_AS_IL) && defined(TARGET_X86)
 
 
 #if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
@@ -3428,7 +3428,7 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // X86EmitCall will generate "mov rax, target/jmp rax", so we have to save
     // rax on the stack.  DO NOT use X86EmitPushReg.  That will induce infinite
     // recursion, since the push may require more unwind info.  This "push rax"
@@ -3444,7 +3444,7 @@ VOID StubLinkerCPU::EmitUnwindInfoCheckSubfunction()
 #endif // defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //-----------------------------------------------------------------------
 // Generates the inline portion of the code to enable preemptive GC. Hopefully,
@@ -3663,7 +3663,7 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 }
 #endif // FEATURE_COMINTEROP
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #endif // CROSSGEN_COMPILE
 
@@ -3672,7 +3672,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 {
     STANDARD_VM_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
     // mov SCRATCHREG,rsp
     X86_64BitOperands();
@@ -3814,7 +3814,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     //   jmp r10
     X86EmitR2ROp(0xff, (X86Reg)4, kR10);
 
-#else // _TARGET_AMD64_
+#else // TARGET_AMD64
 
     UINT espadjust = 0;
     BOOL haveMemMemMove = FALSE;
@@ -3903,13 +3903,13 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
     static const BYTE bjmpeax[] = { 0xff, 0x20 };
     EmitBytes(bjmpeax, sizeof(bjmpeax));
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 }
 
 
 #if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 //===========================================================================
 // Computes hash code for MulticastDelegate.Invoke()
 UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
@@ -3942,9 +3942,9 @@ UINT_PTR StubLinkerCPU::HashMulticastInvoke(MetaSig* pSig)
 
     return hash;
 }
-#endif // defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
+#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 //===========================================================================
 // Emits code for MulticastDelegate.Invoke()
 VOID StubLinkerCPU::EmitDelegateInvoke()
@@ -3979,9 +3979,9 @@ VOID StubLinkerCPU::EmitDelegateInvoke()
 
     X86EmitReturn(0);
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 {
     STANDARD_VM_CONTRACT;
@@ -4099,7 +4099,7 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
     // Epilog
     EmitMethodStubEpilog(numStackBytes, MulticastFrame::GetOffsetOfTransitionBlock());
 }
-#endif // defined(_TARGET_X86_) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
+#endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
 #endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
 
@@ -4231,7 +4231,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
     //  total (accumulates unscaled offset)     edi                 r10
     //  factor (accumulates the slice factor)   esi                 r11
     X86Reg kArrayRefReg = THIS_kREG;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     const X86Reg kArrayMTReg  = kR10;
     const X86Reg kTotalReg    = kR10;
     const X86Reg kFactorReg   = kR11;
@@ -4241,7 +4241,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
     const X86Reg kFactorReg   = kESI;
 #endif
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Simplifying assumption for fNeedPrologue.
     _ASSERTE(!pArrayOpScript->m_gcDesc || (pArrayOpScript->m_flags & ArrayOpScript::NEEDSWRITEBARRIER));
     // Simplifying assumption for saving rsi and rdi.
@@ -4313,7 +4313,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
     BOOL fSavedESI = FALSE;
     BOOL fSavedEDI = FALSE;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (fNeedPrologue)
     {
         // Save argument registers if we'll be making a call before using
@@ -4400,7 +4400,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // If that fails we will fall back to calling the slow helper ( ArrayStoreCheck ) that erects a frame.
             // See also JitInterfaceX86::JIT_Stelem_Ref
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // RCX contains pointer to object to check (Object*)
             // RDX contains array type handle
 
@@ -4441,7 +4441,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             CodeLabel * Cleanup = NewCodeLabel();
             X86EmitCondJump(Cleanup, X86CondCode::kJZ);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // get address of value to store
             // lea rcx, [rsp+offs]
             X86EmitEspOffset(0x8d, kRCX,   ofsadjust + pArrayOpScript->m_fValLoc);
@@ -4466,7 +4466,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             X86EmitCall(NewExternalCodeLabel((LPVOID)ArrayStoreCheck), 0);
 
             EmitLabel(Cleanup);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             X86EmitEspOffset(0x8b, kRCX, 0x00 + ofsadjust + TransitionBlock::GetOffsetOfArgumentRegisters());
             X86EmitEspOffset(0x8b, kRDX, 0x08 + ofsadjust + TransitionBlock::GetOffsetOfArgumentRegisters());
             X86EmitEspOffset(0x8b, kR8, 0x10 + ofsadjust + TransitionBlock::GetOffsetOfArgumentRegisters());
@@ -4491,26 +4491,18 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             // Load up the hidden type parameter into 'typeReg'
             X86Reg typeReg = LoadArrayOpArg(pArrayOpScript->m_typeParamOffs, this, kEAX, ofsadjust);
 
-            // 'typeReg' holds the typeHandle for the ARRAY.  This must be a ArrayTypeDesc*, so
-            // mask off the low two bits to get the TypeDesc*
-            X86EmitR2ROp(0x83, (X86Reg)4, typeReg);    //   AND typeReg, 0xFFFFFFFC
-            Emit8(0xFC);
-
+            // 'typeReg' holds the typeHandle/MethodTable for the ARRAY.
             // If 'typeReg' is NULL then we're executing the readonly ::Address and no type check is
             // needed.
             CodeLabel *Inner_passedTypeCheck = NewCodeLabel();
 
+            // test typeReg, typeReg
+            X86EmitR2ROp(0x85, typeReg, typeReg);
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
-            // Get the parameter of the parameterize type
-            // mov typeReg, [typeReg.m_Arg]
-            X86EmitOp(0x8b, typeReg, typeReg, offsetof(ParamTypeDesc, m_Arg) AMD64_ARG(k64BitOp));
-
-            // Compare this against the element type of the array.
-            // mov ESI/R10, [kArrayRefReg]
-            X86EmitOp(0x8b, kArrayMTReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
-            // cmp typeReg, [ESI/R10+m_ElementType];
-            X86EmitOp(0x3b, typeReg, kArrayMTReg, MethodTable::GetOffsetOfArrayElementTypeHandle() AMD64_ARG(k64BitOp));
+            // Compare MT against the MT of the array.                     
+            // cmp typeReg, [kArrayRefReg]
+            X86EmitOp(0x3b, typeReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
 
             // Throw error if not equal
             Inner_typeMismatchexception = NewCodeLabel();
@@ -4764,14 +4756,14 @@ COPY_VALUE_CLASS:
                 case 4:
                     if (pArrayOpScript->m_flags & ArrayOpScript::ISFPUTYPE)
                     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         // movss xmm0, dword ptr ELEMADDR
                         Emit8(0xf3);
                         X86EmitOp(0x100f, (X86Reg)0, elemBaseReg, elemOfs, elemScaledReg, elemScale);
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
                         // fld dword ptr ELEMADDR
                         X86EmitOp(0xd9, (X86Reg)0, elemBaseReg, elemOfs, elemScaledReg, elemScale);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
                     }
                     else
                     {
@@ -4783,20 +4775,20 @@ COPY_VALUE_CLASS:
                 case 8:
                     if (pArrayOpScript->m_flags & ArrayOpScript::ISFPUTYPE)
                     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         // movsd xmm0, qword ptr ELEMADDR
                         Emit8(0xf2);
                         X86EmitOp(0x100f, (X86Reg)0, elemBaseReg, elemOfs, elemScaledReg, elemScale);
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
                         // fld qword ptr ELEMADDR
                         X86EmitOp(0xdd, (X86Reg)0, elemBaseReg, elemOfs, elemScaledReg, elemScale);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
                     }
                     else
                     {
                         // mov eax, ELEMADDR
                         X86EmitOp(0x8b, kEAX, elemBaseReg, elemOfs, elemScaledReg, elemScale AMD64_ARG(k64BitOp));
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // mov edx, ELEMADDR + 4
                         X86EmitOp(0x8b, kEDX, elemBaseReg, elemOfs + 4, elemScaledReg, elemScale);
 #endif
@@ -4828,7 +4820,7 @@ COPY_VALUE_CLASS:
                 X86EmitOp(0x89, kValueReg, elemBaseReg, elemOfs, elemScaledReg, elemScale);
                 break;
             case 4:
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
                 if (pArrayOpScript->m_flags & ArrayOpScript::NEEDSWRITEBARRIER)
                 {
                     // mov SCRATCH, [esp + valoffset]
@@ -4842,7 +4834,7 @@ COPY_VALUE_CLASS:
                     X86EmitCall(NewExternalCodeLabel((LPVOID) &JIT_WriteBarrierEAX), 0);
                 }
                 else
-#else // _TARGET_AMD64_
+#else // TARGET_AMD64
                 if (pArrayOpScript->m_flags & ArrayOpScript::ISFPUTYPE)
                 {
                     if (!TransitionBlock::IsStackArgumentOffset(pArrayOpScript->m_fValLoc))
@@ -4863,7 +4855,7 @@ COPY_VALUE_CLASS:
                     X86EmitOp(0x110f, kValueReg, elemBaseReg, elemOfs, elemScaledReg, elemScale);
                 }
                 else
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                 {
                     // mov SCRATCH, [esp + valoffset]
                     kValueReg = LoadArrayOpArg(pArrayOpScript->m_fValLoc, this, SCRATCH_REGISTER_X86REG, ofsadjust AMD64_ARG(k32BitOp));
@@ -4877,7 +4869,7 @@ COPY_VALUE_CLASS:
 
                 if (!(pArrayOpScript->m_flags & ArrayOpScript::NEEDSWRITEBARRIER))
                 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                     if (pArrayOpScript->m_flags & ArrayOpScript::ISFPUTYPE)
                     {
                         if (!TransitionBlock::IsStackArgumentOffset(pArrayOpScript->m_fValLoc))
@@ -4905,7 +4897,7 @@ COPY_VALUE_CLASS:
                         // mov ELEMADDR, SCRATCH
                         X86EmitOp(0x89, kValueReg, elemBaseReg, elemOfs, elemScaledReg, elemScale, k64BitOp);
                     }
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
                     _ASSERTE(TransitionBlock::IsStackArgumentOffset(pArrayOpScript->m_fValLoc)); // on x86, value will never get a register: so too lazy to implement that case
                     // mov SCRATCH, [esp + valoffset]
                     X86EmitEspOffset(0x8b, SCRATCH_REGISTER_X86REG, pArrayOpScript->m_fValLoc + ofsadjust);
@@ -4917,10 +4909,10 @@ COPY_VALUE_CLASS:
                     X86EmitEspOffset(0x8b, SCRATCH_REGISTER_X86REG, pArrayOpScript->m_fValLoc + ofsadjust + 4);
                     // mov ELEMADDR+4, SCRATCH
                     X86EmitOp(0x89, SCRATCH_REGISTER_X86REG, elemBaseReg, elemOfs+4, elemScaledReg, elemScale);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
                     break;
                 }
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 else
                 {
                     _ASSERTE(SCRATCH_REGISTER_X86REG == kEAX); // value to store is already in EAX where we want it.
@@ -4937,22 +4929,22 @@ COPY_VALUE_CLASS:
                     X86EmitCall(NewExternalCodeLabel((PVOID)JIT_WriteBarrier), 0);
                     break;
                 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                     // FALL THROUGH (on x86)
             default:
                 // Ensure that these registers have been saved!
                 _ASSERTE(fSavedESI && fSavedEDI);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 // mov rsi, [rsp + valoffset]
                 kValueReg = LoadArrayOpArg(pArrayOpScript->m_fValLoc, this, kRSI, ofsadjust);
                 if (kRSI != kValueReg)
                     X86EmitR2ROp(0x8b, kRSI, kValueReg);
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
                 _ASSERTE(TransitionBlock::IsStackArgumentOffset(pArrayOpScript->m_fValLoc));
                 // lea esi, [esp + valoffset]
                 X86EmitEspOffset(0x8d, kESI, pArrayOpScript->m_fValLoc + ofsadjust);
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
                 // lea edi, ELEMADDR
                 X86EmitOp(0x8d, kEDI, elemBaseReg, elemOfs, elemScaledReg, elemScale AMD64_ARG(k64BitOp));
@@ -4966,7 +4958,7 @@ COPY_VALUE_CLASS:
 
     EmitLabel(Epilog);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (fNeedPrologue)
     {
         if (fNeedScratchArea)
@@ -4983,7 +4975,7 @@ COPY_VALUE_CLASS:
     }
 
     X86EmitReturn(0);
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
     // Restore the callee-saved registers
     X86EmitPopReg(kFactorReg);
     X86EmitPopReg(kTotalReg);
@@ -4994,14 +4986,14 @@ COPY_VALUE_CLASS:
 #else
     X86EmitReturn(0);
 #endif
-#endif // !_TARGET_AMD64_
+#endif // !TARGET_AMD64
 
     // Exception points must clean up the stack for all those extra args.
     // kFactorReg and kTotalReg will be popped by the jump targets.
 
     void *pvExceptionThrowFn;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 #define ARRAYOP_EXCEPTION_HELPERS(base)      { (PVOID)base, (PVOID)base##_RSIRDI, (PVOID)base##_ScratchArea, (PVOID)base##_RSIRDI_ScratchArea }
  static void *rgNullExceptionHelpers[]           = ARRAYOP_EXCEPTION_HELPERS(ArrayOpStubNullException);
     static void *rgRangeExceptionHelpers[]          = ARRAYOP_EXCEPTION_HELPERS(ArrayOpStubRangeException);
@@ -5009,40 +5001,40 @@ COPY_VALUE_CLASS:
 #undef ARRAYOP_EXCEPTION_HELPERS
 
     UINT iExceptionHelper = (fNeedRSIRDI ? 1 : 0) + (fNeedScratchArea ? 2 : 0);
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
 
     EmitLabel(Inner_nullexception);
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     pvExceptionThrowFn = (LPVOID)ArrayOpStubNullException;
 
     Emit8(0xb8);        // mov EAX, <stack cleanup>
     Emit32(pArrayOpScript->m_cbretpop);
-#else //_TARGET_AMD64_
+#else //TARGET_AMD64
     pvExceptionThrowFn = rgNullExceptionHelpers[iExceptionHelper];
-#endif //!_TARGET_AMD64_
+#endif //!TARGET_AMD64
     X86EmitNearJump(NewExternalCodeLabel(pvExceptionThrowFn));
 
     EmitLabel(Inner_rangeexception);
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
     pvExceptionThrowFn = (LPVOID)ArrayOpStubRangeException;
     Emit8(0xb8);        // mov EAX, <stack cleanup>
     Emit32(pArrayOpScript->m_cbretpop);
-#else //_TARGET_AMD64_
+#else //TARGET_AMD64
     pvExceptionThrowFn = rgRangeExceptionHelpers[iExceptionHelper];
-#endif //!_TARGET_AMD64_
+#endif //!TARGET_AMD64
     X86EmitNearJump(NewExternalCodeLabel(pvExceptionThrowFn));
 
     if (Inner_typeMismatchexception != NULL)
     {
         EmitLabel(Inner_typeMismatchexception);
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
         pvExceptionThrowFn = (LPVOID)ArrayOpStubTypeMismatchException;
         Emit8(0xb8);        // mov EAX, <stack cleanup>
         Emit32(pArrayOpScript->m_cbretpop);
-#else //_TARGET_AMD64_
+#else //TARGET_AMD64
         pvExceptionThrowFn = rgTypeMismatchExceptionHelpers[iExceptionHelper];
-#endif //!_TARGET_AMD64_
+#endif //!TARGET_AMD64
         X86EmitNearJump(NewExternalCodeLabel(pvExceptionThrowFn));
     }
 }
@@ -5063,7 +5055,7 @@ VOID StubLinkerCPU::EmitDebugBreak()
     Emit8(0xCC);
 }
 
-#if defined(FEATURE_COMINTEROP) && defined(_TARGET_X86_)
+#if defined(FEATURE_COMINTEROP) && defined(TARGET_X86)
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -5124,14 +5116,14 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 #pragma warning(pop)
 #endif
 
-#endif // FEATURE_COMINTEROP && _TARGET_X86_
+#endif // FEATURE_COMINTEROP && TARGET_X86
 
 #endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
 
 #endif // !DACCESS_COMPILE
 
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 //
 // TailCallFrame Object Scanning
@@ -5187,7 +5179,7 @@ void TailCallFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
                 offset &= 0x7FFFFFFC;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
                 offset <<= 1;
 #endif
                 offset += sizeof(void*);
@@ -5247,7 +5239,7 @@ static void EncodeOneGCOffset(CPUSTUBLINKER *pSl, ULONG delta, BOOL maybeInterio
     // we use the 1 bit to denote a range
     _ASSERTE((delta % sizeof(void*)) == 0);
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     // For 64-bit, we have 3 bits of alignment, so we allow larger frames
     // by shifting and gaining a free high-bit.
     ULONG encodedDelta = delta >> 1;
@@ -5847,7 +5839,7 @@ Stub * StubLinkerCPU::CreateTailCallCopyArgsThunk(CORINFO_SIG_INFO * pSig,
 }
 #endif // DACCESS_COMPILE
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 
 #ifdef HAS_FIXUP_PRECODE

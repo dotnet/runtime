@@ -1003,7 +1003,7 @@ namespace Internal.NativeCrypto
         internal static void ImportKeyBlob(SafeProvHandle saveProvHandle, CspProviderFlags flags, bool addNoSaltFlag, byte[] keyBlob, out SafeKeyHandle safeKeyHandle)
         {
             // Compat note: This isn't the same check as the one done by the CLR _ImportCspBlob QCall,
-            // but this does match the desktop CLR behavior and the only scenarios it
+            // but this does match the .NET Framework CLR behavior and the only scenarios it
             // affects are cases where a corrupt blob is passed in.
             bool isPublic = keyBlob.Length > 0 && keyBlob[0] == CapiHelper.PUBLICKEYBLOB;
 

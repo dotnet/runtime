@@ -1,0 +1,55 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 6 * * *"
+  displayName: Mon through Sun at 10:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - OSX_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: outerloop
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - OSX_x64
+    - Windows_NT_x64
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      crossgen2: true
+      displayNameArgs: R2R_CG2
+      liveLibrariesBuildConfig: Release

@@ -40,8 +40,8 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
         {
             // Swap res with head.
             prev->flNext = head;
-            jitstd::swap(head->flNext, res->flNext);
-            jitstd::swap(head, res);
+            std::swap(head->flNext, res->flNext);
+            std::swap(head, res);
         }
     }
     return head;
@@ -72,8 +72,7 @@ EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* blo
     // can occur within it, so clear m_curTry if it's non-null.
     if (m_curTry != nullptr)
     {
-        BasicBlock* beforeBlock = block->bbPrev;
-        if (beforeBlock != nullptr && beforeBlock->isBBCallAlwaysPair())
+        if (block->isBBCallAlwaysPairTail())
         {
             m_curTry = nullptr;
         }
@@ -176,17 +175,15 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
 
         // Now add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
         // these cannot cause transfer to the handler...)
-        BasicBlock* prevBB = nullptr;
-
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
         //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
-        for (BasicBlock *bb = fgFirstBB; bb != nullptr; prevBB = bb, bb = bb->bbNext)
+        for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
         {
-            if (bbInExnFlowRegions(tryIndex, bb) && (prevBB == nullptr || !prevBB->isBBCallAlwaysPair()))
+            if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {
                 res = new (this, CMK_FlowList) flowList(bb, res);
 
@@ -333,12 +330,16 @@ void BasicBlock::dspFlags()
     {
         printf("newobj ");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+    if (bbFlags & BBF_HAS_NULLCHECK)
+    {
+        printf("nullcheck ");
+    }
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_FINALLY_TARGET)
     {
         printf("ftarget ");
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
         printf("bwd ");
@@ -1375,6 +1376,67 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 }
 
 //------------------------------------------------------------------------
+// isBBCallAlwaysPair: Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+
+// Return Value:
+//    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+//    -- a block corresponding to an exit from the try of a try/finally.
+//
+// Notes:
+//    In the flow graph, this becomes a block that calls the finally, and a second, immediately
+//    following empty block (in the bbNext chain) to which the finally will return, and which
+//    branches unconditionally to the next block to be executed outside the try/finally.
+//    Note that code is often generated differently than this description. For example, on ARM,
+//    the target of the BBJ_ALWAYS is loaded in LR (the return register), and a direct jump is
+//    made to the 'finally'. The effect is that the 'finally' returns directly to the target of
+//    the BBJ_ALWAYS. A "retless" BBJ_CALLFINALLY is one that has no corresponding BBJ_ALWAYS.
+//    This can happen if the finally is known to not return (e.g., it contains a 'throw'). In
+//    that case, the BBJ_CALLFINALLY flags has BBF_RETLESS_CALL set. Note that ARM never has
+//    "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
+//    generating code.
+//
+bool BasicBlock::isBBCallAlwaysPair()
+{
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    if (this->bbJumpKind == BBJ_CALLFINALLY)
+#else
+    if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
+#endif
+    {
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        // On ARM, there are no retless BBJ_CALLFINALLY.
+        assert(!(this->bbFlags & BBF_RETLESS_CALL));
+#endif
+        // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
+        assert(this->bbNext != nullptr);
+        assert(this->bbNext->bbJumpKind == BBJ_ALWAYS);
+        assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+        assert(this->bbNext->isEmpty());
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+//
+// Return Value:
+//    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+//    -- a block corresponding to an exit from the try of a try/finally.
+//
+// Notes:
+//    See notes on isBBCallAlwaysPair(), above.
+//
+bool BasicBlock::isBBCallAlwaysPairTail()
+{
+    return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
+}
+
+//------------------------------------------------------------------------
 // hasEHBoundaryIn: Determine if this block begins at an EH boundary.
 //
 // Return Value:
@@ -1417,14 +1479,6 @@ bool BasicBlock::hasEHBoundaryIn()
 bool BasicBlock::hasEHBoundaryOut()
 {
     bool returnVal = false;
-    // If a block is marked BBF_KEEP_BBJ_ALWAYS, it is always paired with its predecessor which is an
-    // EH boundary block. It must remain empty, and we must not have any live incoming vars in registers,
-    // in particular because we can't perform resolution if there are mismatches across edges.
-    if ((bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0)
-    {
-        returnVal = true;
-    }
-
     if (bbJumpKind == BBJ_EHFILTERRET)
     {
         returnVal = true;

@@ -21,13 +21,13 @@
 #include <float.h>
 #include <limits.h>
 
-#if !defined(_TARGET_X86_) || defined(FEATURE_PAL)
+#if !defined(TARGET_X86) || defined(TARGET_UNIX)
 #ifndef FEATURE_EH_FUNCLETS
 #define FEATURE_EH_FUNCLETS
 #endif
-#endif // !_TARGET_X86_ || FEATURE_PAL
+#endif // !TARGET_X86 || TARGET_UNIX
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 typedef unsigned __int64 TARGET_POINTER_TYPE;
 #else
 typedef unsigned int TARGET_POINTER_TYPE;
@@ -41,7 +41,6 @@ typedef unsigned int TARGET_POINTER_TYPE;
 #include "gcinfotypes.h"
 
 #include "holder.h"
-#include "strongname.h"
 #include "ex.h"
 #include "corbbtprof.h"
 #include "clrnt.h"

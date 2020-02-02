@@ -65,11 +65,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<MethodWithGCInfo> _methodNodes;
         private List<int> _ehInfoOffsets;
 
-        private readonly ReadyToRunCodegenNodeFactory _nodeFactory;
+        private readonly NodeFactory _nodeFactory;
 
         private readonly EHInfoNode _ehInfoNode;
 
-        public ExceptionInfoLookupTableNode(ReadyToRunCodegenNodeFactory nodeFactory)
+        public ExceptionInfoLookupTableNode(NodeFactory nodeFactory)
             : base(nodeFactory.Target)
         {
             _nodeFactory = nodeFactory;

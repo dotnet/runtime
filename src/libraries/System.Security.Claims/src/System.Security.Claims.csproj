@@ -2,8 +2,8 @@
   <PropertyGroup>
     <AssemblyName>System.Security.Claims</AssemblyName>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Security\Claims\Claim.cs" />
     <Compile Include="System\Security\Claims\ClaimsIdentity.cs" />
@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Principal" />

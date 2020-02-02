@@ -870,7 +870,7 @@ namespace System.Management
                 strClass = OriginalClassName;
             }
 
-            // Check if the name of the class starts with a charachter. If not add "C" to the begining of the name
+            // Check if the name of the class starts with a charachter. If not add "C" to the beginning of the name
             if (char.IsLetter(strClass[0]) == false)
             {
                 strClass = "C" + strClass;
@@ -4837,7 +4837,7 @@ namespace System.Management
 
                     case CodeLanguage.JScript:
                         strProvider = "JScript.NET.";
-                        bSucceeded = false; // JScriptCodeProvider does not exist on CoreFx
+                        bSucceeded = false; // JScriptCodeProvider does not exist on .NET Core
                         break;
 
                     case CodeLanguage.CSharp:
@@ -5298,7 +5298,7 @@ namespace System.Management
         */
 
         /// <summary>
-        /// Adds comments at the begining of the class defination
+        /// Adds comments at the beginning of the class defination
         /// </summary>
         private void AddClassComments(CodeTypeDeclaration cc)
         {
@@ -5927,28 +5927,28 @@ namespace System.Management
         /// Internal function used to create code to convert DateTime or ManagementPath to String
         /// convert a expression. Used in adding code for Property Set for DateTime and Reference properties
         /// </summary>
-        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginingExpression)
+        private CodeExpression ConvertPropertyToString(string strType, CodeExpression beginningExpression)
         {
             switch (strType)
             {
                 case "System.DateTime":
 
                     CodeMethodInvokeExpression cmie1 = new CodeMethodInvokeExpression();
-                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginingExpression));
+                    cmie1.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.DateTime"), beginningExpression));
                     cmie1.Method.MethodName = PrivateNamesUsed["ToDMTFDateTimeMethod"].ToString();
                     return cmie1;
 
                 case "System.TimeSpan":
 
                     CodeMethodInvokeExpression cmie2 = new CodeMethodInvokeExpression();
-                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginingExpression));
+                    cmie2.Parameters.Add(new CodeCastExpression(new CodeTypeReference("System.TimeSpan"), beginningExpression));
                     cmie2.Method.MethodName = PrivateNamesUsed["ToDMTFTimeIntervalMethod"].ToString();
                     return cmie2;
 
                 case "System.Management.ManagementPath":
                     return new CodePropertyReferenceExpression(new CodeCastExpression(
                         new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()),
-                        beginingExpression), PublicNamesUsed["PathProperty"].ToString());
+                        beginningExpression), PublicNamesUsed["PathProperty"].ToString());
 
 
             }

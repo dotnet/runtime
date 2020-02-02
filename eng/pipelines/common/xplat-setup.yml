@@ -12,13 +12,6 @@ jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
     variables:
-      - name: _containsCoreClrChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_coreclr.containsChange'] ]
-      - name: _containsLibrariesChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: _containsInstallerChange
-        value: $[ dependencies.checkout.outputs['SetPathVars_installer.containsChange'] ]
-
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: archiveExtension
           value: '.zip'
@@ -31,7 +24,7 @@ jobs:
         - name: dir
           value: '\'
         - name: _msbuildCommand
-          value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+          value: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -ci
         - name: setScriptToEchoAndFailOnNonZero
           value: ''
 
@@ -47,7 +40,7 @@ jobs:
         - name: dir
           value: '/'
         - name: _msbuildCommand
-          value: ./eng/common/msbuild.sh --warnaserror false --ci
+          value: ./eng/common/msbuild.sh --ci
         # Set the bash script to display each command, and stop if any command exits nonzero.
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'
@@ -56,6 +49,12 @@ jobs:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
+
+      - name: runtimeFlavorName
+        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
+          value: Mono
+        ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
+          value: CoreCLR
 
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
@@ -84,13 +83,9 @@ jobs:
         ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: dnceng-freebsd-internal
 
-        # Official Build OSX Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted Mac Internal
-
         # Public OSX Build Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted macOS
+        ${{ if eq(parameters.osGroup, 'OSX') }}:
+          vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:

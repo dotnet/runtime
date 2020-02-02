@@ -1,0 +1,165 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExcludeSGenGCFromBuild>true</ExcludeSGenGCFromBuild>
+    <ExcludeSGenGCFromBuild Condition="'$(MONO_TARGET_GC)'=='sgen'">false</ExcludeSGenGCFromBuild>
+  </PropertyGroup>
+  <ItemGroup Label="monosgen_sources">
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\gc-internal-agnostic.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-alloc.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-archdep.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-cardtable.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-cardtable.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-client.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-conf.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-copy-object.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-debug.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-descriptor.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-descriptor.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-fin-weak-hash.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gc.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-gc.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gchandles.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-gray.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-gray.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-hash-table.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-hash-table.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-internal.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-layout-stats.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-layout-stats.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-los.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-major-copy-object.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-marksweep-drain-gray-stack.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-marksweep.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-memory-governor.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-memory-governor.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-minor-copy-object.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-minor-scan-object.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-nursery-allocator.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning-stats.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-pinning.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-pointer-queue.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-pointer-queue.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-array-list.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-array-list.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol-def.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-protocol.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-qsort.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-qsort.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-scan-object.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-simple-nursery.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-split-nursery.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-tagged-pointer.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-thread-pool.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-thread-pool.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\sgen\sgen-workers.c">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\sgen\sgen-workers.h">
+      <ExcludedFromBuild>$(ExcludeSGenGCFromBuild)</ExcludedFromBuild>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\mono\sgen\Makefile.am" />
+  </ItemGroup>
+</Project>

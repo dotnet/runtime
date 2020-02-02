@@ -19,7 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcdecoder.cpp
 // ******************************************************************************
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 /* This file is shared between the VM and JIT/IL and SOS/Strike directories */
 
@@ -530,7 +530,7 @@ const unsigned callCommonDelta[4] = { 6,8,10,12 };
  *
  *  Note that ARG_MASK is the mask of pushed args that contain GC pointers
  *   since the first two arguments are always passed in registers it is
- *   a fairly rare occurance to push a GC pointer as an argument, since it
+ *   a fairly rare occurrence to push a GC pointer as an argument, since it
  *   only occurs for nested calls, when the third or later argument for the
  *   outer call contains a GC ref.
  *
@@ -621,4 +621,4 @@ const unsigned callPatternTable[80] = {               // # of occurences
     0x07000300, //    1684
 };
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86

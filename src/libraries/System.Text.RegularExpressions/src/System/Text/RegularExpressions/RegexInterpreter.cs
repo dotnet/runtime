@@ -6,6 +6,7 @@
 // while consuming input.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -145,7 +146,7 @@ namespace System.Text.RegularExpressions
         {
             int newpos = runtrack![runtrackpos++];
 #if DEBUG
-            if (runmatch!.Debug)
+            if (runmatch!.IsDebug)
             {
                 if (newpos < 0)
                     Debug.WriteLine("       Backtracking (back2) to code position " + (-newpos));
@@ -386,51 +387,68 @@ namespace System.Text.RegularExpressions
 
         protected override bool FindFirstChar()
         {
-            if (0 != (_code.Anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
+            if (!_code.RightToLeft)
+            {
+                if (runtextpos > runtextend - _code.Tree.MinRequiredLength)
+                {
+                    runtextpos = runtextend;
+                    return false;
+                }
+            }
+            else
+            {
+                if (runtextpos - _code.Tree.MinRequiredLength < runtextbeg)
+                {
+                    runtextpos = runtextbeg;
+                    return false;
+                }
+            }
+
+            if (0 != (_code.Anchors & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End)))
             {
                 if (!_code.RightToLeft)
                 {
-                    if ((0 != (_code.Anchors & RegexFCD.Beginning) && runtextpos > runtextbeg) ||
-                        (0 != (_code.Anchors & RegexFCD.Start) && runtextpos > runtextstart))
+                    if ((0 != (_code.Anchors & RegexPrefixAnalyzer.Beginning) && runtextpos > runtextbeg) ||
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.Start) && runtextpos > runtextstart))
                     {
                         runtextpos = runtextend;
                         return false;
                     }
-                    if (0 != (_code.Anchors & RegexFCD.EndZ) && runtextpos < runtextend - 1)
+                    if (0 != (_code.Anchors & RegexPrefixAnalyzer.EndZ) && runtextpos < runtextend - 1)
                     {
                         runtextpos = runtextend - 1;
                     }
-                    else if (0 != (_code.Anchors & RegexFCD.End) && runtextpos < runtextend)
+                    else if (0 != (_code.Anchors & RegexPrefixAnalyzer.End) && runtextpos < runtextend)
                     {
                         runtextpos = runtextend;
                     }
                 }
                 else
                 {
-                    if ((0 != (_code.Anchors & RegexFCD.End) && runtextpos < runtextend) ||
-                        (0 != (_code.Anchors & RegexFCD.EndZ) && (runtextpos < runtextend - 1 ||
+                    if ((0 != (_code.Anchors & RegexPrefixAnalyzer.End) && runtextpos < runtextend) ||
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.EndZ) && (runtextpos < runtextend - 1 ||
                                                                (runtextpos == runtextend - 1 && CharAt(runtextpos) != '\n'))) ||
-                        (0 != (_code.Anchors & RegexFCD.Start) && runtextpos < runtextstart))
+                        (0 != (_code.Anchors & RegexPrefixAnalyzer.Start) && runtextpos < runtextstart))
                     {
                         runtextpos = runtextbeg;
                         return false;
                     }
-                    if (0 != (_code.Anchors & RegexFCD.Beginning) && runtextpos > runtextbeg)
+                    if (0 != (_code.Anchors & RegexPrefixAnalyzer.Beginning) && runtextpos > runtextbeg)
                     {
                         runtextpos = runtextbeg;
                     }
                 }
 
-                if (_code.BMPrefix != null)
+                if (_code.BoyerMoorePrefix != null)
                 {
-                    return _code.BMPrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
+                    return _code.BoyerMoorePrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
                 }
 
                 return true; // found a valid start or end anchor
             }
-            else if (_code.BMPrefix != null)
+            else if (_code.BoyerMoorePrefix != null)
             {
-                runtextpos = _code.BMPrefix.Scan(runtext!, runtextpos, runtextbeg, runtextend);
+                runtextpos = _code.BoyerMoorePrefix.Scan(runtext!, runtextpos, runtextbeg, runtextend);
 
                 if (runtextpos == -1)
                 {
@@ -440,82 +458,151 @@ namespace System.Text.RegularExpressions
 
                 return true;
             }
-            else if (_code.FCPrefix == null)
+            else if (_code.LeadingCharClasses is null)
             {
                 return true;
             }
 
-            _rightToLeft = _code.RightToLeft;
-            _caseInsensitive = _code.FCPrefix.GetValueOrDefault().CaseInsensitive;
-            string set = _code.FCPrefix.GetValueOrDefault().Prefix;
-
             // We now loop through looking for the first matching character.  This is a hot loop, so we lift out as many
             // branches as we can.  Each operation requires knowing whether this is a) right-to-left vs left-to-right, and
-            // b) case-sensitive vs case-insensitive.  So, we split it all out into 4 loops, for each combination of these.
-            // It's duplicated code, but it allows the inner loop to be much tighter than if everything were combined with
-            // multiple branches on each operation.  We can also then use spans to avoid bounds checks in at least the forward
-            // iteration direction where the JIT is able to detect the pattern.
+            // b) case-sensitive vs case-insensitive, and c) a singleton or not.  So, we split it all out into 8 loops, for
+            // each combination of these. It's duplicated code, but it allows the inner loop to be much tighter than if
+            // everything were combined with multiple branches on each operation.  We can also then use spans to avoid bounds
+            // checks in at least the forward iteration direction where the JIT is able to detect the pattern.
 
-            if (!_rightToLeft)
+            // TODO https://github.com/dotnet/runtime/issues/1349:
+            // LeadingCharClasses may contain multiple sets, one for each of the first N characters in the expression,
+            // but the interpreter currently only uses the first set for the first character.  In fact, we currently
+            // only run the analysis that can produce multiple sets if RegexOptions.Compiled was set.
+
+            string set = _code.LeadingCharClasses[0].CharClass;
+            if (RegexCharClass.IsSingleton(set))
             {
-                ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
-                if (!_caseInsensitive)
+                char ch = RegexCharClass.SingletonChar(set);
+
+                if (!_code.RightToLeft)
                 {
-                    // left-to-right, case-sensitive
-                    for (int i = 0; i < span.Length; i++)
+                    ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(span[i], set, ref _code.FCPrefixAsciiLookup))
+                        // singleton, left-to-right, case-sensitive
+                        int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(ch);
+                        if (i >= 0)
                         {
                             runtextpos += i;
                             return true;
                         }
                     }
+                    else
+                    {
+                        // singleton, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = 0; i < span.Length; i++)
+                        {
+                            if (ch == ti.ToLower(span[i]))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
+                        }
+                    }
+
+                    runtextpos = runtextend;
                 }
                 else
                 {
-                    // left-to-right, case-insensitive
-                    TextInfo ti = _culture.TextInfo;
-                    for (int i = 0; i < span.Length; i++)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.FCPrefixAsciiLookup))
+                        // singleton, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            runtextpos += i;
-                            return true;
+                            if (ch == runtext![i])
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
                         }
                     }
-                }
+                    else
+                    {
+                        // singleton, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (ch == ti.ToLower(runtext![i]))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
 
-                runtextpos = runtextend;
+                    runtextpos = runtextbeg;
+                }
             }
             else
             {
-                if (!_caseInsensitive)
+                if (!_code.RightToLeft)
                 {
-                    // right-to-left, case-sensitive
-                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                    ReadOnlySpan<char> span = runtext.AsSpan(runtextpos, runtextend - runtextpos);
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(runtext![i], set, ref _code.FCPrefixAsciiLookup))
+                        // set, left-to-right, case-sensitive
+                        for (int i = 0; i < span.Length; i++)
                         {
-                            runtextpos = i + 1;
-                            return true;
+                            if (RegexCharClass.CharInClass(span[i], set, ref _code.LeadingCharClassAsciiLookup))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
                         }
                     }
+                    else
+                    {
+                        // set, left-to-right, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = 0; i < span.Length; i++)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(span[i]), set, ref _code.LeadingCharClassAsciiLookup))
+                            {
+                                runtextpos += i;
+                                return true;
+                            }
+                        }
+                    }
+
+                    runtextpos = runtextend;
                 }
                 else
                 {
-                    // right-to-left, case-insensitive
-                    TextInfo ti = _culture.TextInfo;
-                    for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                    if (!_code.LeadingCharClasses[0].CaseInsensitive)
                     {
-                        if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.FCPrefixAsciiLookup))
+                        // set, right-to-left, case-sensitive
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
                         {
-                            runtextpos = i + 1;
-                            return true;
+                            if (RegexCharClass.CharInClass(runtext![i], set, ref _code.LeadingCharClassAsciiLookup))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
                         }
                     }
-                }
+                    else
+                    {
+                        // set, right-to-left, case-insensitive
+                        TextInfo ti = _culture.TextInfo;
+                        for (int i = runtextpos - 1; i >= runtextbeg; i--)
+                        {
+                            if (RegexCharClass.CharInClass(ti.ToLower(runtext![i]), set, ref _code.LeadingCharClassAsciiLookup))
+                            {
+                                runtextpos = i + 1;
+                                return true;
+                            }
+                        }
+                    }
 
-                runtextpos = runtextbeg;
+                    runtextpos = runtextbeg;
+                }
             }
 
             return false;
@@ -536,7 +623,7 @@ namespace System.Text.RegularExpressions
                     advance = -1;
                 }
 #if DEBUG
-                if (runmatch!.Debug)
+                if (runmatch!.IsDebug)
                 {
                     DumpState();
                 }
@@ -1066,6 +1153,7 @@ namespace System.Text.RegularExpressions
                         }
 
                     case RegexCode.Oneloop:
+                    case RegexCode.Oneloopatomic:
                         {
                             int c = Operand(1);
 
@@ -1085,14 +1173,17 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Oneloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;
                         }
 
                     case RegexCode.Notoneloop:
+                    case RegexCode.Notoneloopatomic:
                         {
                             int c = Operand(1);
 
@@ -1112,14 +1203,17 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Notoneloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;
                         }
 
                     case RegexCode.Setloop:
+                    case RegexCode.Setloopatomic:
                         {
                             int c = Operand(1);
 
@@ -1149,8 +1243,10 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i)
+                            if (c > i && Operator() == RegexCode.Setloop)
+                            {
                                 TrackPush(c - i - 1, Textpos() - Bump());
+                            }
 
                             advance = 2;
                             continue;
@@ -1286,6 +1382,7 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
+        [ExcludeFromCodeCoverage]
         internal override void DumpState()
         {
             base.DumpState();

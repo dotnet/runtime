@@ -547,7 +547,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     switch(regNum)
     {
     case ICorDebugInfo::REGNUM_EAX: return offsetof(T_CONTEXT,Eax);
@@ -567,7 +567,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_EDI: return offsetof(T_CONTEXT,Edi);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T) -1;
     }
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     switch(regNum)
     {
     case ICorDebugInfo::REGNUM_RAX: return offsetof(CONTEXT, Rax);
@@ -588,7 +588,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_R15: return offsetof(CONTEXT, R15);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
     }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     switch(regNum)
     {
@@ -611,7 +611,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
     case ICorDebugInfo::REGNUM_AMBIENT_SP: return offsetof(T_CONTEXT, Sp);
     default: _ASSERTE(!"Bad regNum"); return (SIZE_T)(-1);
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
     switch(regNum)
     {
@@ -654,7 +654,7 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
 #else
     PORTABILITY_ASSERT("GetRegOffsInCONTEXT is not implemented on this platform.");
     return (SIZE_T) -1;
-#endif  // _TARGET_X86_
+#endif  // TARGET_X86
 }
 
 SIZE_T DereferenceByRefVar(SIZE_T addr)
@@ -794,22 +794,6 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 }
 
 
-BOOL CompareFiles(HANDLE hFile1,HANDLE hFile2)
-{
-
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    BY_HANDLE_FILE_INFORMATION fileinfo1;
-    BY_HANDLE_FILE_INFORMATION fileinfo2;
-    if (!GetFileInformationByHandle(hFile1,&fileinfo1) ||
-        !GetFileInformationByHandle(hFile2,&fileinfo2))
-        ThrowLastError();
-    return fileinfo1.nFileIndexLow == fileinfo2.nFileIndexLow &&
-               fileinfo1.nFileIndexHigh == fileinfo2.nFileIndexHigh &&
-               fileinfo1.dwVolumeSerialNumber==fileinfo2.dwVolumeSerialNumber;
-}
-
-
 #ifndef DACCESS_COMPILE
 
 // Returns the location at which the variable
@@ -893,7 +877,7 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 }
 
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 void GetNativeVarValHelper(SIZE_T* dstAddrLow, SIZE_T* dstAddrHigh, SIZE_T* srcAddr, SIZE_T size)
 {
     if (size == 1)
@@ -915,7 +899,7 @@ void GetNativeVarValHelper(SIZE_T* dstAddrLow, SIZE_T* dstAddrHigh, SIZE_T* srcA
         UNREACHABLE();
     }
 }
-#endif // BIT64
+#endif // HOST_64BIT
 
 
 bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
@@ -931,7 +915,7 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 
     switch(varLoc.vlType)
     {
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
         SIZE_T          regOffs;
 
     case ICorDebugInfo::VLT_REG:
@@ -978,7 +962,7 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_FPSTK:
          _ASSERTE(!"NYI"); break;
 
-#else  // BIT64
+#else  // HOST_64BIT
     case ICorDebugInfo::VLT_REG:
     case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_STK:
@@ -990,7 +974,7 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         _ASSERTE(!"GNVV: This function should not be called for value types");
         break;
 
-#endif // BIT64
+#endif // HOST_64BIT
 
     default:
          _ASSERTE(!"Bad locType"); break;
@@ -1000,7 +984,7 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 }
 
 
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 void SetNativeVarValHelper(SIZE_T* dstAddr, SIZE_T valueLow, SIZE_T valueHigh, SIZE_T size)
 {
     if (size == 1)
@@ -1022,7 +1006,7 @@ void SetNativeVarValHelper(SIZE_T* dstAddr, SIZE_T valueLow, SIZE_T valueHigh, S
         UNREACHABLE();
     }
 }
-#endif // BIT64
+#endif // HOST_64BIT
 
 
 bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
@@ -1037,7 +1021,7 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 
     switch(varLoc.vlType)
     {
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
         SIZE_T          regOffs;
 
     case ICorDebugInfo::VLT_REG:
@@ -1084,7 +1068,7 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
     case ICorDebugInfo::VLT_FPSTK:
          _ASSERTE(!"NYI"); break;
 
-#else  // BIT64
+#else  // HOST_64BIT
     case ICorDebugInfo::VLT_REG:
     case ICorDebugInfo::VLT_REG_FP:
     case ICorDebugInfo::VLT_STK:
@@ -1096,7 +1080,7 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
         _ASSERTE(!"GNVV: This function should not be called for value types");
         break;
 
-#endif // BIT64
+#endif // HOST_64BIT
 
     default:
          _ASSERTE(!"Bad locType"); break;
@@ -1108,7 +1092,7 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 #ifndef CROSSGEN_COMPILE
 
 //-----------------------------------------------------------------------------
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 // This function checks to see if GetLogicalProcessorInformation API is supported.
 // On success, this function allocates a SLPI array, sets nEntries to number
@@ -1207,7 +1191,7 @@ Exit:
     return cache_size;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 // This function returns the number of logical processors on a given physical chip.  If it cannot
 // determine the number of logical cpus, or the machine is not populated uniformly with the same
@@ -1223,9 +1207,9 @@ DWORD GetLogicalCpuCountFromOS()
     static DWORD val = 0;
     DWORD retVal = 0;
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     retVal = PAL_GetLogicalCpuCountFromOS();
-#else // FEATURE_PAL
+#else // TARGET_UNIX
 
     DWORD nEntries = 0;
 
@@ -1257,7 +1241,7 @@ DWORD GetLogicalCpuCountFromOS()
                 // (which would be best), but there are variants faster than these:
                 // See http://en.wikipedia.org/wiki/Hamming_weight.
                 // This is the naive implementation.
-#if !BIT64
+#if !HOST_64BIT
                 count = (pmask & 0x55555555) + ((pmask >> 1) &  0x55555555);
                 count = (count & 0x33333333) + ((count >> 2) &  0x33333333);
                 count = (count & 0x0F0F0F0F) + ((count >> 4) &  0x0F0F0F0F);
@@ -1271,7 +1255,7 @@ DWORD GetLogicalCpuCountFromOS()
                 pmask = (pmask & 0x0000ffff0000ffffull) + ((pmask >> 16) & 0x0000ffff0000ffffull);
                 pmask = (pmask & 0x00000000ffffffffull) + ((pmask >> 32) & 0x00000000ffffffffull);
                 count = static_cast<DWORD>(pmask);
-#endif // !BIT64 else
+#endif // !HOST_64BIT else
                 assert (count > 0);
 
                 if (prevcount)
@@ -1296,12 +1280,12 @@ lDone:
     {
         delete[] pslpi;                        // release the memory allocated for the SLPI array
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return retVal;
 }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #define CACHE_WAY_BITS          0xFFC00000      // number of cache WAYS-Associativity is returned in EBX[31:22] (10 bits) using cpuid function 4
 #define CACHE_PARTITION_BITS    0x003FF000      // number of cache Physical Partitions is returned in EBX[21:12] (10 bits) using cpuid function 4
@@ -1559,9 +1543,9 @@ fDone:
     return retVal;
 }
 
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined (_TARGET_X86_) || defined (_TARGET_AMD64_)
+#if defined (TARGET_X86) || defined (TARGET_AMD64)
 static size_t GetCacheSizeFromCpuId()
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1691,7 +1675,7 @@ static size_t GetCacheSizeFromCpuId()
 
     return param.maxSize;
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 // fix this if/when AMD does multicore or SMT
 size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
@@ -1712,16 +1696,16 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     size_t maxTrueSize = 0;
 
     // For x86, always get from cpuid.
-#if !defined (_TARGET_X86_)
+#if !defined (TARGET_X86)
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 #endif
 
-#if defined (_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined (TARGET_X86) || defined(TARGET_AMD64)
     if (maxSize == 0)
     {
         maxSize = maxTrueSize = GetCacheSizeFromCpuId();
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     // Bigger gen0 size helps arm64 targets
     maxSize = maxTrueSize * 3;
 #endif
@@ -1745,7 +1729,7 @@ CLRMapViewOfFile(
     )
 {
 #ifdef _DEBUG
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
     char *tmp = new (nothrow) char;
     if (!tmp)
@@ -1755,7 +1739,7 @@ CLRMapViewOfFile(
     }
     delete tmp;
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // _DEBUG
 
     LPVOID pv = MapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,lpBaseAddress);
@@ -1769,7 +1753,7 @@ CLRMapViewOfFile(
     }
 
 #ifdef _DEBUG
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (pv && g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
     {
         MEMORY_BASIC_INFORMATION mbi;
@@ -1784,7 +1768,7 @@ CLRMapViewOfFile(
         pv = ClrVirtualAlloc(lpBaseAddress, mbi.RegionSize, MEM_RESERVE, PAGE_NOACCESS);
     }
     else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // _DEBUG
     {
     }
@@ -1803,13 +1787,13 @@ CLRUnmapViewOfFile(
     STATIC_CONTRACT_ENTRY_POINT;
 
 #ifdef _DEBUG
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
     {
         return ClrVirtualFree((LPVOID)lpBaseAddress, 0, MEM_RELEASE);
     }
     else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // _DEBUG
     {
         BOOL result = UnmapViewOfFile(lpBaseAddress);
@@ -1857,7 +1841,7 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
     return hmod;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags, DWORD *pLastError)
 
@@ -1896,7 +1880,7 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     return hmod;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 BOOL CLRFreeLibrary(HMODULE hModule)
 {
@@ -2473,7 +2457,7 @@ void DACNotify::DoJITPitchingNotification(MethodDesc *MethodDescPtr)
     }
     CONTRACTL_END;
 
-#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
     NotifyGdb::MethodPitched(MethodDescPtr);
 #endif
     TADDR Args[2] = { JIT_PITCHING_NOTIFICATION, (TADDR) MethodDescPtr };
@@ -2748,7 +2732,7 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
 //
 //
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 /*============================GetCharacterInfoHelper============================
 **Determines character type info (digit, whitespace, etc) for the given char.
 **Args:   c is the character on which to operate.
@@ -2768,7 +2752,7 @@ INT32 GetCharacterInfoHelper(WCHAR c, INT32 CharInfoType)
     }
     return(INT32)result;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 /*==============================nativeIsWhiteSpace==============================
 **The locally available version of IsWhiteSpace.  Designed to be called by other
@@ -2781,7 +2765,7 @@ BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (c <= (WCHAR) 0x7F) // common case
     {
         BOOL result = (c == ' ') || (c == '\r') || (c == '\n') || (c == '\t') || (c == '\f') || (c == (WCHAR) 0x0B);
@@ -2793,9 +2777,9 @@ BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
 
     // GetCharacterInfoHelper costs around 160 instructions
     return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_SPACE)!=0);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return iswspace(c);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 /*================================nativeIsDigit=================================
@@ -2808,11 +2792,11 @@ BOOL COMCharacter::nativeIsWhiteSpace(WCHAR c)
 BOOL COMCharacter::nativeIsDigit(WCHAR c)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     return((GetCharacterInfoHelper(c, CT_CTYPE1) & C1_DIGIT)!=0);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return iswdigit(c);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 BOOL RuntimeFileNotFound(HRESULT hr)
@@ -2821,7 +2805,7 @@ BOOL RuntimeFileNotFound(HRESULT hr)
     return Assembly::FileNotFound(hr);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 HRESULT GetFileVersion(                     // S_OK or error
     LPCWSTR wszFilePath,                    // Path to the executable.
     ULARGE_INTEGER* pFileVersion)           // Put file version here.
@@ -2875,6 +2859,6 @@ HRESULT GetFileVersion(                     // S_OK or error
 
     return S_OK;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #endif // !DACCESS_COMPILE

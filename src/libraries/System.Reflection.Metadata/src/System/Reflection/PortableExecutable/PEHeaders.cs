@@ -16,9 +16,9 @@ namespace System.Reflection.PortableExecutable
     public sealed class PEHeaders
     {
         private readonly CoffHeader _coffHeader;
-        private readonly PEHeader _peHeader;
+        private readonly PEHeader? _peHeader;
         private readonly ImmutableArray<SectionHeader> _sectionHeaders;
-        private readonly CorHeader _corHeader;
+        private readonly CorHeader? _corHeader;
         private readonly bool _isLoadedImage;
 
         private readonly int _metadataStartOffset = -1;
@@ -160,7 +160,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Gets the PE header of the image or null if the image is COFF only.
         /// </summary>
-        public PEHeader PEHeader
+        public PEHeader? PEHeader
         {
             get { return _peHeader; }
         }
@@ -184,7 +184,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Gets the CLI header or null if the image does not have one.
         /// </summary>
-        public CorHeader CorHeader
+        public CorHeader? CorHeader
         {
             get { return _corHeader; }
         }
@@ -232,7 +232,7 @@ namespace System.Reflection.PortableExecutable
 
         private bool TryCalculateCorHeaderOffset(long peStreamSize, out int startOffset)
         {
-            if (!TryGetDirectoryOffset(_peHeader.CorHeaderTableDirectory, out startOffset, canCrossSectionBoundary: false))
+            if (!TryGetDirectoryOffset(_peHeader!.CorHeaderTableDirectory, out startOffset, canCrossSectionBoundary: false))
             {
                 startOffset = -1;
                 return false;
@@ -306,7 +306,7 @@ namespace System.Reflection.PortableExecutable
                 builder.Add(new SectionHeader(ref reader));
             }
 
-            return builder.ToImmutable();
+            return builder.MoveToImmutable();
         }
 
         /// <summary>

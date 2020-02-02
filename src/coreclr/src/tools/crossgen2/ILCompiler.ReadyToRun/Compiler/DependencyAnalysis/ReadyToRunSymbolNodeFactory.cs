@@ -37,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class ReadyToRunSymbolNodeFactory
     {
-        private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
+        private readonly NodeFactory _codegenNodeFactory;
 
-        public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
         {
             _codegenNodeFactory = codegenNodeFactory;
             CreateNodeCaches();
@@ -109,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
                 return new DelayLoadHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
-                    ReadyToRunHelper.DelayLoad_Helper,
+                    ReadyToRunHelper.DelayLoad_Helper_ObjObj,
                     new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token, signatureContext));
             });
 
@@ -129,12 +129,12 @@ namespace ILCompiler.DependencyAnalysis
                         key.SignatureContext));
             });
 
-            _indirectPInvokeTargetNodes = new NodeCache<IndirectPInvokeTargetKey, ISymbolNode>(key =>
+            _pInvokeTargetNodes = new NodeCache<PInvokeTargetKey, ISymbolNode>(key =>
             {
                 return new PrecodeHelperImport(
                     _codegenNodeFactory,
                     _codegenNodeFactory.MethodSignature(
-                        ReadyToRunFixupKind.IndirectPInvokeTarget,
+                        key.IsIndirect ? ReadyToRunFixupKind.IndirectPInvokeTarget : ReadyToRunFixupKind.PInvokeTarget,
                         key.MethodWithToken,
                         signatureContext: key.SignatureContext,
                         isUnboxingStub: false,
@@ -327,7 +327,7 @@ namespace ILCompiler.DependencyAnalysis
             return new DelayLoadHelperImport(
                 _codegenNodeFactory,
                 _codegenNodeFactory.HelperImports,
-                ReadyToRunHelper.DelayLoad_Helper,
+                ReadyToRunHelper.DelayLoad_Helper_Obj,
                 _codegenNodeFactory.TypeSignature(ReadyToRunFixupKind.IsInstanceOf, type, signatureContext));
         }
 
@@ -712,39 +712,49 @@ namespace ILCompiler.DependencyAnalysis
             return _genericLookupHelpers.GetOrAdd(key);
         }
 
-        private struct IndirectPInvokeTargetKey : IEquatable<IndirectPInvokeTargetKey>
+        private struct PInvokeTargetKey : IEquatable<PInvokeTargetKey>
         {
             public readonly MethodWithToken MethodWithToken;
             public readonly SignatureContext SignatureContext;
+            public readonly bool IsIndirect;
 
-            public IndirectPInvokeTargetKey(MethodWithToken methodWithToken, SignatureContext signatureContext)
+            public PInvokeTargetKey(MethodWithToken methodWithToken, SignatureContext signatureContext, bool isIndirect)
             {
                 MethodWithToken = methodWithToken;
                 SignatureContext = signatureContext;
+                IsIndirect = isIndirect;
             }
 
-            public bool Equals(IndirectPInvokeTargetKey other)
+            public bool Equals(PInvokeTargetKey other)
             {
-                return MethodWithToken.Equals(other.MethodWithToken)
+                return IsIndirect.Equals(other.IsIndirect)
+                    && MethodWithToken.Equals(other.MethodWithToken)
                     && SignatureContext.Equals(other.SignatureContext);
             }
 
             public override bool Equals(object obj)
             {
-                return obj is IndirectPInvokeTargetKey other && Equals(other);
+                return obj is PInvokeTargetKey other && Equals(other);
             }
 
             public override int GetHashCode()
             {
-                return MethodWithToken.GetHashCode() ^ (SignatureContext.GetHashCode() * 31);
+                return IsIndirect.GetHashCode()
+                    ^ (MethodWithToken.GetHashCode() * 23)
+                    ^ (SignatureContext.GetHashCode() * 31);
             }
         }
 
-        private NodeCache<IndirectPInvokeTargetKey, ISymbolNode> _indirectPInvokeTargetNodes = new NodeCache<IndirectPInvokeTargetKey, ISymbolNode>();
+        private NodeCache<PInvokeTargetKey, ISymbolNode> _pInvokeTargetNodes = new NodeCache<PInvokeTargetKey, ISymbolNode>();
 
         public ISymbolNode GetIndirectPInvokeTargetNode(MethodWithToken methodWithToken, SignatureContext signatureContext)
         {
-            return _indirectPInvokeTargetNodes.GetOrAdd(new IndirectPInvokeTargetKey(methodWithToken, signatureContext));
+            return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, signatureContext, isIndirect: true));
+        }
+
+        public ISymbolNode GetPInvokeTargetNode(MethodWithToken methodWithToken, SignatureContext signatureContext)
+        {
+            return _pInvokeTargetNodes.GetOrAdd(new PInvokeTargetKey(methodWithToken, signatureContext, isIndirect: false));
         }
     }
 }

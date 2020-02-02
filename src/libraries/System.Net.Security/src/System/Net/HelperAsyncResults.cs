@@ -20,10 +20,6 @@ namespace System.Net
     //
     internal class AsyncProtocolRequest
     {
-#if DEBUG
-        internal object _DebugAsyncChain;         // Optionally used to track chains of async calls.
-#endif
-
         private AsyncProtocolCallback _callback;
         private int _completionStatus;
 
@@ -33,7 +29,6 @@ namespace System.Net
 
         public LazyAsyncResult UserAsyncResult;
         public int Result;
-        public object AsyncState;
         public readonly CancellationToken CancellationToken;
 
         public byte[] Buffer; // Temporary buffer reused by a protocol.

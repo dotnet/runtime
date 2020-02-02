@@ -3,8 +3,8 @@
     <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.Constants.cs" Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs" Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
     <Compile Include="AclTests.cs" />
     <Compile Include="EventWaitHandleAclTests.cs" />
     <Compile Include="MutexAclTests.cs" />

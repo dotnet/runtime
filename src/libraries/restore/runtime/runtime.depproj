@@ -4,9 +4,11 @@
     <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly. -->
     <RuntimeIdentifier Condition="'$(RuntimeOS)' == 'webassembly'">$(ToolRuntimeRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
-    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true')">true</SwapNativeForIL>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(ConfigurationGroup)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
     <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(DefaultOSGroup)</CoreCLROSGroup>
     <CoreCLRConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(ConfigurationGroup)</CoreCLRConfiguration>
+    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(DefaultOSGroup)</MonoOSGroup>
+    <MonoConfiguration Condition="'$(MonoConfiguration)' == ''">$(ConfigurationGroup)</MonoConfiguration>
     <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
   </PropertyGroup>
 
@@ -61,11 +63,24 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
   </Target>
 
-  <Target Name="OverrideRuntime"
+  <Target Name="OverrideRuntimeCoreCLR"
           DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild"
-          AfterTargets="AfterResolveReferences;FilterNugetPackages">
+          AfterTargets="AfterResolveReferences;FilterNugetPackages"
+          Condition="'$(RuntimeFlavor)' != 'Mono'">
     <ItemGroup>
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/corerun*" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)/PDB/corerun*" />
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="OverrideRuntimeMono"
+          DependsOnTargets="ResolveMonoFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences;FilterNugetPackages"
+          Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(MonoFiles)" />
     </ItemGroup>
   </Target>
 
@@ -78,7 +93,7 @@
 
   <Target Name="SwapNativeForIL"
           AfterTargets="AfterResolveReferences"
-          DependsOnTargets="GetCoreCLRILFiles;OverrideRuntime"
+          DependsOnTargets="GetCoreCLRILFiles;OverrideRuntimeCoreCLR"
           Condition="'$(SwapNativeForIL)' == 'true'">
       <ItemGroup>
         <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />

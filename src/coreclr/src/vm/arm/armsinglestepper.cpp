@@ -98,7 +98,7 @@ ArmSingleStepper::ArmSingleStepper()
 ArmSingleStepper::~ArmSingleStepper()
 {
 #if !defined(DACCESS_COMPILE)
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->BackoutMem(m_rgCode, kMaxCodeBuffer * sizeof(WORD));
 #else
     DeleteExecutable(m_rgCode);
@@ -111,7 +111,7 @@ void ArmSingleStepper::Init()
 #if !defined(DACCESS_COMPILE)
     if (m_rgCode == NULL)
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         m_rgCode = (WORD *)(void *)SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(kMaxCodeBuffer * sizeof(WORD)));
 #else
         m_rgCode = new (executable) WORD[kMaxCodeBuffer];

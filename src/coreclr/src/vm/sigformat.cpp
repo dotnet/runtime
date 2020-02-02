@@ -504,13 +504,12 @@ void SigFormat::AddType(TypeHandle th)
     case ELEMENT_TYPE_SZARRAY:      // Single Dim, Zero
     case ELEMENT_TYPE_ARRAY:        // General Array
         {
-            ArrayTypeDesc* aTD = th.AsArray();
-            AddType(aTD->GetArrayElementTypeHandle());
+            AddType(th.GetArrayElementTypeHandle());
 
             if (type == ELEMENT_TYPE_ARRAY)
             {
                 AddString("[");
-                int len = aTD->GetRank();
+                int len = th.GetRank();
 
                 for (int j=0;j<len-1;j++)
 

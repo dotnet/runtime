@@ -3497,7 +3497,7 @@ MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOver
             pslIL->EmitLDARG(argidx);
             pslIL->EmitCALL(pslIL->GetToken(pargs->mm.m_pDtor), 1, 0);
         }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
         pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
 #else

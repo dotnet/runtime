@@ -12,6 +12,7 @@ parameters:
   crossrootfsDir: ''
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
+  liveLibrariesBuildConfig: ''
   displayNameArgs: ''
   runInUnloadableContext: false
   condition: true
@@ -29,6 +30,7 @@ jobs:
   - template: /eng/pipelines/coreclr/templates/build-test-job.yml
     parameters:
       buildConfig: ${{ parameters.buildConfig }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.managedTestBuildOsGroup }}
       osSubgroup: ${{ parameters.managedTestBuildOsSubgroup }}
@@ -43,6 +45,7 @@ jobs:
 - template: /eng/pipelines/coreclr/templates/run-test-job.yml
   parameters:
     buildConfig: ${{ parameters.buildConfig }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}

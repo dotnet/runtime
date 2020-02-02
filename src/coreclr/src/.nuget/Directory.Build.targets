@@ -3,12 +3,6 @@
 
   <Import Project="../Directory.Build.targets" />
 
-  <PropertyGroup>
-    <!-- Reset PackageOutputPath. The ProjectDefaults targets from Arcade set it to be in the artifacts directory,
-         but our publishing step currently looks under PackagesBinDir -->
-    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-  </PropertyGroup>
-
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
   <!--

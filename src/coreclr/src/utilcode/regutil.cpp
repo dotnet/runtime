@@ -21,7 +21,7 @@
 #define COMPLUS_PREFIX W("COMPlus_")
 #define LEN_OF_COMPLUS_PREFIX 8
 
-#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(FEATURE_PAL)
+#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(TARGET_UNIX)
 #define ALLOW_REGISTRY
 #endif
 

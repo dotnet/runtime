@@ -908,7 +908,6 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 11, Desc = "Load stylesheet with entity reference: Bug #68450 ")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]

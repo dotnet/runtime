@@ -25,7 +25,7 @@ namespace System.IO
 
         public TSource Current
         {
-            get { return current; }
+            get { return current!; }
         }
 
         protected abstract Iterator<TSource> Clone();

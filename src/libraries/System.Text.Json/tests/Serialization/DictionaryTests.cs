@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using Xunit;
@@ -323,7 +325,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<string> InvalidJsonForIntValue()
         {
-            yield return @"""1""" ;
+            yield return @"""1""";
             yield return "[";
             yield return "}";
             yield return @"[""1""]";
@@ -932,6 +934,112 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonString, json);
         }
 
+        private interface IClass { }
+
+        private class MyClass : IClass { }
+
+        private class MyNonGenericDictionary : Dictionary<string, int> { }
+
+        private class MyFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type typeToConvert)
+            {
+                return typeToConvert == typeof(IClass) || typeToConvert == typeof(MyClass);
+            }
+
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new MyStuffConverter();
+            }
+        }
+
+        private class MyStuffConverter : JsonConverter<IClass>
+        {
+            public override IClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new MyClass();
+            }
+
+            public override void Write(Utf8JsonWriter writer, IClass value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(1);
+            }
+        }
+
+        // This method generates 316 unique test cases for nested dictionaries up to 4
+        // levels deep, along with matching JSON, encompassing the various planes of
+        // dictionaries that can be combined: generic, non-generic, BCL, user-derived,
+        // immutable, mutable, readonly, concurrent, specialized.
+        private static IEnumerable<(Type, string)> NestedDictionaryTypeData()
+        {
+            string testJson = @"{""Key"":1}";
+
+            List<Type> genericDictTypes = new List<Type>()
+            {
+                typeof(IDictionary<,>),
+                typeof(ConcurrentDictionary<,>),
+                typeof(GenericIDictionaryWrapper<,>),
+            };
+
+            List<Type> nonGenericDictTypes = new List<Type>()
+            {
+                typeof(Hashtable),
+                typeof(OrderedDictionary),
+            };
+
+            List<Type> baseDictionaryTypes = new List<Type>
+            {
+                typeof(MyNonGenericDictionary),
+                typeof(IReadOnlyDictionary<string, MyClass>),
+                typeof(ConcurrentDictionary<string, int>),
+                typeof(ImmutableDictionary<string, IClass>),
+                typeof(GenericIDictionaryWrapper<string, int?>),
+            };
+            baseDictionaryTypes.AddRange(nonGenericDictTypes);
+
+            // This method has exponential behavior which this depth value significantly impacts.
+            // Don't change this value without checking how many test cases are generated and
+            // how long the tests run for.
+            int maxTestDepth = 4;
+
+            HashSet<(Type, string)> tests = new HashSet<(Type, string)>();
+
+            for (int i = 0; i < maxTestDepth; i++)
+            {
+                List<Type> newBaseTypes = new List<Type>();
+
+                foreach (Type testType in baseDictionaryTypes)
+                {
+                    tests.Add((testType, testJson));
+
+                    foreach (Type genericType in genericDictTypes)
+                    {
+                        newBaseTypes.Add(genericType.MakeGenericType(typeof(string), testType));
+                    }
+
+                    newBaseTypes.AddRange(nonGenericDictTypes);
+                }
+
+                baseDictionaryTypes = newBaseTypes;
+                testJson = @"{""Key"":" + testJson + "}";
+            }
+
+            return tests;
+        }
+
+        [Fact]
+        public static void NestedDictionariesRoundtrip()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.Converters.Add(new MyFactory());
+
+            foreach ((Type dictionaryType, string testJson) in NestedDictionaryTypeData())
+            {
+                object dict = JsonSerializer.Deserialize(testJson, dictionaryType, options);
+                Assert.Equal(testJson, JsonSerializer.Serialize(dict, options));
+            }
+        }
+
         [Fact]
         public static void DictionaryOfClasses()
         {
@@ -1107,7 +1215,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CustomEscapingOnPropertyNameAndValue()
         {
             var dict = new Dictionary<string, string>();
-            dict.Add("A\u046701","Value\u0467");
+            dict.Add("A\u046701", "Value\u0467");
 
             // Baseline with no escaping.
             var json = JsonSerializer.Serialize(dict);
@@ -1964,7 +2072,7 @@ namespace System.Text.Json.Serialization.Tests
             IEnumerator IEnumerable.GetEnumerator()
             {
                 // Create an incompatible converter.
-                return new int[] {100,200 }.GetEnumerator();
+                return new int[] { 100, 200 }.GetEnumerator();
             }
 
             public bool Remove(string key)

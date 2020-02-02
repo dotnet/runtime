@@ -21,9 +21,6 @@
     <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
     <HasCrossTargetComponents Condition="'$(TargetsLinux)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm') and '$(__DoCrossArchBuild)' == '1'">true</HasCrossTargetComponents>
 
-    <!-- Created package output locations must be kept in sync with eng/build-job.yml -->
-    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
     <PackageIndexFile>$(MSBuildThisFileDirectory)/packageIndex.json</PackageIndexFile>
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->

@@ -166,7 +166,7 @@ class ZapInfo
 
     ZapUnwindInfo *             m_pUnwindInfo;
     ZapUnwindInfo *             m_pUnwindInfoFragments;
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     ZapUnwindInfo *             m_pChainedColdUnwindInfo;
 #endif
 #endif // FEATURE_EH_FUNCLETS

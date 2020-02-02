@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
@@ -17,15 +15,15 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
   add_subdirectory(libunwind)
 elseif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    if(PAL_CMAKE_PLATFORM_ARCH_ARM)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 
-    if(PAL_CMAKE_PLATFORM_ARCH_ARM64)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
       find_library(UNWIND_ARCH NAMES unwind-aarch64)
     endif()
 
-    if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
+    if(CLR_CMAKE_HOST_ARCH_AMD64)
       find_library(UNWIND_ARCH NAMES unwind-x86_64)
     endif()
 
@@ -66,49 +64,8 @@ include_directories(include)
 
 # Compile options
 
-if(CLR_CROSS_COMPONENTS_BUILD)
-    if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL amd64)
-        if(CLR_CMAKE_TARGET_ARCH STREQUAL "arm" OR CLR_CMAKE_TARGET_ARCH STREQUAL "armel")
-            if($ENV{CROSSCOMPILE} STREQUAL "1")
-                set(PAL_CMAKE_PLATFORM_ARCH_I386 1)
-                add_definitions(-D_X86_)
-            else()
-                set(PAL_CMAKE_PLATFORM_ARCH_AMD64 1)
-                add_definitions(-D_AMD64_)
-            endif()
-        else()
-            set(PAL_CMAKE_PLATFORM_ARCH_AMD64 1)
-            add_definitions(-D_AMD64_)
-        endif()
-    elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL i686)
-        set(PAL_CMAKE_PLATFORM_ARCH_I386 1)
-        add_definitions(-D_X86_)
-    else()
-        message(FATAL_ERROR "Only AMD64, I386 host for cross-architecture component is supported")
-    endif()
-else()
-    if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL AMD64)
-        set(PAL_CMAKE_PLATFORM_ARCH_AMD64 1)
-        add_definitions(-D_AMD64_)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-        set(PAL_CMAKE_PLATFORM_ARCH_ARM 1)
-        add_definitions(-D_ARM_)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-        set(PAL_CMAKE_PLATFORM_ARCH_ARM 1)
-        add_definitions(-D_ARM_)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-        set(PAL_CMAKE_PLATFORM_ARCH_ARM64 1)
-        add_definitions(-D_ARM64_)
-    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-        set(PAL_CMAKE_PLATFORM_ARCH_I386 1)
-        add_definitions(-D_X86_)
-    else()
-        message(FATAL_ERROR "Only ARM, AMD64, ARM64 and I386 is supported")
-    endif()
-endif()
-
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  add_definitions(-D_TARGET_MAC64)
+  add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
     arch/amd64/activationhandlerwrapper.S
@@ -122,38 +79,32 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
-add_definitions(-DPLATFORM_UNIX)
 add_definitions(-DLP64COMPATIBLE)
-add_definitions(-DFEATURE_PAL)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 add_definitions(-D_FILE_OFFSET_BITS=64)
-if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
-  add_definitions(-DBIT64)
+if(CLR_CMAKE_HOST_ARCH_AMD64)
   set(PAL_ARCH_SOURCES_DIR amd64)
-elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
-  add_definitions(-DBIT32)
+elseif(CLR_CMAKE_HOST_ARCH_ARM)
   set(PAL_ARCH_SOURCES_DIR arm)
-elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
-  add_definitions(-DBIT64)
+elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
-elseif(PAL_CMAKE_PLATFORM_ARCH_I386)
-  add_definitions(-DBIT32)
+elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 endif()
 
-if(PAL_CMAKE_PLATFORM_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+if(CLR_CMAKE_HOST_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
   # Currently the _xstate is not available on Alpine Linux
   add_definitions(-DXSTATE_SUPPORTED)
-endif(PAL_CMAKE_PLATFORM_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
 
-if(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
   # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
   # larger than the initial committed stack size.
   add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
-endif(CLR_CMAKE_PLATFORM_ALPINE_LINUX)
+endif(CLR_CMAKE_HOST_ALPINE_LINUX)
 
 # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no-gc-sections")
@@ -172,11 +123,11 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   )
 endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
-if(PAL_CMAKE_PLATFORM_ARCH_ARM)
+if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set_source_files_properties(exception/seh.cpp PROPERTIES COMPILE_FLAGS -Wno-error=inline-asm)
   endif()
-endif(PAL_CMAKE_PLATFORM_ARCH_ARM)
+endif(CLR_CMAKE_HOST_ARCH_ARM)
 
 set(SOURCES
   cruntime/file.cpp
@@ -329,7 +280,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   # On Android, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_PLATFORM_ANDROID)
+  if(NOT CLR_CMAKE_HOST_ANDROID)
     target_link_libraries(coreclrpal
       gcc_s
       pthread
@@ -337,7 +288,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     )
   endif()
 
-  if(CLR_CMAKE_PLATFORM_ANDROID)
+  if(CLR_CMAKE_HOST_ANDROID)
     find_library(LZMA NAMES lzma)
 
     if(LZMA STREQUAL LZMA-NOTFOUND)
@@ -387,8 +338,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     ${KVM}
   )
 endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-add_subdirectory(examples)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

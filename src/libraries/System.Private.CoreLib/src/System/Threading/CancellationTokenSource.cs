@@ -753,11 +753,11 @@ namespace System.Threading
 
         /// <summary>
         /// Creates a <see cref="CancellationTokenSource"/> that will be in the canceled state
-        /// when any of the source tokens are in the canceled state.
+        /// when the supplied token is in the canceled state.
         /// </summary>
-        /// <param name="token">The first <see cref="CancellationToken">CancellationToken</see> to observe.</param>
-        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        internal static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token) =>
+        /// <param name="token">The <see cref="CancellationToken">CancellationToken</see> to observe.</param>
+        /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source token.</returns>
+        public static CancellationTokenSource CreateLinkedTokenSource(CancellationToken token) =>
             token.CanBeCanceled ? new Linked1CancellationTokenSource(token) : new CancellationTokenSource();
 
         /// <summary>

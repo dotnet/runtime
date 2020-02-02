@@ -3,7 +3,7 @@ Performance Requirements
 
 The .NET runtime supports a wide variety of high performance applications.  As such, performance is a key design element for every change.  This guidance is designed to share how we collect data and analyze the performance of the runtime.
 
-You may also want to read about [CoreFX performance guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/performance-guidelines.md).
+You may also want to read about [performance coding guidelines](../coding-guidelines/performance-guidelines.md).
 
 # Design Phase #
 Make sure to address performance during the design phase of any change.  It is much easier to tweak a design to fit performance goals and requirements before implementation has started.
@@ -48,7 +48,7 @@ Capturing a trace using PerfView will allow you to:
 - Compare the performance of a workload by diffing before and after traces.
 - Much, much more.
 
-PerfView is available at the [Microsoft Download Center](http://www.microsoft.com/en-us/download/details.aspx?id=28567 "Microsoft Download Center").  The help documentation is quite substantial and can help you get started.  Clicking the blue links throughout PerfView's UI will also take you to the appropriate help topic.  It is also recommended that you watch the [PerfView Tutorial Videos](http://channel9.msdn.com/Series/PerfView-Tutorial).
+PerfView is available at the [PerfView repo](https://github.com/microsoft/perfview/releases).  The help documentation is quite substantial and can help you get started.  Clicking the blue links throughout PerfView's UI will also take you to the appropriate help topic.  It is also recommended that you watch the [PerfView Tutorial Videos](http://channel9.msdn.com/Series/PerfView-Tutorial).
 
 # Running the CoreCLR Performance Tests on Windows #
 1. The first step to running the performance tests locally is to do a release build of CoreCLR and all of the performance tests.  You can do this with the command `build.cmd x64 Release`, this will of course build the x64 runtime, and you should use x86 if you want to test x86.

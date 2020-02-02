@@ -25,7 +25,9 @@ namespace ILCompiler
         {
             EnsureLoadableType(method.OwningType);
 
-            if (method.HasInstantiation)
+            // If this is an instantiated generic method, check the instantiation.
+            MethodDesc methodDef = method.GetMethodDefinition();
+            if (methodDef != method)
             {
                 foreach (var instType in method.Instantiation)
                     EnsureLoadableType(instType);
@@ -107,8 +109,8 @@ namespace ILCompiler
                 // Validate classes, structs, enums, interfaces, and delegates
                 Debug.Assert(type.IsDefType);
 
-                // Don't validate generic definitons or runtime determined subtypes
-                if (type.IsGenericDefinition || type.IsRuntimeDeterminedSubtype)
+                // Don't validate generic definitons
+                if (type.IsGenericDefinition)
                 {
                     return type;
                 }

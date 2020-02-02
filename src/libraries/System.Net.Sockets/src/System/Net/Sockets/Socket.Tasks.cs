@@ -187,9 +187,6 @@ namespace System.Net.Sockets
             return ReceiveAsync((Memory<byte>)buffer, socketFlags, fromNetworkStream, default).AsTask();
         }
 
-        // TODO https://github.com/dotnet/corefx/issues/24430:
-        // Fully plumb cancellation down into socket operations.
-
         internal ValueTask<int> ReceiveAsync(Memory<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -782,7 +779,7 @@ namespace System.Net.Sockets
             internal bool _accessed = false;
 
             internal TaskSocketAsyncEventArgs() :
-                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose Task, which handles it
+                base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose Task, which handles it
             {
             }
 
@@ -836,7 +833,7 @@ namespace System.Net.Sockets
 
             /// <summary>Initializes the event args.</summary>
             public AwaitableSocketAsyncEventArgs() :
-                base(flowExecutionContext: false) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
+                base(unsafeSuppressExecutionContextFlow: true) // avoid flowing context at lower layers as we only expose ValueTask, which handles it
             {
             }
 

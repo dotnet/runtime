@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
         protected HMAC() { }
         protected int BlockSizeValue { get { throw null; } set { } }
         public string HashName { get { throw null; } set { } }
-        public override byte[]? Key { get { throw null; } set { } }
+        public override byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.HMAC Create() { throw null; }
         public static new System.Security.Cryptography.HMAC? Create(string algorithmName) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -164,14 +164,14 @@ namespace System.Security.Cryptography
         bool CanTransformMultipleBlocks { get; }
         int InputBlockSize { get; }
         int OutputBlockSize { get; }
-        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[]? outputBuffer, int outputOffset);
+        int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset);
         byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount);
     }
     public abstract partial class KeyedHashAlgorithm : System.Security.Cryptography.HashAlgorithm
     {
         protected byte[] KeyValue;
         protected KeyedHashAlgorithm() { }
-        public virtual byte[]? Key { get { throw null; } set { } }
+        public virtual byte[] Key { get { throw null; } set { } }
         public static new System.Security.Cryptography.KeyedHashAlgorithm Create() { throw null; }
         public static new System.Security.Cryptography.KeyedHashAlgorithm? Create(string algName) { throw null; }
         protected override void Dispose(bool disposing) { }

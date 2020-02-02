@@ -850,7 +850,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //     On architectures with strong ordering, we only need to prevent compiler reordering.
         //     Otherwise we put a process-wide fence here (so that we could use an ordinary read in the barrier)
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         if (!is_runtime_suspended)
         {
             // If runtime is not suspended, force all threads to see the changed table before seeing updated heap boundaries.
@@ -862,11 +862,11 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         g_lowest_address = args->lowest_address;
         g_highest_address = args->highest_address;
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         // Need to reupdate for changes to g_highest_address g_lowest_address
         stompWBCompleteActions |= ::StompWriteBarrierResize(is_runtime_suspended, args->requires_upper_bounds_check);
 
-#ifdef _ARM_
+#ifdef HOST_ARM
         if (stompWBCompleteActions & SWB_ICACHE_FLUSH)
         {
             // flushing/invalidating the write barrier's body for the current process
@@ -902,7 +902,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         //       (we care only about managed threads and suspend/resume will do full fences - good enough for us).
         //
 
-#if defined(_ARM64_) || defined(_ARM_)
+#if defined(HOST_ARM64) || defined(HOST_ARM)
         is_runtime_suspended = (stompWBCompleteActions & SWB_EE_RESTART) || is_runtime_suspended;
         if (!is_runtime_suspended)
         {
@@ -914,7 +914,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         if (stompWBCompleteActions & SWB_EE_RESTART)
         {
             assert(!args->is_runtime_suspended &&
-                "if runtime was suspended in patching routines then it was in running state at begining");
+                "if runtime was suspended in patching routines then it was in running state at beginning");
             ThreadSuspend::RestartEE(FALSE, TRUE);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
@@ -990,7 +990,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     if (stompWBCompleteActions & SWB_EE_RESTART)
     {
         assert(!args->is_runtime_suspended &&
-            "if runtime was suspended in patching routines then it was in running state at begining");
+            "if runtime was suspended in patching routines then it was in running state at beginning");
         ThreadSuspend::RestartEE(FALSE, TRUE);
     }
 }
@@ -1425,7 +1425,7 @@ void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* s
     OverlappedDataObject *pOverlapped = (OverlappedDataObject *)object;
     if (pOverlapped->m_userObject != NULL)
     {
-        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
+        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].AsMethodTable())
         {
             // OverlappedDataObject is very special.  An async pin handle keeps it alive.
             // During GC, we also make sure
@@ -1464,7 +1464,7 @@ void GCToEEInterface::WalkAsyncPinned(Object* object, void* context, void (*call
     {
         Object * pUserObject = OBJECTREFToObject(pOverlapped->m_userObject);
         callback(object, pUserObject, context);
-        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT]->GetMethodTable())
+        if (pOverlapped->m_userObject->GetGCSafeMethodTable() == g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].AsMethodTable())
         {
             ArrayBase* pUserArrayObject = (ArrayBase*)pUserObject;
             Object **pObj = (Object**)pUserArrayObject->GetDataPtr(TRUE);

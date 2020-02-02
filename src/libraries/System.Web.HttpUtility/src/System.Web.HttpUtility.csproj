@@ -4,8 +4,7 @@
     <Nullable>enable</Nullable>
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup>
     <Compile Include="System\Web\HttpUtility.cs" />
     <Compile Include="System\Web\Util\HttpEncoder.cs" />
     <Compile Include="System\Web\Util\HttpEncoderUtility.cs" />
@@ -14,13 +13,8 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.IO" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Text.Encoding" />
   </ItemGroup>
 </Project>

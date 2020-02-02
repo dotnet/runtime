@@ -20,7 +20,7 @@ namespace Internal.Cryptography
         private static readonly HashSet<string> s_allNames = CreateAllNames();
 
         /// <summary>
-        /// Map HashAlgorithm type to string; desktop uses CryptoConfig functionality.
+        /// Map HashAlgorithm type to string; .NET Framework uses CryptoConfig functionality.
         /// </summary>
         public static string ToAlgorithmName(this HashAlgorithm hashAlgorithm)
         {

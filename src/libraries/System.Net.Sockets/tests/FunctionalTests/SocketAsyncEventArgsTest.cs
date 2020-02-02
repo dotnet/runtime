@@ -149,6 +149,58 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_Default_FlowIsNotSuppressed()
+        {
+            await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(), false);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ExecutionContext_SocketAsyncEventArgs_Ctor_UnsafeSuppressExecutionContextFlow(bool suppressed)
+        {
+            await ExecutionContext_SocketAsyncEventArgs_Ctors(() => new SocketAsyncEventArgs(suppressed), suppressed);
+        }
+
+        private async Task ExecutionContext_SocketAsyncEventArgs_Ctors(Func<SocketAsyncEventArgs> saeaFactory, bool suppressed)
+        {
+            using (var listen = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listen.Listen(1);
+
+                Task<Socket> acceptTask = listen.AcceptAsync();
+                await Task.WhenAll(
+                    acceptTask,
+                    client.ConnectAsync(new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port)));
+
+                using (Socket server = await acceptTask)
+                using (SocketAsyncEventArgs receiveSaea = saeaFactory())
+                {
+                    var local = new AsyncLocal<int>
+                    {
+                        Value = 42
+                    };
+                    int threadId = Environment.CurrentManagedThreadId;
+
+                    var mres = new ManualResetEventSlim();
+                    receiveSaea.SetBuffer(new byte[1], 0, 1);
+                    receiveSaea.Completed += delegate
+                    {
+                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                        Assert.Equal(suppressed ? 0 : 42, local.Value);
+                        mres.Set();
+                    };
+
+                    Assert.True(client.ReceiveAsync(receiveSaea));
+                    server.Send(new byte[1]);
+                    mres.Wait();
+                }
+            }
+        }
+
+        [Fact]
         public void SetBuffer_InvalidArgs_Throws()
         {
             using (var saea = new SocketAsyncEventArgs())
@@ -394,7 +446,7 @@ namespace System.Net.Sockets.Tests
 
                     var args = new SocketAsyncEventArgs();
                     args.SetBuffer(new byte[1024], 0, 1024);
-                    args.Completed += (_,__) => tcs.SetResult(true);
+                    args.Completed += (_, __) => tcs.SetResult(true);
 
                     for (int i = 1; i <= 10; i++)
                     {
@@ -419,7 +471,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         public async Task ReuseSocketAsyncEventArgs_MutateBufferList()
         {
@@ -443,14 +495,14 @@ namespace System.Net.Sockets.Tests
                     sendBufferList.Add(new ArraySegment<byte>(sendBuffer, 0, 1));
                     var sendArgs = new SocketAsyncEventArgs();
                     sendArgs.BufferList = sendBufferList;
-                    sendArgs.Completed += (_,__) => tcs.SetResult(true);
+                    sendArgs.Completed += (_, __) => tcs.SetResult(true);
 
                     var recvBuffer = new byte[64];
                     var recvBufferList = new List<ArraySegment<byte>>();
                     recvBufferList.Add(new ArraySegment<byte>(recvBuffer, 0, 1));
                     var recvArgs = new SocketAsyncEventArgs();
                     recvArgs.BufferList = recvBufferList;
-                    recvArgs.Completed += (_,__) => tcs.SetResult(true);
+                    recvArgs.Completed += (_, __) => tcs.SetResult(true);
 
                     for (int i = 1; i <= 10; i++)
                     {
@@ -491,7 +543,7 @@ namespace System.Net.Sockets.Tests
             handle.Set();
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Success()
@@ -541,7 +593,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
@@ -562,7 +614,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix platforms don't yet support receiving data with AcceptAsync.
         public void AcceptAsync_WithReceiveBuffer_Failure()

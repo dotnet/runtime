@@ -372,27 +372,6 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfOnly()
-        {
-            CreateFilename(EmfType.EmfOnly, true);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfPlusDual()
-        {
-            CreateFilename(EmfType.EmfPlusDual, true);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
-        [ActiveIssue(20844)]
-        public void CreateFilename_SingleGraphics_EmfPlusOnly()
-        {
-            CreateFilename(EmfType.EmfPlusOnly, true);
-        }
-
-        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Measure()
         {
             Font test_font = new Font(FontFamily.GenericMonospace, 12);

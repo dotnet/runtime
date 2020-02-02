@@ -49,7 +49,7 @@ _add_executable(superpmi
 
 target_precompile_header(TARGET superpmi HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi
         utilcodestaticnohost
         mscorrc_debug
@@ -65,6 +65,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi DESTINATION .)

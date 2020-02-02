@@ -44,7 +44,7 @@ EventPipeEventSource::EventPipeEventSource()
         EventPipeEventLevel::LogAlways,
         params,
         numParams,
-        metadataLength);
+        &metadataLength);
 
     // Add the event.
     m_pProcessInfoEvent = m_pProvider->AddEvent(

@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -3368,7 +3368,10 @@ void emitter::emitIns(instruction ins)
     instrDesc* id  = emitNewInstrSmall(EA_8BYTE);
     insFormat  fmt = emitInsFormat(ins);
 
-    assert(fmt == IF_SN_0A);
+    if (ins != INS_BREAKPOINT)
+    {
+        assert(fmt == IF_SN_0A);
+    }
 
     id->idIns(ins);
     id->idInsFmt(fmt);
@@ -3876,6 +3879,7 @@ void emitter::emitIns_R_R(
             assert(isGeneralRegisterOrZR(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // Reserved encoding
             fmt = IF_DV_2C;
             break;
 
@@ -5248,24 +5252,25 @@ void emitter::emitIns_R_R_R(
         case INS_cmgt:
         case INS_cmhi:
         case INS_cmhs:
-        case INS_ctst:
+        case INS_cmtst:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                fmt      = IF_DV_3A;
+                assert(opt != INS_OPTS_1D); // Reserved encoding
+                fmt = IF_DV_3A;
             }
             else
             {
-                NYI("Untested");
+                assert(insOptsNone(opt));
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(size == EA_8BYTE); // Only Int64/UInt64 supported
                 fmt = IF_DV_3E;
             }
             break;
@@ -5277,10 +5282,10 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
@@ -5289,8 +5294,8 @@ void emitter::emitIns_R_R_R(
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
+                assert(insOptsNone(opt));
                 assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
                 fmt = IF_DV_3D;
             }
@@ -5304,6 +5309,15 @@ void emitter::emitIns_R_R_R(
         case INS_uabd:
         case INS_umax:
         case INS_umin:
+            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
+            __fallthrough;
+
+        case INS_uzp1:
+        case INS_uzp2:
+        case INS_zip1:
+        case INS_zip2:
+        case INS_trn1:
+        case INS_trn2:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -5313,7 +5327,6 @@ void emitter::emitIns_R_R_R(
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
             elemsize = optGetElemsize(opt);
-            assert(elemsize != EA_8BYTE); // can't use 2D or 1D
 
             fmt = IF_DV_3A;
             break;
@@ -5384,6 +5397,8 @@ void emitter::emitIns_R_R_R(
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
+        case INS_facge:
+        case INS_facgt:
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
@@ -11556,10 +11571,31 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
-        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg   - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
+        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
+            switch (ins)
+            {
+                case INS_addv:
+                case INS_saddlv:
+                case INS_smaxv:
+                case INS_sminv:
+                case INS_uaddlv:
+                case INS_umaxv:
+                case INS_uminv:
+                    elemsize = optGetElemsize(id->idInsOpt());
+                    emitDispReg(id->idReg1(), elemsize, true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+
+                default:
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+            }
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
@@ -12547,7 +12583,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             }
             break;
 
-        case IF_SN_0A: // bkpt, nop
+        case IF_SN_0A: // bkpt, brk, nop
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_ZERO;
             break;
@@ -12890,11 +12926,29 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_umax:
                 case INS_smin:
                 case INS_smax:
+                case INS_uzp1:
+                case INS_uzp2:
+                case INS_zip1:
+                case INS_zip2:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
-                case INS_ctst:
+                case INS_trn1:
+                case INS_trn2:
+                    if (id->idInsOpt() == INS_OPTS_2D)
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    }
+
+                    result.insLatency = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_cmtst:
                 case INS_pmul:
                 case INS_sabd:
                 case INS_uabd:
@@ -13093,4 +13147,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)

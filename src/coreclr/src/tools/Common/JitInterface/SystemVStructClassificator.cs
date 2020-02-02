@@ -99,8 +99,7 @@ namespace Internal.JitInterface
             int typeSize = typeDesc.GetElementSize().AsInt;
             if (typeDesc.IsValueType && (typeSize <= CLR_SYSTEMV_MAX_STRUCT_BYTES_TO_PASS_IN_REGISTERS))
             {
-                if ((TypeDef2SystemVClassification(typeDesc) != SystemVClassificationTypeStruct) &&
-                    (TypeDef2SystemVClassification(typeDesc) != SystemVClassificationTypeTypedReference))
+                if (TypeDef2SystemVClassification(typeDesc) != SystemVClassificationTypeStruct)
                 {
                     return;
                 }
@@ -126,12 +125,6 @@ namespace Internal.JitInterface
 
         private static SystemVClassificationType TypeDef2SystemVClassification(TypeDesc typeDesc)
         {
-            if (typeDesc.IsWellKnownType(WellKnownType.TypedReference))
-            {
-                // There is no category representing typed reference
-                return SystemVClassificationTypeTypedReference;
-            }
-
             switch (typeDesc.Category)
             {
                 case TypeFlags.Boolean:
@@ -254,7 +247,7 @@ namespace Internal.JitInterface
                 if (instantiatedType != null)
                 {
                     if (VectorFieldLayoutAlgorithm.IsVectorType(instantiatedType) ||
-                        VectorFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
+                        VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(instantiatedType))
                     {
                         return false;
                     }
@@ -334,47 +327,6 @@ namespace Internal.JitInterface
                     }
 
                     continue;
-                }
-
-                if (fieldClassificationType == SystemVClassificationTypeTypedReference || 
-                    TypeDef2SystemVClassification(typeDesc) == SystemVClassificationTypeTypedReference)
-                {
-                    // The TypedReference is a very special type.
-                    // In source/metadata it has two fields - Type and Value and both are defined of type IntPtr.
-                    // When the VM creates a layout of the type it changes the type of the Value to ByRef type and the
-                    // type of the Type field is left to IntPtr (TYPE_I internally - native int type.)
-                    // This requires a special treatment of this type. The code below handles the both fields (and this entire type).
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        fieldSize = 8;
-                        fieldOffset = (i == 0 ? 0 : 8);
-                        normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
-                        fieldClassificationType = (i == 0 ? SystemVClassificationTypeIntegerByRef : SystemVClassificationTypeInteger);
-                        if ((normalizedFieldOffset % fieldSize) != 0)
-                        {
-                            // The spec requires that struct values on the stack from register passed fields expects
-                            // those fields to be at their natural alignment.
-                            return false;
-                        }
-
-                        helper.LargestFieldOffset = (int)normalizedFieldOffset;
-
-                        // Set the data for a new field.
-
-                        // The new field classification must not have been initialized yet.
-                        Debug.Assert(helper.FieldClassifications[helper.CurrentUniqueOffsetField] == SystemVClassificationTypeNoClass);
-
-                        helper.FieldClassifications[helper.CurrentUniqueOffsetField] = fieldClassificationType;
-                        helper.FieldSizes[helper.CurrentUniqueOffsetField] = fieldSize;
-                        helper.FieldOffsets[helper.CurrentUniqueOffsetField] = normalizedFieldOffset;
-
-                        helper.CurrentUniqueOffsetField++;
-                    }
-
-                    // Both fields of the special TypedReference struct are handled.
-                    // Done classifying the System.TypedReference struct fields.
-                    break;
                 }
 
                 if ((normalizedFieldOffset % fieldSize) != 0)

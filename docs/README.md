@@ -14,15 +14,10 @@ Getting Started
 - [Installing the .NET SDK](https://dotnet.microsoft.com/download)
 - [Official .NET Docs](https://docs.microsoft.com/dotnet/core/)
 
-Software requirements
-===============
-
-- [Windows Requirements](workflow/windows-requirements.md)
-- [Linux Requirements](workflow/linux-requirements.md)
-- [MacOS Requirements](workflow/macos-requirements.md)
-
 Workflow (Building, testing, etc.)
 ===============
+
+If you want to contribute a code change to this repo, start here.
 
 - [Workflow Instructions](workflow/README.md)
 
@@ -75,7 +70,7 @@ Other Information
 
 - [.NET Glossary](project/glossary.md)
 - [.NET Filename Encyclopedia](project/dotnet-filenames.md)
-- [Porting to .NET Core](project/support-dotnet-core-instructions.md)
+- [Porting to .NET Core](https://docs.microsoft.com/en-us/dotnet/standard/analyzers/portability-analyzer)
 - [.NET Standards (Ecma)](project/dotnet-standards.md)
 - [CLR Configuration Knobs](../src/coreclr/src/inc/clrconfigvalues.h)
 - [CLR overview](https://docs.microsoft.com/dotnet/standard/clr)

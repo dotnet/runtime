@@ -52,7 +52,7 @@ void InitWinRTStatus();
 inline BOOL RunningOnWin8()
 {
     WRAPPER_NO_CONTRACT;
-#if (!defined(_X86_) && !defined(_AMD64_)) || defined(CROSSGEN_COMPILE)
+#if (!defined(HOST_X86) && !defined(HOST_AMD64)) || defined(CROSSGEN_COMPILE)
     return TRUE;
 #else
     if (gRunningOnStatus == RUNNING_ON_STATUS_UNINITED)
@@ -94,7 +94,7 @@ inline BOOL WinRTSupported()
 
 #endif // FEATURE_COMINTEROP
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 inline BOOL RunningInWow64()
 {
     return FALSE;

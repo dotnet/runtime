@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -24,10 +25,10 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            TKey k = default;
+            TKey k = default!;
             bool keySet = false;
 
-            TValue v = default;
+            TValue v = default!;
             bool valueSet = false;
 
             // Get the first property.
@@ -37,7 +38,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            string propertyName = reader.GetString();
+            string propertyName = reader.GetString()!;
             if (propertyName == KeyName)
             {
                 k = ReadProperty<TKey>(ref reader, typeToConvert, options);
@@ -60,7 +61,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            propertyName = reader.GetString();
+            propertyName = reader.GetString()!;
             if (propertyName == ValueName)
             {
                 v = ReadProperty<TValue>(ref reader, typeToConvert, options);
@@ -107,10 +108,10 @@ namespace System.Text.Json.Serialization.Converters
                 k = JsonSerializer.Deserialize<T>(ref reader, options);
             }
 
-            return k;
+            return k!;
         }
 
-        private void WriteProperty<T>(Utf8JsonWriter writer, T value, JsonEncodedText name, JsonSerializerOptions options)
+        private void WriteProperty<T>(Utf8JsonWriter writer, T value, JsonEncodedText name, JsonSerializerOptions? options)
         {
             Type typeToConvert = typeof(T);
 
@@ -128,7 +129,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions? options)
         {
             writer.WriteStartObject();
             WriteProperty(writer, value.Key, _keyName, options);

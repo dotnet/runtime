@@ -3,7 +3,6 @@
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Reflection.cs" />
     <Compile Include="System.Reflection.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -386,7 +386,6 @@ static PCCOR_SIGNATURE PrettyPrintType(
         PrettyPrintSigWorker(typePtr, (typeEnd - typePtr), W(""), out, pIMDI);
         break;
 
-    case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         appendStrW(out, W("native "));
         typePtr = PrettyPrintType(typePtr, (typeEnd - typePtr), out, pIMDI);
@@ -794,7 +793,6 @@ static HRESULT PrettyPrintTypeA(
         IfFailGo(PrettyPrintSigWorkerInternal(typePtr, (typeEnd - typePtr), "", out,pIMDI));
         break;
 
-    case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
     case ELEMENT_TYPE_NATIVE_VALUETYPE_ZAPSIG:
         IfFailGo(appendStrA(out, "native "));
         IfFailGo(PrettyPrintTypeA(typePtr, (typeEnd - typePtr), out, pIMDI));

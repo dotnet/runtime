@@ -1612,13 +1612,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // plus they are not marked as blittable.
                 if (!th.IsEnum())
                 {
-                    // It should be blittable
-                    if (!th.IsBlittable())
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_PTRNONBLITTABLE;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
                     // Check for Copy Constructor Modifier
                     if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
                         sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
@@ -1634,23 +1627,12 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                 }
             }
-            else
-            {
-                if (!(mtype2 != ELEMENT_TYPE_CLASS &&
-                    mtype2 != ELEMENT_TYPE_STRING &&
-                    mtype2 != ELEMENT_TYPE_OBJECT &&
-                    mtype2 != ELEMENT_TYPE_SZARRAY))
-                {
-                    m_resID = IDS_EE_BADMARSHAL_PTRSUBTYPE;
-                    IfFailGoto(E_FAIL, lFail);
-                }
-            }
         }
     }
 
     // System primitive types (System.Int32, et.al.) will be marshaled as expected
     // because the mtype CorElementType is normalized (e.g. ELEMENT_TYPE_I4).
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // We however need to detect if such a normalization occurred for non-system
     // trivial value types, because we hold CorNativeType belonging to the original
     // "un-normalized" signature type. It has to be verified that all the value types
@@ -1677,7 +1659,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
 
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 
     if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
@@ -1922,7 +1904,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1936,7 +1918,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1972,7 +1954,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1993,7 +1975,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -2869,7 +2851,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
                         }
                         else
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // JIT64 is not aware of normalized value types and this optimization
                         // (returning small value types by value in registers) is already done in JIT64.
                         if (        !m_byref   // Permit register-sized structs as return values
@@ -2885,7 +2867,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_args.m_pMT = m_pMT;
                         }
                         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                         {
                             m_args.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;
@@ -2924,11 +2906,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 fCalculatingFieldMetadata ? TRUE : FALSE);
             _ASSERTE(!arrayTypeHnd.IsNull());
 
-            ArrayTypeDesc* asArray = arrayTypeHnd.AsArray();
-            if (asArray == NULL)
-                IfFailGoto(E_FAIL, lFail);
-
-            TypeHandle thElement = asArray->GetTypeParam();
+            TypeHandle thElement = arrayTypeHnd.GetArrayElementTypeHandle();
 
 #ifdef FEATURE_COMINTEROP
             if (m_ms != MARSHAL_SCENARIO_WINRT)
@@ -2941,10 +2919,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 }
             }
 
-            m_args.na.m_pArrayMT = arrayTypeHnd.GetMethodTable();
+            m_args.na.m_pArrayMT = arrayTypeHnd.AsMethodTable();
 
             // Handle retrieving the information for the array type.
-            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, asArray->GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
+            IfFailGoto(HandleArrayElemType(&ParamInfo, thElement, arrayTypeHnd.GetRank(), mtype == ELEMENT_TYPE_SZARRAY, isParam, pAssembly), lFail);
             break;
         }
 

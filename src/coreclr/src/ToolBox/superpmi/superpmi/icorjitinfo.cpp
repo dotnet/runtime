@@ -1569,7 +1569,7 @@ InfoAccessType MyICJI::emptyStringLiteral(void** ppValue)
 }
 
 // (static fields only) given that 'field' refers to thread local store,
-// return the ID (TLS index), which is used to find the begining of the
+// return the ID (TLS index), which is used to find the beginning of the
 // TLS data area for the particular DLL 'field' is associated with.
 DWORD MyICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -1880,13 +1880,13 @@ void MyICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return IMAGE_FILE_MACHINE_I386;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return IMAGE_FILE_MACHINE_ARM64;
 #else
     return IMAGE_FILE_MACHINE_UNKNOWN;

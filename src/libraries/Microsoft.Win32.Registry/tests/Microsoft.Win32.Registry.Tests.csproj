@@ -7,8 +7,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
-      <Link>Interop\Windows\Interop.RegSetValueEx.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs">
+      <Link>Common\Interop\Windows\Interop.RegSetValueEx.cs</Link>
     </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="RegistryKey\RegistryKey_GetValue_CorruptData.cs" />

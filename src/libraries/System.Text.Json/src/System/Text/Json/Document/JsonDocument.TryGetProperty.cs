@@ -180,7 +180,7 @@ namespace System.Text.Json
                         {
                             int remaining = currentPropertyName.Length - idx;
                             int written = 0;
-                            byte[] rented = null;
+                            byte[]? rented = null;
 
                             try
                             {

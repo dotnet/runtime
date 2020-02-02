@@ -26,6 +26,7 @@ jobs:
 
 - job: linux
   displayName: Docker Linux
+  timeoutInMinutes: 120
   pool:
     name: Hosted Ubuntu 1604
 
@@ -36,7 +37,7 @@ jobs:
 
   - bash: |
       $(dockerfilesFolder)/build-docker-sdk.ps1 -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-    displayName: Build Libraries
+    displayName: Build CLR and Libraries
 
   - bash: |
       $(sslStressProject)/run-docker-compose.ps1 -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
@@ -48,7 +49,8 @@ jobs:
     displayName: Run SslStress
 
 - job: windows
-  displayName: Docker Nano Server
+  displayName: Docker NanoServer
+  timeoutInMinutes: 120
   pool:
     vmImage: 'windows-latest'
 
@@ -60,7 +62,7 @@ jobs:
 
   - pwsh: |
       $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-    displayName: Build Libraries
+    displayName: Build CLR and Libraries
   
   - pwsh: |
       $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)

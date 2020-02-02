@@ -36,14 +36,14 @@ class AppDomain;
 //  on the stack.  The FEF is used for unwinding.  If not defined, the unwinding
 //  uses the exception context.
 #define USE_FEF // to mark where code needs to be changed to eliminate the FEF
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
  #undef USE_FEF // Turn off the FEF use on x86.
  #define ELIMINATE_FEF
 #else
  #if defined(ELIMINATE_FEF)
   #undef ELIMINATE_FEF
  #endif
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // TARGET_X86 && !TARGET_UNIX
 
 #if defined(FEATURE_EH_FUNCLETS)
 #define RECORD_RESUMABLE_FRAME_SP
@@ -69,9 +69,9 @@ class CrawlFrame
 {
 public:
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     friend StackWalkAction TAStackCrawlCallBack(CrawlFrame* pCf, void* data);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     //************************************************************************
     // Functions available for the callbacks (using the current pCrawlFrame)
@@ -102,6 +102,7 @@ public:
     inline Frame* GetFrame()       // will return NULL for "frameless methods"
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
 
         if (isFrameless)
             return NULL;
@@ -173,6 +174,7 @@ public:
     inline bool IsFrameless()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
 
         return isFrameless;
     }
@@ -183,6 +185,7 @@ public:
     inline bool IsActiveFrame()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFirst != 0xcc);
 
         return isFirst;
     }
@@ -193,6 +196,7 @@ public:
     inline bool IsActiveFunc()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFirst != 0xcc);
 
         return (pFunc && isFirst);
     }
@@ -204,6 +208,7 @@ public:
     bool IsInterrupted()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isInterrupted != 0xcc);
 
         return (pFunc && isInterrupted /* && isFrameless?? */);
     }
@@ -214,6 +219,7 @@ public:
     bool HasFaulted()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)hasFaulted != 0xcc);
 
         return (pFunc && hasFaulted /* && isFrameless?? */);
     }
@@ -225,6 +231,8 @@ public:
     bool IsNativeMarker()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isNativeMarker != 0xcc);
+
         return isNativeMarker;
     }
 
@@ -239,6 +247,8 @@ public:
     bool IsNoFrameTransition()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isNoFrameTransition != 0xcc);
+
         return isNoFrameTransition;
     }
 
@@ -249,6 +259,8 @@ public:
     TADDR GetNoFrameTransitionMarker()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isNoFrameTransition != 0xcc);
+
         return (isNoFrameTransition ? taNoFrameTransitionMarker : NULL);
     }
 
@@ -259,6 +271,7 @@ public:
     bool IsIPadjusted()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isIPadjusted != 0xcc);
 
         return (pFunc && isIPadjusted /* && isFrameless?? */);
     }
@@ -310,9 +323,9 @@ public:
      */
     bool IsGcSafe();
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     bool HasTailCalls();
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
 
     PREGDISPLAY GetRegisterSet()
     {
@@ -336,6 +349,7 @@ public:
     GCInfoToken GetGCInfoToken()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetGCInfoToken();
     }
@@ -343,6 +357,7 @@ public:
     PTR_VOID GetGCInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetGCInfo();
     }
@@ -350,6 +365,7 @@ public:
     const METHODTOKEN& GetMethodToken()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetMethodToken();
     }
@@ -357,6 +373,7 @@ public:
     unsigned GetRelOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetRelOffset();
     }
@@ -364,6 +381,7 @@ public:
     IJitManager*  GetJitManager()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetJitManager();
     }
@@ -371,6 +389,7 @@ public:
     ICodeManager* GetCodeManager()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE((int)isFrameless != 0xcc);
         _ASSERTE(isFrameless);
         return codeInfo.GetCodeManager();
     }

@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -67,13 +68,11 @@ namespace System.Net.Http
                 // Configure the socket and return a stream for it.
                 Socket socket = saea.ConnectSocket;
                 socket.NoDelay = true;
-                return new ExposedSocketNetworkStream(socket, ownsSocket: true);
+                return new NetworkStream(socket, ownsSocket: true);
             }
             catch (Exception error) when (!(error is OperationCanceledException))
             {
-                throw CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
-                    CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                    new HttpRequestException(error.Message, error, RequestRetryType.RetryOnNextProxy);
+                throw CreateWrappedException(error, cancellationToken);
             }
             finally
             {
@@ -84,6 +83,13 @@ namespace System.Net.Http
         /// <summary>SocketAsyncEventArgs that carries with it additional state for a Task builder and a CancellationToken.</summary>
         private sealed class ConnectEventArgs : SocketAsyncEventArgs
         {
+            internal ConnectEventArgs() :
+                // The OnCompleted callback serves just to complete a task that's awaited in ConnectAsync,
+                // so we don't need to also flow ExecutionContext again into the OnCompleted callback.
+                base(unsafeSuppressExecutionContextFlow: true)
+            {
+            }
+
             public AsyncTaskMethodBuilder Builder { get; private set; }
             public CancellationToken CancellationToken { get; private set; }
 
@@ -170,6 +176,43 @@ namespace System.Net.Http
             }
 
             return sslStream;
+        }
+
+        public static async ValueTask<QuicConnection> ConnectQuicAsync(string host, int port, SslClientAuthenticationOptions clientAuthenticationOptions, CancellationToken cancellationToken)
+        {
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(host).ConfigureAwait(false);
+            Exception lastException = null;
+
+            foreach (IPAddress address in addresses)
+            {
+                QuicConnection con = new QuicConnection(new IPEndPoint(address, port), clientAuthenticationOptions);
+                try
+                {
+                    await con.ConnectAsync(cancellationToken).ConfigureAwait(false);
+                    return con;
+                }
+                // TODO: it would be great to catch a specific exception here... QUIC implementation dependent.
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    con.Dispose();
+                    lastException = ex;
+                }
+            }
+
+            if (lastException != null)
+            {
+                throw CreateWrappedException(lastException, cancellationToken);
+            }
+
+            // TODO: find correct exception to throw here.
+            throw new HttpRequestException("No host found.");
+        }
+
+        private static Exception CreateWrappedException(Exception error, CancellationToken cancellationToken)
+        {
+            return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
+                CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
+                new HttpRequestException(error.Message, error, RequestRetryType.RetryOnNextProxy);
         }
     }
 }

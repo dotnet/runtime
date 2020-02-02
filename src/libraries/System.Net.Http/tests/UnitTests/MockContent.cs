@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Tests
@@ -106,9 +107,17 @@ namespace System.Net.Http.Tests
             }
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            throw new NotImplementedException(); // The overload with the CancellationToken should be called
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             SerializeToStreamAsyncCount++;
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
 
             if ((_options & MockOptions.ReturnNullInCopyToAsync) != 0)
             {

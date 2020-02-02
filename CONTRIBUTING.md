@@ -48,17 +48,23 @@ We use and recommend the following workflow:
     - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. Create a branch off of master (`git checkout -b mybranch`).
+3. In your fork, create a branch off of master (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
-4. Make and commit your changes.
+4. Make and commit your changes to your branch.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
-7. Create a pull request (PR) against the upstream repository's **master** branch.
-    - Push your changes to your fork on GitHub (if you haven't already).
+7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
+    - State in the description what issue or improvement your change is addressing.
+    - Check if all the Continuous Integration checks are passing.
+8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
+    - Details about the pull request [review procedure](docs/pr-guide.md).
+9. When area owners have signed off, and all checks are green, your PR will be merged.
+    - The next official build will automatically include your change.
+    - You can delete the branch you used for making the change.
 
 Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
 
@@ -67,6 +73,14 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 ## Up for Grabs
 
 The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
+
+Some issues have not yet been migrated here from our "old" repos. You can find those here:
+
+[CoreFX up for grabs](https://github.com/dotnet/corefx/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
+
+[CoreCLR up for grabs](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs)
+
+Even for these issues, the pull request should go to this repo.
 
 ## Commit Messages
 
@@ -157,6 +171,6 @@ See [IdnMapping.cs](./src/libraries/System.Private.CoreLib/src/System/Globalizat
 
 ### Porting Files from Other Projects
 
-There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C# , for example, are the same as would be used for copying the same file, as described above.
+There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C#, for example, are the same as would be used for copying the same file, as described above.
 
 [Clean-room](https://en.wikipedia.org/wiki/Clean_room_design) implementations of existing algorithms that are not permissively licensed will generally not be accepted. If you want to create or nominate such an implementation, please create an issue to discuss the idea.
