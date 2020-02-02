@@ -7,8 +7,11 @@
 
 namespace InteropLibImports
 {
-    // Forward declaration of External Object Context iterator.
-    class ExtObjCxtIterator;
+    // Forward declaration of Runtime calling context.
+    // This class is used by the consuming runtime to pass through details
+    // that may be required during a subsequent callback from the InteropLib.
+    // InteropLib never directly modifies or inspects supplied instances.
+    class RuntimeCallContext;
 }
 
 namespace InteropLib

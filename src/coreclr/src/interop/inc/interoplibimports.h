@@ -24,10 +24,18 @@ namespace InteropLibImports
     // Delete Object instance handle
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
-    // Get next External Object Context from the iterator.
+    // Get next External Object Context from the Runtime calling context.
     // S_OK - Context is valid.
     // S_FALSE - Iterator has reached end and context out parameter is set to NULL.
-    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept;
+    HRESULT IteratorNext(
+        _In_ RuntimeCallContext* runtimeContext,
+        _Outptr_result_maybenull_ void** extObjContext) noexcept;
+
+    // Create a reference between the External Object Context and the OBJECTHANDLE.
+    HRESULT CreateReference(
+        _In_ RuntimeCallContext* runtimeContext,
+        _In_ void* extObjContext,
+        _In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
     // Given a ComWrappers implementation, get or create
     // an IReferenceTrackerTarget instance for the supplied

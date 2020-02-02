@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Runtime headers
 #include "common.h"
+#include "rcwrefcache.h"
 
 // Interop library header
 #include <interoplibimports.h>
@@ -28,7 +30,7 @@ namespace
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext
     {
-        static DWORD InvalidSyncBlockIndex = 0;
+        static DWORD InvalidSyncBlockIndex = 0; // See syncblk.h
         static DWORD CollectedFlag = ~0;
 
         void* Identity;
@@ -65,7 +67,7 @@ namespace
         }
         ExternalObjectContext* operator->()
         {
-            return (ExternalObjectContext*)_cxt;
+            return _cxt;
         }
         ExternalObjectContext** operator&()
         {
@@ -135,7 +137,7 @@ namespace
         };
 
     private:
-        friend class InteropLibImports::ExtObjCxtIterator;
+        friend class InteropLibImports::RuntimeCallContext;
         SHash<Traits> _hashMap;
         Crst _lock;
 
@@ -238,6 +240,8 @@ namespace
 
     // Global instance
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
+
+    using ExtObjCxtRefCache = RCWRefCache;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -597,42 +601,76 @@ namespace InteropLibImports
         return hr;
     }
 
-    class ExtObjCxtIterator
+    class RuntimeCallContext
     {
     public:
-        ExtObjCxtIterator(_In_ ExtObjCxtCache* cache)
+        RuntimeCallContext(_In_ ExtObjCxtCache* cache, _In_ ExtObjCxtRefCache* refCache)
             : Curr{ cache->_hashMap.Begin() }
             , End{ cache->_hashMap.End() }
+            , RefCache{ refCache }
         { }
 
+        // Iterators for all known external objects.
         ExtObjCxtCache::Iterator Curr;
         ExtObjCxtCache::Iterator End;
+
+        // Pointer to cache used to create object references.
+        ExtObjCxtRefCache* RefCache;
     };
 
-    HRESULT IteratorNext(_In_ ExtObjCxtIterator* iter, _Outptr_result_maybenull_ void** context) noexcept
+    HRESULT IteratorNext(
+        _In_ RuntimeCallContext* runtimeContext,
+        _Outptr_result_maybenull_ void** extObjContext) noexcept
     {
         CONTRACTL
         {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_COOPERATIVE;
-            PRECONDITION(iter != NULL);
-            PRECONDITION(context != NULL);
+            PRECONDITION(runtimeContext != NULL);
+            PRECONDITION(extObjContext != NULL);
 
             // Should only be called during a GC suspension
             PRECONDITION(Debug_IsLockedViaThreadSuspension());
         }
         CONTRACTL_END;
 
-        if (iter->Curr == iter->End)
+        if (runtimeContext->Curr == runtimeContext->End)
         {
-            *context = NULL;
+            *extObjContext = NULL;
             return S_FALSE;
         }
 
-        ExtObjCxtCache::Element e = *iter->Curr++;
-        *context = e;
+        ExtObjCxtCache::Element e = *runtimeContext->Curr++;
+        *extObjContext = e;
         return S_OK;
+    }
+
+    HRESULT CreateReference(
+        _In_ RuntimeCallContext* runtimeContext,
+        _In_ void* extObjContextRaw,
+        _In_ InteropLib::OBJECTHANDLE handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+            PRECONDITION(runtimeContext != NULL);
+            PRECONDITION(extObjContextRaw != NULL);
+            PRECONDITION(handle != NULL);
+
+            // Should only be called during a GC suspension
+            PRECONDITION(Debug_IsLockedViaThreadSuspension());
+        }
+        CONTRACTL_END;
+
+        ExternalObjectContext* extObjContext = static_cast<ExternalObjectContext*>(extObjContextRaw);
+        _ASSERTE(extObjContext->IsActive());
+
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        return E_NOTIMPL;
     }
 }
 
