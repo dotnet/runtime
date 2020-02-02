@@ -139,7 +139,7 @@ namespace System.Net.Http
             }
         }
 
-        public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Task waitTask = WaitForAvailableRequestStreamAsync(cancellationToken);
 
@@ -148,13 +148,13 @@ namespace System.Net.Http
                 : WaitThenSendAsync(waitTask, request, cancellationToken);
         }
 
-        private async Task<HttpResponseMessage> WaitThenSendAsync(Task taskToWaitFor, HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> WaitThenSendAsync(Task taskToWaitFor, HttpRequestMessage request, CancellationToken cancellationToken)
         {
             await taskToWaitFor.ConfigureAwait(false);
             return await SendWithoutWaitingAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        private Task<HttpResponseMessage> SendWithoutWaitingAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private ValueTask<HttpResponseMessage> SendWithoutWaitingAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             QuicStream quicStream = null;
             Http3RequestStream stream;
@@ -190,7 +190,7 @@ namespace System.Net.Http
         retryRequest:
             // We lost a race between GOAWAY/abort and our pool sending the request to this connection.
             quicStream?.Dispose();
-            return Task.FromException<HttpResponseMessage>(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy));
+            return new ValueTask<HttpResponseMessage>(Task.FromException<HttpResponseMessage>(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy)));
         }
 
         /// <summary>

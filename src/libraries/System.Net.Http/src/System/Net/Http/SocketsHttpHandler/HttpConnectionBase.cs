@@ -12,7 +12,7 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IHttpTrace
     {
-        public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
+        public abstract ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
         public abstract void Trace(string message, [CallerMemberName] string memberName = null);
 
         protected void TraceConnection(Stream stream)
@@ -77,7 +77,7 @@ namespace System.Net.Http
         {
             _ = IgnoreExceptionsAsync(task);
 
-            static async Task IgnoreExceptionsAsync(ValueTask<int> task)
+            static async ValueTask IgnoreExceptionsAsync(ValueTask<int> task)
             {
                 try { await task.ConfigureAwait(false); } catch { }
             }
@@ -88,7 +88,7 @@ namespace System.Net.Http
         {
             _ = IgnoreExceptionsAsync(task);
 
-            static async Task IgnoreExceptionsAsync(Task task)
+            static async ValueTask IgnoreExceptionsAsync(Task task)
             {
                 try { await task.ConfigureAwait(false); } catch { }
             }
@@ -99,7 +99,7 @@ namespace System.Net.Http
         {
             _ = LogExceptionsAsync(task);
 
-            async Task LogExceptionsAsync(Task task)
+            async ValueTask LogExceptionsAsync(Task task)
             {
                 try
                 {

@@ -109,7 +109,7 @@ namespace System.Net.Http
             cts?.Cancel();
         }
 
-        public async Task<HttpResponseMessage> SendAsync(CancellationToken cancellationToken)
+        public async ValueTask<HttpResponseMessage> SendAsync(CancellationToken cancellationToken)
         {
             // If true, dispose the stream upon return. Will be set to false if we're duplex or returning content.
             bool disposeSelf = true;
