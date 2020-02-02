@@ -12,7 +12,7 @@
     <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
     <LocalDotnet Condition="'$(OS)' == 'Windows_NT'">$(LocalDotnetDir)\dotnet.exe</LocalDotnet>
     <LocalDotnet Condition="'$(LocalDotnet)' == ''">$(LocalDotnetDir)\dotnet</LocalDotnet>
-    <LocalDotnetRuntimeDir>$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
+    <LocalDotnetRuntimeDir Condition="Exists($(LocalDotnet))">$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
