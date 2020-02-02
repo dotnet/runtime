@@ -79,7 +79,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             if (capacity > 0) Initialize(capacity);
-            if (comparer != EqualityComparer<TKey>.Default)
+            if (comparer != null && comparer != EqualityComparer<TKey>.Default)
             {
                 _comparer = comparer;
             }
