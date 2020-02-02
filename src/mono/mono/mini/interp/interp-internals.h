@@ -189,30 +189,33 @@ typedef struct {
 	int inited;
 } FrameStack;
 
-/* State of the interpreter main loop */
-typedef struct {
-	stackval *sp;
-	unsigned char *vt_sp;
-	const unsigned short  *ip;
-	GSList *finally_ips;
-	gpointer clause_args;
-} InterpState;
-
 struct _InterpFrame {
-	InterpFrame *parent; /* parent */
+	// InterpFrame is used both for interp_exec_method_inner to
+	// communicate with interp_exec_method_full, and to hold
+	// the state of interp_exec_method_full across recursion.
+	//
+	// These could be two separate structs but that would probably
+	// use more stack.
+	//
+	// union is confusing but space-efficient
+	union {
+		InterpFrame *parent; /* parent */
+		GSList *finally_ips; /* child */
+	};
 	InterpMethod  *imethod; /* parent */
 	stackval       *retval; /* parent */
-	stackval       *stack_args; /* parent */
-	stackval       *stack;
-	/* An address on the native stack associated with the frame, used during EH */
-	gpointer       native_stack_addr;
-	/* Stack fragments this frame was allocated from */
-	StackFragment *iframe_frag, *data_frag;
+
+	union {
+		stackval       *stack_args; /* parent */
+		stackval       *sp;	    /* child */
+	};
+
+	union {
+		stackval       *stack;
+		guchar         *vt_sp;	/* child */
+	};
 	/* exception info */
-	const unsigned short  *ip;
-	/* State saved before calls */
-	/* This is valid if state.ip != NULL */
-	InterpState state;
+	const guint16 *ip;
 };
 
 #define frame_locals(frame) (((guchar*)((frame)->stack)) + (frame)->imethod->stack_size + (frame)->imethod->vt_stack_size)
