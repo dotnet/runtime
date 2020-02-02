@@ -919,7 +919,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeTestModes.JitMinOpts)]
         public void Match_ExcessPrefix(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
