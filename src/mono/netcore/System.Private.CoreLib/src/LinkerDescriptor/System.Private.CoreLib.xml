@@ -32,6 +32,8 @@
 		  <method name="MonoResolveUnmanagedDllUsingEvent"/>
 		  <!-- appdomain.c: mono_domain_fire_assembly_load_event -->
 		  <method name="OnAssemblyLoad"/>
+		  <!-- appdomain.c: mono_domain_try_type_resolve_name -->
+		  <method name="OnTypeResolve"/>
 		</type>
 		
 		<!-- marshal.c: emit_marshal_custom (should not be used on devices)
@@ -280,7 +282,7 @@
 		</type>
 		
 		<!-- mono-mlist.c (managed list): used in threadpool.c and gc.c -->
-		<type fullname="System.MonoListItem" preserve="fields" />
+		<type fullname="Mono.MonoListItem" preserve="fields" />
 		
 		<!-- domain.c: mono_defaults.type_class -->
 		<type fullname="System.MonoType" preserve="nothing" />
@@ -522,7 +524,7 @@
 		</type>
 		
 		<!-- reflection.c: mono_method_body_get_object -->
-		<type fullname="System.Reflection.ExceptionHandlingClause" preserve="fields" >
+		<type fullname="System.Reflection.RuntimeExceptionHandlingClause" preserve="fields" >
 			<!-- reflection.c mono_object_new_checked in add_exception_handling_clause_to_array -->
 			<method signature="System.Void .ctor()" />
 		</type>
@@ -727,9 +729,9 @@
 			<method name="get_BaseDirectory"/>
 		</type>
 
-		<typename fullname="Mono.NullByRefReturnException">
+		<type fullname="Mono.NullByRefReturnException">
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
-		</typename>
+		</type>
 	</assembly>
 </linker>
