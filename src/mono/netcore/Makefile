@@ -1,18 +1,12 @@
 DOTNET=../../../.dotnet/dotnet
 TESTHOST_PATH=../../../artifacts/bin/testhost/
 
-CONFIGURATION=
-OS_GROUP=
-PLATFORM=
-
 # let's check ../../../artifacts/bin/testhost/ for available configurations
 # it's expected to see there only a single config, e.g. "netcoreapp5.0-OSX-Release-x64"
 # otherwise you have to set these variables for desired config
 ifeq ($(words $(wildcard $(TESTHOST_PATH)/*)), 1)
 	TESTHOST_CFG := $(subst -, ,$(notdir $(wildcard $(TESTHOST_PATH)/*)))
-	OS_GROUP := $(word 2,$(TESTHOST_CFG))
 	CONFIGURATION := $(word 3,$(TESTHOST_CFG))
-	PLATFORM := $(word 4,$(TESTHOST_CFG))
 endif
 
 check-config:

@@ -120,8 +120,4 @@
     <Error Condition="!Exists('$(TestHostPath)')" Text="'$(TestHostPath)' doesn't exist. Try to set Configuration, OSGroup and Platform variables if neccesary." />
   </Target>
 
-  <Target Name="Foo">
-    <Message Importance="High" Text="Fooo: $(OSGroup).$(Platform).$(Configuration)" />
-  </Target>
-
 </Project>
