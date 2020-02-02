@@ -24,6 +24,7 @@ if (WIN32)
         agilereferences.cpp
         comwrappers.cpp
         comwrappers.h
+        trackerobjectmanager.cpp
         referencetrackertypes.h)
 endif(WIN32)
 

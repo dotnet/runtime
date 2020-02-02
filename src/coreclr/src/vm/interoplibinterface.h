@@ -38,3 +38,13 @@ public: // Lifetime management for COM Wrappers
 };
 
 #endif // FEATURE_COMINTEROP
+
+class Interop
+{
+public:
+    // Notify when GC started
+    static void OnGCStarted(_In_ int nCondemnedGeneration);
+
+    // Notify when GC finished
+    static void OnGCFinished(_In_ int nCondemnedGeneration);
+};

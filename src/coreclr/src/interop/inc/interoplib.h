@@ -46,9 +46,9 @@ namespace InteropLib
         // Destroy the supplied wrapper.
         void DestroyWrapperForExternal(_In_ void* context) noexcept;
 
-        // Register the default callback in the Reference Tracker Host scenario.
+        // Register a runtime implementation callback in the Reference Tracker Host scenario.
         // Returns true if registration succeeded, otherwise false.
-        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept;
+        bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept;
 
         // Get internal interop IUnknown dispatch pointers.
         void GetIUnknownImpl(
@@ -60,6 +60,8 @@ namespace InteropLib
         // S_OK    - the wrapper is active and the OBJECTHANDLE wasn't needed.
         // S_FALSE - the wrapper was inactive and the OBJECTHANDLE argument was used.
         HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
+
+        //HRESULT TrackExternalObjectReferences(_In_ RuntimeCallContext* cxt);
     }
 
 #endif // _WIN32

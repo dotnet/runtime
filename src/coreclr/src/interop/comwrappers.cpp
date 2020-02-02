@@ -5,6 +5,7 @@
 #include "comwrappers.h"
 #include <interoplibimports.h>
 
+using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using AllocScenario = InteropLibImports::AllocScenario;
 
 namespace ABI
@@ -555,9 +556,7 @@ HRESULT NativeObjectWrapperContext::Create(
     {
         hr = external->QueryInterface(&trackerObject);
         if (SUCCEEDED(hr))
-        {
-            // [TODO] RETURN_IF_FAILED(TrackerRCWManager::OnIReferenceTrackerFound(trackerObject));
-        }
+            RETURN_IF_FAILED(TrackerObjectManager::OnIReferenceTrackerFound(trackerObject));
     }
 
     ComHolder<IAgileReference> reference;
@@ -579,7 +578,12 @@ HRESULT NativeObjectWrapperContext::Create(
     {
         // Inform the tracker object manager
         _ASSERTE((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject);
-        // [TODO] TrackerRCWManager::AfterRCWCreated(contextLocal);
+        hr = TrackerObjectManager::AfterWrapperCreated(contextLocal);
+        if (FAILED(hr))
+        {
+            Destroy(contextLocal);
+            return hr;
+        }
     }
 
     *context = contextLocal;
@@ -694,18 +698,22 @@ namespace InteropLib
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
 
+            // Check if the tracker object manager should be informed prior to being destroyed.
+            if (context->GetReferenceTrackerFast() != nullptr)
+            {
+                // We only call this during a GC so ignore the failure as
+                // there is no way we can handle that failure at this point.
+                HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(context);
+                _ASSERTE(SUCCEEDED(hr));
+                (void)hr;
+            }
+
             NativeObjectWrapperContext::Destroy(context);
         }
 
-        bool RegisterReferenceTrackerHostCallback(_In_ OBJECTHANDLE objectHandle) noexcept // [TODO] Move to tracker object manager
+        bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept
         {
-            static OBJECTHANDLE g_objectHandle = nullptr;
-
-            if (g_objectHandle != nullptr)
-                return false;
-
-            g_objectHandle = objectHandle;
-            return true;
+            return TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(objectHandle);
         }
 
         void GetIUnknownImpl(

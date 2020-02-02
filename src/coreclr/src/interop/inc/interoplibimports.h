@@ -21,6 +21,10 @@ namespace InteropLibImports
     // Free the previously allocated memory.
     void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept;
 
+    HRESULT AddMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept;
+    HRESULT RemoveMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept;
+    //HRESULT RequestGarbageCollectionForExternal() noexcept;
+
     // Delete Object instance handle
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
@@ -31,13 +35,14 @@ namespace InteropLibImports
         _In_ RuntimeCallContext* runtimeContext,
         _Outptr_result_maybenull_ void** extObjContext) noexcept;
 
-    // Create a reference between the External Object Context and the OBJECTHANDLE.
-    HRESULT CreateReference(
+    // Tell the runtime a reference path between the External Object Context and
+    // OBJECTHANDLE was found.
+    HRESULT FoundReferencePath(
         _In_ RuntimeCallContext* runtimeContext,
         _In_ void* extObjContext,
         _In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
-    // Given a ComWrappers implementation, get or create
+    // Given a runtime implementation, get or create
     // an IReferenceTrackerTarget instance for the supplied
     // external object.
     HRESULT GetOrCreateTrackerTargetForExternal(
@@ -46,6 +51,7 @@ namespace InteropLibImports
         _In_ INT32 externalObjectFlags,
         _In_ INT32 trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept;
+
 }
 
 #endif // _INTEROP_INC_INTEROPLIBIMPORTS_H_

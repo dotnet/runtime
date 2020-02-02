@@ -10,8 +10,6 @@
 #include <interoplib.h>
 #include "referencetrackertypes.h"
 
-using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
-
 enum class CreateComInterfaceFlags
 {
     None = 0,
@@ -46,7 +44,7 @@ namespace ABI
 class ManagedObjectWrapper
 {
 public:
-    OBJECTHANDLE Target;
+    InteropLib::OBJECTHANDLE Target;
 
 private:
     const int32_t _runtimeDefinedCount;
@@ -65,7 +63,7 @@ public: // static
     // Create a ManagedObjectWrapper instance
     static HRESULT Create(
         _In_ CreateComInterfaceFlags flags,
-        _In_ OBJECTHANDLE objectHandle,
+        _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t userDefinedCount,
         _In_ ComInterfaceEntry* userDefined,
         _Outptr_ ManagedObjectWrapper** mow);
@@ -76,7 +74,7 @@ public: // static
 private:
     ManagedObjectWrapper(
         _In_ CreateComInterfaceFlags flags,
-        _In_ OBJECTHANDLE objectHandle,
+        _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t runtimeDefinedCount,
         _In_ const ComInterfaceEntry* runtimeDefined,
         _In_ int32_t userDefinedCount,
@@ -89,7 +87,7 @@ public:
 
     void* As(_In_ REFIID riid);
     // Attempt to set the target object handle based on an assumed current value.
-    bool TrySetObjectHandle(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current = nullptr);
+    bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlags flag) const;
 
 public: // IReferenceTrackerTarget
@@ -161,6 +159,35 @@ template<typename T>
 HRESULT CreateAgileReference(
     _In_ T* object,
     _Outptr_ IAgileReference** agileReference);
+
+// Manage native object wrappers that support IReferenceTracker.
+class TrackerObjectManager
+{
+public:
+    // Attempt to set a runtime implementation for use by the IReferenceTrackerHost implementation.
+    static bool TrySetReferenceTrackerHostRuntimeImpl(
+        _In_ InteropLib::OBJECTHANDLE objectHandle,
+        _In_ InteropLib::OBJECTHANDLE current = nullptr);
+
+    // Called when an IReferenceTracker instance is found.
+    static HRESULT OnIReferenceTrackerFound(_In_ IReferenceTracker* obj);
+
+    // Called after wrapper has been created.
+    static HRESULT AfterWrapperCreated(_In_ NativeObjectWrapperContext* cxt);
+
+    // Called before wrapper is about to be destroyed (the same lifetime as short weak handle).
+    static HRESULT BeforeWrapperDestroyed(_In_ NativeObjectWrapperContext* cxt);
+
+public:
+    // Called when GC started
+    static void OnGCStarted(_In_ int nCondemnedGeneration);
+
+    // Called when GC finished
+    static void OnGCFinished(_In_ int nCondemnedGeneration);
+
+    // Cleanup stuff when runtime is about to shutdown
+    static void OnShutdown();
+};
 
 // Class used to hold COM objects (i.e. IUnknown base class)
 // This class mimics the semantics of ATL::CComPtr<T> (https://docs.microsoft.com/cpp/atl/reference/ccomptr-class).

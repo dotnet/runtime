@@ -5,6 +5,7 @@
 // Runtime headers
 #include "common.h"
 #include "rcwrefcache.h"
+#include "rcwwalker.h"
 
 // Interop library header
 #include <interoplibimports.h>
@@ -30,8 +31,8 @@ namespace
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext
     {
-        static DWORD InvalidSyncBlockIndex = 0; // See syncblk.h
-        static DWORD CollectedFlag = ~0;
+        static DWORD InvalidSyncBlockIndex;
+        static DWORD CollectedFlag;
 
         void* Identity;
         DWORD SyncBlockIndex;
@@ -50,6 +51,9 @@ namespace
                 && (SyncBlockIndex != InvalidSyncBlockIndex);
         }
     };
+
+    DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
+    DWORD ExternalObjectContext::CollectedFlag = ~0;
 
     static_assert((sizeof(ExternalObjectContext) % sizeof(void*)) == 0, "Keep context pointer size aligned");
 
@@ -528,6 +532,49 @@ namespace InteropLibImports
         ::free(mem);
     }
 
+    HRESULT AddMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            GCInterface::NewAddMemoryPressure(memoryInBytes);
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
+    HRESULT RemoveMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            GCInterface::NewRemoveMemoryPressure(memoryInBytes);
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
+    void RequestGarbageCollection() noexcept
+    {
+
+    }
+
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept
     {
         CONTRACTL
@@ -646,7 +693,7 @@ namespace InteropLibImports
         return S_OK;
     }
 
-    HRESULT CreateReference(
+    HRESULT FoundReferencePath(
         _In_ RuntimeCallContext* runtimeContext,
         _In_ void* extObjContextRaw,
         _In_ InteropLib::OBJECTHANDLE handle) noexcept
@@ -665,12 +712,20 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
+        // Get the external object's managed wrapper
         ExternalObjectContext* extObjContext = static_cast<ExternalObjectContext*>(extObjContextRaw);
         _ASSERTE(extObjContext->IsActive());
+        OBJECTREF source = ObjectToOBJECTREF(g_pSyncTable[extObjContext->SyncBlockIndex].m_Object);
 
+        // Get the target of the external object's reference.
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+        OBJECTREF target = ObjectFromHandle(objectHandle);
 
-        return E_NOTIMPL;
+        // If these point at the same object don't create a reference.
+        if (source->GetSyncBlock() == target->GetSyncBlock())
+            return S_FALSE;
+
+        return runtimeContext->RefCache->AddReferenceFromObjectToObject(source, target);
     }
 }
 
@@ -761,7 +816,7 @@ void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
 
         implHandle = GetAppDomain()->CreateTypedHandle(implRef, ComWrappersImplHandleType);
 
-        if (!InteropLib::Com::RegisterReferenceTrackerHostCallback(implHandle))
+        if (!InteropLib::Com::RegisterReferenceTrackerHostRuntimeImpl(implHandle))
         {
             DestroyHandleCommon(implHandle, ComWrappersImplHandleType);
             COMPlusThrow(kInvalidOperationException, IDS_EE_RESET_REFERENCETRACKERHOST_CALLBACKS);
@@ -804,13 +859,13 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     InteropLib::Com::DestroyWrapperForObject(wrapper);
 }
 
-void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* context)
+void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
 {
     CONTRACTL
     {
         NOTHROW;
         MODE_ANY;
-        PRECONDITION(context != NULL);
+        PRECONDITION(contextRaw != NULL);
     }
     CONTRACTL_END;
 
@@ -829,7 +884,7 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(context != NULL);
+        PRECONDITION(contextRaw != NULL);
         PRECONDITION(GCHeapUtilities::IsGCInProgress());
     }
     CONTRACTL_END;
@@ -844,3 +899,46 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
 }
 
 #endif // FEATURE_COMINTEROP
+
+void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP
+    //
+    // Let GC detect managed/native cycles with input from jupiter
+    // Jupiter will
+    // 1. Report reference from RCW to CCW based on native reference in Jupiter
+    // 2. Identify the subset of CCWs that needs to be rooted
+    //
+    // We'll build the references from RCW to CCW using
+    // 1. Preallocated arrays
+    // 2. Dependent handles
+    //
+    RCWWalker::OnGCStarted(nCondemnedGeneration);
+
+#endif // FEATURE_COMINTEROP
+}
+
+void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP
+    //
+    // Tell Jupiter GC has finished
+    //
+    RCWWalker::OnGCFinished(nCondemnedGeneration);
+
+#endif // FEATURE_COMINTEROP
+}

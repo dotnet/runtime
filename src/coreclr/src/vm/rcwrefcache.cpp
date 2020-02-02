@@ -215,15 +215,15 @@ HRESULT RCWRefCache::AddReferenceFromRCWToCCW(RCW *pRCW, ComCallWrapper *pCCW)
 //
 // Add a reference from obj1 to obj2
 //
-HRESULT AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2)
+HRESULT RCWRefCache::AddReferenceFromObjectToObject(OBJECTREF obj1, OBJECTREF obj2)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(obj1));
-        PRECONDITION(CheckPointer(obj2));
+        PRECONDITION(obj1 != NULL);
+        PRECONDITION(obj2 != NULL);
     }
     CONTRACTL_END;
 
