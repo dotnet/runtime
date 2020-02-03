@@ -8,10 +8,10 @@ namespace System
     {
 #if TARGET_UNIX && !SILVERLIGHT
 
-#if !TARGET_UNIX
+#if TARGET_WINDOWS
         internal const String DLLPREFIX = "";
         internal const String DLLSUFFIX = ".dll";
-#else // !TARGET_UNIX
+#else // TARGET_WINDOWS
 #if __APPLE__
         internal const String DLLPREFIX = "lib";
         internal const String DLLSUFFIX = ".dylib";
@@ -25,7 +25,7 @@ namespace System
         internal const String DLLPREFIX = "lib";
         internal const String DLLSUFFIX = ".so";
 #endif
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
 
         public const string Kernel32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
         public const string User32 = DLLPREFIX + "rotor_pal" + DLLSUFFIX;
@@ -78,6 +78,6 @@ namespace System
         // system.data.oracleclient specific
         internal const string OciDll = "oci.dll";
         internal const string OraMtsDll = "oramts.dll";
-#endif //!TARGET_UNIX
+#endif //TARGET_WINDOWS
     }
 }

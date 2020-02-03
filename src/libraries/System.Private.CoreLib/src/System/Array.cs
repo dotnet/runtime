@@ -1021,7 +1021,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !TARGET_64BIT
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1251,7 +1251,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !TARGET_64BIT
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1460,7 +1460,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if !TARGET_64BIT
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif

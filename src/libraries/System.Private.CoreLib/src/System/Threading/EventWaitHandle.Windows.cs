@@ -19,7 +19,7 @@ namespace System.Threading
 
         private void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
-#if !TARGET_WINDOWS
+#if TARGET_UNIX
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif

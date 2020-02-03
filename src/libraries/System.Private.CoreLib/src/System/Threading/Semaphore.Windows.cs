@@ -24,7 +24,7 @@ namespace System.Threading
             Debug.Assert(maximumCount >= 1);
             Debug.Assert(initialCount <= maximumCount);
 
-#if !TARGET_WINDOWS
+#if TARGET_UNIX
             if (name != null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif

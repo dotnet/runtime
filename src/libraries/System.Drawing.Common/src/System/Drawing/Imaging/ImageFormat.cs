@@ -145,7 +145,7 @@ namespace System.Drawing.Imaging
             return _guid.GetHashCode();
         }
 
-#if !TARGET_UNIX
+#if TARGET_WINDOWS
         // Find any random encoder which supports this format
         internal ImageCodecInfo FindEncoder()
         {

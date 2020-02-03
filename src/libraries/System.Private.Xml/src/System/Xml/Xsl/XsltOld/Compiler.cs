@@ -43,9 +43,9 @@ namespace System.Xml.Xsl.XsltOld
     internal enum ScriptingLanguage
     {
         JScript,
-#if !TARGET_UNIX // visualbasic
+#if TARGET_WINDOWS // visualbasic
         VisualBasic,
-#endif // !TARGET_UNIX
+#endif // TARGET_WINDOWS
         CSharp
     }
 
