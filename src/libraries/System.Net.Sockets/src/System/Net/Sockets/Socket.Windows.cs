@@ -57,9 +57,20 @@ namespace System.Net.Sockets
 
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
             errorCode = SocketPal.GetSockName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
+
             if (errorCode == SocketError.Success)
             {
                 _rightEndPoint = ep.Create(socketAddress);
+            }
+            else if (errorCode == SocketError.InvalidArgument)
+            {
+                // Socket is not yet bound.
+            }
+            else
+            {
+                _handle.Dispose();
+                _handle = null;
+                throw new SocketException((int)errorCode);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
