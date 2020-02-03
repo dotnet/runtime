@@ -159,10 +159,9 @@ namespace System.Net.Mail
                     {
                         if (!_isClosed && _tcpClient != null)
                         {
-                            // free CBT buffer
                             _channelBindingToken?.Close();
 
-                            // must destroy manually since sending a QUIT here might not be
+                            // Must destroy manually since sending a QUIT here might not be
                             // interpreted correctly by the server if it's in the middle of a
                             // DATA command or some similar situation.  This may send a RST
                             // but this is ok in this situation.  Do not reuse this connection
