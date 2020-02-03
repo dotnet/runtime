@@ -20,6 +20,7 @@ namespace ILCompiler
         public bool InputBubble { get; set; }
         public bool CompileBubbleGenerics { get; set; }
         public bool Verbose { get; set; }
+        public bool Composite { get; set; }
 
         public FileInfo DgmlLogFileName { get; set; }
         public bool GenerateFullDgmlLog { get; set; }
@@ -83,6 +84,7 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption),
                 new Option(new[] { "--inputbubble" }, SR.InputBubbleOption),
+                new Option(new[] { "--composite" }, SR.CompositeBuildMode),
                 new Option(new[] { "--tuning" }, SR.TuningImageOption) 
                 {
                     Argument = new Argument<bool>() 

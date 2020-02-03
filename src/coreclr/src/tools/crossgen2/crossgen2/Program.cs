@@ -188,12 +188,14 @@ namespace ILCompiler
                     typeSystemContext.ReferenceFilePaths = _referenceFilePaths;
 
                     List<EcmaModule> inputModules = new List<EcmaModule>();
+                    List<EcmaModule> rootingModules = new List<EcmaModule>();
                     HashSet<ModuleDesc> versionBubbleModulesHash = new HashSet<ModuleDesc>();
 
                     foreach (var inputFile in typeSystemContext.InputFilePaths)
                     {
                         EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
                         inputModules.Add(module);
+                        rootingModules.Add(module);
                         versionBubbleModulesHash.Add(module);
 
                         if (!_commandLineOptions.InputBubble)
@@ -231,6 +233,18 @@ namespace ILCompiler
                         try
                         {
                             EcmaModule module = typeSystemContext.GetModuleFromPath(referenceFile);
+                            if (versionBubbleModulesHash.Contains(module))
+                            {
+                                // Ignore reference assemblies that have also been passed as inputs
+                                continue;
+                            }
+                            if (_commandLineOptions.Composite)
+                            {
+                                // In composite mode, add reference assemblies as inputs but don't root all their methods
+                                // This will need more granularity (probably two types of references) when implementing
+                                // shared framework / multi-layer composite R2R files.
+                                inputModules.Add(module);
+                            }
                             referenceableModules.Add(module);
                             if (_commandLineOptions.InputBubble)
                             {
@@ -277,7 +291,7 @@ namespace ILCompiler
                     if (singleMethod == null)
                     {
                         // For non-single-method compilations add compilation roots.
-                        foreach (var module in inputModules)
+                        foreach (var module in rootingModules)
                         {
                             compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
