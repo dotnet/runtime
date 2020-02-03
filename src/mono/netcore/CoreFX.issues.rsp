@@ -19,13 +19,6 @@
 -nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
 
 ####################################################################
-##  System.Data.Common.Tests
-####################################################################
-
-# Invalid IL - IL_00bc: castclass 0x0100000d
--nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
-
-####################################################################
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
