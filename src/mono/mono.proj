@@ -125,7 +125,6 @@
   </Target>
 
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchTestHost">
-    <Error Condition="!Exists('$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked')" Text="CoreCLR test must be built with Checked configuration, e.g. run `cd src/coreclr && ./build.sh -checked`" />
     <PropertyGroup>
       <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
       <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
