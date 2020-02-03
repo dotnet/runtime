@@ -15,11 +15,44 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private readonly IntPtr _registrationContext;
 
+        public static bool IsQuicSupported { get; } = GetIsQuicSupported();
+
+        private static bool GetIsQuicSupported()
+        {
+            // TODO: check using MsQuicOpen return value; but there doesn't seem to be a consistent error code for this yet.
+            OperatingSystem ver = Environment.OSVersion;
+
+            if (ver.Platform != PlatformID.Win32NT || ver.Version >= new Version(10, 0, 19041, 0))
+            {
+                try
+                {
+                    new MsQuicApi().Dispose();
+                    return true;
+                }
+                catch (QuicNotSupportedException)
+                {
+                }
+            }
+
+            return false;
+        }
+
         private unsafe MsQuicApi()
         {
-            QuicExceptionHelpers.ThrowIfFailed(
-                Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration),
-                "Could not open MsQuic.");
+            MsQuicNativeMethods.NativeApi* registration;
+
+            try
+            {
+                uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
+                if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+                {
+                    throw new QuicNotSupportedException();
+                }
+            }
+            catch (DllNotFoundException)
+            {
+                throw new QuicNotSupportedException();
+            }
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 
@@ -114,7 +147,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _registrationContext = ctx;
         }
 
-        internal static MsQuicApi Api { get; } = new MsQuicApi();
+        internal static MsQuicApi Api { get; } = IsQuicSupported ? new MsQuicApi() : null;
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
