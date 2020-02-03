@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Threading.Tests
-####################################################################
-
-# flaky, causes stack overflow
--nomethod System.Threading.Tasks.Tests.TaskContinueWithTests.LongContinuationChain_ContinueWith_DoesNotStackOverflow
-
-####################################################################
 ##  System.Threading.ThreadPool.Tests
 ####################################################################
 
