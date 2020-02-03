@@ -15,6 +15,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly IMethodNode _targetMethod;
 
+        private readonly bool _isInstantiatingStub;
+
         private readonly ModuleToken _methodToken;
 
         private readonly SignatureContext _signatureContext;
@@ -22,11 +24,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
+            bool isInstantiatingStub,
             ModuleToken methodToken,
             SignatureContext signatureContext)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
+            _isInstantiatingStub = isInstantiatingStub;
             _methodToken = methodToken;
             _signatureContext = signatureContext;
 
@@ -76,7 +80,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($@"DelegateCtor(");
             sb.Append(nameMangler.GetMangledTypeName(_delegateType));
             sb.Append(" -> ");
-            sb.Append(nameMangler.GetMangledMethodName(_targetMethod.Method));
+            _targetMethod.AppendMangledName(nameMangler, sb);
+            if (_isInstantiatingStub)
+            {
+                sb.Append(" [INST]");
+            }
             sb.Append("; ");
             sb.Append(_methodToken.ToString());
             sb.Append(")");
@@ -89,7 +97,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = comparer.Compare(_targetMethod.Method, otherNode._targetMethod.Method);
+            result = _targetMethod.CompareToImpl(otherNode._targetMethod, comparer);
             if (result != 0)
                 return result;
 

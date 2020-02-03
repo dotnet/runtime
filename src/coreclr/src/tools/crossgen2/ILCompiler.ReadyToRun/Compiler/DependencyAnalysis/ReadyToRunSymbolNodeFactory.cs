@@ -110,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
                     _codegenNodeFactory,
                     _codegenNodeFactory.HelperImports,
                     ReadyToRunHelper.DelayLoad_Helper_ObjObj,
-                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Token, signatureContext));
+                    new DelegateCtorSignature(ctorKey.Type, targetMethodNode, ctorKey.Method.Method.HasInstantiation, ctorKey.Method.Token, signatureContext));
             });
 
             _genericLookupHelpers = new NodeCache<GenericLookupKey, ISymbolNode>(key =>
