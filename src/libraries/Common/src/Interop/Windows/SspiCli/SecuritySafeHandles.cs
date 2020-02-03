@@ -432,28 +432,38 @@ namespace System.Net.Security
             Span<IntPtr> ptr = stackalloc IntPtr[3];
             try
             {
-                Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[inSecBuffers.Count];
-                inUnmanagedBuffer.Clear();
+                // Allocate always maximum to allow better code optimization.
+                Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
+                for (int index = 0; index < inSecBuffers.Count; ++index)
+                {
+                    inUnmanagedBuffer[index].BufferType = inSecBuffers.GetBuffer(index).Type;
+                    inUnmanagedBuffer[index].cbBuffer = inSecBuffers.GetBuffer(index).Token.Length;
+                    inUnmanagedBuffer[index].pvBuffer = inSecBuffers.GetBuffer(index).UnmanagedToken != null ?
+                                                            (IntPtr)inSecBuffers.GetBuffer(index).UnmanagedToken.DangerousGetHandle() :
+                                                            IntPtr.Zero;
+                }
 
                 fixed (void* inUnmanagedBufferPtr = inUnmanagedBuffer)
-                fixed (void* pinnedToken0 = &inSecBuffers.GetBuffer(0).Token.GetPinnableReference())
-                fixed (void* pinnedToken1 = &inSecBuffers.GetBuffer(1).Token.GetPinnableReference())
-                fixed (void* pinnedToken2 = &inSecBuffers.GetBuffer(2).Token.GetPinnableReference())
+                fixed (void* pinnedToken0 = inSecBuffers.GetBuffer(0).Token)
+                fixed (void* pinnedToken1 = inSecBuffers.GetBuffer(1).Token)
+                fixed (void* pinnedToken2 = inSecBuffers.GetBuffer(2).Token)
                 {
-                    ptr[0] = (IntPtr)pinnedToken0;
-                    ptr[1] = (IntPtr)pinnedToken1;
-                    ptr[2] = (IntPtr)pinnedToken2;
-
                     // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                     inSecurityBufferDescriptor.pBuffers = inUnmanagedBufferPtr;
-
-                    for (int index = 0; index < inSecBuffers.Count; ++index)
+                    // Updated pvBuffer with pinned address. UnmanagedToken takes precedence.
+                    if (inSecBuffers.Count > 2 && inUnmanagedBuffer[2].pvBuffer == IntPtr.Zero)
                     {
-                        inUnmanagedBuffer[index].cbBuffer = inSecBuffers.GetBuffer(index).Token.Length;
-                        inUnmanagedBuffer[index].BufferType = inSecBuffers.GetBuffer(index).Type;
-                        inUnmanagedBuffer[index].pvBuffer = inSecBuffers.GetBuffer(index).UnmanagedToken != null ?
-                                                                inSecBuffers.GetBuffer(index).UnmanagedToken.DangerousGetHandle() :
-                                                                ptr[index];
+                        inUnmanagedBuffer[2].pvBuffer = (IntPtr)pinnedToken2;
+                    }
+
+                    if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].pvBuffer == IntPtr.Zero)
+                    {
+                        inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken1;
+                    }
+
+                    if (inSecBuffers.Count > 0 && inUnmanagedBuffer[0].pvBuffer == IntPtr.Zero)
+                    {
+                        inUnmanagedBuffer[0].pvBuffer = (IntPtr)pinnedToken0;
                     }
 
                     fixed (byte* pinnedOutBytes = outSecBuffer.token)
@@ -657,33 +667,40 @@ namespace System.Net.Security
             SafeFreeContextBuffer outFreeContextBuffer = null;
             Span<Interop.SspiCli.SecBuffer> outUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[2];
             outUnmanagedBuffer[1].pvBuffer = IntPtr.Zero;
-            Span<IntPtr> ptr = stackalloc IntPtr[3];
             try
             {
-                Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[inSecBuffers.Count];
-
-                inUnmanagedBuffer.Clear();
+                // Allocate always maximum to allow better code optimization.
+                Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
+                for (int index = 0; index < inSecBuffers.Count; ++index)
+                {
+                    inUnmanagedBuffer[index].BufferType = inSecBuffers.GetBuffer(index).Type;
+                    inUnmanagedBuffer[index].cbBuffer = inSecBuffers.GetBuffer(index).Token.Length;
+                    inUnmanagedBuffer[index].pvBuffer = inSecBuffers.GetBuffer(index).UnmanagedToken != null ?
+                                                            (IntPtr)inSecBuffers.GetBuffer(index).UnmanagedToken.DangerousGetHandle() :
+                                                            IntPtr.Zero;
+                }
 
                 fixed (void* inUnmanagedBufferPtr = inUnmanagedBuffer)
                 fixed (void* outUnmanagedBufferPtr = outUnmanagedBuffer)
-                fixed (void* pinnedToken0 = &inSecBuffers.GetBuffer(0).Token.GetPinnableReference())
-                fixed (void* pinnedToken1 = &inSecBuffers.GetBuffer(1).Token.GetPinnableReference())
-                fixed (void* pinnedToken2 = &inSecBuffers.GetBuffer(2).Token.GetPinnableReference())
+                fixed (void* pinnedToken0 = inSecBuffers.GetBuffer(0).Token)
+                fixed (void* pinnedToken1 = inSecBuffers.GetBuffer(1).Token)
+                fixed (void* pinnedToken2 = inSecBuffers.GetBuffer(2).Token)
                 {
-
-                    ptr[0] = (IntPtr)pinnedToken0;
-                    ptr[1] = (IntPtr)pinnedToken1;
-                    ptr[2] = (IntPtr)pinnedToken2;
-
                     inSecurityBufferDescriptor.pBuffers = inUnmanagedBufferPtr;
-
-                    for (int index = 0; index < inSecBuffers.Count; ++index)
+                    // Updated pvBuffer with pinned address. UnmanagedToken takes precedence.
+                    if (inSecBuffers.Count > 2 && inUnmanagedBuffer[2].pvBuffer == IntPtr.Zero)
                     {
-                        inUnmanagedBuffer[index].cbBuffer = inSecBuffers.GetBuffer(index).Token.Length;
-                        inUnmanagedBuffer[index].BufferType = inSecBuffers.GetBuffer(index).Type;
-                        inUnmanagedBuffer[index].pvBuffer = inSecBuffers.GetBuffer(index).UnmanagedToken != null ?
-                                                                inSecBuffers.GetBuffer(index).UnmanagedToken.DangerousGetHandle() :
-                                                                ptr[index];
+                        inUnmanagedBuffer[2].pvBuffer = (IntPtr)pinnedToken2;
+                    }
+
+                    if (inSecBuffers.Count > 1 && inUnmanagedBuffer[1].pvBuffer == IntPtr.Zero)
+                    {
+                        inUnmanagedBuffer[1].pvBuffer = (IntPtr)pinnedToken1;
+                    }
+
+                    if (inSecBuffers.Count > 0 && inUnmanagedBuffer[0].pvBuffer == IntPtr.Zero)
+                    {
+                        inUnmanagedBuffer[0].pvBuffer = (IntPtr)pinnedToken0;
                     }
 
                     fixed (byte* pinnedOutBytes = outSecBuffer.token)

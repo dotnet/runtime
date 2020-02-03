@@ -417,7 +417,7 @@ namespace System.Net.Security
 
                 if (_framing == Framing.Unified)
                 {
-                    _framing = DetectFraming(new Span<byte>(message.Payload, 0, message.Payload.Length));
+                    _framing = DetectFraming(new ReadOnlySpan<byte>(message.Payload));
                 }
 
                 InnerStream.Write(message.Payload, 0, message.Size);
@@ -518,10 +518,10 @@ namespace System.Net.Security
 
             if (_framing == Framing.Unified || _framing == Framing.Unknown)
             {
-                _framing = DetectFraming(_handshakeBuffer.ActiveSpan);
+                _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize = GetFrameSize(_handshakeBuffer.ActiveSpan);
+            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
             if (frameSize < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
@@ -533,7 +533,7 @@ namespace System.Net.Security
             {
                 readBytes = await FillBufferAsync(InnerStream, _handshakeBuffer, frameSize, cancellationToken).ConfigureAwait(false);
             }
-            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveSpan.Slice(0, frameSize));
+            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveReadOnlySpan.Slice(0, frameSize));
             _handshakeBuffer.Discard(frameSize);
 
             return token;
