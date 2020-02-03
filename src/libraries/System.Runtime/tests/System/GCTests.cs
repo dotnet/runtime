@@ -399,6 +399,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31657", TargetFrameworkMonikers.Mono)]
         [InlineData(GCLatencyMode.Batch)]
         [InlineData(GCLatencyMode.Interactive)]
         public static void LatencyRoundtrips(GCLatencyMode value)
