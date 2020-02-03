@@ -13043,12 +13043,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = op1->AsOp()->gtOp1;
                     }
 
-                    // If 'op1' is an expression, create an assignment node.
-                    // Helps analyses (like CSE) to work fine.
-
                     if (op1->gtOper != GT_CALL)
                     {
-                        op1 = gtUnusedValNode(op1);
+                        if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            op1 = gtUnusedValNode(op1);
+                        }
+                        else
+                        {
+                            op1->gtBashToNOP();
+                        }
                     }
 
                     /* Append the value to the tree list */
