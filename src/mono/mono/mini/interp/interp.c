@@ -3777,11 +3777,12 @@ main_loop:
 			/* Non-recursive call */
 			SAVE_INTERP_STATE (frame);
 
+			child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+
 			if (G_UNLIKELY (!imethod->transformed)) {
 				MonoException *ex;
 				gboolean tracing;
 
-				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				method_entry (context, child_frame, &tracing, &ex);
 				if (G_UNLIKELY (ex)) {
 					frame = child_frame;
@@ -3790,7 +3791,6 @@ main_loop:
 					EXCEPTION_CHECKPOINT;
 				}
 			} else {
-				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				alloc_stack_data (context, child_frame, imethod->alloca_size);
 #if DEBUG_INTERP
 				debug_enter (child_frame, &tracing);
@@ -3885,11 +3885,12 @@ retry_callvirt_fast:
 			if (imethod->code_type == IMETHOD_CODE_INTERP) {
 				SAVE_INTERP_STATE (frame);
 
+				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+
 				if (G_UNLIKELY (!imethod->transformed)) {
 					MonoException *ex;
 					gboolean tracing;
 
-					child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
 					method_entry (context, child_frame, &tracing, &ex);
 					if (G_UNLIKELY (ex)) {
 						frame = child_frame;
@@ -3898,7 +3899,6 @@ retry_callvirt_fast:
 						EXCEPTION_CHECKPOINT;
 					}
 				} else {
-					child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
 					alloc_stack_data (context, child_frame, imethod->alloca_size);
 				}
 
@@ -4001,11 +4001,12 @@ retry_callvirt_fast:
 			 */
 			SAVE_INTERP_STATE (frame);
 
+			child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+
 			if (G_UNLIKELY (!imethod->transformed)) {
 				MonoException *ex;
 				gboolean tracing;
 
-				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				method_entry (context, child_frame, &tracing, &ex);
 				if (G_UNLIKELY (ex)) {
 					frame = child_frame;
@@ -4014,7 +4015,6 @@ retry_callvirt_fast:
 					EXCEPTION_CHECKPOINT;
 				}
 			} else {
-				child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 				alloc_stack_data (context, child_frame, imethod->alloca_size);
 #if DEBUG_INTERP
 				debug_enter (child_frame, &tracing);
