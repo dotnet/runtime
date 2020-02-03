@@ -473,8 +473,7 @@ namespace System.ServiceProcess
             // already been freed.
             try
             {
-                PowerBroadcastStatus status = (PowerBroadcastStatus)eventType;
-                _ = OnPowerEvent(status);
+                _ = OnPowerEvent((PowerBroadcastStatus)eventType);
 
                 WriteLogEntry(SR.PowerEventOK);
             }
