@@ -373,16 +373,24 @@ namespace System.Security.Cryptography
         public virtual bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             => TrySignHashCore(hash, destination, DSASignatureFormat.IeeeP1363FixedFieldConcatenation, out bytesWritten);
 
-        public bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+        public bool TrySignHash(ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
             => TrySignHashCore(hash, destination, signatureFormat, out bytesWritten);
 
-        protected virtual bool TrySignHashCore(ReadOnlySpan<byte> hash, Span<byte> destination, DSASignatureFormat signatureFormat, out int bytesWritten)
+        protected virtual bool TrySignHashCore(
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination,
+            DSASignatureFormat signatureFormat,
+            out int bytesWritten)
         {
             // This method is expected to be overriden with better implementation
 
-            // The only available implmentation here is abstract method, use it
+            // The only available implementation here is abstract method, use it
             byte[] result = SignHash(hash.ToArray());
-            return Helpers.TryCopyToDestination(result, destination, out bytesWritten);
+            byte[] converted = AsymmetricAlgorithmHelpers.ConvertIeeeP1363Signature(result, signatureFormat);
+            return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
         }
 
         public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
@@ -406,7 +414,10 @@ namespace System.Security.Cryptography
         public bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
             => VerifyHashCore(hash, signature, signatureFormat);
 
-        protected virtual bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
+        protected virtual bool VerifyHashCore(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            DSASignatureFormat signatureFormat)
         {
             // This method is expected to be overriden with better implementation
 
