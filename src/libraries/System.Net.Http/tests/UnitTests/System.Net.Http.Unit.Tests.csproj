@@ -53,6 +53,9 @@
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+      <Link>Common\System\Net\ArrayBuffer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>
@@ -310,9 +313,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>

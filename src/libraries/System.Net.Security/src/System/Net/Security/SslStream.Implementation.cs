@@ -380,6 +380,14 @@ namespace System.Net.Security
                 }
             } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
 
+            if (_handshakeBuffer.ActiveLength > 0)
+            {
+                // If we read more than we needed for handshake, move it to input buffer for further processing.
+                ResetReadBuffer();
+                _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
+                _internalBufferCount = _handshakeBuffer.ActiveLength;
+            }
+
             if (!CompleteHandshake(out ProtocolToken alertToken))
             {
                 SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
@@ -526,8 +534,6 @@ namespace System.Net.Security
             {
                 throw new IOException(SR.net_frame_read_size);
             }
-
-            //int frameSize = SecureChannel.ReadHeaderSize + payloadBytes;
 
             if (_handshakeBuffer.ActiveLength < frameSize)
             {
