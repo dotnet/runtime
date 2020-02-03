@@ -338,6 +338,8 @@ fi
 
 # Crossgen System.Private.CoreLib
 
+__CoreLibILDir=$__BinDir/IL
+
 if [[ "$__SkipMSCorLib" != 1 ]]; then
     # The cross build generates a crossgen with the target architecture.
     if [[ "$__CrossBuild" == 0 ]]; then

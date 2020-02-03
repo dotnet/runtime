@@ -40,6 +40,7 @@ initNonPortableDistroRid()
     local buildArch="$2"
     local isPortable="$3"
     local rootfsDir="$4"
+    local nonPortableBuildID=""
 
     if [ "$buildOs" = "Linux" ]; then
         if [ -e "${rootfsDir}/etc/os-release" ]; then
@@ -115,7 +116,10 @@ initDistroRidGlobal()
     local buildOs="$1"
     local buildArch="$2"
     local isPortable="$3"
-    local rootfsDir="$4"
+    local rootfsDir=""
+    if [ "$#" -ge 4 ]; then
+        rootfsDir="$4"
+    fi
 
     if [ -n "${rootfsDir}" ]; then
         # We may have a cross build. Check for the existance of the rootfsDir

@@ -13,7 +13,7 @@
     <DebugSymbols>true</DebugSymbols>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(ArtifactsBinDir)/coreclr/$(BuildOS).$(BuildArch).$(Configuration)/IL/</OutputPath>
+    <OutputPath>$(BinDir)/IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
 
@@ -454,7 +454,7 @@
   <Target Name="FindPythonUnix"
           Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
           Returns="$(PYTHON)">
-    <Exec Condition="command -v python3 || command -v python2 || command -v python || command -v py"
+    <Exec Command="command -v python3 || command -v python2 || command -v python || command -v py"
           StandardOutputImportance="Low"
           EchoOff="true"
           ConsoleToMsBuild="true">

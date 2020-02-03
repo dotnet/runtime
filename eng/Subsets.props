@@ -61,7 +61,7 @@
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
-    <DefaultCoreClrSubsets>all</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>runtime-corelib-tools-packages</DefaultCoreClrSubsets>
     <DefaultMonoSubsets>all</DefaultMonoSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
@@ -147,7 +147,7 @@
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\runincontext\runincontext.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\r2rdump\R2RDump.csproj" />
     <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\ReadyToRun.SuperIlc\ReadyToRun.SuperIlc.csproj" />
-    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" />
+    <CoreClrManagedToolsProjectToBuild Include="$(CoreClrProjectRoot)src\tools\crossgen2\crossgen2\crossgen2.csproj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrManagedToolsProjectToBuild)" />
   </ItemGroup>
 
