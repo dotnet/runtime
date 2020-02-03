@@ -9,9 +9,6 @@
 ##  System.Threading.ThreadPool.Tests
 ####################################################################
 
-# TODO: Differences in behaviour between NetFX and CoreFX
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
-
 # Explicitly skipped if it's MonoVM (SkipOnTargetFramework)
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
 
