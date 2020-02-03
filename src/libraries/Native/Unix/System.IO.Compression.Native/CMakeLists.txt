@@ -1,6 +1,6 @@
 project(System.IO.Compression.Native C)
 
-if (CLR_CMAKE_PLATFORM_WASM)
+if (CLR_CMAKE_TARGET_WASM)
     add_definitions(-s USE_ZLIB)
 else ()
     find_package(ZLIB REQUIRED)

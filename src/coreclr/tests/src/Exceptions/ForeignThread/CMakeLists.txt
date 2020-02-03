@@ -9,7 +9,7 @@ endif(CLR_CMAKE_HOST_DARWIN)
 
 set(SOURCES ForeignThreadExceptionsNative.cpp)
 
-if(NOT WIN32)
+if(NOT CLR_CMAKE_TARGET_WIN32)
 add_compile_options(-pthread)
 endif()
 

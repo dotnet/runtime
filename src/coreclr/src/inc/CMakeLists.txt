@@ -12,7 +12,7 @@ set( CORGUIDS_IDL_SOURCES
   sospriv.idl
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
 #Build for corguids is done in two steps:
 #1. compile .idl to *_i.c : This is done using custom midl command
 #2. compile *_i.c to .lib
@@ -51,7 +51,7 @@ foreach(IDL_SOURCE IN LISTS CORGUIDS_IDL_SOURCES)
    list(APPEND CORGUIDS_SOURCES ${C_SOURCE})
 endforeach(IDL_SOURCE)
 
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 if(FEATURE_JIT_PITCHING)
    add_definitions(-DFEATURE_JIT_PITCHING)

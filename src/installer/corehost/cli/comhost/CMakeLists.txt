@@ -26,7 +26,7 @@ set(HEADERS
     ../json_parser.h
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()
@@ -35,11 +35,11 @@ include(../lib.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     set(WINLIBS wintrust.lib)
 
     # Specify non-default Windows libs to be used for Arm/Arm64 builds
-    if (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
+    if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         list(APPEND WINLIBS Advapi32.lib Ole32.lib OleAut32.lib)
     endif()
 

@@ -34,12 +34,12 @@ set(ILASM_HEADERS
   typar.hpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND ILASM_SOURCES ${ILASM_HEADERS})
 
   set(ILASM_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=ilasm.exe)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -83,7 +83,7 @@ set(ILASM_LINK_LIBRARIES
   corguids
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -105,7 +105,7 @@ else()
         mscorrc_debug
         palrt
     )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 
 if(CLR_CMAKE_HOST_UNIX)
@@ -118,11 +118,11 @@ if(CLR_CMAKE_HOST_UNIX)
   )
 
   # FreeBSD and NetBSD implement dlopen(3) in libc
-  if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
     target_link_libraries(ilasm
       dl
     )
-  endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}

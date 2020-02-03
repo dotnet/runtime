@@ -1,12 +1,24 @@
 include(CheckPIESupported)
 
-# All code we build should be compiled as position independent
-check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES CXX)
-if(NOT MSVC AND NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
-  message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+endif(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+    # All code we build should be compiled as position independent
+    get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if("CXX" IN_LIST languages)
+        set(CLR_PIE_LANGUAGE CXX)
+    else()
+        set(CLR_PIE_LANGUAGE C)
+    endif()
+    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
+    if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
+        message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
                   "PIE link options will not be passed to linker.")
-endif()
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    endif()
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)
 
 #----------------------------------------
 # Detect and set platform variable names
@@ -42,6 +54,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
             set(CLR_CMAKE_HOST_UNIX_AMD64 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
+            set(CLR_CMAKE_HOST_UNIX_ARMV7L 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
@@ -71,6 +84,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
+            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+        elseif(CLR_CMAKE_LINUX_ID STREQUAL android)
+            set(CLR_CMAKE_HOST_ANDROID 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
@@ -120,7 +136,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   set(CLR_CMAKE_HOST_OS Windows_NT)
 endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
 
-
 #--------------------------------------------
 # This repo builds two set of binaries
 # 1. binaries which execute on target arch machine
@@ -135,6 +150,10 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
 if(CLR_CMAKE_HOST_UNIX_ARM)
     set(CLR_CMAKE_HOST_ARCH_ARM 1)
     set(CLR_CMAKE_HOST_ARCH "arm")
+
+    if(CLR_CMAKE_HOST_HOST_ARMV7L)
+        set(CLR_CMAKE_HOST_ARCH_ARMV7L 1)
+    endif()
 elseif(CLR_CMAKE_HOST_UNIX_ARM64)
     set(CLR_CMAKE_HOST_ARCH_ARM64 1)
     set(CLR_CMAKE_HOST_ARCH "arm64")
@@ -205,6 +224,12 @@ if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_LINUX 1)
     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+
+if(CLR_CMAKE_TARGET_OS STREQUAL android)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_ANDROID 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL android)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
     set(CLR_CMAKE_TARGET_UNIX 1)
