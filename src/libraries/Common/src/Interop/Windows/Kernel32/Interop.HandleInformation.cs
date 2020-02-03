@@ -19,6 +19,6 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern bool SetHandleInformation(SafeHandle handle, HandleFlags mask, HandleFlags flags);
+        internal static extern bool SetHandleInformation(SafeHandle hObject, HandleFlags dwMask, HandleFlags dwFlags);
     }
 }

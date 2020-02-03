@@ -23,12 +23,18 @@ namespace System.Net.Sockets.Tests
     public class SocketDuplicationTests
     {
         private readonly ArraySegment<byte> _receiveBuffer = new ArraySegment<byte>(new byte[32]);
-        const string TestMessage = "test123!";
+        private const string TestMessage = "test123!";
         private static ArraySegment<byte> TestBytes => Encoding.ASCII.GetBytes(TestMessage);
         private static string GetMessageString(ArraySegment<byte> data, int count) =>
             Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
-        private static int CurrentProcessId => Process.GetCurrentProcess().Id;
 
+        private static readonly Lazy<int> s_currentProcessId = new Lazy<int>(() =>
+        {
+            using var process = Process.GetCurrentProcess();
+            return process.Id;
+        }, LazyThreadSafetyMode.PublicationOnly);
+
+        private static int CurrentProcessId => s_currentProcessId.Value;
 
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()

@@ -44,14 +44,12 @@ internal static partial class Interop
             internal uint dwMessageSize;
             internal uint dwProviderReserved;
             internal fixed char szProtocol[WSAPROTOCOL_LEN + 1];
-
-            public static readonly int Size = sizeof(WSAPROTOCOL_INFOW);
         }
 
         [DllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern unsafe int WSADuplicateSocket(
-            [In] SafeSocketHandle socketHandle,
-            [In] uint targetProcessId,
+            [In] SafeSocketHandle s,
+            [In] uint dwProcessId,
             [In] WSAPROTOCOL_INFOW* lpProtocolInfo
         );
     }

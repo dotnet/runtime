@@ -65,7 +65,7 @@ namespace System.Net.Sockets
             ref SocketType socketType,
             ref ProtocolType protocolType)
         {
-            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < Interop.Winsock.WSAPROTOCOL_INFOW.Size)
+            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < sizeof(Interop.Winsock.WSAPROTOCOL_INFOW))
             {
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
@@ -1321,7 +1321,7 @@ namespace System.Net.Sockets
         {
             socketInformation = new SocketInformation
             {
-                ProtocolInformation = new byte[Interop.Winsock.WSAPROTOCOL_INFOW.Size]
+                ProtocolInformation = new byte[sizeof(Interop.Winsock.WSAPROTOCOL_INFOW)]
             };
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
