@@ -782,6 +782,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/37378")]
+        [ActiveIssue("https://github.com/mono/mono/issues/15236", TargetFrameworkMonikers.Mono)]
         public static void GetGCMemoryInfo()
         {
             RemoteExecutor.Invoke(() =>
