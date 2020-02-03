@@ -21,41 +21,6 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// This structure represents a single precode fixup cell decoded from the
-    /// nibble-oriented per-method fixup blob. Each method entrypoint fixup
-    /// represents an array of cells that must be fixed up before the method
-    /// can start executing.
-    /// </summary>
-    public struct FixupCell
-    {
-        public int Index { get; set; }
-
-        /// <summary>
-        /// Zero-based index of the import table within the import tables section.
-        /// </summary>
-        public uint TableIndex;
-
-        /// <summary>
-        /// Zero-based offset of the entry in the import table; it must be a multiple
-        /// of the target architecture pointer size.
-        /// </summary>
-        public uint CellOffset;
-
-        /// <summary>
-        /// Fixup cell signature (textual representation of the typesystem object).
-        /// </summary>
-        public string Signature;
-
-        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
-        {
-            Index = index;
-            TableIndex = tableIndex;
-            CellOffset = cellOffset;
-            Signature = signature;
-        }
-    }
-
-    /// <summary>
     /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
     /// </summary>
     public enum OperatingSystem
@@ -350,7 +315,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 // initialize R2RMethods
                 ParseMethodDefEntrypoints(isEntryPoint);
                 ParseInstanceMethodEntrypoints(isEntryPoint);
-                ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
+                ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset);
             }
 
             AvailableTypes = new List<string>();
@@ -543,9 +508,9 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     EntityHandle methodHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
                     int runtimeFunctionId;
-                    FixupCell[] fixups;
-                    GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixups);
-                    ReadyToRunMethod method = new ReadyToRunMethod(Methods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixups: fixups);
+                    int? fixupOffset;
+                    GetRuntimeFunctionIndexFromOffset(offset, out runtimeFunctionId, out fixupOffset);
+                    ReadyToRunMethod method = new ReadyToRunMethod(this, Methods.Count, this.MetadataReader, methodHandle, runtimeFunctionId, owningType: null, constrainedType: null, instanceArgs: null, fixupOffset: fixupOffset);
 
                     if (method.EntryPointRuntimeFunctionId < 0 || method.EntryPointRuntimeFunctionId >= isEntryPoint.Length)
                     {
@@ -617,9 +582,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
 
                 int runtimeFunctionId;
-                FixupCell[] fixups;
-                GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixups);
+                int? fixupOffset;
+                GetRuntimeFunctionIndexFromOffset((int)decoder.Offset, out runtimeFunctionId, out fixupOffset);
                 ReadyToRunMethod method = new ReadyToRunMethod(
+                    this,
                     Methods.Count,
                     mdReader == null ? MetadataReader : mdReader,
                     methodHandle,
@@ -627,7 +593,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     owningType,
                     constrainedType,
                     methodTypeArgs,
-                    fixups);
+                    fixupOffset);
                 if (method.EntryPointRuntimeFunctionId >= 0 && method.EntryPointRuntimeFunctionId < isEntryPoint.Length)
                 {
                     isEntryPoint[method.EntryPointRuntimeFunctionId] = true;
@@ -642,83 +608,83 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Get the RVAs of the runtime functions for each method
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/zap/zapcode.cpp">ZapUnwindInfo::Save</a>
         /// </summary>
-        private void ParseRuntimeFunctions(bool[] isEntryPoint, int runtimeFunctionOffset, int runtimeFunctionSize)
+        private void ParseRuntimeFunctions(bool[] isEntryPoint, int runtimeFunctionOffset)
         {
-            int curOffset = 0;
             foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
                     continue;
-                curOffset = runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize;
-                BaseGcInfo gcInfo = null;
-                int codeOffset = 0;
-                do
-                {
-                    int startRva = NativeReader.ReadInt32(Image, ref curOffset);
-                    int endRva = -1;
-                    if (Machine == Machine.Amd64)
-                    {
-                        endRva = NativeReader.ReadInt32(Image, ref curOffset);
-                    }
-                    int unwindRva = NativeReader.ReadInt32(Image, ref curOffset);
-                    int unwindOffset = GetOffset(unwindRva);
-
-                    BaseUnwindInfo unwindInfo = null;
-                    if (Machine == Machine.Amd64)
-                    {
-                        unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
-                        if (isEntryPoint[runtimeFunctionId])
-                        {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
-                        }
-                    }
-                    else if (Machine == Machine.I386)
-                    {
-                        unwindInfo = new x86.UnwindInfo(Image, unwindOffset);
-                        if (isEntryPoint[runtimeFunctionId])
-                        {
-                            gcInfo = new x86.GcInfo(Image, unwindOffset, Machine, ReadyToRunHeader.MajorVersion);
-                        }
-                    }
-                    else if (Machine == Machine.ArmThumb2)
-                    {
-                        unwindInfo = new Arm.UnwindInfo(Image, unwindOffset);
-                        if (isEntryPoint[runtimeFunctionId])
-                        {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
-                        }
-                    }
-                    else if (Machine == Machine.Arm64)
-                    {
-                        unwindInfo = new Arm64.UnwindInfo(Image, unwindOffset);
-                        if (isEntryPoint[runtimeFunctionId])
-                        {
-                            gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
-                        }
-                    }
-
-                    EHInfo ehInfo = null;
-                    RuntimeFunctionToEHInfo.TryGetValue(startRva, out ehInfo);
-
-                    RuntimeFunction rtf = new RuntimeFunction(
-                        this,
-                        runtimeFunctionId,
-                        startRva,
-                        endRva,
-                        unwindRva,
-                        codeOffset,
-                        method,
-                        unwindInfo,
-                        gcInfo,
-                        ehInfo);
-
-                    method.RuntimeFunctions.Add(rtf);
-                    runtimeFunctionId++;
-                    codeOffset += rtf.Size;
-                }
-                while (runtimeFunctionId < isEntryPoint.Length && !isEntryPoint[runtimeFunctionId]);
+                int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+                ParseRuntimeFunctionsForMethod(isEntryPoint, runtimeFunctionOffset + runtimeFunctionId * runtimeFunctionSize, method, runtimeFunctionId);
             }
+        }
+
+        private void ParseRuntimeFunctionsForMethod(bool[] isEntryPoint, int curOffset, ReadyToRunMethod method, int runtimeFunctionId)
+        {
+            BaseGcInfo gcInfo = null;
+            int codeOffset = 0;
+            do
+            {
+                int startRva = NativeReader.ReadInt32(Image, ref curOffset);
+                int endRva = -1;
+                if (Machine == Machine.Amd64)
+                {
+                    endRva = NativeReader.ReadInt32(Image, ref curOffset);
+                }
+                int unwindRva = NativeReader.ReadInt32(Image, ref curOffset);
+                int unwindOffset = GetOffset(unwindRva);
+
+                BaseUnwindInfo unwindInfo = null;
+                if (Machine == Machine.Amd64)
+                {
+                    unwindInfo = new Amd64.UnwindInfo(Image, unwindOffset);
+                    if (isEntryPoint[runtimeFunctionId])
+                    {
+                        gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (Machine == Machine.I386)
+                {
+                    unwindInfo = new x86.UnwindInfo(Image, unwindOffset);
+                    if (isEntryPoint[runtimeFunctionId])
+                    {
+                        gcInfo = new x86.GcInfo(Image, unwindOffset, Machine, ReadyToRunHeader.MajorVersion);
+                    }
+                }
+                else if (Machine == Machine.ArmThumb2)
+                {
+                    unwindInfo = new Arm.UnwindInfo(Image, unwindOffset);
+                    if (isEntryPoint[runtimeFunctionId])
+                    {
+                        gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion); // Arm and Arm64 use the same GcInfo format as x64
+                    }
+                }
+                else if (Machine == Machine.Arm64)
+                {
+                    unwindInfo = new Arm64.UnwindInfo(Image, unwindOffset);
+                    if (isEntryPoint[runtimeFunctionId])
+                    {
+                        gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, ReadyToRunHeader.MajorVersion);
+                    }
+                }
+
+                RuntimeFunction rtf = new RuntimeFunction(
+                    this,
+                    runtimeFunctionId,
+                    startRva,
+                    endRva,
+                    unwindRva,
+                    codeOffset,
+                    method,
+                    unwindInfo,
+                    gcInfo);
+
+                method.RuntimeFunctions.Add(rtf);
+                runtimeFunctionId++;
+                codeOffset += rtf.Size;
+            }
+            while (runtimeFunctionId < isEntryPoint.Length && !isEntryPoint[runtimeFunctionId]);
         }
 
         /// <summary>
@@ -889,9 +855,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// Reads the method entrypoint from the offset. Used for non-generic methods
         /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
         /// </summary>
-        private void GetRuntimeFunctionIndexFromOffset(int offset, out int runtimeFunctionIndex, out FixupCell[] fixupCells)
+        private void GetRuntimeFunctionIndexFromOffset(int offset, out int runtimeFunctionIndex, out int? fixupOffset)
         {
-            fixupCells = null;
+            fixupOffset = null;
 
             // get the id of the entry point runtime function from the MethodEntryPoints NativeArray
             uint id = 0; // the RUNTIME_FUNCTIONS index
@@ -905,7 +871,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     offset -= (int)val;
                 }
 
-                fixupCells = DecodeFixupCells(offset);
+                fixupOffset = offset;
 
                 id >>= 2;
             }
@@ -915,46 +881,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
             runtimeFunctionIndex = (int)id;
-        }
-
-        private FixupCell[] DecodeFixupCells(int offset)
-        {
-            List<FixupCell> cells = new List<FixupCell>();
-            NibbleReader reader = new NibbleReader(Image, offset);
-
-            // The following algorithm has been loosely ported from CoreCLR,
-            // src\vm\ceeload.inl, BOOL Module::FixupDelayListAux
-            uint curTableIndex = reader.ReadUInt();
-
-            while (true)
-            {
-                uint fixupIndex = reader.ReadUInt(); // Accumulate the real rva from the delta encoded rva
-
-                while (true)
-                {
-                    ReadyToRunImportSection importSection = ImportSections[(int)curTableIndex];
-                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixupIndex];
-                    cells.Add(new FixupCell(cells.Count, curTableIndex, fixupIndex, entry.Signature));
-
-                    uint delta = reader.ReadUInt();
-
-                    // Delta of 0 means end of entries in this table
-                    if (delta == 0)
-                        break;
-
-                    fixupIndex += delta;
-                }
-
-                uint tableIndex = reader.ReadUInt();
-
-                if (tableIndex == 0)
-                    break;
-
-                curTableIndex = curTableIndex + tableIndex;
-
-            } // Done with all entries in this table
-
-            return cells.ToArray();
         }
 
         private AssemblyReferenceHandle GetAssemblyAtIndex(int refAsmIndex, out MetadataReader metadataReader)
