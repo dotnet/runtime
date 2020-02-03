@@ -114,7 +114,7 @@ void Compiler::optAddCopies()
 
         bool isFloatParam = false;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         isFloatParam = varDsc->lvIsParam && varTypeIsFloating(typ);
 #endif
 
@@ -956,9 +956,9 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
         assertion.op2.vn           = ValueNumStore::VNForNull();
         assertion.op2.u1.iconVal   = 0;
         assertion.op2.u1.iconFlags = 0;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         assertion.op2.u1.iconFlags |= 1; // Signify that this is really TYP_LONG
-#endif                                   // _TARGET_64BIT_
+#endif                                   // TARGET_64BIT
     }
     //
     // Are we making an assertion about a local variable?
@@ -1080,7 +1080,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
                         // Do not Constant-Prop large constants for ARM
                         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had
                         // target_ssize_t type.
@@ -1088,15 +1088,15 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
                         assertion.op2.u1.iconVal   = op2->AsIntCon()->gtIconVal;
                         assertion.op2.u1.iconFlags = op2->GetIconHandleFlag();
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                         if (op2->TypeGet() == TYP_LONG || op2->TypeGet() == TYP_BYREF)
                         {
                             assertion.op2.u1.iconFlags |= 1; // Signify that this is really TYP_LONG
                         }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                     }
                     else if (op2->gtOper == GT_CNS_LNG)
                     {
@@ -1243,10 +1243,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         case TYP_UBYTE:
                         case TYP_SHORT:
                         case TYP_USHORT:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                         case TYP_UINT:
                         case TYP_INT:
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                             assertion.op2.u2.loBound = AssertionDsc::GetLowerBoundForIntegralType(toType);
                             assertion.op2.u2.hiBound = AssertionDsc::GetUpperBoundForIntegralType(toType);
                             break;
@@ -1318,12 +1318,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 if (op2->AsOp()->gtOp1->TypeGet() == TYP_LONG)
                 {
                     assertion.op2.u1.iconFlags |= 1; // Signify that this is really TYP_LONG
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
             }
             // JIT case
             else if (optIsTreeKnownIntValue(!optLocalAssertionProp, op2, &cnsValue, &iconFlags))
@@ -1336,12 +1336,12 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
                 assertion.op2.u1.iconFlags = iconFlags;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 if (op2->TypeGet() == TYP_LONG)
                 {
                     assertion.op2.u1.iconFlags |= 1; // Signify that this is really TYP_LONG
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
             }
             else
             {
@@ -1395,7 +1395,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
             *pFlags    = tree->GetIconHandleFlag();
             return true;
         }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         // Just to be clear, get it from gtLconVal rather than
         // overlapping gtIconVal.
         else if (tree->OperGet() == GT_CNS_LNG)
@@ -1424,7 +1424,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
         *pFlags    = vnStore->IsVNHandle(vn) ? vnStore->GetHandleFlags(vn) : 0;
         return true;
     }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     else if (vnType == TYP_LONG)
     {
         *pConstant = vnStore->ConstantValue<INT64>(vn);
@@ -2108,7 +2108,7 @@ void Compiler::optAssertionGen(GenTree* tree)
             {
                 //  Retrieve the 'this' arg
                 GenTree* thisArg = gtGetThisArg(tree->AsCall());
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM)
                 if (thisArg == nullptr)
                 {
                     // For tail calls we lose the this pointer in the argument list but that's OK because a null check
@@ -2116,7 +2116,7 @@ void Compiler::optAssertionGen(GenTree* tree)
                     noway_assert(tree->AsCall()->IsTailCall());
                     break;
                 }
-#endif // _TARGET_X86_ || _TARGET_AMD64_ || _TARGET_ARM_
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM
                 noway_assert(thisArg != nullptr);
                 assertionInfo = optCreateAssertion(thisArg, nullptr, OAK_NOT_EQUAL);
             }
@@ -2444,7 +2444,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             INT64 value = vnStore->ConstantValue<INT64>(vnCns);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             if (vnStore->IsVNHandle(vnCns))
             {
                 // Don't perform constant folding that involves a handle that needs
@@ -2502,7 +2502,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         case TYP_INT:
         {
             int value = vnStore->ConstantValue<int>(vnCns);
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
             if (vnStore->IsVNHandle(vnCns))
             {
                 // Don't perform constant folding that involves a handle that needs
@@ -2695,7 +2695,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
             // Constant ints are of type TYP_INT, not any of the short forms.
             if (varTypeIsIntegral(newTree->TypeGet()))
             {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 var_types newType = (var_types)((curAssertion->op2.u1.iconFlags & 1) ? TYP_LONG : TYP_INT);
                 if (newTree->TypeGet() != newType)
                 {
@@ -3441,7 +3441,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
     {
         constantIsEqual = (curAssertion->op2.u1.iconVal == cnsVal);
     }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     else if (genTypeSize(cmpType) == sizeof(INT32))
     {
         // Compare the low 32-bits only

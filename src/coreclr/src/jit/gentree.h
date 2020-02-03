@@ -75,7 +75,7 @@ enum genTreeOps : BYTE
 
     GT_COUNT,
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // GT_CNS_NATIVELONG is the gtOper symbol for GT_CNS_LNG or GT_CNS_INT, depending on the target.
     // For the 64-bit targets we will only use GT_CNS_INT as it used to represent all the possible sizes
     GT_CNS_NATIVELONG = GT_CNS_INT,
@@ -337,7 +337,7 @@ struct Statement;
 
 /*****************************************************************************/
 
-#ifndef _HOST_64BIT_
+#ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
 
@@ -1209,18 +1209,18 @@ public:
 
     bool OperIsMultiRegOp() const
     {
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         if (OperIs(GT_MUL_LONG))
         {
             return true;
         }
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         if (OperIs(GT_PUTARG_REG, GT_BITCAST))
         {
             return true;
         }
-#endif // _TARGET_ARM_
-#endif // _TARGET_64BIT_
+#endif // TARGET_ARM
+#endif // TARGET_64BIT
         return false;
     }
 
@@ -1286,7 +1286,7 @@ public:
 
     static bool OperIsShiftLong(genTreeOps gtOper)
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         return false;
 #else
         return (gtOper == GT_LSH_HI) || (gtOper == GT_RSH_LO);
@@ -1321,7 +1321,7 @@ public:
     static bool OperIsMul(genTreeOps gtOper)
     {
         return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
                || (gtOper == GT_MUL_LONG)
 #endif
             ;
@@ -1344,7 +1344,7 @@ public:
                || OperIsShiftOrRotate(op);
     }
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     static bool OperIsRMWMemOp(genTreeOps gtOper)
     {
         // Return if binary op is one of the supported operations for RMW of memory.
@@ -1356,7 +1356,7 @@ public:
         // Return if binary op is one of the supported operations for RMW of memory.
         return OperIsRMWMemOp(gtOper);
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
     static bool OperIsUnary(genTreeOps gtOper)
     {
@@ -1437,7 +1437,7 @@ public:
     static bool OperMayOverflow(genTreeOps gtOper)
     {
         return ((gtOper == GT_ADD) || (gtOper == GT_SUB) || (gtOper == GT_MUL) || (gtOper == GT_CAST)
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
                 || (gtOper == GT_ADD_HI) || (gtOper == GT_SUB_HI)
 #endif
                     );
@@ -1528,7 +1528,7 @@ public:
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
-#if defined(_TARGET_64BIT_)
+#if defined(TARGET_64BIT)
         return false;
 #else
         return gtOper == GT_LONG;
@@ -1611,9 +1611,9 @@ public:
             case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
             case GT_PUTARG_REG:
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
                 return true;
             default:
@@ -2834,7 +2834,7 @@ struct GenTreeIntConCommon : public GenTree
 
     static bool FitsInI32(ssize_t val) // Constant fits into 32-bit signed storage
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         return (int32_t)val == val;
 #else
         return true;
@@ -2844,7 +2844,7 @@ struct GenTreeIntConCommon : public GenTree
     bool ImmedValNeedsReloc(Compiler* comp);
     bool ImmedValCanBeFolded(Compiler* comp, genTreeOps op);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     bool FitsInAddrBase(Compiler* comp);
     bool AddrNeedsReloc(Compiler* comp);
 #endif
@@ -2921,7 +2921,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
 
     void FixupInitBlkValue(var_types asgType);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     void TruncateOrSignExtend32()
     {
         if (gtFlags & GTF_UNSIGNED)
@@ -2933,7 +2933,7 @@ struct GenTreeIntCon : public GenTreeIntConCommon
             gtIconVal = INT32(gtIconVal);
         }
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
 #if DEBUGGABLE_GENTREE
     GenTreeIntCon() : GenTreeIntConCommon()
@@ -2970,7 +2970,7 @@ struct GenTreeLngCon : public GenTreeIntConCommon
 
 inline INT64 GenTreeIntConCommon::LngValue()
 {
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
     assert(gtOper == GT_CNS_LNG);
     return AsLngCon()->gtLconVal;
 #else
@@ -2980,7 +2980,7 @@ inline INT64 GenTreeIntConCommon::LngValue()
 
 inline void GenTreeIntConCommon::SetLngValue(INT64 val)
 {
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
     assert(gtOper == GT_CNS_LNG);
     AsLngCon()->gtLconVal = val;
 #else
@@ -3006,11 +3006,11 @@ inline void GenTreeIntConCommon::SetIconValue(ssize_t val)
 
 inline INT64 GenTreeIntConCommon::IntegralValue()
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     return LngValue();
 #else
     return gtOper == GT_CNS_LNG ? LngValue() : (INT64)IconValue();
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 }
 
 /* gtDblCon -- double  constant (GT_CNS_DBL) */
@@ -3990,11 +3990,11 @@ struct GenTreeCall final : public GenTree
     //
     bool HasMultiRegRetVal() const
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         return varTypeIsLong(gtType);
-#elif FEATURE_MULTIREG_RET && defined(_TARGET_ARM_)
+#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
         return varTypeIsLong(gtType) || (varTypeIsStruct(gtType) && !HasRetBufArg());
-#elif defined(FEATURE_HFA) && defined(_TARGET_ARM64_)
+#elif defined(FEATURE_HFA) && defined(TARGET_ARM64)
         // SIMD types are returned in vector regs on ARM64.
         return (gtType == TYP_STRUCT) && !HasRetBufArg();
 #elif FEATURE_MULTIREG_RET
@@ -4262,7 +4262,7 @@ struct GenTreeCmpXchg : public GenTree
 #endif
 };
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 struct GenTreeMultiRegOp : public GenTreeOp
 {
     regNumber gtOtherReg;
@@ -4416,7 +4416,7 @@ struct GenTreeMultiRegOp : public GenTreeOp
     }
 #endif
 };
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
 struct GenTreeFptrVal : public GenTree
 {
@@ -5117,10 +5117,10 @@ public:
     enum
     {
         BlkOpKindInvalid,
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
         BlkOpKindHelper,
 #endif
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         BlkOpKindRepInstr,
 #endif
         BlkOpKindUnroll,
@@ -6294,7 +6294,7 @@ public:
     // see GenConditionDesc and its associated mapping table for more details.
     bool PreferSwap() const
     {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         return Is(GenCondition::FLT, GenCondition::FLE, GenCondition::FGTU, GenCondition::FGEU);
 #else
         return false;
@@ -6826,7 +6826,7 @@ inline bool GenTree::IsMultiRegNode() const
     }
 #endif
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return true;
@@ -6869,7 +6869,7 @@ inline unsigned GenTree::GetMultiRegCount()
     }
 #endif
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegCount();
@@ -6920,7 +6920,7 @@ inline regNumber GenTree::GetRegByIndex(int regIndex)
         return AsPutArgSplit()->GetRegNumByIdx(regIndex);
     }
 #endif
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegNumByIdx(regIndex);
@@ -6969,7 +6969,7 @@ inline var_types GenTree::GetRegTypeByIndex(int regIndex)
         return AsPutArgSplit()->GetRegType(regIndex);
     }
 #endif
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (OperIsMultiRegOp())
     {
         return AsMultiRegOp()->GetRegType(regIndex);
@@ -7020,21 +7020,21 @@ inline bool GenTree::IsCnsIntOrI() const
 
 inline bool GenTree::IsIntegralConst() const
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     return IsCnsIntOrI();
-#else  // !_TARGET_64BIT_
+#else  // !TARGET_64BIT
     return ((gtOper == GT_CNS_INT) || (gtOper == GT_CNS_LNG));
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 }
 
 // Is this node an integer constant that fits in a 32-bit signed integer (INT32)
 inline bool GenTree::IsIntCnsFitsInI32()
 {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     return IsCnsIntOrI() && AsIntCon()->FitsInI32();
-#else  // !_TARGET_64BIT_
+#else  // !TARGET_64BIT
     return IsCnsIntOrI();
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 }
 
 inline bool GenTree::IsCnsFltOrDbl() const
@@ -7080,7 +7080,7 @@ inline bool GenTree::isUsedFromSpillTemp() const
 
 /*****************************************************************************/
 
-#ifndef _HOST_64BIT_
+#ifndef HOST_64BIT
 #include <poppack.h>
 #endif
 

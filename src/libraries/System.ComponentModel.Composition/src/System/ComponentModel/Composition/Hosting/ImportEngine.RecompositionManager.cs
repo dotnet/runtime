@@ -70,8 +70,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public IEnumerable<PartManager> GetPartsImporting(string contractName)
             {
-                WeakReferenceCollection<PartManager> partManagerList;
-                if (!_partManagerIndex.TryGetValue(contractName, out partManagerList))
+                if (!_partManagerIndex.TryGetValue(contractName, out WeakReferenceCollection<PartManager>? partManagerList))
                 {
                     return Enumerable.Empty<PartManager>();
                 }
@@ -83,8 +82,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 foreach (string contractName in partManager.GetImportedContractNames())
                 {
-                    WeakReferenceCollection<PartManager> indexEntries;
-                    if (!_partManagerIndex.TryGetValue(contractName, out indexEntries))
+                    if (!_partManagerIndex.TryGetValue(contractName, out WeakReferenceCollection<PartManager>? indexEntries))
                     {
                         indexEntries = new WeakReferenceCollection<PartManager>();
                         _partManagerIndex.Add(contractName, indexEntries);
@@ -101,8 +99,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 foreach (string contractName in partManager.GetImportedContractNames())
                 {
-                    WeakReferenceCollection<PartManager> indexEntries;
-                    if (_partManagerIndex.TryGetValue(contractName, out indexEntries))
+                    if (_partManagerIndex.TryGetValue(contractName, out WeakReferenceCollection<PartManager>? indexEntries))
                     {
                         indexEntries.Remove(partManager);
                         var aliveItems = indexEntries.AliveItemsToList();
@@ -120,7 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var partsToIndex = _partsToIndex.AliveItemsToList();
                 _partsToIndex.Clear();
 
-                var partsToUnindex = _partsToUnindex.AliveItemsToList();
+                List<PartManager?> partsToUnindex = _partsToUnindex.AliveItemsToList()!;
                 _partsToUnindex.Clear();
 
                 if (partsToIndex.Count == 0 && partsToUnindex.Count == 0)

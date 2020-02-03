@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.Hosting
     internal sealed class CompositionLock : IDisposable
     {
         // narrow lock
-        private readonly Lock _stateLock = null;
+        private readonly Lock? _stateLock = null;
         // wide lock
         private static readonly object _compositionLock = new object();
 
@@ -47,7 +47,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0)
                 {
-                    _stateLock.Dispose();
+                    _stateLock!.Dispose();
                 }
             }
         }
@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_isThreadSafe)
             {
-                return new ReadLock(_stateLock);
+                return new ReadLock(_stateLock!);
             }
             else
             {
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_isThreadSafe)
             {
-                return new WriteLock(_stateLock);
+                return new WriteLock(_stateLock!);
             }
             else
             {

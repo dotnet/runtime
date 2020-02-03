@@ -334,12 +334,12 @@ void BasicBlock::dspFlags()
     {
         printf("nullcheck ");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_FINALLY_TARGET)
     {
         printf("ftarget ");
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
         printf("bwd ");
@@ -1397,13 +1397,13 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 //
 bool BasicBlock::isBBCallAlwaysPair()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (this->bbJumpKind == BBJ_CALLFINALLY)
 #else
     if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
 #endif
     {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         // On ARM, there are no retless BBJ_CALLFINALLY.
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif

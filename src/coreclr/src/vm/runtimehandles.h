@@ -355,9 +355,6 @@ public:
     static
     void QCALLTYPE Destroy(MethodDesc * pMethod);
 
-    static
-    void QCALLTYPE GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType);
-
     static FCDECL2(RuntimeMethodBody*, GetMethodBody, ReflectMethodObject *pMethodUNSAFE, PTR_ReflectClassBaseObject pDeclaringType);
 
     static FCDECL1(FC_BOOL_RET, IsConstructor, MethodDesc *pMethod);

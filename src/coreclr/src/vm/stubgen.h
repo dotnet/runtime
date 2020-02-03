@@ -787,9 +787,9 @@ protected:
     UINT                m_uCurInstrIdx;
     ILStubLinker::CodeStreamType      m_codeStreamType;       // Type of the ILCodeStream
 
-#ifndef BIT64
+#ifndef HOST_64BIT
     const static UINT32 SPECIAL_VALUE_NAN_64_ON_32 = 0xFFFFFFFF;
-#endif // BIT64
+#endif // HOST_64BIT
 };
 
 #define TOKEN_ILSTUB_TARGET_SIG (TokenFromRid(0xFFFFFF, mdtSignature))

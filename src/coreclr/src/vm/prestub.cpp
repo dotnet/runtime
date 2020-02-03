@@ -44,6 +44,7 @@
 #include "perfmap.h"
 #endif
 
+#include "callcounter.h"
 #include "methoddescbackpatchinfo.h"
 
 #if defined(FEATURE_GDBJIT)
@@ -96,7 +97,7 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
 
     // Only take the lock if the method is versionable with vtable slot backpatch, for recording slots and synchronizing with
     // backpatching slots
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder(isVersionableWithVtableSlotBackpatch);
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder(isVersionableWithVtableSlotBackpatch);
 
     // Get the method entry point inside the lock above to synchronize with backpatching in
     // MethodDesc::BackpatchEntryPointSlots()
@@ -320,7 +321,7 @@ PCODE MethodDesc::PrepareInitialCode()
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
     PCODE pCode = PrepareCode(&config);
 
-#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_GDBJIT) && defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
     NotifyGdb::MethodPrepared(this);
 #endif
 
@@ -1036,42 +1037,16 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         }
 
         SetupGcCoverage(pConfig->GetCodeVersion(), (BYTE*)pCode);
+
+        // This thread should always win the publishing race
+        // since we're under a lock.
+        if (!pConfig->SetNativeCode(pCode, &pOtherCode))
+        {
+            _ASSERTE(!"GC Cover native code publish failed");
+        }
     }
+    else
 #endif // HAVE_GCCOVER
-
-#ifdef FEATURE_TIERED_COMPILATION
-    // Update the optimization tier if necessary before SetNativeCode() is called. As soon as SetNativeCode() is called, another
-    // thread may get the native code and the optimization tier for that code version, and it should have already been
-    // finalized.
-    bool shouldCountCalls = false;
-    if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
-    {
-        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
-        _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
-        _ASSERTE(
-            pConfig
-                ->GetMethodDesc()
-                ->GetLoaderAllocator()
-                ->GetCallCountingManager()
-                ->IsCallCountingEnabled(pConfig->GetCodeVersion()));
-
-        if (pConfig->JitSwitchedToOptimized())
-        {
-            // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
-            // call counting would have to be disabled for the method.
-            NativeCodeVersion codeVersion = pConfig->GetCodeVersion();
-            if (codeVersion.IsDefaultVersion())
-            {
-                pConfig->GetMethodDesc()->GetLoaderAllocator()->GetCallCountingManager()->DisableCallCounting(codeVersion);
-            }
-            codeVersion.SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
-        }
-        else
-        {
-            shouldCountCalls = true;
-        }
-    }
-#endif
 
     // Aside from rejit, performing a SetNativeCodeInterlocked at this point
     // generally ensures that there is only one winning version of the native
@@ -1080,12 +1055,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
     // JITCachedFunctionSearchStarted)
     if (!pConfig->SetNativeCode(pCode, &pOtherCode))
     {
-#ifdef HAVE_GCCOVER
-        // When GCStress is enabled, this thread should always win the publishing race
-        // since we're under a lock.
-        _ASSERTE(!GCStress<cfg_instr_jit>::IsEnabled() || !"GC Cover native code publish failed");
-#endif
-
         // Another thread beat us to publishing its copy of the JITted code.
         return pOtherCode;
     }
@@ -1093,10 +1062,26 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 #ifdef FEATURE_CODE_VERSIONING
     pConfig->SetGeneratedOrLoadedNewCode();
 #endif
+
 #ifdef FEATURE_TIERED_COMPILATION
-    if (shouldCountCalls)
+    if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
     {
-        pConfig->SetShouldCountCalls();
+        _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0);
+        _ASSERTE(pConfig->GetMethodDesc()->IsEligibleForTieredCompilation());
+        _ASSERTE(pConfig->GetMethodDesc()->GetCallCounter()->IsCallCountingEnabled(pConfig->GetMethodDesc()));
+
+        if (pConfig->JitSwitchedToOptimized())
+        {
+            // Update the tier in the code version. The JIT may have decided to switch from tier 0 to optimized, in which case
+            // call counting would have to be disabled for the method.
+            MethodDesc *methodDesc = pConfig->GetMethodDesc();
+            methodDesc->GetCallCounter()->DisableCallCounting(methodDesc);
+            pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTierOptimized);
+        }
+        else
+        {
+            pConfig->SetShouldCountCalls();
+        }
     }
 #endif
 
@@ -1187,12 +1172,12 @@ BOOL PrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
+    if (m_pMethodDesc->SetNativeCodeInterlocked(pCode, NULL))
     {
         return TRUE;
     }
 
-    *ppAlternateCodeToUse = m_nativeCodeVersion.GetNativeCode();
+    *ppAlternateCodeToUse = m_pMethodDesc->GetNativeCode();
     return FALSE;
 }
 
@@ -1294,7 +1279,7 @@ VersionedPrepareCodeConfig::VersionedPrepareCodeConfig(NativeCodeVersion codeVer
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(!m_nativeCodeVersion.IsDefaultVersion());
-    _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(m_pMethodDesc->GetCodeVersionManager()->LockOwnedByCurrentThread());
     m_ilCodeVersion = m_nativeCodeVersion.GetILCodeVersion();
 }
 
@@ -1302,7 +1287,7 @@ HRESULT VersionedPrepareCodeConfig::FinishConfiguration()
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!CodeVersionManager::IsLockOwnedByCurrentThread());
+    _ASSERTE(!GetMethodDesc()->GetCodeVersionManager()->LockOwnedByCurrentThread());
 
     // Any code build stages that do just in time configuration should
     // be configured now
@@ -1321,6 +1306,23 @@ PCODE VersionedPrepareCodeConfig::IsJitCancellationRequested()
 {
     LIMITED_METHOD_CONTRACT;
     return m_nativeCodeVersion.GetNativeCode();
+}
+
+BOOL VersionedPrepareCodeConfig::SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    //This isn't the default version so jumpstamp is never needed
+    _ASSERTE(!m_nativeCodeVersion.IsDefaultVersion());
+    if (m_nativeCodeVersion.SetNativeCodeInterlocked(pCode, NULL))
+    {
+        return TRUE;
+    }
+    else
+    {
+        *ppAlternateCodeToUse = m_nativeCodeVersion.GetNativeCode();
+        return FALSE;
+    }
 }
 
 COR_ILMETHOD* VersionedPrepareCodeConfig::GetILHeader()
@@ -1360,7 +1362,7 @@ PrepareCodeConfigBuffer::PrepareCodeConfigBuffer(NativeCodeVersion codeVersion)
     // a bit slower path (+1 usec?)
     VersionedPrepareCodeConfig *config;
     {
-        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        CodeVersionManager::TableLockHolder lock(codeVersion.GetMethodDesc()->GetCodeVersionManager());
         config = new(m_buffer) VersionedPrepareCodeConfig(codeVersion);
     }
     config->FinishConfiguration();
@@ -1395,10 +1397,10 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
     SigPointer pReturn = msig.GetReturnProps();
     pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     // The hidden context parameter
     stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     // Copy rest of the arguments
     msig.NextArg();
@@ -1408,10 +1410,10 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
         pArgs.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // The hidden context parameter
     stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
@@ -1455,7 +1457,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitLoadThis();
     pCode->EmitLDFLDA(tokRawData);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // 2.2 Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
@@ -1471,7 +1473,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     pCode->EmitSUB();
     pCode->EmitLDIND_I();
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
     // 2.4 Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
@@ -1561,25 +1563,25 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
         pCode->EmitLoadThis();
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // 2.2 Push the rest of the arguments for x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // 2.3 Push the hidden context param
     // InstantiatingStub
     pCode->EmitLDC((TADDR)pHiddenArg);
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
     // 2.4 Push the rest of the arguments for not x86
     for (unsigned i = 0; i < msig.NumFixedArgs();i++)
     {
         pCode->EmitLDARG(i);
     }
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     // 2.5 Push the target address
     pCode->EmitLDC((TADDR)pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
@@ -1750,7 +1752,7 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-#if defined (HAS_COMPACT_ENTRYPOINTS) && defined (_TARGET_ARM_)
+#if defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
 
 extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE pCode)
 {
@@ -1763,7 +1765,7 @@ extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE 
     return MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, FALSE);
 }
 
-#endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (_TARGET_ARM_)
+#endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
 
 //=============================================================================
 // This function generates the real code for a method and installs it into
@@ -2128,7 +2130,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     // should have thrown an exception if it couldn't make a stub.
     _ASSERTE((pStub != NULL) ^ (pCode != NULL));
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     //
     // We are seeing memory reordering race around fixups (see DDB 193514 and related bugs). We get into
     // situation where the patched precode is visible by other threads, but the resolved fixups
@@ -2174,9 +2176,9 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
 // use the prestub.
 //==========================================================================
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 static PCODE g_UMThunkPreStub;
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 #ifndef DACCESS_COMPILE
 
@@ -2203,9 +2205,9 @@ void InitPreStubManager(void)
         return;
     }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     g_UMThunkPreStub = GenerateUMThunkPrestub()->GetEntryPoint();
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     ThePreStubManager::Init();
 }
@@ -2214,18 +2216,18 @@ PCODE TheUMThunkPreStub()
 {
     LIMITED_METHOD_CONTRACT;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     return g_UMThunkPreStub;
-#else  // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#else  // TARGET_X86 && !FEATURE_STUBS_AS_IL
     return GetEEFuncEntryPoint(TheUMEntryPrestub);
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 }
 
 PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(_TARGET_X86_) && !defined(_TARGET_ARM64_)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);
@@ -2259,7 +2261,7 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
     {
         CORCOMPILE_EXTERNAL_METHOD_THUNK * pThunk = (CORCOMPILE_EXTERNAL_METHOD_THUNK *)pIndirection;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         INT64 oldValue = *(INT64*)pThunk;
         BYTE* pOldValue = (BYTE*)&oldValue;
 
@@ -2276,11 +2278,11 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_CO
 
             FlushInstructionCache(GetCurrentProcess(), pThunk, 8);
         }
-#elif  defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif  defined(TARGET_ARM) || defined(TARGET_ARM64)
         // Patchup the thunk to point to the actual implementation of the cross module external method
         pThunk->m_pTarget = pCode;
 
-        #if defined(_TARGET_ARM_)
+        #if defined(TARGET_ARM)
         // ThumbBit must be set on the target address
         _ASSERTE(pCode & THUMB_CODE);
         #endif
@@ -2343,13 +2345,13 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     FrameWithCookie<ExternalMethodFrame> frame(pTransitionBlock);
     ExternalMethodFrame * pEMFrame = &frame;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Decode indirection cell from callsite if it is not present
     if (pIndirection == NULL)
     {
         // Asssume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pEMFrame->GetReturnAddress();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         pIndirection = *(((TADDR *)retAddr) - 1);
 #else
         pIndirection = *(((INT32 *)retAddr) - 1) + retAddr;
@@ -2624,7 +2626,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 }
 
 
-#if !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_) && defined(FEATURE_PREJIT)
+#if !defined(TARGET_X86) && !defined(TARGET_AMD64) && defined(FEATURE_PREJIT)
 
 //==========================================================================================
 // In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
@@ -2674,13 +2676,13 @@ EXTERN_C PCODE VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_VIRTUAL_I
         // Patch the thunk to the actual method body
         pThunk->m_pTarget = pCode;
     }
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     // The target address should have the thumb bit set
     _ASSERTE(pCode & THUMB_CODE);
 #endif
     return pCode;
 }
-#endif // !defined(_TARGET_X86_) && !defined(_TARGET_AMD64_) && defined(FEATURE_PREJIT)
+#endif // !defined(TARGET_X86) && !defined(TARGET_AMD64) && defined(FEATURE_PREJIT)
 
 #ifdef FEATURE_READYTORUN
 
@@ -2849,7 +2851,7 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
 TADDR GetFirstArgumentRegisterValuePtr(TransitionBlock * pTransitionBlock)
 {
     TADDR pArgument = (TADDR)pTransitionBlock + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // x86 is special as always
     pArgument += offsetof(ArgumentRegisters, ECX);
 #endif
@@ -3352,13 +3354,13 @@ extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // Decode indirection cell from callsite if it is not present
     if (pCell == NULL)
     {
         // Asssume that the callsite is call [xxxxxxxx]
         PCODE retAddr = pFrame->GetReturnAddress();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         pCell = *(((TADDR **)retAddr) - 1);
 #else
         pCell = (TADDR *)(*(((INT32 *)retAddr) - 1) + retAddr);

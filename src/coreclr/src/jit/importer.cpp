@@ -1235,7 +1235,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 
                 dest = lcl;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                 // TODO-Cleanup: This should have been taken care of in the above HasMultiRegRetVal() case,
                 // but that method has not been updadted to include ARM.
                 impMarkLclDstNotPromotable(lcl->AsLclVarCommon()->GetLclNum(), src, structHnd);
@@ -2268,9 +2268,9 @@ bool Compiler::impSpillStackEntry(unsigned level,
         // be catched when importing the destblock. We still allow int/byrefs and float/double differences.
         if ((genActualType(valTyp) != genActualType(dstTyp)) &&
             !(
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
                 (valTyp == TYP_I_IMPL && dstTyp == TYP_BYREF) || (valTyp == TYP_BYREF && dstTyp == TYP_I_IMPL) ||
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
                 (varTypeIsFloating(dstTyp) && varTypeIsFloating(valTyp))))
         {
             if (verNeedsVerification())
@@ -2964,7 +2964,7 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
                 tree->gtType = TYP_I_IMPL;
             }
         }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         else if (varTypeIsI(wantedType) && (currType == TYP_INT))
         {
             // Note that this allows TYP_INT to be cast to a TYP_I_IMPL when wantedType is a TYP_BYREF or TYP_REF
@@ -2975,7 +2975,7 @@ GenTree* Compiler::impImplicitIorI4Cast(GenTree* tree, var_types dstTyp)
             // Note that this allows TYP_BYREF or TYP_REF to be cast to a TYP_INT
             tree = gtNewCastNode(TYP_INT, tree, false, TYP_INT);
         }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
     }
 
     return tree;
@@ -3487,7 +3487,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     *pIntrinsicID = intrinsicID;
 
-#ifndef _TARGET_ARM_
+#ifndef TARGET_ARM
     genTreeOps interlockedOperator;
 #endif
 
@@ -3496,7 +3496,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // must be done regardless of DbgCode and MinOpts
         return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
     }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     if (intrinsicID == CORINFO_INTRINSIC_StubHelpers_GetStubContextAddr)
     {
         // must be done regardless of DbgCode and MinOpts
@@ -3549,7 +3549,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             retNode = impMathIntrinsic(method, sig, callType, intrinsicID, tailCall);
             break;
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // TODO-ARM-CQ: reenable treating Interlocked operation as intrinsic
 
         // Note that CORINFO_INTRINSIC_InterlockedAdd32/64 are not actually used.
@@ -3563,7 +3563,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             interlockedOperator = GT_XCHG;
             goto InterlockedBinOpCommon;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case CORINFO_INTRINSIC_InterlockedAdd64:
         case CORINFO_INTRINSIC_InterlockedXAdd64:
             interlockedOperator = GT_XADD;
@@ -3571,7 +3571,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         case CORINFO_INTRINSIC_InterlockedXchg64:
             interlockedOperator = GT_XCHG;
             goto InterlockedBinOpCommon;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         InterlockedBinOpCommon:
             assert(callType != TYP_STRUCT);
@@ -3594,7 +3594,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1->gtFlags |= GTF_GLOB_REF | GTF_ASG;
             retNode = op1;
             break;
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
         case CORINFO_INTRINSIC_MemoryBarrier:
 
@@ -3605,10 +3605,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             retNode = op1;
             break;
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // TODO-ARM-CQ: reenable treating InterlockedCmpXchg32 operation as intrinsic
         case CORINFO_INTRINSIC_InterlockedCmpXchg32:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case CORINFO_INTRINSIC_InterlockedCmpXchg64:
 #endif
         {
@@ -3626,7 +3626,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             retNode = node;
             break;
         }
-#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
         case CORINFO_INTRINSIC_StringLength:
             op1 = impPopStack().val;
@@ -4048,7 +4048,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_FusedMultiplyAdd:
             case NI_System_MathF_FusedMultiplyAdd:
             {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
                 if (compSupports(InstructionSet_FMA))
                 {
                     assert(varTypeIsFloating(callType));
@@ -4071,7 +4071,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callType, 16);
                 }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
                 break;
             }
 #endif // FEATURE_HW_INTRINSICS
@@ -4115,10 +4115,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     case CorInfoType::CORINFO_TYPE_INT:
                     case CorInfoType::CORINFO_TYPE_UINT:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     case CorInfoType::CORINFO_TYPE_LONG:
                     case CorInfoType::CORINFO_TYPE_ULONG:
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                         retNode = gtNewOperNode(GT_BSWAP, callType, impPopStack().val);
                         break;
 
@@ -4183,7 +4183,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     op1 = nullptr;
 
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
     // Intrinsics that are not implemented directly by target instructions will
     // be re-materialized as users calls in rationalizer. For prefixed tail calls,
     // don't do this optimization, because
@@ -4343,7 +4343,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
         }
     }
-#if defined(_TARGET_XARCH_) // We currently only support BSWAP on x86
+#if defined(TARGET_XARCH) // We currently only support BSWAP on x86
     else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
     {
         if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
@@ -4351,7 +4351,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
         }
     }
-#endif // !defined(_TARGET_XARCH_)
+#endif // !defined(TARGET_XARCH)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
@@ -4365,9 +4365,9 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         namespaceName += 25;
         const char* platformNamespaceName;
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         platformNamespaceName = ".X86";
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
         platformNamespaceName = ".Arm";
 #else
 #error Unsupported platform
@@ -4704,7 +4704,7 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
     // be turned off during importation).
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 
 #ifdef DEBUG
     bool canSkipVerificationResult =
@@ -4717,7 +4717,7 @@ void Compiler::verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logM
     {
         tiIsVerifiableCode = FALSE;
     }
-#endif //_TARGET_64BIT_
+#endif // TARGET_64BIT
     verResetCurrentState(block, &verCurrentState);
     verConvertBBToThrowVerificationException(block DEBUGARG(logMsg));
 
@@ -4743,7 +4743,7 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
             }
             break;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case CORINFO_TYPE_NATIVEINT:
         case CORINFO_TYPE_NATIVEUINT:
             if (clsHnd)
@@ -4756,7 +4756,7 @@ typeInfo Compiler::verMakeTypeInfo(CorInfoType ciType, CORINFO_CLASS_HANDLE clsH
                 return typeInfo::nativeInt();
             }
             break;
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
         case CORINFO_TYPE_VALUECLASS:
         case CORINFO_TYPE_REFANY:
@@ -4828,12 +4828,12 @@ typeInfo Compiler::verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd, bool bashStructT
             return typeInfo();
         }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         if (t == CORINFO_TYPE_NATIVEINT || t == CORINFO_TYPE_NATIVEUINT)
         {
             return typeInfo::nativeInt();
         }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
         if (t != CORINFO_TYPE_UNDEF)
         {
@@ -5679,14 +5679,14 @@ void Compiler::verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsig
 {
     if (tiOp1.IsNumberType())
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         Verify(tiCompatibleWith(tiOp1, tiOp2, true), "Cond type mismatch");
 #else  // _TARGET_64BIT
         // [10/17/2013] Consider changing this: to put on my verification lawyer hat,
         // this is non-conforming to the ECMA Spec: types don't have to be equivalent,
         // but compatible, since we can coalesce native int with int32 (see section III.1.5).
         Verify(typeInfo::AreEquivalent(tiOp1, tiOp2), "Cond type mismatch");
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
     }
     else if (tiOp1.IsObjRef())
     {
@@ -6438,7 +6438,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return true;
     }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // On 64-bit platforms, we disable pinvoke inlining inside of try regions.
     // Note that this could be needed on other architectures too, but we
     // haven't done enough investigation to know for sure at this point.
@@ -6474,7 +6474,7 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 
         return false;
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
     return true;
 }
@@ -6686,7 +6686,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig)
         argsToReverse--;
     }
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     // Don't reverse args on ARM or x64 - first four args always placed in regs in order
     argsToReverse = 0;
 #endif
@@ -7146,7 +7146,7 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
         return true;
     }
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     // Jit64 compat:
     if (callerRetType == TYP_VOID)
     {
@@ -7176,7 +7176,7 @@ bool Compiler::impTailCallRetTypeCompatible(var_types            callerRetType,
     {
         return (varTypeIsIntegral(calleeRetType) || isCalleeRetTypMBEnreg) && (callerRetTypeSize == calleeRetTypeSize);
     }
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+#endif // TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }
@@ -7251,7 +7251,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
     int    cntPop = 0;
     OPCODE nextOpcode;
 
-#if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
     do
     {
         nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
@@ -7262,7 +7262,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
                                                                                          // one pop seen so far.
 #else
     nextOpcode = (OPCODE)getU1LittleEndian(codeAddrOfNextOpcode);
-#endif // !FEATURE_CORECLR && _TARGET_AMD64_
+#endif // !FEATURE_CORECLR && TARGET_AMD64
 
     if (isCallPopAndRet)
     {
@@ -7270,7 +7270,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
         *isCallPopAndRet = (nextOpcode == CEE_RET) && (cntPop == 1);
     }
 
-#if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
+#if !defined(FEATURE_CORECLR) && defined(TARGET_AMD64)
     // Jit64 Compat:
     // Tail call IL pattern could be either of the following
     // 1) call/callvirt/calli + ret
@@ -7278,7 +7278,7 @@ bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
     return (nextOpcode == CEE_RET) && ((cntPop == 0) || ((cntPop == 1) && (info.compRetType == TYP_VOID)));
 #else
     return (nextOpcode == CEE_RET) && (cntPop == 0);
-#endif // !FEATURE_CORECLR && _TARGET_AMD64_
+#endif // !FEATURE_CORECLR && TARGET_AMD64
 }
 
 /*****************************************************************************
@@ -7712,7 +7712,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     call->gtFlags |= GTF_EXCEPT | (stubAddr->gtFlags & GTF_GLOB_EFFECT);
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     // No tailcalls allowed for these yet...
                     canTailCall             = false;
                     szCanTailCallFailReason = "VirtualCall with runtime lookup";
@@ -7979,7 +7979,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
            varargs is not caller-pop, etc), but not worth it. */
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (canTailCall)
         {
             canTailCall             = false;
@@ -8486,13 +8486,13 @@ DONE:
         // Stack empty check for implicit tail calls.
         if (canTailCall && (tailCall & PREFIX_TAILCALL_IMPLICIT) && (verCurrentState.esStackDepth != 0))
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // JIT64 Compatibility:  Opportunistic tail call stack mismatch throws a VerificationException
             // in JIT64, not an InvalidProgramException.
             Verify(false, "Stack should be empty after tailcall");
-#else  // _TARGET_64BIT_
+#else  // TARGET_64BIT
             BADCODE("Stack should be empty after tailcall");
-#endif //!_TARGET_64BIT_
+#endif //! TARGET_64BIT
         }
 
         // assert(compCurBB is not a catch, finally or filter block);
@@ -9048,7 +9048,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
 /*****************************************************************************
    For struct return values, re-type the operand in the case where the ABI
    does not use a struct return buffer
-   Note that this method is only call for !_TARGET_X86_
+   Note that this method is only call for !TARGET_X86
  */
 
 GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd)
@@ -9059,7 +9059,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 
 #ifdef UNIX_AMD64_ABI
     // No VarArgs for CoreCLR on x64 Unix
@@ -9095,7 +9095,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
     assert(info.compRetNativeType != TYP_STRUCT);
 #endif // !UNIX_AMD64_ABI
 
-#elif FEATURE_MULTIREG_RET && defined(_TARGET_ARM_)
+#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM)
 
     if (varTypeIsStruct(info.compRetNativeType) && !info.compIsVarArgs && IsHfa(retClsHnd))
     {
@@ -9129,7 +9129,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE re
         return impAssignMultiRegTypeToVar(op, retClsHnd);
     }
 
-#elif FEATURE_MULTIREG_RET && defined(_TARGET_ARM64_)
+#elif FEATURE_MULTIREG_RET && defined(TARGET_ARM64)
 
     // Is method returning a multi-reg struct?
     if (IsMultiRegReturnedType(retClsHnd))
@@ -9622,14 +9622,14 @@ void Compiler::impImportLeave(BasicBlock* block)
                                               // exit) returns to this block
                 step->bbJumpDest->bbRefs++;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                 if (stepType == ST_FinallyReturn)
                 {
                     assert(step->bbJumpKind == BBJ_ALWAYS);
                     // Mark the target of a finally return
                     step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
                 }
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 exitBlock->setBBWeight(block->bbWeight);
@@ -9767,14 +9767,14 @@ void Compiler::impImportLeave(BasicBlock* block)
                                               // finally in the chain)
                 step->bbJumpDest->bbRefs++;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                 if (stepType == ST_FinallyReturn)
                 {
                     assert(step->bbJumpKind == BBJ_ALWAYS);
                     // Mark the target of a finally return
                     step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
                 }
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 callBlock->setBBWeight(block->bbWeight);
@@ -9872,13 +9872,13 @@ void Compiler::impImportLeave(BasicBlock* block)
                 step->bbJumpDest = catchStep;
                 step->bbJumpDest->bbRefs++;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                 if (stepType == ST_FinallyReturn)
                 {
                     // Mark the target of a finally return
                     step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
                 }
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
                 /* The new block will inherit this block's weight */
                 catchStep->setBBWeight(block->bbWeight);
@@ -9929,14 +9929,14 @@ void Compiler::impImportLeave(BasicBlock* block)
     {
         step->bbJumpDest = leaveTarget; // this is the ultimate destination of the LEAVE
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         if (stepType == ST_FinallyReturn)
         {
             assert(step->bbJumpKind == BBJ_ALWAYS);
             // Mark the target of a finally return
             step->bbJumpDest->bbFlags |= BBF_FINALLY_TARGET;
         }
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
 #ifdef DEBUG
         if (verbose)
@@ -10167,13 +10167,13 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // So here we decide to make the resulting type to be a native int.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
             {
                 // insert an explicit upcast
                 op1 = *pOp1 = gtNewCastNode(TYP_I_IMPL, op1, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
             }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             type = TYP_I_IMPL;
         }
@@ -10182,13 +10182,13 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // byref - [native] int => gives a byref
             assert(genActualType(op1->TypeGet()) == TYP_BYREF && genActualTypeIsIntOrI(op2->TypeGet()));
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             if ((genActualType(op2->TypeGet()) != TYP_I_IMPL))
             {
                 // insert an explicit upcast
                 op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
             }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             type = TYP_BYREF;
         }
@@ -10204,7 +10204,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
         assert(genActualType(op1->TypeGet()) != TYP_BYREF || genActualType(op2->TypeGet()) != TYP_BYREF);
         assert(genActualTypeIsIntOrI(op1->TypeGet()) || genActualTypeIsIntOrI(op2->TypeGet()));
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         if (genActualType(op2->TypeGet()) == TYP_BYREF)
         {
             if (genActualType(op1->TypeGet()) != TYP_I_IMPL)
@@ -10218,11 +10218,11 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
             // insert an explicit upcast
             op2 = *pOp2 = gtNewCastNode(TYP_I_IMPL, op2, fUnsigned, fUnsigned ? TYP_U_IMPL : TYP_I_IMPL);
         }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
         type = TYP_BYREF;
     }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     else if (genActualType(op1->TypeGet()) == TYP_I_IMPL || genActualType(op2->TypeGet()) == TYP_I_IMPL)
     {
         assert(!varTypeIsFloating(op1->gtType) && !varTypeIsFloating(op2->gtType));
@@ -10254,7 +10254,7 @@ var_types Compiler::impGetByRefResultType(genTreeOps oper, bool fUnsigned, GenTr
 
         type = TYP_LONG;
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
     else
     {
         // int + int => gives an int
@@ -11190,14 +11190,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = impImplicitIorI4Cast(op1, lclTyp);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 // Downcast the TYP_I_IMPL into a 32-bit Int for x86 JIT compatiblity
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(lclTyp) == TYP_INT))
                 {
                     assert(!tiVerificationNeeded); // We should have thrown the VerificationException before.
                     op1 = gtNewCastNode(TYP_INT, op1, false, TYP_INT);
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
                 // We had better assign it a value of the correct type
                 assertImp(
@@ -11745,7 +11745,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         tiRetVal             = verGetArrayElemType(tiArray);
                         typeInfo arrayElemTi = typeInfo(lclTyp);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                         if (opcode == CEE_LDELEM_I)
                         {
                             arrayElemTi = typeInfo::nativeInt();
@@ -11756,7 +11756,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             Verify(typeInfo::AreEquivalent(tiRetVal, arrayElemTi), "bad array");
                         }
                         else
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                         {
                             Verify(tiRetVal.IsType(arrayElemTi.GetType()), "bad array");
                         }
@@ -11956,12 +11956,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // As per ECMA 'index' specified can be either int32 or native int.
                     Verify(tiIndex.IsIntOrNativeIntType(), "bad index");
                     typeInfo arrayElem = typeInfo(lclTyp);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     if (opcode == CEE_STELEM_I)
                     {
                         arrayElem = typeInfo::nativeInt();
                     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                     Verify(tiArray.IsNullObjRef() || typeInfo::AreEquivalent(verGetArrayElemType(tiArray), arrayElem),
                            "bad array");
 
@@ -12156,12 +12156,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     tiRetVal = tiOp1;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     if (tiOp2.IsNativeIntType())
                     {
                         tiRetVal = tiOp2;
                     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                 }
 
                 op2 = impPopStack().val;
@@ -12218,7 +12218,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     /* These operators can later be transformed into 'GT_CALL' */
 
                     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_MUL]);
-#ifndef _TARGET_ARM_
+#ifndef TARGET_ARM
                     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_DIV]);
                     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_UDIV]);
                     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_MOD]);
@@ -12496,7 +12496,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 if (varTypeIsI(op1->TypeGet()) && (genActualType(op2->TypeGet()) == TYP_INT))
                 {
                     op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
@@ -12505,7 +12505,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
                           varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet()) ||
@@ -12596,7 +12596,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 if ((op1->TypeGet() == TYP_I_IMPL) && (genActualType(op2->TypeGet()) == TYP_INT))
                 {
                     op2 = gtNewCastNode(TYP_I_IMPL, op2, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
@@ -12605,7 +12605,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     op1 = gtNewCastNode(TYP_I_IMPL, op1, uns, uns ? TYP_U_IMPL : TYP_I_IMPL);
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
                 assertImp(genActualType(op1->TypeGet()) == genActualType(op2->TypeGet()) ||
                           varTypeIsI(op1->TypeGet()) && varTypeIsI(op2->TypeGet()) ||
@@ -12841,7 +12841,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     const typeInfo& tiVal = impStackTop().seTypeInfo;
                     Verify(tiVal.IsNumberType(), "bad arg");
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     bool isNative = false;
 
                     switch (opcode)
@@ -12862,7 +12862,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         tiRetVal = typeInfo::nativeInt();
                     }
                     else
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                     {
                         tiRetVal = typeInfo(lclTyp).NormaliseForStack();
                     }
@@ -12874,7 +12874,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (varTypeIsFloating(lclTyp))
                 {
                     callNode = varTypeIsLong(impStackTop().val) || uns // uint->dbl gets turned into uint->long->dbl
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                                // TODO-ARM64-Bug?: This was AMD64; I enabled it for ARM64 also. OK?
                                // TYP_BYREF could be used as TYP_I_IMPL which is long.
                                // TODO-CQ: remove this when we lower casts long/ulong --> float/double
@@ -13131,12 +13131,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (tiVerificationNeeded)
                 {
                     typeInfo instrType(lclTyp);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     if (opcode == CEE_STIND_I)
                     {
                         instrType = typeInfo::nativeInt();
                     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                     verVerifySTIND(impStackTop(1).seTypeInfo, impStackTop(0).seTypeInfo, instrType);
                 }
                 else
@@ -13156,7 +13156,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op2 = impImplicitR4orR8Cast(op2, lclTyp);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
                 if ((op2->OperGet() == GT_CNS_INT) && varTypeIsI(lclTyp) && !varTypeIsI(op2->gtType))
                 {
@@ -13179,7 +13179,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2 = gtNewCastNode(TYP_I_IMPL, op2, false, TYP_I_IMPL);
                     }
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
                 if (opcode == CEE_STIND_REF)
                 {
@@ -13275,12 +13275,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 if (tiVerificationNeeded)
                 {
                     typeInfo lclTiType(lclTyp);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     if (opcode == CEE_LDIND_I)
                     {
                         lclTiType = typeInfo::nativeInt();
                     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
                     tiRetVal = verVerifyLDIND(impStackTop().seTypeInfo, lclTiType);
                     tiRetVal.NormaliseForStack();
                 }
@@ -13294,7 +13294,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // address to load from
                 impBashVarAddrsToI(op1);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 // Allow an upcast of op1 from a 32-bit Int into TYP_I_IMPL for x86 JIT compatiblity
                 //
                 if (genActualType(op1->gtType) == TYP_INT)
@@ -14230,7 +14230,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
 
                     case CORINFO_FIELD_STATIC_TLS:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only
 
                         /* Create the data member node */
@@ -14538,7 +14538,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
 
                     case CORINFO_FIELD_STATIC_TLS:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // Legacy TLS access is implemented as intrinsic on x86 only
 
                         /* Create the data member node */
@@ -14605,7 +14605,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     */
                     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
                     // In UWP6.0 and beyond (post-.NET Core 2.0), we decided to let this cast from int to long be
                     // generated for ARM as well as x86, so the following IR will be accepted:
                     // STMTx (IL 0x... ???)
@@ -14620,7 +14620,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 #endif
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     // Automatic upcast for a GT_CNS_INT into TYP_I_IMPL
                     if ((op2->OperGet() == GT_CNS_INT) && varTypeIsI(lclTyp) && !varTypeIsI(op2->gtType))
                     {
@@ -14750,7 +14750,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op2 = impPopStack().val;
                 assertImp(genActualTypeIsIntOrI(op2->gtType));
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 // The array helper takes a native int for array length.
                 // So if we have an int, explicitly extend it to be a native int.
                 if (genActualType(op2->TypeGet()) != TYP_I_IMPL)
@@ -14765,7 +14765,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op2             = gtNewCastNode(TYP_I_IMPL, op2, isUnsigned, TYP_I_IMPL);
                     }
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
@@ -16170,7 +16170,7 @@ void Compiler::impLoadLoc(unsigned ilLclNum, IL_OFFSET offset)
     }
 }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 /**************************************************************************************
  *
  *  When assigning a vararg call src to a HFA lcl dest, mark that we cannot promote the
@@ -16208,7 +16208,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
         }
     }
 }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 //------------------------------------------------------------------------
 // impAssignSmallStructTypeToVar: ensure calls that return small structs whose
@@ -16585,8 +16585,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                      (unsigned)CHECK_SPILL_ALL);
                 }
 
-#if defined(_TARGET_ARM_) || defined(UNIX_AMD64_ABI)
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_ARM)
                 // TODO-ARM64-NYI: HFA
                 // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
                 // next ifdefs could be refactored in a single method with the ifdef inside.
@@ -16612,7 +16612,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     {
                         if (!impInlineInfo->retExpr)
                         {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
                             impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
 #else  // defined(UNIX_AMD64_ABI)
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
@@ -16627,7 +16627,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
                 else
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -16651,7 +16651,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     }
                 }
                 else
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
                 {
                     assert(iciCall->HasRetBufArg());
                     GenTree* dest = gtCloneExpr(iciCall->gtCallArgs->GetNode());
@@ -16696,13 +16696,13 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
         // x64 (System V and Win64) calling convention requires to
         // return the implicit return buffer explicitly (in RAX).
         // Change the return type to be BYREF.
         op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-#else  // !defined(_TARGET_AMD64_)
+#else  // !defined(TARGET_AMD64)
         // In case of non-AMD64 targets the profiler hook requires to return the implicit RetBuf explicitly (in RAX).
         // In such case the return value of the function is changed to BYREF.
         // If profiler hook is not needed the return type of the function is TYP_VOID.
@@ -16715,7 +16715,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             // return void
             op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
-#endif // !defined(_TARGET_AMD64_)
+#endif // !defined(TARGET_AMD64)
     }
     else if (varTypeIsStruct(info.compRetType))
     {
@@ -16737,14 +16737,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
     // We must have imported a tailcall and jumped to RET
     if (isTailCall)
     {
-#if defined(FEATURE_CORECLR) || !defined(_TARGET_AMD64_)
+#if defined(FEATURE_CORECLR) || !defined(TARGET_AMD64)
         // Jit64 compat:
         // This cannot be asserted on Amd64 since we permit the following IL pattern:
         //      tail.call
         //      pop
         //      ret
         assert(verCurrentState.esStackDepth == 0 && impOpcodeIsCallOpcode(opcode));
-#endif // FEATURE_CORECLR || !_TARGET_AMD64_
+#endif // FEATURE_CORECLR || !TARGET_AMD64
 
         opcode = CEE_RET; // To prevent trying to spill if CALL_SITE_BOUNDARIES
 
@@ -17202,7 +17202,7 @@ SPILLSTACK:
                 markImport = true;
             }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             if (genActualType(tree->gtType) == TYP_I_IMPL && lvaTable[tempNum].lvType == TYP_INT)
             {
                 if (tiVerificationNeeded && tgtBlock->bbEntryState != nullptr &&
@@ -17262,7 +17262,7 @@ SPILLSTACK:
                     verCurrentState.esStack[level].val = gtNewCastNode(TYP_I_IMPL, tree, false, TYP_I_IMPL);
                 }
             }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             if (tree->gtType == TYP_DOUBLE && lvaTable[tempNum].lvType == TYP_FLOAT)
             {
@@ -18093,7 +18093,7 @@ void Compiler::impImport(BasicBlock* method)
         if (dsc->pdBB->bbFlags & BBF_FAILED_VERIFICATION)
         {
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             // On AMD64, during verification we have to match JIT64 behavior since the VM is very tighly
             // coupled with the JIT64 IL Verification logic.  Look inside verHandleVerificationFailure
             // method for further explanation on why we raise this exception instead of making the jitted
@@ -18103,7 +18103,7 @@ void Compiler::impImport(BasicBlock* method)
                 BADCODE("Basic block marked as not verifiable");
             }
             else
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
             {
                 verConvertBBToThrowVerificationException(dsc->pdBB DEBUGARG(true));
                 impEndTreeList(dsc->pdBB);
@@ -19005,7 +19005,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                         assert(inlArgNode->OperIsConst());
                     }
                 }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 else if (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType))
                 {
                     // This should only happen for int -> native int widening
@@ -19023,7 +19023,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                         assert(inlArgNode->OperIsConst());
                     }
                 }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
             }
         }
     }
@@ -19633,8 +19633,8 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return;
     }
 
-    // Don't inline if inlining into root method is disabled.
-    if (InlineStrategy::IsNoInline(info.compCompHnd, info.compMethodHnd))
+    // Don't inline if inlining into this method is disabled.
+    if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
         return;
@@ -19834,7 +19834,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
 bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
 {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     switch (intrinsicId)
     {
         // AMD64/x86 has SSE2 instructions to directly compute sqrt/abs and SSE4.1
@@ -19858,7 +19858,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         default:
             return false;
     }
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     switch (intrinsicId)
     {
         case CORINFO_INTRINSIC_Sqrt:
@@ -19871,7 +19871,7 @@ bool Compiler::IsTargetIntrinsic(CorInfoIntrinsics intrinsicId)
         default:
             return false;
     }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     switch (intrinsicId)
     {
         case CORINFO_INTRINSIC_Sqrt:
@@ -20009,7 +20009,12 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    const bool doPrint = JitConfig.JitPrintDevirtualizedMethods() == 1;
+    // Optionally, print info on devirtualization
+    Compiler* const rootCompiler = impInlineRoot();
+    const bool      doPrint      = JitConfig.JitPrintDevirtualizedMethods().contains(rootCompiler->info.compMethodName,
+                                                                           rootCompiler->info.compClassName,
+                                                                           &rootCompiler->info.compMethodInfo->args);
+
 #endif // DEBUG
 
     // Fetch information about the virtual method we're calling.

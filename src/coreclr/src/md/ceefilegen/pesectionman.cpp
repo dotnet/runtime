@@ -308,7 +308,7 @@ HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
 
     switch (reloc)
     {
-#ifdef BIT64
+#ifdef HOST_64BIT
     case srRelocDir64Ptr:
 #endif
     case srRelocAbsolutePtr:
@@ -317,7 +317,7 @@ HRESULT PESection::addBaseReloc(unsigned offset, CeeSectionRelocType reloc,
         hr = S_OK;
         break;
 
-#if defined (_TARGET_X86_) || defined (_TARGET_AMD64_)
+#if defined (TARGET_X86) || defined (TARGET_AMD64)
     case srRelocRelativePtr:
     case srRelocRelative:
         hr = addSectReloc(offset, NULL, reloc, extra);

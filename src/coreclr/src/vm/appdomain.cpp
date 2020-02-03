@@ -61,9 +61,9 @@
 
 #include "nativeoverlapped.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 
@@ -669,6 +669,11 @@ BaseDomain::BaseDomain()
     m_JITLock.PreInit();
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
+
+#ifdef FEATURE_CODE_VERSIONING
+    m_codeVersionManager.PreInit();
+#endif
+
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -1562,11 +1567,10 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
+
     ThunkHeapStubManager::Init();
+
     TailCallStubManager::Init();
-#ifdef FEATURE_TIERED_COMPILATION
-    CallCountingStubManager::Init();
-#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE

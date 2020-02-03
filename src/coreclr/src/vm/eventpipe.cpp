@@ -22,9 +22,9 @@
 #include "win32threadpool.h"
 #include "ceemain.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "pal.h"
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #ifdef FEATURE_PERFTRACING
 
@@ -34,13 +34,13 @@ EventPipeConfiguration EventPipe::s_config;
 EventPipeEventSource *EventPipe::s_pEventSource = nullptr;
 VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
 Volatile<uint64_t> EventPipe::s_allowWrite = 0;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
 Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 extern "C"
 #endif
 void InitProvidersAndEvents();
@@ -78,7 +78,7 @@ void EventPipe::Initialize()
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeProcNumbers) != 0)
     {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // setup the windows processor group offset table
         WORD numGroups = ::GetActiveProcessorGroupCount();
         s_pProcGroupOffsets = new (nothrow) unsigned int[numGroups];
