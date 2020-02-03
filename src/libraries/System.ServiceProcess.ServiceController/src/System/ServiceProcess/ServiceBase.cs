@@ -474,7 +474,7 @@ namespace System.ServiceProcess
             try
             {
                 PowerBroadcastStatus status = (PowerBroadcastStatus)eventType;
-                bool statusResult = OnPowerEvent(status);
+                _ = OnPowerEvent(status);
 
                 WriteLogEntry(SR.PowerEventOK);
             }
