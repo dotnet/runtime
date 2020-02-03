@@ -136,7 +136,7 @@ namespace System.Buffers.Binary
         /// <param name="source">The read-only span of bytes to read.</param>
         /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as little endian.</param>
         /// <returns>
-        /// <see langword="true" /> if the span is large enough to contain an <see cref="double" />; otherwise, <see langword="false" />.
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="double" />; otherwise, <see langword="false" />.
         /// </returns>
         /// <remarks>Reads exactly 8 bytes from the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -209,7 +209,7 @@ namespace System.Buffers.Binary
         /// <param name="source">The read-only span of bytes to read.</param>
         /// <param name="value">When this method returns, the value read out of the read-only span of bytes, as little endian.</param>
         /// <returns>
-        /// <see langword="true" /> if the span is large enough to contain an <see cref="float" />; otherwise, <see langword="false" />.
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="float" />; otherwise, <see langword="false" />.
         /// </returns>
         /// <remarks>Reads exactly 4 bytes from the beginning of the span.</remarks>
         public static bool TryReadSingleLittleEndian(ReadOnlySpan<byte> source, out float value)

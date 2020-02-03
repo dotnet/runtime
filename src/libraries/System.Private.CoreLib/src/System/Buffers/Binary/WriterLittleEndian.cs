@@ -16,7 +16,7 @@ namespace System.Buffers.Binary
         /// <param name="value">The value to write into the span of bytes.</param>
         /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="destination" /> is too small to contain an <see cref="double" />.
+        /// <paramref name="destination" /> is too small to contain a <see cref="double" />.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteDoubleLittleEndian(Span<byte> destination, double value)
@@ -78,7 +78,7 @@ namespace System.Buffers.Binary
         /// <param name="value">The value to write into the span of bytes.</param>
         /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="destination" /> is too small to contain an <see cref="float" />.
+        /// <paramref name="destination" /> is too small to contain a <see cref="float" />.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void WriteSingleLittleEndian(Span<byte> destination, float value)
@@ -142,7 +142,7 @@ namespace System.Buffers.Binary
         /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
         /// <param name="value">The value to write into the span of bytes.</param>
         /// <returns>
-        /// <see langword="true" /> if the span is large enough to contain an <see cref="double" />; otherwise, <see langword="false" />.
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="double" />; otherwise, <see langword="false" />.
         /// </returns>
         /// <remarks>Writes exactly 8 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -205,7 +205,7 @@ namespace System.Buffers.Binary
         /// <param name="destination">The span of bytes where the value is to be written, as little endian.</param>
         /// <param name="value">The value to write into the span of bytes.</param>
         /// <returns>
-        /// <see langword="true" /> if the span is large enough to contain an <see cref="float" />; otherwise, <see langword="false" />.
+        /// <see langword="true" /> if the span is large enough to contain a <see cref="float" />; otherwise, <see langword="false" />.
         /// </returns>
         /// <remarks>Writes exactly 4 bytes to the beginning of the span.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
