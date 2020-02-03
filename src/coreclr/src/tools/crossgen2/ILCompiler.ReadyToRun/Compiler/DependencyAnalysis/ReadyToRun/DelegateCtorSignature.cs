@@ -15,15 +15,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly IMethodNode _targetMethod;
 
+        private readonly bool _isInstantiatingStub;
+
         private readonly ModuleToken _methodToken;
 
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
+            bool isInstantiatingStub,
             ModuleToken methodToken)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
+            _isInstantiatingStub = isInstantiatingStub;
             _methodToken = methodToken;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
