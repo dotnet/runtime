@@ -6,6 +6,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeIntrinsics.cs" />
-    <Compile Include="TypeIntrinsics.IsAssignableFrom.cs" />
   </ItemGroup>
 </Project>

@@ -20,7 +20,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness,
     NI_System_GC_KeepAlive,
     NI_System_Type_get_IsValueType,
-    NI_System_Type_IsAssignableFrom,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_IsSupported_True,
