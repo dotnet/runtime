@@ -303,6 +303,7 @@ namespace System.Net.Security
             {
                 _handshakeBuffer.Dispose();
             }
+
             FinishHandshakeRead(LockNone);
         }
 
