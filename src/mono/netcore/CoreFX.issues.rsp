@@ -9,9 +9,6 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# GCSettings.LatencyMode is not implemented
--nomethod System.Tests.GCTests.LatencyRoundtrips
-
 # GC.GetGCMemoryInfo is not implemented
 -nomethod System.Tests.GCExtendedTests.GetGCMemoryInfo
 
