@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -243,7 +244,7 @@ internal static partial class Interop
 
         internal static bool TryParseStatFile(string statFilePath, out ParsedStat result, ReusableTextReader reusableReader)
         {
-            if (!TryReadFile(statFilePath, reusableReader, out string statFileContents))
+            if (!TryReadFile(statFilePath, reusableReader, out string? statFileContents))
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.
@@ -312,7 +313,7 @@ internal static partial class Interop
 
         internal static bool TryParseStatusFile(string statusFilePath, out ParsedStatus result, ReusableTextReader reusableReader)
         {
-            if (!TryReadFile(statusFilePath, reusableReader, out string fileContents))
+            if (!TryReadFile(statusFilePath, reusableReader, out string? fileContents))
             {
                 // Between the time that we get an ID and the time that we try to read the associated stat
                 // file(s), the process could be gone.
@@ -415,7 +416,7 @@ internal static partial class Interop
             return true;
         }
 
-        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, out string fileContents)
+        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, [NotNullWhen(true)]out string? fileContents)
         {
             try
             {

@@ -912,7 +912,7 @@ namespace System.Diagnostics
                 throw new Win32Exception(SR.Format(SR.UserDoesNotExist, startInfo.UserName));
             }
 
-            uint[] groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId!.Value);
+            uint[]? groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId!.Value);
             if (groups == null)
             {
                 throw new Win32Exception(SR.Format(SR.UserGroupsCannotBeDetermined, startInfo.UserName));
