@@ -58,10 +58,7 @@ set(NATIVEGLOBALIZATION_SOURCES
 )
 
 include_directories(${UTYPES_H})
-
-if (CORECLR_BUILD)
-    include_directories("../Common")
-endif()
+include_directories("../Common")
 
 if (GEN_SHARED_LIB)
     add_library(System.Globalization.Native
