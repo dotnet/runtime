@@ -138,7 +138,7 @@ namespace R2RDump
 
             if (_options.GC && method.GcInfo != null)
             {
-                _writer.WriteLine("GcInfo:");
+                _writer.WriteLine("GC info:");
                 _writer.Write(method.GcInfo);
 
                 if (_options.Raw)
