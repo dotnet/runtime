@@ -117,7 +117,7 @@
 
   <!-- Run CoreCLR runtime test using testhost -->
   <Target Name="RunCoreClrTest" DependsOnTargets="ValidateTestHost;PatchTestHost">
-    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set." />
+    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/Windows_NT.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh` in order to run DivToMul test." />
     <PropertyGroup>
       <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
     </PropertyGroup>
@@ -125,20 +125,21 @@
   </Target>
 
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchTestHost">
+    <Error Condition="!Exists('$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked')" Text="CoreCLR test must be built with Checked configuration, e.g. run `cd src/coreclr && ./build.sh -checked`" />
     <PropertyGroup>
       <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
       <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
       <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     </PropertyGroup>
     <ItemGroup>
-      <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\Windows_NT.x64.Checked\**\*$(ScriptExt)" />
+      <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked\**\*$(ScriptExt)" />
     </ItemGroup>
     <Exec Command="%(CoreClrTests.Identity)" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <Target Name="RunBenchmarks">
     <Error Condition="$(BenchmarksRepo) == ''" Text="BenchmarksRepo variable is not set" />
-    <Exec Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) --cli $(LocalDotnet)" />
+    <Exec WorkingDirectory="$(BenchmarksRepo)\src\benchmarks\micro" Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) --cli $(LocalDotnet)" />
   </Target>
 
   <Target Name="ValidateTestHost">
