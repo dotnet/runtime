@@ -104,7 +104,6 @@
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
-
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFolder="$(TestHostPath)\shared\Microsoft.NETCore.App\$(ProductVersion)" 
           SkipUnchangedFiles="true"/>
@@ -122,7 +121,19 @@
     <PropertyGroup>
       <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
     </PropertyGroup>
-    <Exec Command="$(CoreClrTest)" />
+    <Exec Command="$(CoreClrTest)"/>
+  </Target>
+
+  <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchTestHost">
+    <PropertyGroup>
+      <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
+      <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
+      <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\Windows_NT.x64.Checked\**\*$(ScriptExt)" />
+    </ItemGroup>
+    <Exec Command="%(CoreClrTests.Identity)" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <Target Name="RunBenchmarks">

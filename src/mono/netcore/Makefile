@@ -25,6 +25,9 @@ patch-local-dotnet: check-config
 run-tests-coreclr: check-config
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest=$(CoreClrTest) /p:Configuration=$(CONFIGURATION) ../mono.proj
 
+run-tests-coreclr-all: check-config
+	$(DOTNET) msbuild /t:RunCoreClrTests /p:Configuration=$(CONFIGURATION) ../mono.proj
+
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
 # you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`
