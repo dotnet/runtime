@@ -205,7 +205,7 @@ struct _InterpFrame {
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
 	/* An address on the native stack associated with the frame, used during EH */
-	gpointer       native_stack_addr;
+	char           *native_stack_addr;
 	/* Stack fragments this frame was allocated from */
 	StackFragment *iframe_frag, *data_frag;
 	/* exception info */

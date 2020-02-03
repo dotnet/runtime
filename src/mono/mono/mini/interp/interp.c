@@ -225,7 +225,7 @@ alloc_frame (ThreadContext *ctx, gpointer native_stack_addr, InterpFrame *parent
 
 	frame->iframe_frag = frag;
 	frame->parent = parent;
-	frame->native_stack_addr = native_stack_addr;
+	frame->native_stack_addr = (char*)native_stack_addr;
 	frame->imethod = imethod;
 	frame->stack_args = args;
 	frame->retval = retval;
@@ -3506,6 +3506,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #include "mintops.def"
 	};
 #endif
+	// For non-recursive calls, native_stack_addr is assigned to
+	// and its value is used.
+	//
+	// For recursive calls, the address of native_stack_addr is used.
+	// FIXME remove recursion.
+	//
+	// To intialize non-recursive calls, native_stack_addr's address is used.
+	gpointer native_stack_addr;
 
 #if DEBUG_INTERP
 	debug_enter (frame, &tracing);
@@ -3740,7 +3748,8 @@ main_loop:
 			MonoMethodSignature *csignature;
 			InterpMethod *imethod;
 			stackval *retval;
-			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
+			// FIXME This assumes a grow down stack.
+			native_stack_addr = frame->native_stack_addr ? frame->native_stack_addr - 1 : (gpointer)&native_stack_addr;
 
 			frame->ip = ip;
 
@@ -3830,7 +3839,7 @@ main_loop:
 			--sp;
 			guchar* const code = (guchar*)sp->data.p;
 			retval = sp;
-			child_frame = alloc_frame (context, &retval, frame, NULL, NULL, retval);
+			child_frame = alloc_frame (context, &native_stack_addr, frame, NULL, NULL, retval);
 
 			sp->data.p = vt_sp;
 			/* decrement by the actual number of args */
@@ -3889,7 +3898,7 @@ retry_callvirt_fast:
 					MonoException *ex;
 					gboolean tracing;
 
-					child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+					child_frame = alloc_frame (context, &native_stack_addr, frame, imethod, sp, retval);
 					method_entry (context, child_frame, &tracing, &ex);
 					if (G_UNLIKELY (ex)) {
 						frame = child_frame;
@@ -3898,7 +3907,7 @@ retry_callvirt_fast:
 						EXCEPTION_CHECKPOINT;
 					}
 				} else {
-					child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+					child_frame = alloc_frame (context, &native_stack_addr, frame, imethod, sp, retval);
 					alloc_stack_data (context, child_frame, imethod->alloca_size);
 				}
 
@@ -3936,7 +3945,7 @@ retry_callvirt_fast:
 			frame->ip = ip;
 
 			retval = sp;
-			child_frame = alloc_frame (context, &retval, frame, (InterpMethod*)frame->imethod->data_items [ip [1]], NULL, retval);
+			child_frame = alloc_frame (context, &native_stack_addr, frame, (InterpMethod*)frame->imethod->data_items [ip [1]], NULL, retval);
 			/* The real signature for vararg calls */
 			csig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
 			/* Push all vararg arguments from normal sp to vt_sp together with the signature */
@@ -3967,7 +3976,8 @@ retry_callvirt_fast:
 			stackval *retval;
 			gboolean is_void = *ip == MINT_VCALL || *ip == MINT_VCALLVIRT;
 			gboolean is_virtual = *ip == MINT_CALLVIRT || *ip == MINT_VCALLVIRT;
-			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
+			// FIXME This assumes a grow down stack.
+			native_stack_addr = frame->native_stack_addr ? frame->native_stack_addr - 1 : (gpointer)&native_stack_addr;
 			InterpMethod *imethod;
 
 			imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
@@ -5110,7 +5120,7 @@ retry_callvirt_fast:
 				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
 				frame->ip = ip;
 
-				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
+				child_frame = alloc_frame (context, &native_stack_addr, frame, ctor_method, sp, NULL);
 				interp_exec_method (child_frame, context, error);
 				CHECK_RESUME_STATE (context);
 				sp [0].data.o = o;
@@ -5122,13 +5132,12 @@ retry_callvirt_fast:
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
-			int dummy;
 			// This is split up to:
 			//  - conserve stack
 			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
+			child_frame = alloc_frame (context, &native_stack_addr, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
 			guint16 const param_count = ip [2];
 
 			if (param_count) {
@@ -5157,7 +5166,6 @@ retry_callvirt_fast:
 		}
 
 		MINT_IN_CASE(MINT_NEWOBJ) {
-			int dummy;
 			// This is split up to:
 			//  - conserve stack
 			//  - keep exception handling and resume mostly in the main function
@@ -5167,7 +5175,7 @@ retry_callvirt_fast:
 			guint32 const token = ip [1];
 			ip += 2; // FIXME: Do this after throw?
 
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*)frame->imethod->data_items [token], NULL, NULL);
+			child_frame = alloc_frame (context, &native_stack_addr, frame, (InterpMethod*)frame->imethod->data_items [token], NULL, NULL);
 			MonoMethodSignature* const csig = mono_method_signature_internal (child_frame->imethod->method);
 
 			g_assert (csig->hasthis);
@@ -6371,7 +6379,6 @@ retry_callvirt_fast:
 		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
-			int dummy;
 			// Leave is split into pieces in order to consume less stack,
 			// but not have to change how exception handling macros access labels and locals.
 
@@ -6384,7 +6391,7 @@ retry_callvirt_fast:
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
 
 			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				child_frame = alloc_frame (context, &dummy, frame, NULL, NULL, NULL);
+				child_frame = alloc_frame (context, &native_stack_addr, frame, NULL, NULL, NULL);
 				MonoException *abort_exc = mono_interp_leave (child_frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, frame->ip);
