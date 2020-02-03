@@ -6,7 +6,7 @@ run-sample:
 
 # run sample using dotnet from PATH
 run-sample-coreclr:
-	dotnet run -c Release -p sample/HelloWorld
+	dotnet run -c Release -p sample/HelloWorld -f netcoreapp3.1
 
 runtime:
 	$(DOTNET) msbuild /t:Build ../mono.proj

@@ -101,25 +101,26 @@
         SkipUnchangedFiles="true" />
   </Target>
 
+  <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <Error Condition="!Exists('$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root')" Text="Core_Root doesn't exist. Have you built coreclr tests in Checked configuration?" />
+    <Error Condition="!Exists('$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).Checked\Tests\Core_Root')" Text="Core_Root doesn't exist. Have you built coreclr tests in Checked configuration?" />
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root" 
+          DestinationFolder="$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).Checked\Tests\Core_Root" 
           SkipUnchangedFiles="true"/>
   </Target>
 
   <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
   <Target Name="RunSample" DependsOnTargets="PatchLocalDotnet">
-    <Exec Command="$(LocalDotnet) run -c Release -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
+    <Exec Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->
   <Target Name="RunCoreClrTest" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
     <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/Windows_NT.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul$(ScriptExt)` in order to run DivToMul test." />
-    <Exec Command="$(CoreClrTest) -coreroot=&quot;$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;"/>
+    <Exec Command="$(CoreClrTest) -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;"/>
   </Target>
 
   <!-- Make sure coreclr tests are built (in Checked configuration), e.g. 
@@ -129,12 +130,12 @@
     <ItemGroup>	
         <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked\**\*$(ScriptExt)" />	
     </ItemGroup>	
-    <Exec Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <!-- Show summary for coreclr tests -->
   <Target Name="CoreClrTestsSummary">
-    <Exec Command="python $(MonoProjectRoot)../coreclr/tests/runtest.py --analyze_results_only -test_location $(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).Checked -build_type Checked" />
+    <Exec Command="python $(MonoProjectRoot)..\coreclr\tests\runtest.py --analyze_results_only -test_location $(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked -build_type Checked" />
   </Target>
 
   <Target Name="RunBenchmarks">
