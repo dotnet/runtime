@@ -39,22 +39,24 @@ namespace System.Net
 
         public void Dispose()
         {
+            _activeStart = 0;
+            _availableStart = 0;
+
             if (_usePool)
             {
-                _activeStart = _availableStart = 0;
-
                 byte[] array = _bytes;
                 _bytes = null;
 
                 if (array != null)
                 {
-                    ArrayPool<byte>.Shared.Return(array);
+                    ArrayPool<byte>.Shared.Return(array, true);
                 }
             }
         }
 
         public int ActiveLength => _availableStart - _activeStart;
-        public ReadOnlySpan<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public int AvailableLength => _bytes.Length - _availableStart;
         public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);
@@ -127,6 +129,11 @@ namespace System.Net
             }
 
             Debug.Assert(byteCount <= AvailableLength);
+        }
+
+        public void Grow()
+        {
+            EnsureAvailableSpace(AvailableLength + 1);
         }
     }
 }

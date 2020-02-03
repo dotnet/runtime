@@ -93,10 +93,10 @@ namespace System.Security.Authentication.ExtendedProtection
             }
 
             // NullReferenceException is thrown when serviceNames is null,
-            // which is consistent with the behavior of the full framework.
+            // which is consistent with the behavior of the .NET Framework.
             foreach (object item in serviceNames)
             {
-                // To match the behavior of the full framework, when an item
+                // To match the behavior of the .NET Framework, when an item
                 // in the collection is not a string:
                 //  - Throw InvalidCastException when expectStrings is true.
                 //  - Throw ArgumentException when expectStrings is false.

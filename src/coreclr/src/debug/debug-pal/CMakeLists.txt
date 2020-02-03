@@ -15,9 +15,8 @@ if(WIN32)
     )
 endif(WIN32)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
 
-    add_definitions(-DFEATURE_PAL)
     add_definitions(-DPAL_IMPLEMENTATION)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
 
@@ -27,6 +26,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
       unix/processdescriptor.cpp
     )
 
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _add_library(debug-pal STATIC ${TWO_WAY_PIPE_SOURCES})

@@ -18,6 +18,14 @@ namespace System.Text.Json
                 return;
             }
 
+            if (state.Current.LastSeenMetadataProperty == MetadataPropertyName.Id || state.Current.LastSeenMetadataProperty == MetadataPropertyName.Ref)
+            {
+                Debug.Assert(options.ReferenceHandling.ShouldReadPreservedReferences());
+
+                HandleMetadataPropertyValue(ref reader, ref state);
+                return;
+            }
+
             JsonPropertyInfo? jsonPropertyInfo = state.Current.JsonPropertyInfo;
             Debug.Assert(state.Current.JsonClassInfo != null);
             if (jsonPropertyInfo == null)

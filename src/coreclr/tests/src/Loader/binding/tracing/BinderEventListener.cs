@@ -165,11 +165,10 @@ namespace BinderTracingTests
         private readonly object eventsLock = new object();
         private readonly Dictionary<Guid, BindOperation> bindOperations = new Dictionary<Guid, BindOperation>();
 
-        public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName, int waitTimeoutInMs = 10000)
+        public BindOperation[] WaitAndGetEventsForAssembly(AssemblyName assemblyName)
         {
             const int waitIntervalInMs = 50;
-            int timeWaitedInMs = 0;
-            do
+            while (true)
             {
                 lock (eventsLock)
                 {
@@ -181,10 +180,7 @@ namespace BinderTracingTests
                 }
 
                 Thread.Sleep(waitIntervalInMs);
-                timeWaitedInMs += waitIntervalInMs;
-            } while (timeWaitedInMs < waitTimeoutInMs);
-
-            throw new TimeoutException($"Timed out waiting for bind events for {assemblyName}");
+            }
         }
 
         protected override void OnEventSourceCreated(EventSource eventSource)

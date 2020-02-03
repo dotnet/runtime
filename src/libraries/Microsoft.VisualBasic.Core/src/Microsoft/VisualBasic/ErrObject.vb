@@ -111,9 +111,9 @@ Namespace Microsoft.VisualBasic
             Dim tmpNumber As Integer = Me.Number
 
             If Msg Is Nothing OrElse Msg.Length = 0 Then
-                Msg = GetResourceString("ID" & CStr(tmpNumber))
+                Msg = SR.GetResourceString("ID" & CStr(tmpNumber))
             ElseIf System.String.CompareOrdinal("Exception from HRESULT: 0x", 0, Msg, 0, Math.Min(Msg.Length, 26)) = 0 Then
-                NewMsg = GetResourceString("ID" & CStr(m_curNumber))
+                NewMsg = SR.GetResourceString("ID" & CStr(m_curNumber))
                 If Not NewMsg Is Nothing Then
                     Msg = NewMsg
                 End If
@@ -279,7 +279,7 @@ Namespace Microsoft.VisualBasic
 
             If Number = 0 Then
                 'This is only called by Raise, so Raise(0) should give the following exception
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Number"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Number"))
             End If
             Me.Number = Number
 
@@ -342,7 +342,7 @@ Namespace Microsoft.VisualBasic
 
             If Number = 0 Then
                 'This is only called by Error xxxx, zero is not a valid exception number
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Number"))
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Number"))
             End If
 
             Dim e As Exception = MapNumberToException(m_curNumber, Description)
@@ -433,7 +433,7 @@ Namespace Microsoft.VisualBasic
         Friend Function MapErrorNumber(ByVal Number As Integer) As Integer
             If Number > 65535 Then
                 ' Number cannot be greater than 65535.
-                Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1), "Number")
+                Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1), "Number")
             End If
 
             If Number >= 0 Then

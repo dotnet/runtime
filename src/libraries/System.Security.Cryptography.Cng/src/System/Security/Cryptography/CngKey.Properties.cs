@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
                 throw ErrorCode.NTE_NOT_FOUND.ToCryptographicException();
 
             if (value.Length == 0)
-                value = null;   // Desktop compat: For some reason, CngKey.GetProperty() morphs zero length property values to null.
+                value = null;   // .NET Framework compat: For some reason, CngKey.GetProperty() morphs zero length property values to null.
 
             return new CngProperty(name, value, options);
         }
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
             {
                 byte[] propertyValue = property.GetValueWithoutCopying();
 
-                // Desktop compat. It would have nicer to throw an ArgumentNull exception or something...
+                // .NET Framework compat. It would have nicer to throw an ArgumentNull exception or something...
                 if (propertyValue == null)
                     throw ErrorCode.NTE_INVALID_PARAMETER.ToCryptographicException();
 

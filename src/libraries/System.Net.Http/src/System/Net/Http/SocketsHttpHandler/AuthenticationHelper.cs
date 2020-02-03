@@ -220,7 +220,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(pool.PreAuthCredentials != null);
                 NetworkCredential credential;
-                lock (pool.PreAuthCredentials) // TODO #28045: Get rid of this lock.
+                lock (pool.PreAuthCredentials)
                 {
                     // Just look for basic credentials.  If in the future we support preauth
                     // for other schemes, this will need to search in order of precedence.
@@ -291,7 +291,7 @@ namespace System.Net.Http
                                     break;
 
                                 default:
-                                    lock (pool.PreAuthCredentials) // TODO #28045: Get rid of this lock.
+                                    lock (pool.PreAuthCredentials)
                                     {
                                         try
                                         {

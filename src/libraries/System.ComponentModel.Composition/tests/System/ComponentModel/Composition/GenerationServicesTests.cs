@@ -144,14 +144,6 @@ namespace Microsoft.Internal
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/507696")]
-        public void EnumTypeEnumerable()
-        {
-            TestEnum[] enumerable = new TestEnum[] { TestEnum.First, TestEnum.Second };
-            this.TestSuccessfulEnumerableGeneration<string>(enumerable);
-        }
-
-        [Fact]
         public void MixedEnumerable()
         {
             List<object> list = new List<object>();

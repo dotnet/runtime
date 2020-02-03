@@ -12,22 +12,13 @@ unsafe partial class GenericsNative
     public static extern Point1<bool> GetPoint1B(bool e00);
 
     [DllImport(nameof(GenericsNative))]
-    public static extern void GetPoint1BOut(bool e00, Point1<bool>* value);
-
-    [DllImport(nameof(GenericsNative))]
     public static extern void GetPoint1BOut(bool e00, out Point1<bool> value);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point1<bool>* GetPoint1BPtr(bool e00);
 
     [DllImport(nameof(GenericsNative), EntryPoint = "GetPoint1BPtr")]
     public static extern ref readonly Point1<bool> GetPoint1BRef(bool e00);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point1<bool> AddPoint1B(Point1<bool> lhs, Point1<bool> rhs);
-
-    [DllImport(nameof(GenericsNative))]
-    public static extern Point1<bool> AddPoint1Bs(Point1<bool>* pValues, int count);
 
     [DllImport(nameof(GenericsNative))]
     public static extern Point1<bool> AddPoint1Bs([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] Point1<bool>[] pValues, int count);
@@ -42,14 +33,7 @@ unsafe partial class GenericsTest
     {
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint1B(true));
 
-        Assert.Throws<MarshalDirectiveException>(() => {
-            GenericsNative.Point1<bool> value2;
-            GenericsNative.GetPoint1BOut(true, &value2);
-        });
-
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint1BOut(true, out GenericsNative.Point1<bool> value3));
-
-        Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint1BPtr(true));
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.GetPoint1BRef(true));
 
@@ -62,13 +46,6 @@ unsafe partial class GenericsTest
             default,
             default
         };
-
-        Assert.Throws<MarshalDirectiveException>(() => {
-            fixed (GenericsNative.Point1<bool>* pValues = &values[0])
-            {
-                GenericsNative.AddPoint1Bs(pValues, values.Length);
-            }
-        });
 
         Assert.Throws<MarshalDirectiveException>(() => GenericsNative.AddPoint1Bs(values, values.Length));
 

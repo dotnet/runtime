@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Internal.JitInterface;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -15,5 +16,6 @@ namespace ILCompiler.DependencyAnalysis
         void InitializeDebugLocInfos(OffsetMapping[] debugLocInfos);
         void InitializeDebugVarInfos(NativeVarInfo[] debugVarInfos);
         void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos);
+        void InitializeInliningInfo(MethodDesc[] inlinedMethods);
     }
 }

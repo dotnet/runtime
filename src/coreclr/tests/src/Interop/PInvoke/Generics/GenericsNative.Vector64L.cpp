@@ -7,18 +7,18 @@
 #include <xplatform.h>
 #include <platformdefines.h>
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     #include <mmintrin.h>
 
     typedef __m64 Vector64L;
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
     #if defined(_MSC_VER)
-        #if defined(_TARGET_ARM64_)
+        #if defined(TARGET_ARM64)
             #include <arm64_neon.h>
         #else
             #include <arm_neon.h>
         #endif
-    #elif defined(_TARGET_ARM64_)
+    #elif defined(TARGET_ARM64)
         #include <arm_neon.h>
     #else
         typedef struct {
@@ -49,9 +49,9 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector64LOut(int64_t e00, Vector
 {
     *pValue = GetVector64L(e00);
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
     _mm_empty();
-#endif // _MSC_VER && _TARGET_X86_
+#endif // _MSC_VER && TARGET_X86
 }
 
 extern "C" DLL_EXPORT const Vector64L* STDMETHODCALLTYPE GetVector64LPtr(int64_t e00)

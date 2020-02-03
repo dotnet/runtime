@@ -257,7 +257,7 @@ namespace System.Linq.Expressions
                         break;
                     case ExpressionType.Power:
                         op = "**";
-                        break; // This was changed in CoreFx from ^ to **
+                        break; // This was changed in .NET Core from ^ to **
                     case ExpressionType.PowerAssign:
                         op = "**=";
                         break;
@@ -660,7 +660,7 @@ namespace System.Linq.Expressions
                 case ExpressionType.ConvertChecked:
                     Out(", ");
                     Out(node.Type.Name);
-                    Out(')'); break; // These were changed in CoreFx to add the type name
+                    Out(')'); break; // These were changed in .NET Core to add the type name
                 case ExpressionType.PostIncrementAssign: Out("++"); break;
                 case ExpressionType.PostDecrementAssign: Out("--"); break;
                 default: Out(')'); break;

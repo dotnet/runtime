@@ -17,7 +17,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private unsafe MsQuicApi()
         {
-            MsQuicStatusException.ThrowIfFailed(Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration));
+            QuicExceptionHelpers.ThrowIfFailed(
+                Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration),
+                "Could not open MsQuic.");
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 
@@ -184,10 +186,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
-            uint status;
+            uint createConfigStatus;
+
+            // If no certificate is provided, provide a null one.
             if (certificate != null)
             {
-                status = SecConfigCreateDelegate(
+                createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
                     (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
                     certificate.Handle,
@@ -197,7 +201,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             else
             {
-                status = SecConfigCreateDelegate(
+                createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
                     (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
                     IntPtr.Zero,
@@ -206,7 +210,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     SecCfgCreateCallbackHandler);
             }
 
-            MsQuicStatusException.ThrowIfFailed(status);
+            QuicExceptionHelpers.ThrowIfFailed(
+                createConfigStatus,
+                "Could not create security configuration.");
 
             void SecCfgCreateCallbackHandler(
                 IntPtr context,
@@ -220,7 +226,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             await tcs.Task.ConfigureAwait(false);
 
-            MsQuicStatusException.ThrowIfFailed(secConfigCreateStatus);
+            QuicExceptionHelpers.ThrowIfFailed(
+                secConfigCreateStatus,
+                "Could not create security configuration.");
 
             return secConfig;
         }
@@ -234,7 +242,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 alpn,
                 IntPtr.Zero,
                 ref sessionPtr);
-            MsQuicStatusException.ThrowIfFailed(status);
+
+            QuicExceptionHelpers.ThrowIfFailed(status, "Could not open session.");
 
             return sessionPtr;
         }

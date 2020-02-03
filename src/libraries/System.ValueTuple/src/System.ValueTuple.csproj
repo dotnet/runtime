@@ -5,9 +5,6 @@
     <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

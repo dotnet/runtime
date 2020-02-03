@@ -45,7 +45,7 @@ struct CustomAttributeType
 
 struct CustomAttributeValue
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     // refs come before longs on win64
     CaValueArrayREF     m_value;
     STRINGREF           m_enumOrTypeName;
@@ -65,7 +65,7 @@ struct CustomAttributeValue
 struct CustomAttributeArgument
 {
     CustomAttributeType m_type;
-#if (!defined(BIT64) && (DATA_ALIGNMENT > 4)) || defined(FEATURE_64BIT_ALIGNMENT)
+#if (!defined(HOST_64BIT) && (DATA_ALIGNMENT > 4)) || defined(FEATURE_64BIT_ALIGNMENT)
     DWORD m_padding;
 #endif
     CustomAttributeValue m_value;
@@ -76,11 +76,11 @@ struct CustomAttributeNamedArgument
     STRINGREF m_argumentName;
     CorSerializationType m_propertyOrField;
     CorSerializationType m_padding;
-#if !defined(BIT64) && (DATA_ALIGNMENT > 4)
+#if !defined(HOST_64BIT) && (DATA_ALIGNMENT > 4)
     DWORD m_padding2;
 #endif
     CustomAttributeType m_type;
-#if !defined(BIT64) && (DATA_ALIGNMENT > 4)
+#if !defined(HOST_64BIT) && (DATA_ALIGNMENT > 4)
     DWORD m_padding3;
 #endif
     CustomAttributeValue m_value;

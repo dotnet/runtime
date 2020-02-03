@@ -13,7 +13,6 @@
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

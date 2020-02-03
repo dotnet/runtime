@@ -276,6 +276,7 @@ namespace System.Net.Security
             finally
             {
                 // Operation has completed.
+                _handshakeBuffer.Dispose();
                 _nestedAuth = 0;
             }
 
@@ -294,7 +295,14 @@ namespace System.Net.Security
                 _lockReadState = LockHandshake;
             }
 
-            await ForceAuthenticationAsync(adapter, false, buffer).ConfigureAwait(false);
+            try
+            {
+                await ForceAuthenticationAsync(adapter, false, buffer).ConfigureAwait(false);
+            }
+            finally
+            {
+                _handshakeBuffer.Dispose();
+            }
             FinishHandshakeRead(LockNone);
         }
 
@@ -408,6 +416,14 @@ namespace System.Net.Security
                 }
             }
 
+            if (_handshakeBuffer.ActiveLength > 0)
+            {
+                // If we read more than we needed for handshake, move it to input buffer for further processing.
+                ResetReadBuffer();
+                _handshakeBuffer.ActiveSpan.CopyTo(_internalBuffer);
+                _internalBufferCount = _handshakeBuffer.ActiveLength;
+            }
+
             if (!CompleteHandshake(out ProtocolToken alertToken))
             {
                 SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
@@ -445,7 +461,7 @@ namespace System.Net.Security
 
                 if (_framing == Framing.Unified)
                 {
-                    _framing = DetectFraming(new Span<byte>(message.Payload, 0, message.Payload.Length));
+                    _framing = DetectFraming(new ReadOnlySpan<byte>(message.Payload));
                 }
 
                 InnerStream.Write(message.Payload, 0, message.Size);
@@ -528,10 +544,10 @@ namespace System.Net.Security
 
             if (_framing == Framing.Unified || _framing == Framing.Unknown)
             {
-                _framing = DetectFraming(_handshakeBuffer.ActiveSpan);
+                _framing = DetectFraming(_handshakeBuffer.ActiveReadOnlySpan);
             }
 
-            int frameSize = GetFrameSize(_handshakeBuffer.ActiveSpan);
+            int frameSize = GetFrameSize(_handshakeBuffer.ActiveReadOnlySpan);
             if (frameSize < 0)
             {
                 throw new IOException(SR.net_frame_read_size);
@@ -542,7 +558,7 @@ namespace System.Net.Security
                 await FillHandshakeBufferAsync(readAdapter, frameSize).ConfigureAwait(false);
             }
 
-            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveSpan.Slice(0, frameSize));
+            ProtocolToken token = _context.NextMessage(_handshakeBuffer.ActiveReadOnlySpan.Slice(0, frameSize));
             _handshakeBuffer.Discard(frameSize);
 
             return token;

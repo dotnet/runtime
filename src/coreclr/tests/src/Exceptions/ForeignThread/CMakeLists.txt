@@ -2,10 +2,10 @@ project (ForeignThreadExceptionsNative)
 
 include_directories(${INC_PLATFORM_DIR})
 
-if(CLR_CMAKE_PLATFORM_DARWIN)
+if(CLR_CMAKE_HOST_DARWIN)
   # Enable non-POSIX pthreads APIs, which by default are not included in the pthreads header
   add_definitions(-D_DARWIN_C_SOURCE)
-endif(CLR_CMAKE_PLATFORM_DARWIN)
+endif(CLR_CMAKE_HOST_DARWIN)
 
 set(SOURCES ForeignThreadExceptionsNative.cpp)
 

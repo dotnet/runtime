@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading
     {
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
 
-        protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected sealed override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             Debug.Assert(types != null);
 
@@ -24,7 +24,7 @@ namespace System.Reflection.TypeLoading
                     candidates.Add(candidate);
             }
 
-            // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+            // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
             if (candidates.Count == 0)
                 return null;
 
@@ -46,24 +46,24 @@ namespace System.Reflection.TypeLoading
         }
 
         public sealed override EventInfo[] GetEvents(BindingFlags bindingAttr) => Query<EventInfo>(bindingAttr).ToArray();
-        public sealed override EventInfo GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(name, bindingAttr).Disambiguate();
+        public sealed override EventInfo? GetEvent(string name, BindingFlags bindingAttr) => Query<EventInfo>(name, bindingAttr).Disambiguate();
 
         public sealed override FieldInfo[] GetFields(BindingFlags bindingAttr) => Query<FieldInfo>(bindingAttr).ToArray();
-        public sealed override FieldInfo GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(name, bindingAttr).Disambiguate();
+        public sealed override FieldInfo? GetField(string name, BindingFlags bindingAttr) => Query<FieldInfo>(name, bindingAttr).Disambiguate();
 
         public sealed override MethodInfo[] GetMethods(BindingFlags bindingAttr) => Query<MethodInfo>(bindingAttr).ToArray();
 
-        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected sealed override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected sealed override MethodInfo? GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        private MethodInfo GetMethodImplCommon(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        private MethodInfo? GetMethodImplCommon(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             Debug.Assert(name != null);
 
@@ -93,7 +93,7 @@ namespace System.Reflection.TypeLoading
                 if (candidates.Count == 0)
                     return null;
 
-                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
@@ -104,11 +104,11 @@ namespace System.Reflection.TypeLoading
         }
 
         public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => Query<Type>(bindingAttr).ToArray();
-        public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(name, bindingAttr).Disambiguate();
+        public sealed override Type? GetNestedType(string name, BindingFlags bindingAttr) => Query<Type>(name, bindingAttr).Disambiguate();
 
         public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => Query<PropertyInfo>(bindingAttr).ToArray();
 
-        protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected sealed override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             Debug.Assert(name != null);
 
@@ -136,7 +136,7 @@ namespace System.Reflection.TypeLoading
                 if (candidates.Count == 0)
                     return null;
 
-                // For perf and desktop compat, fast-path these specific checks before calling on the binder to break ties.
+                // For perf and .NET Framework compat, fast-path these specific checks before calling on the binder to break ties.
                 if (types == null || types.Length == 0)
                 {
                     // no arguments
@@ -177,7 +177,7 @@ namespace System.Reflection.TypeLoading
             return Query<M>(name, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string optionalName, BindingFlags bindingAttr, Func<M, bool> optionalPredicate) where M : MemberInfo
+        private QueryResult<M> Query<M>(string? optionalName, BindingFlags bindingAttr, Func<M, bool>? optionalPredicate) where M : MemberInfo
         {
             MemberPolicies<M> policies = MemberPolicies<M>.Default;
             bindingAttr = policies.ModifyBindingFlags(bindingAttr);
@@ -209,7 +209,7 @@ namespace System.Reflection.TypeLoading
 
         private TypeComponentsCache Cache => _lazyCache ?? (_lazyCache = new TypeComponentsCache(this));
 
-        private volatile TypeComponentsCache _lazyCache;
+        private volatile TypeComponentsCache? _lazyCache;
 
         private const int GenericParameterCountAny = -1;
     }

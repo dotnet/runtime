@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ExportDefinition _definition;
         private readonly ReflectionMember _member;
-        private object _cachedValue = null;
+        private object? _cachedValue = null;
         private volatile bool _isValueCached = false;
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
@@ -42,13 +42,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get { return _definition; }
         }
 
-        public object GetExportedValue(object instance, object @lock)
+        public object? GetExportedValue(object? instance, object @lock)
         {
             EnsureReadable();
 
             if (!_isValueCached)
             {
-                object exportedValue;
+                object? exportedValue;
                 try
                 {
                     exportedValue = _member.GetValue(instance);
