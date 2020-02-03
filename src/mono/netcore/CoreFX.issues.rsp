@@ -9,9 +9,6 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# GC.GetGCMemoryInfo is not implemented
--nomethod System.Tests.GCExtendedTests.GetGCMemoryInfo
-
 # flaky test, System.ArgumentNullException : Key cannot be null. Parameter name: key
 -nomethod System.Tests.GetEnvironmentVariable.EnvironmentVariablesAreHashtable
 
