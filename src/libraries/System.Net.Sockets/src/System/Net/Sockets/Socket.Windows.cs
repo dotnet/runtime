@@ -29,6 +29,7 @@ namespace System.Net.Sockets
             if (errorCode != SocketError.Success)
             {
                 Debug.Assert(_handle.IsInvalid);
+                _handle = null;
 
                 if (errorCode == SocketError.InvalidArgument)
                 {
@@ -39,13 +40,10 @@ namespace System.Net.Sockets
                 throw new SocketException((int)errorCode);
             }
 
-            if (_handle.IsInvalid)
-            {
-                throw new SocketException();
-            }
-
             if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
             {
+                _handle.Dispose();
+                _handle = null;
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 

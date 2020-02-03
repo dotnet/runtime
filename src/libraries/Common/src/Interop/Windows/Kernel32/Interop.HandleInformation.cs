@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [Flags]
-        internal enum HandleFlags: uint
+        internal enum HandleFlags : uint
         {
             None = 0,
             HANDLE_FLAG_INHERIT = 1,

@@ -71,7 +71,7 @@ namespace System.Net.Sockets
 
                         if (alreadyBound)
                         {
-                            throw new InvalidOperationException(SR.net_sockets_asyncoperations_notallowed);
+                            throw new InvalidOperationException(SR.net_sockets_asyncoperations_notallowed, exception);
                         }
 
                         throw;

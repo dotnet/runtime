@@ -13,20 +13,16 @@ namespace System.Net.Sockets
     {
         public Socket(SocketInformation socketInformation)
         {
-            //
             // This constructor works in conjunction with DuplicateAndClose, which is not supported on Unix.
             // See comments in DuplicateAndClose.
-            //
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 
         public SocketInformation DuplicateAndClose(int targetProcessId)
         {
-            //
-            // DuplicateAndClose is not supported on Unix, since passing FD-s between processes
-            // should involve Unix Domain Sockets. The programming model is fundamentally different,
-            // and incompatible with the design of SocketInformation API-s.
-            //
+            // DuplicateAndClose is not supported on Unix, since passing file descriptors between processes
+            // requires Unix Domain Sockets. The programming model is fundamentally different,
+            // and incompatible with the design of SocketInformation-related methods.
             throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
         }
 

@@ -29,6 +29,7 @@ namespace System.Net.Sockets.Tests
             Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
         private static int CurrentProcessId => Process.GetCurrentProcess().Id;
 
+
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()
         {
@@ -229,6 +230,18 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Fact]
+        public void SocketCtr_SocketInformation_NonIpSocket_ThrowsNotSupportedException()
+        {
+            // UDS unsupported:
+            if (!PlatformDetection.IsWindows10Version1803OrGreater || !Environment.Is64BitProcess) return;
+
+            using Socket original = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            SocketInformation info = original.DuplicateAndClose(CurrentProcessId);
+            Assert.ThrowsAny<NotSupportedException>(() => _ = new Socket(info));
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SocketCtr_SocketInformation_WhenProtocolInformationIsNull_Throws()
@@ -277,16 +290,28 @@ namespace System.Net.Sockets.Tests
                 return result;
             }
 
+            public static readonly TheoryData<AddressFamily, bool> TcpServerHandlerData =
+                new TheoryData<AddressFamily, bool>()
+                {
+                    { AddressFamily.InterNetwork, false },
+                    { AddressFamily.InterNetwork, true },
+                    { AddressFamily.InterNetworkV6, false },
+                    { AddressFamily.InterNetworkV6, true },
+                };
+
             [Theory]
             [PlatformSpecific(TestPlatforms.Windows)]
-            [InlineData(false)]
-            [InlineData(true)]
-            public async Task DuplicateAndClose_TcpServerHandler(bool sameProcess)
+            [MemberData(nameof(TcpServerHandlerData))]
+            public async Task DuplicateAndClose_TcpServerHandler(AddressFamily addressFamily, bool sameProcess)
             {
-                using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                using Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                IPAddress address = addressFamily == AddressFamily.InterNetwork
+                    ? IPAddress.Loopback
+                    : IPAddress.IPv6Loopback;
 
-                listener.BindToAnonymousPort(IPAddress.Loopback);
+                using Socket listener = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
+                using Socket client = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+                listener.BindToAnonymousPort(address);
                 listener.Listen(1);
 
                 client.Connect(listener.LocalEndPoint);

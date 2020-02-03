@@ -74,7 +74,7 @@ namespace System.Net.Sockets
             {
                 // Sockets are non-inheritable in .NET Core.
                 // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
-                // we need to disable handle inheritance when constructing the new socket handle from Protcol Info.
+                // we need to disable handle inheritance when constructing the new socket handle from Protocol Info.
                 // Additionally, it looks like WSA_FLAG_NO_HANDLE_INHERIT has no effect when being used with the Protocol Info
                 // variant of WSASocketW, so it is being passed to that call only for consistency.
                 // Inheritance is being disabled with SetHandleInformation(...) after the WSASocketW call.
