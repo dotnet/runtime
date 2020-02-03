@@ -165,7 +165,7 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 		res = munmap (info->addr, info->size);
 		END_CRITICAL_SECTION;
 		g_free (info);
-		g_hash_table_remove (valloc_hash, info);
+		g_hash_table_remove (valloc_hash, addr);
 	} else {
 		BEGIN_CRITICAL_SECTION;
 		res = munmap (addr, length);

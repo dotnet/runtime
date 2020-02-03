@@ -545,14 +545,14 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
     // we will allocate a new exact type of precode in GetOrCreatePrecode.
     BOOL fForcedPrecode = hasMethodDescVersionableWithPrecode || pFirstMD->RequiresStableEntryPoint(count > 1);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     if (pFirstMD->RequiresMethodDescCallingConvention(count > 1)
         || count >= MethodDescChunk::GetCompactEntryPointMaxCount ())
     {
         // We do not pass method desc on scratch register
         fForcedPrecode = TRUE;
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     if (!fForcedPrecode && (totalSize > MethodDescChunk::SizeOfCompactEntryPoints(count)))
         return NULL;
@@ -672,7 +672,7 @@ void Precode::Save(DataImage *image)
     _ASSERTE(GetType() != PRECODE_FIXUP);
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // StubPrecode may have straddlers (relocations crossing pages) on x86 and x64. We need
     // to insert padding to eliminate it. To do that, we need to save these using custom ZapNode that can only
     // be implemented in dataimage.cpp or zapper due to factoring of the header files.
@@ -688,7 +688,7 @@ void Precode::Save(DataImage *image)
         static_cast<ULONG>(SizeOf(t)),
         GetPrecodeItemKind(image, pMD, IsPrebound(image)),
         AlignOf(t));
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 }
 
 void Precode::Fixup(DataImage *image, MethodDesc * pMD)
@@ -697,14 +697,14 @@ void Precode::Fixup(DataImage *image, MethodDesc * pMD)
 
     PrecodeType precodeType = GetType();
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 #if defined(HAS_FIXUP_PRECODE)
     if (precodeType == PRECODE_FIXUP)
     {
         AsFixupPrecode()->Fixup(image, pMD);
     }
 #endif
-#else // _TARGET_X86_ || _TARGET_AMD64_
+#else // TARGET_X86 || TARGET_AMD64
     ZapNode * pCodeNode = NULL;
 
     if (IsPrebound(image))
@@ -730,7 +730,7 @@ void Precode::Fixup(DataImage *image, MethodDesc * pMD)
         UnexpectedPrecodeType("Precode::Save", precodeType);
         break;
     }
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 }
 
 BOOL Precode::IsPrebound(DataImage *image)

@@ -44,7 +44,7 @@ namespace Internal.JitInterface
             ARM64 = 0xaa64,
         }
 
-        private const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -109,29 +109,11 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private static JitConfigProvider s_jitConfig;
-
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
-        public static void RegisterJITModule(JitConfigProvider jitConfig)
+        public static void Startup()
         {
-            s_jitConfig = jitConfig;
-            if (jitConfig.JitPath != null)
-            {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
-        }
-
-        private static IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libHandle = IntPtr.Zero;
-            if (libraryName == JitLibrary)
-            {
-                libHandle = NativeLibrary.Load(s_jitConfig.JitPath, assembly, searchPath);
-            }
-            return libHandle;
+            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl()
@@ -243,7 +225,7 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = s_jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -277,6 +259,9 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+#endif
             PublishProfileData();
         }
 
@@ -356,6 +341,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             _profileDataNode = null;
+            _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
         }
 
@@ -771,10 +757,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
-        {
-        }
-
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
         {
         }
@@ -965,7 +947,8 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition());
+                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                        (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }
@@ -1418,7 +1401,7 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT || type.IsWellKnownType(WellKnownType.TypedReference))
+            if (type.IsByReferenceOfT)
             {
                 return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
@@ -3038,7 +3021,7 @@ namespace Internal.JitInterface
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
-            foreach (var flag in s_jitConfig.Flags)
+            foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
             // Set the rest of the flags that don't make sense to expose publically.

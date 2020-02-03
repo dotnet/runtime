@@ -35,7 +35,7 @@ SPMI_TARGET_ARCHITECTURE SpmiTargetArchitecture;
 
 void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if ((targetArchitecture != nullptr) && (0 == _stricmp(targetArchitecture, "arm64")))
     {
         SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
@@ -44,7 +44,7 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
     {
         SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
     }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     if ((targetArchitecture != nullptr) && (0 == _stricmp(targetArchitecture, "arm")))
     {
         SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
@@ -53,9 +53,9 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
     {
         SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
     }
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
 #else
 #error Unsupported architecture
@@ -136,13 +136,13 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
 // 3    : there were missing values in method context
 int __cdecl main(int argc, char* argv[])
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (0 != PAL_Initialize(argc, argv))
     {
         fprintf(stderr, "Error: Fail to PAL_Initialize\n");
         return (int)SpmiResult::GeneralFailure;
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     Logger::Initialize();
 

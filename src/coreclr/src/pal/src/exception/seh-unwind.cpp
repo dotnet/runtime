@@ -42,7 +42,7 @@ Abstract:
 
 #if UNWIND_CONTEXT_IS_UCONTEXT_T
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Rip)        \
     ASSIGN_REG(Rsp)        \
@@ -52,7 +52,7 @@ Abstract:
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Pc)         \
     ASSIGN_REG(Sp)         \
@@ -68,7 +68,7 @@ Abstract:
     ASSIGN_REG(X26)        \
     ASSIGN_REG(X27)        \
     ASSIGN_REG(X28)
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Eip)        \
     ASSIGN_REG(Esp)        \
@@ -89,7 +89,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 #else
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
-#if defined(_ARM_)
+#if defined(HOST_ARM)
     // Assuming that unw_set_reg() on cursor will point the cursor to the
     // supposed stack frame is dangerous for libunwind-arm in Linux.
     // It is because libunwind's unw_cursor_t has other data structure
@@ -116,7 +116,7 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
 
 static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     unw_set_reg(cursor, UNW_REG_IP, winContext->Rip);
     unw_set_reg(cursor, UNW_REG_SP, winContext->Rsp);
     unw_set_reg(cursor, UNW_X86_64_RBP, winContext->Rbp);
@@ -125,7 +125,7 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_X86_64_R13, winContext->R13);
     unw_set_reg(cursor, UNW_X86_64_R14, winContext->R14);
     unw_set_reg(cursor, UNW_X86_64_R15, winContext->R15);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     unw_set_reg(cursor, UNW_REG_IP, winContext->Eip);
     unw_set_reg(cursor, UNW_REG_SP, winContext->Esp);
     unw_set_reg(cursor, UNW_X86_EBP, winContext->Ebp);
@@ -138,7 +138,7 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
 
 void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
     unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
@@ -147,14 +147,14 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
     unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
     unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
     unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
     unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
@@ -166,7 +166,7 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R9, (unw_word_t *) &winContext->R9);
     unw_get_reg(cursor, UNW_ARM_R10, (unw_word_t *) &winContext->R10);
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_AARCH64_X29, (unw_word_t *) &winContext->Fp);
@@ -206,19 +206,19 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
 
 void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, &contextPointers->Rbp);
     GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, &contextPointers->Rbx);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R12, &contextPointers->R12);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R15, &contextPointers->R15);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     GetContextPointer(cursor, unwContext, UNW_X86_EBX, &contextPointers->Ebx);
     GetContextPointer(cursor, unwContext, UNW_X86_EBP, &contextPointers->Ebp);
     GetContextPointer(cursor, unwContext, UNW_X86_ESI, &contextPointers->Esi);
     GetContextPointer(cursor, unwContext, UNW_X86_EDI, &contextPointers->Edi);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     GetContextPointer(cursor, unwContext, UNW_ARM_R4, &contextPointers->R4);
     GetContextPointer(cursor, unwContext, UNW_ARM_R5, &contextPointers->R5);
     GetContextPointer(cursor, unwContext, UNW_ARM_R6, &contextPointers->R6);
@@ -227,7 +227,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_ARM_R9, &contextPointers->R9);
     GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
     GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, &contextPointers->X21);
@@ -313,16 +313,16 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     if (unw_is_signal_frame(&cursor) > 0)
     {
         context->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
-#if defined(_ARM_) || defined(_ARM64_) || defined(_X86_)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_X86)
         context->ContextFlags &= ~CONTEXT_UNWOUND_TO_CALL;
-#endif // _ARM_ || _ARM64_
+#endif // HOST_ARM || HOST_ARM64
     }
     else
     {
         context->ContextFlags &= ~CONTEXT_EXCEPTION_ACTIVE;
-#if defined(_ARM_) || defined(_ARM64_) || defined(_X86_)
+#if defined(HOST_ARM) || defined(HOST_ARM64) || defined(HOST_X86)
         context->ContextFlags |= CONTEXT_UNWOUND_TO_CALL;
-#endif // _ARM_ || _ARM64_
+#endif // HOST_ARM || HOST_ARM64
     }
 
     // Update the passed in windows context to reflect the unwind

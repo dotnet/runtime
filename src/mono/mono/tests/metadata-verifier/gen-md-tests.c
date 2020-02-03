@@ -1015,7 +1015,7 @@ parse_validity (scanner_t *scanner)
 	else if (!strcmp (name, "badrt"))
 		validity = TEST_TYPE_BADRT;
 	else {
-		printf ("Expected either 'valid', 'invalid' or 'badtr' but got '%s' at the begining of a test entry at line %d\n", name, scanner_get_line (scanner));
+		printf ("Expected either 'valid', 'invalid' or 'badtr' but got '%s' at the beginning of a test entry at line %d\n", name, scanner_get_line (scanner));
 		exit (INVALID_VALIDITY_TEST);
 	}
 

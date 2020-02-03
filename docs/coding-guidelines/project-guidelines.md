@@ -1,5 +1,5 @@
 # Build Project Guidelines
-In order to work in corefx repo you must first run build.cmd/sh from the root of the repo at least
+In order to work in dotnet/runtime repo you must first run build.cmd/sh from the root of the repo at least
 once before you can iterate and work on a given library project.
 
 ## Behind the scenes with build.cmd/sh
@@ -8,7 +8,7 @@ once before you can iterate and work on a given library project.
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildConfiguration)`
  - Netstandard Library - Copy to `bin\ref\netstandard`
- - NetFx targeting pack - Copy to `bin\ref\netfx`
+ - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
  - Build src\ref.builds which builds all references assembly projects. For reference assembly project information see [ref](#ref)
 - Build product
@@ -37,7 +37,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(TargetGroup) -> netstandard | netcoreapp | netfx`
+- `$(TargetGroup) -> netstandard2.1 | netcoreapp5.0 | net472`
 //**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
@@ -77,9 +77,9 @@ All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
   <BuildConfigurations>
-    netcoreapp-Windows_NT;
-    netcoreapp-Unix;
-    netfx-Windows_NT;
+    $(NetCoreAppCurrent)-Windows_NT;
+    $(NetCoreAppCurrent)-Unix;
+    $(NetFrameworkCurrent)-Windows_NT;
   </BuildConfigurations>
 <PropertyGroup>
 ```
@@ -90,12 +90,12 @@ Placeholder build configurations can be added to the `<BuildConfigurations>` pro
 Placeholder build configurations start with _ prefix.
 
 Example:
-When we have a project that has a `netstandard` build configuration that means that this project is compatible with any build configuration. So if we do a vertical build for `netfx` this project will be built as part of the vertical because `netfx` is compatible with `netstandard`. This means that in the runtime and testhost binaries the netstandard implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `netfx` vertical we need to add a placeholder configuration:
+When we have a project that has a `netstandard` build configuration that means that this project is compatible with any build configuration. So if we do a vertical build for `net472` this project will be built as part of the vertical because `net472` is compatible with `netstandard2.0`. This means that in the runtime and testhost binaries the netstandard implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `net472` vertical we need to add a placeholder configuration:
 ```
 <PropertyGroup>
   <BuildConfigurations>
-    netstandard;
-    _netfx;
+    netstandard2.0;
+    _net472;
   </BuildConfigurations>
 </PropertyGroup>
 ```
@@ -120,8 +120,8 @@ TODO: Link to the target framework and OS fallbacks when they are available.
 Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/osgroups.props and https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/targetgroups.props
 
 ## Supported full build configurations
-- .NET Core latest on current OS (default) -> `netcoreapp-[RunningOS]`
-- .NET Framework latest -> `netfx-Windows_NT`
+- .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
+- .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
 
 ## Project configurations for VS
 For each unique configuration needed for a given library project a configuration entry separated by a ';' should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>

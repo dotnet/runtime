@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithToken _method;
 
         public ExternalMethodImport(
-            ReadyToRunCodegenNodeFactory factory,
+            NodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isUnboxingStub,

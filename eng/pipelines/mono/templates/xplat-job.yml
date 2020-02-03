@@ -7,7 +7,6 @@ parameters:
   helixType: '(unspecified)'
   container: ''
   crossrootfsDir: ''
-  stagedBuild: false
   strategy: ''
   pool: ''
 
@@ -31,8 +30,7 @@ jobs:
     container: ${{ parameters.container }}
     condition: ${{ parameters.condition }}
     dependsOn:
-      - ${{ if ne(parameters.stagedBuild, true) }}:
-        - checkout
+      - checkout
       - ${{ if ne(parameters.dependsOn, '') }}:
         - ${{ parameters.dependsOn }}
 

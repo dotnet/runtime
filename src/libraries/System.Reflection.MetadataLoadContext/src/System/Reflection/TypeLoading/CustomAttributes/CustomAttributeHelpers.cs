@@ -13,7 +13,7 @@ namespace System.Reflection.TypeLoading
         /// <summary>
         /// Helper for creating a CustomAttributeNamedArgument.
         /// </summary>
-        public static CustomAttributeNamedArgument ToCustomAttributeNamedArgument(this Type attributeType, string name, Type argumentType, object value)
+        public static CustomAttributeNamedArgument ToCustomAttributeNamedArgument(this Type attributeType, string name, Type? argumentType, object? value)
         {
             MemberInfo[] members = attributeType.GetMember(name, MemberTypes.Field | MemberTypes.Property, BindingFlags.Public | BindingFlags.Instance);
             if (members.Length == 0)
@@ -21,7 +21,7 @@ namespace System.Reflection.TypeLoading
             if (members.Length > 1)
                 throw new AmbiguousMatchException();
 
-            return new CustomAttributeNamedArgument(members[0], new CustomAttributeTypedArgument(argumentType, value));
+            return new CustomAttributeNamedArgument(members[0], new CustomAttributeTypedArgument(argumentType!, value));
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace System.Reflection.TypeLoading
         private static CustomAttributeTypedArgument CloneForApiReturn(this CustomAttributeTypedArgument cat)
         {
             Type type = cat.ArgumentType;
-            object value = cat.Value;
+            object? value = cat.Value;
 
             if (!(value is IList<CustomAttributeTypedArgument> cats))
                 return cat;
@@ -84,7 +84,7 @@ namespace System.Reflection.TypeLoading
         /// Convert MarshalAsAttribute data into CustomAttributeData form. Returns null if the core assembly cannot be loaded or if the necessary
         /// types aren't in the core assembly.
         /// </summary>
-        public static CustomAttributeData TryComputeMarshalAsCustomAttributeData(Func<MarshalAsAttribute> marshalAsAttributeComputer, MetadataLoadContext loader)
+        public static CustomAttributeData? TryComputeMarshalAsCustomAttributeData(Func<MarshalAsAttribute> marshalAsAttributeComputer, MetadataLoadContext loader)
         {
             // Make sure all the necessary framework types exist in this MetadataLoadContext's core assembly. If one doesn't, skip.
             CoreTypes ct = loader.GetAllFoundCoreTypes();
@@ -96,7 +96,7 @@ namespace System.Reflection.TypeLoading
                 ct[CoreType.Int16] == null ||
                 ct[CoreType.Int32] == null)
                 return null;
-            ConstructorInfo ci = loader.TryGetMarshalAsCtor();
+            ConstructorInfo? ci = loader.TryGetMarshalAsCtor();
             if (ci == null)
                 return null;
 
@@ -108,9 +108,9 @@ namespace System.Reflection.TypeLoading
 
                     MarshalAsAttribute ma = marshalAsAttributeComputer();
 
-                    Type attributeType = ci.DeclaringType;
+                    Type attributeType = ci.DeclaringType!;
 
-                    CustomAttributeTypedArgument[] cats = { new CustomAttributeTypedArgument(ct[CoreType.UnmanagedType], (int)(ma.Value)) };
+                    CustomAttributeTypedArgument[] cats = { new CustomAttributeTypedArgument(ct[CoreType.UnmanagedType]!, (int)(ma.Value)) };
                     List<CustomAttributeNamedArgument> cans = new List<CustomAttributeNamedArgument>();
                     cans.AddRange(new CustomAttributeNamedArgument[]
                     {

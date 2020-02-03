@@ -9,23 +9,28 @@
 DumpDataTarget::DumpDataTarget(pid_t pid) :
     m_ref(1),
     m_pid(pid),
+#ifndef HAVE_PROCESS_VM_READV
     m_fd(-1),
+#endif
     m_crashInfo(nullptr)
 {
 }
 
 DumpDataTarget::~DumpDataTarget()
 {
+#ifndef HAVE_PROCESS_VM_READV
     if (m_fd != -1)
     {
         close(m_fd);
         m_fd = -1;
     }
+#endif
 }
 
 bool
 DumpDataTarget::Initialize(CrashInfo * crashInfo)
 {
+#ifndef HAVE_PROCESS_VM_READV
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
 
@@ -35,6 +40,7 @@ DumpDataTarget::Initialize(CrashInfo * crashInfo)
         fprintf(stderr, "open(%s) FAILED %d (%s)\n", memPath, errno, strerror(errno));
         return false;
     }
+#endif
     m_crashInfo = crashInfo;
     return true;
 }
@@ -81,13 +87,13 @@ HRESULT STDMETHODCALLTYPE
 DumpDataTarget::GetMachineType(
     /* [out] */ ULONG32 *machine)
 {
-#ifdef _AMD64_
+#ifdef HOST_AMD64
     *machine = IMAGE_FILE_MACHINE_AMD64;
-#elif _ARM_
+#elif HOST_ARM
     *machine = IMAGE_FILE_MACHINE_ARMNT;
-#elif _ARM64_
+#elif HOST_ARM64
     *machine = IMAGE_FILE_MACHINE_ARM64;
-#elif _X86_
+#elif HOST_X86
     *machine = IMAGE_FILE_MACHINE_I386;
 #else
 #error Unsupported architecture
@@ -99,9 +105,9 @@ HRESULT STDMETHODCALLTYPE
 DumpDataTarget::GetPointerSize(
     /* [out] */ ULONG32 *size)
 {
-#if defined(_AMD64_) || defined(_ARM64_)
+#if defined(HOST_AMD64) || defined(HOST_ARM64)
     *size = 8;
-#elif defined(_ARM_) || defined(_X86_)
+#elif defined(HOST_ARM) || defined(HOST_X86)
     *size = 4;
 #else
 #error Unsupported architecture
@@ -149,14 +155,20 @@ DumpDataTarget::ReadVirtual(
     /* [in] */ ULONG32 size,
     /* [optional][out] */ ULONG32 *done)
 {
+#ifdef HAVE_PROCESS_VM_READV
+    iovec local{ buffer, size };
+    iovec remote{ (void*)(ULONG_PTR)address, size };
+    ssize_t read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
+#else
     assert(m_fd != -1);
     ssize_t read = pread64(m_fd, buffer, size, (off64_t)(ULONG_PTR)address);
+#endif
     if (read == -1)
     {
         *done = 0;
         return E_FAIL;
     }
-    *done = read;
+    *done = (ULONG32)read;
     return S_OK;
 }
 

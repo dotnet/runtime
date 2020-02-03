@@ -48,17 +48,23 @@ We use and recommend the following workflow:
     - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. Create a branch off of master (`git checkout -b mybranch`).
+3. In your fork, create a branch off of master (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
-4. Make and commit your changes.
+4. Make and commit your changes to your branch.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
-7. Create a pull request (PR) against the upstream repository's **master** branch.
-    - Push your changes to your fork on GitHub (if you haven't already).
+7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
+    - State in the description what issue or improvement your change is addressing.
+    - Check if all the Continuous Integration checks are passing.
+8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
+    - Details about the pull request [review procedure](docs/pr-guide.md).
+9. When area owners have signed off, and all checks are green, your PR will be merged.
+    - The next official build will automatically include your change.
+    - You can delete the branch you used for making the change.
 
 Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
 

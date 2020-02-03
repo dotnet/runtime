@@ -214,7 +214,7 @@ LPCWSTR GetPCEnd(LPCWSTR lpszStart)
 
 //
 // Given a pointer to the end of a path component, return a pointer to
-// its begining.
+// its beginning.
 // ie return a pointer to the previous backslash (or start of the string).
 //
 LPCWSTR PCStart(LPCWSTR lpszStart, LPCWSTR lpszEnd)
@@ -241,7 +241,7 @@ void NearRootFixups(LPWSTR lpszPath, BOOL fUNC)
     if (lpszPath[0] == W('\0'))
     {
         // Fix up.
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
         lpszPath[0] = CH_WHACK;
 #else
         lpszPath[0] = CH_SLASH;
@@ -305,7 +305,7 @@ STDAPI_(BOOL) PathCanonicalizeW(LPWSTR lpszDst, LPCWSTR lpszSrc)
         if (cchPC == 1 && IsPathSeparator(*lpchSrc))   // Check for slashes.
         {
             // Just copy them.
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
             *lpchDst = CH_WHACK;
 #else
             *lpchDst = CH_SLASH;

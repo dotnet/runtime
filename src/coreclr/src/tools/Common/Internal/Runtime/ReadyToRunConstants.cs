@@ -7,7 +7,7 @@ using System;
 namespace Internal.ReadyToRunConstants
 {
     [Flags]
-    public enum ReadyToRunFlag
+    public enum ReadyToRunFlags
     {
         READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
         READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data

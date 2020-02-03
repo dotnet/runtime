@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-#if !defined(_TARGET_ARM_)
+#if !defined(TARGET_ARM)
   #error Unexpected target type
 #endif
 

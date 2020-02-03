@@ -26,6 +26,7 @@ namespace R2RDump
         public bool Header { get; set; }
         public bool Disasm { get; set; }
         public bool Naked { get; set; }
+        public bool HideOffsets { get; set; }
 
         public string[] Query { get; set; }
         public string[] Keyword { get; set; }
@@ -39,6 +40,7 @@ namespace R2RDump
         public bool Normalize { get; set; }
         public bool Verbose { get; set; }
         public bool Diff { get; set; }
+        public bool DiffHideSameDisasm { get; set; }
         public bool IgnoreSensitive { get; set; }
 
         public FileInfo[] Reference { get; set; }
@@ -161,13 +163,21 @@ namespace R2RDump
         abstract internal void DumpBytes(int rva, uint size, string name = "Raw", bool convertToOffset = true);
         abstract internal void DumpSectionContents(ReadyToRunSection section);
         abstract internal void DumpQueryCount(string q, string title, int count);
+
+        public TextWriter Writer => _writer;
+
+        public DumpOptions Options => _options;
+
+        public ReadyToRunReader Reader => _r2r;
+
+        public Disassembler Disassembler => _disassembler;
     }
 
     class R2RDump
     {
         private readonly DumpOptions _options;
-        private readonly TextWriter _writer;
         private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
+        private readonly TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
@@ -182,10 +192,9 @@ namespace R2RDump
                 _options.SectionContents = true;
             }
 
-            // open output stream
             if (_options.Out != null)
             {
-                _writer = new StreamWriter(_options.Out.FullName, append: false, encoding: Encoding.ASCII);
+                _writer = new StreamWriter(_options.Out.FullName);
             }
             else
             {
@@ -478,7 +487,7 @@ namespace R2RDump
                     throw new ArgumentException("The option '--naked' is incompatible with '--raw'");
                 }
 
-                ReadyToRunReader previousReader = null;
+                Dumper previousDumper = null;
 
                 foreach (FileInfo filename in _options.In)
                 {
@@ -497,19 +506,25 @@ namespace R2RDump
                         }
                     }
 
-                    _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
                     {
                         // output the ReadyToRun info
+                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
                         Dump(r2r);
                     }
-                    else if (previousReader != null)
+                    else
                     {
-                        new R2RDiff(previousReader, r2r, _writer).Run();
+                        string perFileOutput = filename.FullName + ".common-methods.r2r";
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput), disassembler, _options);
+                        if (previousDumper != null)
+                        {
+                            new R2RDiff(previousDumper, _dumper, _writer).Run();
+                        }
+                        previousDumper?.Writer?.Flush();
+                        previousDumper = _dumper;
                     }
 
-                    previousReader = r2r;
                 }
             }
             catch (Exception e)
@@ -527,8 +542,9 @@ namespace R2RDump
                 {
                     disassembler.Dispose();
                 }
-                // close output stream
-                _writer.Close();
+                // flush output stream
+                _dumper?.Writer?.Flush();
+                _writer?.Flush();
             }
 
             return 0;

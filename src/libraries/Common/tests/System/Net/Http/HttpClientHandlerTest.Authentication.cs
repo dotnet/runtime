@@ -76,7 +76,6 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // TODO: https://github.com/dotnet/corefx/issues/28065: Fix failing authentication test cases on different httpclienthandlers.
                 return;
             }
 

@@ -103,12 +103,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt16BigEndian(ReadOnlySpan<byte> source, out short value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out short tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -118,12 +120,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt32BigEndian(ReadOnlySpan<byte> source, out int value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out int tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -133,12 +137,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadInt64BigEndian(ReadOnlySpan<byte> source, out long value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out long tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -149,12 +155,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt16BigEndian(ReadOnlySpan<byte> source, out ushort value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out ushort tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -165,12 +173,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt32BigEndian(ReadOnlySpan<byte> source, out uint value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out uint tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
 
         /// <summary>
@@ -181,12 +191,14 @@ namespace System.Buffers.Binary
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryReadUInt64BigEndian(ReadOnlySpan<byte> source, out ulong value)
         {
-            bool success = MemoryMarshal.TryRead(source, out value);
             if (BitConverter.IsLittleEndian)
             {
-                value = ReverseEndianness(value);
+                bool success = MemoryMarshal.TryRead(source, out ulong tmp);
+                value = ReverseEndianness(tmp);
+                return success;
             }
-            return success;
+
+            return MemoryMarshal.TryRead(source, out value);
         }
     }
 }

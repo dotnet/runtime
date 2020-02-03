@@ -12,8 +12,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     public struct LazyMemberInfo
     {
         private readonly MemberTypes _memberType;
-        private MemberInfo[] _accessors;
-        private readonly Func<MemberInfo[]> _accessorsCreator;
+        private MemberInfo?[]? _accessors;
+        private readonly Func<MemberInfo[]>? _accessorsCreator;
 
         public LazyMemberInfo(MemberInfo member)
         {
@@ -31,11 +31,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
-                    _accessors = new MemberInfo[] { property.GetGetMethod(true), property.GetSetMethod(true) };
+                    _accessors = new MemberInfo?[] { property.GetGetMethod(true), property.GetSetMethod(true) };
                     break;
                 case MemberTypes.Event:
                     EventInfo event_ = (EventInfo)member;
-                    _accessors = new MemberInfo[] { event_.GetRaiseMethod(true), event_.GetAddMethod(true), event_.GetRemoveMethod(true) };
+                    _accessors = new MemberInfo?[] { event_.GetRaiseMethod(true), event_.GetAddMethod(true), event_.GetRemoveMethod(true) };
                     break;
                 default:
                     _accessors = new MemberInfo[] { member };
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 _accessors = accessors;
             }
 
-            return _accessors;
+            return _accessors!;
         }
 
         public override int GetHashCode()
@@ -104,13 +104,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
-                return MemberType.GetHashCode() ^ _accessors[0].GetHashCode();
+                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            LazyMemberInfo that = (LazyMemberInfo)obj;
+            LazyMemberInfo that = (LazyMemberInfo)obj!;
 
             // Difefrent member types mean different members
             if (_memberType != that._memberType)

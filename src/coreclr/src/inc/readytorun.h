@@ -63,10 +63,11 @@ enum ReadyToRunSectionType
     // 107 used by an older format of READYTORUN_SECTION_AVAILABLE_TYPES
     READYTORUN_SECTION_AVAILABLE_TYPES              = 108,
     READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS  = 109,
-    READYTORUN_SECTION_INLINING_INFO                = 110, // Added in V2.1
+    READYTORUN_SECTION_INLINING_INFO                = 110, // Added in V2.1, deprecated in 4.1
     READYTORUN_SECTION_PROFILEDATA_INFO             = 111, // Added in V2.2
     READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
     READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
+    READYTORUN_SECTION_INLINING_INFO2               = 114, // Added in V4.1
 
 	// If you add a new section consider whether it is a breaking or non-breaking change.
 	// Usually it is non-breaking, but if it is preferable to have older runtimes fail

@@ -136,7 +136,7 @@ class DbgTransportSession;
 class ShimProcess;
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 extern HINSTANCE GetModuleInst();
 #endif
 
@@ -3969,8 +3969,8 @@ public:
     // This has m_cPatch elements.
     PRD_TYPE             *m_rgUncommitedOpcode;
 
-    // CORDB_ADDRESS's are UINT_PTR's (64 bit under BIT64, 32 bit otherwise)
-#if defined(DBG_TARGET_64BIT)
+    // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
+#if defined(TARGET_64BIT)
 #define MAX_ADDRESS     (_UI64_MAX)
 #else
 #define MAX_ADDRESS     (_UI32_MAX)
@@ -4786,7 +4786,7 @@ public:
                           CordbType ** ppResultType);
 
     // Some derived constructors...  Use this one if the type is definitely not
-    // a paramterized type, e.g. to implement functions on the API where types cannot
+    // a parameterized type, e.g. to implement functions on the API where types cannot
     // be parameterized.
     static HRESULT MkUnparameterizedType(CordbAppDomain *appdomain, CorElementType et, CordbClass *cl, CordbType **ppType);
 
@@ -6142,15 +6142,15 @@ public:
     void MarkStackFramesDirty();
 
 
-#if defined(DBG_TARGET_X86)
+#if defined(TARGET_X86)
     // Converts the values in the floating point register area of the context to real number values.
     void Get32bitFPRegisters(CONTEXT * pContext);
 
-#elif defined(DBG_TARGET_AMD64) ||  defined(DBG_TARGET_ARM64) || defined(DBG_TARGET_ARM)
+#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM)
     // Converts the values in the floating point register area of the context to real number values.
     void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
 
-#endif // DBG_TARGET_X86
+#endif // TARGET_X86
 
    // Initializes the float state members of this instance of CordbThread. This function gets the context and
    // converts the floating point values from their context representation to real number values.
@@ -10554,7 +10554,7 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef DBG_TARGET_X86
+#ifdef TARGET_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
@@ -10602,7 +10602,7 @@ private:
     ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 
 
-#ifdef DBG_TARGET_X86
+#ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
 #endif
@@ -11743,7 +11743,7 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef DBG_TARGET_ARM
+#ifdef TARGET_ARM
 // TODO: review the following
 #ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
@@ -11753,7 +11753,7 @@ inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
 #endif // FEATURE_64BIT_ALIGNMENT
-#endif // DBG_TARGET_ARM
+#endif // TARGET_ARM
 }
 
 //-----------------------------------------------------------------------------

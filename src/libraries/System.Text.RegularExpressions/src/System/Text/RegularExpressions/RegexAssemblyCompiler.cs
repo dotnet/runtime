@@ -46,8 +46,8 @@ namespace System.Text.RegularExpressions
             _code = code;
             _codes = code.Codes;
             _strings = code.Strings;
-            _fcPrefix = code.FCPrefix;
-            _bmPrefix = code.BMPrefix;
+            _leadingCharClasses = code.LeadingCharClasses;
+            _boyerMoorePrefix = code.BoyerMoorePrefix;
             _anchors = code.Anchors;
             _trackcount = code.TrackCount;
 
@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
             string typenumString = ((uint)Interlocked.Increment(ref s_typeCount)).ToString();
 
             // Generate the RegexRunner-derived type.
-            TypeBuilder regexRunnerTypeBuilder = DefineType(_module, $"{name}Runner{typenumString}", false, typeof(RegexRunner));
+            TypeBuilder regexRunnerTypeBuilder = DefineType(_module, $"{name}Runner{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunner));
             _ilg = DefineMethod(regexRunnerTypeBuilder, "Go", null);
             GenerateGo();
             _ilg = DefineMethod(regexRunnerTypeBuilder, "FindFirstChar", typeof(bool));
@@ -65,13 +65,13 @@ namespace System.Text.RegularExpressions
             Type runnerType = regexRunnerTypeBuilder.CreateType()!;
 
             // Generate the RegexRunnerFactory-derived type.
-            TypeBuilder regexRunnerFactoryTypeBuilder = DefineType(_module, $"{name}Factory{typenumString}", false, typeof(RegexRunnerFactory));
+            TypeBuilder regexRunnerFactoryTypeBuilder = DefineType(_module, $"{name}Factory{typenumString}", isPublic: false, isSealed: true, typeof(RegexRunnerFactory));
             _ilg = DefineMethod(regexRunnerFactoryTypeBuilder, "CreateInstance", typeof(RegexRunner));
             GenerateCreateInstance(runnerType);
             Type regexRunnerFactoryType = regexRunnerFactoryTypeBuilder.CreateType()!;
 
             // Generate the Regex-derived type.
-            TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, typeof(Regex));
+            TypeBuilder regexTypeBuilder = DefineType(_module, name, isPublic, isSealed: false, typeof(Regex));
             ConstructorBuilder defaultCtorBuilder = regexTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
             _ilg = defaultCtorBuilder.GetILGenerator();
             GenerateRegexDefaultCtor(pattern, options, regexRunnerFactoryType, code, matchTimeout);
@@ -242,8 +242,16 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Begins the definition of a new type with a specified base class</summary>
-        private static TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, bool isPublic, Type inheritFromClass) =>
-            moduleBuilder.DefineType(typeName, (isPublic ? TypeAttributes.Public : TypeAttributes.NotPublic) | TypeAttributes.Class, inheritFromClass);
+        private static TypeBuilder DefineType(ModuleBuilder moduleBuilder, string typeName, bool isPublic, bool isSealed, Type inheritFromClass)
+        {
+            TypeAttributes attrs = TypeAttributes.Class | TypeAttributes.BeforeFieldInit | (isPublic ? TypeAttributes.Public : TypeAttributes.NotPublic);
+            if (isSealed)
+            {
+                attrs |= TypeAttributes.Sealed;
+            }
+
+            return moduleBuilder.DefineType(typeName, attrs, inheritFromClass);
+        }
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
         private static ILGenerator DefineMethod(TypeBuilder typeBuilder, string methname, Type? returnType) =>

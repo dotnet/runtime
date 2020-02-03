@@ -3491,4 +3491,70 @@ L3:
 	ret
    }
 */
+
+	.method public hidebysig static string cmov_try_block_helper (string s) cil managed noinlining
+  	{
+		// Code size       43 (0x2b)
+		.maxstack  2
+		.locals init (bool V_0, string V_1)
+		IL_0000:  nop
+		IL_0001:  ldarg.0
+		IL_0002:  callvirt   instance int32 [mscorlib]System.String::get_Length()
+		IL_0007:  ldc.i4.0
+		IL_0008:  ceq
+		IL_000a:  stloc.0
+		IL_000b:  ldloc.0
+		IL_000c:  brfalse.s  IL_0016
+
+		IL_000e:  ldstr	  "Empty"
+		IL_0013:  stloc.1
+		IL_0014:  br.s	  IL_0029
+
+		IL_0016:  nop
+		.try
+		{
+		  IL_0017:  nop
+		  IL_0018:  ldarg.0
+		  IL_0019:  stloc.1
+		  IL_001a:  leave.s   IL_0029
+		}  // end .try
+		catch [mscorlib]System.Exception
+		{
+		  IL_001c:  pop
+		  IL_001d:  nop
+		  IL_001e:  nop
+		  IL_001f:  leave.s   IL_0021
+		}  // end handler
+		IL_0021:  ldstr  "Should not happen"
+		IL_0026:  stloc.1
+		IL_0027:  br.s   IL_0029
+
+		IL_0029:  ldloc.1
+		IL_002a:  ret
+	}
+
+	.method public hidebysig static int32 test_1_cmov_try_block() cil managed
+	{
+		// Code size       37 (0x25)
+		.maxstack  2
+		.locals init (string V_0, bool V_1, int32 V_2)
+		IL_0000:  nop
+		IL_0001:  ldstr  "abc"
+		IL_0006:  call   string Tests::cmov_try_block_helper(string)
+		IL_000d:  ldstr  "abc"
+		IL_0012:  call   bool [mscorlib]System.String::op_Equality(string,string)
+		IL_0019:  brfalse.s  IL_001f
+
+		IL_001b:  ldc.i4.1
+		IL_001c:  stloc.2
+		IL_001d:  br.s   IL_0023
+
+		IL_001f:  ldc.i4.0
+		IL_0020:  stloc.2
+		IL_0021:  br.s   IL_0023
+
+		IL_0023:  ldloc.2
+		IL_0024:  ret
+	 }
+
 }

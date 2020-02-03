@@ -56,9 +56,6 @@
 
     <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <!-- Versionless netcoreapp and netfx needs to be removed after .yml scripts are finalized.-->
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netcoreapp'">$(NetCoreAppCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-    <BuildConfiguration Condition="'$(TargetGroup)' == 'netfx'">$(NetFrameworkCurrent)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
 
     <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' and '$(BuildConfigurations)' == ''">package</BuildConfigurations>
@@ -270,8 +267,6 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetCoreAppCurrent)\lib</NETCoreAppPackageRuntimePath>
-    <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\ref</NetFxPackageRefPath>
-    <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\$(NetFrameworkCurrent)\lib</NetFxPackageRuntimePath>
 
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
 

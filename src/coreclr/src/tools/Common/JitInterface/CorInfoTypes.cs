@@ -1150,20 +1150,6 @@ namespace Internal.JitInterface
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-        // Internal flags - never returned outside of the classification implementation.
-
-        // This value represents a very special type with two eightbytes.
-        // First ByRef, second Integer (platform int).
-        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect
-        // the special TypedReference type and specialize its classification.
-        // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr.
-        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-        SystemVClassificationTypeTypedReference     = 8,
-        SystemVClassificationTypeMAX                = 9
     };
 
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR

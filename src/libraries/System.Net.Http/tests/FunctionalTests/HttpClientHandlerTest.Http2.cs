@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
-        protected override bool UseHttp2 => true;
+        protected override Version UseVersion => HttpVersion.Version20;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 
@@ -209,7 +209,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/35466")]
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR)]
         [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR)]

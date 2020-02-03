@@ -189,7 +189,6 @@
     <Compile Include="System\Net\NetworkInformation\LinuxIcmpV6Statistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxTcpStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxUdpStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Linux.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\LinuxIPGlobalProperties.cs" />
@@ -211,9 +210,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Linux\Interop.LinuxNetDeviceFlags.cs">
       <Link>Common\Interop\Linux\Interop.LinuxNetDeviceFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Linux\System.Native\Interop.NetworkChange.cs">
-      <Link>Common\Interop\Linux\System.Native\Interop.NetworkChange.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- OSX -->
@@ -260,9 +256,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs">
       <Link>Common\Interop\FreeBSD\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Unix.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.NetworkChange.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.NetworkChange.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unknown Unix -->
@@ -274,12 +275,10 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -293,7 +292,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
 </Project>

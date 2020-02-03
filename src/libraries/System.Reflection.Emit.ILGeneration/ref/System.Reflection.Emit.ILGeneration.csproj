@@ -10,7 +10,6 @@
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
-    <ProjectReference Include="..\..\System.Reflection\ref\System.Reflection.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\ref\System.Reflection.Primitives.csproj" />
   </ItemGroup>
 </Project>

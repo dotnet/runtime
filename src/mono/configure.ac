@@ -609,7 +609,7 @@ AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AC_CHECK_TOOL(CXX, g++, g++)
 AC_PROG_CXX
-AM_PATH_PYTHON
+AM_PATH_PYTHON([3.2])
 AM_PROG_AS
 AC_PROG_INSTALL
 AC_PROG_AWK
@@ -677,7 +677,7 @@ AC_PROG_LD_GNU
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h sys/sysctl.h libproc.h sys/prctl.h copyfile.h gnu/lib-names.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h sys/inotify.h arpa/inet.h complex.h unwind.h)
 
-# zlib/configure checks for unistd.h existance and defines HAVE_UNISTD_H on the compiler
+# zlib/configure checks for unistd.h existence and defines HAVE_UNISTD_H on the compiler
 # command line (not config.h) if it is present.
 AC_CHECK_HEADER(unistd.h,
     [HAVE_UNISTD_H=1
@@ -2948,13 +2948,6 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(shm_open)
 
 	dnl ********************************
-	dnl ***  Checks for gettext lib  ***
-	dnl ********************************
-	# This is needed for some hackery for AIX;
-	# Mono itself doesn't use it, but DllMap includes it
-	AC_SEARCH_LIBS([gettext], [intl])
-
-	dnl ********************************
 	dnl *** Checks for timezone stuff **
 	dnl ********************************
 	AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
@@ -4472,9 +4465,24 @@ case "$host" in
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 			TARGET=POWERPC64;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
-			if ! (echo $CC | grep -q -- 'clang'); then
-				CFLAGS="$CFLAGS -mminimal-toc"
-			fi
+			# mono#18554 - be more robust in testing for -mminimal-toc
+			AC_MSG_NOTICE([Checking for PowerPC ISA -mminimal-toc support])
+			AX_CHECK_COMPILE_FLAG(
+				[-mminimal-toc],
+				[CFLAGS="$CFLAGS -mminimal-toc"],
+				[CFLAGS="$CFLAGS"]
+			)
+			case "$host" in
+				powerpc*-*-freebsd*)
+					# We need to be aware if we are ELFv1 or v2 here
+					AC_MSG_NOTICE([Checking FreeBSD ELF version])
+					if ! ( echo | cc -dM -E - | awk '/_CALL_ELF/ {print $NF}'); then
+						AC_DEFINE([POWERPC_ELF], 1, [PowerPC ELFv1])
+					else
+						AC_DEFINE([POWERPC_ELFV2], 1, [PowerPC ELFv2])
+					fi
+					;;
+			esac
 		else
 			TARGET=POWERPC;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
@@ -4486,6 +4494,10 @@ case "$host" in
 			BTLS_PLATFORM=powerpc
 			;;
 		  linux*)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=powerpc
+			;;
+		  freebsd*)
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=powerpc
 			;;

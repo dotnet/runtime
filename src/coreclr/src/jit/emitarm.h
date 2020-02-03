@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 // This typedef defines the type that we use to hold encoded instructions.
 //
@@ -381,4 +381,4 @@ inline bool emitIsLoadLabel(instrDesc* jmp)
     return (jmp->idInsFmt() == IF_T2_M1) || (jmp->idInsFmt() == IF_T1_J3) || (jmp->idInsFmt() == IF_T2_N1);
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM

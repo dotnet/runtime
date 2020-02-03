@@ -3051,13 +3051,13 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
         g_holdStringOutData.Clear();
         GCDump gcDump(gcInfoToken.Version);
         gcDump.gcPrintf = stringOutFn;
-#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+#if !defined(TARGET_X86) && defined(USE_GC_INFO_DECODER)
         GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
         //dump the data to a string first so we can get the gcinfo size.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         InfoHdr hdr;
         stringOutFn( "method info Block:\n" );
         curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
@@ -3066,7 +3066,7 @@ void NativeImageDumper::DumpCompleteMethod(PTR_Module module, MethodIterator& mi
 
         IF_OPT(METHODS)
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             stringOutFn( "PointerTable:\n" );
             curGCInfoPtr += gcDump.DumpGCTable( curGCInfoPtr,
                                                 hdr,
@@ -3350,7 +3350,7 @@ SIZE_T NativeImageDumper::TranslateFixupCallback(IXCLRDisassemblySupport *dis,
     case sizeof(void*):
         targetOffset = *PTR_SIZE_T(taddr);
         break;
-#ifdef BIT64
+#ifdef HOST_64BIT
     case sizeof(INT32):
         targetOffset = *PTR_INT32(taddr);
         break;
@@ -6234,7 +6234,7 @@ void NativeImageDumper::DoDumpComPlusCallInfo( PTR_ComPlusCallInfo compluscall )
                           compluscall->m_pStubMD.GetValueMaybeNull(PTR_HOST_MEMBER_TADDR(ComPlusCallInfo, compluscall, m_pStubMD)),
                           ComPlusCallInfo, ALWAYS );
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     DisplayWriteFieldInt( m_cbStackArgumentSize, compluscall->m_cbStackArgumentSize,
                           ComPlusCallInfo, ALWAYS );
 
@@ -7723,7 +7723,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         CoverageRead(TO_TADDR(ssmd->GetSigRVA()), ssmd->m_cSig);
         DisplayWriteFieldInt( m_cSig, ssmd->m_cSig,
                               StoredSigMethodDesc, METHODDESCS );
-#ifdef BIT64
+#ifdef HOST_64BIT
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      ssmd->m_dwExtendedFlags,
                                      StoredSigMethodDesc,
@@ -7743,7 +7743,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         DisplayWriteFieldPointer( m_pResolver,
                                   DPtrToPreferredAddr(dmd->m_pResolver),
                                   DynamicMethodDesc, METHODDESCS );
-#ifndef BIT64
+#ifndef HOST_64BIT
         DisplayWriteFieldEnumerated( m_dwExtendedFlags,
                                      dmd->m_dwExtendedFlags,
                                      DynamicMethodDesc,
@@ -7866,7 +7866,7 @@ void NativeImageDumper::DumpMethodDesc( PTR_MethodDesc md, PTR_Module module )
         }
 #endif
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         DisplayWriteFieldInt( m_cbStackArgumentSize,
                               nd->m_cbStackArgumentSize,
                               NDirectMethodDesc::temp1, METHODDESCS );
@@ -8985,13 +8985,13 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
         UINT32 gcInfoVersion = GCInfoToken::ReadyToRunVersionToGcInfoVersion(r2rversion);
         GCInfoToken gcInfoToken = { curGCInfoPtr, gcInfoVersion };
 
-#if !defined(_TARGET_X86_) && defined(USE_GC_INFO_DECODER)
+#if !defined(TARGET_X86) && defined(USE_GC_INFO_DECODER)
         GcInfoDecoder gcInfoDecoder(gcInfoToken, DECODE_CODE_LENGTH);
         methodSize = gcInfoDecoder.GetCodeLength();
 #endif
 
         //dump the data to a string first so we can get the gcinfo size.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         InfoHdr hdr;
         stringOutFn("method info Block:\n");
         curGCInfoPtr += gcDump.DumpInfoHdr(curGCInfoPtr, &hdr, &methodSize, 0);
@@ -9000,7 +9000,7 @@ void NativeImageDumper::DumpReadyToRunMethod(PCODE pEntryPoint, PTR_RUNTIME_FUNC
 
         IF_OPT(METHODS)
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             stringOutFn("PointerTable:\n");
             curGCInfoPtr += gcDump.DumpGCTable(curGCInfoPtr,
                 hdr,
@@ -9095,7 +9095,7 @@ HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
 #undef NOTHROW
 #undef GC_NOTRIGGER
 
-#if defined _DEBUG && defined _TARGET_X86_
+#if defined _DEBUG && defined TARGET_X86
 #ifdef _MSC_VER
 // disable FPO for checked build
 #pragma optimize("y", off)
@@ -9104,18 +9104,18 @@ HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
 
 #undef _ASSERTE
 #define _ASSERTE(a) do {} while (0)
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #include <gcdump.cpp>
 #endif
 
 #undef LIMITED_METHOD_CONTRACT
 #undef WRAPPER_NO_CONTRACT
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 #include <i386/gcdumpx86.cpp>
-#else // !_TARGET_X86_
+#else // !TARGET_X86
 #undef PREGDISPLAY
 #include <gcdumpnonx86.cpp>
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
 #ifdef __MSC_VER
 #pragma warning(default:4244)
