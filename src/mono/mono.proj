@@ -130,10 +130,7 @@
       <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
       <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     </PropertyGroup>
-    <ItemGroup>
-      <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked\**\*$(ScriptExt)" />
-    </ItemGroup>
-    <Exec Command="%(CoreClrTests.Identity)" ContinueOnError="WarnAndContinue" />
+    <Exec Command="..\coreclr\tests\runtest$(ScriptExt) checked" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <Target Name="RunBenchmarks">
