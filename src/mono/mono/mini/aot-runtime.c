@@ -61,6 +61,7 @@
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/bsearch.h>
+#include <mono/utils/mono-tls-inline.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -70,16 +71,13 @@
 #include "aot-runtime.h"
 #include "jit-icalls.h"
 #include "mini-runtime.h"
-#include "mono/utils/mono-tls-inline.h"
+#include "llvmonly-runtime.h"
 
 #ifndef DISABLE_AOT
 
 #ifdef TARGET_OSX
 #define ENABLE_AOT_CACHE
 #endif
-
-/* Number of got entries shared between the JIT and LLVM GOT */
-#define N_COMMON_GOT_ENTRIES 10
 
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
@@ -1985,7 +1983,7 @@ get_call_table_entry (void *table, int index, int entry_size)
  *   Initialize the shared got entries for AMODULE.
  */
 static void
-init_amodule_got (MonoAotModule *amodule)
+init_amodule_got (MonoAotModule *amodule, gboolean preinit)
 {
 	MonoJumpInfo *ji;
 	MonoMemPool *mp;
@@ -2010,7 +2008,8 @@ init_amodule_got (MonoAotModule *amodule)
 		return;
 	}
 
-	amodule->got_initialized = GOT_INITIALIZING;
+	if (!preinit)
+		amodule->got_initialized = GOT_INITIALIZING;
 
 	mp = mono_mempool_new ();
 	npatches = amodule->info.nshared_got_entries;
@@ -2024,7 +2023,19 @@ init_amodule_got (MonoAotModule *amodule)
 	for (i = 0; i < npatches; ++i) {
 		ji = &patches [i];
 
-		if (ji->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR && !mono_gc_is_moving ()) {
+		if (amodule->shared_got [i]) {
+		} else if (ji->type == MONO_PATCH_INFO_AOT_MODULE) {
+			amodule->shared_got [i] = amodule;
+		} else if (preinit) {
+			/*
+			 * This is called from init_amodule () during startup, so some things might not
+			 * be setup. Initialize just the slots needed to make method initialization work.
+			 */
+			if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+				if (ji->data.jit_icall_id == MONO_JIT_ICALL_mini_llvm_init_method)
+					amodule->shared_got [i] = (gpointer)mini_llvm_init_method;
+			}
+		} else if (ji->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR && !mono_gc_is_moving ()) {
 			amodule->shared_got [i] = NULL;
 		} else if (ji->type == MONO_PATCH_INFO_GC_NURSERY_START && !mono_gc_is_moving ()) {
 			amodule->shared_got [i] = NULL;
@@ -2043,6 +2054,7 @@ init_amodule_got (MonoAotModule *amodule)
 			}
 		} else if (ji->type == MONO_PATCH_INFO_AOT_MODULE) {
 			amodule->shared_got [i] = amodule;
+		} else if (ji->type == MONO_PATCH_INFO_NONE) {
 		} else {
 			amodule->shared_got [i] = mono_resolve_patch_target (NULL, mono_get_root_domain (), NULL, ji, FALSE, error);
 			mono_error_assert_ok (error);
@@ -2060,8 +2072,10 @@ init_amodule_got (MonoAotModule *amodule)
 
 	mono_mempool_destroy (mp);
 
-	mono_memory_barrier ();
-	amodule->got_initialized = GOT_INITIALIZED;
+	if (!preinit) {
+		mono_memory_barrier ();
+		amodule->got_initialized = GOT_INITIALIZED;
+	}
 	mono_loader_unlock ();
 }
 
@@ -2345,7 +2359,7 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 	amodule->trampolines [MONO_AOT_TRAMP_FTNPTR_ARG] = (guint8 *)info->ftnptr_arg_trampolines;
 	amodule->trampolines [MONO_AOT_TRAMP_UNBOX_ARBITRARY] = (guint8 *)info->unbox_arbitrary_trampolines;
 
-	if (mono_is_corlib_image (assembly->image))
+	if (mono_is_corlib_image (assembly->image) || !strcmp (assembly->aname.name, "mscorlib") || !strcmp (assembly->aname.name, "System.Private.CoreLib"))
 		mscorlib_aot_module = amodule;
 
 	/* Compute method addresses */
@@ -2409,6 +2423,12 @@ load_aot_module (MonoAssemblyLoadContext *alc, MonoAssembly *assembly, gpointer 
 
 	g_hash_table_insert (aot_modules, assembly, amodule);
 	mono_aot_unlock ();
+
+	init_amodule_got (amodule, TRUE);
+
+	if (info->flags & MONO_AOT_FILE_FLAG_WITH_LLVM)
+		/* Directly called methods might make calls through the PLT */
+		init_plt (amodule);
 
 	if (amodule->jit_code_start)
 		mono_jit_info_add_aot_module (assembly->image, amodule->jit_code_start, amodule->jit_code_end);
@@ -4031,7 +4051,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
  * decode_patches:
  *
  *    Decode a list of patches identified by the got offsets in GOT_OFFSETS. Return an array of
- * MonoJumpInfo structures allocated from MP.
+ * MonoJumpInfo structures allocated from MP. GOT entries already loaded have their
+ * ji->type set to MONO_PATCH_INFO_NONE.
  */
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets)
@@ -4061,6 +4082,7 @@ decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean
 		/* See load_method () for SFLDA */
 		if (got && got [got_offsets [i]] && ji->type != MONO_PATCH_INFO_SFLDA) {
 			/* Already loaded */
+			ji->type = MONO_PATCH_INFO_NONE;
 		} else {
 			res = decode_patch (amodule, mp, ji, p, &p);
 			if (!res)
@@ -4138,7 +4160,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	error_init (error);
 
-	init_amodule_got (amodule);
+	init_amodule_got (amodule, FALSE);
 
 	if (domain != mono_get_root_domain ())
 		/* Non shared AOT code can't be used in other appdomains */
@@ -4534,6 +4556,10 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	MonoGenericContext *context;
 	MonoGenericContext ctx;
 
+	/* Might be needed if the method is externally called */
+	init_plt (amodule);
+	init_amodule_got (amodule, FALSE);
+
 	memset (&ctx, 0, sizeof (ctx));
 
 	error_init (error);
@@ -4597,7 +4623,8 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 			 * been initialized by load_method () for a static cctor before the cctor has
 			 * finished executing (#23242).
 			 */
-			if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
+			if (ji->type == MONO_PATCH_INFO_NONE) {
+			} else if (!got [got_slots [pindex]] || ji->type == MONO_PATCH_INFO_SFLDA) {
 				/* In llvm-only made, we might encounter shared methods */
 				if (mono_llvm_only && ji->type == MONO_PATCH_INFO_METHOD && mono_method_check_context_used (ji->data.method)) {
 					g_assert (context);
@@ -5347,7 +5374,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-
 				const MonoJitICallId jit_icall_id = (MonoJitICallId)ji->data.jit_icall_id;
 				switch (jit_icall_id) {
 
@@ -5394,7 +5420,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				g_assert (target);
 			}
 
-			amodule->got [got_slots [pindex]] = target;
+			if (ji->type != MONO_PATCH_INFO_NONE)
+				amodule->got [got_slots [pindex]] = target;
 		}
 
 		g_free (got_slots);
@@ -5418,7 +5445,7 @@ get_mscorlib_aot_module (void)
 	MonoAotModule *amodule;
 
 	image = mono_defaults.corlib;
-	if (image)
+	if (image && image->aot_module)
 		amodule = image->aot_module;
 	else
 		amodule = mscorlib_aot_module;

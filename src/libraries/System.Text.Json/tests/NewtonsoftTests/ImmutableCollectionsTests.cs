@@ -87,7 +87,6 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Array
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
         [Fact]
         public void SerializeArray()
         {
@@ -106,7 +105,6 @@ namespace System.Text.Json.Tests
 ]", json);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
         [Fact]
         public void DeserializeArray()
         {
@@ -124,7 +122,6 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", data[2]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
         [Fact]
         public void SerializeDefaultArray()
         {
@@ -330,7 +327,7 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region Dictionary
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40120")]
         [Fact]
         public void SerializeDictionary()
         {
@@ -349,7 +346,7 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", (string)a[3]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40120")]
         [Fact]
         public void DeserializeDictionary()
         {
@@ -367,7 +364,7 @@ namespace System.Text.Json.Tests
             Assert.Equal("3", data[3]);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40120")]
         [Fact]
         public void DeserializeDictionaryInterface()
         {
@@ -387,7 +384,7 @@ namespace System.Text.Json.Tests
         #endregion
 
         #region SortedDictionary
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40120")]
         [Fact]
         public void SerializeSortedDictionary()
         {
@@ -406,7 +403,7 @@ namespace System.Text.Json.Tests
 }", json);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/36643")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40120")]
         [Fact]
         public void DeserializeSortedDictionary()
         {

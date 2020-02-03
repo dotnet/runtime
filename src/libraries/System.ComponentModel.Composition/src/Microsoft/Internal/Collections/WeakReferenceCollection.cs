@@ -68,9 +68,7 @@ namespace Microsoft.Internal.Collections
 
             foreach (var weakItem in _items)
             {
-                T item = weakItem.Target as T;
-
-                if (item != null)
+                if (weakItem.Target is T item)
                 {
                     aliveItems.Add(item);
                 }

@@ -17,10 +17,8 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

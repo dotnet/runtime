@@ -44,7 +44,7 @@
 
     <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
 
-    <ClDefines>$(ClDefines);_TARGET_ARM_=1</ClDefines>
+    <ClDefines>$(ClDefines);TARGET_ARM=1</ClDefines>
     <ClDefines>$(ClDefines);ALT_JIT</ClDefines>
 
     <Win32DllLibs>$(SdkLibPath)\kernel32.lib;$(SdkLibPath)\user32.lib;$(SdkLibPath)\advapi32.lib;$(SdkLibPath)\oleaut32.lib;$(SdkLibPath)\uuid.lib</Win32DllLibs>

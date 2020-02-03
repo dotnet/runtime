@@ -21,7 +21,7 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include <dactablerva.h>
 #endif
 
@@ -195,7 +195,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 #define DEFINE_DACVAR(id_type, size_type, id, var) \
     ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // Add the dac table memory in coreclr
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + DAC_TABLE_RVA, sizeof(g_dacGlobals)); )
 #endif
@@ -241,9 +241,9 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_runtimeLoadedBaseAddress.EnumMem(); )
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // These are the structures that are pointed by global pointers and we care.
     // Some may reside in heap and some may reside as a static byte array in mscorwks.dll
@@ -1921,7 +1921,7 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
             status = EnumMemoryRegionsWrapper(CLRDATA_ENUM_MEM_MINI);
         }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // For all dump types, we need to capture the chain to the IMAGE_DIRECTORY_ENTRY_DEBUG
         // contents, so that DAC can validate against the TimeDateStamp even if the
         // debugger can't find the main CLR module on disk.

@@ -9,7 +9,7 @@ namespace System.ComponentModel.Composition.Hosting
     /// </summary>
     public interface INotifyComposablePartCatalogChanged
     {
-        event EventHandler<ComposablePartCatalogChangeEventArgs> Changed;
-        event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
+        event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed;
+        event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing;
     }
 }

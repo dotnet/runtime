@@ -38,27 +38,33 @@ namespace System
             get
             {
 #if NETCOREAPP
-                if (IsWindows)
+                if (!IsWindows)
                 {
-#endif
-                    return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-#if NETCOREAPP
-                }
-                else if (IsOSX)
-                {
-                    return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                }
-                else
-                {
-                   return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+                    if (IsOSX)
+                    {
+                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
+                    }
+                    else
+                    {
+                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+                    }
                 }
 #endif
+
+                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
+
             }
         }
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+
+#if NETCOREAPP
+        public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
+#else
         public static bool IsReflectionEmitSupported = true;
+#endif
+
         public static bool IsInvokingStaticConstructorsSupported => true;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies

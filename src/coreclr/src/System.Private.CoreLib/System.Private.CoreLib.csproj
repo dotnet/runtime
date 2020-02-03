@@ -456,4 +456,6 @@
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
   <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
+
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 </Project>

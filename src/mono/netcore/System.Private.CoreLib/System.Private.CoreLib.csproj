@@ -20,7 +20,7 @@
     <Platforms>x64;x86;arm;arm64;wasm32</Platforms>
 
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <ILLinkTrimAssembly>false</ILLinkTrimAssembly> <!-- TODO: reenable this -->
+    <ILLinkTrimAssembly>true</ILLinkTrimAssembly>
     <ILLinkTrimXml>$(MSBuildThisFileDirectory)src\LinkerDescriptor\System.Private.CoreLib.xml</ILLinkTrimXml>
   </PropertyGroup>
 

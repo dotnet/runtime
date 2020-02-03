@@ -740,6 +740,7 @@ static void* create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, M
 static void process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 static int ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
 static void ss_args_destroy (SingleStepArgs *ss_args);
+static int handle_multiple_ss_requests (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
 
@@ -970,6 +971,7 @@ debugger_agent_init (void)
 	cbs.process_breakpoint_events = process_breakpoint_events;
 	cbs.ss_create_init_args = ss_create_init_args;
 	cbs.ss_args_destroy = ss_args_destroy;
+	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
 	mono_de_init (&cbs);
 
@@ -4966,6 +4968,12 @@ ss_args_destroy (SingleStepArgs *ss_args)
 {
 	if (ss_args->frames)
 		free_frames ((StackFrame**)ss_args->frames, ss_args->nframes);
+}
+
+static int
+handle_multiple_ss_requests (void)
+{
+	return DE_ERR_NOT_IMPLEMENTED;
 }
 
 static int

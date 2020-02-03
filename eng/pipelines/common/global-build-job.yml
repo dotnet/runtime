@@ -1,5 +1,7 @@
 parameters:
   buildConfig: ''
+  nameSuffix: ''
+  buildArgs: ''
   archType: ''
   osGroup: ''
   osSubgroup: ''
@@ -11,8 +13,8 @@ parameters:
 jobs:
 - template: /eng/common/templates/job/job.yml
   parameters:
-    name: ${{ format('runtime_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Runtime Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
     dependsOn: checkout
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
@@ -35,5 +37,14 @@ jobs:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     # Build
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -c ${{ parameters.buildConfig }} -arch ${{ parameters.archType }}
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} ${{ parameters.buildArgs }} 
       displayName: Build product
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Logs
+      inputs:
+        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+        PublishLocation: Container
+        ArtifactName: $(Agent.Os)_PublishBuildAssets
+      continueOnError: true
+      condition: always()

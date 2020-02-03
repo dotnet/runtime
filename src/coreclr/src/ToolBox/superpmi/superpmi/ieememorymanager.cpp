@@ -98,9 +98,9 @@ HANDLE STDMETHODCALLTYPE MyIEEMM::ClrGetProcessExecutableHeap()
     if (processHeap == INVALID_HANDLE_VALUE)
     {
         DWORD flOptions = 0;
-#ifndef FEATURE_PAL // TODO-Review: PAL doesn't have HEAP_CREATE_ENABLE_EXECUTE. Is this ok?
+#ifndef TARGET_UNIX // TODO-Review: PAL doesn't have HEAP_CREATE_ENABLE_EXECUTE. Is this ok?
         flOptions = HEAP_CREATE_ENABLE_EXECUTE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         processHeap = HeapCreate(flOptions, 10000, 0);
     }
     return processHeap;

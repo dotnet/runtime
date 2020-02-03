@@ -225,10 +225,10 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pRCWCleanupList, ::g_pRCWClean
 DEFINE_DACVAR(ULONG, BOOL, RCWWalker__s_bIsGlobalPeggingOn, RCWWalker::s_bIsGlobalPeggingOn)
 #endif // FEATURE_COMINTEROP
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 DEFINE_DACVAR(ULONG, SIZE_T, dac__g_runtimeLoadedBaseAddress, ::g_runtimeLoadedBaseAddress)
 DEFINE_DACVAR(ULONG, SIZE_T, dac__g_runtimeVirtualSize, ::g_runtimeVirtualSize)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 DEFINE_DACVAR(ULONG, SyncBlockCache *, SyncBlockCache__s_pSyncBlockCache, SyncBlockCache::s_pSyncBlockCache)
 
@@ -238,9 +238,9 @@ DEFINE_DACVAR(ULONG, SIZE_T, dac__s_gsCookie, ::s_gsCookie)
 
 DEFINE_DACVAR_NO_DUMP(ULONG, SIZE_T, dac__g_FCDynamicallyAssignedImplementations, ::g_FCDynamicallyAssignedImplementations)
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 DEFINE_DACVAR(ULONG, HANDLE, dac__g_hContinueStartupEvent, ::g_hContinueStartupEvent)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 DEFINE_DACVAR(ULONG, DWORD, CorHost2__m_dwStartupFlags, CorHost2::m_dwStartupFlags)
 
 DEFINE_DACVAR(ULONG, HRESULT, dac__g_hrFatalError, ::g_hrFatalError)

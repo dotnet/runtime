@@ -2844,7 +2844,6 @@ insert_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	} else if (bblock == cfg->bb_entry) {
 		mono_bblock_insert_after_ins (bblock, bblock->last_ins, poll_addr);
 		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
-
 	} else {
 		mono_bblock_insert_before_ins (bblock, NULL, poll_addr);
 		mono_bblock_insert_after_ins (bblock, poll_addr, ins);
@@ -3177,6 +3176,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 	cfg->interp = (flags & JIT_FLAG_INTERP) != 0;
 	cfg->use_current_cpu = (flags & JIT_FLAG_USE_CURRENT_CPU) != 0;
+	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
 	cfg->backend = current_backend;
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {

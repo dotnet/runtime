@@ -110,11 +110,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 sb.AppendLine($"MajorVersion: 0x{MajorVersion:X4}");
                 sb.AppendLine($"MinorVersion: 0x{MinorVersion:X4}");
                 sb.AppendLine($"Flags: 0x{Flags:X8}");
-                foreach (ReadyToRunFlag flag in Enum.GetValues(typeof(ReadyToRunFlag)))
+                foreach (ReadyToRunFlags flag in Enum.GetValues(typeof(ReadyToRunFlags)))
                 {
                     if ((Flags & (uint)flag) != 0)
                     {
-                        sb.AppendLine($"  - {Enum.GetName(typeof(ReadyToRunFlag), flag)}");
+                        sb.AppendLine($"  - {Enum.GetName(typeof(ReadyToRunFlags), flag)}");
                     }
                 }
             }
