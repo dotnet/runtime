@@ -137,7 +137,10 @@
     *nix: `cd ../coreclr && ./build.sh -checked && ./build-testh.sh -checked` 
     Windows: `cd ../coreclr && build.cmd -checked` -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchCoreClrCoreRoot">
-    <Exec Command="..\coreclr\tests\runtest$(ScriptExt) checked" ContinueOnError="WarnAndContinue" />
+    <ItemGroup>	
+        <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked\**\*$(ScriptExt)" />	
+    </ItemGroup>	
+    <Exec Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <Target Name="RunBenchmarks">
