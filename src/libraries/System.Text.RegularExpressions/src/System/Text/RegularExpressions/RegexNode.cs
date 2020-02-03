@@ -42,7 +42,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -214,51 +213,7 @@ namespace System.Text.RegularExpressions
                 // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
                 // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
                 // to implementations that don't support backtracking.
-                if ((Options & RegexOptions.Compiled) != 0) // only apply when we're compiling, as that's the only time it would make a meaningful difference
-                {
-                    // Walk the tree, starting from the sole child of the root implicit capture.
-                    RegexNode node = rootNode.Child(0);
-                    while (true)
-                    {
-                        switch (node.Type)
-                        {
-                            case Oneloop:
-                            case Notoneloop:
-                            case Setloop:
-                                node.MakeLoopAtomic();
-                                break;
-
-                            case Capture:
-                            case Concatenate:
-                                RegexNode existingChild = node.Child(node.ChildCount() - 1);
-                                switch (existingChild.Type)
-                                {
-                                    default:
-                                        node = existingChild;
-                                        break;
-
-                                    case Alternate:
-                                    case Loop:
-                                    case Lazyloop:
-                                        // Make the node atomic if it isn't already (as conferred by a parent node being atomic).
-                                        if (!existingChild.IsAtomicByParent())
-                                        {
-                                            var atomic = new RegexNode(Atomic, Options);
-                                            atomic.AddChild(existingChild);
-                                            node.ReplaceChild(node.ChildCount() - 1, atomic);
-                                        }
-                                        break;
-                                }
-                                continue;
-
-                            case Atomic:
-                                node = node.Child(0);
-                                continue;
-                        }
-
-                        break;
-                    }
-                }
+                EliminateEndingBacktracking(rootNode.Child(0), DefaultMaxRecursionDepth);
 
                 // Optimization: implicit anchoring.
                 // If the expression begins with a .* loop, add an anchor to the beginning:
@@ -323,6 +278,77 @@ namespace System.Text.RegularExpressions
 
             // Done optimizing.  Return the final tree.
             return rootNode;
+        }
+
+        /// <summary>Converts nodes at the end of the specified node tree to be atomic.</summary>
+        /// <remarks>
+        /// The correctness of this optimization depends on nothing being able to backtrack into
+        /// the provided node.  That means it must be at the root of the overall expression, or
+        /// it must be an Atomic node that nothing will backtrack into by the very nature of Atomic.
+        /// </remarks>
+        private static void EliminateEndingBacktracking(RegexNode node, int maxDepth)
+        {
+            if (maxDepth <= 0)
+            {
+                return;
+            }
+
+            // Walk the tree starting from the provided node.
+            while (true)
+            {
+                switch (node.Type)
+                {
+                    // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes.
+                    case Oneloop:
+                    case Notoneloop:
+                    case Setloop:
+                        node.MakeLoopAtomic();
+                        break;
+
+                    case Capture:
+                    case Concatenate:
+                        // For Alternate, Loop, and Lazyloop, make the node atomic by wrapping it in an Atomic node.
+                        // Since we later check to see whether a node is atomic based on its parent or grandparent,
+                        // we don't bother wrapping such a node in an Atomic one.
+                        RegexNode existingChild = node.Child(node.ChildCount() - 1);
+                        if ((existingChild.Type == Alternate || existingChild.Type == Loop || existingChild.Type == Lazyloop) &&
+                            (node.Next is null || node.Next.Type != Atomic)) // validate grandparent isn't atomic
+                        {
+                            var atomic = new RegexNode(Atomic, existingChild.Options);
+                            atomic.AddChild(existingChild);
+                            node.ReplaceChild(node.ChildCount() - 1, atomic);
+                        }
+                        node = existingChild;
+                        continue;
+
+                    // For alternate, we can recur into each branch separately.  We use this iteration for the first branch.
+                    case Alternate:
+                        {
+                            int branches = node.ChildCount();
+                            for (int i = 1; i < branches; i++)
+                            {
+                                EliminateEndingBacktracking(node.Child(i), maxDepth - 1);
+                            }
+                        }
+                        node = node.Child(0);
+                        continue;
+
+                    // For Loop, we search to see if there's a viable last expression, and iff there
+                    // is we recur into processing it.
+                    case Loop:
+                        {
+                            RegexNode? loopDescendent = FindLastExpressionInLoopForAutoAtomic(node, maxDepth - 1);
+                            if (loopDescendent != null)
+                            {
+                                node = loopDescendent;
+                                continue; // loop around to process node
+                            }
+                        }
+                        break;
+                }
+
+                break;
+            }
         }
 
         /// <summary>Whether this node is considered to be atomic based on its parent.</summary>
@@ -436,51 +462,17 @@ namespace System.Text.RegularExpressions
                 case Setloopatomic:
                     return child;
 
-                // If an atomic subexpression contains only a {one/notone/set} loop,
-                // change it to be an atomic {one/notone/set}loop and remove the atomic node.
+                // If an atomic subexpression contains only a {one/notone/set}loop,
+                // change it to be an {one/notone/set}loopatomic and remove the atomic node.
                 case Oneloop:
                 case Notoneloop:
                 case Setloop:
                     child.MakeLoopAtomic();
                     return child;
 
-                // If the end expression(s) of an atomic are loops, they can also be made atomic,
-                // since nothing can backtrack into the atomic and thus into them.  So, if the
-                // atomic node is wrapping a capture or a concatenate, recur into it (in the future
-                // this could also be expanded to alternations, recuring into each branch to
-                // mark the last node in each branch as atomic, and marking the alternation itself
-                // by wrapping it in an atomic node if it's not already in one; for now, though,
-                // that adds complication for a relatively rare case, and we're not doing anything
-                // here the developer of the regex couldn't do themselves).  The benefit of this
-                // is simply around improving the final code gen, rather than significantly improving
-                // the expression tree.
-                case Capture:
-                case Concatenate:
-                    {
-                        while (child != null)
-                        {
-                            child = child.Child(child.ChildCount() - 1);
-                            switch (child.Type)
-                            {
-                                case Capture:
-                                case Concatenate:
-                                    continue;
-
-                                case Oneloop:
-                                case Notoneloop:
-                                case Setloop:
-                                    child.MakeLoopAtomic();
-                                    goto default;
-
-                                default:
-                                    child = null!;
-                                    break;
-                            }
-                        }
-                    }
-                    goto default;
-
+                // For everything else, try to reduce ending backtracking of the last contained expression.
                 default:
+                    EliminateEndingBacktracking(child, DefaultMaxRecursionDepth);
                     return this;
             }
         }
@@ -964,7 +956,7 @@ namespace System.Text.RegularExpressions
             // Now convert as many loops as possible to be atomic to avoid unnecessary backtracking.
             if ((Options & RegexOptions.RightToLeft) == 0)
             {
-                ReduceConcatenateWithAutoAtomic();
+                ReduceConcatenationWithAutoAtomic();
             }
 
             // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
@@ -1186,7 +1178,7 @@ namespace System.Text.RegularExpressions
         /// to {one/notone/set}loopatomic nodes.  Such changes avoid potential useless backtracking.
         /// A*B (where sets A and B don't overlap) => (?>A*)B.
         /// </summary>
-        private void ReduceConcatenateWithAutoAtomic()
+        private void ReduceConcatenationWithAutoAtomic()
         {
             Debug.Assert(Type == Concatenate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
@@ -1199,14 +1191,33 @@ namespace System.Text.RegularExpressions
 
                 static void ProcessNode(RegexNode node, RegexNode subsequent, int maxDepth)
                 {
-                    // Skip down the node past irrelevant nodes.  We don't need to
-                    // skip Groups, as they should have already been reduced away.
-                    // If there's a concatenation, we can jump to the last element of it.
-                    while (node.Type == Capture || node.Type == Concatenate)
+                    // Skip down the node past irrelevant nodes.
+                    while (true)
                     {
-                        node = node.Child(node.ChildCount() - 1);
+                        // We can always recur into captures and into the last node of concatenations.
+                        if (node.Type == Capture || node.Type == Concatenate)
+                        {
+                            node = node.Child(node.ChildCount() - 1);
+                            continue;
+                        }
+
+                        // For loops with at least one guaranteed iteration, we can recur into them, but
+                        // we need to be careful not to just always do so; the ending node of a loop can only
+                        // be made atomic if what comes after the loop but also the beginning of the loop are
+                        // compatible for the optimization.
+                        if (node.Type == Loop)
+                        {
+                            RegexNode? loopDescendent = FindLastExpressionInLoopForAutoAtomic(node, maxDepth - 1);
+                            if (loopDescendent != null)
+                            {
+                                node = loopDescendent;
+                                continue;
+                            }
+                        }
+
+                        // Can't skip any further.
+                        break;
                     }
-                    Debug.Assert(node.Type != Group);
 
                     // If the node can be changed to atomic based on what comes after it, do so.
                     switch (node.Type)
@@ -1232,137 +1243,180 @@ namespace System.Text.RegularExpressions
                             }
                             break;
                     }
+                }
+            }
+        }
 
-                    // Determines whether node can be switched to an atomic loop.  Subsequent is the node
-                    // immediately after 'node'.
-                    static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth)
+        /// <summary>
+        /// Recurs into the last expression of a loop node, looking to see if it can find a node
+        /// that could be made atomic _assuming_ the conditions exist for it with the loop's ancestors.
+        /// </summary>
+        /// <returns>The found node that should be explored further for auto-atomicity; null if it doesn't exist.</returns>
+        private static RegexNode? FindLastExpressionInLoopForAutoAtomic(RegexNode node, int maxDepth)
+        {
+            Debug.Assert(node.Type == Loop);
+
+            // Start by looking at the loop's sole child.
+            node = node.Child(0);
+
+            // Skip past captures.
+            while (node.Type == Capture)
+            {
+                node = node.Child(0);
+            }
+
+            // If the loop's body terminates with a {one/notone/set} loop, return it.
+            if (node.Type == Oneloop || node.Type == Notoneloop || node.Type == Setloop)
+            {
+                return node;
+            }
+
+            // If the loop's body is a concatenate, we can skip to its last child iff that
+            // last child doesn't conflict with the first child, since this whole concatenation
+            // could be repeated, such that the first node ends up following the last.
+            if (node.Type == Concatenate)
+            {
+                int concatCount = node.ChildCount();
+                RegexNode lastConcatChild = node.Child(concatCount - 1);
+                if (CanBeMadeAtomic(lastConcatChild, node.Child(0), maxDepth - 1))
+                {
+                    return lastConcatChild;
+                }
+            }
+
+            // Otherwise, the loop has nothing that can participate in auto-atomicity.
+            return null;
+        }
+
+        /// <summary>
+        /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
+        /// immediately after 'node'.
+        /// </summary>
+        private static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth)
+        {
+            if (maxDepth <= 0)
+            {
+                // We hit our recursion limit.  Just don't apply the optimization.
+                return false;
+            }
+
+            // Skip the successor down to the guaranteed next node.
+            while (subsequent.ChildCount() > 0)
+            {
+                Debug.Assert(subsequent.Type != Group);
+                switch (subsequent.Type)
+                {
+                    case Concatenate:
+                    case Capture:
+                    case Atomic:
+                    case Require:
+                    case Loop when subsequent.M > 0:
+                    case Lazyloop when subsequent.M > 0:
+                        subsequent = subsequent.Child(0);
+                        continue;
+                }
+
+                break;
+            }
+
+            // If the two nodes don't agree on case-insensitivity, don't try to optimize.
+            // If they're both case sensitive or both case insensitive, then their tokens
+            // will be comparable.
+            if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
+            {
+                return false;
+            }
+
+            // If the successor is an alternation, all of its children need to be evaluated, since any of them
+            // could come after this node.  If any of them fail the optimization, then the whole node fails.
+            if (subsequent.Type == Alternate)
+            {
+                int childCount = subsequent.ChildCount();
+                for (int i = 0; i < childCount; i++)
+                {
+                    if (!CanBeMadeAtomic(node, subsequent.Child(i), maxDepth - 1))
                     {
-                        if (maxDepth <= 0)
-                        {
-                            // We hit our recursion limit.  Just don't apply the optimization.
-                            return false;
-                        }
-
-                        // Skip the successor down to the guaranteed next node.
-                        while (subsequent.ChildCount() > 0)
-                        {
-                            Debug.Assert(subsequent.Type != Group);
-                            switch (subsequent.Type)
-                            {
-                                case Concatenate:
-                                case Capture:
-                                case Atomic:
-                                case Require:
-                                case Loop when subsequent.M > 0:
-                                case Lazyloop when subsequent.M > 0:
-                                    subsequent = subsequent.Child(0);
-                                    continue;
-                            }
-
-                            break;
-                        }
-
-                        // If the two nodes don't agree on case-insensitivity, don't try to optimize.
-                        // If they're both case sensitive or both case insensitive, then their tokens
-                        // will be comparable.
-                        if ((node.Options & RegexOptions.IgnoreCase) != (subsequent.Options & RegexOptions.IgnoreCase))
-                        {
-                            return false;
-                        }
-
-                        // If the successor is an alternation, all of its children need to be evaluated, since any of them
-                        // could come after this node.  If any of them fail the optimization, then the whole node fails.
-                        if (subsequent.Type == Alternate)
-                        {
-                            int childCount = subsequent.ChildCount();
-                            for (int i = 0; i < childCount; i++)
-                            {
-                                if (!CanBeMadeAtomic(node, subsequent.Child(i), maxDepth - 1))
-                                {
-                                    return false;
-                                }
-                            }
-
-                            return true;
-                        }
-
-                        // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
-                        // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
-                        // Doing so avoids unnecessary backtracking.
-                        switch (node.Type)
-                        {
-                            case Oneloop:
-                                switch (subsequent.Type)
-                                {
-                                    case One when node.Ch != subsequent.Ch:
-                                    case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                                    case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                                    case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
-                                    case Notone when node.Ch == subsequent.Ch:
-                                    case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Multi when node.Ch != subsequent.Str![0]:
-                                    case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                                    case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                                    case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                                    case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
-                                    case End:
-                                    case EndZ when node.Ch != '\n':
-                                    case Eol when node.Ch != '\n':
-                                    case Boundary when RegexCharClass.IsWordChar(node.Ch):
-                                    case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
-                                    case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
-                                    case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
-                                        return true;
-                                }
-                                break;
-
-                            case Notoneloop:
-                                switch (subsequent.Type)
-                                {
-                                    case One when node.Ch == subsequent.Ch:
-                                    case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
-                                    case Multi when node.Ch == subsequent.Str![0]:
-                                    case End:
-                                        return true;
-                                }
-                                break;
-
-                            case Setloop:
-                                switch (subsequent.Type)
-                                {
-                                    case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
-                                    case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
-                                    case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                                    case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                                    case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                                    case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
-                                    case End:
-                                    case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
-                                    case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                                    case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
-                                    case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
-                                    case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
-                                    case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
-                                        return true;
-                                }
-                                break;
-                        }
-
                         return false;
                     }
                 }
+
+                return true;
             }
+
+            // If this node is a {one/notone/set}loop, see if it overlaps with its successor in the concatenation.
+            // If it doesn't, then we can upgrade it to being a {one/notone/set}loopatomic.
+            // Doing so avoids unnecessary backtracking.
+            switch (node.Type)
+            {
+                case Oneloop:
+                    switch (subsequent.Type)
+                    {
+                        case One when node.Ch != subsequent.Ch:
+                        case Onelazy when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                        case Oneloop when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                        case Oneloopatomic when subsequent.M > 0 && node.Ch != subsequent.Ch:
+                        case Notone when node.Ch == subsequent.Ch:
+                        case Notonelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Notoneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Notoneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Multi when node.Ch != subsequent.Str![0]:
+                        case Set when !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                        case Setlazy when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                        case Setloop when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                        case Setloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(node.Ch, subsequent.Str!):
+                        case End:
+                        case EndZ when node.Ch != '\n':
+                        case Eol when node.Ch != '\n':
+                        case Boundary when RegexCharClass.IsWordChar(node.Ch):
+                        case Nonboundary when !RegexCharClass.IsWordChar(node.Ch):
+                        case ECMABoundary when RegexCharClass.IsECMAWordChar(node.Ch):
+                        case NonECMABoundary when !RegexCharClass.IsECMAWordChar(node.Ch):
+                            return true;
+                    }
+                    break;
+
+                case Notoneloop:
+                    switch (subsequent.Type)
+                    {
+                        case One when node.Ch == subsequent.Ch:
+                        case Onelazy when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Oneloop when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Oneloopatomic when subsequent.M > 0 && node.Ch == subsequent.Ch:
+                        case Multi when node.Ch == subsequent.Str![0]:
+                        case End:
+                            return true;
+                    }
+                    break;
+
+                case Setloop:
+                    switch (subsequent.Type)
+                    {
+                        case One when !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Onelazy when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Oneloop when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Oneloopatomic when subsequent.M > 0 && !RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Notone when RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Notonelazy when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Notoneloop when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Notoneloopatomic when subsequent.M > 0 && RegexCharClass.CharInClass(subsequent.Ch, node.Str!):
+                        case Multi when !RegexCharClass.CharInClass(subsequent.Str![0], node.Str!):
+                        case Set when !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                        case Setlazy when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                        case Setloop when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                        case Setloopatomic when subsequent.M > 0 && !RegexCharClass.MayOverlap(node.Str!, subsequent.Str!):
+                        case End:
+                        case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
+                        case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
+                        case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
+                        case Nonboundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
+                        case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
+                        case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
+                            return true;
+                    }
+                    break;
+            }
+
+            return false;
         }
 
         /// <summary>Computes a min bound on the required length of any string that could possibly match.</summary>
@@ -1672,14 +1726,15 @@ namespace System.Text.RegularExpressions
         }
 
         [ExcludeFromCodeCoverage]
-        public void Dump()
+        public void Dump() => Debug.WriteLine(ToString());
+
+        [ExcludeFromCodeCoverage]
+        public override string ToString()
         {
-            List<int> stack = new List<int>();
             RegexNode? curNode = this;
             int curChild = 0;
-
-            Debug.WriteLine(curNode.Description());
-
+            var sb = new StringBuilder().AppendLine(curNode.Description());
+            var stack = new List<int>();
             while (true)
             {
                 if (curChild < curNode!.ChildCount())
@@ -1688,7 +1743,7 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Child(curChild);
                     curChild = 0;
 
-                    Debug.WriteLine(new string(' ', stack.Count * 2) + curNode.Description());
+                    sb.Append(new string(' ', stack.Count * 2)).Append(curNode.Description()).AppendLine();
                 }
                 else
                 {
@@ -1702,7 +1757,9 @@ namespace System.Text.RegularExpressions
                     curNode = curNode.Next;
                 }
             }
+
+            return sb.ToString();
         }
 #endif
-        }
+    }
 }

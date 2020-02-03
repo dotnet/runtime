@@ -42,15 +42,20 @@ namespace System.Text.RegularExpressions.Tests
             Assert.NotNull(s_regexCodeTreeMinRequiredLength);
         }
 
-        private static int[] GetRegexCodes(Regex r)
+        private static string GetRegexCodes(Regex r)
         {
             object code = s_regexCode.GetValue(r);
             Assert.NotNull(code);
+            string result = code.ToString();
 
+            // In release builds, the above ToString won't be informative.
+            // Also include the numerical codes, which are not as comprehensive
+            // but which exist in release builds as well.
             int[] codes = s_regexCodeCodes.GetValue(code) as int[];
             Assert.NotNull(codes);
+            result += Environment.NewLine + string.Join(", ", codes);
 
-            return codes;
+            return result;
         }
 
         private static int GetMinRequiredLength(Regex r)
@@ -269,6 +274,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ace][ace]", "[ace]{2}")]
         // Large loop patterns
         [InlineData("a*a*a*a*a*a*a*b*b*?a+a*", "a*b*b*?a+")]
+        [InlineData("a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a{0,30}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
         // Group elimination
         [InlineData("(?:(?:(?:(?:(?:(?:a*))))))", "a*")]
         // Nested loops
@@ -319,13 +325,23 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
         [InlineData("apple|(?:orange|pear)|grape", "apple|orange|pear|grape")]
         [InlineData("(?>(?>(?>(?:abc)*)))", "(?:abc)*")]
+        [InlineData("(w*)+", "((?>w*))+")]
+        [InlineData("(w*)+\\.", "((?>w*))+\\.")]
+        [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
+        [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
         {
-            AssertExtensions.Equal(GetRegexCodes(new Regex(pattern1)), GetRegexCodes(new Regex(pattern2)));
-            Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
+            string result1 = GetRegexCodes(new Regex(pattern1));
+            string result2 = GetRegexCodes(new Regex(pattern2));
+            if (result1 != result2)
+            {
+                throw new Xunit.Sdk.EqualException(result2, result1);
+            }
+
+            Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
             if (!pattern1.Contains("?i:") && !pattern2.Contains("?i:"))
             {
-                Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
+                Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
             }
         }
 
@@ -376,11 +392,13 @@ namespace System.Text.RegularExpressions.Tests
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
         [InlineData("[^\n]*\n*", "(?>[^\n]*)\n")]
+        [InlineData("(a[bcd]a*)*fg", "(a[bcd](?>a*))*fg")]
+        [InlineData("(\\w[bcd]\\d*)*fg", "(\\w[bcd](?>\\d*))*fg")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
             var r1 = new Regex(pattern1);
             var r2 = new Regex(pattern2);
-            Assert.NotEqual<int>(GetRegexCodes(r1), GetRegexCodes(r2));
+            Assert.NotEqual(GetRegexCodes(r1), GetRegexCodes(r2));
         }
 
         [Theory]
