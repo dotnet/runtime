@@ -519,7 +519,7 @@ namespace System.Net.Security
                 _framing = DetectFraming(buffer);
             }
 
-            int frameSize = GetFrameSize(new Span<byte>(buffer, 0, readBytes));
+            int frameSize = GetFrameSize(new ReadOnlySpan<byte>(buffer, 0, readBytes));
             int restBytes = frameSize - readBytes;
 
             if (frameSize < 0)
@@ -937,7 +937,7 @@ namespace System.Net.Security
                         return 0;
                     }
 
-                    int payloadBytes = GetFrameSize(new Span<byte>(_internalBuffer, _internalOffset, readBytes));
+                    int payloadBytes = GetFrameSize(new ReadOnlySpan<byte>(_internalBuffer, _internalOffset, readBytes));
                     if (payloadBytes < 0)
                     {
                         throw new IOException(SR.net_frame_read_size);
