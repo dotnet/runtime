@@ -13,7 +13,7 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
         internal static extern bool CreateProcess(
-            string lpApplicationName,
+            string? lpApplicationName,
             [In] StringBuilder lpCommandLine,
             ref SECURITY_ATTRIBUTES procSecAttrs,
             ref SECURITY_ATTRIBUTES threadSecAttrs,

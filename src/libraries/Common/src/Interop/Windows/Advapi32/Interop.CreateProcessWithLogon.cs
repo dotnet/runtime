@@ -16,7 +16,7 @@ internal partial class Interop
             string domain,
             IntPtr password,
             LogonFlags logonFlags,
-            string appName,
+            string? appName,
             [In] StringBuilder cmdLine,
             int creationFlags,
             IntPtr environmentBlock,

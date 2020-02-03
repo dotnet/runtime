@@ -14,7 +14,7 @@ internal partial class Interop
         {
             internal ProcessWaitHandle(SafeProcessHandle processHandle)
             {
-                SafeWaitHandle waitHandle = null;
+                SafeWaitHandle? waitHandle;
                 SafeProcessHandle currentProcHandle = Interop.Kernel32.GetCurrentProcess();
                 bool succeeded = Interop.Kernel32.DuplicateHandle(
                     currentProcHandle,
