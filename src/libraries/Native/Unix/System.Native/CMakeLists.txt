@@ -60,7 +60,6 @@ endif ()
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

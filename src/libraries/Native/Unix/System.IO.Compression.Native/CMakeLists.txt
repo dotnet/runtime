@@ -59,7 +59,6 @@ endif ()
 add_library(System.IO.Compression.Native-Static
     STATIC
     ${NATIVECOMPRESSION_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

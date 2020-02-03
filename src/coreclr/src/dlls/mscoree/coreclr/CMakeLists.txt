@@ -123,6 +123,7 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc_debug
         palrt
+        System.Globalization.Native-Static
     )
 endif(CLR_CMAKE_TARGET_WIN32)
 

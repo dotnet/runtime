@@ -25,11 +25,11 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private readonly object _thisLock = new object();
         private readonly ICompositionElement _definitionOrigin;
-        private volatile Assembly _assembly = null;
-        private volatile ComposablePartCatalog _innerCatalog = null;
+        private volatile Assembly _assembly = null!; // Always initiialized with helper
+        private volatile ComposablePartCatalog? _innerCatalog = null;
         private int _isDisposed = 0;
 
-        private readonly ReflectionContext _reflectionContext = default(ReflectionContext);
+        private readonly ReflectionContext? _reflectionContext = default(ReflectionContext);
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AssemblyCatalog"/> class
@@ -492,7 +492,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     This property always returns <see langword="null"/>.
         /// </value>
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }
         }
