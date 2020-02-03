@@ -72,8 +72,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
           mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
           if [ -z ${__DotNet+x} ]%3B then
-            __DotNet=$(command -v dotnet)
-            if [ ! -z ${UseDotNetInPath+x} ]%3B then
+            __DotNet=%24(command -v dotnet)
+            if [ -z ${UseDotNetInPath+x} ]%3B then
               __LocalDotNetPath=$CORE_ROOT/../../../../../../dotnet.sh
               if [ -f $__LocalDotNetPath ]%3B then
                 __DotNet=$__LocalDotNetPath
