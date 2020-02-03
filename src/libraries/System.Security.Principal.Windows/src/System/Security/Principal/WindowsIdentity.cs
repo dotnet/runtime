@@ -323,7 +323,7 @@ namespace System.Security.Principal
         public static WindowsIdentity GetCurrent()
         {
             // not null when threadOnly argument is false
-            return GetCurrentInternal(TokenAccessLevels.MaximumAllowed, false)!;
+            return GetCurrentInternal(TokenAccessLevels.MaximumAllowed, threadOnly: false)!;
         }
 
 
