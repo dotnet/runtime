@@ -1610,8 +1610,9 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot[=<options>]      Compiles the assembly to native code\n"
-#ifndef ENABLE_NETCORE
-		"    --debug=ignore    Disable debugging support, use --help-debug for details\n"
+#ifdef ENABLE_NETCORE
+		"    --debug=ignore    Disable debugging support\n"
+		"    --debug=<options>    Enable debugging support, use --help-debug for details\n"
 #else
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
 #endif
