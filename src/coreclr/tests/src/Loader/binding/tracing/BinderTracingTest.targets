@@ -1,12 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinderTracingTest.cs" />
-    <Compile Include="BinderTracingTest.DefaultProbing.cs" />
-    <Compile Include="BinderTracingTest.EventHandlers.cs" />
-    <Compile Include="BinderTracingTest.ResolutionFlow.cs" />
     <Compile Include="BinderEventListener.cs" />
     <Compile Include="Helpers.cs" />
   </ItemGroup>

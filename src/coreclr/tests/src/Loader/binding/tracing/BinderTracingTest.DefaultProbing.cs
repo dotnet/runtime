@@ -18,8 +18,6 @@ namespace BinderTracingTests
 {
     partial class BinderTracingTest
     {
-        private static CultureInfo SatelliteCulture = CultureInfo.CreateSpecificCulture("fr-FR");
-
         // Assembly found in app path:
         //   KnownPathProbed : AppNativeImagePaths  (DLL)   [COR_E_FILENOTFOUND]
         //   KnownPathProbed : AppNativeImagePaths  (EXE)   [COR_E_FILENOTFOUND]
