@@ -337,7 +337,7 @@ namespace System.Security.Principal
         public static WindowsIdentity GetCurrent(TokenAccessLevels desiredAccess)
         {
             // not null when threadOnly argument is false
-            return GetCurrentInternal(desiredAccess, false)!;
+            return GetCurrentInternal(desiredAccess, threadOnly: false)!;
         }
 
         // GetAnonymous() is used heavily in ASP.NET requests as a dummy identity to indicate
