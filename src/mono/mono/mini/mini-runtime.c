@@ -3226,7 +3226,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigfpe_signal_handler)
 
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash ("SIGFPE", &mctx, info);
+			mono_handle_native_crash (mono_get_signame (SIGFPE), &mctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			goto exit;
@@ -3239,7 +3239,7 @@ exit:
 	MONO_EXIT_GC_UNSAFE_UNBALANCED;
 }
 
-MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
+MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 {
 	MonoContext mctx;
 	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
@@ -3250,12 +3250,15 @@ MONO_SIG_HANDLER_FUNC (, mono_sigill_signal_handler)
 
 	mono_sigctx_to_monoctx (ctx, &mctx);
 	if (mono_dump_start ())
-		mono_handle_native_crash ("SIGILL", &mctx, info);
+#if defined(HAVE_SIG_INFO) && !defined(HOST_WIN32) // info is a siginfo_t
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
+#else
+		mono_handle_native_crash (mono_get_signame (SIGTERM), &mctx, info);
+#endif
 	if (mono_do_crash_chaining) {
 		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 		return;
 	}
-
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
@@ -3325,6 +3328,9 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_aot_handle_pagefault (info->si_addr);
 		return;
 	}
+	int signo = info->si_signo;
+#else
+	int signo = SIGSEGV;
 #endif
 
 	/* The thread might no be registered with the runtime */
@@ -3332,7 +3338,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 		if (mono_dump_start())
-			mono_handle_native_crash ("SIGSEGV", &mctx, info);
+			mono_handle_native_crash (mono_get_signame (signo), &mctx, info);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -3375,7 +3381,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		} else {
 			// FIXME: This shouldn't run on the altstack
 			if (mono_dump_start ())
-				mono_handle_native_crash ("SIGSEGV", &mctx, info);
+				mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, info);
 		}
 #endif
 	}
@@ -3386,7 +3392,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 			return;
 
 		if (mono_dump_start ())
-			mono_handle_native_crash ("SIGSEGV", &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -3398,7 +3404,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
 		if (mono_dump_start ())
-			mono_handle_native_crash ("SIGSEGV", &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
+			mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 	}
 #endif
 }

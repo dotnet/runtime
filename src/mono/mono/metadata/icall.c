@@ -118,6 +118,7 @@
 #include "icall-decl.h"
 #include "mono/utils/mono-threads-coop.h"
 #include "mono/metadata/icall-signatures.h"
+#include "mono/utils/mono-signal-handler.h"
 
 //#define MONO_DEBUG_ICALLARRAY
 
@@ -6525,7 +6526,7 @@ ves_icall_Mono_Runtime_SendMicrosoftTelemetry (const char *payload, guint64 port
 	hashes.offset_rich_hash = unportable_hash;
 
 	// Tells mono that we want to send the HANG EXC_TYPE.
-	const char *signal = "SIGTERM";
+	const char *signal = mono_get_signame (SIGTERM);
 
 	gboolean success = mono_merp_invoke (crashed_pid, signal, payload, &hashes);
 	if (!success) {
