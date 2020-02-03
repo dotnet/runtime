@@ -2786,19 +2786,30 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
                 // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
 
-                if (m_pMT->HasInstantiation() && !m_pMT->IsBlittable())
+                if (m_pMT->HasInstantiation() && !IsFieldScenario())
                 {
-                    if (!IsFieldScenario() &&
-                        (m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                        || m_pMT->HasSameTypeDefAs(g_pNullableClass)
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                    if (!m_pMT->IsBlittable()
+                        || (m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                            || m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
-                        // Crossgen scenarios block Vector<T> from even being loaded
-                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            // Crossgen scenarios block Vector<T> from even being loaded
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
                         ))
+                    {
+                        m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                        IfFailGoto(E_FAIL, lFail);
+                    }
+                }
+                else if (IsFieldScenario())
+                {
+                    // In the field scenario, we used to allow other types such as Nullable<T>, so we need to keep allowing them.
+                    // However, since ByReference<T> has very special handling, we continue to block it from being marshalled even in
+                    // the field scenario.
+                    if (m_pMT->HasSameTypeDefAs(g_pByReferenceClass))
                     {
                         m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                         IfFailGoto(E_FAIL, lFail);
