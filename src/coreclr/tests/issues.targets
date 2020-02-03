@@ -865,6 +865,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/Coverage/arglist_pos/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relu_conv/*">
+            <Issue>31665</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_reli_conv/*">
+            <Issue>31665</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/refany/_il_dbgseq/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
