@@ -1,0 +1,56 @@
+/* PSR := <Op> Rn, (imm8 ROR 2*rot) */
+#define ARM_<Op>_REG_IMM_COND(p, rn, imm8, rot, cond) \
+	ARM_DPIOP_S_REG_IMM8ROT_COND(p, ARMOP_<Op>, 0, rn, imm8, rot, cond)
+#define ARM_<Op>_REG_IMM(p, rn, imm8, rot) \
+	ARM_<Op>_REG_IMM_COND(p, rn, imm8, rot, ARMCOND_AL)
+
+#ifndef ARM_NOIASM
+#define _<Op>_REG_IMM_COND(rn, imm8, rot, cond) \
+	ARM_IASM_DPIOP_S_REG_IMM8ROT_COND(ARMOP_<Op>, 0, rn, imm8, rot, cond)
+#define _<Op>_REG_IMM(rn, imm8, rot) \
+	_<Op>_REG_IMM_COND(rn, imm8, rot, ARMCOND_AL)
+#endif
+
+
+/* PSR := <Op> Rn, imm8 */
+#define ARM_<Op>_REG_IMM8_COND(p, rn, imm8, cond) \
+	ARM_<Op>_REG_IMM_COND(p, rn, imm8, 0, cond)
+#define ARM_<Op>_REG_IMM8(p, rn, imm8) \
+	ARM_<Op>_REG_IMM8_COND(p, rn, imm8, ARMCOND_AL)
+
+#ifndef ARM_NOIASM
+#define _<Op>_REG_IMM8_COND(rn, imm8, cond) \
+	_<Op>_REG_IMM_COND(rn, imm8, 0, cond)
+#define _<Op>_REG_IMM8(rn, imm8) \
+	_<Op>_REG_IMM8_COND(rn, imm8, ARMCOND_AL)
+#endif
+
+
+/* PSR := <Op> Rn, Rm */
+#define ARM_<Op>_REG_REG_COND(p, rn, rm, cond) \
+	ARM_DPIOP_S_REG_REG_COND(p, ARMOP_<Op>, 0, rn, rm, cond)
+#define ARM_<Op>_REG_REG(p, rn, rm) \
+	ARM_<Op>_REG_REG_COND(p, rn, rm, ARMCOND_AL)
+
+#ifndef ARM_NOIASM
+#define _<Op>_REG_REG_COND(rn, rm, cond) \
+	ARM_IASM_DPIOP_S_REG_REG_COND(ARMOP_<Op>, 0, rn, rm, cond)
+#define _<Op>_REG_REG(rn, rm) \
+	_<Op>_REG_REG_COND(rn, rm, ARMCOND_AL)
+#endif
+
+
+/* PSR := <Op> Rn, (Rm <shift_type> imm8) */
+#define ARM_<Op>_REG_IMMSHIFT_COND(p, rn, rm, shift_type, imm_shift, cond) \
+	ARM_DPIOP_S_REG_IMMSHIFT_COND(p, ARMOP_<Op>, 0, rn, rm, shift_type, imm_shift, cond)
+#define ARM_<Op>_REG_IMMSHIFT(p, rn, rm, shift_type, imm_shift) \
+	ARM_<Op>_REG_IMMSHIFT_COND(p, rn, rm, shift_type, imm_shift, ARMCOND_AL)
+
+#ifndef ARM_NOIASM
+#define _<Op>_REG_IMMSHIFT_COND(rn, rm, shift_type, imm_shift, cond) \
+	ARM_IASM_DPIOP_S_REG_IMMSHIFT_COND(ARMOP_<Op>, 0, rn, rm, shift_type, imm_shift, cond)
+#define _<Op>_REG_IMMSHIFT(rn, rm, shift_type, imm_shift) \
+	_<Op>_REG_IMMSHIFT_COND(rn, rm, shift_type, imm_shift, ARMCOND_AL)
+#endif
+
+

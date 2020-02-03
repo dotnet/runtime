@@ -72,8 +72,6 @@ namespace ILCompiler
 
         protected abstract ILProvider GetILProvider();
 
-        public abstract CompilationBuilder UseJitPath(string jitPath);
-
         protected DependencyAnalyzerBase<NodeFactory> CreateDependencyGraph(NodeFactory factory, IComparer<DependencyNodeCore<NodeFactory>> comparer = null)
         {
             return _dependencyTrackingLevel.CreateDependencyGraph(factory, comparer);

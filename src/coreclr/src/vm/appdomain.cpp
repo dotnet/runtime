@@ -32,6 +32,7 @@
 #include "comdelegate.h"
 #include "siginfo.hpp"
 #include "typekey.h"
+#include "castcache.h"
 
 #include "caparser.h"
 #include "ecall.h"
@@ -60,9 +61,9 @@
 
 #include "nativeoverlapped.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "stringarraylist.h"
 
@@ -1978,14 +1979,21 @@ void SystemDomain::LoadBaseSystemClasses()
     // We have delayed allocation of mscorlib's static handles until we load the object class
     MscorlibBinder::GetModule()->AllocateRegularStaticHandles(DefaultDomain());
 
-    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
-
     // Make sure all primitive types are loaded
     for (int et = ELEMENT_TYPE_VOID; et <= ELEMENT_TYPE_R8; et++)
         MscorlibBinder::LoadPrimitiveType((CorElementType)et);
 
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_I);
     MscorlibBinder::LoadPrimitiveType(ELEMENT_TYPE_U);
+
+    g_TypedReferenceMT = MscorlibBinder::GetClass(CLASS__TYPED_REFERENCE);
+
+    // further loading of nonprimitive types may need casting support.
+    // initialize cast cache here.
+#ifndef CROSSGEN_COMPILE
+    CastCache::Initialize();
+    ECall::PopulateManagedCastHelpers();
+#endif // CROSSGEN_COMPILE
 
     // unfortunately, the following cannot be delay loaded since the jit
     // uses it to compute method attributes within a function that cannot

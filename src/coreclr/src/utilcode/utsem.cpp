@@ -22,7 +22,7 @@ Revision History:
 #include "contract.h"
 
 // Consider replacing this with a #ifdef INTEROP_DEBUGGING
-#if !defined(SELF_NO_HOST) && defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if !defined(SELF_NO_HOST) && defined(TARGET_X86) && !defined(TARGET_UNIX)
 // For Interop debugging, the UTSemReadWrite class must inform the debugger
 // that this thread can't be suspended currently.  See vm\util.hpp for the
 // implementation of these methods.
@@ -31,7 +31,7 @@ void DecCantStopCount();
 #else
 #define IncCantStopCount()
 #define DecCantStopCount()
-#endif  // !SELF_NO_HOST && _TARGET_X86_
+#endif  // !SELF_NO_HOST && TARGET_X86
 
 /******************************************************************************
 Definitions of the bit fields in UTSemReadWrite::m_dwFlag:
@@ -59,7 +59,7 @@ const ULONG WRITEWAITERS_INCR = 0x00400000;    // amount to add to increment num
 // Copy of definition from file:..\VM\spinlock.h
 #define CALLER_LIMITS_SPINNING 0
 
-#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(FEATURE_PAL) && defined(DACCESS_COMPILE))
+#if (defined(SELF_NO_HOST) && !defined(CROSSGEN_COMPILE)) || (defined(TARGET_UNIX) && defined(DACCESS_COMPILE))
 
 // When we do not have host, we just call OS - see file:..\VM\hosting.cpp#__SwitchToThread
 BOOL __SwitchToThread(DWORD dwSleepMSec, DWORD dwSwitchCount)

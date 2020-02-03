@@ -31,7 +31,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
                     (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
                 }
@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     Assert.True(request.Headers.TryAddWithoutValidation("bad", value));
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 bool contentHeader = false;
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     if (!message.Headers.TryAddWithoutValidation(key, value))
                     {
                         message.Content = new StringContent("");
@@ -195,7 +195,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     HttpResponseMessage response = await client.SendAsync(message);
                     Assert.NotNull(response.Content.Headers.Expires);
                     // Invalid date should be converted to MinValue so everything is expired.
@@ -233,7 +233,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                     HttpResponseMessage response = await client.SendAsync(message);
 
                     Assert.Equal(value, response.Headers.GetValues(name).First());
@@ -253,7 +253,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
-            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = VersionFromUseHttp2 };
+            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
 
             using (HttpClient client = CreateHttpClient())
@@ -280,7 +280,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = VersionFromUseHttp2 };
+            var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = "hostheaderthatdoesnotmatch";
 
             using (HttpClient client = CreateHttpClient())

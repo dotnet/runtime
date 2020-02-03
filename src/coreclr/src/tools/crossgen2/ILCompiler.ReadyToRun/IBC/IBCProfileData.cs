@@ -16,7 +16,7 @@ namespace ILCompiler.IBC
             foreach (MethodProfileData data in methodData)
             {
                 if (_methodData.ContainsKey(data.Method))
-                    throw new Exception("Multiple copies of data for the same method"); // TODO, I think this is actually valid, but lets see
+                    throw new Exception("Multiple copies of data for the same method");
 
                 _methodData.Add(data.Method, data);
             }

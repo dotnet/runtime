@@ -383,26 +383,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/484204")]
-        public void GetExportedValue_MissingPostImports_ShouldThrowComposition()
-        {
-            var part = CreatePart(typeof(MySharedPartExport));
-
-            // Signal that the composition should be finished
-            part.Activate();
-
-            var definition = part.ExportDefinitions.First();
-
-            // Dev10:484204 - This used to cause a failure but after we made
-            // ReflectionComposablePart internal we needed to back remove this
-            // validation for post imports to make declarative composition work.
-            CompositionAssert.ThrowsError(ErrorId.ImportNotSetOnPart, () =>
-            {
-                part.GetExportedValue(definition);
-            });
-        }
-
-        [Fact]
         public void GetExportedValue_NoConstructorOnDefinition_ShouldThrowComposablePart()
         {
             var part = CreatePart(typeof(ClassWithNoMarkedOrDefaultConstructor));

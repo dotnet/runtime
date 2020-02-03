@@ -349,11 +349,11 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.NtDll.PROCESS_BASIC_INFORMATION info = default;
-
                 using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
                 {
-                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.PROCESSINFOCLASS.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                    Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+
+                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
                         throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                     return (int)info.InheritedFromUniqueProcessId;

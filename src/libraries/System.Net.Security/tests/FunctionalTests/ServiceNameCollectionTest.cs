@@ -216,7 +216,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
 
-            // This really should be ArgumentNullException, but the full framework does not
+            // This really should be ArgumentNullException, but the .NET Framework does not
             // guard against null, so NullReferenceException ends up being thrown instead.
             Assert.Throws<NullReferenceException>(() => collection.Merge((IEnumerable)null));
         }

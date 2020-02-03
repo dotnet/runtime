@@ -375,14 +375,14 @@ namespace System
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
 
-            int ret = 0;
+            HashCode hashCode = default;
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = HashCode.Combine(ret, comparer.GetHashCode(GetValue(i)!));
+                hashCode.Add(comparer.GetHashCode(GetValue(i)!));
             }
 
-            return ret;
+            return hashCode.ToHashCode();
         }
 
         // Searches an array for a given element using a binary search algorithm.

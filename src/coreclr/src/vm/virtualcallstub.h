@@ -19,7 +19,7 @@
 
 #define CHAIN_LOOKUP
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 // If this is uncommented, leaves a file "StubLog_<pid>.log" with statistics on the behavior
 // of stub-based interface dispatch.
 //#define STUB_LOGGING
@@ -54,14 +54,14 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
 extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            TADDR siteAddrForRegisterIndirect,
                                            size_t token
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
                                            , UINT_PTR flags
 #endif
                                            );
 
 
 /////////////////////////////////////////////////////////////////////////////////////
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 typedef INT32 DISPL;
 #endif
 
@@ -133,11 +133,11 @@ private:
 
 public:
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     StubCallSite(TADDR siteAddrForRegisterIndirect, PCODE returnAddr);
 
     PCODE           GetCallerAddress();
-#else // !defined(_TARGET_X86_)
+#else // !defined(TARGET_X86)
     // On platforms where we always use an indirection cell things
     // are much simpler - the siteAddr always stores a pointer to a
     // value that in turn points to the indirection cell.
@@ -146,7 +146,7 @@ public:
        { LIMITED_METHOD_CONTRACT; m_siteAddr = dac_cast<PTR_PCODE>(siteAddr); m_returnAddr = returnAddr; }
 
     PCODE           GetCallerAddress()     { LIMITED_METHOD_CONTRACT; return m_returnAddr; }
-#endif // !defined(_TARGET_X86_)
+#endif // !defined(TARGET_X86)
 
     PCODE           GetSiteTarget()        { WRAPPER_NO_CONTRACT; return *(GetIndirectCell()); }
     void            SetSiteTarget(PCODE newTarget);
@@ -165,12 +165,12 @@ extern "C" void StubDispatchFixupStub();              // for lazy fixup of ngen 
 extern "C" void ResolveWorkerAsmStub();               // resolve a token and transfer control to that method
 extern "C" void ResolveWorkerChainLookupAsmStub();    // for chaining of entries in the cache
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 extern "C" void BackPatchWorkerAsmStub();             // backpatch a call site to point to a different stub
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 extern "C" void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
-#endif // FEATURE_PAL
-#endif // _TARGET_X86_
+#endif // TARGET_UNIX
+#endif // TARGET_X86
 
 
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
@@ -289,7 +289,7 @@ public:
           lookup_heap(NULL),
           dispatch_heap(NULL),
           resolve_heap(NULL),
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
           m_fShouldAllocateLongJumpDispatchStubs(FALSE),
 #endif
           lookups(NULL),
@@ -498,7 +498,7 @@ private:
                                          size_t dispatchToken,
                                          bool *pMayHaveReenteredCooperativeGCMode);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Used to allocate a long jump dispatch stub. See comment around
     // m_fShouldAllocateLongJumpDispatchStubs for explaination.
     DispatchHolder *GenerateDispatchStubLong(PCODE addrOfCode,
@@ -590,12 +590,12 @@ private:
     friend PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                    TADDR siteAddrForRegisterIndirect,
                                    size_t token
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
                                    , UINT_PTR flags
 #endif
                                    );
 
-#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
+#if defined(TARGET_X86) && defined(TARGET_UNIX)
     friend void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect);
 #endif
 
@@ -734,7 +734,7 @@ private:
     PTR_LoaderHeap  resolve_heap;       // resolve stubs go here
     PTR_LoaderHeap  vtable_heap;        // vtable-based jump stubs go here
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // When we layout the stub heaps, we put them close together in a sequential order
     // so that we maximize performance with respect to branch predictions. On AMD64,
     // dispatch stubs use a rel32 jump on failure to the resolve stub. This works for

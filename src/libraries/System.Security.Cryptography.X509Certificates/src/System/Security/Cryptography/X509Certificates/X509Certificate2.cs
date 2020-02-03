@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
 
-            // Desktop compat: The desktop CLR expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
+            // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
             string fullPath = Path.GetFullPath(fileName);
 

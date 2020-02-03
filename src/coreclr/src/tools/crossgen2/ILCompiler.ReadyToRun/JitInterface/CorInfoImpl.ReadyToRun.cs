@@ -139,6 +139,7 @@ namespace Internal.JitInterface
         private IReadyToRunMethodCodeNode _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
+        private ArrayBuilder<MethodDesc> _inlinedMethods;
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -611,6 +612,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.StackProbe;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_POLL_GC:
+                    id = ReadyToRunHelper.GCPoll;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS:
                 case CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION:
@@ -669,10 +674,11 @@ namespace Internal.JitInterface
             // If the method body is synthetized by the compiler (the definition of the MethodIL is not
             // an EcmaMethodIL), the tokens in the MethodIL are not actual tokens: they're just
             // "per-MethodIL unique cookies". For ready to run, we need to be able to get to an actual
+            // token to refer to the result of token lookup in the R2R fixups; we replace the token
             // token to refer to the result of token lookup in the R2R fixups.
             //
-            // We replace the token with the token of the ECMA entity. This only works for **non-generic
-            // types/members within the current version bubble**, but this happens to be good enough because
+            // We replace the token with the token of the ECMA entity. This only works for **types/members
+            // within the current version bubble**, but this happens to be good enough because
             // we only do this replacement within CoreLib to replace method bodies in places
             // that we cannot express in C# right now and for p/invokes in large version bubbles).
             MethodIL methodILDef = methodIL.GetMethodILDefinition();
@@ -681,22 +687,32 @@ namespace Internal.JitInterface
             {
                 object resultDef = methodILDef.GetObject((int)pResolvedToken.token);
 
-                if (resultDef is MethodDesc)
+                if (resultDef is MethodDesc resultMethod)
                 {
-                    if (resultDef is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
-                        resultDef = rawPinvoke.Target;
+                    if (resultMethod is IL.Stubs.PInvokeTargetNativeMethod rawPinvoke)
+                        resultMethod = rawPinvoke.Target;
 
-                    Debug.Assert(resultDef is EcmaMethod);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultDef).Handle);
-                    module = ((EcmaMethod)resultDef).Module;
+                    // It's okay to strip the instantiation away because we don't need a MethodSpec
+                    // token - SignatureBuilder will generate the generic method signature
+                    // using instantiation parameters from the MethodDesc entity.
+                    resultMethod = resultMethod.GetTypicalMethodDefinition();
+
+                    Debug.Assert(resultMethod is EcmaMethod);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaMethod)resultMethod).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaMethod)resultMethod).Handle);
+                    module = ((EcmaMethod)resultMethod).Module;
                 }
-                else if (resultDef is FieldDesc)
+                else if (resultDef is FieldDesc resultField)
                 {
-                    Debug.Assert(resultDef is EcmaField);
-                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultDef).OwningType));
-                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultDef).Handle);
-                    module = ((EcmaField)resultDef).Module;
+                    // It's okay to strip the instantiation away because we don't need the
+                    // instantiated MemberRef token - SignatureBuilder will generate the generic
+                    // field signature using instantiation parameters from the FieldDesc entity.
+                    resultField = resultField.GetTypicalFieldDefinition();
+
+                    Debug.Assert(resultField is EcmaField);
+                    Debug.Assert(_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(((EcmaField)resultField).OwningType));
+                    token = (mdToken)MetadataTokens.GetToken(((EcmaField)resultField).Handle);
+                    module = ((EcmaField)resultField).Module;
                 }
                 else
                 {
@@ -2035,9 +2051,17 @@ namespace Internal.JitInterface
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
-            
-            pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
-            pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+
+            if (ecmaMethod.IsSuppressGCTransition())
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PVALUE;
+            }
+            else
+            {
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.accessType = InfoAccessType.IAT_PPVALUE;
+            }
         }
 
         private bool pInvokeMarshalingRequired(CORINFO_METHOD_STRUCT_* handle, CORINFO_SIG_INFO* callSiteSig)
@@ -2140,6 +2164,16 @@ namespace Internal.JitInterface
             }
 
             _ehClauses[EHnumber] = clause;
+        }
+
+        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
+        {
+            if (inlineResult == CorInfoInline.INLINE_PASS)
+            {
+                // We deliberately ignore inlinerHnd because we have no interest to track intermediate links now.
+                MethodDesc inlinee = HandleToObject(inlineeHnd);
+                _inlinedMethods.Add(inlinee);
+            }
         }
     }
 }

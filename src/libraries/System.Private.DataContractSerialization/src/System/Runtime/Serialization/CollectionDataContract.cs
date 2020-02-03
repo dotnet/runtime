@@ -1268,7 +1268,7 @@ namespace System.Runtime.Serialization
                     {
                         Type[] parentInterfaceTypes = interfaceType.GetInterfaces();
                         // The for loop below depeneds on the order for the items in parentInterfaceTypes, which
-                        // doesnt' seem right. But it's the behavior of DCS on the full framework.
+                        // doesn't seem right. But it's the behavior of DCS on the .NET Framework.
                         // Sorting the array to make sure the behavior is consistent with Desktop's.
                         Array.Sort(parentInterfaceTypes, (x, y) => string.Compare(x.FullName, y.FullName));
                         foreach (Type parentInterfaceType in parentInterfaceTypes)

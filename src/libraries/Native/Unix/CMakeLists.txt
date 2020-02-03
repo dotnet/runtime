@@ -22,7 +22,7 @@ set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../_version.c")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 
 # We mark the function which needs exporting with DLLEXPORT
 add_compile_options(-fvisibility=hidden)

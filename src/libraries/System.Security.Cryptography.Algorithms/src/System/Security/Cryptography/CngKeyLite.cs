@@ -596,7 +596,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Retrieve a well-known CNG string property. (Note: desktop compat: this helper likes to return special values rather than throw exceptions for missing
+        /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
         internal static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
@@ -604,9 +604,9 @@ namespace System.Security.Cryptography
             Debug.Assert(!ncryptHandle.IsInvalid);
             byte[] value = GetProperty(ncryptHandle, propertyName, options);
             if (value == null)
-                return null;   // Desktop compat: return null if key not present.
+                return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
-                return string.Empty; // Desktop compat: return empty if property value is 0-length.
+                return string.Empty; // .NET Framework compat: return empty if property value is 0-length.
 
             unsafe
             {

@@ -16,7 +16,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin AND NOT CMAKE_SYSTEM_NAME STREQUAL Free
   set(CMAKE_REQUIRED_DEFINITIONS "-D_BSD_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_POSIX_C_SOURCE=200809L")
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
+if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_HOST_ANDROID)
   set(CMAKE_RT_LIBS rt)
 elseif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
   set(CMAKE_RT_LIBS rt)
@@ -126,6 +126,7 @@ check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
 check_function_exists(pipe2 HAVE_PIPE2)
+check_function_exists(process_vm_readv HAVE_PROCESS_VM_READV)
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
@@ -1146,7 +1147,7 @@ int main()
 }" HAVE_FULLY_FEATURED_PTHREAD_MUTEXES)
 set(CMAKE_REQUIRED_LIBRARIES)
 
-if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
   set(CMAKE_REQUIRED_LIBRARIES pthread)
   check_cxx_source_runs("
   // This test case verifies the pthread process-shared robust mutex's cross-process abandon detection. The parent process starts

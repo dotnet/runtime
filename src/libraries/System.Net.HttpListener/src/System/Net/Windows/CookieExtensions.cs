@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
-    // TODO: #13607
+    // TODO https://github.com/dotnet/corefx/issues/13607
     internal static class CookieExtensions
     {
         private static Func<Cookie, string> s_toServerStringFunc;

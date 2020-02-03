@@ -499,7 +499,6 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22627")]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
@@ -713,7 +712,7 @@ namespace System.Net.Tests
         [Fact]
         public void ConnectionGroupName_SetAndGetGroup_ValuesMatch()
         {
-            // Note: In CoreFX changing this value will not have any effect on HTTP stack's behavior.
+            // Note: In .NET Core changing this value will not have any effect on HTTP stack's behavior.
             //       For app-compat reasons we allow applications to alter and read the property.
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             Assert.Null(request.ConnectionGroupName);
@@ -1029,7 +1028,7 @@ namespace System.Net.Tests
         [Fact]
         public void ReadWriteTimeout_SetThenGet_ValuesMatch()
         {
-            // Note: In CoreFX changing this value will not have any effect on HTTP stack's behavior.
+            // Note: In .NET Core changing this value will not have any effect on HTTP stack's behavior.
             //       For app-compat reasons we allow applications to alter and read the property.
             HttpWebRequest request = WebRequest.CreateHttp("http://test");
             request.ReadWriteTimeout = 5;
@@ -1263,7 +1262,7 @@ namespace System.Net.Tests
                 }
             }, async server =>
             {
-                string host = server.Uri.Host + ":" + server.Uri.Port;
+                string host = server.Address.Host + ":" + server.Address.Port;
                 HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Host", host) });
                 string serverReceivedHost = requestData.GetSingleHeaderValue("Host");
                 Assert.Equal(host, serverReceivedHost);
@@ -1716,7 +1715,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "dotnet/corefx #19083")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "https://github.com/dotnet/corefx/issues/19083")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {

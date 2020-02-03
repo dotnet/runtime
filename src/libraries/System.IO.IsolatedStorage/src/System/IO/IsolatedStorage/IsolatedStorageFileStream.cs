@@ -58,8 +58,8 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        // On NetFX FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
-        // to internals in CoreFX so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
+        // On .NET Framework FileStream has an internal no arg constructor that we utilize to provide the facade. We don't have access
+        // to internals in .NET Core so we'll do the next best thing and contort ourselves into the SafeFileHandle constructor.
         // (A path constructor would try and create the requested file and give us two open handles.)
         //
         // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
@@ -138,7 +138,7 @@ namespace System.IO.IsolatedStorage
                 {
                 }
 
-                // Exception message might leak the IsolatedStorage path. The desktop prevented this by calling an
+                // Exception message might leak the IsolatedStorage path. The .NET Framework prevented this by calling an
                 // internal API which made sure that the exception message was scrubbed. However since the innerException
                 // is never returned to the user(GetIsolatedStorageException() does not populate the innerexception
                 // in retail bits we leak the path only under the debugger via IsolatedStorageException._underlyingException which

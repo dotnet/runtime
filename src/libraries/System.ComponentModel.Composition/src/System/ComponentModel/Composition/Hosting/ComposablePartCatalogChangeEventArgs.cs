@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     <paramref name="addedDefinitions"/> or <paramref name="removedDefinitions"/> is <see langword="null"/>.
         /// </exception>
         public ComposablePartCatalogChangeEventArgs(IEnumerable<ComposablePartDefinition> addedDefinitions,
-            IEnumerable<ComposablePartDefinition> removedDefinitions, AtomicComposition atomicComposition)
+            IEnumerable<ComposablePartDefinition> removedDefinitions, AtomicComposition? atomicComposition)
         {
             Requires.NotNull(addedDefinitions, nameof(addedDefinitions));
             Requires.NotNull(removedDefinitions, nameof(removedDefinitions));
@@ -96,6 +96,6 @@ namespace System.ComponentModel.Composition.Hosting
         ///     When the value is non-null it should be used to record temporary changed state
         ///     and actions that will be executed when the atomicComposition is completeed.
         /// </value>
-        public AtomicComposition AtomicComposition { get; private set; }
+        public AtomicComposition? AtomicComposition { get; private set; }
     }
 }

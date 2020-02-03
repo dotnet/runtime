@@ -12,11 +12,11 @@
 // Our little collection of enough of the CLR data to get the JIT up and working...
 #define FEATURE_CLRSQM
 
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_) && !defined(_TARGET_ARM64_) && !defined(_TARGET_ARM_)
+#if !defined(TARGET_AMD64) && !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_ARM)
 #if defined(_M_X64)
-#define _TARGET_AMD64_ 1
+#define TARGET_AMD64 1
 #elif defined(_M_IX86)
-#define _TARGET_X86_ 1
+#define TARGET_X86 1
 #endif
 #endif // _TARGET_* not previously defined
 

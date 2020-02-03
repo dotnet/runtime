@@ -462,22 +462,6 @@ namespace Tests.Integration
             public PartB ImportB { get; set; }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/684510")]
-        public void PartAOptionalDependsOnPartB_PartBGetAddedLater()
-        {
-            var container = new CompositionContainer(new TypeCatalog(typeof(PartC), typeof(PartA)));
-            var partA = container.GetExportedValue<PartA>();
-
-            Assert.Null(partA.ImportB);
-
-            var partB = new PartB();
-            container.ComposeParts(partB);
-
-            Assert.Equal(partA.ImportB, partB);
-            Assert.NotNull(partB.ImportC);
-        }
-
         [Export]
         public class PartA2
         {
@@ -486,23 +470,6 @@ namespace Tests.Integration
 
             [Import(AllowDefault = true, AllowRecomposition = true)]
             public PartC ImportC { get; set; }
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/684510")]
-        public void PartAOptionalDependsOnPartBAndPartC_PartCGetRecurrected()
-        {
-            var container = new CompositionContainer(new TypeCatalog(typeof(PartA2), typeof(PartB)));
-            var partA = container.GetExportedValue<PartA2>();
-
-            Assert.Null(partA.ImportB);
-            Assert.Null(partA.ImportC);
-
-            var partC = new PartC();
-            container.ComposeParts(partC);
-
-            Assert.Equal(partA.ImportB, partC.ImportB);
-            Assert.Equal(partA.ImportC, partC);
         }
     }
 }

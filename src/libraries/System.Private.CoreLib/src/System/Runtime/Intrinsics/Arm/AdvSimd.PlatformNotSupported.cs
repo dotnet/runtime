@@ -34,53 +34,83 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<ulong> Abs(Vector128<long> value) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcagt (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareGreaterThan(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// int64x1_t vabs_s64 (int64x1_t a)
+            ///   A64: ABS Dd, Dn
+            /// </summary>
+            public static Vector64<ulong> AbsScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcagt (float64x2_t a, float64x2_t b)
-            ///   A64: FACGT Vd, Vn, Vm
+            /// uint64x2_t vcagtq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcage (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGE Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareGreaterThanOrEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcagt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareGreaterThanScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcage (float64x2_t a, float64x2_t b)
-            ///   A64: FACGE Vd, Vn, Vm
+            /// uint32_t vcagts_f32 (float32_t a, float32_t b)
+            ///   A64: FACGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareGreaterThanScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcageq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcalt (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareLessThan(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcage_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareGreaterThanOrEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcalt (float64x2_t a, float64x2_t b)
-            ///   A64: FACGT Vd, Vn, Vm
+            /// uint32_t vcages_f32 (float32_t a, float32_t b)
+            ///   A64: FACGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareGreaterThanOrEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcaltq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareLessThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcale (float64x1_t a, float64x1_t b)
-            // ///   A64: FACGE Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<double> AbsoluteCompareLessThanOrEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcalt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareLessThanScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcale (float64x2_t a, float64x2_t b)
-            ///   A64: FACGE Vd, Vn, Vm
+            /// uint32_t vcalts_f32 (float32_t a, float32_t b)
+            ///   A64: FACGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareLessThanScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcaleq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FACGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> AbsoluteCompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcale_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FACGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteCompareLessThanOrEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vcales_f32 (float32_t a, float32_t b)
+            ///   A64: FACGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteCompareLessThanOrEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vabdq_f64 (float64x2_t a, float64x2_t b)
@@ -88,11 +118,17 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<double> AbsoluteDifference(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// int64x1_t vabs_s64 (int64x1_t a)
-            // ///   A64: ABS Dd, Dn
-            // /// </summary>
-            // public static Vector64<ulong> AbsScalar(Vector64<long> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// float64x1_t vabd_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FABD Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> AbsoluteDifferenceScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vabds_f32 (float32_t a, float32_t b)
+            ///   A64: FABD Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> AbsoluteDifferenceScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vaddq_f64 (float64x2_t a, float64x2_t b)
@@ -160,223 +196,253 @@ namespace System.Runtime.Intrinsics.Arm
             /// </summary>
             public static Vector128<uint> AddAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// int64x1_t vceq_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMEQ Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareEqual(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMEQ Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareEqual(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMEQ Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vceqq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMEQ Vd, Vn, Vm
+            /// uint64x2_t vceqq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vceqq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMEQ Vd, Vn, Vm
+            ///   A64: CMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMEQ Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
             /// <summary>
-            /// float64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMEQ Vd, Vn, Vm
+            /// uint64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMEQ Dd, Dn, Dm
             /// </summary>
-            public static Vector128<double> CompareEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// float64x1_t vcgt_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMGT Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareGreaterThan(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vcgt_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareGreaterThan(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vcgt_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHI Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareGreaterThan(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            public static Vector64<double> CompareEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcgtq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMGT Vd, Vn, Vm
+            /// uint64x1_t vceq_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMEQ Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareEqualScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vceqs_f32 (float32_t a, float32_t b)
+            ///   A64: FCMEQ Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMEQ Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareEqualScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcgtq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareGreaterThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vcgtq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMGT Vd, Vn, Vm
+            /// uint64x2_t vcgtq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareGreaterThan(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vcgtq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHI Vd, Vn, Vm
+            ///   A64: CMHI Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareGreaterThan(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vceq_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: CMGE Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareGreaterThanOrEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vcge_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMGE Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareGreaterThanOrEqual(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vceq_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHS Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareGreaterThanOrEqual(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcgt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareGreaterThanScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: CMGE Vd, Vn, Vm
+            /// uint64x1_t vcgt_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareGreaterThanScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vcgts_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareGreaterThanScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcgt_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHI Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareGreaterThanScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcgeq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareGreaterThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vcgeq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMGE Vd, Vn, Vm
+            /// uint64x2_t vcgeq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareGreaterThanOrEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// uint64x2_t vceqq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHS Vd, Vn, Vm
+            /// uint64x2_t vcgeq_u64 (uint64x2_t a, uint64x2_t b)
+            ///   A64: CMHS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareGreaterThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vclt_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMGT Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareLessThan(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vclt_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMGT Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareLessThan(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vclt_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHI Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareLessThan(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcge_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareGreaterThanOrEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcltq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMGT Vd, Vn, Vm
+            /// uint64x1_t vcge_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareGreaterThanOrEqualScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vcges_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareGreaterThanOrEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcge_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareGreaterThanOrEqualScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcltq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareLessThan(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vcltq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMGT Vd, Vn, Vm
+            /// uint64x2_t vcltq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGT Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareLessThan(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vcltq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHI Vd, Vn, Vm
+            ///   A64: CMHI Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareLessThan(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vcle_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: FCMGT Dd, Dn, Dm
-            // /// </summary>
-            // public static Vector64<double> CompareLessThanOrEqual(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vcle_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMHS Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareLessThanOrEqual(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vcle_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMHS Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareLessThanOrEqual(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vclt_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareLessThanScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vcleq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: FCMGT Vd, Vn, Vm
+            /// uint64x1_t vclt_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGT Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareLessThanScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vclts_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGT Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareLessThanScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vclt_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHI Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareLessThanScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vcleq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FCMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<double> CompareLessThanOrEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vcleq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMHS Vd, Vn, Vm
+            /// uint64x2_t vcleq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMGE Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareLessThanOrEqual(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vcleq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMHS Vd, Vn, Vm
+            ///   A64: CMHS Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareLessThanOrEqual(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-            // /// <summary>
-            // /// float64x1_t vtst_f64 (float64x1_t a, float64x1_t b)
-            // ///   A64: CMTST Dd, Dn, Dm
-            // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-            // /// </summary>
-            // public static Vector64<double> CompareTest(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// int64x1_t vtst_s64 (int64x1_t a, int64x1_t b)
-            // ///   A64: CMTST Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<long> CompareTest(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-            // /// <summary>
-            // /// uint64x1_t vtst_u64 (uint64x1_t a, uint64x1_t b)
-            // ///   A64: CMTST Vd, Vn, Vm
-            // /// </summary>
-            // public static Vector64<ulong> CompareTest(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// uint64x1_t vcle_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FCMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> CompareLessThanOrEqualScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// float64x2_t vtstq_f64 (float64x2_t a, float64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            /// uint64x1_t vcle_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMGE Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareLessThanOrEqualScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vcles_f32 (float32_t a, float32_t b)
+            ///   A64: FCMGE Sd, Sn, Sm
+            /// </summary>
+            public static Vector64<float> CompareLessThanOrEqualScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vcle_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMHS Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareLessThanOrEqualScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x2_t vtstq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
             /// </summary>
             public static Vector128<double> CompareTest(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
-            /// int64x2_t vtstq_s64 (int64x2_t a, int64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            /// uint64x2_t vtstq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<long> CompareTest(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// uint64x2_t vtstq_u64 (uint64x2_t a, uint64x2_t b)
-            ///   A64: CMTST Vd, Vn, Vm
+            ///   A64: CMTST Vd.2D, Vn.2D, Vm.2D
             /// </summary>
             public static Vector128<ulong> CompareTest(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vtst_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<double> CompareTestScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vtst_s64 (int64x1_t a, int64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<long> CompareTestScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint64x1_t vtst_u64 (uint64x1_t a, uint64x1_t b)
+            ///   A64: CMTST Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -1022,13 +1088,6 @@ namespace System.Runtime.Intrinsics.Arm
         }
 
         /// <summary>
-        /// int8x8_t vabs_s8 (int8x8_t a)
-        ///   A32: VABS.S8 Dd, Dm
-        ///   A64: ABS Vd.8B, Vn.8B
-        /// </summary>
-        public static Vector64<byte> Abs(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16x4_t vabs_s16 (int16x4_t a)
         ///   A32: VABS.S16 Dd, Dm
         ///   A64: ABS Vd.4H, Vn.4H
@@ -1043,18 +1102,18 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<uint> Abs(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x8_t vabs_s8 (int8x8_t a)
+        ///   A32: VABS.S8 Dd, Dm
+        ///   A64: ABS Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<byte> Abs(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vabs_f32 (float32x2_t a)
         ///   A32: VABS.F32 Dd, Dm
         ///   A64: FABS Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<float> Abs(Vector64<float> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int8x16_t vabsq_s8 (int8x16_t a)
-        ///   A32: VABS.S8 Qd, Qm
-        ///   A64: ABS Vd.16B, Vn.16B
-        /// </summary>
-        public static Vector128<byte> Abs(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vabsq_s16 (int16x8_t a)
@@ -1071,6 +1130,13 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> Abs(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x16_t vabsq_s8 (int8x16_t a)
+        ///   A32: VABS.S8 Qd, Qm
+        ///   A64: ABS Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<byte> Abs(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x4_t vabsq_f32 (float32x4_t a)
         ///   A32: VABS.F32 Qd, Qm
         ///   A64: FABS Vd.4S, Vn.4S
@@ -1078,58 +1144,73 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<float> Abs(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcagt (float32x2_t a, float32x2_t b)
-        ///   A32: VACGT Dd, Dn, Dm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// float64x1_t vabs_f64 (float64x1_t a)
+        ///   A32: VABS.F64 Dd, Dm
+        ///   A64: FABS Dd, Dn
+        /// </summary>
+        public static Vector64<double> AbsScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vabss_f32 (float32_t a)
+        ///   A32: VABS.F32 Sd, Sm
+        ///   A64: FABS Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> AbsScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vcagt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACGT.F32 Dd, Dn, Dm
+        ///   A64: FACGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareGreaterThan(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcagt (float32x4_t a, float32x4_t b)
-        ///   A32: VACGT Qd, Qn, Qm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x4_t vcagtq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACGT.F32 Qd, Qn, Qm
+        ///   A64: FACGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcage (float32x2_t a, float32x2_t b)
-        ///   A32: VACGE Dd, Dn, Dm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x2_t vcage_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACGE.F32 Dd, Dn, Dm
+        ///   A64: FACGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareGreaterThanOrEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcage (float32x4_t a, float32x4_t b)
-        ///   A32: VACGE Qd, Qn, Qm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x4_t vcageq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACGE.F32 Qd, Qn, Qm
+        ///   A64: FACGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcalt (float32x2_t a, float32x2_t b)
-        ///   A32: VACLT Dd, Dn, Dm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x2_t vcalt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACLT.F32 Dd, Dn, Dm
+        ///   A64: FACGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareLessThan(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcalt (float32x4_t a, float32x4_t b)
-        ///   A32: VACLT Qd, Qn, Qm
-        ///   A64: FACGT Vd, Vn, Vm
+        /// uint32x4_t vcaltq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACLT.F32 Qd, Qn, Qm
+        ///   A64: FACGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareLessThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcale (float32x2_t a, float32x2_t b)
-        ///   A32: VACLE Dd, Dn, Dm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x2_t vcale_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VACLE.F32 Dd, Dn, Dm
+        ///   A64: FACGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> AbsoluteCompareLessThanOrEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcale (float32x4_t a, float32x4_t b)
-        ///   A32: VACLE Qd, Qn, Qm
-        ///   A64: FACGE Vd, Vn, Vm
+        /// uint32x4_t vcaleq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VACLE.F32 Qd, Qn, Qm
+        ///   A64: FACGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> AbsoluteCompareLessThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
@@ -1230,19 +1311,6 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UABD Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> AbsoluteDifference(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// float64x1_t vabs_f64 (float64x1_t a)
-        // ///   A32: VABS.F64 Dd, Dm
-        // ///   A64: FABS Dd, Dn
-        // /// </summary>
-        // public static Vector64<double> AbsScalar(Vector64<double> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        ///   A32: VABS.F32 Sd, Sm
-        ///   A64: FABS Sd, Sn
-        /// </summary>
-        public static Vector64<float> AbsScalar(Vector64<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vadd_u8 (uint8x8_t a, uint8x8_t b)
@@ -1356,32 +1424,34 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VADD.F64 Dd, Dn, Dm
-        // ///   A64: FADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> AddScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// int64x1_t vadd_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VADD.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> AddScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
-
-        // /// <summary>
-        // /// uint64x1_t vadd_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VADD.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> AddScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VADD.F64 Dd, Dn, Dm
+        ///   A64: FADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> AddScalar(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int64x1_t vadd_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VADD.I64 Dd, Dn, Dm
+        ///   A64: ADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> AddScalar(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vadds_f32 (float32_t a, float32_t b)
         ///   A32: VADD.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FADD Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> AddScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vadd_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VADD.I64 Dd, Dn, Dm
+        ///   A64: ADD Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> AddScalar(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
@@ -1674,856 +1744,856 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vbsl_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> BitwiseSelect(Vector64<byte> select, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// float64x1_t vbsl_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<double> BitwiseSelect(Vector64<double> select, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// float64x1_t vbsl_f64 (uint64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<double> BitwiseSelect(Vector64<double> select, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vbsl_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        /// int16x4_t vbsl_s16 (uint16x4_t a, int16x4_t b, int16x4_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> BitwiseSelect(Vector64<short> select, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vbsl_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        /// int32x2_t vbsl_s32 (uint32x2_t a, int32x2_t b, int32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> BitwiseSelect(Vector64<int> select, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// int64x1_t vbsl_s64 (int64x1_t a, int64x1_t b, int64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> BitwiseSelect(Vector64<long> select, Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// int64x1_t vbsl_s64 (uint64x1_t a, int64x1_t b, int64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> BitwiseSelect(Vector64<long> select, Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vbsl_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        /// int8x8_t vbsl_s8 (uint8x8_t a, int8x8_t b, int8x8_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> BitwiseSelect(Vector64<sbyte> select, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vbsl_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        /// float32x2_t vbsl_f32 (uint32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<float> BitwiseSelect(Vector64<float> select, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vbsl_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> BitwiseSelect(Vector64<ushort> select, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vbsl_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
         ///   A32: VBSL Dd, Dn, Dm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> BitwiseSelect(Vector64<uint> select, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
-        // /// <summary>
-        // /// uint64x1_t vbsl_u64 (uint64x1_t a, uint64x1_t b, uint64x1_t c)
-        // ///   A32: VBSL Dd, Dn, Dm
-        // ///   A64: BSL Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> BitwiseSelect(Vector64<ulong> select, Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// uint64x1_t vbsl_u64 (uint64x1_t a, uint64x1_t b, uint64x1_t c)
+        ///   A32: VBSL Dd, Dn, Dm
+        ///   A64: BSL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> BitwiseSelect(Vector64<ulong> select, Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vbslq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> BitwiseSelect(Vector128<byte> select, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float64x2_t vbslq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+        /// float64x2_t vbslq_f64 (uint64x2_t a, float64x2_t b, float64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<double> BitwiseSelect(Vector128<double> select, Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vbslq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        /// int16x8_t vbslq_s16 (uint16x8_t a, int16x8_t b, int16x8_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> BitwiseSelect(Vector128<short> select, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vbslq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        /// int32x4_t vbslq_s32 (uint32x4_t a, int32x4_t b, int32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> BitwiseSelect(Vector128<int> select, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int64x2_t vbslq_s64 (int64x2_t a, int64x2_t b, int64x2_t c)
+        /// int64x2_t vbslq_s64 (uint64x2_t a, int64x2_t b, int64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> BitwiseSelect(Vector128<long> select, Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vbslq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        /// int8x16_t vbslq_s8 (uint8x16_t a, int8x16_t b, int8x16_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> BitwiseSelect(Vector128<sbyte> select, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vbslq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        /// float32x4_t vbslq_f32 (uint32x4_t a, float32x4_t b, float32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<float> BitwiseSelect(Vector128<float> select, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vbslq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> BitwiseSelect(Vector128<ushort> select, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vbslq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> BitwiseSelect(Vector128<uint> select, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint64x2_t vbslq_u64 (uint64x2_t a, uint64x2_t b, uint64x2_t c)
         ///   A32: VBSL Qd, Qn, Qm
-        ///   A64: BSL Vd, Vn, Vm
+        ///   A64: BSL Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> BitwiseSelect(Vector128<ulong> select, Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vceq_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector64<sbyte> CompareEqual(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int8x16_t vceqq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int16x4_t vceq_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector64<short> CompareEqual(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int16x8_t vceqq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector128<short> CompareEqual(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int32x2_t vceq_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector64<int> CompareEqual(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int32x4_t vceqq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector128<int> CompareEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x8_t vceq_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
+        ///   A32: VCEQ.I8 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareEqual(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vceqq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
+        /// uint16x4_t vceq_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCEQ.I16 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.4H, Vn.4H, Vm.4H
         /// </summary>
-        public static Vector128<byte> CompareEqual(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> CompareEqual(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vceq_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
+        /// uint32x2_t vceq_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCEQ.I32 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.2S, Vn.2S, Vm.2S
         /// </summary>
-        public static Vector64<ushort> CompareEqual(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> CompareEqual(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vceqq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
+        /// uint8x8_t vceq_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCEQ.I8 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector128<ushort> CompareEqual(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> CompareEqual(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x2_t vceq_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector64<uint> CompareEqual(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// uint32x4_t vceqq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: CMEQ Vd, Vn, Vm
-        /// </summary>
-        public static Vector128<uint> CompareEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float32x2_t vceq_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCEQ Dd, Dn, Dm
-        ///   A64: FCMEQ Dd, Dn, Dm
+        /// uint32x2_t vceq_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCEQ.F32 Dd, Dn, Dm
+        ///   A64: FCMEQ Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vceqq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCEQ Qd, Qn, Qm
-        ///   A64: FCMEQ Vd, Vn, Vm
+        /// uint16x4_t vceq_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VCEQ.I16 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> CompareEqual(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vceq_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VCEQ.I32 Dd, Dn, Dm
+        ///   A64: CMEQ Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> CompareEqual(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vceqq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VCEQ.I8 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> CompareEqual(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vceqq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCEQ.I16 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> CompareEqual(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vceqq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCEQ.I32 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> CompareEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vceqq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCEQ.I8 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> CompareEqual(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vceqq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCEQ.F32 Qd, Qn, Qm
+        ///   A64: FCMEQ Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// uint16x8_t vceqq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VCEQ.I16 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> CompareEqual(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vceqq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VCEQ.I32 Qd, Qn, Qm
+        ///   A64: CMEQ Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> CompareEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint8x8_t vcgt_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U8 Dd, Dn, Dm
+        ///   A64: CMHI Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareGreaterThan(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vcgt_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x4_t vcgt_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCGT.S16 Dd, Dn, Dm
+        ///   A64: CMGT Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareGreaterThan(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vcgt_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x2_t vcgt_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCGT.S32 Dd, Dn, Dm
+        ///   A64: CMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareGreaterThan(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcgt_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x8_t vcgt_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCGT.S8 Dd, Dn, Dm
+        ///   A64: CMGT Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareGreaterThan(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcgt_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: FCMGT Dd, Dn, Dm
+        /// uint32x2_t vcgt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCGT.F32 Dd, Dn, Dm
+        ///   A64: FCMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareGreaterThan(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vcgt_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U16 Dd, Dn, Dm
+        ///   A64: CMHI Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareGreaterThan(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vcgt_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCGT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U32 Dd, Dn, Dm
+        ///   A64: CMHI Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareGreaterThan(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vcgtq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U8 Qd, Qn, Qm
+        ///   A64: CMHI Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareGreaterThan(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vcgtq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x8_t vcgtq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCGT.S16 Qd, Qn, Qm
+        ///   A64: CMGT Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareGreaterThan(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vcgtq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x4_t vcgtq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCGT.S32 Qd, Qn, Qm
+        ///   A64: CMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareGreaterThan(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vcgtq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x16_t vcgtq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCGT.S8 Qd, Qn, Qm
+        ///   A64: CMGT Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareGreaterThan(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcgtq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: FCMGT Vd, Vn, Vm
+        /// uint32x4_t vcgtq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCGT.F32 Qd, Qn, Qm
+        ///   A64: FCMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareGreaterThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vcgtq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U16 Qd, Qn, Qm
+        ///   A64: CMHI Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareGreaterThan(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vcgtq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCGT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCGT.U32 Qd, Qn, Qm
+        ///   A64: CMHI Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareGreaterThan(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x8_t vceq_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x8_t vcge_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VCGE.U8 Dd, Dn, Dm
+        ///   A64: CMHS Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareGreaterThanOrEqual(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vcge_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint16x4_t vcge_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCGE.S16 Dd, Dn, Dm
+        ///   A64: CMGE Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareGreaterThanOrEqual(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vcge_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x2_t vcge_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCGE.S32 Dd, Dn, Dm
+        ///   A64: CMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareGreaterThanOrEqual(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcge_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint8x8_t vcge_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCGE.S8 Dd, Dn, Dm
+        ///   A64: CMGE Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareGreaterThanOrEqual(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vceq_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMGE Dd, Dn, Dm
+        /// uint32x2_t vcge_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCGE.F32 Dd, Dn, Dm
+        ///   A64: FCMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareGreaterThanOrEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vceq_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x4_t vcge_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VCGE.U16 Dd, Dn, Dm
+        ///   A64: CMHS Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareGreaterThanOrEqual(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x2_t vceq_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCGE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x2_t vcge_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VCGE.U32 Dd, Dn, Dm
+        ///   A64: CMHS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareGreaterThanOrEqual(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint8x16_t vceqq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x16_t vcgeq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VCGE.U8 Qd, Qn, Qm
+        ///   A64: CMHS Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareGreaterThanOrEqual(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vcgeq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint16x8_t vcgeq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCGE.S16 Qd, Qn, Qm
+        ///   A64: CMGE Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareGreaterThanOrEqual(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vcgeq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x4_t vcgeq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCGE.S32 Qd, Qn, Qm
+        ///   A64: CMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareGreaterThanOrEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vcgeq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint8x16_t vcgeq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCGE.S8 Qd, Qn, Qm
+        ///   A64: CMGE Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareGreaterThanOrEqual(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vceqq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMGE Vd, Vn, Vm
+        /// uint32x4_t vcgeq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCGE.F32 Qd, Qn, Qm
+        ///   A64: FCMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vceqq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x8_t vcgeq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VCGE.U16 Qd, Qn, Qm
+        ///   A64: CMHS Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareGreaterThanOrEqual(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint32x4_t vceqq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCGE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x4_t vcgeq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VCGE.U32 Qd, Qn, Qm
+        ///   A64: CMHS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareGreaterThanOrEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vclt_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U8 Dd, Dn, Dm
+        ///   A64: CMHI Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareLessThan(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vclt_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x4_t vclt_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCLT.S16 Dd, Dn, Dm
+        ///   A64: CMGT Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareLessThan(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vclt_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x2_t vclt_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCLT.S32 Dd, Dn, Dm
+        ///   A64: CMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareLessThan(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vclt_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x8_t vclt_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCLT.S8 Dd, Dn, Dm
+        ///   A64: CMGT Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareLessThan(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vclt_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: FCMGT Dd, Dn, Dm
+        /// uint32x2_t vclt_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCLT.F32 Dd, Dn, Dm
+        ///   A64: FCMGT Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareLessThan(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vclt_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U16 Dd, Dn, Dm
+        ///   A64: CMHI Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareLessThan(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vclt_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCLT Dd, Dn, Dm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U32 Dd, Dn, Dm
+        ///   A64: CMHI Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareLessThan(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vcltq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U8 Qd, Qn, Qm
+        ///   A64: CMHI Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareLessThan(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vcltq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint16x8_t vcltq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCLT.S16 Qd, Qn, Qm
+        ///   A64: CMGT Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareLessThan(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vcltq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint32x4_t vcltq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCLT.S32 Qd, Qn, Qm
+        ///   A64: CMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareLessThan(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vcltq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMGT Vd, Vn, Vm
+        /// uint8x16_t vcltq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCLT.S8 Qd, Qn, Qm
+        ///   A64: CMGT Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareLessThan(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcltq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: FCMGT Vd, Vn, Vm
+        /// uint32x4_t vcltq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCLT.F32 Qd, Qn, Qm
+        ///   A64: FCMGT Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareLessThan(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vcltq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U16 Qd, Qn, Qm
+        ///   A64: CMHI Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareLessThan(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vcltq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCLT Qd, Qn, Qm
-        ///   A64: CMHI Vd, Vn, Vm
+        ///   A32: VCLT.U32 Qd, Qn, Qm
+        ///   A64: CMHI Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareLessThan(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vcle_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U8 Dd, Dn, Dm
+        ///   A64: CMHS Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareLessThanOrEqual(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vcle_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x4_t vcle_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VCLE.S16 Dd, Dn, Dm
+        ///   A64: CMGE Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareLessThanOrEqual(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vcle_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x2_t vcle_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VCLE.S32 Dd, Dn, Dm
+        ///   A64: CMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareLessThanOrEqual(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcle_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x8_t vcle_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VCLE.S8 Dd, Dn, Dm
+        ///   A64: CMGE Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareLessThanOrEqual(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vcle_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: FCMGT Dd, Dn, Dm
+        /// uint32x2_t vcle_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VCLE.F32 Dd, Dn, Dm
+        ///   A64: FCMGE Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<float> CompareLessThanOrEqual(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vcle_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U16 Dd, Dn, Dm
+        ///   A64: CMHS Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareLessThanOrEqual(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vcle_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VCLE Dd, Dn, Dm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U32 Dd, Dn, Dm
+        ///   A64: CMHS Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareLessThanOrEqual(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vcleq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U8 Qd, Qn, Qm
+        ///   A64: CMHS Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareLessThanOrEqual(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vcleq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint16x8_t vcleq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VCLE.S16 Qd, Qn, Qm
+        ///   A64: CMGE Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareLessThanOrEqual(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vcleq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint32x4_t vcleq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VCLE.S32 Qd, Qn, Qm
+        ///   A64: CMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareLessThanOrEqual(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vcleq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        /// uint8x16_t vcleq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VCLE.S8 Qd, Qn, Qm
+        ///   A64: CMGE Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareLessThanOrEqual(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vcleq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: FCMGT Vd, Vn, Vm
+        /// uint32x4_t vcleq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VCLE.F32 Qd, Qn, Qm
+        ///   A64: FCMGE Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<float> CompareLessThanOrEqual(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vcleq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U16 Qd, Qn, Qm
+        ///   A64: CMHS Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareLessThanOrEqual(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vcleq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VCLE Qd, Qn, Qm
-        ///   A64: CMHS Vd, Vn, Vm
+        ///   A32: VCLE.U32 Qd, Qn, Qm
+        ///   A64: CMHS Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareLessThanOrEqual(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vtst_u8 (uint8x8_t a, uint8x8_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.8 Dd, Dn, Dm
+        ///   A64: CMTST Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> CompareTest(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x4_t vtst_s16 (int16x4_t a, int16x4_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint16x4_t vtst_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VTST.16 Dd, Dn, Dm
+        ///   A64: CMTST Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> CompareTest(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x2_t vtst_s32 (int32x2_t a, int32x2_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint32x2_t vtst_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VTST.32 Dd, Dn, Dm
+        ///   A64: CMTST Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> CompareTest(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vtst_s8 (int8x8_t a, int8x8_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint8x8_t vtst_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VTST.8 Dd, Dn, Dm
+        ///   A64: CMTST Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> CompareTest(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x2_t vtst_f32 (float32x2_t a, float32x2_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Dd, Dn, Dm
+        /// uint32x2_t vtst_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VTST.32 Dd, Dn, Dm
+        ///   A64: CMTST Vd.2S, Vn.2S, Vm.2S
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> CompareTest(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vtst_u16 (uint16x4_t a, uint16x4_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.16 Dd, Dn, Dm
+        ///   A64: CMTST Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> CompareTest(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vtst_u32 (uint32x2_t a, uint32x2_t b)
-        ///   A32: VTST Dd, Dn, Dm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.32 Dd, Dn, Dm
+        ///   A64: CMTST Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> CompareTest(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vtstq_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.8 Qd, Qn, Qm
+        ///   A64: CMTST Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> CompareTest(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int16x8_t vtstq_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint16x8_t vtstq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VTST.16 Qd, Qn, Qm
+        ///   A64: CMTST Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> CompareTest(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int32x4_t vtstq_s32 (int32x4_t a, int32x4_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint32x4_t vtstq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VTST.32 Qd, Qn, Qm
+        ///   A64: CMTST Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> CompareTest(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vtstq_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint8x16_t vtstq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VTST.8 Qd, Qn, Qm
+        ///   A64: CMTST Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> CompareTest(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// float32x4_t vtstq_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        /// uint32x4_t vtstq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VTST.32 Qd, Qn, Qm
+        ///   A64: CMTST Vd.4S, Vn.4S, Vm.4S
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> CompareTest(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vtstq_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.16 Qd, Qn, Qm
+        ///   A64: CMTST Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> CompareTest(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vtstq_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VTST Qd, Qn, Qm
-        ///   A64: CMTST Vd, Vn, Vm
+        ///   A32: VTST.32 Qd, Qn, Qm
+        ///   A64: CMTST Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcls_s8 (int8x8_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
-        /// </summary>
-        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S16 Dd, Dm
+        ///   A64: CLS Vd.4H, Vn.4H
         /// </summary>
         public static Vector64<short> LeadingSignCount(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vcls_s32 (int32x2_t a)
-        ///   A32: VCLS Dd, Dm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S32 Dd, Dm
+        ///   A64: CLS Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<int> LeadingSignCount(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vclsq_s8 (int8x16_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        /// int8x8_t vcls_s8 (int8x8_t a)
+        ///   A32: VCLS.S8 Dd, Dm
+        ///   A64: CLS Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> LeadingSignCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vclsq_s16 (int16x8_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S16 Qd, Qm
+        ///   A64: CLS Vd.8H, Vn.8H
         /// </summary>
         public static Vector128<short> LeadingSignCount(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vclsq_s32 (int32x4_t a)
-        ///   A32: VCLS Qd, Qm
-        ///   A64: CLS Vd, Vn
+        ///   A32: VCLS.S32 Qd, Qm
+        ///   A64: CLS Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<int> LeadingSignCount(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vclz_s8 (int8x8_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        /// int8x16_t vclsq_s8 (int8x16_t a)
+        ///   A32: VCLS.S8 Qd, Qm
+        ///   A64: CLS Vd.16B, Vn.16B
         /// </summary>
-        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> LeadingSignCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vclz_u8 (uint8x8_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I8 Dd, Dm
+        ///   A64: CLZ Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> LeadingZeroCount(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vclz_s16 (int16x4_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I16 Dd, Dm
+        ///   A64: CLZ Vd.4H, Vn.4H
         /// </summary>
         public static Vector64<short> LeadingZeroCount(Vector64<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x4_t vclz_u16 (uint16x4_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int32x2_t vclz_s32 (int32x2_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Dd, Dm
+        ///   A64: CLZ Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<int> LeadingZeroCount(Vector64<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x8_t vclz_s8 (int8x8_t a)
+        ///   A32: VCLZ.I8 Dd, Dm
+        ///   A64: CLZ Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> LeadingZeroCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vclz_u16 (uint16x4_t a)
+        ///   A32: VCLZ.I16 Dd, Dm
+        ///   A64: CLZ Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<ushort> LeadingZeroCount(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint32x2_t vclz_u32 (uint32x2_t a)
-        ///   A32: VCLZ Dd, Dm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Dd, Dm
+        ///   A64: CLZ Vd.2S, Vn.2S
         /// </summary>
         public static Vector64<uint> LeadingZeroCount(Vector64<uint> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vclzq_s8 (int8x16_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x16_t vclzq_u8 (uint8x16_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I8 Qd, Qm
+        ///   A64: CLZ Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> LeadingZeroCount(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vclzq_s16 (int16x8_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I16 Qd, Qm
+        ///   A64: CLZ Vd.8H, Vn.8H
         /// </summary>
         public static Vector128<short> LeadingZeroCount(Vector128<short> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// uint16x8_t vclzq_u16 (uint16x8_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
-        /// </summary>
-        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int32x4_t vclzq_s32 (int32x4_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Qd, Qm
+        ///   A64: CLZ Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<int> LeadingZeroCount(Vector128<int> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// int8x16_t vclzq_s8 (int8x16_t a)
+        ///   A32: VCLZ.I8 Qd, Qm
+        ///   A64: CLZ Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> LeadingZeroCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vclzq_u16 (uint16x8_t a)
+        ///   A32: VCLZ.I16 Qd, Qm
+        ///   A64: CLZ Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<ushort> LeadingZeroCount(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// uint32x4_t vclzq_u32 (uint32x4_t a)
-        ///   A32: VCLZ Qd, Qm
-        ///   A64: CLZ Vd, Vn
+        ///   A32: VCLZ.I32 Qd, Qm
+        ///   A64: CLZ Vd.4S, Vn.4S
         /// </summary>
         public static Vector128<uint> LeadingZeroCount(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
 
@@ -2533,6 +2603,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.8B, [Xn]
         /// </summary>
         public static unsafe Vector64<byte> LoadVector64(byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float64x1_t vld1_f64 (float64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<double> LoadVector64(double* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vld1_s16 (int16_t const * ptr)
@@ -2547,6 +2624,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2S, [Xn]
         /// </summary>
         public static unsafe Vector64<int> LoadVector64(int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int64x1_t vld1_s64 (int64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<long> LoadVector64(long* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vld1_s8 (int8_t const * ptr)
@@ -2575,6 +2659,13 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: LD1 Vt.2S, [Xn]
         /// </summary>
         public static unsafe Vector64<uint> LoadVector64(uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint64x1_t vld1_u64 (uint64_t const * ptr)
+        ///   A32: VLD1.64 Dd, [Rn]
+        ///   A64: LD1 Vt.1D, [Xn]
+        /// </summary>
+        public static unsafe Vector64<ulong> LoadVector64(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vld1q_u8 (uint8_t const * ptr)
@@ -3079,32 +3170,32 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x8_t vcnt_s8 (int8x8_t a)
-        ///   A32: VCNT Dd, Dm
-        ///   A64: CNT Vd, Vn
-        /// </summary>
-        public static Vector64<sbyte> PopCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// uint8x8_t vcnt_u8 (uint8x8_t a)
-        ///   A32: VCNT Dd, Dm
-        ///   A64: CNT Vd, Vn
+        ///   A32: VCNT.I8 Dd, Dm
+        ///   A64: CNT Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> PopCount(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int8x16_t vcntq_s8 (int8x16_t a)
-        ///   A32: VCNT Qd, Qm
-        ///   A64: CNT Vd, Vn
+        /// int8x8_t vcnt_s8 (int8x8_t a)
+        ///   A32: VCNT.I8 Dd, Dm
+        ///   A64: CNT Vd.8B, Vn.8B
         /// </summary>
-        public static Vector128<sbyte> PopCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> PopCount(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vcntq_u8 (uint8x16_t a)
-        ///   A32: VCNT Qd, Qm
-        ///   A64: CNT Vd, Vn
+        ///   A32: VCNT.I8 Qd, Qm
+        ///   A64: CNT Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> PopCount(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vcntq_s8 (int8x16_t a)
+        ///   A32: VCNT.I8 Qd, Qm
+        ///   A64: CNT Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> PopCount(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)

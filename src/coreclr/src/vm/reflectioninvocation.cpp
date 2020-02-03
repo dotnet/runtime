@@ -844,7 +844,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
 
     GCPROTECT_BEGIN(targetException);
 
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
+#if defined(_DEBUG) && !defined(TARGET_UNIX)
     if (IsWatsonEnabled())
     {
         if (!CLRException::IsPreallocatedExceptionObject(targetException))
@@ -880,7 +880,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
             }
         }
     }
-#endif // _DEBUG && !FEATURE_PAL
+#endif // _DEBUG && !TARGET_UNIX
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Get the corruption severity of the exception that came in through reflection invocation.
@@ -893,7 +893,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
 
     OBJECTREF except = InvokeUtil::CreateTargetExcept(&targetException);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (IsWatsonEnabled())
     {
         struct
@@ -936,7 +936,7 @@ void DECLSPEC_NORETURN ThrowInvokeMethodException(MethodDesc * pMethod, OBJECTRE
         except = gcTIE.oExcept;
         GCPROTECT_END();
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // Since the original exception is inner of target invocation exception,
     // when TIE is seen to be raised for the first time, we will end up
@@ -1513,31 +1513,6 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
     _ASSERTE(gc.refDeclaringType == NULL || !gc.refDeclaringType->GetType().IsTypeDesc());
     MethodTable *pEnclosingMT = (gc.refDeclaringType != NULL ? gc.refDeclaringType->GetType() : TypeHandle()).AsMethodTable();
 
-    // Verify the callee/caller access
-    if (!pField->IsPublic() || (pEnclosingMT != NULL && !pEnclosingMT->IsExternallyVisible()))
-    {
-
-        bool targetRemoted = false;
-
-
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetRemoted));
-
-        MethodTable* pInstanceMT = NULL;
-        if (!pField->IsStatic())
-        {
-            if (!targetType.IsTypeDesc())
-                pInstanceMT = targetType.AsMethodTable();
-        }
-
-        //TODO: missing check that the field is consistent
-
-        // Perform the normal access check (caller vs field).
-        InvokeUtil::CanAccessField(&sCtx,
-                                   pEnclosingMT,
-                                   pInstanceMT,
-                                   pField);
-    }
-
     CLR_BOOL domainInitialized = FALSE;
     if (pField->IsStatic() || !targetType.IsValueType()) {
         refRet = DirectObjectFieldGet(pField, fieldType, TypeHandle(pEnclosingMT), pTarget, &domainInitialized);
@@ -1685,31 +1660,6 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
                 ssFieldName.GetUnicode(),
                 GetFullyQualifiedNameForClassW(pEnclosingMT));
         }
-
-        // Verify the callee/caller access
-        if (!pField->IsPublic() || (pEnclosingMT != NULL && !pEnclosingMT->IsExternallyVisible()))
-        {
-            // security and consistency checks
-
-            bool targetRemoted = false;
-
-            RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetRemoted));
-
-            MethodTable* pInstanceMT = NULL;
-            if (!pField->IsStatic()) {
-                if (!targetType.IsTypeDesc())
-                    pInstanceMT = targetType.AsMethodTable();
-            }
-
-            //TODO: missing check that the field is consistent
-
-            // Perform the normal access check (caller vs field).
-            InvokeUtil::CanAccessField(&sCtx,
-                                       pEnclosingMT,
-                                       pInstanceMT,
-                                       pField);
-        }
-
     }
 
     CLR_BOOL domainInitialized = FALSE;
@@ -1879,10 +1829,6 @@ FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject 
     if (!pMT->IsClassInited())
     {
         HELPER_METHOD_FRAME_BEGIN_1(refType);
-
-        // We perform the access check only on CoreCLR for backward compatibility.
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType());
-        InvokeUtil::CanAccessClass(&sCtx, pMT);
 
         pMT->CheckRestore();
         pMT->EnsureInstanceActive();

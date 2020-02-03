@@ -1236,7 +1236,7 @@ namespace System
                     //
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
-                    // n would be a relative number from the begining of the year. which should handle if the
+                    // n would be a relative number from the beginning of the year. which should handle if the
                     // the year is a leap year or not.
                     //
                     // In leap year, n would be counted as:
