@@ -41,13 +41,13 @@ namespace System.Security.Principal
         private static SecurityIdentifier? s_localSystemRid;
         private static SecurityIdentifier? s_anonymousRid;
 
-        private string? _name = null;
-        private SecurityIdentifier? _owner = null;
-        private SecurityIdentifier? _user = null;
-        private IdentityReferenceCollection? _groups = null;
+        private string? _name;
+        private SecurityIdentifier? _owner;
+        private SecurityIdentifier? _user;
+        private IdentityReferenceCollection? _groups;
 
         private SafeAccessTokenHandle _safeTokenHandle = SafeAccessTokenHandle.InvalidHandle;
-        private readonly string? _authType = null;
+        private readonly string? _authType;
         private int _isAuthenticated = -1;
         private volatile TokenImpersonationLevel _impersonationLevel;
         private volatile bool _impersonationLevelInitialized;

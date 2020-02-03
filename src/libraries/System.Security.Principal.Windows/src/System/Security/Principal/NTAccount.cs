@@ -139,7 +139,7 @@ namespace System.Security.Principal
 
         public override bool Equals(object? o)
         {
-            return o is NTAccount acc && this == acc; // invokes operator==
+            return (this == o as NTAccount); // invokes operator==
         }
 
         public override int GetHashCode()

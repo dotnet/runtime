@@ -299,7 +299,7 @@ namespace System.Security.Principal
         // Computed attributes of a SID
         //
 
-        private string? _sddlForm = null;
+        private string? _sddlForm;
 
         #endregion
 
