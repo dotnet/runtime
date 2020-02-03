@@ -16,6 +16,9 @@ check-config:
 run-sample: check-config
 	$(DOTNET) msbuild /t:RunSample $(MONO_PROPS) ../mono.proj
 
+run-sample-coreclr: check-config
+	$(DOTNET) run -c Release -p sample/HelloWorld
+
 runtime:
 	$(DOTNET) msbuild /t:Build $(MONO_PROPS) ../mono.proj
 

@@ -124,6 +124,7 @@
     <Exec Command="$(CoreClrTest)"/>
   </Target>
 
+  <!-- Make sure coreclr tests are built (in Checked configuration), e.g. `cd ../coreclr && build.cmd -checked` -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchTestHost">
     <PropertyGroup>
       <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
