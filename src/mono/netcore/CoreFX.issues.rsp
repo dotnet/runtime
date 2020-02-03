@@ -9,9 +9,6 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# error: Invalid IL code in (wrapper dynamic-method) object:<xsl:apply-templates> (System.Xml.Xsl.Runtime.XmlQueryRuntime,System.Xml.XPath.XPathNavigator,double): IL_0179: ret
--nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
-
 # GCSettings.LatencyMode is not implemented
 -nomethod System.Tests.GCTests.LatencyRoundtrips
 
