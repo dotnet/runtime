@@ -3662,6 +3662,10 @@ mini_parse_debug_option (const char *option)
 
 	if (!strcmp (option, "handle-sigint"))
 		mini_debug_options.handle_sigint = TRUE;
+#ifdef ENABLE_NETCORE
+	else if (!strcmp (option, "ignore"))
+		mini_debug_options.enabled = FALSE;
+#endif
 	else if (!strcmp (option, "keep-delegates"))
 		mini_debug_options.keep_delegates = TRUE;
 	else if (!strcmp (option, "reverse-pinvoke-exceptions"))

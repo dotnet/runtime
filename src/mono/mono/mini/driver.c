@@ -216,6 +216,11 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "gdb", 3)) {
 			opt->gdb = TRUE;
 			p += 3;
+#ifdef ENABLE_NETCORE
+		} else if (!strncmp (p, "ignore", 6)) {
+			opt->enabled = FALSE;
+			p += 6;
+#endif
 		} else {
 			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
 			return FALSE;
@@ -1605,7 +1610,11 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot[=<options>]      Compiles the assembly to native code\n"
+#ifndef ENABLE_NETCORE
+		"    --debug=ignore    Disable debugging support, use --help-debug for details\n"
+#else
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
+#endif
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
@@ -2099,6 +2108,10 @@ mono_main (int argc, char* argv[])
 
 	opt = mono_parse_default_optimizations (NULL);
 
+#ifdef ENABLE_NETCORE
+	enable_debugging = TRUE;
+#endif
+
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
 			break;
@@ -2325,12 +2338,21 @@ mono_main (int argc, char* argv[])
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
+#ifndef ENABLE_NETCORE
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
+#endif
 		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
 				return 1;
+#ifdef ENABLE_NETCORE
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+			if (!opt->enabled) {
+				enable_debugging = FALSE;
+			}
+#endif
  		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
