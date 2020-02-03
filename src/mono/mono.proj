@@ -10,6 +10,8 @@
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
     <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
+    <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
+    <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -109,6 +111,16 @@
           SkipUnchangedFiles="true"/>
   </Target>
 
+  <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateTestHost">
+    <Error Condition="!Exists('$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root')" Text="Core_Root doesn't exist. Have you built coreclr tests in Checked configuration?" />
+    <ItemGroup>
+      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFolder="$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root" 
+          SkipUnchangedFiles="true"/>
+  </Target>
+
   <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
   <Target Name="RunSample" DependsOnTargets="ValidateTestHost;PatchTestHost">
     <MSBuild Projects="$(MonoProjectRoot)netcore\sample\HelloWorld\HelloWorld.csproj" Targets="Restore;Build" />
@@ -116,21 +128,15 @@
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->
-  <Target Name="RunCoreClrTest" DependsOnTargets="ValidateTestHost;PatchTestHost">
-    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/Windows_NT.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh` in order to run DivToMul test." />
-    <PropertyGroup>
-      <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
-    </PropertyGroup>
-    <Exec Command="$(CoreClrTest)"/>
+  <Target Name="RunCoreClrTest" DependsOnTargets="ValidateTestHost;PatchCoreClrCoreRoot">
+    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/Windows_NT.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul$(ScriptExt)` in order to run DivToMul test." />
+    <Exec Command="$(CoreClrTest) -coreroot=&quot;$(ArtifactsDir)/tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;"/>
   </Target>
 
-  <!-- Make sure coreclr tests are built (in Checked configuration), e.g. `cd ../coreclr && build.cmd -checked` -->
-  <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchTestHost">
-    <PropertyGroup>
-      <CORE_ROOT>$(TestHostPath)</CORE_ROOT>
-      <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
-      <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
-    </PropertyGroup>
+  <!-- Make sure coreclr tests are built (in Checked configuration), e.g. 
+    *nix: `cd ../coreclr && ./build.sh -checked && ./build-testh.sh -checked` 
+    Windows: `cd ../coreclr && build.cmd -checked` -->
+  <Target Name="RunCoreClrTests" DependsOnTargets="ValidateTestHost;PatchCoreClrCoreRoot">
     <Exec Command="..\coreclr\tests\runtest$(ScriptExt) checked" ContinueOnError="WarnAndContinue" />
   </Target>
 
