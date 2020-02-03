@@ -143,7 +143,7 @@ jobs:
       archType: x64
       platform: Linux_x64
       container:
-        image: centos-7-bfba074-20200131040603
+        image: centos-7-203142e-20200131220214
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
