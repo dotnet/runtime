@@ -1757,7 +1757,7 @@ namespace Internal.JitInterface
                     {
                         result = TypeCompareState.Must;
                     }
-                    // We have __Canon parameter(s) in fromClass, somehwere.
+                    // We have __Canon parameter(s) in fromClass, somewhere.
                     //
                     // In CanCastTo, these __Canon(s) won't match the interface or
                     // instantiated types on the interface, so CanCastTo may
