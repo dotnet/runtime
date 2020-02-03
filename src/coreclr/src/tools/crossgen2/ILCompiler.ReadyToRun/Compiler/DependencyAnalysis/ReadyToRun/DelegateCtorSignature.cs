@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = _targetMethod.CompareToImpl(otherNode._targetMethod, comparer);
+            result = comparer.Compare(_targetMethod, otherNode._targetMethod);
             if (result != 0)
                 return result;
 
