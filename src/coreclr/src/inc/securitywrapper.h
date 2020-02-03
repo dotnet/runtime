@@ -12,7 +12,7 @@
 #ifndef _SECURITY_WRAPPER_H
 #define _SECURITY_WRAPPER_H
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #error This file should not be included on non-Windows platforms.
 #endif
 

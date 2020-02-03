@@ -754,7 +754,7 @@ DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
 
 DEFINE_CLASS(RAW_ARRAY_DATA,        CompilerServices,       RawArrayData)
 DEFINE_FIELD(RAW_ARRAY_DATA,        LENGTH,                 Length)
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 DEFINE_FIELD(RAW_ARRAY_DATA,        PADDING,                Padding)
 #endif
 DEFINE_FIELD(RAW_ARRAY_DATA,        DATA,                   Data)
@@ -1020,9 +1020,9 @@ DEFINE_METHOD(STUBHELPERS,          VALIDATE_OBJECT,                    Validate
 DEFINE_METHOD(STUBHELPERS,          VALIDATE_BYREF,                     ValidateByref,                  SM_IntPtr_IntPtr_Obj_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT,                   GetStubContext,                 SM_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          LOG_PINNED_ARGUMENT,                LogPinnedArgument,              SM_IntPtr_IntPtr_RetVoid)
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 DEFINE_METHOD(STUBHELPERS,          GET_STUB_CONTEXT_ADDR,              GetStubContextAddr,             SM_RetIntPtr)
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_ADD_REF,    SafeHandleAddRef,           SM_SafeHandle_RefBool_RetIntPtr)
 DEFINE_METHOD(STUBHELPERS,          SAFE_HANDLE_RELEASE,    SafeHandleRelease,          SM_SafeHandle_RetVoid)
 

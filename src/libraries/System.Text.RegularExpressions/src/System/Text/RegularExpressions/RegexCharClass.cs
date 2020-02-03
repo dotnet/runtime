@@ -735,7 +735,7 @@ namespace System.Text.RegularExpressions
             return set[SetStartIndex];
         }
 
-        public static bool IsMergeable(string? charClass) =>
+        public static bool IsMergeable(string charClass) =>
             charClass != null &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
@@ -1541,7 +1541,7 @@ namespace System.Text.RegularExpressions
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
 
-            StringBuilder desc = new StringBuilder();
+            var desc = new StringBuilder();
 
             desc.Append('[');
 

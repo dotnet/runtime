@@ -100,7 +100,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         dwAttr = pCACtor->GetAttrs();
     }
 
-    StaticAccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
+    AccessCheckContext accessContext(NULL, pDecoratedMT, pDecoratedModule->GetAssembly());
 
     return ClassLoader::CanAccess(
         &accessContext,
@@ -3048,22 +3048,3 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
     return (ReflectMethodObject*)OBJECTREFToObject(gc.retMethod);
 }
 FCIMPLEND
-
-void QCALLTYPE RuntimeMethodHandle::GetCallerType(QCall::StackCrawlMarkHandle pStackMark, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-    GCX_COOP();
-    MethodTable *pMT = NULL;
-
-    pMT = SystemDomain::GetCallersType(pStackMark);
-
-    if (pMT != NULL)
-        retType.Set(pMT->GetManagedClassObject());
-
-    END_QCALL;
-
-    return;
-}
-

@@ -202,7 +202,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Exception_OverriddenToStringOnInnerException()
         {
             var inner = new DerivedException();

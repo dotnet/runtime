@@ -5,19 +5,19 @@
     "rollForward": "major"
   },
   "tools": {
-    "dotnet": "5.0.100-alpha1-015772"
+    "dotnet": "5.0.100-alpha.1.20073.4"
   },
   "native-tools": {
     "cmake": "3.14.2",
     "python": "2.7.15"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20071.3",
-    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20071.3",
-    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20071.3",
-    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.20071.3",
+    "Microsoft.DotNet.Arcade.Sdk": "5.0.0-beta.20079.8",
+    "Microsoft.DotNet.Build.Tasks.SharedFramework.Sdk": "5.0.0-beta.20079.8",
+    "Microsoft.DotNet.Helix.Sdk": "5.0.0-beta.20079.8",
+    "Microsoft.DotNet.Build.Tasks.Configuration": "5.0.0-beta.20079.8",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
-    "Microsoft.NET.Sdk.IL": "5.0.0-alpha1.19563.3",
+    "Microsoft.NET.Sdk.IL": "5.0.0-alpha.1.20076.2",
     "Microsoft.Build.NoTargets": "1.0.53",
     "Microsoft.Build.Traversal": "2.0.2"
   }
