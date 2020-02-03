@@ -39,7 +39,8 @@ ValueNumFuncDef(ReadyToRunIsInstanceOf, 2, false, false, false)       // Args: 0
 ValueNumFuncDef(TypeHandleToRuntimeType, 1, false, false, false)      // Args: 0: TypeHandle to translate
 ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false, false)      // Args: 0: TypeHandle to translate
 
-ValueNumFuncDef(AreTypesEquivalent, 2, false, false, false) // Args: 0: first TypeHandle, 1: second TypeHandle
+ValueNumFuncDef(AreTypeHandlesEquivalent, 2, false, false, false) // Args: 0: first TypeHandle, 1: second TypeHandle
+ValueNumFuncDef(AreTypeHandleAndTypeEquivalent, 2, false, false, false) // Args: 0: TypeHandle, 1: Type instance
 
 ValueNumFuncDef(LdElemA, 3, false, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
 

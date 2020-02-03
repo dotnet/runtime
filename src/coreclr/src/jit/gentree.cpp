@@ -12278,7 +12278,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 
     // Emit a call to a runtime helper
     GenTreeCall::Use* helperArgs = gtNewCallArgs(op1, op2);
-    GenTree*          ret        = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPES_EQUIVALENT, TYP_INT, helperArgs);
+    GenTree*          ret        = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPEHANDLES_EQUIVALENT, TYP_INT, helperArgs);
     if (oper == GT_EQ)
     {
         ret = gtNewOperNode(GT_NE, TYP_INT, ret, gtNewIconNode(0, TYP_INT));
@@ -12306,6 +12306,7 @@ GenTree* Compiler::gtCreateHandleCompare(genTreeOps             oper,
 //    Checks for
 //        typeof(...) == obj.GetType()
 //        typeof(...) == typeof(...)
+//        typeof(...) == someType
 //
 //    And potentially optimizes away the need to obtain actual
 //    RuntimeType objects to do the comparison.
@@ -12320,20 +12321,12 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Screen for the right kinds of operands
+    // Screen for the operands
     GenTree* const         op1     = tree->AsOp()->gtOp1;
     const TypeProducerKind op1Kind = gtGetTypeProducerKind(op1);
-    if (op1Kind == TPK_Unknown)
-    {
-        return tree;
-    }
 
     GenTree* const         op2     = tree->AsOp()->gtOp2;
     const TypeProducerKind op2Kind = gtGetTypeProducerKind(op2);
-    if (op2Kind == TPK_Unknown)
-    {
-        return tree;
-    }
 
     // We must have a handle on one side or the other here to optimize,
     // otherwise we can't be sure that optimizing is sound.
@@ -12438,23 +12431,13 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     }
 
     // Just one operand creates a type from a handle.
-    //
-    // If the other operand is fetching the type from an object,
-    // we can sometimes optimize the type compare into a simpler
-    // method table comparison.
-    //
-    // TODO: if other operand is null...
-    if ((op1Kind != TPK_GetType) && (op2Kind != TPK_GetType))
-    {
-        return tree;
-    }
 
     GenTree* const opHandle = op1IsFromHandle ? op1 : op2;
-    GenTree* const opOther  = op1IsFromHandle ? op2 : op1;
+    GenTree* const opOther = op1IsFromHandle ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
     GenTree* const       opHandleArgument = opHandle->AsCall()->gtCallArgs->GetNode();
-    CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
+    CORINFO_CLASS_HANDLE clsHnd = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
     if (clsHnd == NO_CLASS_HANDLE)
@@ -12462,50 +12445,74 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return tree;
     }
 
-    // Ask the VM if this type can be equality tested by a simple method
-    // table comparison.
-    CorInfoInlineTypeCheck typeCheckInliningResult =
-        info.compCompHnd->canInlineTypeCheck(clsHnd, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
-    if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_NONE)
+    // If the other operand is fetching the type from an object,
+    // we can sometimes optimize the type compare into a simpler
+    // method table comparison.
+    //
+    // TODO: if other operand is null...
+    if ((op1Kind == TPK_GetType) || (op2Kind == TPK_GetType))
     {
-        return tree;
-    }
+        // Ask the VM if this type can be equality tested by a simple method
+        // table comparison.
+        CorInfoInlineTypeCheck typeCheckInliningResult =
+            info.compCompHnd->canInlineTypeCheck(clsHnd, CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
+        if (typeCheckInliningResult == CORINFO_INLINE_TYPECHECK_NONE)
+        {
+            return tree;
+        }
 
-    // We're good to go.
-    JITDUMP("Optimizing compare of obj.GetType()"
+        // We're good to go.
+        JITDUMP("Optimizing compare of obj.GetType()"
             " and type-from-handle to compare method table pointer\n");
 
-    // opHandleArgument is the method table we're looking for.
-    GenTree* const knownMT = opHandleArgument;
+        // opHandleArgument is the method table we're looking for.
+        GenTree* const knownMT = opHandleArgument;
 
-    // Fetch object method table from the object itself.
-    GenTree* objOp = nullptr;
+        // Fetch object method table from the object itself.
+        GenTree* objOp = nullptr;
 
-    // Note we may see intrinsified or regular calls to GetType
-    if (opOther->OperGet() == GT_INTRINSIC)
+        // Note we may see intrinsified or regular calls to GetType
+        if (opOther->OperGet() == GT_INTRINSIC)
+        {
+            objOp = opOther->AsUnOp()->gtOp1;
+        }
+        else
+        {
+            objOp = opOther->AsCall()->gtCallThisArg->GetNode();
+        }
+
+        GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
+
+        // Update various flags
+        objMT->gtFlags |= GTF_EXCEPT;
+        compCurBB->bbFlags |= BBF_HAS_VTABREF;
+        optMethodFlags |= OMF_HAS_VTABLEREF;
+
+        // Compare the two method tables
+        GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
+
+        // Drop any now irrelevant flags
+        compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
+
+        // And we're done
+        return compare;
+    }
+
+    // One of the operands is from a handle and we don't have special handling for the other one.
+    // Transform to a helper call that avoids materializing the runtime type for the handle.
+    GenTreeCall::Use* helperArgs = gtNewCallArgs(opHandleArgument, opOther);
+    tree = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT, TYP_INT, helperArgs);
+    if (oper == GT_EQ)
     {
-        objOp = opOther->AsUnOp()->gtOp1;
+        tree = gtNewOperNode(GT_NE, TYP_INT, tree, gtNewIconNode(0, TYP_INT));
     }
     else
     {
-        objOp = opOther->AsCall()->gtCallThisArg->GetNode();
+        assert(oper == GT_NE);
+        tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewIconNode(0, TYP_INT));
     }
 
-    GenTree* const objMT = gtNewOperNode(GT_IND, TYP_I_IMPL, objOp);
-
-    // Update various flags
-    objMT->gtFlags |= GTF_EXCEPT;
-    compCurBB->bbFlags |= BBF_HAS_VTABREF;
-    optMethodFlags |= OMF_HAS_VTABLEREF;
-
-    // Compare the two method tables
-    GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
-
-    // Drop any now irrelevant flags
-    compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
-
-    // And we're done
-    return compare;
+    return tree;
 }
 
 //------------------------------------------------------------------------

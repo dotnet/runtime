@@ -1332,7 +1332,8 @@ void HelperCallProperties::init()
                 noThrow = true; // These return null for a failing cast
                 break;
 
-            case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
+            case CORINFO_HELP_ARE_TYPEHANDLES_EQUIVALENT:
+            case CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT:
 
                 isPure  = true;
                 noThrow = true;

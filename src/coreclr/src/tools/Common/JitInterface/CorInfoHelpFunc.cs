@@ -247,7 +247,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
-        CORINFO_HELP_ARE_TYPES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
+    CORINFO_HELP_ARE_TYPEHANDLES_EQUIVALENT, // Check whether two TypeHandles (native structure pointers) are equivalent
+    CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT, // Checks whether a TypeHandle (native structure pointer) is equivalent to a RuntimeType
 
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
                                             //CORINFO_HELP_VIRTUAL_FUNC_PTR_LOG,  // look up a virtual method at run-time, with IBC logging

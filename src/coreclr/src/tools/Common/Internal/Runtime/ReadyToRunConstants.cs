@@ -266,6 +266,8 @@ namespace Internal.ReadyToRunConstants
 
         StackProbe                  = 0x111,
 
+        AreTypeHandleAndTypeEquivalent = 0x112,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.

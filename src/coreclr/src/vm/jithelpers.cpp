@@ -75,6 +75,7 @@
 //      EXCEPTION HELPERS
 //      DEBUGGER/PROFILER HELPERS
 //      GC HELPERS
+//      REFLECTION HELPERS
 //      INTEROP HELPERS
 //
 //========================================================================
@@ -5093,6 +5094,37 @@ HCIMPL0(void, JIT_DebugLogLoopCloning)
 #ifdef _DEBUG
      printf(">> Logging loop cloning optimization\n");
 #endif
+}
+HCIMPLEND
+
+//========================================================================
+//
+//      REFLECTION HELPERS
+//
+//========================================================================
+
+HCIMPL2(FC_BOOL_RET, JIT_AreTypeHandleAndTypeEquivalent, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle th(type);
+
+    OBJECTREF refObj = ObjectToOBJECTREF(obj);
+
+    if (!refObj)
+    {
+        FC_RETURN_BOOL(FALSE);
+    }
+
+    if (refObj->GetMethodTable() != g_pRuntimeTypeClass)
+    {
+        // Non-RuntimeType cannot be equal to a RuntimeType
+        FC_RETURN_BOOL(FALSE);
+    }
+
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)refObj;
+
+    FC_RETURN_BOOL(refType->GetType() == th);
 }
 HCIMPLEND
 
