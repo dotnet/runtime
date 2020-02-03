@@ -44,10 +44,13 @@ struct RgbaVector
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void FromScaledVector4(Vector4 vector) => FromVector4(vector);
 
+    // Workaround for ARM64 JIT bug #31673.
+    private static readonly Vector4 one = Vector4.One;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void FromVector4(Vector4 v)
     {
-        v = Vector4.Clamp(v, Vector4.Zero, Vector4.One);
+        v = Vector4.Clamp(v, Vector4.Zero, one);
         R = v.X;
         G = v.Y;
         B = v.Z;
