@@ -45,7 +45,7 @@ namespace System.Net.Security
 
         internal void SetNextBuffer(InputSecurityBuffer buffer)
         {
-            Debug.Assert(Count < 3);
+            Debug.Assert(Count >= 0 && Count < 3);
             if (Count == 0)
             {
                 _item0 = buffer;
