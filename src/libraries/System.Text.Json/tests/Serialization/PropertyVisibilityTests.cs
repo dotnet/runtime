@@ -12,6 +12,231 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class PropertyVisibilityTests
     {
         [Fact]
+        public static void Serialize_new_slot_public_property()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyString"":""NewDefaultValue""}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotProperty>(json);
+
+            Assert.Equal("NewValue", ((ClassWithNewSlotProperty)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithPrivateProperty)obj).MyString);
+        }
+
+        [Fact]
+        public static void Serialize_base_public_property_on_conflict_with_derived_private()
+        {
+            // Serialize
+            var obj = new ClassWithNewSlotPrivateProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyString"":""DefaultValue""}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithNewSlotPrivateProperty>(json);
+
+            Assert.Equal("NewValue", ((ClassWithPublicProperty)obj).MyString);
+            Assert.Equal("NewDefaultValue", ((ClassWithNewSlotPrivateProperty)obj).MyString);
+        }
+
+        [Fact]
+        public static void Serialize_public_property_on_conflict_with_private_due_to_attributes()
+        {
+            // Serialize
+            var obj = new ClassWithPropertyNamingConflict();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{""MyString"":""DefaultValue""}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithPropertyNamingConflict>(json);
+
+            Assert.Equal("NewValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.ConflictingString);
+        }
+
+        [Fact]
+        public static void Serialize_public_property_on_conflict_with_private_due_to_policy()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassWithPropertyPolicyConflict();
+            string json = JsonSerializer.Serialize(obj, options);
+
+            Assert.Equal(@"{""myString"":""DefaultValue""}", json);
+
+            // Deserialzie
+            json = @"{""myString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithPropertyPolicyConflict>(json, options);
+
+            Assert.Equal("NewValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.myString);
+        }
+
+        [Fact]
+        public static void Ignore_non_public_property()
+        {
+            // Serialize
+            var obj = new ClassWithPrivateProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithPrivateProperty>(json);
+
+            Assert.Equal("DefaultValue", obj.MyString);
+        }
+
+        [Fact]
+        public static void Ignore_ignored_new_slot_public_property()
+        {
+            // Serialize
+            var obj = new ClassWithIgnoredNewSlotProperty();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredNewSlotProperty>(json);
+
+            Assert.Equal("NewDefaultValue", ((ClassWithIgnoredNewSlotProperty)obj).MyString);
+            Assert.Equal("DefaultValue", ((ClassWithPrivateProperty)obj).MyString);
+        }
+
+        [Fact]
+        public static void Ignore_ignored_base_public_property_on_conflict_with_derived_private()
+        {
+            // Serialize
+            var obj = new ClassWithIgnoredPublicPropertyAndNewSlotPrivate();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPublicPropertyAndNewSlotPrivate>(json);
+
+            Assert.Equal("DefaultValue", ((ClassWithIgnoredPublicProperty)obj).MyString);
+            Assert.Equal("NewDefaultValue", ((ClassWithIgnoredPublicPropertyAndNewSlotPrivate)obj).MyString);
+        }
+
+        [Fact]
+        public static void Ignore_public_property_on_conflict_with_private_due_to_attributes()
+        {
+            // Serialize
+            var obj = new ClassWithIgnoredPropertyNamingConflict();
+            string json = JsonSerializer.Serialize(obj);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialzie
+            json = @"{""MyString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyNamingConflict>(json);
+
+            Assert.Equal("DefaultValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.ConflictingString);
+        }
+
+        [Fact]
+        public static void Ignore_public_property_on_conflict_with_private_due_to_policy()
+        {
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+            // Serialize
+            var obj = new ClassWithIgnoredPropertyPolicyConflict();
+            string json = JsonSerializer.Serialize(obj, options);
+
+            Assert.Equal(@"{}", json);
+
+            // Deserialzie
+            json = @"{""myString"":""NewValue""}";
+            obj = JsonSerializer.Deserialize<ClassWithIgnoredPropertyPolicyConflict>(json, options);
+
+            Assert.Equal("DefaultValue", obj.MyString);
+            Assert.Equal("ConflictingValue", obj.myString);
+        }
+
+        public class ClassWithPrivateProperty
+        {
+            internal string MyString { get; set; } = "DefaultValue";
+        }
+
+        public class ClassWithNewSlotProperty : ClassWithPrivateProperty
+        {
+            public new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithPublicProperty
+        {
+            public string MyString { get; set; } = "DefaultValue";
+        }
+
+        public class ClassWithNewSlotPrivateProperty : ClassWithPublicProperty
+        {
+            internal new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithPropertyNamingConflict
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonPropertyName(nameof(MyString))]
+            internal string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithPropertyPolicyConflict
+        {
+            public string MyString { get; set; } = "DefaultValue";
+
+            internal string myString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithIgnoredNewSlotProperty : ClassWithPrivateProperty
+        {
+            [JsonIgnore]
+            public new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithIgnoredPublicProperty
+        {
+            [JsonIgnore]
+            public string MyString { get; set; } = "DefaultValue";
+        }
+
+        public class ClassWithIgnoredPublicPropertyAndNewSlotPrivate : ClassWithIgnoredPublicProperty
+        {
+            internal new string MyString { get; set; } = "NewDefaultValue";
+        }
+
+        public class ClassWithIgnoredPropertyNamingConflict
+        {
+            [JsonIgnore]
+            public string MyString { get; set; } = "DefaultValue";
+
+            [JsonPropertyName(nameof(MyString))]
+            internal string ConflictingString { get; set; } = "ConflictingValue";
+        }
+
+        public class ClassWithIgnoredPropertyPolicyConflict
+        {
+            [JsonIgnore]
+            public string MyString { get; set; } = "DefaultValue";
+
+            internal string myString { get; set; } = "ConflictingValue";
+        }
+
+        [Fact]
         public static void NoSetter()
         {
             var obj = new ClassWithNoSetter();
