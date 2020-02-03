@@ -4,7 +4,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -332,7 +331,6 @@ namespace System
             return false;
         }
 
-        [Intrinsic]
         public virtual bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (c == null)

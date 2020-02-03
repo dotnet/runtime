@@ -3447,8 +3447,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
-        // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
+        // The recursive calls to Jit intrinsics are must-expand by convention.
+        mustExpand = mustExpand || gtIsRecursiveCall(method);
 
         if (intrinsicID == CORINFO_INTRINSIC_Illegal)
         {
@@ -4014,49 +4014,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            case NI_System_Type_IsAssignableFrom:
-            {
-                // Optimize patterns like:
-                //
-                //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
-                //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
-                //
-                // to true/false
-                GenTree* typeTo   = impStackTop(1).val;
-                GenTree* typeFrom = impStackTop(0).val;
-
-                if (typeTo->IsCall() && typeFrom->IsCall())
-                {
-                    // make sure both arguments are `typeof()`
-                    CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
-                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
-                    {
-                        CORINFO_CLASS_HANDLE hClassTo =
-                            gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
-                        CORINFO_CLASS_HANDLE hClassFrom =
-                            gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
-
-                        if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
-                        {
-                            break;
-                        }
-
-                        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
-                        if (castResult == TypeCompareState::May)
-                        {
-                            // requires runtime check
-                            // e.g. __Canon, COMObjects, Nullable
-                            break;
-                        }
-
-                        retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
-                        impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
-                        impPopStack();
-                    }
-                }
-                break;
-            }
-
             case NI_System_Type_get_IsValueType:
             {
                 // Optimize
@@ -4383,10 +4340,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
-            }
-            else if (strcmp(methodName, "IsAssignableFrom") == 0)
-            {
-                result = NI_System_Type_IsAssignableFrom;
             }
         }
     }
@@ -7650,6 +7603,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
+                assert(!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL) ||
+                       (clsFlags & CORINFO_FLG_FINAL));
+
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (call->OperGet() == GT_INTRINSIC)
                 {
