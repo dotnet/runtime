@@ -465,6 +465,12 @@ sgen_memgov_available_free_space (void)
 	return max_heap_size - MIN (allocated_heap, max_heap_size);
 }
 
+mword 
+sgen_memgov_get_max_heap_size_bytes (void)
+{
+	return max_heap_size;
+}
+
 void
 sgen_memgov_release_space (mword size, int space)
 {
@@ -500,16 +506,6 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_LOG_ENTRY, sizeof (SgenLogEntry));
 
-	if (max_heap == 0) {
-		sgen_gc_info.total_available_memory_bytes = mono_determine_physical_ram_size ();
-
-		if (!sgen_gc_info.total_available_memory_bytes){
-			SGEN_LOG(9, "Warning: Unable to determine physical ram size for GCMemoryInfo");
-		}
-
-		return;
-	}
-
 	if (max_heap < soft_limit) {
 		sgen_env_var_error (MONO_GC_PARAMS_NAME, "Setting to minimum.", "`max-heap-size` must be at least as large as `soft-heap-limit`.");
 		max_heap = soft_limit;
@@ -520,8 +516,6 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 		max_heap = SGEN_DEFAULT_NURSERY_SIZE * 4;
 	}
 	max_heap_size = max_heap;
-
-	sgen_gc_info.total_available_memory_bytes = max_heap;
 
 	if (allowance_ratio)
 		default_allowance_nursery_size_ratio = allowance_ratio;

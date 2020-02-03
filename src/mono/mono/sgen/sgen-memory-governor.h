@@ -12,6 +12,7 @@
 void sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, double min_allowance_ratio, double save_target);
 void sgen_memgov_release_space (mword size, int space);
 gboolean sgen_memgov_try_alloc_space (mword size, int space);
+mword sgen_memgov_get_max_heap_size_bytes (void);
 
 /* GC trigger heuristics */
 void sgen_memgov_minor_collection_start (void);

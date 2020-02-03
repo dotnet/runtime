@@ -12,6 +12,7 @@
 
 #include "sgen/sgen-gc.h"
 #include "sgen/sgen-protocol.h"
+#include "sgen/sgen-memory-governor.h"
 #include "metadata/monitor.h"
 #include "sgen/sgen-layout-stats.h"
 #include "sgen/sgen-client.h"
@@ -2591,13 +2592,24 @@ mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
 						  gint64* heap_size_bytes,
 						  gint64* fragmented_bytes)
 {
+	mword max_heap_size;
+
 	*high_memory_load_threshold_bytes = sgen_gc_info.high_memory_load_threshold_bytes;
 	*fragmented_bytes = sgen_gc_info.fragmented_bytes;
 	
 	*heap_size_bytes = sgen_gc_info.heap_size_bytes;
 
 	*memory_load_bytes = sgen_gc_info.memory_load_bytes;
-	*total_available_memory_bytes = sgen_gc_info.total_available_memory_bytes;
+
+	if (!(max_heap_size = sgen_memgov_get_max_heap_size_bytes () ))
+	{
+		*total_available_memory_bytes = mono_determine_physical_ram_available_size ();
+	}
+	else
+	{
+		*total_available_memory_bytes = max_heap_size;
+	}
+	
 }	
 
 MonoGCDescriptor
