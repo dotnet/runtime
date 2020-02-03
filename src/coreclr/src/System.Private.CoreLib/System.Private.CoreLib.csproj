@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <FeatureCoreCLR>true</FeatureCoreCLR>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
