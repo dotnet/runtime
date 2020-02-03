@@ -17,9 +17,7 @@ namespace System.ComponentModel.Composition.Primitives
 
         public static ImportDefinition GetProductImportDefinition(this ImportDefinition import)
         {
-            IPartCreatorImportDefinition partCreatorDefinition = import as IPartCreatorImportDefinition;
-
-            if (partCreatorDefinition != null)
+            if (import is IPartCreatorImportDefinition partCreatorDefinition)
             {
                 return partCreatorDefinition.ProductImportDefinition;
             }
@@ -33,8 +31,8 @@ namespace System.ComponentModel.Composition.Primitives
         {
             import = import.GetProductImportDefinition();
             string contractName = import.ContractName;
-            string genericContractName = import.Metadata.GetValue<string>(CompositionConstants.GenericContractMetadataName);
-            int[] importParametersOrder = import.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
+            string? genericContractName = import.Metadata.GetValue<string>(CompositionConstants.GenericContractMetadataName);
+            int[]? importParametersOrder = import.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
             if (importParametersOrder != null)
             {
                 int partArity = part.Metadata.GetValue<int>(CompositionConstants.GenericPartArityMetadataName);
@@ -56,9 +54,7 @@ namespace System.ComponentModel.Composition.Primitives
             import = import.GetProductImportDefinition();
             if (expandGenerics)
             {
-                Tuple<ComposablePartDefinition, ExportDefinition> singleMatch;
-                IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> multipleMatches;
-                return part.TryGetExports(import, out singleMatch, out multipleMatches);
+                return part.TryGetExports(import, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches);
             }
             else
             {
@@ -68,13 +64,13 @@ namespace System.ComponentModel.Composition.Primitives
 
         private static ImportDefinition TranslateImport(ImportDefinition import, ComposablePartDefinition part)
         {
-            ContractBasedImportDefinition contractBasedImport = import as ContractBasedImportDefinition;
+            ContractBasedImportDefinition? contractBasedImport = import as ContractBasedImportDefinition;
             if (contractBasedImport == null)
             {
                 return import;
             }
 
-            int[] importParametersOrder = contractBasedImport.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
+            int[]? importParametersOrder = contractBasedImport.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
             if (importParametersOrder == null)
             {
                 return import;
@@ -87,7 +83,7 @@ namespace System.ComponentModel.Composition.Primitives
             }
 
             string contractName = GenericServices.GetGenericName(contractBasedImport.ContractName, importParametersOrder, partArity);
-            string requiredTypeIdentity = GenericServices.GetGenericName(contractBasedImport.RequiredTypeIdentity, importParametersOrder, partArity);
+            string requiredTypeIdentity = GenericServices.GetGenericName(contractBasedImport.RequiredTypeIdentity!, importParametersOrder, partArity);
             return new ContractBasedImportDefinition(
                          contractName,
                          requiredTypeIdentity,

@@ -172,7 +172,7 @@ namespace System.Security.Principal
         BuiltinAuthorizationAccessSid = 59,
         /// <summary>Indicates a SID is present in a server that can issue terminal server licenses.</summary>
         WinBuiltinTerminalServerLicenseServersSid = 60,
-        [Obsolete("This member has been depcreated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
+        [Obsolete("This member has been deprecated and is only maintained for backwards compatability. WellKnownSidType values greater than MaxDefined may be defined in future releases.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         MaxDefined = WinBuiltinTerminalServerLicenseServersSid,
         /// <summary>Indicates a SID that matches the distributed COM user group.</summary>
@@ -288,16 +288,18 @@ namespace System.Security.Principal
         //
 
         private IdentifierAuthority _identifierAuthority;
-        private int[] _subAuthorities;
-        private byte[] _binaryForm;
-        private SecurityIdentifier _accountDomainSid;
+        // values guaranteed to be non-null on account of CreateFromParts()
+        // method called by every constructor in this class.
+        private int[] _subAuthorities = null!;
+        private byte[] _binaryForm = null!;
+        private SecurityIdentifier? _accountDomainSid;
         private bool _accountDomainSidInitialized = false;
 
         //
         // Computed attributes of a SID
         //
 
-        private string _sddlForm = null;
+        private string? _sddlForm;
 
         #endregion
 
@@ -521,7 +523,7 @@ namespace System.Security.Principal
             // Call into the underlying O/S conversion routine
             //
 
-            int error = Win32.CreateSidFromString(sddlForm, out byte[] resultSid);
+            int error = Win32.CreateSidFromString(sddlForm, out byte[]? resultSid);
 
             if (error == Interop.Errors.ERROR_INVALID_SID)
             {
@@ -537,7 +539,7 @@ namespace System.Security.Principal
                 throw new Win32Exception(error);
             }
 
-            CreateFromBinaryForm(resultSid, 0);
+            CreateFromBinaryForm(resultSid!, 0);
         }
 
         //
@@ -571,7 +573,7 @@ namespace System.Security.Principal
         //
 
 
-        public SecurityIdentifier(WellKnownSidType sidType, SecurityIdentifier domainSid)
+        public SecurityIdentifier(WellKnownSidType sidType, SecurityIdentifier? domainSid)
         {
             //
             // sidType must not be equal to LogonIdsSid
@@ -606,7 +608,7 @@ namespace System.Security.Principal
                 // verify that the domain sid is a valid windows domain sid
                 // to do that we call GetAccountDomainSid and the return value should be the same as the domainSid
                 //
-                error = Win32.GetWindowsAccountDomainSid(domainSid, out SecurityIdentifier resultDomainSid);
+                error = Win32.GetWindowsAccountDomainSid(domainSid, out SecurityIdentifier? resultDomainSid);
 
                 if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
@@ -634,7 +636,7 @@ namespace System.Security.Principal
             }
 
 
-            error = Win32.CreateWellKnownSid(sidType, domainSid, out byte[] resultSid);
+            error = Win32.CreateWellKnownSid(sidType, domainSid, out byte[]? resultSid);
 
             if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
             {
@@ -646,7 +648,7 @@ namespace System.Security.Principal
                 throw new Win32Exception(error);
             }
 
-            CreateFromBinaryForm(resultSid, 0);
+            CreateFromBinaryForm(resultSid!, 0);
         }
 
 #if NETCOREAPP2_0
@@ -693,7 +695,7 @@ namespace System.Security.Principal
         //       there is no security risk involved, so no security demand is being made.
         //
 
-        public SecurityIdentifier AccountDomainSid
+        public SecurityIdentifier? AccountDomainSid
         {
             get
             {
@@ -711,7 +713,7 @@ namespace System.Security.Principal
 
 #region Inherited properties and methods
 
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             return (this == o as SecurityIdentifier); // invokes operator==
         }
@@ -807,9 +809,9 @@ namespace System.Security.Principal
         }
 
 
-        internal SecurityIdentifier GetAccountDomainSid()
+        internal SecurityIdentifier? GetAccountDomainSid()
         {
-            int error = Win32.GetWindowsAccountDomainSid(this, out SecurityIdentifier resultSid);
+            int error = Win32.GetWindowsAccountDomainSid(this, out SecurityIdentifier? resultSid);
 
             if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
             {
@@ -876,10 +878,10 @@ namespace System.Security.Principal
 
 #region Operators
 
-        public static bool operator ==(SecurityIdentifier left, SecurityIdentifier right)
+        public static bool operator ==(SecurityIdentifier? left, SecurityIdentifier? right)
         {
-            object l = left;
-            object r = right;
+            object? l = left;
+            object? r = right;
 
             if (l == r)
             {
@@ -891,11 +893,11 @@ namespace System.Security.Principal
             }
             else
             {
-                return (left.CompareTo(right) == 0);
+                return (left!.CompareTo(right) == 0);
             }
         }
 
-        public static bool operator !=(SecurityIdentifier left, SecurityIdentifier right)
+        public static bool operator !=(SecurityIdentifier? left, SecurityIdentifier? right)
         {
             return !(left == right);
         }
@@ -904,7 +906,7 @@ namespace System.Security.Principal
 
 #region IComparable implementation
 
-        public int CompareTo(SecurityIdentifier sid)
+        public int CompareTo(SecurityIdentifier? sid)
         {
             if (sid == null)
             {
@@ -997,9 +999,9 @@ namespace System.Security.Principal
 
             IntPtr[] SidArrayPtr = new IntPtr[sourceSids.Count];
             GCHandle[] HandleArray = new GCHandle[sourceSids.Count];
-            SafeLsaPolicyHandle LsaHandle = null;
-            SafeLsaMemoryHandle ReferencedDomainsPtr = null;
-            SafeLsaMemoryHandle NamesPtr = null;
+            SafeLsaPolicyHandle? LsaHandle = null;
+            SafeLsaMemoryHandle? ReferencedDomainsPtr = null;
+            SafeLsaMemoryHandle? NamesPtr = null;
 
             try
             {
@@ -1010,9 +1012,7 @@ namespace System.Security.Principal
                 int currentSid = 0;
                 foreach (IdentityReference id in sourceSids)
                 {
-                    SecurityIdentifier sid = id as SecurityIdentifier;
-
-                    if (sid == null)
+                    if (!(id is SecurityIdentifier sid))
                     {
                         throw new ArgumentException(SR.Argument_ImproperType, nameof(sourceSids));
                     }

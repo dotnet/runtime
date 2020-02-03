@@ -98,8 +98,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (traversedParts.Add(part))
                 {
-                    IEnumerable<ComposablePartDefinition> partsToTraverse = null;
-                    if (traversal.TryTraverse(part, out partsToTraverse))
+                    if (traversal.TryTraverse(part, out IEnumerable<ComposablePartDefinition>? partsToTraverse))
                     {
                         GetTraversalClosure(partsToTraverse, traversedParts, traversal);
                     }
@@ -109,8 +108,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void FreezeInnerCatalog()
         {
-            INotifyComposablePartCatalogChanged innerNotifyCatalog = _innerCatalog as INotifyComposablePartCatalogChanged;
-            if (innerNotifyCatalog != null)
+            if (_innerCatalog is INotifyComposablePartCatalogChanged innerNotifyCatalog)
             {
                 innerNotifyCatalog.Changing += ThrowOnRecomposition;
             }
@@ -118,14 +116,13 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void UnfreezeInnerCatalog()
         {
-            INotifyComposablePartCatalogChanged innerNotifyCatalog = _innerCatalog as INotifyComposablePartCatalogChanged;
-            if (innerNotifyCatalog != null)
+            if (_innerCatalog is INotifyComposablePartCatalogChanged innerNotifyCatalog)
             {
                 innerNotifyCatalog.Changing -= ThrowOnRecomposition;
             }
         }
 
-        private static void ThrowOnRecomposition(object sender, ComposablePartCatalogChangeEventArgs e)
+        private static void ThrowOnRecomposition(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             throw new ChangeRejectedException();
         }
