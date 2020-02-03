@@ -13,9 +13,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         internal static unsafe int ForkAndExecProcess(
-            string filename, string[] argv, string[] envp, string cwd,
+            string filename, string[] argv, string[] envp, string? cwd,
             bool redirectStdin, bool redirectStdout, bool redirectStderr,
-            bool setUser, uint userId, uint groupId, uint[] groups,
+            bool setUser, uint userId, uint groupId, uint[]? groups,
             out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd, bool shouldThrow = true)
         {
             byte** argvPtr = null, envpPtr = null;
@@ -43,7 +43,7 @@ internal static partial class Interop
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ForkAndExecProcess", SetLastError = true)]
         private static extern unsafe int ForkAndExecProcess(
-            string filename, byte** argv, byte** envp, string cwd,
+            string filename, byte** argv, byte** envp, string? cwd,
             int redirectStdin, int redirectStdout, int redirectStderr,
             int setUser, uint userId, uint groupId, uint* groups, int groupsLength,
             out int lpChildPid, out int stdinFd, out int stdoutFd, out int stderrFd);
