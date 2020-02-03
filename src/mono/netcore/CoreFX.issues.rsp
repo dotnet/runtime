@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Threading.ThreadPool.Tests
-####################################################################
-
-# Explicitly skipped if it's MonoVM (SkipOnTargetFramework)
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
-
-####################################################################
 ##  System.ComponentModel.Composition.Tests
 ####################################################################
 
