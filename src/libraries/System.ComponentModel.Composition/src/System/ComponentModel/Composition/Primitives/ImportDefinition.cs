@@ -17,13 +17,13 @@ namespace System.ComponentModel.Composition.Primitives
     public class ImportDefinition
     {
         internal static readonly string EmptyContractName = string.Empty;
-        private readonly Expression<Func<ExportDefinition, bool>> _constraint;
+        private readonly Expression<Func<ExportDefinition, bool>>? _constraint;
         private readonly ImportCardinality _cardinality = ImportCardinality.ExactlyOne;
         private readonly string _contractName = EmptyContractName;
         private readonly bool _isRecomposable;
         private readonly bool _isPrerequisite = true;
-        private Func<ExportDefinition, bool> _compiledConstraint;
-        private readonly IDictionary<string, object> _metadata = MetadataServices.EmptyMetadata;
+        private Func<ExportDefinition, bool>? _compiledConstraint;
+        private readonly IDictionary<string, object?> _metadata = MetadataServices.EmptyMetadata;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ImportDefinition"/> class.
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     values.
         /// </exception>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, MetadataServices.EmptyMetadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -89,7 +89,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object> metadata)
+        public ImportDefinition(Expression<Func<ExportDefinition, bool>> constraint, string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
             : this(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
         {
             Requires.NotNull(constraint, nameof(constraint));
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.Primitives
             _constraint = constraint;
         }
 
-        internal ImportDefinition(string contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object> metadata)
+        internal ImportDefinition(string? contractName, ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, IDictionary<string, object?>? metadata)
         {
             if (
                 (cardinality != ImportCardinality.ExactlyOne) &&
@@ -159,7 +159,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///         </note>
         ///     </para>
         /// </remarks>
-        public virtual IDictionary<string, object> Metadata
+        public virtual IDictionary<string, object?> Metadata
         {
             get
             {

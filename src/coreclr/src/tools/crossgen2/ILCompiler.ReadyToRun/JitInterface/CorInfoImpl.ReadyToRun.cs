@@ -139,6 +139,7 @@ namespace Internal.JitInterface
         private IReadyToRunMethodCodeNode _methodCodeNode;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
+        private ArrayBuilder<MethodDesc> _inlinedMethods;
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -2163,6 +2164,16 @@ namespace Internal.JitInterface
             }
 
             _ehClauses[EHnumber] = clause;
+        }
+
+        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
+        {
+            if (inlineResult == CorInfoInline.INLINE_PASS)
+            {
+                // We deliberately ignore inlinerHnd because we have no interest to track intermediate links now.
+                MethodDesc inlinee = HandleToObject(inlineeHnd);
+                _inlinedMethods.Add(inlinee);
+            }
         }
     }
 }

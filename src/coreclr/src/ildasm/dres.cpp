@@ -7,7 +7,7 @@
 //
 #include "ildasmpch.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "debugmacros.h"
 #include "corpriv.h"
 #include "dasmenum.hpp"
@@ -312,5 +312,5 @@ DWORD   DumpResourceToFile(__in __nullterminated WCHAR*   wzFileName)
 
     return ret;
 }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 

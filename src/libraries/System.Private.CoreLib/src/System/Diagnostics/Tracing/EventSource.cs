@@ -4700,7 +4700,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (EventId < 0)      // TraceLogging convention EventID == -1
+                if (EventId <= 0)      // TraceLogging convention EventID == -1
                     return m_keywords;
 
                 Debug.Assert(m_eventSource.m_eventData != null);

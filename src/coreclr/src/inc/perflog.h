@@ -17,7 +17,7 @@
 #ifndef _PERFLOG_H_
 #define _PERFLOG_H_
 
-#if !defined(BIT64) && !defined(DACCESS_COMPILE)
+#if !defined(HOST_64BIT) && !defined(DACCESS_COMPILE)
 #define ENABLE_PERF_LOG
 #else
 #undef ENABLE_PERF_LOG

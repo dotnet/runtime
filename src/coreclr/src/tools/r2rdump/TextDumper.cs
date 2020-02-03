@@ -138,7 +138,7 @@ namespace R2RDump
 
             if (_options.GC && method.GcInfo != null)
             {
-                _writer.WriteLine("GcInfo:");
+                _writer.WriteLine("GC info:");
                 _writer.Write(method.GcInfo);
 
                 if (_options.Raw)
@@ -390,6 +390,18 @@ namespace R2RDump
                     NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.Image, attributesStartOffset, attributesEndOffset);
                     _writer.WriteLine("Attribute presence filter");
                     _writer.WriteLine(attributes.ToString());
+                    break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_INLINING_INFO:
+                    int iiOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int iiEndOffset = iiOffset + section.Size;
+                    InliningInfoSection inliningInfoSection = new InliningInfoSection(_r2r, iiOffset, iiEndOffset);
+                    _writer.WriteLine(inliningInfoSection.ToString());
+                    break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_INLINING_INFO2:
+                    int ii2Offset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int ii2EndOffset = ii2Offset + section.Size;
+                    InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
+                    _writer.WriteLine(inliningInfoSection2.ToString());
                     break;
             }
         }

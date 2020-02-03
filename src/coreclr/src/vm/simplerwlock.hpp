@@ -102,7 +102,7 @@ private:
     // Check for dead lock situation.
     Volatile<LONG>      m_countNoTriggerGC;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // ensures that we are a multiple of 8-bytes
     UINT32 pad;
 #endif

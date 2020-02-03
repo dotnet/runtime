@@ -22,13 +22,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Windows x86 and Windows ARM/ARM64 may not define _isnanf() but they do define _isnan().
 // We will redirect the macros to these other functions if the macro is not defined for the
 // platform. This has the side effect of a possible implicit upcasting for arguments passed.
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+#if (defined(HOST_X86) || defined(HOST_ARM) || defined(HOST_ARM64)) && !defined(HOST_UNIX)
 
 #if !defined(_isnanf)
 #define _isnanf _isnan
 #endif
 
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
+#endif // (defined(HOST_X86) || defined(HOST_ARM) || defined(HOST_ARM64)) && !defined(HOST_UNIX)
 
 // We need to use target-specific NaN values when statically compute expressions.
 // Otherwise, cross crossgen (e.g. x86_arm) would have different binary outputs
@@ -54,9 +54,9 @@ struct FloatTraits
 
     static float NaN()
     {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
         unsigned           bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
@@ -80,9 +80,9 @@ struct DoubleTraits
 
     static double NaN()
     {
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(_TARGET_ARMARCH_)
+#elif defined(TARGET_ARMARCH)
         unsigned long long bits = 0x7FF8000000000000ull;
 #else
 #error Unsupported or unset target architecture
@@ -107,7 +107,7 @@ struct DoubleTraits
 template <typename TFp, typename TFpTraits>
 TFp FpAdd(TFp value1, TFp value2)
 {
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     // If [value1] is negative infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is positive infinity and [value2] is negative infinity
@@ -125,7 +125,7 @@ TFp FpAdd(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
     return value1 + value2;
 }
@@ -143,7 +143,7 @@ TFp FpAdd(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpSub(TFp value1, TFp value2)
 {
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     // If [value1] is positive infinity and [value2] is positive infinity
     //   the result is NaN.
     // If [value1] is negative infinity and [value2] is negative infinity
@@ -161,7 +161,7 @@ TFp FpSub(TFp value1, TFp value2)
             return TFpTraits::NaN();
         }
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
     return value1 - value2;
 }
@@ -179,7 +179,7 @@ TFp FpSub(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpMul(TFp value1, TFp value2)
 {
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     // From the ECMA standard:
     //
     // If [value1] is zero and [value2] is infinity
@@ -195,7 +195,7 @@ TFp FpMul(TFp value1, TFp value2)
     {
         return TFpTraits::NaN();
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
     return value1 * value2;
 }
@@ -213,7 +213,7 @@ TFp FpMul(TFp value1, TFp value2)
 template <typename TFp, typename TFpTraits>
 TFp FpDiv(TFp dividend, TFp divisor)
 {
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
     // From the ECMA standard:
     //
     // If [dividend] is zero and [divisor] is zero
@@ -229,7 +229,7 @@ TFp FpDiv(TFp dividend, TFp divisor)
     {
         return TFpTraits::NaN();
     }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
     return dividend / divisor;
 }
@@ -2494,7 +2494,7 @@ int ValueNumStore::GetConstantInt32(ValueNum argVN)
         case TYP_INT:
             result = ConstantValue<int>(argVN);
             break;
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         case TYP_REF:
         case TYP_BYREF:
             result = (int)ConstantValue<size_t>(argVN);
@@ -2806,7 +2806,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 
     switch (castFromType) // GT_CAST source type
     {
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         case TYP_REF:
         case TYP_BYREF:
 #endif
@@ -2836,7 +2836,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                 case TYP_LONG:
                 case TYP_ULONG:
                     assert(!IsVNHandle(arg0VN));
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                     if (typ == TYP_LONG)
                     {
                         if (srcIsUnsigned)
@@ -2889,7 +2889,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
             break;
         }
             {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
                 case TYP_REF:
                 case TYP_BYREF:
 #endif
@@ -5735,7 +5735,7 @@ void Compiler::fgValueNumber()
                     }
                     break;
             }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             bool isVarargParam = (lclNum == lvaVarargsBaseOfStkArgs || lclNum == lvaVarargsHandleArg);
             if (isVarargParam)
                 initVal = vnStore->VNForExpr(fgFirstBB); // a new, unique VN.
@@ -8463,7 +8463,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         vnpUniq.SetBoth(vnStore->VNForExpr(compCurBB, call->TypeGet()));
     }
 
-#if defined(FEATURE_READYTORUN_COMPILER) && defined(_TARGET_ARMARCH_)
+#if defined(FEATURE_READYTORUN_COMPILER) && defined(TARGET_ARMARCH)
     if (call->IsR2RRelativeIndir())
     {
 #ifdef DEBUG
@@ -8478,7 +8478,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
         useEntryPointAddrAsArg0 = false;
     }
-#endif // FEATURE_READYTORUN_COMPILER && _TARGET_ARMARCH_
+#endif // FEATURE_READYTORUN_COMPILER && TARGET_ARMARCH
 
     if (nArgs == 0)
     {

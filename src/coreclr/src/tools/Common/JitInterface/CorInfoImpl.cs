@@ -259,6 +259,9 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+#endif
             PublishProfileData();
         }
 
@@ -338,6 +341,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             _profileDataNode = null;
+            _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
         }
 
@@ -753,10 +757,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
-        {
-        }
-
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
         {
         }
@@ -947,7 +947,8 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition());
+                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                        (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }

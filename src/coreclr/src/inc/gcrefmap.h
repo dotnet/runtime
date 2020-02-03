@@ -80,7 +80,7 @@ public:
     {
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     void WriteStackPop(int stackPop)
     {
         if (stackPop < 3)
@@ -205,7 +205,7 @@ public:
         return m_PendingByte == 0;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     UINT ReadStackPop()
     {
         int x = GetTwoBit();

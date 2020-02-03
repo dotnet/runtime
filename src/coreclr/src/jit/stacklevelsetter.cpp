@@ -339,7 +339,7 @@ void StackLevelSetter::CheckArgCnt()
 //
 void StackLevelSetter::CheckAdditionalArgs()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     if (comp->compIsProfilerHookNeeded())
     {
         if (maxStackLevel == 0)
@@ -348,5 +348,5 @@ void StackLevelSetter::CheckAdditionalArgs()
             maxStackLevel = 1;
         }
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
