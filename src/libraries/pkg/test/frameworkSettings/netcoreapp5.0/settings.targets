@@ -9,6 +9,7 @@
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 
+  <!-- This should be removed after the sdk contains the 5.0.0.0 assembly version of this assembly. -->
   <ItemGroup>
     <IgnoredReference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
