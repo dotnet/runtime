@@ -1897,6 +1897,17 @@ interp_icall_op_for_sig (MonoMethodSignature *sig)
 static gboolean
 interp_method_check_inlining (TransformData *td, MonoMethod *method)
 {
+
+#if HOST_WASM
+
+	// The recursive implementation of inlining runs out of stack on iOS/WebAssembly.
+	// This is a stop-gap until recursion is further reduced
+	// in the interpreter. See https://github.com/mono/mono/issues/18646.
+
+	return FALSE;
+
+#else
+
 	MonoMethodHeaderSummary header;
 
 	if (td->method == method)
@@ -1944,6 +1955,9 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 		return FALSE;
 
 	return TRUE;
+
+#endif
+
 }
 
 static gboolean
