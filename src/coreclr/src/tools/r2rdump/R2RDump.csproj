@@ -12,7 +12,7 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
-    <OutputPath>$(BinDir)</OutputPath>
+    <OutputPath>$(BinDir)/R2RDump</OutputPath>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
@@ -22,9 +22,6 @@
     </PackageReference>
     <PackageReference Include="System.CommandLine.Experimental">
       <Version>0.2.0-alpha.19174.3</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.6.0</Version>
     </PackageReference>
     <ProjectReference Include="..\crossgen2\ILCompiler.Reflection.ReadyToRun\ILCompiler.Reflection.ReadyToRun.csproj" />
   </ItemGroup>
