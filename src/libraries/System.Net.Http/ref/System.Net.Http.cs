@@ -12,6 +12,7 @@ namespace System.Net.Http
         public ByteArrayContent(byte[] content) { }
         public ByteArrayContent(byte[] content, int offset, int count) { }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext context) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
@@ -27,6 +28,7 @@ namespace System.Net.Http
         protected DelegatingHandler(System.Net.Http.HttpMessageHandler innerHandler) { }
         public System.Net.Http.HttpMessageHandler InnerHandler { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class FormUrlEncodedContent : System.Net.Http.ByteArrayContent
@@ -116,6 +118,7 @@ namespace System.Net.Http
         public bool UseDefaultCredentials { get { throw null; } set { } }
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum HttpCompletionOption
@@ -130,9 +133,9 @@ namespace System.Net.Http
         public void CopyTo(System.IO.Stream stream) { }
         public void CopyTo(System.IO.Stream stream, System.Net.TransportContext context) { }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream) { throw null; }
-        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected virtual System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public void Dispose() { }
@@ -155,6 +158,7 @@ namespace System.Net.Http
         protected HttpMessageHandler() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        protected internal virtual System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         protected internal abstract System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken);
     }
     public partial class HttpMessageInvoker : System.IDisposable
@@ -163,6 +167,7 @@ namespace System.Net.Http
         public HttpMessageInvoker(System.Net.Http.HttpMessageHandler handler, bool disposeHandler) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public virtual System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         public virtual System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class HttpMethod : System.IEquatable<System.Net.Http.HttpMethod>
@@ -228,6 +233,7 @@ namespace System.Net.Http
         protected MessageProcessingHandler(System.Net.Http.HttpMessageHandler innerHandler) { }
         protected abstract System.Net.Http.HttpRequestMessage ProcessRequest(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken);
         protected abstract System.Net.Http.HttpResponseMessage ProcessResponse(System.Net.Http.HttpResponseMessage response, System.Threading.CancellationToken cancellationToken);
+        protected internal sealed override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         protected internal sealed override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class MultipartContent : System.Net.Http.HttpContent, System.Collections.Generic.IEnumerable<System.Net.Http.HttpContent>, System.Collections.IEnumerable
@@ -240,6 +246,7 @@ namespace System.Net.Http
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
         public System.Collections.Generic.IEnumerator<System.Net.Http.HttpContent> GetEnumerator() { throw null; }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext context) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
@@ -258,6 +265,7 @@ namespace System.Net.Http
     {
         public ReadOnlyMemoryContent(System.ReadOnlyMemory<byte> content) { }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext context) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
@@ -286,8 +294,7 @@ namespace System.Net.Http
         public bool UseCookies { get { throw null; } set { } }
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
-        public System.Net.Http.HttpResponseMessage SendDirect(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendDirectAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class StreamContent : System.Net.Http.HttpContent
@@ -296,6 +303,7 @@ namespace System.Net.Http
         public StreamContent(System.IO.Stream content, int bufferSize) { }
         protected override System.Threading.Tasks.Task<System.IO.Stream> CreateContentReadStreamAsync() { throw null; }
         protected override void Dispose(bool disposing) { }
+        protected override void SerializeToStream(System.IO.Stream stream, System.Net.TransportContext context) { }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context) { throw null; }
         protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override bool TryComputeLength(out long length) { throw null; }
@@ -546,9 +554,9 @@ namespace System.Net.Http.Headers
     }
     public partial class NameValueWithParametersHeaderValue : System.Net.Http.Headers.NameValueHeaderValue, System.ICloneable
     {
-        protected NameValueWithParametersHeaderValue(System.Net.Http.Headers.NameValueWithParametersHeaderValue source) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
-        public NameValueWithParametersHeaderValue(string name) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
-        public NameValueWithParametersHeaderValue(string name, string value) : base (default(System.Net.Http.Headers.NameValueHeaderValue)) { }
+        protected NameValueWithParametersHeaderValue(System.Net.Http.Headers.NameValueWithParametersHeaderValue source) : base (default(string)) { }
+        public NameValueWithParametersHeaderValue(string name) : base (default(string)) { }
+        public NameValueWithParametersHeaderValue(string name, string value) : base (default(string)) { }
         public System.Collections.Generic.ICollection<System.Net.Http.Headers.NameValueHeaderValue> Parameters { get { throw null; } }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }

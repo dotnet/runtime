@@ -1302,29 +1302,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_Sync_Test : HttpClientHandlerTestBase
-    {
-        public SocketsHttpHandler_Sync_Test(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public async Task SendDirect_Get_StaysOnSameThread()
-        {
-            string content = new string(Enumerable.Range(0, 1000000).Select(i => (char)('a' + (i % 26))).ToArray());
-            await LoopbackServer.CreateClientAndServerAsync(uri =>
-            {
-                using (var handler = new SocketsHttpHandler())
-                using (HttpResponseMessage response = handler.SendDirect(new HttpRequestMessage(HttpMethod.Get, uri)))
-                using (Stream responseStream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
-                {
-                    var ms = new MemoryStream();
-                    responseStream.CopyTo(ms);
-                    Assert.Equal(content, Encoding.ASCII.GetString(ms.ToArray()));
-                }
-                return Task.CompletedTask;
-            }, server => server.AcceptConnectionSendResponseAndCloseAsync(content: content));
-        }
-    }
-
     public sealed class SocketsHttpHandler_Connect_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }

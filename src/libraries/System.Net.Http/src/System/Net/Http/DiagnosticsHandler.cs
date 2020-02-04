@@ -31,7 +31,16 @@ namespace System.Net.Http
             return s_enableActivityPropagation && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        // SendAsyncCore returns already completed ValueTask for when async: false is passed.
+        // Internally, it calls the synchronous Send method of the base class.
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request) =>
+            SendAsyncCore(request, false, default).GetAwaiter().GetResult();
+
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            SendAsyncCore(request, true, cancellationToken).AsTask();
+
+        private async ValueTask<HttpResponseMessage> SendAsyncCore(HttpRequestMessage request, bool async,
             CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
@@ -57,7 +66,14 @@ namespace System.Net.Http
 
                 try
                 {
-                    return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    if (async)
+                    {
+                        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        return base.Send(request);
+                    }
                 }
                 finally
                 {
@@ -98,12 +114,22 @@ namespace System.Net.Http
                 InjectHeaders(currentActivity, request);
             }
 
-            Task<HttpResponseMessage> responseTask = null;
+            HttpResponseMessage response = null;
+            TaskStatus taskStatus = TaskStatus.Faulted;
             try
             {
-                responseTask = base.SendAsync(request, cancellationToken);
-
-                return await responseTask.ConfigureAwait(false);
+                if (async)
+                {
+                    Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
+                    response = await responseTask.ConfigureAwait(false);
+                    taskStatus = responseTask.Status;
+                }
+                else
+                {
+                    response = base.Send(request);
+                    taskStatus = TaskStatus.RanToCompletion;
+                }
+                return response;
             }
             catch (OperationCanceledException)
             {
@@ -127,12 +153,12 @@ namespace System.Net.Http
                 if (activity != null)
                 {
                     s_diagnosticListener.StopActivity(activity, new ActivityStopData(
-                        responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                        response,
                         // If request is failed or cancelled, there is no response, therefore no information about request;
                         // pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
                         // and not retain all requests in Start
                         request,
-                        responseTask?.Status ?? TaskStatus.Faulted));
+                        taskStatus));
                 }
                 // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
@@ -140,10 +166,10 @@ namespace System.Net.Http
                     long timestamp = Stopwatch.GetTimestamp();
                     s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
                         new ResponseData(
-                            responseTask?.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                            response,
                             loggingRequestId,
                             timestamp,
-                            responseTask?.Status ?? TaskStatus.Faulted));
+                            taskStatus));
                 }
             }
         }

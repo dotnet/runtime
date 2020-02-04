@@ -12,9 +12,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class DecompressionHandler : SocketsHttpHandlerStage
+    internal sealed class DecompressionHandler : HttpMessageHandlerStage
     {
-        private readonly SocketsHttpHandlerStage _innerHandler;
+        private readonly HttpMessageHandlerStage _innerHandler;
         private readonly DecompressionMethods _decompressionMethods;
 
         private const string Gzip = "gzip";
@@ -24,7 +24,7 @@ namespace System.Net.Http
         private static readonly StringWithQualityHeaderValue s_deflateHeaderValue = new StringWithQualityHeaderValue(Deflate);
         private static readonly StringWithQualityHeaderValue s_brotliHeaderValue = new StringWithQualityHeaderValue(Brotli);
 
-        public DecompressionHandler(DecompressionMethods decompressionMethods, SocketsHttpHandlerStage innerHandler)
+        public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandlerStage innerHandler)
         {
             Debug.Assert(decompressionMethods != DecompressionMethods.None);
             Debug.Assert(innerHandler != null);
@@ -82,7 +82,15 @@ namespace System.Net.Http
             return response;
         }
 
-        public override void Dispose() => _innerHandler.Dispose();
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _innerHandler.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
 
         private abstract class DecompressedContent : HttpContent
         {

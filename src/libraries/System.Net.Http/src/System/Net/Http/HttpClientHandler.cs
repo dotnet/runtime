@@ -214,6 +214,13 @@ namespace System.Net.Http
 
         public IDictionary<string, object> Properties => _socketsHttpHandler.Properties;
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request)
+        {
+            return DiagnosticsHandler.IsEnabled() ?
+                _diagnosticsHandler.Send(request) :
+                _socketsHttpHandler.Send(request);
+        }
+
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

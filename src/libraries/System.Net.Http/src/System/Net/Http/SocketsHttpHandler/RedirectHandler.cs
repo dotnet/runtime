@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed partial class RedirectHandler : SocketsHttpHandlerStage
+    internal sealed class RedirectHandler : HttpMessageHandlerStage
     {
-        private readonly SocketsHttpHandlerStage _initialInnerHandler;       // Used for initial request
-        private readonly SocketsHttpHandlerStage _redirectInnerHandler;      // Used for redirects; this allows disabling auth
+        private readonly HttpMessageHandlerStage _initialInnerHandler;       // Used for initial request
+        private readonly HttpMessageHandlerStage _redirectInnerHandler;      // Used for redirects; this allows disabling auth
         private readonly int _maxAutomaticRedirections;
 
-        public RedirectHandler(int maxAutomaticRedirections, SocketsHttpHandlerStage initialInnerHandler, SocketsHttpHandlerStage redirectInnerHandler)
+        public RedirectHandler(int maxAutomaticRedirections, HttpMessageHandlerStage initialInnerHandler, HttpMessageHandlerStage redirectInnerHandler)
         {
             Debug.Assert(initialInnerHandler != null);
             Debug.Assert(redirectInnerHandler != null);
@@ -151,10 +151,15 @@ namespace System.Net.Http
             }
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            _initialInnerHandler.Dispose();
-            _redirectInnerHandler.Dispose();
+            if (disposing)
+            {
+                _initialInnerHandler.Dispose();
+                _redirectInnerHandler.Dispose();
+            }
+
+            base.Dispose(disposing);
         }
 
         internal void Trace(string message, int requestId, [CallerMemberName] string memberName = null) =>
