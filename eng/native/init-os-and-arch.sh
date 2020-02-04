@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case "$OSName" in
+    Darwin)
+        os=OSX
+        ;;
+
+    FreeBSD)
+        os=FreeBSD
+        ;;
+
+    Linux)
+        os=Linux
+        ;;
+
+    NetBSD)
+        os=NetBSD
+        ;;
+
+    OpenBSD)
+        os=OpenBSD
+        ;;
+
+    SunOS)
+        os=SunOS
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        os=Linux
+        ;;
+esac
+
+# Use uname to determine what the CPU is.
+CPUName=$(uname -p)
+
+# Some Linux platforms report unknown for platform, but the arch for machine.
+if [[ "$CPUName" == "unknown" ]]; then
+    CPUName=$(uname -m)
+fi
+
+case "$CPUName" in
+    aarch64)
+        arch=arm64
+        ;;
+
+    amd64)
+        arch=x64
+        ;;
+
+    armv7l)
+        arch=arm
+        ;;
+
+    i686)
+        echo "Unsupported CPU $CPUName detected, build might not succeed!"
+        arch=x86
+        ;;
+
+    x86_64)
+        arch=x64
+        ;;
+
+    *)
+        echo "Unknown CPU $CPUName detected, configuring as if for x64"
+        arch=x64
+        ;;
+esac
