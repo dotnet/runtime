@@ -456,7 +456,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         return false;
     }
-#else  //!TARGET_AMD64 = TARGET_X86
+#else  //! TARGET_AMD64 = TARGET_X86
     return false;
 #endif //! TARGET_AMD64
 }

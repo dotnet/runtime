@@ -14120,7 +14120,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 lclTyp = JITtype2varType(ciType);
 
-
                 if (compIsForInlining())
                 {
                     switch (fieldInfo.fieldAccessor)
