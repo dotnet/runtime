@@ -23,13 +23,13 @@ restore-local-dotnet:
 run-tests-coreclr:
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" ../mono.proj
 
-# show summary for coreclr tests
-tests-coreclr-summary:
-	$(DOTNET) msbuild /t:CoreClrTestsSummary ../mono.proj
-
 # run all coreclr tests
 run-tests-coreclr-all:
 	$(DOTNET) msbuild /t:RunCoreClrTests ../mono.proj
+
+# show summary for coreclr tests
+tests-coreclr-summary:
+	$(DOTNET) msbuild /t:CoreClrTestsSummary ../mono.proj
 
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'

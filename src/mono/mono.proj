@@ -96,21 +96,16 @@
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
-    <Copy Condition="!Exists('$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll')"
-          SourceFiles="@(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll"
-          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll-coreclr" />
-    <Copy Condition="!Exists('$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr')"
-          SourceFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)"
-          DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr" />
     <Copy SourceFiles="$(_MonoRuntimeArtifacts)"
           DestinationFolder="$(LocalDotnetRuntimeDir)"
           SkipUnchangedFiles="true" />
   </Target>
 
+  <!-- Copy Coreclr runtime bits to the local .dotnet dir -->
   <Target Name="RestoreLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
-    <Move SourceFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll-coreclr"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
           DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll" />
-    <Move SourceFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName"
           DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)" />
   </Target>
 
@@ -125,10 +120,11 @@
           SkipUnchangedFiles="true"/>
   </Target>
 
+  <!-- Copy Coreclr runtime bits back to Core_Root -->
   <Target Name="RestoreCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <Move SourceFiles="$(CoreClrTestCoreRoot)\System.Private.CoreLib.dll-coreclr"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
           DestinationFiles="$(CoreClrTestCoreRoot)\System.Private.CoreLib.dll" />
-    <Move SourceFiles="$(CoreClrTestCoreRoot)\$(_CoreClrFileName)-coreclr"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName"
           DestinationFiles="$(CoreClrTestCoreRoot)\$(_CoreClrFileName)" />
   </Target>
 
