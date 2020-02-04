@@ -56,6 +56,8 @@ namespace System.Runtime.InteropServices.Tests
         public void SizeOf_Struct_With_GenericValueTypeField_ReturnsExpected()
         {
             Assert.Equal(8, Marshal.SizeOf<TestStructWithGenericStructField>());
+            Assert.Equal(8, Marshal.SizeOf<TestStructWithNullable>());
+            Assert.Equal(8, Marshal.SizeOf<TestStructWithVector64>());
         }
 
         public static IEnumerable<object[]> SizeOf_InvalidType_TestData()
@@ -122,6 +124,16 @@ namespace System.Runtime.InteropServices.Tests
         public struct TestStructWithGenericStructField
         {
             public GenericStruct<int> i;
+        }
+
+        public struct TestStructWithNullable
+        {
+            public int? i;
+        }
+
+        public struct TestStructWithVector64
+        {
+            public System.Runtime.Intrinsics.Vector64<double> v;
         }
     }
 }
