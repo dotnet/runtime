@@ -499,7 +499,7 @@ namespace System.Net.Http
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    timeoutTime = Environment.TickCount64 + (long)_timeout.TotalMilliseconds;
+                    timeoutTime = Environment.TickCount64 + (_timeout.Ticks/TimeSpan.TicksPerMillisecond);
                     cts.CancelAfter(_timeout);
                 }
             }
