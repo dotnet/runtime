@@ -481,7 +481,7 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_S) (short jump).</summary>
         private void Bgt(Label l) => _ilg!.Emit(OpCodes.Bgt_S, l);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.Bleun_S) (short jump).</summary>
+        /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_Un_S) (short jump).</summary>
         private void BgtUn(Label l) => _ilg!.Emit(OpCodes.Bgt_Un_S, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Bne_S) (short jump).</summary>
