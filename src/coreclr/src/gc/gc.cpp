@@ -15560,7 +15560,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
-            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gen2_fragmented);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_gen1_in_pm);
             n = max_generation - 1;
         }
     }
@@ -15601,8 +15601,11 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (loh_generation);
-                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
-                full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
+                if ((est_loh_reclaim * 8) >= heap_hard_limit)
+                {
+                    gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
+                    full_compact_gc_p = true;
+                }
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
         }
