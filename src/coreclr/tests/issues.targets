@@ -44,12 +44,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/muldimjagary/muldimjagary/*">
             <Issue>3392</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_relu_conv/*">
-            <Issue>31665</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/ELEMENT_TYPE_IU/_il_reli_conv/*">
-            <Issue>31665</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/*">
             <Issue>11408</Issue>
         </ExcludeList>
