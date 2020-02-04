@@ -200,6 +200,7 @@ static gboolean
 parse_debug_options (const char* p)
 {
 	MonoDebugOptions *opt = mini_get_debug_options ();
+	opt->enabled = TRUE;
 
 	do {
 		if (!*p) {
@@ -1611,8 +1612,8 @@ mini_usage (void)
 		"Development:\n"
 		"    --aot[=<options>]      Compiles the assembly to native code\n"
 #ifdef ENABLE_NETCORE
-		"    --debug=ignore    Disable debugging support\n"
-		"    --debug=<options>    Enable debugging support, use --help-debug for details\n"
+		"    --debug=ignore         Disable debugging support (on by default)\n"
+		"    --debug=[<options>]    Disable debugging support or enable debugging extras, use --help-debug for details\n"
 #else
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
 #endif
@@ -1674,10 +1675,17 @@ mini_debug_usage (void)
 {
 	fprintf (stdout,
 		 "Debugging options:\n"
+#ifdef ENABLE_NETCORE
+		 "   --debug[=OPTIONS]     Disable debugging support or enable debugging extras, optional OPTIONS is a comma\n"
+#else
 		 "   --debug[=OPTIONS]     Enable debugging support, optional OPTIONS is a comma\n"
+#endif
 		 "                         separated list of options\n"
 		 "\n"
 		 "OPTIONS is composed of:\n"
+#ifdef ENABLE_NETCORE
+		 "    ignore               Disable debugging support (on by default).\n"
+#endif
 		 "    casts                Enable more detailed InvalidCastException messages.\n"
 		 "    mdb-optimizations    Disable some JIT optimizations which are normally\n"
 		 "                         disabled when running inside the debugger.\n"
@@ -2339,10 +2347,8 @@ mono_main (int argc, char* argv[])
 			mname = argv [++i];
 			mono_graph_options = MONO_GRAPH_CFG;
 			action = DO_DRAW;
-#ifndef ENABLE_NETCORE
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
-#endif
 		} else if (strncmp (argv [i], "--debug=", 8) == 0) {
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
