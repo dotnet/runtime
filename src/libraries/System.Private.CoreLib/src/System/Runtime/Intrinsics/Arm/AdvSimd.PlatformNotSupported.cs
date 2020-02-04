@@ -2626,6 +2626,22 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> FusedMultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float64x1_t vfnma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMA.F64 Dd, Dn, Dm
+        ///   A64: FNMADD Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfnmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMA.F32 Sd, Sn, Sm
+        ///   A64: FNMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// float32x2_t vfms_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
         ///   A32: VFMS.F32 Dd, Dn, Dm
         ///   A64: FMLS Vd.2S, Vn.2S, Vm.2S
