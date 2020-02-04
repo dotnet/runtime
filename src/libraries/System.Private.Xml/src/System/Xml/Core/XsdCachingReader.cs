@@ -647,7 +647,7 @@ namespace System.Xml
 
         private ValidatingReaderNodeData AddAttribute(int attIndex)
         {
-            Debug.Assert(attIndex <= _attributeEvents.Length);
+            Debug.Assert(attIndex < _attributeEvents.Length);
             ValidatingReaderNodeData attInfo = _attributeEvents[attIndex];
             if (attInfo != null)
             {
@@ -671,7 +671,7 @@ namespace System.Xml
 
         private ValidatingReaderNodeData AddContent(XmlNodeType nodeType)
         {
-            Debug.Assert(_contentIndex <= _contentEvents.Length);
+            Debug.Assert(_contentIndex < _contentEvents.Length);
             ValidatingReaderNodeData contentInfo = _contentEvents[_contentIndex];
             if (contentInfo != null)
             {

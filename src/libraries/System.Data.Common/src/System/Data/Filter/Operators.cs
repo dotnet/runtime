@@ -229,7 +229,7 @@ namespace System.Data
         {
             string st;
 
-            if (op <= s_looks.Length)
+            if (op < s_looks.Length)
                 st = s_looks[op];
             else
                 st = "Unknown op";
