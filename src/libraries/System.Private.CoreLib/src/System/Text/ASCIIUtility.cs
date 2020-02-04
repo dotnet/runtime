@@ -1010,10 +1010,12 @@ namespace System.Text
         {
             Debug.Assert(AllCharsInUInt64AreAscii(value));
 
-            if (Bmi2.X64.IsSupported)
+            if (Sse2.X64.IsSupported)
             {
-                // BMI2 will work regardless of the processor's endianness.
-                Unsafe.WriteUnaligned(ref outputBuffer, (uint)Bmi2.X64.ParallelBitExtract(value, 0x00FF00FF_00FF00FFul));
+                Debug.Assert(BitConverter.IsLittleEndian, "SSE2 narrowing assumes little-endian.");
+                Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
+                Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
+                Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
             }
             else
             {
@@ -1695,14 +1697,16 @@ namespace System.Text
         /// writes them to the output buffer with machine endianness.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
+        internal static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
-            if (Bmi2.X64.IsSupported)
+            if (Sse2.X64.IsSupported)
             {
-                // BMI2 will work regardless of the processor's endianness.
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), Bmi2.X64.ParallelBitDeposit(value, 0x00FF00FF_00FF00FFul));
+                Debug.Assert(BitConverter.IsLittleEndian, "SSE2 widening assumes little-endian.");
+                Vector128<byte> vecNarrow = Sse2.ConvertScalarToVector128UInt32(value).AsByte();
+                Vector128<ulong> vecWide = Sse2.UnpackLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned<ulong>(ref Unsafe.As<char, byte>(ref outputBuffer), Sse2.X64.ConvertToUInt64(vecWide));
             }
             else
             {
