@@ -1,5 +1,6 @@
 <Project>
     <PropertyGroup>
+        <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeatureCollectibleALC>true</FeatureCollectibleALC>
         <FeatureEventTrace>true</FeatureEventTrace>
         <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
