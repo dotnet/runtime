@@ -4,7 +4,6 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
@@ -21,14 +20,6 @@
   </Target>
 
   <ItemGroup>
-    <Compile Include="CommandRunner.cs" />
-    <Compile Include="IntegrationTestBase.cs" />
-    <Compile Include="Loggers.cs" />
-    <Compile Include="TestContext.cs" />
-    <Compile Include="HelloWorldTest.cs" />
-    <Compile Include="WebApiTest.cs" />
-    <Compile Include="MusicStoreTest.cs" />
-
     <!-- tell xunit to log diagnostic messages -->
     <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
