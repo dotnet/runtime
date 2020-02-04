@@ -5951,13 +5951,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             break;
 
         case CEE_ISINST:
-            // box + isinst + br_true/false
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
                 const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
 
                 switch (nextCodeAddr[0])
                 {
+                    // box + isinst + br_true/false
                     case CEE_BRTRUE:
                     case CEE_BRTRUE_S:
                     case CEE_BRFALSE:
@@ -5990,6 +5990,34 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                 }
                             }
                         }
+                        break;
+
+                    // box + isinst + unbox.any
+                    case CEE_UNBOX_ANY:
+                        if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
+                        {
+                            // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
+                            CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
+                            impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                                                          pResolvedToken->hClass) ==
+                                TypeCompareState::Must)
+                            {
+                                CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                                impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                                // If so, box + isinst + unbox.any is a nop.
+                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
+                                                                              pResolvedToken->hClass) ==
+                                    TypeCompareState::Must)
+                                {
+                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                    return 2 + sizeof(mdToken) * 2;
+                                }
+                            }
+                        }
+                        break;
                 }
             }
             break;
