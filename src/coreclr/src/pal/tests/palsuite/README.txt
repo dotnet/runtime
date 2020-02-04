@@ -45,17 +45,6 @@ The results are logged to %ROTOR_DIR%\tests\pvtResults.log.
 3. ENVIRONMENT VARIABLES AND AUTOMATED TESTING SPECIFICS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-3.1 PAL_DISABLE_MESSAGEBOX
-
-For automated testing on the CLR_CMAKE_TARGET_WIN32 PAL, the following environment
-variable is useful to prevent pop-up message boxes from interupting the
-execution of the MessageBoxW test cases:
-
-set PAL_DISABLE_MESSAGEBOX=1
-
-
-3.2 Other Notes
-
 See notes in section 4 on the following test cases if running automated tests:
 
      Miscellaneous: messageboxw/test(1,2)
