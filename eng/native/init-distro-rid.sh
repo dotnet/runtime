@@ -138,6 +138,11 @@ initDistroRidGlobal()
 
     initNonPortableDistroRid "${buildOs}" "${buildArch}" "${isPortable}" "${rootfsDir}"
 
+    if [ "$buildArch" = "wasm" ]; then
+        __DistroRid=WebAssembly-wasm
+        export __DistroRid
+    fi
+
     if [ -z "${__DistroRid}" ]; then
         # The non-portable build rid was not set. Set the portable rid.
 
