@@ -7509,17 +7509,21 @@ mono_interp_transform_init (void)
 #endif
 }
 
+static MONO_NEVER_INLINE void
+mono_interp_transform_method_2 (InterpMethod *imethod,
+                                ThreadContext *context,
+                                MonoMethod *method,
+                                MonoMethodSignature *signature,
+                                MonoDomain *domain,
+                                MonoError *error);
+
 void
 mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, MonoError *error)
 {
 	MonoMethod *method = imethod->method;
-	MonoMethodHeader *header = NULL;
 	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	MonoVTable *method_class_vt;
-	MonoGenericContext *generic_context = NULL;
 	MonoDomain *domain = imethod->domain;
-	InterpMethod tmp_imethod;
-	InterpMethod *real_imethod;
 
 	error_init (error);
 
@@ -7532,10 +7536,30 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	method_class_vt = mono_class_vtable_checked (domain, imethod->method->klass, error);
 	return_if_nok (error);
 
+	// mono_runtime_class_init_full can recurse into mono_interp_transform_method.
+	// Splitting mono_interp_transform_method into mono_interp_transform_method
+	// and mono_interp_transform_method_2 should reduce the stack use of that recursion.
+
 	if (!method_class_vt->initialized) {
 		mono_runtime_class_init_full (method_class_vt, error);
 		return_if_nok (error);
 	}
+
+	mono_interp_transform_method_2 (imethod, context, method, signature, domain, error);
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_transform_method_2 (InterpMethod *imethod,
+                                ThreadContext *context,
+                                MonoMethod *method,
+                                MonoMethodSignature *signature,
+                                MonoDomain *domain,
+                                MonoError *error)
+{
+	MonoMethodHeader *header = NULL;
+	MonoGenericContext *generic_context = NULL;
+	InterpMethod tmp_imethod;
+	InterpMethod *real_imethod;
 
 	MONO_PROFILER_RAISE (jit_begin, (method));
 
