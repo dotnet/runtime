@@ -105,7 +105,7 @@
   <Target Name="RestoreLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
     <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
           DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll" />
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName)"
           DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)" />
   </Target>
 
