@@ -24,7 +24,7 @@ typedef enum _UNWIND_OP_CODES {
     UWOP_SAVE_XMM128_FAR,
     UWOP_PUSH_MACHFRAME,
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     // UWOP_SET_FPREG_LARGE is a CLR Unix-only extension to the Windows AMD64 unwind codes.
     // It is not part of the standard Windows AMD64 unwind codes specification.
     // UWOP_SET_FPREG allows for a maximum of a 240 byte offset between RSP and the
@@ -39,7 +39,7 @@ typedef enum _UNWIND_OP_CODES {
     // is established. Either UWOP_SET_FPREG or UWOP_SET_FPREG_LARGE can be used, but not both.
 
     UWOP_SET_FPREG_LARGE,
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 } UNWIND_OP_CODES, *PUNWIND_OP_CODES;
 
 static const UCHAR UnwindOpExtraSlotTable[] = {
@@ -55,9 +55,9 @@ static const UCHAR UnwindOpExtraSlotTable[] = {
     2,          // UWOP_SAVE_XMM128_FAR
     0,          // UWOP_PUSH_MACHFRAME
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     2,          // UWOP_SET_FPREG_LARGE
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 };
 
 //
@@ -89,13 +89,13 @@ typedef union _UNWIND_CODE {
 #define UNW_FLAG_UHANDLER 0x2
 #define UNW_FLAG_CHAININFO 0x4
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 typedef struct _UNWIND_INFO {
     ULONG FunctionLength;
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 
 typedef struct _UNWIND_INFO {
     UCHAR Version : 3;
@@ -122,5 +122,5 @@ typedef struct _UNWIND_INFO {
 
 } UNWIND_INFO, *PUNWIND_INFO;
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #endif // _WIN64UNWIND_H_

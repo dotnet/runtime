@@ -8,6 +8,8 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;$(NetCoreAppCurrent);_$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <Nullable>enable</Nullable>
+    <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true' or '$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />

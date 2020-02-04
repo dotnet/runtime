@@ -30,7 +30,6 @@ add_library(System.Security.Cryptography.Native.Apple
 add_library(System.Security.Cryptography.Native.Apple-Static
     STATIC
     ${NATIVECRYPTO_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix.

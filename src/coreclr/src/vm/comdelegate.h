@@ -52,7 +52,6 @@ private:
 public:
     static ShuffleThunkCache *m_pShuffleThunkCache;
 
-    //REVIEW: reconcile initialization, one init?
     // One time init.
     static void Init();
 
@@ -150,8 +149,7 @@ private:
                              OBJECTREF     *pRefFirstArg,
                              MethodDesc    *pTargetMethod,
                              MethodTable   *pExactMethodType,
-                             BOOL           fIsOpenDelegate,
-                             BOOL           fCheckSecurity);
+                             BOOL           fIsOpenDelegate);
 };
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
@@ -164,8 +162,7 @@ enum DelegateBindingFlags
     DBF_ClosedDelegateOnly  =   0x00000008, // Only allow the creation of delegates closed over the 1st argument
     DBF_NeverCloseOverNull  =   0x00000010, // A null target will never been considered as a possible null 1st argument
     DBF_CaselessMatching    =   0x00000020, // Use case insensitive lookup for methods matched by name
-    DBF_SkipSecurityChecks  =   0x00000040, // Skip security checks (visibility, link demand etc.)
-    DBF_RelaxedSignature    =   0x00000080, // Allow relaxed signature matching (co/contra variance)
+    DBF_RelaxedSignature    =   0x00000040, // Allow relaxed signature matching (co/contra variance)
 };
 
 void DistributeEvent(OBJECTREF *pDelegate,

@@ -375,11 +375,11 @@ static void EncodeTargetOffset(PVOID pLocation, SSIZE_T targetOffset, ZapRelocat
         *(UNALIGNED TADDR *)pLocation = 0;
         break;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     case IMAGE_REL_BASED_REL32:
         *(UNALIGNED INT32 *)pLocation = (INT32)targetOffset;
         break;
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
     default:
         _ASSERTE(0);
@@ -402,10 +402,10 @@ static SSIZE_T DecodeTargetOffset(PVOID pLocation, ZapRelocationType type)
         _ASSERTE(*(UNALIGNED TADDR *)pLocation == 0);
         return 0;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     case IMAGE_REL_BASED_REL32:
         return *(UNALIGNED INT32 *)pLocation;
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
     default:
         _ASSERTE(0);
@@ -1198,7 +1198,7 @@ ZapNode * DataImage::GetGenericSignature(PVOID signature, BOOL fMethod)
     return pGenericSignature;
 }
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 class ZapStubPrecode : public ZapNode
 {
@@ -1319,7 +1319,7 @@ void DataImage::SavePrecode(PVOID ptr, MethodDesc * pMD, PrecodeType t, ItemKind
     AddStructureInOrder(pNode);
 }
 
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
 void DataImage::FixupModulePointer(Module * pModule, PVOID p, SSIZE_T offset, ZapRelocationType type)
 {
@@ -2307,7 +2307,7 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
 
-#if (defined(_TARGET_X86_) || defined(_TARGET_AMD64_)) && defined(_MSC_VER)
+#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && defined(_MSC_VER)
 
         // This this operation could impact the performance of ngen (we call this a *lot*) we'll try and
         // optimize this where we can. x86 and amd64 actually have instructions to find the least and most
@@ -2318,7 +2318,7 @@ private:
         else
             return 1;
 
-#else // (_TARGET_X86_ || _TARGET_AMD64_) && _MSC_VER
+#else // (TARGET_X86 || TARGET_AMD64) && _MSC_VER
 
         // Otherwise we'll calculate this the slow way. Pick off the 32-bit case first due to avoid the
         // usual << problem (x << 32 == x, not 0).
@@ -2331,7 +2331,7 @@ private:
 
         return cBits;
 
-#endif // (_TARGET_X86_ || _TARGET_AMD64_) && _MSC_VER
+#endif // (TARGET_X86 || TARGET_AMD64) && _MSC_VER
     }
 
     // Sort the given input array (of kLookupMapLengthEntries entries, where the last entry is already sorted)

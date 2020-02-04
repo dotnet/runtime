@@ -351,6 +351,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_26311/GitHub_26311/*">
             <Issue>26311</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/interlocked/compareexchange/compareexchangedouble/*">
+            <Issue>129</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows x86 specific excludes -->

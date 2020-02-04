@@ -72,7 +72,7 @@ jobs:
         buildConfig: Debug
         platforms:
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
-          - Windows_NT_x86
+          - Windows_NT_x64
         - ${{ if eq(variables['includeLinuxOuterloop'], true) }}:
           - Linux_x64
           - Linux_musl_x64

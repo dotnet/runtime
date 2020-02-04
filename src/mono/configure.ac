@@ -609,7 +609,7 @@ AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AC_CHECK_TOOL(CXX, g++, g++)
 AC_PROG_CXX
-AM_PATH_PYTHON
+AM_PATH_PYTHON([3.2])
 AM_PROG_AS
 AC_PROG_INSTALL
 AC_PROG_AWK
@@ -4466,21 +4466,23 @@ case "$host" in
 			TARGET=POWERPC64;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
 			# mono#18554 - be more robust in testing for -mminimal-toc
-			AC_MSG_NOTICE([Checking PowerPC ABI])
-			if ! (echo $CC | grep -q -- 'clang'); then
-				if ! (echo | cc -dM -E - | awk '/_CALL_ELF/ {print $NF}'); then
-					AX_CHECK_COMPILE_FLAG(
-						[-mminimal-toc],
-						[CFLAGS="$CFLAGS -mminimal-toc"],
-						[CFLAGS="$CFLAGS"]
-					)
-					AC_DEFINE([POWERPC_ELF], 1, [PowerPC ELFv1])
-				else
-					# Do not set -mminimal-toc on ELFv2 systems
-					AC_DEFINE([POWERPC_ELFV2], 1, [PowerPC ELFv2])
-					CFLAGS="$CFLAGS"
-				fi
-			fi
+			AC_MSG_NOTICE([Checking for PowerPC ISA -mminimal-toc support])
+			AX_CHECK_COMPILE_FLAG(
+				[-mminimal-toc],
+				[CFLAGS="$CFLAGS -mminimal-toc"],
+				[CFLAGS="$CFLAGS"]
+			)
+			case "$host" in
+				powerpc*-*-freebsd*)
+					# We need to be aware if we are ELFv1 or v2 here
+					AC_MSG_NOTICE([Checking FreeBSD ELF version])
+					if ! ( echo | cc -dM -E - | awk '/_CALL_ELF/ {print $NF}'); then
+						AC_DEFINE([POWERPC_ELF], 1, [PowerPC ELFv1])
+					else
+						AC_DEFINE([POWERPC_ELFV2], 1, [PowerPC ELFv2])
+					fi
+					;;
+			esac
 		else
 			TARGET=POWERPC;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
