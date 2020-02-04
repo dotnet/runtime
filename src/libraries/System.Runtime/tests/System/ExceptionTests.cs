@@ -108,7 +108,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
