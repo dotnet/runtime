@@ -30,7 +30,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
-    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
     <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
@@ -65,6 +64,7 @@
   </Target>
 
   <ItemGroup Condition="!$(ILLinkBuild)">
+    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <PackageReference Include="NUnit" Version="3.10.0" />
     <PackageReference Include="NUnit.ConsoleRunner" Version="3.10.0" />
   </ItemGroup>
