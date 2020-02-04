@@ -3906,8 +3906,23 @@ main_loop:
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
 			}
-retry_callvirt_fast:
-			if (imethod->code_type == IMETHOD_CODE_INTERP) {
+
+			InterpMethodCodeType code_type = imethod->code_type;
+
+			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+			          code_type == IMETHOD_CODE_INTERP ||
+			          code_type == IMETHOD_CODE_COMPILED);
+
+			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
+				if (mono_interp_jit_call_supported (imethod->method, sig))
+					code_type = IMETHOD_CODE_COMPILED;
+				else
+					code_type = IMETHOD_CODE_INTERP;
+				imethod->code_type = code_type;
+			}
+
+			if (code_type == IMETHOD_CODE_INTERP) {
 				SAVE_INTERP_STATE (frame);
 
 				if (G_UNLIKELY (!imethod->transformed)) {
@@ -3930,7 +3945,7 @@ retry_callvirt_fast:
 				frame = child_frame;
 				clause_args = NULL;
 				INIT_INTERP_STATE (frame, clause_args);
-			} else if (imethod->code_type == IMETHOD_CODE_COMPILED) {
+			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, imethod, error);
 				if (!is_ok (error)) {
@@ -3942,13 +3957,6 @@ retry_callvirt_fast:
 
 				if (imethod->rtype->type != MONO_TYPE_VOID)
 					sp++;
-			} else {
-				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
-				if (mono_interp_jit_call_supported (imethod->method, sig))
-					imethod->code_type = IMETHOD_CODE_COMPILED;
-				else
-					imethod->code_type = IMETHOD_CODE_INTERP;
-				goto retry_callvirt_fast;
 			}
 
 			MINT_IN_BREAK;
