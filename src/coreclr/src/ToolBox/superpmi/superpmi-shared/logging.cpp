@@ -235,7 +235,7 @@ void Logger::LogVprintf(
 
         if (s_logFile != INVALID_HANDLE_VALUE)
         {
-#ifndef FEATURE_PAL // TODO: no localtime_s() or strftime() in PAL
+#ifndef TARGET_UNIX // TODO: no localtime_s() or strftime() in PAL
             tm      timeInfo;
             errno_t err = localtime_s(&timeInfo, &timestamp);
             if (err != 0)
@@ -254,9 +254,9 @@ void Logger::LogVprintf(
                 timeStrBuffSize *= 2;
                 timeStr = (char*)realloc(timeStr, timeStrBuffSize);
             }
-#else  // FEATURE_PAL
+#else  // TARGET_UNIX
             const char* timeStr = "";
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
             const char logEntryFmtStr[] = "%s - %s [%s:%d] - %s - %s\r\n";
             size_t logEntryBuffSize = sizeof(logEntryFmtStr) + strlen(timeStr) + strlen(function) + strlen(file) + 10 +
@@ -277,15 +277,15 @@ void Logger::LogVprintf(
 
             delete[] logEntry;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             free((void*)timeStr);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         }
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 CleanUp:
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     LeaveCriticalSection(&s_critSec);
     delete[] fullMsg;

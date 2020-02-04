@@ -26,6 +26,7 @@ namespace R2RDump
         public bool Header { get; set; }
         public bool Disasm { get; set; }
         public bool Naked { get; set; }
+        public bool HideOffsets { get; set; }
 
         public string[] Query { get; set; }
         public string[] Keyword { get; set; }
@@ -39,6 +40,7 @@ namespace R2RDump
         public bool Normalize { get; set; }
         public bool Verbose { get; set; }
         public bool Diff { get; set; }
+        public bool DiffHideSameDisasm { get; set; }
         public bool IgnoreSensitive { get; set; }
 
         public FileInfo[] Reference { get; set; }
@@ -167,13 +169,15 @@ namespace R2RDump
         public DumpOptions Options => _options;
 
         public ReadyToRunReader Reader => _r2r;
+
+        public Disassembler Disassembler => _disassembler;
     }
 
     class R2RDump
     {
         private readonly DumpOptions _options;
         private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
-        private TextWriter _writer;
+        private readonly TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
@@ -186,6 +190,15 @@ namespace R2RDump
                 _options.Unwind = true;
                 _options.GC = true;
                 _options.SectionContents = true;
+            }
+
+            if (_options.Out != null)
+            {
+                _writer = new StreamWriter(_options.Out.FullName);
+            }
+            else
+            {
+                _writer = Console.Out;
             }
         }
 
@@ -475,11 +488,6 @@ namespace R2RDump
                 }
 
                 Dumper previousDumper = null;
-                TextWriter globalWriter = null;
-                if (_options.Out != null)
-                {
-                    globalWriter = new StreamWriter(_options.Out.FullName);
-                }
 
                 foreach (FileInfo filename in _options.In)
                 {
@@ -498,28 +506,25 @@ namespace R2RDump
                         }
                     }
 
-                    if (!_options.Diff && globalWriter != null)
-                    {
-                        _writer = globalWriter;
-                    }
-                    else
-                    {
-                        string outFile = r2r.Filename + ".r2rdump";
-                        _writer = new StreamWriter(outFile, append: false, encoding: Encoding.ASCII);
-                    }
-                    _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
                     {
                         // output the ReadyToRun info
+                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
                         Dump(r2r);
                     }
-                    else if (previousDumper != null)
+                    else
                     {
-                        new R2RDiff(previousDumper, _dumper, globalWriter).Run();
+                        string perFileOutput = filename.FullName + ".common-methods.r2r";
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput), disassembler, _options);
+                        if (previousDumper != null)
+                        {
+                            new R2RDiff(previousDumper, _dumper, _writer).Run();
+                        }
+                        previousDumper?.Writer?.Flush();
+                        previousDumper = _dumper;
                     }
 
-                    previousDumper = _dumper;
                 }
             }
             catch (Exception e)
@@ -537,8 +542,9 @@ namespace R2RDump
                 {
                     disassembler.Dispose();
                 }
-                // close output stream
-                _writer.Close();
+                // flush output stream
+                _dumper?.Writer?.Flush();
+                _writer?.Flush();
             }
 
             return 0;

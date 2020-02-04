@@ -18,9 +18,9 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         private class PartManager
         {
-            private Dictionary<ImportDefinition, List<IDisposable>> _importedDisposableExports;
-            private Dictionary<ImportDefinition, Export[]> _importCache;
-            private string[] _importedContractNames;
+            private Dictionary<ImportDefinition, List<IDisposable>>? _importedDisposableExports;
+            private Dictionary<ImportDefinition, Export[]?>? _importCache;
+            private string[]? _importedContractNames;
             private readonly ComposablePart _part;
             private ImportState _state = ImportState.NoImportsSatisfied;
             private readonly ImportEngine _importEngine;
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
 
-            public void SetSavedImport(ImportDefinition import, Export[] exports, AtomicComposition atomicComposition)
+            public void SetSavedImport(ImportDefinition import, Export[]? exports, AtomicComposition? atomicComposition)
             {
                 if (atomicComposition != null)
                 {
@@ -109,15 +109,15 @@ namespace System.ComponentModel.Composition.Hosting
 
                 if (_importCache == null)
                 {
-                    _importCache = new Dictionary<ImportDefinition, Export[]>();
+                    _importCache = new Dictionary<ImportDefinition, Export[]?>();
                 }
 
                 _importCache[import] = exports;
             }
 
-            public Export[] GetSavedImport(ImportDefinition import)
+            public Export[]? GetSavedImport(ImportDefinition import)
             {
-                Export[] exports = null;
+                Export[]? exports = null;
                 if (_importCache != null)
                 {
                     // We don't care about the return value we just want the exports
@@ -150,11 +150,10 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 // Determine if there are any new disposable exports, optimizing for the most
                 // likely case, which is that there aren't any
-                List<IDisposable> disposableExports = null;
+                List<IDisposable>? disposableExports = null;
                 foreach (var export in exports)
                 {
-                    IDisposable disposableExport = export as IDisposable;
-                    if (disposableExport != null)
+                    if (export is IDisposable disposableExport)
                     {
                         if (disposableExports == null)
                         {
@@ -165,7 +164,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 // Dispose any existing references previously set on this import
-                List<IDisposable> oldDisposableExports = null;
+                List<IDisposable>? oldDisposableExports = null;
                 if (_importedDisposableExports != null &&
                     _importedDisposableExports.TryGetValue(import, out oldDisposableExports))
                 {

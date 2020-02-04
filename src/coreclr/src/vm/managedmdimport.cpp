@@ -221,7 +221,7 @@ MDImpl3(void, MetaDataImport::Enum, mdToken type, mdToken tkParent, MetadataEnum
 }
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)		// Small critical routines, don't put in EBP frame
 #endif
 
@@ -658,7 +658,7 @@ MDImpl2(void, MetaDataImport::GetMemberRefProps,
 }
 FCIMPLEND
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)			// restore command line optimization defaults
 #endif
 

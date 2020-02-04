@@ -255,9 +255,16 @@ handle_instruction:
 #endif
 			case OP_STORER8_MEMBASE_REG:
 			case OP_STOREV_MEMBASE:
+				tmp = NULL;
+				if (ins->opcode == OP_STOREV_MEMBASE) {
+					tmp = (MonoInst *)g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->dreg));
+					if (tmp)
+						ins->flags |= MONO_INST_STACK_STORE;
+				}
 				if (ins->inst_offset != 0)
 					continue;
-				tmp = (MonoInst *)g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->dreg));
+				if (!tmp)
+					tmp = (MonoInst *)g_hash_table_lookup (addr_loads, GINT_TO_POINTER (ins->dreg));
 				if (tmp) {
 					if (cfg->verbose_level > 2) { printf ("Found candidate store:"); mono_print_ins (ins); }
 					if (lower_store (cfg, ins, tmp)) {

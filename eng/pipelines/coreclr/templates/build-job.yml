@@ -84,16 +84,9 @@ jobs:
         value: true
     - name: officialBuildIdArg
       value: ''
-    - name: ibcOptimizeArg
-      value: ''
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '-officialbuildid=$(Build.BuildNumber)'
-
-      # IBCMerge is currently Windows-only and x86/x64-only
-      - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'x86'))) }}:
-        - name: ibcOptimizeArg
-          value: '-ibcoptimize'
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
@@ -121,7 +114,7 @@ jobs:
     # # Since our internal tools are behind an authenticated feed,
     # # we need to use the DotNetCli AzDO task to restore from the feed using a service connection.
     # # We can't do this from within the build, so we need to do this as a separate step.
-    - ${{ if and(and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')), eq(parameters.osGroup, 'Windows_NT')) }}:
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
         parameters:
           installDotnet: true
@@ -131,7 +124,7 @@ jobs:
       - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci -skipnuget $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(ibcOptimizeArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci -skiptests -skipbuildpackages $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build product
 
     # Build native test components
@@ -216,6 +209,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: 'BuildLogs_CoreCLR_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

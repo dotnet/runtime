@@ -332,7 +332,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             Options)
 
                         If RangePatternError Then
-                            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                         End If
 
                         If RangeMismatch Then
@@ -362,7 +362,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             Options)
 
                         If AsteriskPatternError Then
-                            Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Pattern"))
+                            Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Pattern"))
                         End If
 
                         Return Not AsteriskMismatch

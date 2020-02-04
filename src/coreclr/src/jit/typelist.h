@@ -7,7 +7,7 @@
 #define PS EA_PTRSIZE
 #define PST (TARGET_POINTER_SIZE / sizeof(int))
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define VTF_I32 0
 #define VTF_I64 VTF_I
 #else

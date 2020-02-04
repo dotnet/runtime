@@ -82,13 +82,13 @@ INT32 QCALLTYPE MarshalNative::NumParamBytes(MethodDesc * pMD)
 
     cbParamBytes = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
 
-#ifdef _X86_
+#ifdef HOST_X86
     if (((NDirectMethodDesc *)pMD)->IsThisCall())
     {
         // The size of 'this' is not included in native stack arg size.
         cbParamBytes += sizeof(LPVOID);
     }
-#endif // _X86_
+#endif // HOST_X86
 
     END_QCALL;
 

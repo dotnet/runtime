@@ -1,13 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageConfigurations>
-      netstandard2.0;
-      netstandard1.0;
-    </PackageConfigurations>
     <BuildConfigurations>
       $(NetCoreAppCurrent)-Windows_NT;
       $(NetCoreAppCurrent)-Unix;
-      $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -66,6 +66,11 @@ namespace System.Runtime.CompilerServices
     {
         public NativeCppClassAttribute() { }
     }
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
+    public sealed class CppInlineNamespaceAttribute : Attribute
+    {
+        public CppInlineNamespaceAttribute(string dottedName) {}
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class RequiredAttributeAttribute : System.Attribute
     {

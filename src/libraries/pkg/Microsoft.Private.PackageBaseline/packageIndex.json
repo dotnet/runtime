@@ -3632,7 +3632,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.6.0",
       "InboxOn": {
         "netcoreapp2.0": "4.1.0.0",
         "netcoreapp2.1": "4.1.1.0",
@@ -3660,7 +3660,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.6.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "netcoreapp3.0": "4.1.0.0",
@@ -3689,7 +3689,7 @@
         "4.3.0",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.6.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
         "netcoreapp3.0": "4.1.0.0",
@@ -3848,7 +3848,7 @@
         "4.5.1",
         "4.6.0"
       ],
-      "BaselineVersion": "5.0.0",
+      "BaselineVersion": "4.6.0",
       "InboxOn": {
         "netcoreapp2.0": "4.1.2.0",
         "netcoreapp2.1": "4.1.3.0",

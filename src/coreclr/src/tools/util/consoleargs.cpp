@@ -45,7 +45,7 @@ inline int HexValue (WCHAR c)
     return (c >= '0' && c <= '9') ? c - '0' : (c & 0xdf) - 'A' + 10;
 }
 
-#ifndef PLATFORM_UNIX
+#ifndef TARGET_UNIX
 //  Get canonical file path from a user specified path.  wszSrcfileName can include relative paths, etc.
 //  Much of this function was taken from csc.exe.
 DWORD GetCanonFilePath(_In_z_ LPCWSTR wszSrcFileName, _Out_z_cap_(cchDestFileName) LPWSTR wszDestFileName, _In_ DWORD cchDestFileName, _In_ bool fPreserveSrcCasing)
@@ -300,7 +300,7 @@ FAIL:
     }
     return 0;
 }
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 bool FreeString(LPCWSTR szText)
 {
@@ -338,7 +338,7 @@ void ConsoleArgs::CleanUpArgs()
 
 bool ConsoleArgs::GetFullFileName(LPCWSTR szSource, __out_ecount(cchFilenameBuffer) LPWSTR filenameBuffer, DWORD cchFilenameBuffer, bool fOutputFilename)
 {
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
     WCHAR tempBuffer[MAX_LONGPATH];
     memset(filenameBuffer, 0, cchFilenameBuffer * sizeof(WCHAR));
     if (!PathCanonicalizeW(tempBuffer, szSource) ||
@@ -925,7 +925,7 @@ void ConsoleArgs::ProcessResponseArgs()
         }
 
         LPWSTR szActualText = nullptr;
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
         szActualText = pwzFileBuffer;
 #else
         DWORD dwNumChars = ExpandEnvironmentStrings(pwzFileBuffer, NULL, 0);

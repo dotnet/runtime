@@ -133,27 +133,46 @@ namespace System.Text.RegularExpressions
             int[] emitted = _emitted.AsSpan().ToArray();
 
             bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
+            bool compiled = (tree.Options & RegexOptions.Compiled) != 0;
 
             // Compute prefixes to help optimize FindFirstChar.
-            RegexBoyerMoore? bmPrefix = null;
-            RegexPrefix? fcPrefix = null;
-            RegexPrefix prefix = RegexFCD.Prefix(tree);
-            if (prefix.Prefix.Length > 1 && prefix.Prefix.Length <= RegexBoyerMoore.MaxLimit) // if it's <= 1 || > MaxLimit, perf is better using fcPrefix
+            RegexBoyerMoore? boyerMoorePrefix = null;
+            (string CharClass, bool CaseInsensitive)[]? leadingCharClasses = null;
+            (string leadingSubstring, bool leadingSubstringCI) = RegexPrefixAnalyzer.ComputeLeadingSubstring(tree);
+            if (leadingSubstring.Length > 1 && // if it's <= 1, perf is better using leadingCharClasses
+                leadingSubstring.Length <= RegexBoyerMoore.MaxLimit)
             {
                 // Compute a Boyer-Moore prefix if we find a single string of sufficient length that always begins the expression.
                 CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-                bmPrefix = new RegexBoyerMoore(prefix.Prefix, prefix.CaseInsensitive, rtl, culture);
+                boyerMoorePrefix = new RegexBoyerMoore(leadingSubstring, leadingSubstringCI, rtl, culture);
             }
-            else
+
+            // If we didn't find a single leading substring, or if we found one but we won't be able to use it for a Boyer-Moore
+            // search, try to compute the characters set that might begin the string.
+            if (boyerMoorePrefix is null ||
+                (boyerMoorePrefix.NegativeUnicode != null && compiled)) // compilation won't use Boyer-Moore if it has a negative Unicode table
             {
-                // If we didn't find such a string, try to compute the characters set that might begin the string.
-                fcPrefix = RegexFCD.FirstChars(tree);
+                boyerMoorePrefix = null;
+
+                // First we employ a less aggressive but more valuable computation to see if we can find sets for each of the first N
+                // characters in the string.  If that's unsuccessful, we employ a more aggressive check to compute a set for just
+                // the first character in the string.
+
+                if ((tree.Options & RegexOptions.Compiled) != 0) // currently not utilized by the interpreter
+                {
+                    leadingCharClasses = RegexPrefixAnalyzer.ComputeMultipleCharClasses(tree, maxChars: 5); // limit of 5 is based on experimentation and can be tweaked as needed
+                }
+
+                if (leadingCharClasses is null)
+                {
+                    leadingCharClasses = RegexPrefixAnalyzer.ComputeFirstCharClass(tree);
+                }
             }
 
             // Compute any anchors starting the expression.
-            int anchors = RegexFCD.Anchors(tree);
+            int anchors = RegexPrefixAnalyzer.FindLeadingAnchors(tree);
 
-            // Convert the string table into an ordered string array/
+            // Convert the string table into an ordered string array.
             var strings = new string[_stringTable.Count];
             foreach (KeyValuePair<string, int> stringEntry in _stringTable)
             {
@@ -161,7 +180,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Return all that in a RegexCode object.
-            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, bmPrefix, fcPrefix, anchors, rtl);
+            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, anchors, rtl);
         }
 
         /// <summary>

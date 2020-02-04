@@ -32,7 +32,7 @@ class ClassLayout
         BYTE  m_gcPtrsArray[sizeof(BYTE*)];
     };
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // A layout that has its size artificially inflated to avoid stack corruption due to
     // bugs in user code - see Compiler::compQuirkForPPP for details.
     ClassLayout* m_pppQuirkLayout;
@@ -53,7 +53,7 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         , m_pppQuirkLayout(nullptr)
 #endif
 #ifdef DEBUG
@@ -73,7 +73,7 @@ class ClassLayout
 #endif
         , m_gcPtrCount(0)
         , m_gcPtrs(nullptr)
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         , m_pppQuirkLayout(nullptr)
 #endif
 #ifdef DEBUG
@@ -86,7 +86,7 @@ class ClassLayout
     void InitializeGCPtrs(Compiler* compiler);
 
 public:
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // Get the layout for the PPP quirk - see Compiler::compQuirkForPPP for details.
     ClassLayout* GetPPPQuirkLayout(CompAllocator alloc);
 #endif

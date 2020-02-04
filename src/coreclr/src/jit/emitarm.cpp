@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -7999,4 +7999,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)

@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Linq;
 using System.Net.Security;
 using System.Text;
 using System.Threading.Tasks;
@@ -324,6 +325,69 @@ namespace System.Net.Quic.Tests
 
             res = await serverStream.ReadAsync(memory);
             Assert.Equal(24, res);
+        }
+
+        [Theory(Skip = "MsQuic not available")]
+        [MemberData(nameof(QuicStream_ReadWrite_Random_Success_Data))]
+        public async Task QuicStream_ReadWrite_Random_Success(int readSize, int writeSize)
+        {
+            byte[] testBuffer = new byte[8192];
+            new Random().NextBytes(testBuffer);
+
+
+            await Task.WhenAll(DoWrite(), DoRead());
+
+            async Task DoWrite()
+            {
+                using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                await clientConnection.ConnectAsync();
+
+                await using QuicStream clientStream = clientConnection.OpenUnidirectionalStream();
+
+                ReadOnlyMemory<byte> sendBuffer = testBuffer;
+                while (sendBuffer.Length != 0)
+                {
+                    ReadOnlyMemory<byte> chunk = sendBuffer.Slice(0, Math.Min(sendBuffer.Length, writeSize));
+                    await clientStream.WriteAsync(chunk);
+                    sendBuffer = sendBuffer.Slice(chunk.Length);
+                }
+
+                clientStream.Shutdown();
+                await clientStream.ShutdownWriteCompleted();
+            }
+
+            async Task DoRead()
+            {
+                using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
+
+                byte[] receiveBuffer = new byte[testBuffer.Length];
+                int totalBytesRead = 0;
+
+                while (totalBytesRead != receiveBuffer.Length)
+                {
+                    int bytesRead = await serverStream.ReadAsync(receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize)));
+
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+
+                    totalBytesRead += bytesRead;
+                }
+
+                Assert.True(receiveBuffer.AsSpan().SequenceEqual(testBuffer));
+            }
+        }
+
+        public static IEnumerable<object[]> QuicStream_ReadWrite_Random_Success_Data()
+        {
+            IEnumerable<int> sizes = Enumerable.Range(1, 8).Append(2048).Append(8192);
+
+            return
+                from readSize in sizes
+                from writeSize in sizes
+                select new object[] { readSize, writeSize };
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)

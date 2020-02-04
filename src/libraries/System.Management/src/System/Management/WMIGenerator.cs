@@ -4727,7 +4727,7 @@ namespace System.Management
             bool bAdd = true;
             if (str.Length == 0)
             {
-                return string.Copy("");
+                return string.Empty;
             }
 
             char[] arrString = str.ToCharArray();

@@ -14,6 +14,41 @@ using System.Text;
 
 namespace ILCompiler.Reflection.ReadyToRun
 {
+    /// <summary>
+    /// This structure represents a single precode fixup cell decoded from the
+    /// nibble-oriented per-method fixup blob. Each method entrypoint fixup
+    /// represents an array of cells that must be fixed up before the method
+    /// can start executing.
+    /// </summary>
+    public struct FixupCell
+    {
+        public int Index { get; set; }
+
+        /// <summary>
+        /// Zero-based index of the import table within the import tables section.
+        /// </summary>
+        public uint TableIndex;
+
+        /// <summary>
+        /// Zero-based offset of the entry in the import table; it must be a multiple
+        /// of the target architecture pointer size.
+        /// </summary>
+        public uint CellOffset;
+
+        /// <summary>
+        /// Fixup cell signature (textual representation of the typesystem object).
+        /// </summary>
+        public string Signature;
+
+        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        {
+            Index = index;
+            TableIndex = tableIndex;
+            CellOffset = cellOffset;
+            Signature = signature;
+        }
+    }
+
     public abstract class BaseUnwindInfo
     {
         public int Size { get; set; }
@@ -51,6 +86,7 @@ namespace ILCompiler.Reflection.ReadyToRun
     public class RuntimeFunction
     {
         private ReadyToRunReader _readyToRunReader;
+        private EHInfo _ehInfo;
         private DebugInfo _debugInfo;
 
         /// <summary>
@@ -89,7 +125,17 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public BaseUnwindInfo UnwindInfo { get; }
 
-        public EHInfo EHInfo { get; }
+        public EHInfo EHInfo
+        {
+            get
+            {
+                if (_ehInfo == null)
+                {
+                    _readyToRunReader.RuntimeFunctionToEHInfo.TryGetValue(StartAddress, out _ehInfo);
+                }
+                return _ehInfo;
+            }
+        }
 
         public DebugInfo DebugInfo
         {
@@ -112,8 +158,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             int codeOffset,
             ReadyToRunMethod method,
             BaseUnwindInfo unwindInfo,
-            BaseGcInfo gcInfo,
-            EHInfo ehInfo)
+            BaseGcInfo gcInfo)
         {
             _readyToRunReader = readyToRunReader;
             Id = id;
@@ -148,7 +193,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
             CodeOffset = codeOffset;
             method.GcInfo = gcInfo;
-            EHInfo = ehInfo;
         }
     }
 
@@ -205,12 +249,24 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public BaseGcInfo GcInfo { get; set; }
 
-        public FixupCell[] Fixups { get; set; }
+        private ReadyToRunReader _readyToRunReader;
+        private List<FixupCell> _fixupCells;
+        private int? _fixupOffset;
+
+        public IReadOnlyList<FixupCell> Fixups
+        {
+            get
+            {
+                EnsureFixupCells();
+                return _fixupCells;
+            }
+        }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
         public ReadyToRunMethod(
+            ReadyToRunReader readyToRunReader,
             int index,
             MetadataReader metadataReader,
             EntityHandle methodHandle,
@@ -218,8 +274,10 @@ namespace ILCompiler.Reflection.ReadyToRun
             string owningType,
             string constrainedType,
             string[] instanceArgs,
-            FixupCell[] fixups)
+            int? fixupOffset)
         {
+            _readyToRunReader = readyToRunReader;
+            _fixupOffset = fixupOffset;
             Index = index;
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
@@ -268,8 +326,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
             }
 
-            Fixups = fixups;
-
             StringBuilder sb = new StringBuilder();
             sb.Append(Signature.ReturnType);
             sb.Append(" ");
@@ -311,6 +367,52 @@ namespace ILCompiler.Reflection.ReadyToRun
             sb.Append(")");
 
             SignatureString = sb.ToString();
+        }
+
+        private void EnsureFixupCells()
+        {
+            if (_fixupCells != null)
+            {
+                return;
+            }
+            if (!_fixupOffset.HasValue)
+            {
+                return;
+            }
+            _fixupCells = new List<FixupCell>();
+            NibbleReader reader = new NibbleReader(_readyToRunReader.Image, _fixupOffset.Value);
+
+            // The following algorithm has been loosely ported from CoreCLR,
+            // src\vm\ceeload.inl, BOOL Module::FixupDelayListAux
+            uint curTableIndex = reader.ReadUInt();
+
+            while (true)
+            {
+                uint fixupIndex = reader.ReadUInt(); // Accumulate the real rva from the delta encoded rva
+
+                while (true)
+                {
+                    ReadyToRunImportSection importSection = _readyToRunReader.ImportSections[(int)curTableIndex];
+                    ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)fixupIndex];
+                    _fixupCells.Add(new FixupCell(_fixupCells.Count, curTableIndex, fixupIndex, entry.Signature));
+
+                    uint delta = reader.ReadUInt();
+
+                    // Delta of 0 means end of entries in this table
+                    if (delta == 0)
+                        break;
+
+                    fixupIndex += delta;
+                }
+
+                uint tableIndex = reader.ReadUInt();
+
+                if (tableIndex == 0)
+                    break;
+
+                curTableIndex = curTableIndex + tableIndex;
+
+            } // Done with all entries in this table
         }
     }
 }

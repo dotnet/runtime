@@ -77,11 +77,6 @@ namespace ILCompiler
                 default:
                     throw new NotImplementedException();
             }
-
-            // Workaround for https://github.com/dotnet/corefx/issues/25267
-            // If pointer size is 8, we're obviously not an X86 process...
-            if (_targetArchitecture == TargetArchitecture.X86 && IntPtr.Size == 8)
-                _targetArchitecture = TargetArchitecture.X64;
         }
 
         private void ProcessCommandLine()
@@ -233,6 +228,15 @@ namespace ILCompiler
 
                     var logger = new Logger(Console.Out, _commandLineOptions.Verbose);
 
+                    List<string> mibcFiles = new List<string>();
+                    if (_commandLineOptions.Mibc != null)
+                    {
+                        foreach (var file in _commandLineOptions.Mibc)
+                        {
+                            mibcFiles.Add(file.FullName);
+                        }
+                    }
+
                     foreach (var referenceFile in _referenceFilePaths.Values)
                     {
                         try
@@ -260,20 +264,7 @@ namespace ILCompiler
                     }
                     else
                     {
-                        // Either single file, or multifile library, or multifile consumption.
-                        EcmaModule entrypointModule = null;
-                        foreach (var inputFile in typeSystemContext.InputFilePaths)
-                        {
-                            EcmaModule module = typeSystemContext.GetModuleFromPath(inputFile.Value);
-
-                            if (module.PEReader.PEHeaders.IsExe)
-                            {
-                                if (entrypointModule != null)
-                                    throw new Exception("Multiple EXE modules");
-                                entrypointModule = module;
-                            }
-                        }
-
+                        // Single assembly compilation.
                         compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(
                             typeSystemContext, inputModules, versionBubbleModules, _commandLineOptions.CompileBubbleGenerics);
                     }
@@ -281,7 +272,13 @@ namespace ILCompiler
                     // Examine profile guided information as appropriate
                     ProfileDataManager profileDataManager =
                         new ProfileDataManager(logger,
-                        referenceableModules);
+                        referenceableModules,
+                        inputModules,
+                        versionBubbleModules,
+                        _commandLineOptions.CompileBubbleGenerics ? inputModules[0] : null,
+                        mibcFiles,
+                        typeSystemContext,
+                        compilationGroup);
 
                     if (_commandLineOptions.Partial)
                         compilationGroup.ApplyProfilerGuidedCompilationRestriction(profileDataManager);
@@ -293,7 +290,7 @@ namespace ILCompiler
                         // For non-single-method compilations add compilation roots.
                         foreach (var module in inputModules)
                         {
-                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager));
+                            compilationRoots.Add(new ReadyToRunRootProvider(module, profileDataManager, _commandLineOptions.Partial));
 
                             if (!_commandLineOptions.InputBubble)
                             {
