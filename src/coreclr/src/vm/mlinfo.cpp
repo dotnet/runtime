@@ -2785,20 +2785,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
                 // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-
-                if (IsFieldScenario())
-                {
-                    if (m_pMT->HasSameTypeDefAs(g_pByReferenceClass))
-                    {
-                        // We need to allow Nullable<T> and VectorX<T> fields for people who are using Marshal.SizeOf instead of Unsafe.SizeOf
-                        // for back-compat reasons, but we still don't want to allow ByReference<T>.
-                        m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-                }
-                else if (m_pMT->HasInstantiation())
-                {
-                    if (!m_pMT->IsBlittable()
+                // We can't block these types for field scenarios for back-compat reasons.
+                if (m_pMT->HasInstantiation() && !IsFieldScenario()
+                    && (!m_pMT->IsBlittable()
                         || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
                         || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
                         || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
@@ -2808,11 +2797,10 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             // Crossgen scenarios block Vector<T> from even being loaded
                             || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
-                        ))
-                    {
-                        m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
-                        IfFailGoto(E_FAIL, lFail);
-                    }
+                    )))
+                {
+                    m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                    IfFailGoto(E_FAIL, lFail);
                 }
 
                 UINT managedSize = m_pMT->GetAlignedNumInstanceFieldBytes();
