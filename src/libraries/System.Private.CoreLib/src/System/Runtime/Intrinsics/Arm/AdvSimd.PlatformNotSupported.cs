@@ -2671,6 +2671,22 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// float64x1_t vfnms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMS.F64 Dd, Dn, Dm
+        ///   A64: FNMSUB Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t vfnmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMS.F32 Sd, Sn, Sm
+        ///   A64: FNMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
