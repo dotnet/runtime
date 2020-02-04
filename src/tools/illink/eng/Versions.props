@@ -5,6 +5,7 @@
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
   </PropertyGroup>
   <PropertyGroup>
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>    
     <!-- ilasm -->
     <MicrosoftNETCoreILAsmPackageVersion>5.0.0-alpha1.19413.7</MicrosoftNETCoreILAsmPackageVersion>
     <!-- These should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
