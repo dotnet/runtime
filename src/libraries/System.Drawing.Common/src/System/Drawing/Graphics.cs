@@ -1425,7 +1425,7 @@ namespace System.Drawing
             DrawString(s, font, brush, layoutRectangle, null);
         }
 
-        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat format)
+        public void DrawString(string s, Font font, Brush brush, RectangleF layoutRectangle, StringFormat? format)
         {
             if (brush == null)
                 throw new ArgumentNullException(nameof(brush));
@@ -1479,7 +1479,7 @@ namespace System.Drawing
             return boundingBox.Size;
         }
 
-        public SizeF MeasureString(string text, Font font, PointF origin, StringFormat stringFormat)
+        public SizeF MeasureString(string text, Font font, PointF origin, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1505,7 +1505,7 @@ namespace System.Drawing
 
         public SizeF MeasureString(string text, Font font, SizeF layoutArea) => MeasureString(text, font, layoutArea, null);
 
-        public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
+        public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat? stringFormat)
         {
             if (string.IsNullOrEmpty(text))
                 return SizeF.Empty;
@@ -1854,8 +1854,8 @@ namespace System.Drawing
             PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
@@ -1865,8 +1865,8 @@ namespace System.Drawing
             PointF[] destPoints,
             RectangleF srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback,
             int callbackData)
         {
             if (destPoints == null)
@@ -1905,7 +1905,7 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, null, 0);
         }
@@ -1915,8 +1915,8 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destPoints, srcRect, srcUnit, imageAttr, callback, 0);
         }
@@ -1926,8 +1926,8 @@ namespace System.Drawing
             Point[] destPoints,
             Rectangle srcRect,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback,
             int callbackData)
         {
             if (destPoints == null)
@@ -1976,7 +1976,7 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs)
+            ImageAttributes? imageAttrs)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, null);
         }
@@ -1989,8 +1989,8 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttrs, callback, IntPtr.Zero);
         }
@@ -2003,8 +2003,8 @@ namespace System.Drawing
             float srcWidth,
             float srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback,
             IntPtr callbackData)
         {
             if (image == null)
@@ -2044,7 +2044,7 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr)
+            ImageAttributes? imageAttr)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, null);
         }
@@ -2057,8 +2057,8 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttr,
-            DrawImageAbort callback)
+            ImageAttributes? imageAttr,
+            DrawImageAbort? callback)
         {
             DrawImage(image, destRect, srcX, srcY, srcWidth, srcHeight, srcUnit, imageAttr, callback, IntPtr.Zero);
         }
@@ -2071,8 +2071,8 @@ namespace System.Drawing
             int srcWidth,
             int srcHeight,
             GraphicsUnit srcUnit,
-            ImageAttributes imageAttrs,
-            DrawImageAbort callback,
+            ImageAttributes? imageAttrs,
+            DrawImageAbort? callback,
             IntPtr callbackData)
         {
             if (image == null)

@@ -67,7 +67,7 @@ namespace System.Drawing
 
         // Creates the native font family object.
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
-        private void CreateFontFamily(string name, FontCollection fontCollection)
+        private void CreateFontFamily(string name, FontCollection? fontCollection)
         {
             IntPtr fontfamily = IntPtr.Zero;
             IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
@@ -189,7 +189,7 @@ namespace System.Drawing
             char* name = stackalloc char[32]; // LF_FACESIZE is 32
             int status = Gdip.GdipGetFamilyName(new HandleRef(this, NativeFamily), name, language);
             Gdip.CheckStatus(status);
-            return Marshal.PtrToStringUni((IntPtr)name);
+            return Marshal.PtrToStringUni((IntPtr)name)!;
         }
 
         /// <summary>

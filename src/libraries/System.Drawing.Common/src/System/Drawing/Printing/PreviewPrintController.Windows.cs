@@ -15,8 +15,8 @@ namespace System.Drawing.Printing
     /// </summary>
     public partial class PreviewPrintController : PrintController
     {
-        private Graphics _graphics;
-        private DeviceContext _dc;
+        private Graphics? _graphics;
+        private DeviceContext? _dc;
 
         /// <summary>
         /// Implements StartPrint for generating print preview information.
@@ -32,7 +32,7 @@ namespace System.Drawing.Printing
 
             // We need a DC as a reference; we don't actually draw on it.
             // We make sure to reuse the same one to improve performance.
-            _dc = document.PrinterSettings.CreateInformationContext(_modeHandle);
+            _dc = document.PrinterSettings.CreateInformationContext(_modeHandle!);
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace System.Drawing.Printing
 
             if (e.CopySettingsToDevMode)
             {
-                e.PageSettings.CopyToHdevmode(_modeHandle);
+                e.PageSettings.CopyToHdevmode(_modeHandle!);
             }
 
             Size size = e.PageBounds.Size;
@@ -62,7 +62,7 @@ namespace System.Drawing.Printing
             // is sufficiently large and has more than 254 colors.
             // This code path can easily be avoided by requesting
             // an EmfPlusOnly EMF..
-            Metafile metafile = new Metafile(_dc.Hdc, new Rectangle(0, 0, metafileSize.Width, metafileSize.Height), MetafileFrameUnit.GdiCompatible, EmfType.EmfPlusOnly);
+            Metafile metafile = new Metafile(_dc!.Hdc, new Rectangle(0, 0, metafileSize.Width, metafileSize.Height), MetafileFrameUnit.GdiCompatible, EmfType.EmfPlusOnly);
 
             PreviewPageInfo info = new PreviewPageInfo(metafile, size);
             _list.Add(info);
@@ -84,7 +84,7 @@ namespace System.Drawing.Printing
                 _graphics.TranslateTransform(document.DefaultPageSettings.Margins.Left, document.DefaultPageSettings.Margins.Top);
             }
 
-            _graphics.PrintingHelper = printGraphics;
+            _graphics!.PrintingHelper = printGraphics;
 
             if (UseAntiAlias)
             {

@@ -37,7 +37,7 @@ namespace System.Drawing
         /// <summary>
         ///     A list of images to be animated.
         /// </summary>
-        private static List<ImageInfo> s_imageInfoList;
+        private static List<ImageInfo>? s_imageInfoList;
 
         /// <summary>
         ///     A variable to flag when an image or images need to be updated due to the selection of a new frame
@@ -50,7 +50,7 @@ namespace System.Drawing
         /// <summary>
         ///     The thread used for animating the images.
         /// </summary>
-        private static Thread s_animationThread;
+        private static Thread? s_animationThread;
 
         /// <summary>
         ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write-
@@ -93,7 +93,7 @@ namespace System.Drawing
         /// <summary>
         ///     Advances the frame in the specified image. The new frame is drawn the next time the image is rendered.
         /// </summary>
-        public static void UpdateFrames(Image image)
+        public static void UpdateFrames(Image? image)
         {
             if (!s_anyFrameDirty || image == null || s_imageInfoList == null)
             {
@@ -194,14 +194,14 @@ namespace System.Drawing
         ///     Adds an image to the image manager.  If the image does not support animation this method does nothing.
         ///     This method creates the image list and spawns the animation thread the first time it is called.
         /// </summary>
-        public static void Animate(Image image, EventHandler onFrameChangedHandler)
+        public static void Animate(Image? image, EventHandler onFrameChangedHandler)
         {
             if (image == null)
             {
                 return;
             }
 
-            ImageInfo imageInfo = null;
+            ImageInfo? imageInfo = null;
 
             // See comment in the class header about locking the image ref.
 #pragma warning disable CA2002
@@ -285,7 +285,7 @@ namespace System.Drawing
         /// <summary>
         ///    Whether or not the image has multiple time-based frames.
         /// </summary>
-        public static bool CanAnimate(Image image)
+        public static bool CanAnimate(Image? image)
         {
             if (image == null)
             {
@@ -315,7 +315,7 @@ namespace System.Drawing
         /// <summary>
         ///     Removes an image from the image manager so it is no longer animated.
         /// </summary>
-        public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
+        public static void StopAnimate(Image? image, EventHandler onFrameChangedHandler)
         {
             // Make sure we have a list of images
             if (image == null || s_imageInfoList == null)

@@ -330,7 +330,7 @@ namespace System.Drawing
             return isEqual != 0;
         }
 
-        public RegionData GetRegionData()
+        public RegionData? GetRegionData()
         {
             Gdip.CheckStatus(Gdip.GdipGetRegionDataSize(new HandleRef(this, NativeRegion), out int regionSize));
 
@@ -348,7 +348,7 @@ namespace System.Drawing
 
         public bool IsVisible(float x, float y, Graphics g) => IsVisible(new PointF(x, y), g);
 
-        public bool IsVisible(PointF point, Graphics g)
+        public bool IsVisible(PointF point, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionPoint(
                 new HandleRef(this, NativeRegion),
@@ -365,7 +365,7 @@ namespace System.Drawing
 
         public bool IsVisible(float x, float y, float width, float height, Graphics g) => IsVisible(new RectangleF(x, y, width, height), g);
 
-        public bool IsVisible(RectangleF rect, Graphics g)
+        public bool IsVisible(RectangleF rect, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionRect(
                 new HandleRef(this, NativeRegion),
@@ -380,7 +380,7 @@ namespace System.Drawing
 
         public bool IsVisible(Point point) => IsVisible(point, null);
 
-        public bool IsVisible(Point point, Graphics g)
+        public bool IsVisible(Point point, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionPointI(
                 new HandleRef(this, NativeRegion),
@@ -397,7 +397,7 @@ namespace System.Drawing
 
         public bool IsVisible(int x, int y, int width, int height, Graphics g) => IsVisible(new Rectangle(x, y, width, height), g);
 
-        public bool IsVisible(Rectangle rect, Graphics g)
+        public bool IsVisible(Rectangle rect, Graphics? g)
         {
             Gdip.CheckStatus(Gdip.GdipIsVisibleRegionRectI(
                 new HandleRef(this, NativeRegion),

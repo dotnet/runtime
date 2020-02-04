@@ -194,7 +194,7 @@ namespace System.Drawing.Printing
         /// Compares this <see cref='Margins'/> to a specified <see cref='Margins'/> to see whether they
         /// are equal.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is Margins margins))
             {
