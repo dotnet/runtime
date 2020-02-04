@@ -14120,9 +14120,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 lclTyp = JITtype2varType(ciType);
 
-#ifdef TARGET_AMD64
-                noway_assert(varTypeIsIntegralOrI(lclTyp) || varTypeIsFloating(lclTyp) || lclTyp == TYP_STRUCT);
-#endif // TARGET_AMD64
 
                 if (compIsForInlining())
                 {
