@@ -19,11 +19,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lsra.h"
 #include "sideeffects.h"
 
-class Lowering : public Phase
+class Lowering final : public Phase
 {
 public:
     inline Lowering(Compiler* compiler, LinearScanInterface* lsra)
-        : Phase(compiler, "Lowering", PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
+        : Phase(compiler, PHASE_LOWERING), vtableCallTemp(BAD_VAR_NUM)
     {
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
