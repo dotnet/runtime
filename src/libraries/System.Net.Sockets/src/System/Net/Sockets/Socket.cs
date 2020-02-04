@@ -106,15 +106,6 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public Socket(SocketInformation socketInformation)
-        {
-            //
-            // This constructor works in conjunction with DuplicateAndClose, which is not supported.
-            // See comments in DuplicateAndClose.
-            //
-            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
-
         // Called by the class to create a socket to accept an incoming request.
         private Socket(SafeSocketHandle fd)
         {
@@ -2043,16 +2034,7 @@ namespace System.Net.Sockets
                 (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
         }
 
-        public SocketInformation DuplicateAndClose(int targetProcessId)
-        {
-            //
-            // On Windows, we cannot duplicate a socket that is bound to an IOCP.  In this implementation, we *only*
-            // support IOCPs, so this will not work.
-            //
-            // On Unix, duplication of a socket into an arbitrary process is not supported at all.
-            //
-            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
+
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)
         {
