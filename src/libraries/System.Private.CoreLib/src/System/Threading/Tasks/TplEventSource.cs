@@ -14,7 +14,7 @@ namespace System.Threading.Tasks
         Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5",
         LocalizationResources =
 #if CORECLR
-            "System.Private.CoreLib.Resources.Strings"
+            "System.Private.CoreLib.Strings"
 #else
             null
 #endif
