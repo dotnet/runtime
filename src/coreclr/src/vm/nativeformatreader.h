@@ -12,22 +12,22 @@
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_AMD64_) || defined(_X86_)
+#if defined(HOST_AMD64) || defined(HOST_X86)
 #include "emmintrin.h"
 #define USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
 
-#ifndef FEATURE_PAL // The Mac and Linux build environments are not setup for NEON simd.
+#ifndef TARGET_UNIX // The Mac and Linux build environments are not setup for NEON simd.
 #define USE_ARM_INTRINSICS_FOR_CUCKOO_FILTER
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
 #include "arm_neon.h"
 #else
 #include "arm64_neon.h"
 #endif
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
-#endif // _ARM_ || _ARM64_
+#endif // HOST_ARM || HOST_ARM64
 
 #endif // DACCESS_COMPILE
 

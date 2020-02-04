@@ -104,6 +104,7 @@
 
 static guint32 default_opt = 0;
 static gboolean default_opt_set = FALSE;
+MonoMethodDesc *mono_stats_method_desc;
 
 gboolean mono_compile_aot = FALSE;
 /* If this is set, no code is generated dynamically, everything is taken from AOT files */
@@ -4693,12 +4694,13 @@ register_icalls (void)
 MonoJitStats mono_jit_stats = {0};
 
 /**
- * Counters of mono_stats and mono_jit_stats can be read without locking here.
+ * Counters of mono_stats and mono_jit_stats can be read without locking during shutdown.
+ * For all other contexts, assumes that the domain lock is held.
  * MONO_NO_SANITIZE_THREAD tells Clang's ThreadSanitizer to hide all reports of these (known) races.
  */
 MONO_NO_SANITIZE_THREAD
-static void
-print_jit_stats (void)
+void
+mono_runtime_print_stats (void)
 {
 	if (mono_jit_stats.enabled) {
 		g_print ("Mono Jit statistics\n");
@@ -4738,24 +4740,35 @@ print_jit_stats (void)
 		g_print ("JIT info table removes: %" G_GINT32_FORMAT "\n", mono_stats.jit_info_table_remove_count);
 		g_print ("JIT info table lookups: %" G_GINT32_FORMAT "\n", mono_stats.jit_info_table_lookup_count);
 
-		g_free (mono_jit_stats.max_ratio_method);
-		mono_jit_stats.max_ratio_method = NULL;
-		g_free (mono_jit_stats.biggest_method);
-		mono_jit_stats.biggest_method = NULL;
+		mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, NULL);
+		g_print ("\n");
 	}
+}
+
+static void
+jit_stats_cleanup (void)
+{
+	g_free (mono_jit_stats.max_ratio_method);
+	mono_jit_stats.max_ratio_method = NULL;
+	g_free (mono_jit_stats.biggest_method);
+	mono_jit_stats.biggest_method = NULL;
 }
 
 #ifdef DISABLE_CLEANUP
 void
 mini_cleanup (MonoDomain *domain)
 {
-	print_jit_stats ();
-	mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, stdout);
+	if (mono_stats.enabled)
+		g_printf ("Printing runtime stats at shutdown\n");
+	mono_runtime_print_stats ();
+	jit_stats_cleanup ();
 }
 #else
 void
 mini_cleanup (MonoDomain *domain)
 {
+	if (mono_stats.enabled)
+		g_printf ("Printing runtime stats at shutdown\n");
 	if (mono_profiler_sampling_enabled ())
 		mono_runtime_shutdown_stat_profiler ();
 
@@ -4774,7 +4787,8 @@ mini_cleanup (MonoDomain *domain)
 #endif
 
 	/* This accesses metadata so needs to be called before runtime shutdown */
-	print_jit_stats ();
+	mono_runtime_print_stats ();
+	jit_stats_cleanup ();
 
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_cleanup (domain);
@@ -4829,8 +4843,6 @@ mini_cleanup (MonoDomain *domain)
 	mono_cleanup ();
 
 	mono_trace_cleanup ();
-
-	mono_counters_dump (MONO_COUNTER_SECTION_MASK | MONO_COUNTER_MONOTONIC, stdout);
 
 	if (mono_inject_async_exc_method)
 		mono_method_desc_free (mono_inject_async_exc_method);

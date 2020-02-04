@@ -2304,7 +2304,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public unsafe String(char* value, int startIndex, int length) { }
         public String(char c, int count) { }
-        public String(char[] value) { }
+        public String(char[]? value) { }
         public String(char[] value, int startIndex, int length) { }
         public String(System.ReadOnlySpan<char> value) { }
         [System.CLSCompliantAttribute(false)]

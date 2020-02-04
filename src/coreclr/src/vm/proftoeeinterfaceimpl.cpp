@@ -2513,7 +2513,7 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo3(FunctionID functionId,
             PCODE pCodeStart = NULL;
             CodeVersionManager* pCodeVersionManager = pMethodDesc->GetCodeVersionManager();
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
+                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
 
                 ILCodeVersion ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMethodDesc, reJitId);
 
@@ -4988,7 +4988,7 @@ HRESULT ProfToEEInterfaceImpl::GetILToNativeMapping2(FunctionID functionId,
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             ILCodeVersion ilCodeVersion = NULL;
             {
-                CodeVersionManager::LockHolder codeVersioningLockHolder;
+                CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
 
                 pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -6527,7 +6527,7 @@ HRESULT ProfToEEInterfaceImpl::GetNativeCodeStartAddresses(FunctionID functionID
 
         ILCodeVersion ilCodeVersion = NULL;
         {
-            CodeVersionManager::LockHolder codeVersioningLockHolder;
+            CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
 
             ilCodeVersion = pCodeVersionManager->GetILCodeVersion(pMD, reJitId);
 
@@ -7550,7 +7550,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
     UINT_PTR currentIP = 0;
     REGDISPLAY *pRegDisplay = pCf->GetRegisterSet();
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     CONTEXT builtContext;
 #endif
 
@@ -7602,7 +7602,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
 
     if (pData->infoFlags & COR_PRF_SNAPSHOT_REGISTER_CONTEXT)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         //
         // X86 stack walking does not keep the context up-to-date during the
         // walk.  Instead it keeps the REGDISPLAY up-to-date.  Thus, we need to
@@ -7636,7 +7636,7 @@ StackWalkAction ProfilerStackWalkCallback(CrawlFrame *pCf, PROFILER_STACK_WALK_D
     return SWA_ABORT;
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //---------------------------------------------------------------------------------------
 // Normally, calling GetFunction() on the frame is sufficient to ensure
@@ -7970,7 +7970,7 @@ Loop:
         }
     }
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //*****************************************************************************
 //  The profiler stackwalk Wrapper
@@ -8139,7 +8139,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
         pThreadToSnapshot = (Thread *)thread;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if ((infoFlags & ~(COR_PRF_SNAPSHOT_REGISTER_CONTEXT | COR_PRF_SNAPSHOT_X86_OPTIMIZED)) != 0)
 #else
     if ((infoFlags & ~(COR_PRF_SNAPSHOT_REGISTER_CONTEXT)) != 0)
@@ -8557,7 +8557,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
     {
         if ((pParam->pData->infoFlags & COR_PRF_SNAPSHOT_X86_OPTIMIZED) != 0)
         {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
             // If check in the beginning of DoStackSnapshot (to return E_INVALIDARG) should
             // make this unreachable
             _ASSERTE(!"COR_PRF_SNAPSHOT_X86_OPTIMIZED on non-X86 should be unreachable!");
@@ -8568,7 +8568,7 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshotHelper(Thread * pThreadToSnapshot,
                              pParam->pctxSeed,
                              pParam->pData->callback,
                              pParam->pData->clientData);
-#endif  // _TARGET_X86_
+#endif  // TARGET_X86
         }
         else
         {

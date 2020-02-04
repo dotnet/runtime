@@ -214,12 +214,6 @@ namespace R2RDump
             }
             writer.WriteLine();
 
-            if (theThis.Method.GcInfo is ILCompiler.Reflection.ReadyToRun.Amd64.GcInfo gcInfo)
-            {
-                writer.WriteLine("GC info:");
-                writer.WriteLine(gcInfo.ToString());
-            }
-
             if (theThis.EHInfo != null)
             {
                 writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");

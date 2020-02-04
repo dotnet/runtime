@@ -84,7 +84,7 @@
 #endif
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
-typedef struct {
+struct FrameClauseArgs {
 	/* Where we start the frame execution from */
 	const guint16 *start_with_ip;
 	/*
@@ -98,7 +98,7 @@ typedef struct {
 	/* Exception that we are filtering */
 	MonoException *filter_exception;
 	InterpFrame *base_frame;
-} FrameClauseArgs;
+};
 
 /*
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
@@ -3465,14 +3465,14 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 	sp = frame->state.sp; \
 	vt_sp = frame->state.vt_sp; \
 	finally_ips = frame->state.finally_ips; \
-	clause_args = (FrameClauseArgs*)frame->state.clause_args;			\
+	clause_args = frame->state.clause_args;			\
 	locals = (unsigned char *)frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size; \
 	frame->state.ip = NULL; \
 	} while (0)
 
 /* Initialize interpreter state for executing FRAME */
 #define INIT_INTERP_STATE(frame, _clause_args) do {	 \
-	ip = _clause_args ? ((FrameClauseArgs*)_clause_args)->start_with_ip : (frame)->imethod->code; \
+	ip = _clause_args ? (_clause_args)->start_with_ip : (frame)->imethod->code; \
 	sp = (frame)->stack; \
 	vt_sp = (unsigned char *) sp + (frame)->imethod->stack_size; \
 	locals = (unsigned char *) vt_sp + (frame)->imethod->vt_stack_size; \
@@ -3798,8 +3798,8 @@ main_loop:
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}
@@ -3903,8 +3903,8 @@ retry_callvirt_fast:
 				}
 
 				frame = child_frame;
-				INIT_INTERP_STATE (frame, NULL);
 				clause_args = NULL;
+				INIT_INTERP_STATE (frame, clause_args);
 			} else if (imethod->code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, imethod, error);
@@ -4022,8 +4022,8 @@ retry_callvirt_fast:
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}

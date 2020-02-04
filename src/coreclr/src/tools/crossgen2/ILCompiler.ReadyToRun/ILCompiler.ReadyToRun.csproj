@@ -108,6 +108,8 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs" />

@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 #include "emit.h"
 #include "codegen.h"
 #include "lower.h"
@@ -7984,4 +7984,4 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
 }
 
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64

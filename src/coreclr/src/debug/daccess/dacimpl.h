@@ -16,13 +16,13 @@
 
 #include "gcinterface.dac.h"
 
-#if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
+#if defined(TARGET_ARM) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for
 // storing code:DAC_INSTANCE .  Otherwise, the DAC uses the STL unordered_map to.
 
 #define DAC_HASHTABLE
-#endif // _TARGET_ARM_|| FEATURE_CORESYSTEM
+#endif // TARGET_ARM|| FEATURE_CORESYSTEM
 
 #ifndef DAC_HASHTABLE
 #pragma push_macro("return")
@@ -59,7 +59,7 @@ extern CRITICAL_SECTION g_dacCritSec;
 inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 {
     SUPPORTS_DAC;
-#ifndef BIT64
+#ifndef HOST_64BIT
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
@@ -76,7 +76,7 @@ inline TADDR CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr)
 inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutTaddr)
 {
     SUPPORTS_DAC;
-#ifndef BIT64
+#ifndef HOST_64BIT
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     INT64 iSignedAddr = (INT64)cdAddr;
     if (iSignedAddr > INT_MAX || iSignedAddr < INT_MIN)
@@ -93,7 +93,7 @@ inline HRESULT TRY_CLRDATA_ADDRESS_TO_TADDR(CLRDATA_ADDRESS cdAddr, TADDR* pOutT
 inline TADDR CORDB_ADDRESS_TO_TADDR(CORDB_ADDRESS cdbAddr)
 {
     SUPPORTS_DAC;
-#ifndef BIT64
+#ifndef HOST_64BIT
     static_assert_no_msg(sizeof(TADDR)==sizeof(UINT));
     if (cdbAddr > UINT_MAX)
     {
@@ -635,7 +635,7 @@ struct DAC_INSTANCE
     // a method descriptor
     ULONG32 MDEnumed:1;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // Keep DAC_INSTANCE a multiple of DAC_INSTANCE_ALIGN
     // bytes in size.
     ULONG32 pad[2];
@@ -1202,9 +1202,9 @@ public:
     HRESULT Initialize(void);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HRESULT GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
     Thread* FindClrThreadByTaskId(ULONG64 taskId);
@@ -1266,9 +1266,9 @@ public:
     // Get the MethodDesc for a function
     MethodDesc * FindLoadedMethodRefOrDef(Module* pModule, mdToken memberRef);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HRESULT GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBlock * pGM);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     HRESULT ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr,
                                 DacpGcHeapDetails *detailsData);
@@ -3948,7 +3948,7 @@ HRESULT GetServerHeaps(CLRDATA_ADDRESS pGCHeaps[], ICorDebugDataTarget* pTarget)
 
 #if defined(DAC_MEASURE_PERF)
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 // Assume Pentium CPU
 
@@ -3977,7 +3977,7 @@ __asm   pop     EDX
 
 #pragma warning( default: 4035 )
 
-#else // #if defined(_TARGET_X86_)
+#else // #if defined(TARGET_X86)
 
 #define CCNT_OVERHEAD    0 // Don't know
 
@@ -3990,7 +3990,7 @@ __inline unsigned __int64 GetCycleCount()
     return qwTmp.QuadPart;
 }
 
-#endif  // #if defined(_TARGET_X86_)
+#endif  // #if defined(TARGET_X86)
 
 extern unsigned __int64 g_nTotalTime;
 extern unsigned __int64 g_nStackTotalTime;

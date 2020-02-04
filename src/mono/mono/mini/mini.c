@@ -4125,6 +4125,11 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 
 	mono_domain_lock (target_domain);
 
+	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, method)) {
+		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (method));
+		mono_runtime_print_stats ();
+	}
+
 	/* Check if some other thread already did the job. In this case, we can
        discard the code this thread generated. */
 
