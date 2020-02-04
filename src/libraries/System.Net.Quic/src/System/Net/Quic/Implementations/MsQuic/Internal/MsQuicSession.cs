@@ -14,7 +14,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             if (!MsQuicApi.IsQuicSupported)
             {
-                throw new QuicNotSupportedException();
+                throw new NotSupportedException(SR.net_quic_notsupported);
             }
         }
 

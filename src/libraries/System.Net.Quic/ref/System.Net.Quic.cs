@@ -90,10 +90,6 @@ namespace System.Net.Quic
         public long ErrorCode { get; }
 
     }
-    public class QuicNotSupportedException : QuicException
-    {
-        public QuicNotSupportedException(string message) : base(message) { }
-    }
     public class QuicStreamAbortedException : QuicException
     {
         public QuicStreamAbortedException(string message, long errorCode) : base(message) { }

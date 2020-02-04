@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -15,28 +17,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private readonly IntPtr _registrationContext;
 
-        public static bool IsQuicSupported { get; } = GetIsQuicSupported();
-
-        private static bool GetIsQuicSupported()
-        {
-            // TODO: check using MsQuicOpen return value; but there doesn't seem to be a consistent error code for this yet.
-            OperatingSystem ver = Environment.OSVersion;
-
-            if (ver.Platform != PlatformID.Win32NT || ver.Version >= new Version(10, 0, 19041, 0))
-            {
-                try
-                {
-                    new MsQuicApi().Dispose();
-                    return true;
-                }
-                catch (QuicNotSupportedException)
-                {
-                }
-            }
-
-            return false;
-        }
-
         private unsafe MsQuicApi()
         {
             MsQuicNativeMethods.NativeApi* registration;
@@ -46,12 +26,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
                 if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
-                    throw new QuicNotSupportedException();
+                    throw new NotSupportedException(SR.net_quic_notsupported);
                 }
             }
             catch (DllNotFoundException)
             {
-                throw new QuicNotSupportedException();
+                throw new NotSupportedException(SR.net_quic_notsupported);
             }
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
@@ -147,7 +127,52 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _registrationContext = ctx;
         }
 
-        internal static MsQuicApi Api { get; } = IsQuicSupported ? new MsQuicApi() : null;
+        internal static MsQuicApi Api { get; }
+
+        internal static bool IsQuicSupported { get; }
+
+        static MsQuicApi()
+        {
+            // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
+            // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
+
+            // TODO:
+            // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
+            // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
+            //   error code mapping when creating exceptions.
+
+            OperatingSystem ver = Environment.OSVersion;
+
+            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
+            {
+                IsQuicSupported = false;
+                return;
+            }
+
+            using (var ssl = new SslStream(new MemoryStream()))
+            {
+                try
+                {
+                    ssl.AuthenticateAsClient("contoso.com", null, System.Security.Authentication.SslProtocols.Tls13, false);
+                }
+                catch (Exception ex)
+                {
+                    ex.ToString();
+                    IsQuicSupported = false;
+                    return;
+                }
+            }
+
+            try
+            {
+                Api = new MsQuicApi();
+                IsQuicSupported = true;
+            }
+            catch (NotSupportedException)
+            {
+                IsQuicSupported = false;
+            }
+        }
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
