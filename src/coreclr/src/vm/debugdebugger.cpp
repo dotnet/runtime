@@ -976,11 +976,6 @@ StackWalkAction DebugStackTrace::GetStackFramesCallback(CrawlFrame* pCf, VOID* d
 
     GetStackFramesData* pData = (GetStackFramesData*)data;
 
-    if (pData->pDomain != pCf->GetAppDomain())
-    {
-        return SWA_CONTINUE;
-    }
-
     if (pData->skip > 0)
     {
         pData->skip--;
