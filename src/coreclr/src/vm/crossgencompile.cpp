@@ -304,7 +304,7 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     return (PCODE)(0x12345);
 }
 
-Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark, AppDomain ** ppAppDomain)
+Assembly * SystemDomain::GetCallersAssembly(StackCrawlMark * stackMark)
 {
     return NULL;
 }

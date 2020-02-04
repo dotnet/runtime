@@ -8459,6 +8459,11 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         DacGetThreadContext(this, &context);
     }
 
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    {
+        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
+    }
+
     FillRegDisplay(&regDisp, &context);
     frameIter.Init(this, NULL, &regDisp, 0);
     while (frameIter.IsValid())
@@ -8516,14 +8521,6 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
         // Enumerate the code around the call site to help debugger stack walking heuristics
         PCODE callEnd = GetControlPC(&regDisp);
         DacEnumCodeForStackwalk(callEnd);
-
-        if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
-        {
-            if (frameIter.m_crawl.GetAppDomain())
-            {
-                frameIter.m_crawl.GetAppDomain()->EnumMemoryRegions(flags, true);
-            }
-        }
 
         // To stackwalk through funceval frames, we need to be sure to preserve the
         // DebuggerModule's m_pRuntimeDomainFile.  This is the only case that doesn't use the current
