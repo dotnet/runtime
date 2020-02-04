@@ -2681,7 +2681,7 @@ inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
         impCurStmtOffs    = offs | stkBit;
     }
 }
-
+// Brian: este metodo solo va a darle un IL a un stmt, que parece se setea restando al la posicion del stmt la base de la base del metodo.
 /*****************************************************************************
  * Returns current IL offset with stack-empty and call-instruction info incorporated
  */
@@ -10822,7 +10822,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                            So spill anything on the stack so that it will form
                            gtStmts with the correct stmt offset noted */
 
-                        impSpillStackEnsure(true);
+                        impSpillStackEnsure(true); // Brian: Could this be needed?
                     }
 
                     // Has impCurStmtOffs been reported in any tree?

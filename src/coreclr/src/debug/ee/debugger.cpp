@@ -3433,7 +3433,7 @@ void Debugger::getBoundaries(MethodDesc * md,
     // If JIT optimizations are allowed for the module this function
     // lives in, then don't grab specific boundaries from the symbol
     // store since any boundaries we give the JIT will be pretty much
-    // ignored anyway.
+    // ignored anyway. Brian: Is this expected? What does it mean with module
     if (!CORDisableJITOptimizations(md->GetModule()->GetDebuggerInfoBits()))
     {
         *implicitBoundaries  = ICorDebugInfo::BoundaryTypes(ICorDebugInfo::STACK_EMPTY_BOUNDARIES |

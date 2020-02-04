@@ -21926,6 +21926,16 @@ void Compiler::fgInline()
         for (Statement* stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
+            if (stmt->GetInlineContext() != nullptr)
+            {
+                JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
+                        eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+            }
+            else
+            {
+                JITDUMP("\ninlined %d from root\n", stmt->GetILOffsetX());
+            }
+            gtDispStmt(stmt, nullptr);
         }
     }
 
@@ -22690,7 +22700,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // This is the InlineInfo struct representing a method to be inlined.
     InlineInfo inlineInfo;
     memset(&inlineInfo, 0, sizeof(inlineInfo));
-    CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;
+    CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;// Brian: This is the method we want to inline
 
     inlineInfo.fncHandle              = fncHandle;
     inlineInfo.iciCall                = call;
@@ -22955,6 +22965,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         for (Statement* stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
+            gtDispStmt(stmt, nullptr);
+            JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(), eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
         }
     }
 
@@ -23644,6 +23656,16 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     {
         assert(addedStmt->GetInlineContext() == nullptr);
         addedStmt->SetInlineContext(context);
+        gtDispStmt(addedStmt, nullptr);
+        if (addedStmt->GetInlineContext() != nullptr)
+        {
+            JITDUMP("\ninlined %d from %s\n", addedStmt->GetILOffsetX(),
+                    eeGetMethodFullName(addedStmt->GetInlineContext()->GetCallee()));
+        }
+        else
+        {
+            JITDUMP("\ninlined %d from root\n", addedStmt->GetILOffsetX());
+        }
     }
 
     return afterStmt;
