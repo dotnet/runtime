@@ -15,7 +15,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configuretools.cmake)
 # Compile options
 
-if (CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_HOST_WIN32)
     # 4100 - unreferenced formal parameter
     # 4514 - unreferenced inline function has been removed
     # 4625 - copy constructor was implicitly defined as deleted because a base class copy constructor is inaccessible or deleted

@@ -76,6 +76,6 @@ add_subdirectory(ilasm)
 
 if(CLR_CMAKE_HOST_UNIX)
     add_subdirectory(palrt)
-elseif(CLR_CMAKE_TARGET_WIN32)
+elseif(CLR_CMAKE_HOST_WIN32)
     add_subdirectory(hosts)
 endif(CLR_CMAKE_HOST_UNIX)

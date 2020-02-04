@@ -234,14 +234,14 @@ if (CLR_CMAKE_HOST_UNIX)
   endif(CLR_CMAKE_HOST_NETBSD)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   add_definitions(-DHOST_WINDOWS)
 
   # Define the CRT lib references that link into Desktop imports
   set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)

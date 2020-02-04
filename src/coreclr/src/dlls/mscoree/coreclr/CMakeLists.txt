@@ -2,6 +2,12 @@ if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+endif (CLR_CMAKE_TARGET_WIN32)
+
+if (CLR_CMAKE_HOST_WIN32)
+    preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+
+    list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
     add_link_options(/ENTRY:CoreDllMain)
 
@@ -22,7 +28,7 @@ if (CLR_CMAKE_TARGET_WIN32)
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
 
-else()
+else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
@@ -51,7 +57,7 @@ else()
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
     endif(CLR_CMAKE_TARGET_DARWIN)
 
-endif (CLR_CMAKE_TARGET_WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 

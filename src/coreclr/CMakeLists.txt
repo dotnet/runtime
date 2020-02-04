@@ -10,10 +10,10 @@ include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 # Include cmake functions
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
-if (CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-endif (CLR_CMAKE_TARGET_WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -36,8 +36,8 @@ OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
-if (CLR_CMAKE_TARGET_WIN32)
-    if(CLR_CMAKE_TARGET_ARCH_ARM)
+if (CLR_CMAKE_HOST_WIN32)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -55,7 +55,7 @@ if (CLR_CMAKE_TARGET_WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -83,7 +83,7 @@ if (CLR_CMAKE_TARGET_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-else (CLR_CMAKE_TARGET_WIN32)
+else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
     # Ensure that awk is present
@@ -111,7 +111,7 @@ else (CLR_CMAKE_TARGET_WIN32)
       endif()
 
     endif()
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #----------------------------------------------------
 # Configure compiler settings for environment
@@ -157,10 +157,10 @@ add_subdirectory(src/tools/crossgen2/jitinterface)
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
   add_compile_options(/Zl) # omit default library name in .OBJ
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #--------------------------------
 # Definition directives

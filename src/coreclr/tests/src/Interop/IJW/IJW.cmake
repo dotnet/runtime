@@ -1,4 +1,4 @@
-if (CLR_CMAKE_TARGET_WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   # 4365 - signed/unsigned mismatch
   add_compile_options(/wd4365)
 

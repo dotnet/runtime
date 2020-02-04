@@ -4,13 +4,13 @@
 
 set (CMAKE_CXX_STANDARD 11)
 
-if (NOT CLR_CMAKE_TARGET_WIN32)
+if (NOT CLR_CMAKE_HOST_WIN32)
     # Try to locate the paxctl tool. Failure to find it is not fatal,
     # but the generated executables won't work on a system where PAX is set
     # to prevent applications to create executable memory mappings.
     find_program(PAXCTL paxctl)
 
-    if (CLR_CMAKE_TARGET_DARWIN)
+    if (CLR_CMAKE_HOST_DARWIN)
         # Ensure that dsymutil and strip are present
         find_program(DSYMUTIL dsymutil)
         if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
@@ -21,7 +21,7 @@ if (NOT CLR_CMAKE_TARGET_WIN32)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
-    else (CLR_CMAKE_TARGET_DARWIN)
+    else (CLR_CMAKE_HOST_DARWIN)
         # Ensure that objcopy is present
         if(DEFINED ENV{ROOTFS_DIR})
             if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
@@ -35,7 +35,7 @@ if (NOT CLR_CMAKE_TARGET_WIN32)
         if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CLR_CMAKE_TARGET_ARCH_I386)
             message(FATAL_ERROR "objcopy not found")
         endif()
-    endif (CLR_CMAKE_TARGET_DARWIN)
+    endif (CLR_CMAKE_HOST_DARWIN)
 endif ()
 
 function(strip_symbols targetName outputFilename)
@@ -108,7 +108,7 @@ function(disable_pax_mprotect targetName)
     endif()
 endfunction()
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_WIN32=1)
     if(IS_64BIT_BUILD)
@@ -225,8 +225,8 @@ if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_AR
       endif()
 endif ()
 
-if (CLR_CMAKE_TARGET_WIN32)
-    if(CLR_CMAKE_TARGET_ARCH_ARM)
+if (CLR_CMAKE_HOST_WIN32)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
       # Explicitly specify the assembler to be used for Arm32 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)
 
@@ -236,7 +236,7 @@ if (CLR_CMAKE_TARGET_WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
       # Explicitly specify the assembler to be used for Arm64 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm64\\armasm64.exe" CMAKE_ASM_COMPILER)
 

@@ -78,7 +78,7 @@ set(COREDBI_LIBRARIES
     corguids
 )
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata-staticcrt
         mdwinmd_dbi
@@ -115,7 +115,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
         add_dependencies(mscordbi pal_redefines_file)
     endif(CLR_CMAKE_HOST_LINUX)
 
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
 install_clr(TARGETS mscordbi)

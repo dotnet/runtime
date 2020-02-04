@@ -8,6 +8,9 @@ set(crossgen_SOURCES crossgen.cpp ../util/consoleargs.cpp)
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND crossgen_SOURCES ../util/consoleargs.h)
     set(crossgen_RESOURCES Native.rc)
+endif()
+
+if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-D_CRT_NON_CONFORMING_WCSTOK)
 endif()
 

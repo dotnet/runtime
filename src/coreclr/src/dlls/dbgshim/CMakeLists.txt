@@ -7,11 +7,13 @@ set(DBGSHIM_SOURCES
     dbgshim.cpp
 )
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     # Use static crt
     add_definitions(-MT)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
+endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND DBGSHIM_SOURCES
         dbgshim.rc
     )
