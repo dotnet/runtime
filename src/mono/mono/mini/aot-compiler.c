@@ -14263,4 +14263,11 @@ mono_aot_can_enter_interp (MonoMethod *method)
 	return FALSE;
 }
 
+int
+mono_aot_get_method_index (MonoMethod *method)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
 #endif

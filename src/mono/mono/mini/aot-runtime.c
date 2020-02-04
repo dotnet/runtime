@@ -6466,4 +6466,11 @@ mono_aot_get_method_flags (guint8 *code)
 	return MONO_AOT_METHOD_FLAG_NONE;
 }
 
+gboolean
+mono_aot_init_llvmonly_method (gpointer aot_module, guint32 method_index, MonoClass *init_class, MonoError *error)
+{
+	g_assert_not_reached ();
+	return FALSE;
+}
+
 #endif
