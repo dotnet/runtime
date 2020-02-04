@@ -56,6 +56,12 @@
     <Exec Command="msvc\run-msbuild.bat build $(_MonoBuildPlatform) $(Configuration) sgen &quot;$(_MonoBuildParams)&quot; msvc\mono-netcore.sln" IgnoreStandardErrorWarningFormat="true" />
   </Target>
 
+  <Target Name="BuildCoreLib">
+    <MSBuild Projects="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj"
+             Properties="Configuration=$(Configuration)"
+             Targets="Build" />
+  </Target>
+
   <!-- General targets -->
   <Target Name="Build" DependsOnTargets="BuildMonoRuntimeUnix;BuildMonoRuntimeWindows">
     <PropertyGroup>
@@ -145,9 +151,15 @@
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
     <ItemGroup>	
         <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\**\*$(ScriptExt)" />	
-    </ItemGroup>	
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="&quot;%(CoreClrTests.Identity)&quot; -coreroot &quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="WarnAndContinue" />
+    </ItemGroup>
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="&quot;%(CoreClrTests.Identity)&quot; -coreroot &quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="ErrorAndContinue" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="ErrorAndContinue" />
+  </Target>
+
+  <!-- Run coreclr tests using runtest.sh
+       It currently crashes on start becase of a bug in Mono (AppContext.BaseDirectory is empty) -->
+  <Target Name="RunCoreClrTests2" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig) --runincontext --sequential" ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <!-- Show summary for coreclr tests -->
