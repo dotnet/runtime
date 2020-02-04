@@ -47,9 +47,9 @@ namespace System.Drawing.Printing
                 throw new InvalidPrinterException(document.PrinterSettings);
             }
 
-            foreach (PreviewPageInfo pi in _list)
+            foreach (PreviewPageInfo? pi in _list)
             {
-                pi.Image.Dispose();
+                pi!.Image.Dispose();
             }
 
             _list.Clear();

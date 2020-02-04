@@ -37,10 +37,10 @@ namespace System.Drawing
     public sealed partial class BufferedGraphics
     {
         private Rectangle size;
-        private Bitmap membmp = null;
-        private Graphics source = null;
+        private Bitmap membmp;
+        private Graphics? source;
 
-        internal BufferedGraphics(Graphics targetGraphics, IntPtr targetDc, Rectangle targetRectangle)
+        internal BufferedGraphics(Graphics? targetGraphics, IntPtr targetDc, Rectangle targetRectangle)
         {
             _targetGraphics = targetGraphics;
             _targetDC = targetDc;
@@ -48,7 +48,7 @@ namespace System.Drawing
             membmp = new Bitmap(size.Width, size.Height);
         }
 
-        public Graphics Graphics
+        public Graphics? Graphics
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.Drawing
             if (membmp != null)
             {
                 membmp.Dispose();
-                membmp = null;
+                membmp = null!;
             }
 
             if (source != null)
