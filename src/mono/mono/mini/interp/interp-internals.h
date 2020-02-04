@@ -189,13 +189,17 @@ typedef struct {
 	int inited;
 } FrameStack;
 
+
+/* Arguments that are passed when invoking only a finally/filter clause from the frame */
+typedef struct FrameClauseArgs FrameClauseArgs;
+
 /* State of the interpreter main loop */
 typedef struct {
 	stackval *sp;
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	gpointer clause_args;
+	FrameClauseArgs *clause_args;
 } InterpState;
 
 struct _InterpFrame {
