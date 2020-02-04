@@ -163,7 +163,6 @@
     <Compile Include="System\Xml\Core\ReadContentAsBinaryHelperAsync.cs" />
     <Compile Include="System\Xml\Core\ReadOnlyTernaryTree.cs" />
     <Compile Include="System\Xml\Core\ReadState.cs" />
-    <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
     <Compile Include="System\Xml\Core\ValidatingReaderNodeData.cs" />
     <Compile Include="System\Xml\Core\ValidationType.cs" />
     <Compile Include="System\Xml\Core\WhitespaceHandling.cs" />
