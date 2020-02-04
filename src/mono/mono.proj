@@ -124,7 +124,7 @@
   <Target Name="RestoreCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
     <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
           DestinationFiles="$(CoreClrTestCoreRoot)\System.Private.CoreLib.dll" />
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName"
+    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName)"
           DestinationFiles="$(CoreClrTestCoreRoot)\$(_CoreClrFileName)" />
   </Target>
 
