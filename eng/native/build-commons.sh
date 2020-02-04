@@ -193,7 +193,7 @@ usage()
     exit 1
 }
 
-. ./init-os-and-arch.sh
+source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
 __BuildArch=$arch
 __HostArch=$arch

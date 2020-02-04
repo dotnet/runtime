@@ -67,7 +67,7 @@ ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
 # Location parameters
 # OS/ConfigurationGroup defaults
 ConfigurationGroup="Debug"
-. ./native/init-os-and-arch.sh
+source $ProjectRoot/eng/native/init-os-and-arch.sh
 
 OS=$os
 __Arch=$arch

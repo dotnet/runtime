@@ -85,7 +85,7 @@ subsetCategory=''
 checkedPossibleDirectoryToBuild=false
 crossBuild=0
 
-. ./native/init-os-and-arch.sh
+source $scriptroot/native/init-os-and-arch.sh
 
 # Check if an action is passed in
 declare -a actions=("r" "restore" "b" "build" "buildtests" "rebuild" "t" "test" "pack" "sign" "publish" "clean")
