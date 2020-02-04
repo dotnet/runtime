@@ -11,6 +11,10 @@
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
+    <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
+    <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
+    <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
+    <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -58,9 +62,7 @@
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
-      <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
-      <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
-      <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
+
 
     </PropertyGroup>
 
@@ -95,20 +97,33 @@
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
+    <Copy Condition="!Exists('$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll')"
+          SourceFiles="@(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll"
+          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll-coreclr" />
+    <Copy Condition="!Exists('$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr')"
+          SourceFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)"
+          DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr" />
+    <Copy SourceFiles="$(_MonoRuntimeArtifacts)"
+          DestinationFolder="$(LocalDotnetRuntimeDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
 
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-        DestinationFolder="$(LocalDotnetRuntimeDir)"
-        SkipUnchangedFiles="true" />
+  <Target Name="RestoreLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
+    <Move SourceFiles="@(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll-coreclr"
+          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll" />
+
+    <Move SourceFiles="@(LocalDotnetRuntimeDir)\$(_CoreClrFileName)-coreclr"
+          DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <Error Condition="!Exists('$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).Checked\Tests\Core_Root')" Text="Core_Root doesn't exist. Have you built coreclr tests in Checked configuration?" />
+    <Error Condition="!Exists('$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root')" Text="Core_Root doesn't exist. Have you built coreclr tests in $(CoreClrTestConfig) configuration?" />
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).Checked\Tests\Core_Root" 
+          DestinationFolder="$(ArtifactsDir)\tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root" 
           SkipUnchangedFiles="true"/>
   </Target>
 
@@ -119,23 +134,24 @@
 
   <!-- Run CoreCLR runtime test using testhost -->
   <Target Name="RunCoreClrTest" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
-    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/Windows_NT.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul$(ScriptExt)` in order to run DivToMul test." />
-    <Exec Command="$(CoreClrTest) -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;"/>
+    <Error Condition="$(CoreClrTest) == ''" Text="'CoreClrTest' is not set. E.g. set it to `$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).$(CoreClrTestConfig)/JIT/opt/InstructionCombining/DivToMul/DivToMul$(ScriptExt)` in order to run DivToMul test." />
+    <Exec Command="$(CoreClrTest) -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).$(CoreClrTestConfig)/Tests/Core_Root&quot;"/>
   </Target>
 
-  <!-- Make sure coreclr tests are built (in Checked configuration), e.g. 
-    *nix: `cd ../coreclr && ./build.sh -checked && ./build-testh.sh -checked` 
-    Windows: `cd ../coreclr && build.cmd -checked` -->
+  <!-- Make sure coreclr tests are built (in $(CoreClrTestConfig) configuration), e.g. 
+    *nix: `cd ../coreclr && ./build.sh -release && ./build-testh.sh -release` 
+    Windows: `cd ../coreclr && build.cmd -release` -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
     <ItemGroup>	
-        <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked\**\*$(ScriptExt)" />	
+        <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\**\*$(ScriptExt)" />	
     </ItemGroup>	
-    <Exec Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).Checked/Tests/Core_Root&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="&quot;%(CoreClrTests.Identity)&quot; -coreroot &quot;$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root&quot;" ContinueOnError="WarnAndContinue" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(ArtifactsDir)tests/coreclr/$(OSGroup).$(Platform).$(CoreClrTestConfig)/Tests/Core_Root&quot;" ContinueOnError="WarnAndContinue" />
   </Target>
 
   <!-- Show summary for coreclr tests -->
   <Target Name="CoreClrTestsSummary">
-    <Exec Command="python $(MonoProjectRoot)..\coreclr\tests\runtest.py --analyze_results_only -test_location $(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).Checked -build_type Checked" />
+    <Exec Command="python $(MonoProjectRoot)..\coreclr\tests\runtest.py --analyze_results_only -test_location $(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig) -build_type $(CoreClrTestConfig)" />
   </Target>
 
   <Target Name="RunBenchmarks">
