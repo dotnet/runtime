@@ -15,6 +15,9 @@ runtime:
 patch-local-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalDotnet ../mono.proj
 
+restore-local-dotnet:
+	$(DOTNET) msbuild /t:RestoreLocalDotnet ../mono.proj
+
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
 run-tests-coreclr:
