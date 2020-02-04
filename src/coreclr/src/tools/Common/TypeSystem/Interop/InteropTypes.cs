@@ -113,6 +113,16 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System", "ByReference`1");
         }
 
+        public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Span`1");
+        }
+
+        public static bool IsSystemReadOnlySpan(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ReadOnlySpan`1");
+        }
+
         public static bool IsSystemNullable(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "Nullable`1");

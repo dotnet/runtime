@@ -2790,6 +2790,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     && (!m_pMT->IsBlittable()
                         || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
                         || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
                         || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
                         || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
                         || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))

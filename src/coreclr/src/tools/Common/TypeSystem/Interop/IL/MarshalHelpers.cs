@@ -345,6 +345,8 @@ namespace Internal.TypeSystem.Interop
 
                 if (type.HasInstantiation && !isField && (!isBlittable
                     || InteropTypes.IsSystemByReference(context, type)
+                    || InteropTypes.IsSystemSpan(context, type)
+                    || InteropTypes.IsSystemReadOnlySpan(context, type)
                     || InteropTypes.IsSystemNullable(context, type)
                     || InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
                     || InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)
