@@ -650,7 +650,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         ParseString(pr, objectPr);
                         var = pr._value;
                     }
-                    else if (ReferenceEquals(pr._dtTypeCode, InternalPrimitiveTypeE.Invalid))
+                    else if (pr._dtTypeCode == InternalPrimitiveTypeE.Invalid)
                     {
                         Debug.Assert(pr._dtType != null);
                         CheckSerializable(pr._dtType);

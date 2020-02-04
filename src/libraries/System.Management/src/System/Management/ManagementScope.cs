@@ -1181,7 +1181,7 @@ namespace System.Management
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
+            if (!IntPtr.Zero.Equals(ppCallResult))
                 status = pWbemServiecsSecurityHelper.GetObject_(strObjectPath, lFlags, pCtx, out ppObject, ppCallResult);
             return status;
         }
@@ -1223,7 +1223,7 @@ namespace System.Management
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
+            if (!IntPtr.Zero.Equals(ppCallResult))
                 status = pWbemServiecsSecurityHelper.DeleteClass_(strClass, lFlags, pCtx, ppCallResult);
             return status;
         }
@@ -1290,7 +1290,7 @@ namespace System.Management
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
+            if (!IntPtr.Zero.Equals(ppCallResult))
                 status = pWbemServiecsSecurityHelper.DeleteInstance_(strObjectPath, lFlags, pCtx, ppCallResult);
             return status;
         }
@@ -1386,7 +1386,7 @@ namespace System.Management
             //It is assumed that caller always passes ppCallResult as IntPtr.Zero.
             //If it changes let this call go through wminet_utils.dll. Check implementation of CreateInstanceEnum_ for more information.
             int status = (int)tag_WBEMSTATUS.WBEM_E_FAILED;
-            if (!object.ReferenceEquals(ppCallResult, IntPtr.Zero))
+            if (!IntPtr.Zero.Equals(ppCallResult))
                 status = pWbemServiecsSecurityHelper.ExecMethod_(strObjectPath, strMethodName, lFlags, pCtx, pInParams, out ppOutParams, ppCallResult);
             return status;
         }
