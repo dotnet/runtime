@@ -4,6 +4,8 @@
 
 using System.IO;
 
+#nullable enable
+
 namespace System.Text
 {
     /// <summary>Provides a reusable reader for reading all of the text from streams.</summary>
