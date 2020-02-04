@@ -257,6 +257,8 @@ namespace System.Net.Security
                 if (isAsync)
                 {
                     result = ForceAuthenticationAsync(new SslReadAsync(this, cancellationToken), _context.IsServer, null);
+                    result.ContinueWith(t => { _handshakeBuffer.Dispose(); _nestedAuth = 0; }, cancellationToken,
+                                        TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
                 else
                 {
@@ -275,9 +277,12 @@ namespace System.Net.Security
             }
             finally
             {
-                // Operation has completed.
-                _handshakeBuffer.Dispose();
-                _nestedAuth = 0;
+                if (result == null || result.IsCompleted)
+                {
+                    // Operation has completed.
+                    _handshakeBuffer.Dispose();
+                    _nestedAuth = 0;
+                }
             }
 
             return result;
