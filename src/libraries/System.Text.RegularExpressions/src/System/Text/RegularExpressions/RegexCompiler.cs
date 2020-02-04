@@ -481,8 +481,8 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_S) (short jump).</summary>
         private void Bgt(Label l) => _ilg!.Emit(OpCodes.Bgt_S, l);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.Bleun_S) (short jump).</summary>
-        private void Bgtun(Label l) => _ilg!.Emit(OpCodes.Bgt_Un_S, l);
+        /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_Un_S) (short jump).</summary>
+        private void BgtUn(Label l) => _ilg!.Emit(OpCodes.Bgt_Un_S, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Bne_S) (short jump).</summary>
         private void Bne(Label l) => _ilg!.Emit(OpCodes.Bne_Un_S, l);
@@ -1139,34 +1139,30 @@ namespace System.Text.RegularExpressions
             else if (_boyerMoorePrefix != null && _boyerMoorePrefix.NegativeUnicode == null)
             {
                 // Compiled Boyer-Moore string matching
-
                 LocalBuilder chLocal = _temp1Local;
                 LocalBuilder testLocal = _temp1Local;
-                LocalBuilder limitLocal = _temp2Local;
-                Label lDefaultAdvance = DefineLabel();
-                Label lAdvance = DefineLabel();
-                Label lStart = DefineLabel();
-                Label lPartialMatch = DefineLabel();
-
+                LocalBuilder limitLocal;
                 int beforefirst;
                 int last;
                 if (!_code.RightToLeft)
                 {
+                    limitLocal = _runtextendLocal;
                     beforefirst = -1;
                     last = _boyerMoorePrefix.Pattern.Length - 1;
                 }
                 else
                 {
+                    limitLocal = _runtextbegLocal!;
                     beforefirst = _boyerMoorePrefix.Pattern.Length;
                     last = 0;
                 }
 
                 int chLast = _boyerMoorePrefix.Pattern[last];
 
+                // string runtext = this.runtext;
                 Mvfldloc(s_runtextField, _runtextLocal);
-                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
-                Stloc(limitLocal);
 
+                // runtextpos += pattern.Length - 1; // advance to match last character
                 Ldloc(_runtextposLocal);
                 if (!_code.RightToLeft)
                 {
@@ -1179,16 +1175,26 @@ namespace System.Text.RegularExpressions
                     Sub();
                 }
                 Stloc(_runtextposLocal);
+
+                Label lStart = DefineLabel();
                 Br(lStart);
 
+                // DefaultAdvance:
+                // offset = pattern.Length;
+                Label lDefaultAdvance = DefineLabel();
                 MarkLabel(lDefaultAdvance);
                 Ldc(_code.RightToLeft ? -_boyerMoorePrefix.Pattern.Length : _boyerMoorePrefix.Pattern.Length);
 
+                // Advance:
+                // runtextpos += offset;
+                Label lAdvance = DefineLabel();
                 MarkLabel(lAdvance);
                 Ldloc(_runtextposLocal);
                 Add();
                 Stloc(_runtextposLocal);
 
+                // Start:
+                // if (runtextpos >= runtextend) goto returnFalse;
                 MarkLabel(lStart);
                 Ldloc(_runtextposLocal);
                 Ldloc(limitLocal);
@@ -1201,25 +1207,32 @@ namespace System.Text.RegularExpressions
                     BltFar(returnFalse);
                 }
 
+                // ch = runtext[runtextpos];
+                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
                 if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
-
                 Dup();
                 Stloc(chLocal);
                 Ldc(chLast);
+
+                Label lPartialMatch = DefineLabel();
                 BeqFar(lPartialMatch);
 
+                // ch -= lowAscii;
+                // if (ch > (highAscii - lowAscii)) goto defaultAdvance;
                 Ldloc(chLocal);
                 Ldc(_boyerMoorePrefix.LowASCII);
                 Sub();
                 Dup();
                 Stloc(chLocal);
                 Ldc(_boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII);
-                Bgtun(lDefaultAdvance);
+                BgtUn(lDefaultAdvance);
 
+                // int offset = "lookupstring"[num];
+                // goto advance;
                 int negativeRange = _boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII + 1;
                 if (negativeRange > 1)
                 {
@@ -1268,18 +1281,18 @@ namespace System.Text.RegularExpressions
                 }
                 BrFar(lAdvance);
 
+                // Emit a check for each character from the next to last down to the first.
                 MarkLabel(lPartialMatch);
-
                 Ldloc(_runtextposLocal);
                 Stloc(testLocal);
 
+                int prevLabelOffset = int.MaxValue;
+                Label prevLabel = default;
                 for (int i = _boyerMoorePrefix.Pattern.Length - 2; i >= 0; i--)
                 {
-                    Label lNext = DefineLabel();
-                    int charindex = _code.RightToLeft ?
-                        _boyerMoorePrefix.Pattern.Length - 1 - i :
-                        i;
+                    int charindex = _code.RightToLeft ? _boyerMoorePrefix.Pattern.Length - 1 - i : i;
 
+                    // if (runtext[--test] == pattern[index]) goto lNext;
                     Ldloc(_runtextLocal);
                     Ldloc(testLocal);
                     Ldc(1);
@@ -1291,15 +1304,31 @@ namespace System.Text.RegularExpressions
                     {
                         CallToLower();
                     }
-
                     Ldc(_boyerMoorePrefix.Pattern[charindex]);
-                    Beq(lNext);
-                    Ldc(_boyerMoorePrefix.Positive[charindex]);
-                    BrFar(lAdvance);
 
-                    MarkLabel(lNext);
+                    if (prevLabelOffset == _boyerMoorePrefix.Positive[charindex])
+                    {
+                        BneFar(prevLabel);
+                    }
+                    else
+                    {
+                        Label lNext = DefineLabel();
+                        Beq(lNext);
+
+                        // offset = positive[ch];
+                        // goto advance;
+                        prevLabel = DefineLabel();
+                        prevLabelOffset = _boyerMoorePrefix.Positive[charindex];
+                        MarkLabel(prevLabel);
+                        Ldc(prevLabelOffset);
+                        BrFar(lAdvance);
+
+                        MarkLabel(lNext);
+                    }
                 }
 
+                // this.runtextpos = test;
+                // return true;
                 Ldthis();
                 Ldloc(testLocal);
                 if (_code.RightToLeft)
@@ -1313,6 +1342,7 @@ namespace System.Text.RegularExpressions
             }
             else if (_leadingCharClasses is null)
             {
+                // return true;
                 Ldc(1);
                 Ret();
             }
