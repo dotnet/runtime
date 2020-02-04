@@ -12433,11 +12433,11 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // Just one operand creates a type from a handle.
 
     GenTree* const opHandle = op1IsFromHandle ? op1 : op2;
-    GenTree* const opOther = op1IsFromHandle ? op2 : op1;
+    GenTree* const opOther  = op1IsFromHandle ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
     GenTree* const       opHandleArgument = opHandle->AsCall()->gtCallArgs->GetNode();
-    CORINFO_CLASS_HANDLE clsHnd = gtGetHelperArgClassHandle(opHandleArgument);
+    CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
     if (clsHnd == NO_CLASS_HANDLE)
@@ -12500,19 +12500,25 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // One of the operands is from a handle and we don't have special handling for the other one.
     // Transform to a helper call that avoids materializing the runtime type for the handle.
+
+    JITDUMP("Optimizing compare of an unknown type"
+        " and type-from-handle to specialized helper\n");
+
     GenTreeCall::Use* helperArgs = gtNewCallArgs(opHandleArgument, opOther);
-    tree = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT, TYP_INT, helperArgs);
+    GenTree* compare = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT, TYP_INT, helperArgs);
     if (oper == GT_EQ)
     {
-        tree = gtNewOperNode(GT_NE, TYP_INT, tree, gtNewIconNode(0, TYP_INT));
+        compare = gtNewOperNode(GT_NE, TYP_INT, compare, gtNewIconNode(0, TYP_INT));
     }
     else
     {
         assert(oper == GT_NE);
-        tree = gtNewOperNode(GT_EQ, TYP_INT, tree, gtNewIconNode(0, TYP_INT));
+        compare = gtNewOperNode(GT_EQ, TYP_INT, compare, gtNewIconNode(0, TYP_INT));
     }
 
-    return tree;
+    compare->gtFlags |= tree->gtFlags;
+
+    return compare;
 }
 
 //------------------------------------------------------------------------
