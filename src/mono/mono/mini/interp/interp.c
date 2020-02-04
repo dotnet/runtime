@@ -290,6 +290,31 @@ static gboolean ss_enabled;
 static gboolean interp_init_done = FALSE;
 
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
+
+static MONO_NEVER_INLINE void
+interp_exec_method_call_vararg (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
+static MONO_NEVER_INLINE void
+interp_exec_method_newobj_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
+static MONO_NEVER_INLINE void
+interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
@@ -3485,7 +3510,7 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
  * to return error information.
  * FRAME is only valid until the next call to alloc_frame ().
  */
-static void
+static MONO_NEVER_INLINE void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	/* Interpreter main loop state (InterpState) */
@@ -3951,7 +3976,7 @@ retry_callvirt_fast:
 			sp -= child_frame->imethod->param_count + child_frame->imethod->hasthis + num_varargs;
 
 			child_frame->stack_args = sp;
-			interp_exec_method (child_frame, context, error);
+			interp_exec_method_call_vararg (child_frame, context, error);
 			CHECK_RESUME_STATE (context);
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				*sp = *retval;
@@ -5111,7 +5136,7 @@ retry_callvirt_fast:
 				frame->ip = ip;
 
 				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
-				interp_exec_method (child_frame, context, error);
+				interp_exec_method_newobj_fast (child_frame, context, error);
 				CHECK_RESUME_STATE (context);
 				sp [0].data.o = o;
 				sp++;
@@ -5142,7 +5167,7 @@ retry_callvirt_fast:
 				sp->data.p = vt_sp;
 				ip += 4;
 
-				interp_exec_method (child_frame, context, error);
+				interp_exec_method_newobj_vtst_fast (child_frame, context, error);
 
 				CHECK_RESUME_STATE (context);
 				sp->data.p = vt_sp;
