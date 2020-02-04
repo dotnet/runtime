@@ -166,7 +166,7 @@
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
     <IncludeDotNetCli Condition="'$(RunCrossGen2)' == 'true'">true</IncludeDotNetCli>
     <DotNetCliPackageType>runtime</DotNetCliPackageType>
-    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCLiVersion>
+    <DotNetCliVersion>$(BundledNETCoreAppPackageVersion)</DotNetCliVersion>
     <EnableXUnitReporter>true</EnableXUnitReporter>
     <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
     <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
