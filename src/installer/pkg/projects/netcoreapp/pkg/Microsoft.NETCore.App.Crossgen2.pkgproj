@@ -29,56 +29,13 @@
 
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
-  <PropertyGroup>
-    <Crossgen2RuntimeConfigFile>$(IntermediateOutputPath)crossgen2.runtimeconfig.json</Crossgen2RuntimeConfigFile>
-  </PropertyGroup>
-
   <ItemGroup>
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)crossgen2$(ExeSuffix)" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)crossgen2.dll" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjitilc$(LibraryFileExtension)" />
-    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
-
-    <ArchitectureSpecificToolFile Include="$(Crossgen2RuntimeConfigFile)" />
+    <ArchitectureSpecificToolFile Include="$(CoreCLRCrossgen2Dir)*" />
 
     <File Include="@(ArchitectureSpecificToolFile)">
       <TargetPath>tools</TargetPath>
     </File>
   </ItemGroup>
-
-  <Target Name="WriteCrossgen2RuntimeConfig"
-          BeforeTargets="GetPackageFiles">
-    <PropertyGroup>
-      <!--
-        We're publishing crossgen2 in its own package as framework dependent application for now
-        since we only have two simple scenarios we want to support in the short term: win_x64 to
-        win_x64 and linux_x64 to linux_x64 compilations. Once we have more complex targets,
-        especially cross-platform and cross-architecture, crossgen2 will become a self-contained
-        package.
-      -->
-      <Crossgen2RuntimeConfigContents>
-{
-  "runtimeOptions": {
-    "tfm": "netcoreapp5.0",
-    "framework": {
-      "name": "Microsoft.NETCore.App",
-      "version": "5.0.100-alpha1-015772"
-    }
-  }
-}
-      </Crossgen2RuntimeConfigContents>
-    </PropertyGroup>
-
-    <!-- Emit the runtime config json file that will be packaged with crossgen2 -->
-    <WriteLinesToFile
-      File="$(Crossgen2RuntimeConfigFile)"
-      Lines="$(Crossgen2RuntimeConfigContents)"
-      Overwrite="true"
-      WriteOnlyWhenDifferent="true" />
-  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
