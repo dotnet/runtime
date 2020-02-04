@@ -2325,7 +2325,6 @@ namespace System
         internal static readonly RuntimeType ValueType = (RuntimeType)typeof(System.ValueType);
 
         private static readonly RuntimeType ObjectType = (RuntimeType)typeof(object);
-        private static readonly RuntimeType StringType = (RuntimeType)typeof(string);
         #endregion
 
         #region Constructor
@@ -3074,7 +3073,7 @@ namespace System
             // pretty much everything is a subclass of object, even interfaces
             // notice that interfaces are really odd because they do not have a BaseType
             // yet IsSubclassOf(typeof(object)) returns true
-            if (rtType == ObjectType && rtType != this)
+            if (rtType == typeof(object) && rtType != this)
                 return true;
 
             return false;
@@ -3317,7 +3316,6 @@ namespace System
         private const BindingFlags BinderGetSetProperty = BindingFlags.GetProperty | BindingFlags.SetProperty;
         private const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
         private const BindingFlags BinderNonFieldGetSet = (BindingFlags)0x00FFF300;
-        private static readonly RuntimeType s_typedRef = (RuntimeType)typeof(TypedReference);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
@@ -3360,7 +3358,7 @@ namespace System
             }
             else if (value == null)
                 return value;
-            else if (this == s_typedRef)
+            else if (this == typeof(TypedReference))
                 // everything works for a typedref
                 return value;
 

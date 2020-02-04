@@ -966,7 +966,7 @@ namespace System.Reflection
             for (int i = 0; i < pcas.Count; i++)
                 result.Add(pcas[i]);
 
-            while (type != (RuntimeType)typeof(object) && type != null)
+            while (type != typeof(object) && type != null)
             {
                 AddCustomAttributes(ref result, type.GetRuntimeModule(), type.MetadataToken, caType, mustBeInheritable, result);
                 mustBeInheritable = true;

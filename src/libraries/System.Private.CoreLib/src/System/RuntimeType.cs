@@ -189,9 +189,9 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_R8:
                     typeCode = TypeCode.Double; break;
                 case CorElementType.ELEMENT_TYPE_VALUETYPE:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.Decimal])
+                    if (this == typeof(decimal))
                         typeCode = TypeCode.Decimal;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.DateTime])
+                    else if (this == typeof(DateTime))
                         typeCode = TypeCode.DateTime;
                     else if (IsEnum)
                         typeCode = GetTypeCode(Enum.GetUnderlyingType(this));
@@ -199,9 +199,9 @@ namespace System
                         typeCode = TypeCode.Object;
                     break;
                 default:
-                    if (this == Convert.ConvertTypes[(int)TypeCode.DBNull])
+                    if (this == typeof(DBNull))
                         typeCode = TypeCode.DBNull;
-                    else if (this == Convert.ConvertTypes[(int)TypeCode.String])
+                    else if (this == typeof(string))
                         typeCode = TypeCode.String;
                     else
                         typeCode = TypeCode.Object;
@@ -250,7 +250,7 @@ namespace System
             }
 
             // If a string is passed in
-            if (valueType == StringType)
+            if (valueType == typeof(string))
             {
                 // Get all of the Fields, calling GetHashEntry directly to avoid copying
                 string[] names = Enum.InternalGetNames(this);
