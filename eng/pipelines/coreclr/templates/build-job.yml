@@ -123,6 +123,10 @@ jobs:
         parameters:
           installDotnet: true
 
+    # Build System.Private.CoreLib
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+      displayName: Build System.Private.CoreLib
+
     # Build CoreCLR
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
@@ -131,9 +135,9 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build CoreCLR Runtime
 
-    # Build managed components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib-tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
-      displayName: Build System.Private.CoreLib and managed tools
+    # Build managed tools
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+      displayName: Build managed tools
 
     # Build native test components
     - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipmanaged $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(clangArg) skipgeneratelayout
