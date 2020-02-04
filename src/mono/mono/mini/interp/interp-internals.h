@@ -9,6 +9,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include "interp.h"
+#include "mintops.h"
 
 #define MINT_TYPE_I1 0
 #define MINT_TYPE_U1 1
@@ -200,6 +201,9 @@ typedef struct {
 	const unsigned short  *ip;
 	GSList *finally_ips;
 	FrameClauseArgs *clause_args;
+	MonoObject* volatile o; // GC hole?
+	MintOpcode opcode;
+	gboolean is_void : 1;
 } InterpState;
 
 struct _InterpFrame {
@@ -209,7 +213,7 @@ struct _InterpFrame {
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
 	/* An address on the native stack associated with the frame, used during EH */
-	gpointer       native_stack_addr;
+	char           *native_stack_addr;
 	/* Stack fragments this frame was allocated from */
 	StackFragment *iframe_frag, *data_frag;
 	/* exception info */
