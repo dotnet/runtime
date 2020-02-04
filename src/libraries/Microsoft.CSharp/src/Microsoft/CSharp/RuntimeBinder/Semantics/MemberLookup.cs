@@ -51,7 +51,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private List<AggregateType> _prgtype;
         private int _csym;                 // Number of syms found.
         private readonly SymWithType _swtFirst;     // The first symbol found.
-        private readonly List<MethPropWithType> _methPropWithTypeList; // When we look up methods, we want to keep the list of all candidate methods given a particular name.
 
         // These are for error reporting.
         private readonly SymWithType _swtAmbig;     // An ambiguous symbol.
@@ -208,12 +207,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         continue;
                     }
-                }
-
-                if (methProp != null)
-                {
-                    MethPropWithType mwpInsert = new MethPropWithType(methProp, typeCur);
-                    _methPropWithTypeList.Add(mwpInsert);
                 }
 
                 // We have a visible symbol.
@@ -490,7 +483,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MemberLookup()
         {
-            _methPropWithTypeList = new List<MethPropWithType>();
             _rgtypeStart = new List<AggregateType>();
             _swtFirst = new SymWithType();
             _swtAmbig = new SymWithType();

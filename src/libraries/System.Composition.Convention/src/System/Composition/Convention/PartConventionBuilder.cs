@@ -19,7 +19,6 @@ namespace System.Composition.Convention
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
         private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportConventionBuilder> _typeExportBuilders;
-        private readonly List<ImportConventionBuilder> _constructorImportBuilders;
         private bool _isShared;
         private string _sharingBoundary;
 
@@ -43,7 +42,6 @@ namespace System.Composition.Convention
         {
             SelectType = selectType;
             _typeExportBuilders = new List<ExportConventionBuilder>();
-            _constructorImportBuilders = new List<ImportConventionBuilder>();
             _propertyExports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportConventionBuilder>, Type>>();
             _propertyImports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ImportConventionBuilder>>>();
             _interfaceExports = new List<Tuple<Predicate<Type>, Action<Type, ExportConventionBuilder>>>();

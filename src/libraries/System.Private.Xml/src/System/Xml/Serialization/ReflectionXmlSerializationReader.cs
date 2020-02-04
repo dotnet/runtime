@@ -1832,7 +1832,6 @@ namespace System.Xml.Serialization
         private void WriteAttributes(Member[] members, Member anyAttribute, UnknownNodeAction elseCall, ref object o)
         {
             Member xmlnsMember = null;
-            var attributes = new List<AttributeAccessor>();
             foreach (Member member in members)
             {
                 if (member.Mapping.Xmlns != null)
@@ -1856,8 +1855,6 @@ namespace System.Xml.Serialization
 
                     if (attribute == null) continue;
                     if (attribute.Any) continue;
-
-                    attributes.Add(attribute);
 
                     if (attribute.IsSpecialXmlNamespace)
                     {

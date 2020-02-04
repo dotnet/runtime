@@ -73,34 +73,12 @@ namespace System.Runtime.Serialization
 
         private class EnumDataContractCriticalHelper : DataContract.DataContractCriticalHelper
         {
-            private static readonly Dictionary<Type, XmlQualifiedName> s_typeToName = new Dictionary<Type, XmlQualifiedName>();
-            private static readonly Dictionary<XmlQualifiedName, Type> s_nameToType = new Dictionary<XmlQualifiedName, Type>();
-
             private List<DataMember> _members;
             private List<long> _values;
             private bool _isULong;
             private bool _isFlags;
             private readonly bool _hasDataContract;
             private XmlDictionaryString[] _childElementNames;
-
-            static EnumDataContractCriticalHelper()
-            {
-                Add(typeof(sbyte), "byte");
-                Add(typeof(byte), "unsignedByte");
-                Add(typeof(short), "short");
-                Add(typeof(ushort), "unsignedShort");
-                Add(typeof(int), "int");
-                Add(typeof(uint), "unsignedInt");
-                Add(typeof(long), "long");
-                Add(typeof(ulong), "unsignedLong");
-            }
-
-            internal static void Add(Type type, string localName)
-            {
-                XmlQualifiedName stableName = CreateQualifiedName(localName, Globals.SchemaNamespace);
-                s_typeToName.Add(type, stableName);
-                s_nameToType.Add(stableName, type);
-            }
 
             internal EnumDataContractCriticalHelper()
             {
