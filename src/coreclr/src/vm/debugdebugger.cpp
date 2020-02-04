@@ -1216,11 +1216,11 @@ void DebugStackTrace::DebugStackTraceElement::InitPass2()
         // When the dwOffset needs to be adjusted it is a lot simpler to decrement instead of trying to figure out
         // the beginning of the instruction. It is enough for GetILOffsetFromNative to return the IL offset of the
         // instruction throwing the exception.
-        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset >= STACKWALK_CONTROLPC_ADJUST_OFFSET;
+        bool fAdjustOffset = (this->flags & STEF_IP_ADJUSTED) == 0 && this->dwOffset > 0;
         bRes = g_pDebugInterface->GetILOffsetFromNative(
             pFunc,
             (LPCBYTE)this->ip,
-            fAdjustOffset ? this->dwOffset - STACKWALK_CONTROLPC_ADJUST_OFFSET : this->dwOffset,
+            fAdjustOffset ? this->dwOffset - 1 : this->dwOffset,
             &this->dwILOffset);
     }
 
