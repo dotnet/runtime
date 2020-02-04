@@ -5343,13 +5343,15 @@ class InlineContext;
 struct GenTreeILOffset : public GenTree
 {
     IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
+    InlineContext* gtInlineContext; // instr inline context from callee
 #ifdef DEBUG
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
 #endif
 
-    GenTreeILOffset(IL_OFFSETX offset DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
+    GenTreeILOffset(IL_OFFSETX offset, InlineContext* inlineContext DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
         : GenTree(GT_IL_OFFSET, TYP_VOID)
         , gtStmtILoffsx(offset)
+        , gtInlineContext(inlineContext)
 #ifdef DEBUG
         , gtStmtLastILoffs(lastOffset)
 #endif
@@ -5359,6 +5361,7 @@ struct GenTreeILOffset : public GenTree
 #if DEBUGGABLE_GENTREE
     GenTreeILOffset() : GenTree(GT_IL_OFFSET, TYP_VOID)
     {
+        assert(false);
     }
 #endif
 };

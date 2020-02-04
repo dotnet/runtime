@@ -939,6 +939,7 @@ void Rationalizer::DoPhase()
             assert(statement->GetRootNode()->gtNext == nullptr);
 
             BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
+            comp->gtDispStmt(statement, nullptr); // Brian
 
             // If this statement has correct offset information, change it into an IL offset
             // node and insert it into the LIR.
@@ -963,7 +964,7 @@ void Rationalizer::DoPhase()
 #endif
                 assert(!statement->IsPhiDefnStmt());
                 GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                    GenTreeILOffset(statement->GetILOffsetX(), statement->GetInlineContext() DEBUGARG(statement->GetLastILOffset()));
                 BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
             }
 #ifdef DEBUG
