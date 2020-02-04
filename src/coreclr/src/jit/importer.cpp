@@ -3447,8 +3447,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if ((methodFlags & CORINFO_FLG_JIT_INTRINSIC) != 0)
     {
-        // The recursive calls to Jit intrinsics are must-expand by convention.
-        mustExpand = mustExpand || gtIsRecursiveCall(method);
+        // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
+        mustExpand = mustExpand || (gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL));
 
         if (intrinsicID == CORINFO_INTRINSIC_Illegal)
         {
@@ -4014,6 +4014,49 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_IsAssignableFrom:
+            {
+                // Optimize patterns like:
+                //
+                //   typeof(TTo).IsAssignableFrom(typeof(TTFrom))
+                //   valueTypeVar.GetType().IsAssignableFrom(typeof(TTFrom))
+                //
+                // to true/false
+                GenTree* typeTo   = impStackTop(1).val;
+                GenTree* typeFrom = impStackTop(0).val;
+
+                if (typeTo->IsCall() && typeFrom->IsCall())
+                {
+                    // make sure both arguments are `typeof()`
+                    CORINFO_METHOD_HANDLE hTypeof = eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
+                    if ((typeTo->AsCall()->gtCallMethHnd == hTypeof) && (typeFrom->AsCall()->gtCallMethHnd == hTypeof))
+                    {
+                        CORINFO_CLASS_HANDLE hClassTo =
+                            gtGetHelperArgClassHandle(typeTo->AsCall()->gtCallArgs->GetNode());
+                        CORINFO_CLASS_HANDLE hClassFrom =
+                            gtGetHelperArgClassHandle(typeFrom->AsCall()->gtCallArgs->GetNode());
+
+                        if (hClassTo == NO_CLASS_HANDLE || hClassFrom == NO_CLASS_HANDLE)
+                        {
+                            break;
+                        }
+
+                        TypeCompareState castResult = info.compCompHnd->compareTypesForCast(hClassFrom, hClassTo);
+                        if (castResult == TypeCompareState::May)
+                        {
+                            // requires runtime check
+                            // e.g. __Canon, COMObjects, Nullable
+                            break;
+                        }
+
+                        retNode = gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0);
+                        impPopStack(); // drop both CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE calls
+                        impPopStack();
+                    }
+                }
+                break;
+            }
+
             case NI_System_Type_get_IsValueType:
             {
                 // Optimize
@@ -4340,6 +4383,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "get_IsValueType") == 0)
             {
                 result = NI_System_Type_get_IsValueType;
+            }
+            else if (strcmp(methodName, "IsAssignableFrom") == 0)
+            {
+                result = NI_System_Type_IsAssignableFrom;
             }
         }
     }
@@ -5904,13 +5951,13 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
             break;
 
         case CEE_ISINST:
-            // box + isinst + br_true/false
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
                 const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
 
                 switch (nextCodeAddr[0])
                 {
+                    // box + isinst + br_true/false
                     case CEE_BRTRUE:
                     case CEE_BRTRUE_S:
                     case CEE_BRFALSE:
@@ -5943,6 +5990,34 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const B
                                 }
                             }
                         }
+                        break;
+
+                    // box + isinst + unbox.any
+                    case CEE_UNBOX_ANY:
+                        if ((nextCodeAddr + 1 + sizeof(mdToken)) <= codeEndp)
+                        {
+                            // See if the resolved tokens in box, isinst and unbox.any describe types that are equal.
+                            CORINFO_RESOLVED_TOKEN isinstResolvedToken = {};
+                            impResolveToken(codeAddr + 1, &isinstResolvedToken, CORINFO_TOKENKIND_Class);
+
+                            if (info.compCompHnd->compareTypesForEquality(isinstResolvedToken.hClass,
+                                                                          pResolvedToken->hClass) ==
+                                TypeCompareState::Must)
+                            {
+                                CORINFO_RESOLVED_TOKEN unboxResolvedToken = {};
+                                impResolveToken(nextCodeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                                // If so, box + isinst + unbox.any is a nop.
+                                if (info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass,
+                                                                              pResolvedToken->hClass) ==
+                                    TypeCompareState::Must)
+                                {
+                                    JITDUMP("\n Importing BOX; ISINST, UNBOX.ANY as NOP\n");
+                                    return 2 + sizeof(mdToken) * 2;
+                                }
+                            }
+                        }
+                        break;
                 }
             }
             break;
@@ -7603,9 +7678,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (call != nullptr)
             {
-                assert(!(mflags & CORINFO_FLG_VIRTUAL) || (mflags & CORINFO_FLG_FINAL) ||
-                       (clsFlags & CORINFO_FLG_FINAL));
-
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (call->OperGet() == GT_INTRINSIC)
                 {

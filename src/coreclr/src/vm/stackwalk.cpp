@@ -376,9 +376,6 @@ inline void CrawlFrame::GotoNextFrame()
     // Update app domain if this frame caused a transition
     //
 
-    AppDomain *pRetDomain = pFrame->GetReturnDomain();
-    if (pRetDomain != NULL)
-        pAppDomain = pRetDomain;
     pFrame = pFrame->Next();
 
     if (pFrame != FRAME_TOP)
@@ -1248,7 +1245,6 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     }
 
     m_crawl.pRD = pRegDisp;
-    m_crawl.pAppDomain = pThread->GetDomain(INDEBUG(flags & PROFILER_DO_STACK_SNAPSHOT));
 
     m_codeManFlags = (ICodeManagerFlags)((flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
     m_scanFlag = ExecutionManager::GetScanFlags();
@@ -1341,9 +1337,6 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
     }
 
     m_crawl.pRD = pRegDisp;
-
-    // we initialize the appdomain to be the current domain, but this nees to be updated below
-    m_crawl.pAppDomain = m_crawl.pThread->GetDomain(INDEBUG(m_flags & PROFILER_DO_STACK_SNAPSHOT));
 
     m_codeManFlags = (ICodeManagerFlags)((m_flags & QUICKUNWIND) ? 0 : UpdateAllRegs);
 
@@ -2633,16 +2626,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             m_crawl.hasFaulted = (uFrameAttribs & Frame::FRAME_ATTR_FAULTED) != 0;
             m_crawl.isIPadjusted = (uFrameAttribs & Frame::FRAME_ATTR_OUT_OF_LINE) != 0;
             _ASSERTE(!m_crawl.hasFaulted || !m_crawl.isIPadjusted); // both cant be set together
-        }
-
-        //
-        // Update app domain if this frame caused a transition.
-        //
-
-        AppDomain *retDomain = m_crawl.pFrame->GetReturnDomain();
-        if (retDomain != NULL)
-        {
-            m_crawl.pAppDomain = retDomain;
         }
 
         PCODE adr = m_crawl.pFrame->GetReturnAddress();

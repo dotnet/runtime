@@ -84,7 +84,7 @@
 #endif
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
-typedef struct {
+struct FrameClauseArgs {
 	/* Where we start the frame execution from */
 	const guint16 *start_with_ip;
 	/*
@@ -98,7 +98,7 @@ typedef struct {
 	/* Exception that we are filtering */
 	MonoException *filter_exception;
 	InterpFrame *base_frame;
-} FrameClauseArgs;
+};
 
 /*
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
@@ -290,6 +290,31 @@ static gboolean ss_enabled;
 static gboolean interp_init_done = FALSE;
 
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
+
+static MONO_NEVER_INLINE void
+interp_exec_method_call_vararg (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
+static MONO_NEVER_INLINE void
+interp_exec_method_newobj_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
+static MONO_NEVER_INLINE void
+interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
+// This function makes WebAsssembly stacks clearer, so you can see which recursion
+// is occuring, in the absence of line numbers in the debugger.
+{
+	interp_exec_method_full (frame, context, NULL, error);
+}
+
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
@@ -3465,14 +3490,14 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 	sp = frame->state.sp; \
 	vt_sp = frame->state.vt_sp; \
 	finally_ips = frame->state.finally_ips; \
-	clause_args = (FrameClauseArgs*)frame->state.clause_args;			\
+	clause_args = frame->state.clause_args;			\
 	locals = (unsigned char *)frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size; \
 	frame->state.ip = NULL; \
 	} while (0)
 
 /* Initialize interpreter state for executing FRAME */
 #define INIT_INTERP_STATE(frame, _clause_args) do {	 \
-	ip = _clause_args ? ((FrameClauseArgs*)_clause_args)->start_with_ip : (frame)->imethod->code; \
+	ip = _clause_args ? (_clause_args)->start_with_ip : (frame)->imethod->code; \
 	sp = (frame)->stack; \
 	vt_sp = (unsigned char *) sp + (frame)->imethod->stack_size; \
 	locals = (unsigned char *) vt_sp + (frame)->imethod->vt_stack_size; \
@@ -3485,7 +3510,7 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
  * to return error information.
  * FRAME is only valid until the next call to alloc_frame ().
  */
-static void
+static MONO_NEVER_INLINE void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	/* Interpreter main loop state (InterpState) */
@@ -3798,8 +3823,8 @@ main_loop:
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}
@@ -3881,8 +3906,23 @@ main_loop:
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
 			}
-retry_callvirt_fast:
-			if (imethod->code_type == IMETHOD_CODE_INTERP) {
+
+			InterpMethodCodeType code_type = imethod->code_type;
+
+			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+			          code_type == IMETHOD_CODE_INTERP ||
+			          code_type == IMETHOD_CODE_COMPILED);
+
+			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
+				if (mono_interp_jit_call_supported (imethod->method, sig))
+					code_type = IMETHOD_CODE_COMPILED;
+				else
+					code_type = IMETHOD_CODE_INTERP;
+				imethod->code_type = code_type;
+			}
+
+			if (code_type == IMETHOD_CODE_INTERP) {
 				SAVE_INTERP_STATE (frame);
 
 				if (G_UNLIKELY (!imethod->transformed)) {
@@ -3903,9 +3943,9 @@ retry_callvirt_fast:
 				}
 
 				frame = child_frame;
-				INIT_INTERP_STATE (frame, NULL);
 				clause_args = NULL;
-			} else if (imethod->code_type == IMETHOD_CODE_COMPILED) {
+				INIT_INTERP_STATE (frame, clause_args);
+			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, imethod, error);
 				if (!is_ok (error)) {
@@ -3917,13 +3957,6 @@ retry_callvirt_fast:
 
 				if (imethod->rtype->type != MONO_TYPE_VOID)
 					sp++;
-			} else {
-				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
-				if (mono_interp_jit_call_supported (imethod->method, sig))
-					imethod->code_type = IMETHOD_CODE_COMPILED;
-				else
-					imethod->code_type = IMETHOD_CODE_INTERP;
-				goto retry_callvirt_fast;
 			}
 
 			MINT_IN_BREAK;
@@ -3951,7 +3984,7 @@ retry_callvirt_fast:
 			sp -= child_frame->imethod->param_count + child_frame->imethod->hasthis + num_varargs;
 
 			child_frame->stack_args = sp;
-			interp_exec_method (child_frame, context, error);
+			interp_exec_method_call_vararg (child_frame, context, error);
 			CHECK_RESUME_STATE (context);
 			if (csig->ret->type != MONO_TYPE_VOID) {
 				*sp = *retval;
@@ -4022,8 +4055,8 @@ retry_callvirt_fast:
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}
@@ -5111,7 +5144,7 @@ retry_callvirt_fast:
 				frame->ip = ip;
 
 				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
-				interp_exec_method (child_frame, context, error);
+				interp_exec_method_newobj_fast (child_frame, context, error);
 				CHECK_RESUME_STATE (context);
 				sp [0].data.o = o;
 				sp++;
@@ -5142,7 +5175,7 @@ retry_callvirt_fast:
 				sp->data.p = vt_sp;
 				ip += 4;
 
-				interp_exec_method (child_frame, context, error);
+				interp_exec_method_newobj_vtst_fast (child_frame, context, error);
 
 				CHECK_RESUME_STATE (context);
 				sp->data.p = vt_sp;

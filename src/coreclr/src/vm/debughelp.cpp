@@ -792,7 +792,7 @@ void PrintException(OBJECTREF pObjectRef)
 /*******************************************************************/
 /* sends a current stack trace to the debug window */
 
-const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamTracker);
+const char* FormatSig(MethodDesc* pMD, AllocMemTracker *pamTracker);
 
 struct PrintCallbackData {
     BOOL toStdout;
@@ -845,7 +845,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
                       _TRUNCATE,
                       W("%S %S  "),
                       pMD->GetName(),
-                      FormatSig(pMD, pCF->GetAppDomain(), &dummyAmTracker));
+                      FormatSig(pMD, &dummyAmTracker));
 
         dummyAmTracker.SuppressRelease();
         if (buffLen < 0 )

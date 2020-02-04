@@ -47,7 +47,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [PreserveDependency("Ctor(System.Char[])", "System.String")]
-        public extern String(char[] value);
+        public extern String(char[]? value);
 
 #if !CORECLR
         static

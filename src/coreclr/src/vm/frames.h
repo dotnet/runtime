@@ -488,12 +488,6 @@ public:
         return (ptr != NULL) ? *PTR_PCODE(ptr) : NULL;
     }
 
-    AppDomain *GetReturnDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NULL;
-    }
-
 #ifndef DACCESS_COMPILE
     virtual Object **GetReturnExecutionContextAddr()
     {

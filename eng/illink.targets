@@ -83,6 +83,8 @@
       <ILLinkArgs>$(ILLinkArgs) --skip-unresolved true</ILLinkArgs>
       <!-- keep interface implementations -->
       <ILLinkArgs>$(ILLinkArgs) --disable-opt unusedinterfaces</ILLinkArgs>
+      <!-- disable optimization to unblock dependencies bump -->
+      <ILLinkArgs>$(ILLinkArgs) --disable-opt ipconstprop</ILLinkArgs>
       <!-- keep PreserveDependencyAttribute unless a project explicitly disables it -->
       <ILLinkArgs Condition="'$(ILLinkKeepDepAttributes)' != 'false'">$(ILLinkArgs) --keep-dep-attributes true</ILLinkArgs>
     </PropertyGroup>
