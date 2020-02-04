@@ -6638,6 +6638,10 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
+#ifndef TARGET_ARM64
+EXTERN_C void JIT_StackProbe_End();
+#endif // TARGET_ARM64
+
 #ifdef FEATURE_EH_FUNCLETS
 
 #ifndef TARGET_X86
@@ -6703,6 +6707,9 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
+#if !defined(TARGET_ARM64)
+    CHECK_RANGE(JIT_StackProbe)
+#endif // !TARGET_ARM64
 #else
 #ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
@@ -6792,6 +6799,19 @@ AdjustContextForWriteBarrier(
         // put ESP back to what it was before the call.
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
+
+    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End)) 
+    {
+        TADDR ebp = GetFP(pContext);
+        void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
+        pExceptionRecord->ExceptionAddress = callsite;
+        SetIP(pContext, (PCODE)callsite);
+
+        // Restore EBP / ESP back to what it was before the call.
+        SetFP(pContext, *dac_cast<PTR_PCODE>(ebp));
+        SetSP(pContext, ebp + 8);
+    }
+
     return FALSE;
 #elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
     void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
