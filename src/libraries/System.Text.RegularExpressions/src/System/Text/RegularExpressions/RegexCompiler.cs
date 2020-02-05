@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -362,6 +363,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
         private void And() => _ilg!.Emit(OpCodes.And);
+
+        /// <summary>A macro for _ilg.Emit(OpCodes.Or).</summary>
+        private void Or() => _ilg!.Emit(OpCodes.Or);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Shl).</summary>
         private void Shl() => _ilg!.Emit(OpCodes.Shl);
@@ -4668,6 +4672,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
         private void EmitMatchCharacterClass(string charClass, bool caseInsensitive, LocalBuilder tempLocal)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
@@ -4676,8 +4681,8 @@ namespace System.Text.RegularExpressions
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
 
             // First, see if the char class is a built-in one for which there's a better function
-            // we can just call directly.  Everything in this section must work correctly for both case
-            // sensitive and case insensitive modes, regardless of current culture or invariant.
+            // we can just call directly.  Everything in this section must work correctly for both
+            // case-sensitive and case-insensitive modes, regardless of culture.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
@@ -4738,10 +4743,10 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    // (uint)ch - lowInclusive < highInclusive + 1 - lowInclusive
+                    // (uint)ch - lowInclusive < highInclusive - lowInclusive + 1
                     Ldc(lowInclusive);
                     Sub();
-                    Ldc((int)highInclusive - (int)lowInclusive + 1);
+                    Ldc(highInclusive - lowInclusive + 1);
                     CltUn();
                 }
 
@@ -4755,8 +4760,38 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Store the input character to a local so we can read it multiple times.
+            // All checks after this point require reading the input character multiple times,
+            // so we store it into a temporary local.
             Stloc(tempLocal);
+
+            // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
+            // it's cheaper and smaller to compare against each than it is to use a lookup table.
+            if (!invariant)
+            {
+                Span<char> setChars = stackalloc char[3];
+                int numChars = RegexCharClass.GetSetChars(charClass, setChars);
+                if (numChars > 0)
+                {
+                    // (ch == setChars[0]) | (ch == setChars[1]) { | (ch == setChars[2]) }
+                    Debug.Assert(numChars == 2 || numChars == 3);
+                    Ldloc(tempLocal);
+                    Ldc(setChars[0]);
+                    Ceq();
+                    Ldloc(tempLocal);
+                    Ldc(setChars[1]);
+                    Ceq();
+                    Or();
+                    if (numChars == 3)
+                    {
+                        Ldloc(tempLocal);
+                        Ldc(setChars[2]);
+                        Ceq();
+                        Or();
+                    }
+
+                    return;
+                }
+            }
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);

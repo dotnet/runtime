@@ -188,7 +188,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/22414", TestPlatforms.Linux, RuntimeStressTestModes.CheckedRuntime)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/22414", TestPlatforms.Linux, RuntimeTestModes.CheckedRuntime)]
         public static void RunRegionSpecificStandardFormatToStringTests()
         {
             CultureInfo[] cultures = new CultureInfo[] { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),

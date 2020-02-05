@@ -24,7 +24,7 @@ namespace System.Text.RegularExpressions
         public int Length { get; private protected set; }
 
         /// <summary>The original string</summary>
-        internal string Text { get; private protected set; }
+        internal string Text { get; set; }
 
         /// <summary>
         /// Returns the value of this Regex Capture.

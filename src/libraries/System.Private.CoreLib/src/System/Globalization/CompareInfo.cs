@@ -17,7 +17,7 @@ namespace System.Globalization
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public partial class CompareInfo : IDeserializationCallback
+    public sealed partial class CompareInfo : IDeserializationCallback
     {
         // Mask used to check if IndexOf()/LastIndexOf()/IsPrefix()/IsPostfix() has the right flags.
         private const CompareOptions ValidIndexMaskOffFlags =
@@ -29,7 +29,7 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
-        // Mask used to check if GetHashCodeOfString() has the right flags.
+        // Mask used to check if GetHashCode(string) has the right flags.
         private const CompareOptions ValidHashCodeOfStringMaskOffFlags =
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
@@ -218,7 +218,7 @@ namespace System.Globalization
         ///  and the locale's changed behavior, then you'll get changed behavior, which is like
         ///  what happens for a version update)
         /// </summary>
-        public virtual string Name
+        public string Name
         {
             get
             {
@@ -238,12 +238,12 @@ namespace System.Globalization
         /// than string2, and a number greater than 0 if string1 is greater
         /// than string2.
         /// </summary>
-        public virtual int Compare(string? string1, string? string2)
+        public int Compare(string? string1, string? string2)
         {
             return Compare(string1, string2, CompareOptions.None);
         }
 
-        public virtual int Compare(string? string1, string? string2, CompareOptions options)
+        public int Compare(string? string1, string? string2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -369,23 +369,23 @@ namespace System.Globalization
         /// string1 is less than string2, and a number greater than 0 if
         /// string1 is greater than string2.
         /// </summary>
-        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2)
+        public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2)
         {
             return Compare(string1, offset1, length1, string2, offset2, length2, 0);
         }
 
-        public virtual int Compare(string? string1, int offset1, string? string2, int offset2, CompareOptions options)
+        public int Compare(string? string1, int offset1, string? string2, int offset2, CompareOptions options)
         {
             return Compare(string1, offset1, string1 == null ? 0 : string1.Length - offset1,
                            string2, offset2, string2 == null ? 0 : string2.Length - offset2, options);
         }
 
-        public virtual int Compare(string? string1, int offset1, string? string2, int offset2)
+        public int Compare(string? string1, int offset1, string? string2, int offset2)
         {
             return Compare(string1, offset1, string2, offset2, 0);
         }
 
-        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, CompareOptions options)
+        public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -684,7 +684,7 @@ namespace System.Globalization
         /// Determines whether prefix is a prefix of string.  If prefix equals
         /// string.Empty, true is returned.
         /// </summary>
-        public virtual bool IsPrefix(string source, string prefix, CompareOptions options)
+        public bool IsPrefix(string source, string prefix, CompareOptions options)
         {
             if (source == null)
             {
@@ -738,7 +738,7 @@ namespace System.Globalization
             return StartsWith(source, prefix, options);
         }
 
-        public virtual bool IsPrefix(string source, string prefix)
+        public bool IsPrefix(string source, string prefix)
         {
             return IsPrefix(source, prefix, 0);
         }
@@ -747,7 +747,7 @@ namespace System.Globalization
         /// Determines whether suffix is a suffix of string.  If suffix equals
         /// string.Empty, true is returned.
         /// </summary>
-        public virtual bool IsSuffix(string source, string suffix, CompareOptions options)
+        public bool IsSuffix(string source, string suffix, CompareOptions options)
         {
             if (source == null)
             {
@@ -801,7 +801,7 @@ namespace System.Globalization
             return EndsWith(source, suffix, options);
         }
 
-        public virtual bool IsSuffix(string source, string suffix)
+        public bool IsSuffix(string source, string suffix)
         {
             return IsSuffix(source, suffix, 0);
         }
@@ -814,7 +814,7 @@ namespace System.Globalization
         /// endIndex is less than zero or greater than the length of string.
         /// Throws ArgumentException if value is null.
         /// </summary>
-        public virtual int IndexOf(string source, char value)
+        public int IndexOf(string source, char value)
         {
             if (source == null)
             {
@@ -824,7 +824,7 @@ namespace System.Globalization
             return IndexOf(source, value, 0, source.Length, CompareOptions.None);
         }
 
-        public virtual int IndexOf(string source, string value)
+        public int IndexOf(string source, string value)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -832,7 +832,7 @@ namespace System.Globalization
             return IndexOf(source, value, 0, source.Length, CompareOptions.None);
         }
 
-        public virtual int IndexOf(string source, char value, CompareOptions options)
+        public int IndexOf(string source, char value, CompareOptions options)
         {
             if (source == null)
             {
@@ -842,7 +842,7 @@ namespace System.Globalization
             return IndexOf(source, value, 0, source.Length, options);
         }
 
-        public virtual int IndexOf(string source, string value, CompareOptions options)
+        public int IndexOf(string source, string value, CompareOptions options)
         {
             if (source == null)
             {
@@ -852,7 +852,7 @@ namespace System.Globalization
             return IndexOf(source, value, 0, source.Length, options);
         }
 
-        public virtual int IndexOf(string source, char value, int startIndex)
+        public int IndexOf(string source, char value, int startIndex)
         {
             if (source == null)
             {
@@ -862,7 +862,7 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
         }
 
-        public virtual int IndexOf(string source, string value, int startIndex)
+        public int IndexOf(string source, string value, int startIndex)
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
@@ -870,7 +870,7 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, source.Length - startIndex, CompareOptions.None);
         }
 
-        public virtual int IndexOf(string source, char value, int startIndex, CompareOptions options)
+        public int IndexOf(string source, char value, int startIndex, CompareOptions options)
         {
             if (source == null)
             {
@@ -880,7 +880,7 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
         }
 
-        public virtual int IndexOf(string source, string value, int startIndex, CompareOptions options)
+        public int IndexOf(string source, string value, int startIndex, CompareOptions options)
         {
             if (source == null)
             {
@@ -890,17 +890,17 @@ namespace System.Globalization
             return IndexOf(source, value, startIndex, source.Length - startIndex, options);
         }
 
-        public virtual int IndexOf(string source, char value, int startIndex, int count)
+        public int IndexOf(string source, char value, int startIndex, int count)
         {
             return IndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public virtual int IndexOf(string source, string value, int startIndex, int count)
+        public int IndexOf(string source, string value, int startIndex, int count)
         {
             return IndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public virtual unsafe int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
+        public unsafe int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -930,7 +930,7 @@ namespace System.Globalization
             return IndexOf(source, char.ToString(value), startIndex, count, options, null);
         }
 
-        public virtual unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
+        public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -1149,7 +1149,7 @@ namespace System.Globalization
         /// endIndex is less than zero or greater than the length of string.
         /// Throws ArgumentException if value is null.
         /// </summary>
-        public virtual int LastIndexOf(string source, char value)
+        public int LastIndexOf(string source, char value)
         {
             if (source == null)
             {
@@ -1160,7 +1160,7 @@ namespace System.Globalization
             return LastIndexOf(source, value, source.Length - 1, source.Length, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, string value)
+        public int LastIndexOf(string source, string value)
         {
             if (source == null)
             {
@@ -1172,7 +1172,7 @@ namespace System.Globalization
                 source.Length, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, char value, CompareOptions options)
+        public int LastIndexOf(string source, char value, CompareOptions options)
         {
             if (source == null)
             {
@@ -1183,7 +1183,7 @@ namespace System.Globalization
             return LastIndexOf(source, value, source.Length - 1, source.Length, options);
         }
 
-        public virtual int LastIndexOf(string source, string value, CompareOptions options)
+        public int LastIndexOf(string source, string value, CompareOptions options)
         {
             if (source == null)
             {
@@ -1194,37 +1194,37 @@ namespace System.Globalization
             return LastIndexOf(source, value, source.Length - 1, source.Length, options);
         }
 
-        public virtual int LastIndexOf(string source, char value, int startIndex)
+        public int LastIndexOf(string source, char value, int startIndex)
         {
             return LastIndexOf(source, value, startIndex, startIndex + 1, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, string value, int startIndex)
+        public int LastIndexOf(string source, string value, int startIndex)
         {
             return LastIndexOf(source, value, startIndex, startIndex + 1, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, char value, int startIndex, CompareOptions options)
+        public int LastIndexOf(string source, char value, int startIndex, CompareOptions options)
         {
             return LastIndexOf(source, value, startIndex, startIndex + 1, options);
         }
 
-        public virtual int LastIndexOf(string source, string value, int startIndex, CompareOptions options)
+        public int LastIndexOf(string source, string value, int startIndex, CompareOptions options)
         {
             return LastIndexOf(source, value, startIndex, startIndex + 1, options);
         }
 
-        public virtual int LastIndexOf(string source, char value, int startIndex, int count)
+        public int LastIndexOf(string source, char value, int startIndex, int count)
         {
             return LastIndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, string value, int startIndex, int count)
+        public int LastIndexOf(string source, string value, int startIndex, int count)
         {
             return LastIndexOf(source, value, startIndex, count, CompareOptions.None);
         }
 
-        public virtual int LastIndexOf(string source, char value, int startIndex, int count, CompareOptions options)
+        public int LastIndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -1280,7 +1280,7 @@ namespace System.Globalization
             return LastIndexOfCore(source, value.ToString(), startIndex, count, options);
         }
 
-        public virtual int LastIndexOf(string source, string value, int startIndex, int count, CompareOptions options)
+        public int LastIndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
             if (source == null)
             {
@@ -1356,7 +1356,7 @@ namespace System.Globalization
         /// <summary>
         /// Gets the SortKey for the given string with the given options.
         /// </summary>
-        public virtual SortKey GetSortKey(string source, CompareOptions options)
+        public SortKey GetSortKey(string source, CompareOptions options)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -1366,7 +1366,7 @@ namespace System.Globalization
             return CreateSortKey(source, options);
         }
 
-        public virtual SortKey GetSortKey(string source)
+        public SortKey GetSortKey(string source)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -1385,26 +1385,15 @@ namespace System.Globalization
         public override int GetHashCode() => Name.GetHashCode();
 
         /// <summary>
-        /// This internal method allows a method that allows the equivalent of creating a Sortkey for a
-        /// string from CompareInfo, and generate a hashcode value from it.  It is not very convenient
-        /// to use this method as is and it creates an unnecessary Sortkey object that will be GC'ed.
+        /// This method performs the equivalent of of creating a Sortkey for a string from CompareInfo,
+        /// then generates a randomized hashcode value from the sort key.
         ///
         /// The hash code is guaranteed to be the same for string A and B where A.Equals(B) is true and both
         /// the CompareInfo and the CompareOptions are the same. If two different CompareInfo objects
         /// treat the string the same way, this implementation will treat them differently (the same way that
         /// Sortkey does at the moment).
-        ///
-        /// This method will never be made public itself, but public consumers of it could be created, e.g.:
-        ///
-        ///     string.GetHashCode(CultureInfo)
-        ///     string.GetHashCode(CompareInfo)
-        ///     string.GetHashCode(CultureInfo, CompareOptions)
-        ///     string.GetHashCode(CompareInfo, CompareOptions)
-        ///     etc.
-        ///
-        /// (the methods above that take a CultureInfo would use CultureInfo.CompareInfo)
         /// </summary>
-        internal int GetHashCodeOfString(string source, CompareOptions options)
+        public int GetHashCode(string source, CompareOptions options)
         {
             if (source == null)
             {
@@ -1435,12 +1424,6 @@ namespace System.Globalization
                 // Unsupported combination of flags specified
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
-        }
-
-        public virtual int GetHashCode(string source, CompareOptions options)
-        {
-            // virtual method delegates to non-virtual method
-            return GetHashCodeOfString(source, options);
         }
 
         public int GetHashCode(ReadOnlySpan<char> source, CompareOptions options)
