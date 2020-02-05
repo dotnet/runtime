@@ -143,6 +143,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TargetFrameworkMonikers.Mono)]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_Exception_SkipFrames(int skipFrames)
@@ -181,6 +182,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TargetFrameworkMonikers.Mono)]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(0, false)]

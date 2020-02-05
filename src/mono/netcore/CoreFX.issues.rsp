@@ -5,14 +5,6 @@
 -notrait category=failing
 -notrait category=IgnoreForCI
 
-####################################################################
-##  System.Diagnostics.StackTrace.Tests
-####################################################################
-
-# JIT should not inline custom throw helpers
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
-
 # Assert.Contains() Failure
 -nomethod System.Diagnostics.Tests.StackTraceTests.ToString_Invoke_ReturnsExpected
 
