@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -125,11 +125,11 @@ namespace System.Runtime.CompilerServices
                 // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
                 // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
-#if BIT64
+#if TARGET_64BIT
                 12;
 #else // 32
                 8;
-#endif // BIT64
+#endif // TARGET_64BIT
 
         }
 
@@ -285,7 +285,7 @@ namespace System.Runtime.CompilerServices
     internal class RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
-#if BIT64
+#if TARGET_64BIT
         public uint Padding;
 #endif
         public byte Data;
@@ -323,7 +323,7 @@ namespace System.Runtime.CompilerServices
 #endif
         ;
 
-#if BIT64
+#if TARGET_64BIT
         private const int InterfaceMapOffset = 0x38
 #else
         private const int InterfaceMapOffset = 0x24
