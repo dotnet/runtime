@@ -5342,7 +5342,7 @@ class InlineContext;
 
 struct GenTreeILOffset : public GenTree
 {
-    IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
+    IL_OFFSETX     gtStmtILoffsx;   // instr offset (if available)
     InlineContext* gtInlineContext; // instr inline context from callee
 #ifdef DEBUG
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt

@@ -956,7 +956,8 @@ void Rationalizer::DoPhase()
                                 comp->eeGetMethodFullName(statement->GetInlineContext()->GetCallee()));
                         if (nullptr != statement->GetInlineContext()->GetCode())
                         { // when method is in clases like String this breaks
-                            dumpILRange(statement->GetInlineContext()->GetCode(), statement->GetInlineContext()->GetILSize());
+                            dumpILRange(statement->GetInlineContext()->GetCode(),
+                                        statement->GetInlineContext()->GetILSize());
                         }
                         statement->GetInlineContext()->DumpData();
                     }
@@ -964,7 +965,8 @@ void Rationalizer::DoPhase()
 #endif
                 assert(!statement->IsPhiDefnStmt());
                 GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                    GenTreeILOffset(statement->GetILOffsetX(), statement->GetInlineContext() DEBUGARG(statement->GetLastILOffset()));
+                    GenTreeILOffset(statement->GetILOffsetX(),
+                                    statement->GetInlineContext() DEBUGARG(statement->GetLastILOffset()));
                 BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
             }
 #ifdef DEBUG

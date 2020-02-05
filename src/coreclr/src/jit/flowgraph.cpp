@@ -22700,7 +22700,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     // This is the InlineInfo struct representing a method to be inlined.
     InlineInfo inlineInfo;
     memset(&inlineInfo, 0, sizeof(inlineInfo));
-    CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd;// Brian: This is the method we want to inline
+    CORINFO_METHOD_HANDLE fncHandle = call->gtCallMethHnd; // Brian: This is the method we want to inline
 
     inlineInfo.fncHandle              = fncHandle;
     inlineInfo.iciCall                = call;
@@ -22788,7 +22788,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_BBINSTR);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_PROF_ENTERLEAVE);
                 compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_EnC);
-                //compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
+                // compileFlagsForInlinee.Clear(JitFlags::JIT_FLAG_DEBUG_INFO);
 
                 compileFlagsForInlinee.Set(JitFlags::JIT_FLAG_SKIP_VERIFICATION);
 
@@ -22966,7 +22966,8 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         {
             stmt->SetInlineContext(calleeContext);
             gtDispStmt(stmt, nullptr);
-            JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(), eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+            JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
+                    eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
         }
     }
 

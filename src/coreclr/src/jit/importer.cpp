@@ -464,12 +464,12 @@ inline void Compiler::impEndTreeList(BasicBlock* block)
     {
         // impLastILoffsStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
         impLastILoffsStmt->SetLastILOffset(impCurOpcOffs);
-        #ifdef DEBUG
+#ifdef DEBUG
         if (verbose)
         {
             JITDUMP("bla");
         }
-        #endif
+#endif
         impLastILoffsStmt = nullptr;
     }
 #endif
@@ -2681,7 +2681,8 @@ inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
         impCurStmtOffs    = offs | stkBit;
     }
 }
-// Brian: este metodo solo va a darle un IL a un stmt, que parece se setea restando al la posicion del stmt la base de la base del metodo.
+// Brian: este metodo solo va a darle un IL a un stmt, que parece se setea restando al la posicion del stmt la base de
+// la base del metodo.
 /*****************************************************************************
  * Returns current IL offset with stack-empty and call-instruction info incorporated
  */
@@ -2699,10 +2700,10 @@ inline IL_OFFSETX Compiler::impCurILOffset(IL_OFFSET offs, bool callInstruction)
     }
     else
     {*/
-        assert(offs == BAD_IL_OFFSET || (offs & IL_OFFSETX_BITS) == 0);
-        IL_OFFSETX stkBit             = (verCurrentState.esStackDepth > 0) ? IL_OFFSETX_STKBIT : 0;
-        IL_OFFSETX callInstructionBit = callInstruction ? IL_OFFSETX_CALLINSTRUCTIONBIT : 0;
-        return offs | stkBit | callInstructionBit;
+    assert(offs == BAD_IL_OFFSET || (offs & IL_OFFSETX_BITS) == 0);
+    IL_OFFSETX stkBit             = (verCurrentState.esStackDepth > 0) ? IL_OFFSETX_STKBIT : 0;
+    IL_OFFSETX callInstructionBit = callInstruction ? IL_OFFSETX_CALLINSTRUCTIONBIT : 0;
+    return offs | stkBit | callInstructionBit;
     //}
 }
 
@@ -2752,12 +2753,12 @@ void Compiler::impNoteLastILoffs()
 
         assert(impLastStmt);
 
-        //impLastStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
+        // impLastStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
         impLastStmt->SetLastILOffset(impCurOpcOffs);
     }
     else
     {
-        //impLastILoffsStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
+        // impLastILoffsStmt->SetLastILOffset(compIsForInlining() ? BAD_IL_OFFSET : impCurOpcOffs);
         impLastILoffsStmt->SetLastILOffset(impCurOpcOffs);
         impLastILoffsStmt = nullptr;
     }
@@ -10805,7 +10806,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 JITDUMP("bla");
             }
 #endif
-            //if (!compIsForInlining())
+            // if (!compIsForInlining())
             {
                 nxtStmtOffs =
                     (nxtStmtIndex < info.compStmtOffsetsCount) ? info.compStmtOffsets[nxtStmtIndex] : BAD_IL_OFFSET;
