@@ -21,10 +21,6 @@
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(BuildArch)'=='x64' And ('$(__BuildOS)' == 'Windows_NT' Or '$(__BuildOS)' == 'Linux')">
-    <ProjectReference Include="Microsoft.NETCore.Crossgen2\Microsoft.NETCore.Crossgen2.builds" />
-  </ItemGroup>
-
   <!-- Generate a version.txt file we include in our packages
        The InitializeSourceControlInformationFromSourceControlManager is part of Microsoft.Build.Tasks.Git
        and is responsible for setting SourceRevisionId -->
