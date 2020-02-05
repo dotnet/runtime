@@ -98,12 +98,9 @@ namespace System.Net.Http.Unit.Tests.HPack
             _decoder = new HPackDecoder(DynamicTableInitialMaxSize, MaxHeaderFieldSize, _dynamicTable);
         }
 
-        void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        void IHttpHeadersHandler.OnHeader(string name, string value)
         {
-            string headerName = Encoding.ASCII.GetString(name);
-            string headerValue = Encoding.ASCII.GetString(value);
-
-            _decodedHeaders[headerName] = headerValue;
+             _decodedHeaders[name] = value;
         }
 
         void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
@@ -112,7 +109,7 @@ namespace System.Net.Http.Unit.Tests.HPack
             throw new NotImplementedException();
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, string value)
         {
             // Not yet implemented for HPACK.
             throw new NotImplementedException();
@@ -131,7 +128,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         public void DecodesIndexedHeaderField_DynamicTable()
         {
             // Add the header to the dynamic table
-            _dynamicTable.Insert(_headerNameBytes, _headerValueBytes);
+            _dynamicTable.Insert(_headerNameString, _headerValueString);
 
             // Index it
             _decoder.Decode(_indexedHeaderDynamic, endHeaders: true, handler: this);
@@ -629,8 +626,8 @@ namespace System.Net.Http.Unit.Tests.HPack
             if (expectDynamicTableEntry)
             {
                 Assert.Equal(1, _dynamicTable.Count);
-                Assert.Equal(expectedHeaderName, Encoding.ASCII.GetString(_dynamicTable[0].Name));
-                Assert.Equal(expectedHeaderValue, Encoding.ASCII.GetString(_dynamicTable[0].Value));
+                Assert.Equal(expectedHeaderName, _dynamicTable[0].Name);
+                Assert.Equal(expectedHeaderValue, _dynamicTable[0].Value);
                 Assert.Equal(expectedHeaderName.Length + expectedHeaderValue.Length + 32, _dynamicTable.Size);
             }
             else

@@ -25,7 +25,7 @@ namespace System.Net.Http.HPack
 
         public int MaxSize => _maxSize;
 
-        public HeaderField this[int index]
+        public ref HeaderField this[int index]
         {
             get
             {
@@ -42,11 +42,11 @@ namespace System.Net.Http.HPack
                     index += _buffer.Length;
                 }
 
-                return _buffer[index];
+                return ref _buffer[index];
             }
         }
 
-        public void Insert(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        public void Insert(string name, string value)
         {
             int entryLength = HeaderField.GetLength(name.Length, value.Length);
             EnsureAvailable(entryLength);

@@ -456,6 +456,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.winhttp_types.cs">
       <Link>ProductionCode\Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Net\WebHeaderEncoding.cs">
+      <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\WinInetProxyHelper.cs">
       <Link>Common\System\Net\Http\WinInetProxyHelper.cs</Link>
     </Compile>

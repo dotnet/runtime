@@ -157,7 +157,7 @@ namespace System.Net.Http.QPack
         };
 
         private static HeaderField CreateHeaderField(string name, string value)
-            => new HeaderField(Encoding.ASCII.GetBytes(name), Encoding.ASCII.GetBytes(value));
+            => new HeaderField(name, value);
 
         public const int Authority = 0;
         public const int PathSlash = 1;

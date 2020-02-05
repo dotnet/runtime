@@ -26,7 +26,7 @@ namespace System.Net.Http
                 1024;
 #endif
 
-            private static readonly byte[] s_statusHeaderName = Encoding.ASCII.GetBytes(":status");
+            private const string s_statusHeaderName = ":status";
 
             private readonly Http2Connection _connection;
             private readonly int _streamId;
@@ -402,15 +402,15 @@ namespace System.Net.Http
                 Debug.Fail("Currently unused by HPACK, this should never be called.");
             }
 
-            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, string value)
             {
                 // TODO: https://github.com/dotnet/runtime/issues/1505
                 Debug.Fail("Currently unused by HPACK, this should never be called.");
             }
 
-            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            public void OnHeader(string name, string value)
             {
-                if (NetEventSource.IsEnabled) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
+                if (NetEventSource.IsEnabled) Trace($"{name}: {value}");
                 Debug.Assert(name != null && name.Length > 0);
 
                 _headerBudgetRemaining -= name.Length + value.Length;
@@ -428,7 +428,7 @@ namespace System.Net.Http
                         return;
                     }
 
-                    if (name[0] == (byte)':')
+                    if (name[0] == ':')
                     {
                         if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingStatus)
                         {
@@ -437,7 +437,7 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
                         }
 
-                        if (name.SequenceEqual(s_statusHeaderName))
+                        if (name.Equals(s_statusHeaderName))
                         {
                             if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
                             {
@@ -482,7 +482,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            if (NetEventSource.IsEnabled) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
+                            if (NetEventSource.IsEnabled) Trace($"Invalid response pseudo-header '{name}'.");
                             throw new HttpRequestException(SR.net_http_invalid_response);
                         }
                     }
@@ -503,7 +503,7 @@ namespace System.Net.Http
                         if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
                         {
                             // Invalid header name
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, name));
                         }
 
                         string headerValue = descriptor.GetHeaderValue(value);

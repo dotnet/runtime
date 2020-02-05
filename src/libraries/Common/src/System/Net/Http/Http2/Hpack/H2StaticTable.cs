@@ -23,7 +23,7 @@ namespace System.Net.Http.HPack
 
         public static int Count => s_staticDecoderTable.Length;
 
-        public static HeaderField Get(int index) => s_staticDecoderTable[index];
+        public static ref HeaderField Get(int index) => ref s_staticDecoderTable[index];
 
         public static IReadOnlyDictionary<int, int> StatusIndex => s_statusIndex;
 
@@ -96,9 +96,7 @@ namespace System.Net.Http.HPack
         // Tackle as part of header table allocation strategy in general (see note in HeaderField constructor).
 
         private static HeaderField CreateHeaderField(string name, string value) =>
-            new HeaderField(
-                Encoding.ASCII.GetBytes(name),
-                value.Length != 0 ? Encoding.ASCII.GetBytes(value) : Array.Empty<byte>());
+            new HeaderField(name, value);
 
         // Values for encoding.
         // Unused values are omitted.

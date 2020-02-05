@@ -18,8 +18,8 @@ namespace System.Net.Http
     interface IHttpHeadersHandler
     {
         void OnStaticIndexedHeader(int index);
-        void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value);
-        void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value);
+        void OnStaticIndexedHeader(int index, string value);
+        void OnHeader(string name, string value);
         void OnHeadersComplete(bool endStream);
     }
 }

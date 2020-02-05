@@ -6,15 +6,15 @@ namespace System.Net.Http.QPack
 {
     internal readonly struct HeaderField
     {
-        public HeaderField(byte[] name, byte[] value)
+        public HeaderField(string name, string value)
         {
-            Name = new byte[name.Length];
-            Value = new byte[value.Length];
+            Name = name;
+            Value = value;
         }
 
-        public byte[] Name { get; }
+        public string Name { get; }
 
-        public byte[] Value { get; }
+        public string Value { get; }
 
         public int Length => Name.Length + Value.Length;
     }

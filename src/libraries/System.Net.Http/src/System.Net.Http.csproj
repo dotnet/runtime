@@ -169,6 +169,9 @@
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
       <Link>Common\System\Net\ContextFlagsPal.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Net\WebHeaderEncoding.cs">
+      <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\Http\Http2\IHttpHeadersHandler.cs">
       <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
     </Compile>

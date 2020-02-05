@@ -794,13 +794,13 @@ namespace System.Net.Http
 
         private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
 
-        void IHttpHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+        void IHttpHeadersHandler.OnHeader(string name, string value)
         {
             Debug.Assert(name.Length > 0);
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
                 // Invalid header name
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, name));
             }
             OnHeader(staticIndex: null, descriptor, staticValue: default, literalValue: value);
         }
@@ -811,7 +811,7 @@ namespace System.Net.Http
             OnHeader(index, descriptor, knownValue, literalValue: default);
         }
 
-        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+        void IHttpHeadersHandler.OnStaticIndexedHeader(int index, string value)
         {
             GetStaticQPackHeader(index, out HeaderDescriptor descriptor, knownValue: out _);
             OnHeader(index, descriptor, staticValue: null, literalValue: value);
@@ -831,7 +831,7 @@ namespace System.Net.Http
         /// <param name="staticValue">The static indexed value, if any.</param>
         /// <param name="literalValue">The literal ASCII value, if any.</param>
         /// <remarks>One of <paramref name="staticValue"/> or <paramref name="literalValue"/> will be set.</remarks>
-        private void OnHeader(int? staticIndex, HeaderDescriptor descriptor, string staticValue, ReadOnlySpan<byte> literalValue)
+        private void OnHeader(int? staticIndex, HeaderDescriptor descriptor, string staticValue, string literalValue)
         {
             if (descriptor.Name[0] == ':')
             {

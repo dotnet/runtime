@@ -146,11 +146,11 @@ namespace System.Net.Http.Unit.Tests.HPack
                 _headers = headers;
             }
 
-            public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
+            public void OnHeader(string name, string value)
             {
                 if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, name));
                 }
 
                 string headerValue = descriptor.GetHeaderValue(value);
@@ -168,7 +168,7 @@ namespace System.Net.Http.Unit.Tests.HPack
                 throw new NotImplementedException();
             }
 
-            public void OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            public void OnStaticIndexedHeader(int index, string value)
             {
                 throw new NotImplementedException();
             }

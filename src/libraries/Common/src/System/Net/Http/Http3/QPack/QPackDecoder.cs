@@ -114,8 +114,7 @@ namespace System.Net.Http.QPack
         private bool _huffman;
         private int? _index;
 
-        private byte[] _headerName;
-        private int _headerNameLength;
+        private string _headerName;
         private int _headerValueLength;
         private int _stringLength;
         private int _stringIndex;
@@ -395,21 +394,16 @@ namespace System.Net.Http.QPack
         {
             OnString(nextState: State.CompressedHeaders);
 
-            Span<byte> headerNameSpan;
-            Span<byte> headerValueSpan = _headerValueOctets.AsSpan(0, _headerValueLength);
+            string headerValue = WebHeaderEncoding.GetString(_headerValueOctets, 0, _headerValueLength);
 
             if (_index is int index)
             {
                 Debug.Assert(index >= 0 && index <= H3StaticTable.Instance.Count, $"The index should be a valid static index here. {nameof(QPackDecoder)} should have previously thrown if it read a dynamic index.");
-                handler.OnStaticIndexedHeader(index, headerValueSpan);
+                handler.OnStaticIndexedHeader(index, headerValue);
                 return;
             }
-            else
-            {
-                headerNameSpan = _headerNameOctets.AsSpan(0, _headerNameLength);
-            }
 
-            handler.OnHeader(headerNameSpan, headerValueSpan);
+            handler.OnHeader(_headerName, headerValue);
         }
 
         private void OnString(State nextState)
@@ -436,8 +430,9 @@ namespace System.Net.Http.QPack
             {
                 if (_state == State.HeaderName)
                 {
-                    _headerNameLength = Decode(ref _headerNameOctets);
-                    _headerName = _headerNameOctets;
+                    int headerNameLength = Decode(ref _headerNameOctets);
+                    _headerName = WebHeaderEncoding.GetString(_headerNameOctets, 0, headerNameLength);
+
                 }
                 else
                 {
