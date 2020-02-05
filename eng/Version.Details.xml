@@ -1,9 +1,5 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="5.0.0-alpha.1.19563.6">
-      <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.20080.9">
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>

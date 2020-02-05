@@ -997,6 +997,17 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", 6));
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
+        [Theory]
+        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        {
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
+        }
+
         [Fact]
         public void Synchronized()
         {

@@ -142,8 +142,8 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
-            new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
+        internal static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
 
 #if DEBUG // until it can be fully implemented
         /// <summary>
