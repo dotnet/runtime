@@ -84,26 +84,26 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector64<ushort> And(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<uint> And(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<ulong> And(System.Runtime.Intrinsics.Vector64<ulong> left, System.Runtime.Intrinsics.Vector64<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<byte> AndNot(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<double> AndNot(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<short> AndNot(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<int> AndNot(System.Runtime.Intrinsics.Vector128<int> left, System.Runtime.Intrinsics.Vector128<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<long> AndNot(System.Runtime.Intrinsics.Vector128<long> left, System.Runtime.Intrinsics.Vector128<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<sbyte> AndNot(System.Runtime.Intrinsics.Vector128<sbyte> left, System.Runtime.Intrinsics.Vector128<sbyte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<float> AndNot(System.Runtime.Intrinsics.Vector128<float> left, System.Runtime.Intrinsics.Vector128<float> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ushort> AndNot(System.Runtime.Intrinsics.Vector128<ushort> left, System.Runtime.Intrinsics.Vector128<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<uint> AndNot(System.Runtime.Intrinsics.Vector128<uint> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector128<ulong> AndNot(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<ulong> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<byte> AndNot(System.Runtime.Intrinsics.Vector64<byte> left, System.Runtime.Intrinsics.Vector64<byte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<double> AndNot(System.Runtime.Intrinsics.Vector64<double> left, System.Runtime.Intrinsics.Vector64<double> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<short> AndNot(System.Runtime.Intrinsics.Vector64<short> left, System.Runtime.Intrinsics.Vector64<short> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<int> AndNot(System.Runtime.Intrinsics.Vector64<int> left, System.Runtime.Intrinsics.Vector64<int> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<long> AndNot(System.Runtime.Intrinsics.Vector64<long> left, System.Runtime.Intrinsics.Vector64<long> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<sbyte> AndNot(System.Runtime.Intrinsics.Vector64<sbyte> left, System.Runtime.Intrinsics.Vector64<sbyte> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<float> AndNot(System.Runtime.Intrinsics.Vector64<float> left, System.Runtime.Intrinsics.Vector64<float> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ushort> AndNot(System.Runtime.Intrinsics.Vector64<ushort> left, System.Runtime.Intrinsics.Vector64<ushort> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<uint> AndNot(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
-        public static System.Runtime.Intrinsics.Vector64<ulong> AndNot(System.Runtime.Intrinsics.Vector64<ulong> left, System.Runtime.Intrinsics.Vector64<ulong> right) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> BitwiseClear(System.Runtime.Intrinsics.Vector128<byte> value, System.Runtime.Intrinsics.Vector128<byte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> BitwiseClear(System.Runtime.Intrinsics.Vector128<double> value, System.Runtime.Intrinsics.Vector128<double> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> BitwiseClear(System.Runtime.Intrinsics.Vector128<short> value, System.Runtime.Intrinsics.Vector128<short> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> BitwiseClear(System.Runtime.Intrinsics.Vector128<int> value, System.Runtime.Intrinsics.Vector128<int> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> BitwiseClear(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<long> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<sbyte> BitwiseClear(System.Runtime.Intrinsics.Vector128<sbyte> value, System.Runtime.Intrinsics.Vector128<sbyte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> BitwiseClear(System.Runtime.Intrinsics.Vector128<float> value, System.Runtime.Intrinsics.Vector128<float> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ushort> BitwiseClear(System.Runtime.Intrinsics.Vector128<ushort> value, System.Runtime.Intrinsics.Vector128<ushort> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<uint> BitwiseClear(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<ulong> BitwiseClear(System.Runtime.Intrinsics.Vector128<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> BitwiseClear(System.Runtime.Intrinsics.Vector64<byte> value, System.Runtime.Intrinsics.Vector64<byte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<double> BitwiseClear(System.Runtime.Intrinsics.Vector64<double> value, System.Runtime.Intrinsics.Vector64<double> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> BitwiseClear(System.Runtime.Intrinsics.Vector64<short> value, System.Runtime.Intrinsics.Vector64<short> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> BitwiseClear(System.Runtime.Intrinsics.Vector64<int> value, System.Runtime.Intrinsics.Vector64<int> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<long> BitwiseClear(System.Runtime.Intrinsics.Vector64<long> value, System.Runtime.Intrinsics.Vector64<long> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> BitwiseClear(System.Runtime.Intrinsics.Vector64<sbyte> value, System.Runtime.Intrinsics.Vector64<sbyte> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> BitwiseClear(System.Runtime.Intrinsics.Vector64<float> value, System.Runtime.Intrinsics.Vector64<float> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ushort> BitwiseClear(System.Runtime.Intrinsics.Vector64<ushort> value, System.Runtime.Intrinsics.Vector64<ushort> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<uint> BitwiseClear(System.Runtime.Intrinsics.Vector64<uint> value, System.Runtime.Intrinsics.Vector64<uint> mask) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<ulong> BitwiseClear(System.Runtime.Intrinsics.Vector64<ulong> value, System.Runtime.Intrinsics.Vector64<ulong> mask) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> BitwiseSelect(System.Runtime.Intrinsics.Vector128<byte> select, System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> BitwiseSelect(System.Runtime.Intrinsics.Vector128<double> select, System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> BitwiseSelect(System.Runtime.Intrinsics.Vector128<short> select, System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
