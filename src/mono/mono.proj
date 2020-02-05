@@ -9,6 +9,8 @@
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
     <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
+    <LocalMonoDotnetDir>..\..\.dotnet-mono</LocalMonoDotnetDir>
+    <LocalMonoDotnet>$(LocalMonoDotnetDir)\$(DotNetExec)</LocalMonoDotnet>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
@@ -94,28 +96,19 @@
 
   <Target Name="Test" />
 
-  <!-- Copy Mono runtime bits to the local .dotnet dir for local experiments (temp solution) -->
-  <Target Name="PatchLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
-    <PropertyGroup>
-      <LocalDotnetRuntimeDir>$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
-    </PropertyGroup>
+  <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
+  <Target Name="PatchLocalMonoDotnet" DependsOnTargets="ValidateLocalDotnet">
     <ItemGroup>
+      <_LocalDotnetFiles Include="$(LocalDotnetDir)\**\*.*" />
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
+    <!-- copy .dotnet to .dotnet-mono if it doesn't exist -->
+    <Copy SourceFiles="@(_LocalDotnetFiles)"
+          DestinationFolder="$(LocalMonoDotnetDir)\%(RecursiveDir)"
+          SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(LocalDotnetRuntimeDir)" />
-  </Target>
-
-  <!-- Copy Coreclr runtime bits to the local .dotnet dir -->
-  <Target Name="RestoreLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
-    <PropertyGroup>
-      <LocalDotnetRuntimeDir>$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
-    </PropertyGroup>
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
-          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll"  />
-    <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName)"
-          DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)" />
+          DestinationFolder="$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
@@ -138,8 +131,8 @@
   </Target>
 
   <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
-  <Target Name="RunSample" DependsOnTargets="PatchLocalDotnet">
-    <Exec Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
+  <Target Name="RunSample" DependsOnTargets="PatchLocalMonoDotnet">
+    <Exec Command="$(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->
@@ -165,9 +158,9 @@
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 
-  <Target Name="RunBenchmarks">
+  <Target Name="RunBenchmarks" DependsOnTargets="PatchLocalMonoDotnet">
     <Error Condition="$(BenchmarksRepo) == ''" Text="BenchmarksRepo variable is not set" />
-    <Exec WorkingDirectory="$(BenchmarksRepo)\src\benchmarks\micro" Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) --cli $(LocalDotnet)" />
+    <Exec WorkingDirectory="$(BenchmarksRepo)\src\benchmarks\micro" Command="$(LocalDotnet) run -c Release -f $(NetCoreAppCurrent) --cli $(LocalMonoDotnet)" />
   </Target>
 
   <Target Name="ValidateLocalDotnet">

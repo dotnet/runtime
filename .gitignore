@@ -4,6 +4,7 @@ syntax: glob
 
 # Tool Runtime Dir
 .dotnet/
+.dotnet-mono/
 .packages/
 .tools/
 

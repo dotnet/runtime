@@ -1,4 +1,6 @@
 DOTNET := $(shell bash init-tools.sh | tail -1)
+# DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
+DOTNET_MONO = ../../../.dotnet-mono/dotnet
 
 CORECLR_TESTS_CONFIG=Release
 MONO_RUNTIME_CONFIG=Release
@@ -20,7 +22,7 @@ run-sample:
 
 # run sample using dotnet from PATH
 run-sample-coreclr:
-	dotnet run -c Release -p sample/HelloWorld -f netcoreapp3.1
+	$(DOTNET) run -c Release -p sample/HelloWorld
 
 bcl corelib:
 	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
@@ -28,12 +30,9 @@ bcl corelib:
 runtime:
 	$(DOTNET) msbuild /t:Build $(MONO_PROJ)
 
-# temp: makes $(DOTNET) to use mono runtime (to run real-world apps using '$(DOTNET) run')
-patch-local-dotnet:
+# call it if you want to use $(DOTNET_MONO) in this Makefile
+patch-mono-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalDotnet $(MONO_PROJ)
-
-restore-local-dotnet:
-	$(DOTNET) msbuild /t:RestoreLocalDotnet $(MONO_PROJ)
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
