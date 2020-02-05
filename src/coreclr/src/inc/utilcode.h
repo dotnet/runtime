@@ -704,9 +704,9 @@ public:
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
         m_pResourceDomain = NULL;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
     }// CCompRC
 
@@ -794,12 +794,12 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     // Resource domain is an ANSI string identifying a native resources file
     static LPCSTR  m_pDefaultResourceDomain;
     static LPCSTR  m_pFallbackResourceDomain;
     LPCSTR m_pResourceDomain;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
@@ -1280,16 +1280,16 @@ public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
                                      DWORD allocType, DWORD prot, DWORD node);
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
     static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
     static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 #endif
 };
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 
 struct CPU_Group_Info
 {
@@ -1353,7 +1353,7 @@ public:
 
 DWORD_PTR GetCurrentProcessCpuMask();
 
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -4809,7 +4809,7 @@ namespace util
  * Overloaded operators for the executable heap
  * ------------------------------------------------------------------------ */
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 
 struct CExecutable { int x; };
 extern const CExecutable executable;
@@ -4833,7 +4833,7 @@ template<class T> void DeleteExecutable(T *p)
     }
 }
 
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
