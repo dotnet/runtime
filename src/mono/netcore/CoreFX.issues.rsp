@@ -9,7 +9,6 @@
 ##  System.ComponentModel.Composition.Tests
 ####################################################################
 
--nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
 -nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
 
 # flaky test - System.TypeLoadException : Could not load type '_proxy_System.ComponentModel.Composition.IStronglyTypedStructure_3b7f133d-79c7-449e-8f68-22aa093dbb8d' from assembly ''.
