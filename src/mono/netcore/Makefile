@@ -16,13 +16,12 @@ endif
 
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
 
-# run sample using local .dotnet (will be patched with Mono Runtime)
-run-sample:
-	$(DOTNET) msbuild /t:RunSample $(MONO_PROJ)
+# run sample using local .dotnet-mono
+run-sample: patch-mono-dotnet
+	COMPlus_DebugWriteToStdErr=1 $(DOTNET_MONO) run -c Debug -p sample/HelloWorld
 
-# run sample using dotnet from PATH
 run-sample-coreclr:
-	$(DOTNET) run -c Release -p sample/HelloWorld
+	$(DOTNET) run -c Debug -p sample/HelloWorld
 
 bcl corelib:
 	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
@@ -32,7 +31,7 @@ runtime:
 
 # call it if you want to use $(DOTNET_MONO) in this Makefile
 patch-mono-dotnet:
-	$(DOTNET) msbuild /t:PatchLocalDotnet $(MONO_PROJ)
+	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
 
 # run specific coreclr test, e.g.:
 # make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
