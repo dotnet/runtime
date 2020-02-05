@@ -272,6 +272,16 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[0-9][0-9]{1,3}?", "[0-9]{2,4}?")]
         // Set and set
         [InlineData("[ace][ace]", "[ace]{2}")]
+        // Set and one
+        [InlineData("[a]", "a")]
+        [InlineData("[a]*", "a*")]
+        [InlineData("(?>[a]*)", "(?>a*)")]
+        [InlineData("[a]*?", "a*?")]
+        // Set and notone
+        [InlineData("[^\n]", ".")]
+        [InlineData("[^\n]*", ".*")]
+        [InlineData("(?>[^\n]*)", "(?>.*)")]
+        [InlineData("[^\n]*?", ".*?")]
         // Large loop patterns
         [InlineData("a*a*a*a*a*a*a*b*b*?a+a*", "a*b*b*?a+")]
         [InlineData("a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a{0,30}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
@@ -282,6 +292,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a*)+", "a*")]
         [InlineData("(?:a+){4}", "a{4,}")]
         [InlineData("(?:a{1,2}){4}", "a{4,8}")]
+        // Nested atomic
+        [InlineData("(?>(?>(?>(?>abc*))))", "(?>ab(?>c*))")]
         // Alternation reduction
         [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
@@ -427,6 +439,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"a*a*a*a*a*a*a*b*", 0)]
         [InlineData(@"((a{1,2}){4}){3,7}", 12)]
         [InlineData(@"\b\w{4}\b", 4)]
+        // we stop computing after a certain depth; if that logic changes in the future, these tests can be updated
+        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", 0)]
+        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 0)]
+        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", 3)]
+        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", 0)]
         public void MinRequiredLengthIsCorrect(string pattern, int expectedLength)
         {
             var r = new Regex(pattern);

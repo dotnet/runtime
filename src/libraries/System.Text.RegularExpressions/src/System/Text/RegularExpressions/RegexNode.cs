@@ -103,7 +103,7 @@ namespace System.Text.RegularExpressions
         public const int Testref = 33;                                //          (?(n) | )  - alternation, reference
         public const int Testgroup = 34;                              //          (?(...) | )- alternation, expression
 
-        private const int DefaultMaxRecursionDepth = 20; // arbitrary cut-off to avoid unbounded recursion
+        private const uint DefaultMaxRecursionDepth = 20; // arbitrary cut-off to avoid unbounded recursion
 
         private object? Children;
         public int Type { get; private set; }
@@ -184,14 +184,107 @@ namespace System.Text.RegularExpressions
                 case Notoneloop:
                     Type = Notoneloopatomic;
                     break;
-                case Setloop:
-                    Type = Setloopatomic;
-                    break;
                 default:
-                    Debug.Fail($"Unexpected type: {Type}");
+#if DEBUG
+                    Debug.Assert(Type == Setloop, $"Unexpected type: {TypeName}");
+#endif
+                    Type = Setloopatomic;
                     break;
             }
         }
+
+#if DEBUG
+        /// <summary>Validate invariants the rest of the implementation relies on for processing fully-built trees.</summary>
+        [Conditional("DEBUG")]
+        private void ValidateFinalTreeInvariants()
+        {
+            var toExamine = new Stack<RegexNode>();
+            toExamine.Push(this);
+            while (toExamine.TryPop(out RegexNode? node))
+            {
+                // Validate that we never see certain node types.
+                Debug.Assert(Type != Group, "All Group nodes should have been removed.");
+
+                // Validate expected child counts.
+                int childCount = node.ChildCount();
+                switch (node.Type)
+                {
+                    case Beginning:
+                    case Bol:
+                    case Boundary:
+                    case ECMABoundary:
+                    case Empty:
+                    case End:
+                    case EndZ:
+                    case Eol:
+                    case Multi:
+                    case Nonboundary:
+                    case NonECMABoundary:
+                    case Nothing:
+                    case Notone:
+                    case Notonelazy:
+                    case Notoneloop:
+                    case Notoneloopatomic:
+                    case One:
+                    case Onelazy:
+                    case Oneloop:
+                    case Oneloopatomic:
+                    case Ref:
+                    case Set:
+                    case Setlazy:
+                    case Setloop:
+                    case Setloopatomic:
+                    case Start:
+                        Debug.Assert(childCount == 0, $"Expected zero children for {node.TypeName}, got {childCount}.");
+                        break;
+
+                    case Atomic:
+                    case Capture:
+                    case Lazyloop:
+                    case Loop:
+                    case Prevent:
+                    case Require:
+                        Debug.Assert(childCount == 1, $"Expected one and only one child for {node.TypeName}, got {childCount}.");
+                        toExamine.Push(node.Child(0));
+                        break;
+
+                    case Testref:
+                    case Testgroup:
+                        Debug.Assert(childCount >= 1, $"Expected at least one child for {node.TypeName}, got {childCount}.");
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            toExamine.Push(node.Child(i));
+                        }
+                        break;
+
+                    case Concatenate:
+                    case Alternate:
+                        Debug.Assert(childCount >= 2, $"Expected at least two children for {node.TypeName}, got {childCount}.");
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            toExamine.Push(node.Child(i));
+                        }
+                        break;
+                }
+
+                // Validate node configuration.
+                switch (node.Type)
+                {
+                    case Multi:
+                    case Set:
+                    case Setloop:
+                    case Setloopatomic:
+                    case Setlazy:
+                        Debug.Assert(!string.IsNullOrEmpty(node.Str), $"Expected non-null, non-empty string for {node.TypeName}.");
+                        break;
+
+                    default:
+                        Debug.Assert(node.Str is null, $"Expected null string for {node.TypeName}, got \"{node.Str}\".");
+                        break;
+                }
+            }
+        }
+#endif
 
         /// <summary>Performs additional optimizations on an entire tree prior to being used.</summary>
         /// <remarks>
@@ -277,6 +370,9 @@ namespace System.Text.RegularExpressions
             }
 
             // Done optimizing.  Return the final tree.
+#if DEBUG
+            rootNode.ValidateFinalTreeInvariants();
+#endif
             return rootNode;
         }
 
@@ -286,9 +382,9 @@ namespace System.Text.RegularExpressions
         /// the provided node.  That means it must be at the root of the overall expression, or
         /// it must be an Atomic node that nothing will backtrack into by the very nature of Atomic.
         /// </remarks>
-        private static void EliminateEndingBacktracking(RegexNode node, int maxDepth)
+        private static void EliminateEndingBacktracking(RegexNode node, uint maxDepth)
         {
-            if (maxDepth <= 0)
+            if (maxDepth == 0)
             {
                 return;
             }
@@ -298,7 +394,8 @@ namespace System.Text.RegularExpressions
             {
                 switch (node.Type)
                 {
-                    // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes.
+                    // {One/Notone/Set}loops can be upgraded to {One/Notone/Set}loopatomic nodes,
+                    // e.g. [abc]* => (?>[abc]*)
                     case Oneloop:
                     case Notoneloop:
                     case Setloop:
@@ -307,9 +404,12 @@ namespace System.Text.RegularExpressions
 
                     case Capture:
                     case Concatenate:
-                        // For Alternate, Loop, and Lazyloop, make the node atomic by wrapping it in an Atomic node.
-                        // Since we later check to see whether a node is atomic based on its parent or grandparent,
-                        // we don't bother wrapping such a node in an Atomic one.
+                        // For Capture and Concatenate, we just recur into their last child (only child in the case
+                        // of Capture).  However, if the child is Alternate, Loop, and Lazyloop, we can also make the
+                        // node itself atomic by wrapping it in an Atomic node. Since we later check to see whether a
+                        // node is atomic based on its parent or grandparent, we don't bother wrapping such a node in
+                        // an Atomic one if its grandparent is already Atomic.
+                        // e.g. [xyz](?:abc|def) => [xyz](?>abc|def)
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
                         if ((existingChild.Type == Alternate || existingChild.Type == Loop || existingChild.Type == Lazyloop) &&
                             (node.Next is null || node.Next.Type != Atomic)) // validate grandparent isn't atomic
@@ -322,6 +422,7 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     // For alternate, we can recur into each branch separately.  We use this iteration for the first branch.
+                    // e.g. abc*|def* => ab(?>c*)|de(?>f*)
                     case Alternate:
                         {
                             int branches = node.ChildCount();
@@ -335,6 +436,7 @@ namespace System.Text.RegularExpressions
 
                     // For Loop, we search to see if there's a viable last expression, and iff there
                     // is we recur into processing it.
+                    // e.g. (?:abc*)* => (?:ab(?>c*))*
                     case Loop:
                         {
                             RegexNode? loopDescendent = FindLastExpressionInLoopForAutoAtomic(node, maxDepth - 1);
@@ -375,69 +477,70 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Removes redundant nodes from the subtree, and returns a reduced subtree.
+        /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
         private RegexNode Reduce()
         {
-            RegexNode n;
-
             switch (Type)
             {
                 case Alternate:
-                    n = ReduceAlternation();
-                    break;
+                    return ReduceAlternation();
 
                 case Concatenate:
-                    n = ReduceConcatenation();
-                    break;
+                    return ReduceConcatenation();
 
                 case Loop:
                 case Lazyloop:
-                    n = ReduceLoops();
-                    break;
+                    return ReduceLoops();
 
                 case Atomic:
-                    n = ReduceAtomic();
-                    break;
+                    return ReduceAtomic();
 
                 case Group:
-                    n = ReduceGroup();
-                    break;
+                    return ReduceGroup();
 
                 case Set:
                 case Setloop:
-                    n = ReduceSet();
-                    break;
+                case Setloopatomic:
+                case Setlazy:
+                    return ReduceSet();
 
                 default:
-                    n = this;
-                    break;
+                    return this;
             }
-
-            return n;
         }
 
-        /// <summary>
-        /// Simple optimization. If a concatenation or alternation has only
-        /// one child strip out the intermediate node. If it has zero children,
-        /// turn it into an empty.
-        /// </summary>
-        private RegexNode StripEnation(int emptyType) =>
-            ChildCount() switch
+        /// <summary>Remove an unnecessary Concatenation or Alternation node</summary>
+        /// <remarks>
+        /// Simple optimization for a concatenation or alternation:
+        /// - if the node has only one child, use it instead
+        /// - if the node has zero children, turn it into an empty with the specified empty type
+        /// </remarks>
+        private RegexNode ReplaceNodeIfUnnecessary(int emptyTypeIfNoChildren)
+        {
+            Debug.Assert(
+                (Type == Alternate && emptyTypeIfNoChildren == Nothing) ||
+                (Type == Concatenate && emptyTypeIfNoChildren == Empty));
+
+            return ChildCount() switch
             {
-                0 => new RegexNode(emptyType, Options),
+                0 => new RegexNode(emptyTypeIfNoChildren, Options),
                 1 => Child(0),
                 _ => this,
             };
+        }
 
-        /// <summary>
-        /// Simple optimization. Once parsed into a tree, non-capturing groups
+        /// <summary>Remove all non-capturing groups.</summary>
+        /// <remark>
+        /// Simple optimization: once parsed into a tree, non-capturing groups
         /// serve no function, so strip them out.
-        /// </summary>
+        /// e.g. (?:(?:(?:abc))) => abc
+        /// </remark>
         private RegexNode ReduceGroup()
         {
-            RegexNode u = this;
+            Debug.Assert(Type == Group);
 
+            RegexNode u = this;
             while (u.Type == Group)
             {
                 Debug.Assert(u.ChildCount() == 1);
@@ -447,13 +550,26 @@ namespace System.Text.RegularExpressions
             return u;
         }
 
-        /// <summary>Remove unnecessary atomic nodes, and make appropriate descendents of the atomic node themselves atomic.</summary>
+        /// <summary>
+        /// Remove unnecessary atomic nodes, and make appropriate descendents of the atomic node themselves atomic.
+        /// </summary>
+        /// <remarks>
+        /// e.g. (?>(?>(?>a*))) => (?>a*)
+        /// e.g. (?>(abc*)*) => (?>(abc(?>c*))*)
+        /// </remarks>
         private RegexNode ReduceAtomic()
         {
             Debug.Assert(Type == Atomic);
             Debug.Assert(ChildCount() == 1);
 
+            RegexNode atomic = this;
             RegexNode child = Child(0);
+            while (child.Type == Atomic)
+            {
+                atomic = child;
+                child = atomic.Child(0);
+            }
+
             switch (child.Type)
             {
                 // If the child is already atomic, we can just remove the atomic node.
@@ -473,21 +589,23 @@ namespace System.Text.RegularExpressions
                 // For everything else, try to reduce ending backtracking of the last contained expression.
                 default:
                     EliminateEndingBacktracking(child, DefaultMaxRecursionDepth);
-                    return this;
+                    return atomic;
             }
         }
 
-        /// <summary>
+        /// <summary>Combine nested loops where applicable.</summary>
+        /// <remarks>
         /// Nested repeaters just get multiplied with each other if they're not too lumpy.
         /// Other optimizations may have also resulted in {Lazy}loops directly containing
         /// sets, ones, and notones, in which case they can be transformed into the corresponding
         /// individual looping constructs.
-        /// </summary>
+        /// </remarks>
         private RegexNode ReduceLoops()
         {
+            Debug.Assert(Type == Loop || Type == Lazyloop);
+
             RegexNode u = this;
             int type = Type;
-            Debug.Assert(type == Loop || type == Lazyloop);
 
             int min = M;
             int max = N;
@@ -579,13 +697,22 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Simple optimization. If a set is a singleton, an inverse singleton, or empty, it's transformed accordingly.
+        /// Reduces set-related nodes to simpler one-related and notone-related nodes, where applicable.
         /// </summary>
+        /// <remarks>
+        /// e.g.
+        /// [a] => a
+        /// [a]* => a*
+        /// [a]*? => a*?
+        /// (?>[a]*) => (?>a*)
+        /// [^a] => ^a
+        /// []* => Nothing
+        /// </remarks>
         private RegexNode ReduceSet()
         {
             // Extract empty-set, one, and not-one case as special
-
-            Debug.Assert(Str != null);
+            Debug.Assert(Type == Set || Type == Setloop || Type == Setloopatomic || Type == Setlazy);
+            Debug.Assert(!string.IsNullOrEmpty(Str));
 
             if (RegexCharClass.IsEmpty(Str))
             {
@@ -596,13 +723,21 @@ namespace System.Text.RegularExpressions
             {
                 Ch = RegexCharClass.SingletonChar(Str);
                 Str = null;
-                Type += (One - Set);
+                Type =
+                    Type == Set ? One :
+                    Type == Setloop ? Oneloop :
+                    Type == Setloopatomic ? Oneloopatomic :
+                    Onelazy;
             }
             else if (RegexCharClass.IsSingletonInverse(Str))
             {
                 Ch = RegexCharClass.SingletonChar(Str);
                 Str = null;
-                Type += (Notone - Set);
+                Type =
+                    Type == Set ? Notone :
+                    Type == Setloop ? Notoneloop :
+                    Type == Setloopatomic ? Notoneloopatomic :
+                    Notonelazy;
             }
 
             return this;
@@ -611,6 +746,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Optimize an alternation.</summary>
         private RegexNode ReduceAlternation()
         {
+            Debug.Assert(Type == Alternate);
+
             switch (ChildCount())
             {
                 case 0:
@@ -621,7 +758,7 @@ namespace System.Text.RegularExpressions
 
                 default:
                     ReduceSingleLetterAndNestedAlternations();
-                    RegexNode newThis = StripEnation(Nothing);
+                    RegexNode newThis = ReplaceNodeIfUnnecessary(Nothing);
                     return newThis != this ? newThis : ExtractCommonPrefix();
             }
 
@@ -749,6 +886,7 @@ namespace System.Text.RegularExpressions
             // potential alternation optimizations, e.g. if the same prefix is followed in two branches
             // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
             // if we end up backtracking into subsequent branches.
+            // e.g. abc|ade => a(?bc|de)
             RegexNode ExtractCommonPrefix()
             {
                 // To keep things relatively simple, we currently only handle:
@@ -874,6 +1012,7 @@ namespace System.Text.RegularExpressions
                 // We may have changed multiple branches to be Empty, but we only need to keep
                 // the first (keeping the rest would just duplicate work in backtracking, though
                 // it would also mean the original regex had at least two identical branches).
+                // e.g. abc|Empty|Empty|def|Empty => abc|Empty|def
                 for (int firstEmpty = 0; firstEmpty < children.Count; firstEmpty++)
                 {
                     if (children[firstEmpty].Type != Empty)
@@ -933,10 +1072,14 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Eliminate empties and concat adjacent entries.
+        /// Optimizes a concatenation by coalescing adjacent characters and strings,
+        /// coalescing adjacent loops, converting loops to be atomic where applicable,
+        /// and removing the concatenation itself if it's unnecessary.
         /// </summary>
         private RegexNode ReduceConcatenation()
         {
+            Debug.Assert(Type == Concatenate);
+
             // If the concat node has zero or only one child, get rid of the concat.
             switch (ChildCount())
             {
@@ -961,12 +1104,12 @@ namespace System.Text.RegularExpressions
 
             // If the concatenation is now empty, return an empty node, or if it's got a single child, return that child.
             // Otherwise, return this.
-            return StripEnation(Empty);
+            return ReplaceNodeIfUnnecessary(Empty);
         }
 
         /// <summary>
         /// Combine adjacent characters/strings.
-        /// (?:abc)(?:def) -> abcdef
+        /// e.g. (?:abc)(?:def) -> abcdef
         /// </summary>
         private void ReduceConcatenationWithAdjacentStrings()
         {
@@ -1053,7 +1196,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>
         /// Combine adjacent loops.
-        /// a*a*a* => a*
+        /// e.g. a*a*a* => a*
         /// </summary>
         private void ReduceConcatenationWithAdjacentLoops()
         {
@@ -1176,7 +1319,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Finds {one/notone/set}loop nodes in the concatenation that can be automatically upgraded
         /// to {one/notone/set}loopatomic nodes.  Such changes avoid potential useless backtracking.
-        /// A*B (where sets A and B don't overlap) => (?>A*)B.
+        /// e.g. A*B (where sets A and B don't overlap) => (?>A*)B.
         /// </summary>
         private void ReduceConcatenationWithAutoAtomic()
         {
@@ -1189,7 +1332,7 @@ namespace System.Text.RegularExpressions
             {
                 ProcessNode(children[i], children[i + 1], DefaultMaxRecursionDepth);
 
-                static void ProcessNode(RegexNode node, RegexNode subsequent, int maxDepth)
+                static void ProcessNode(RegexNode node, RegexNode subsequent, uint maxDepth)
                 {
                     // Skip down the node past irrelevant nodes.
                     while (true)
@@ -1252,7 +1395,7 @@ namespace System.Text.RegularExpressions
         /// that could be made atomic _assuming_ the conditions exist for it with the loop's ancestors.
         /// </summary>
         /// <returns>The found node that should be explored further for auto-atomicity; null if it doesn't exist.</returns>
-        private static RegexNode? FindLastExpressionInLoopForAutoAtomic(RegexNode node, int maxDepth)
+        private static RegexNode? FindLastExpressionInLoopForAutoAtomic(RegexNode node, uint maxDepth)
         {
             Debug.Assert(node.Type == Loop);
 
@@ -1273,7 +1416,10 @@ namespace System.Text.RegularExpressions
 
             // If the loop's body is a concatenate, we can skip to its last child iff that
             // last child doesn't conflict with the first child, since this whole concatenation
-            // could be repeated, such that the first node ends up following the last.
+            // could be repeated, such that the first node ends up following the last.  For
+            // example, in the expression (a+[def])*, the last child is [def] and the first is
+            // a+, which can't possibly overlap with [def].  In contrast, if we had (a+[ade])*,
+            // [ade] could potentially match the starting 'a'.
             if (node.Type == Concatenate)
             {
                 int concatCount = node.ChildCount();
@@ -1292,15 +1438,15 @@ namespace System.Text.RegularExpressions
         /// Determines whether node can be switched to an atomic loop.  Subsequent is the node
         /// immediately after 'node'.
         /// </summary>
-        private static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, int maxDepth)
+        private static bool CanBeMadeAtomic(RegexNode node, RegexNode subsequent, uint maxDepth)
         {
-            if (maxDepth <= 0)
+            if (maxDepth == 0)
             {
                 // We hit our recursion limit.  Just don't apply the optimization.
                 return false;
             }
 
-            // Skip the successor down to the guaranteed next node.
+            // Skip the successor down to the closest node that's guaranteed to follow it.
             while (subsequent.ChildCount() > 0)
             {
                 Debug.Assert(subsequent.Type != Group);
@@ -1421,14 +1567,18 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Computes a min bound on the required length of any string that could possibly match.</summary>
         /// <returns>The min computed length.  If the result is 0, there is no minimum we can enforce.</returns>
+        /// <remarks>
+        /// e.g. abc[def](ghijkl|mn) => 6
+        /// </remarks>
         public int ComputeMinLength()
         {
             return ComputeMinLength(this, DefaultMaxRecursionDepth);
 
-            static int ComputeMinLength(RegexNode node, int maxDepth)
+            static int ComputeMinLength(RegexNode node, uint maxDepth)
             {
                 if (maxDepth == 0)
                 {
+                    // Don't examine any further, as we've reached the max allowed depth.
                     return 0;
                 }
 
@@ -1495,7 +1645,9 @@ namespace System.Text.RegularExpressions
 
                     case Empty:
                     case Nothing:
-                    // Nothing to match.
+                    // Nothing to match. In the future, we could potentially use Nothing to say that the min length
+                    // is infinite, but that would require a different structure, as that would only applies if the
+                    // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                     case Beginning:
                     case Bol:
                     case Boundary:
@@ -1519,7 +1671,9 @@ namespace System.Text.RegularExpressions
                         return 0;
 
                     default:
-                        Debug.Fail($"Unknown node: {node.Type}");
+#if DEBUG
+                        Debug.Fail($"Unknown node: {node.TypeName}");
+#endif
                         return 0;
                 }
             }
@@ -1611,10 +1765,8 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
-        public string Description()
-        {
-            string typeStr = Type switch
+        private string TypeName =>
+            Type switch
             {
                 Oneloop => nameof(Oneloop),
                 Notoneloop => nameof(Notoneloop),
@@ -1656,7 +1808,10 @@ namespace System.Text.RegularExpressions
                 _ => $"(unknown {Type})"
             };
 
-            var sb = new StringBuilder(typeStr);
+        [ExcludeFromCodeCoverage]
+        public string Description()
+        {
+            var sb = new StringBuilder(TypeName);
 
             if ((Options & RegexOptions.ExplicitCapture) != 0) sb.Append("-C");
             if ((Options & RegexOptions.IgnoreCase) != 0) sb.Append("-I");
