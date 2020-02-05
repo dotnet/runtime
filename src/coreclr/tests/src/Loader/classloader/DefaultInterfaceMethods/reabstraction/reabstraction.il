@@ -4,6 +4,7 @@
 //
 
 .assembly extern mscorlib { }
+.assembly extern System.Private.CoreLib { }
 
 .assembly reabstraction { }
 
