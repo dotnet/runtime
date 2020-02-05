@@ -17,8 +17,6 @@ namespace System
     {
         private static Dictionary<string, object?>? s_dataStore;
         private static Dictionary<string, bool>? s_switches;
-
-#if !MONO
         private static string? s_defaultBaseDirectory;
 
         public static string BaseDirectory =>
@@ -26,9 +24,6 @@ namespace System
             // Otherwise the caller will get invalid cast exception
             (string?)GetData("APP_CONTEXT_BASE_DIRECTORY") ??
             (s_defaultBaseDirectory ??= GetBaseDirectoryCore());
-#else   // https://github.com/dotnet/runtime/issues/31800
-        public static string BaseDirectory => GetBaseDirectoryCore();
-#endif
 
         public static string? TargetFrameworkName =>
             // The Target framework is not the framework that the process is actually running on.
