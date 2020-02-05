@@ -39,7 +39,6 @@ namespace System.Net.Mail
         {
             Debug.Assert(0 <= index && index < data.Length, "index was outside the bounds of the string: " + index);
 
-            outIndex = default;
             int startIndex = index;
 
             // Scan for the first invalid chars (including whitespace)
@@ -61,6 +60,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    outIndex = default;
                     return false;
                 }
             }
@@ -73,6 +73,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    outIndex = default;
                     return false;
                 }
             }

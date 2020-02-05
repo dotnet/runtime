@@ -36,8 +36,6 @@ namespace System.Net.Mail
         {
             Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
-            outIndex = default;
-
             if (index <= 0 || data[index - 1] != MailBnfHelper.Backslash)
             {
                 outIndex = 0;
@@ -64,6 +62,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }

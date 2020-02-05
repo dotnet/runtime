@@ -34,7 +34,6 @@ namespace System.Net.Mail
             Debug.Assert(!string.IsNullOrEmpty(data), "data was null or empty");
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
 
-            outIndex = default;
             bool expectCR = false;
 
             for (; index >= 0; index--)
@@ -53,6 +52,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }
@@ -83,6 +83,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    outIndex = default;
                     return false;
                 }
             }
@@ -117,11 +118,11 @@ namespace System.Net.Mail
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
 
             int commentDepth = 0;
-            outIndex = default;
 
             // Check for valid whitespace
             if (!TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
             {
+                outIndex = default;
                 return false;
             }
 
@@ -130,6 +131,7 @@ namespace System.Net.Mail
                 // Check for escaped characters.  They must be within comments.
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, true, out int quotedCharCount, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -157,6 +159,7 @@ namespace System.Net.Mail
                         }
                         else
                         {
+                            outIndex = default;
                             return false;
                         }
                     }
@@ -177,6 +180,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }
@@ -189,6 +193,7 @@ namespace System.Net.Mail
                 // Check for valid whitespace
                 if (!TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
             }
@@ -202,6 +207,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    outIndex = default;
                     return false;
                 }
             }

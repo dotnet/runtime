@@ -39,8 +39,6 @@ namespace System.Net.Mail
             // Check for the first bounding quote
             Debug.Assert(data[index] == MailBnfHelper.Quote, "Initial char at index " + index + " was not a quote.");
 
-            outIndex = default;
-
             // Skip the bounding quote
             index--;
 
@@ -49,6 +47,7 @@ namespace System.Net.Mail
                 // Check for valid whitespace
                 if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -60,6 +59,7 @@ namespace System.Net.Mail
                 // Check for escaped characters
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -84,6 +84,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }
@@ -102,6 +103,7 @@ namespace System.Net.Mail
             }
             else
             {
+                outIndex = default;
                 return false;
             }
         }
@@ -126,13 +128,12 @@ namespace System.Net.Mail
         {
             Debug.Assert(0 <= index && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
-            outIndex = default;
-
             do
             {
                 // Check for valid whitespace
                 if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -143,6 +144,7 @@ namespace System.Net.Mail
                 // Check for escaped characters
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, permitUnicode, out int quotedCharCount, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -164,6 +166,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }

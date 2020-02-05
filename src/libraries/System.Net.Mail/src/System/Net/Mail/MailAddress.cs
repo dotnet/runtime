@@ -128,8 +128,6 @@ namespace System.Net.Mail
                 throw new ArgumentException(SR.Format(SR.net_emptystringcall, nameof(address)), nameof(address));
             }
 
-            parsedData = default;
-
             displayNameEncoding ??= Encoding.GetEncoding(MimeBasePart.DefaultCharSet);
             displayName ??= string.Empty;
 
@@ -138,6 +136,7 @@ namespace System.Net.Mail
             {
                 if (!MailAddressParser.TryNormalizeOrThrow(displayName, out displayName, throwExceptionIfFail))
                 {
+                    parsedData = default;
                     return false;
                 }
 
@@ -150,6 +149,7 @@ namespace System.Net.Mail
 
             if (!MailAddressParser.TryParseAddress(address, out ParseAddressInfo info, throwExceptionIfFail))
             {
+                parsedData = default;
                 return false;
             }
 

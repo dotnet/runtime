@@ -34,8 +34,6 @@ namespace System.Net.Mail
             Debug.Assert(0 <= index && index < data.Length, "index was outside the bounds of the string: " + index);
             Debug.Assert(data[index] == MailBnfHelper.EndSquareBracket, "data did not end with a square bracket");
 
-            outIndex = default;
-
             // Skip the end bracket
             index--;
 
@@ -44,6 +42,7 @@ namespace System.Net.Mail
                 // Check for valid whitespace
                 if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -55,6 +54,7 @@ namespace System.Net.Mail
                 // Check for escaped characters
                 if (!QuotedPairReader.TryCountQuotedChars(data, index, false, out int quotedCharCount, throwExceptionIfFail))
                 {
+                    outIndex = default;
                     return false;
                 }
 
@@ -79,6 +79,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        outIndex = default;
                         return false;
                     }
                 }
@@ -98,6 +99,7 @@ namespace System.Net.Mail
             }
             else
             {
+                outIndex = default;
                 return false;
             }
         }

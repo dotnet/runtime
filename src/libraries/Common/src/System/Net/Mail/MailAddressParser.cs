@@ -68,14 +68,13 @@ namespace System.Net.Mail
             Debug.Assert(!string.IsNullOrEmpty(data));
             Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
 
-            parseAddressInfo = default;
-
             // Parsed components to be assembled as a MailAddress later
             string displayName;
 
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
             {
+                parseAddressInfo = default;
                 return false;
             }
 
@@ -90,6 +89,7 @@ namespace System.Net.Mail
 
             if (!TryParseDomain(data, ref index, out string domain, throwExceptionIfFail))
             {
+                parseAddressInfo = default;
                 return false;
             }
 
@@ -102,6 +102,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    parseAddressInfo = default;
                     return false;
                 }
             }
@@ -111,6 +112,7 @@ namespace System.Net.Mail
 
             if (!TryParseLocalPart(data, ref index, expectAngleBracket, expectMultipleAddresses, out string localPart, throwExceptionIfFail))
             {
+                parseAddressInfo = default;
                 return false;
             }
 
@@ -123,6 +125,7 @@ namespace System.Net.Mail
                     // Skip whitespace, but leave comments, as they may be part of the display name.
                     if (!WhitespaceReader.TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
                     {
+                        parseAddressInfo = default;
                         return false;
                     }
                 }
@@ -136,6 +139,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        parseAddressInfo = default;
                         return false;
                     }
                 }
@@ -147,6 +151,7 @@ namespace System.Net.Mail
             {
                 if (!TryParseDisplayName(data, ref index, expectMultipleAddresses, out displayName, throwExceptionIfFail))
                 {
+                    parseAddressInfo = default;
                     return false;
                 }
             }
@@ -163,10 +168,9 @@ namespace System.Net.Mail
         // MailAddress components were found.
         private static bool TryReadCfwsAndThrowIfIncomplete(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
-            outIndex = default;
-
             if (!WhitespaceReader.TryReadCfwsReverse(data, index, out index, throwExceptionIfFail))
             {
+                outIndex = default;
                 return false;
             }
 
@@ -179,6 +183,7 @@ namespace System.Net.Mail
                 }
                 else
                 {
+                    outIndex = default;
                     return false;
                 }
             }
@@ -203,11 +208,10 @@ namespace System.Net.Mail
         // - If the start of the data string is reached
         private static bool TryParseDomain(string data, ref int index, out string domain, bool throwExceptionIfFail)
         {
-            domain = default;
-
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
             {
+                domain = default;
                 return false;
             }
 
@@ -219,6 +223,7 @@ namespace System.Net.Mail
             {
                 if (!DomainLiteralReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    domain = default;
                     return false;
                 }
             }
@@ -226,6 +231,7 @@ namespace System.Net.Mail
             {
                 if (!DotAtomReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    domain = default;
                     return false;
                 }
             }
@@ -264,11 +270,10 @@ namespace System.Net.Mail
         private static bool TryParseLocalPart(string data, ref int index, bool expectAngleBracket,
             bool expectMultipleAddresses, out string localPart, bool throwExceptionIfFail)
         {
-            localPart = default;
-
             // Skip comments and whitespace
             if (!TryReadCfwsAndThrowIfIncomplete(data, index, out index, throwExceptionIfFail))
             {
+                localPart = default;
                 return false;
             }
 
@@ -280,6 +285,7 @@ namespace System.Net.Mail
             {
                 if (!QuotedStringFormatReader.TryReadReverseQuoted(data, index, true, out index, throwExceptionIfFail))
                 {
+                    localPart = default;
                     return false;
                 }
             }
@@ -287,6 +293,7 @@ namespace System.Net.Mail
             {
                 if (!DotAtomReader.TryReadReverse(data, index, out index, throwExceptionIfFail))
                 {
+                    localPart = default;
                     return false;
                 }
 
@@ -311,6 +318,7 @@ namespace System.Net.Mail
                     }
                     else
                     {
+                        localPart = default;
                         return false;
                     }
                 }
@@ -348,8 +356,6 @@ namespace System.Net.Mail
         // - If the postconditions cannot be met.
         private static bool TryParseDisplayName(string data, ref int index, bool expectMultipleAddresses, out string displayName, bool throwExceptionIfFail)
         {
-            displayName = default;
-
             // Whatever is left over must be the display name. The display name should be a single word/atom or a
             // quoted string, but for robustness we allow the quotes to be omitted, so long as we can find the comma
             // separator before the next address.
@@ -358,6 +364,7 @@ namespace System.Net.Mail
             // omitted. Otherwise, mark this end of the comment so we can include it as part of the display name.
             if (!WhitespaceReader.TryReadCfwsReverse(data, index, out int firstNonCommentIndex, throwExceptionIfFail))
             {
+                displayName = default;
                 return false;
             }
 
@@ -367,6 +374,7 @@ namespace System.Net.Mail
                 // The preceding comment was not part of the display name.  Read just the quoted string.
                 if (!QuotedStringFormatReader.TryReadReverseQuoted(data, firstNonCommentIndex, true, out index, throwExceptionIfFail))
                 {
+                    displayName = default;
                     return false;
                 }
 
@@ -405,6 +413,7 @@ namespace System.Net.Mail
                 // Read until the dividing comma or the end of the line.
                 if (!QuotedStringFormatReader.TryReadReverseUnQuoted(data, index, true, expectMultipleAddresses, out index, throwExceptionIfFail))
                 {
+                    displayName = default;
                     return false;
                 }
 
