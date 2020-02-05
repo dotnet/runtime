@@ -7246,10 +7246,11 @@ public:
 
     struct IPmappingDsc
     {
-        IPmappingDsc* ipmdNext;      // next line# record
-        emitLocation  ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
-        IL_OFFSETX    ipmdILoffsx;   // the instr offset
-        bool          ipmdIsLabel;   // Can this code be a branch label?
+        IPmappingDsc*  ipmdNext;          // next line# record
+        emitLocation   ipmdNativeLoc;     // the emitter location of the native code corresponding to the IL offset
+        IL_OFFSETX     ipmdILoffsx;       // the instr offset
+        InlineContext* ipmdInlineContext; // the context from which this ip came from
+        bool           ipmdIsLabel;       // Can this code be a branch label?
     };
 
     // Record the instr offset mapping to the generated code

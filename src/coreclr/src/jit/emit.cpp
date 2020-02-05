@@ -1678,11 +1678,11 @@ void emitter::emitCreatePlaceholderIG(insGroupPlaceholderType igType,
     {
         if (igType == IGPT_FUNCLET_PROLOG)
         {
-            codeGen->genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::PROLOG, true);
+            codeGen->genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::PROLOG, true, nullptr);
         }
         else if (igType == IGPT_FUNCLET_EPILOG)
         {
-            codeGen->genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true);
+            codeGen->genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true, nullptr);
         }
     }
 #endif // FEATURE_EH_FUNCLETS

@@ -7486,7 +7486,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
     /* Managed RetVal: emit sequence point for the call */
     if (emitComp->opts.compDbgInfo && ilOffset != BAD_IL_OFFSET)
     {
-        codeGen->genIPmappingAdd(ilOffset, false);
+        codeGen->genIPmappingAdd(ilOffset, false, nullptr);
     }
 
     /*

@@ -1769,7 +1769,7 @@ void CodeGen::genExitCode(BasicBlock* block)
        that this is ok  */
 
     // For non-optimized debuggable code, there is only one epilog.
-    genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true);
+    genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::EPILOG, true, nullptr);
 
     bool jmpEpilog = ((block->bbFlags & BBF_HAS_JMP) != 0);
     if (compiler->getNeedsGSSecurityCookie())
@@ -10438,6 +10438,11 @@ void CodeGen::genIPmappingDisp(unsigned mappingNum, Compiler::IPmappingDsc* ipMa
         printf(" label");
     }
 
+    if (ipMapping->ipmdInlineContext != nullptr)
+    {
+        printf(" imported from %s", compiler->eeGetMethodFullName(ipMapping->ipmdInlineContext->GetCallee()));
+    }
+
     printf("\n");
 }
 
@@ -10462,14 +10467,8 @@ void CodeGen::genIPmappingListDisp()
  *  Record the instr offset as being at the current code gen position.
  */
 
-void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
+void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inlineContext)
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        JITDUMP("bla");
-    }
-#endif // DEBUG
     if (!compiler->opts.compDbgInfo)
     {
         return;
@@ -10487,13 +10486,22 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 
             if (offsx != (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
             {
-                noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
+                if (inlineContext != nullptr)
+                {
+                    noway_assert(jitGetILoffs(offsx) <= inlineContext->GetImportedILSize());
+                }
+                else
+                {
+                    noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
+                }
             }
 
             // Ignore this one if it's the same IL offset as the last one we saw.
             // Note that we'll let through two identical IL offsets if the flag bits
             // differ, or two identical "special" mappings (e.g., PROLOG).
-            if ((compiler->genIPmappingLast != nullptr) && (offsx == compiler->genIPmappingLast->ipmdILoffsx))
+            if ((compiler->genIPmappingLast != nullptr) &&
+                (offsx == compiler->genIPmappingLast->ipmdILoffsx &&
+                 inlineContext == compiler->genIPmappingLast->ipmdInlineContext))
             {
                 JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", offsx);
                 return;
@@ -10505,9 +10513,10 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 
     Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
-    addMapping->ipmdIsLabel = isLabel;
-    addMapping->ipmdNext    = nullptr;
+    addMapping->ipmdILoffsx       = offsx;
+    addMapping->ipmdIsLabel       = isLabel;
+    addMapping->ipmdInlineContext = inlineContext;
+    addMapping->ipmdNext          = nullptr;
 
     if (compiler->genIPmappingList != nullptr)
     {
@@ -10524,7 +10533,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
     compiler->genIPmappingLast = addMapping;
 
 #ifdef DEBUG
-    if (verbose)
+    if (compiler->verbose)
     {
         printf("Added IP mapping: ");
         genIPmappingDisp(unsigned(-1), addMapping);
@@ -10564,9 +10573,10 @@ void CodeGen::genIPmappingAddToFront(IL_OFFSETX offsx)
 
     Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
     addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx = offsx;
-    addMapping->ipmdIsLabel = true;
-    addMapping->ipmdNext    = nullptr;
+    addMapping->ipmdILoffsx       = offsx;
+    addMapping->ipmdInlineContext = nullptr;
+    addMapping->ipmdIsLabel       = true;
+    addMapping->ipmdNext          = nullptr;
 
     addMapping->ipmdNext       = compiler->genIPmappingList;
     compiler->genIPmappingList = addMapping;

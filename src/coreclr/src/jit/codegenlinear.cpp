@@ -385,7 +385,7 @@ void CodeGen::genCodeForBBlist()
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
                                              // emit a NO_MAPPING entry, immediately after the prolog.
         {
-            genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true);
+            genIPmappingAdd((IL_OFFSETX)ICorDebugInfo::NO_MAPPING, true, nullptr);
         }
 
         bool firstMapping = true;
@@ -444,8 +444,12 @@ void CodeGen::genCodeForBBlist()
                     JITDUMP("\ngenIPmappingAdd(%d) for none\n", currentILOffset);
                 }
 #endif
-
-                genIPmappingAdd(currentILOffset, firstMapping);
+                InlineContext* inlineContext = ilOffset->gtInlineContext;
+                if (inlineContext != nullptr && inlineContext->IsRoot())
+                {
+                    inlineContext = nullptr; // if inline context is root then use nullptr
+                }
+                genIPmappingAdd(currentILOffset, firstMapping, ilOffset->gtInlineContext);
                 firstMapping = false;
 #ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||

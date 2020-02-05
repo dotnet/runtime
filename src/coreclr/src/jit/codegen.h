@@ -549,7 +549,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    void genIPmappingAdd(IL_OFFSETX offset, bool isLabel);
+    void genIPmappingAdd(IL_OFFSETX offset, bool isLabel, InlineContext* inlineContext);
     void genIPmappingAddToFront(IL_OFFSETX offset);
     void genIPmappingGen();
 

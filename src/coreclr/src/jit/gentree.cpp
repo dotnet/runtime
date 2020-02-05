@@ -11718,7 +11718,12 @@ void Compiler::gtDispStmt(Statement* stmt, const char* msg /* = nullptr */)
         {
             printf("0x%03X", lastILOffs);
         }
-        printf(")\n");
+        printf(")");
+
+        if (stmt->GetInlineContext() != nullptr)
+        {
+            printf(" inlined from %s\n", eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+        }
     }
     gtDispTree(stmt->GetRootNode());
 }
