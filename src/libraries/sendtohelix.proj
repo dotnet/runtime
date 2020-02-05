@@ -1,4 +1,4 @@
-<Project InitialTargets="PrintHelixQueues;PrintTargetGroup;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project InitialTargets="PrintHelixQueues;PrintBuildTargetFramework;BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
   <PropertyGroup>
     <!-- Set helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
@@ -64,8 +64,8 @@
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(OSGroup)' == 'Windows_NT'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(OSGroup)' != 'Windows_NT'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
     <!-- TODO: remove rsp argument when rsp files are removed: https://github.com/dotnet/runtime/issues/1980. -->
     <HelixCommand Condition="'$(RuntimeFlavor)' == 'mono'">$(HelixCommand) --rsp-file "$(MonoRspFileName)"</HelixCommand>
   </PropertyGroup>
@@ -111,8 +111,8 @@
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
   </Target>
 
-  <Target Name="PrintTargetGroup">
-    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Target Group: $(TargetGroup)" />
+  <Target Name="PrintBuildTargetFramework">
+    <Message Condition="'$(BuildAllConfigurations)' != 'true'" Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
     <Message Condition="'$(BuildAllConfigurations)' == 'true'" Importance="High" Text="Doing Package Testing" />
   </Target>
 </Project>

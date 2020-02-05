@@ -1,9 +1,9 @@
 <Project>
 
   <PropertyGroup>
-    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(BuildOS)</CoreCLROSGroup>
-    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(BuildOS)</MonoOSGroup>
-    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(BuildOS)</LibrariesOSGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(OSGroup)</MonoOSGroup>
+    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
 
     <LibrariesOSGroupConfigurationArchitecture Condition="'$(LibrariesOSGroupConfigurationArchitecture)' == ''">$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesOSGroupConfigurationArchitecture>
