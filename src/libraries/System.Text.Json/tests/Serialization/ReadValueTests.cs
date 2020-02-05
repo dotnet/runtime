@@ -55,8 +55,8 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() =>
             {
-                var reader = new Utf8JsonReader(utf8);
-                JsonSerializer.Deserialize(ref reader, typeof(int[]), serializerOptions);
+                var reader = new Utf8JsonReader(utf8, readerOptions);
+                JsonSerializer.Deserialize(ref reader, typeof(int[][]), serializerOptions);
             });
 
             var state = new JsonReaderState(readerOptions);
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() =>
             {
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
-                JsonSerializer.Deserialize(ref reader, typeof(int[]), serializerOptions);
+                JsonSerializer.Deserialize(ref reader, typeof(int[][]), serializerOptions);
             });
 
 
@@ -80,13 +80,13 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 var reader = new Utf8JsonReader(utf8, readerOptions);
-                int[] result = JsonSerializer.Deserialize<int[]>(ref reader);
+                int[][] result = JsonSerializer.Deserialize<int[][]>(ref reader);
                 Assert.Equal(1, result.Length);
             }
 
             {
                 var reader = new Utf8JsonReader(utf8, readerOptions);
-                int[] result = JsonSerializer.Deserialize<int[]>(ref reader, serializerOptions);
+                int[][] result = JsonSerializer.Deserialize<int[][]>(ref reader, serializerOptions);
                 Assert.Equal(1, result.Length);
             }
         }
@@ -131,7 +131,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReaderOptionsWinComments()
         {
-            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, 3]/* some comment */");
+            byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, /* some comment */ 3]");
 
             var serializerOptions = new JsonSerializerOptions
             {
@@ -152,16 +152,21 @@ namespace System.Text.Json.Serialization.Tests
 
             var readerOptions = new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip };
 
-            {
-                var reader = new Utf8JsonReader(utf8, readerOptions);
-                int[] result = JsonSerializer.Deserialize<int[]>(ref reader);
-                Assert.Equal(3, result.Length);
-            }
+            ReadAndVerify(utf8, serializerOptions: null, readerOptions, utf8.Length);
+            ReadAndVerify(utf8, serializerOptions, readerOptions, utf8.Length);
 
+            byte[] utf8_CommentsAfter = Encoding.UTF8.GetBytes("[1, 2, 3]/* some comment */");
+
+            ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions: default, expectedLength: "[1, 2, 3]".Length);
+            ReadAndVerify(utf8_CommentsAfter, serializerOptions, readerOptions, expectedLength: "[1, 2, 3]".Length);
+
+            static void ReadAndVerify(byte[] utf8, JsonSerializerOptions serializerOptions, JsonReaderOptions readerOptions, int expectedLength)
             {
                 var reader = new Utf8JsonReader(utf8, readerOptions);
                 int[] result = JsonSerializer.Deserialize<int[]>(ref reader, serializerOptions);
                 Assert.Equal(3, result.Length);
+                Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+                Assert.Equal(expectedLength, reader.BytesConsumed);
             }
         }
 

@@ -234,26 +234,40 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                var options = new JsonSerializerOptions();
+                var options = new JsonSerializerOptions
+                {
+                    Converters = { new CustomConverter() }
+                };
                 WriteAndValidate(direct, typeof(DeepArray), expectedInner, options, writerOptions: default);
                 WriteAndValidate(custom, typeof(IContent), json, options, writerOptions: default);
             }
 
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Converters = { new CustomConverter() }
+                };
                 var writerOptions = new JsonWriterOptions { Indented = false };
                 WriteAndValidate(direct, typeof(DeepArray), expectedInner, options, writerOptions);
                 WriteAndValidate(custom, typeof(IContent), json, options, writerOptions);
             }
 
             {
-                var options = new JsonSerializerOptions { WriteIndented = true };
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Converters = { new CustomConverter() }
+                };
                 WriteAndValidate(direct, typeof(DeepArray), expectedInner, options, writerOptions: default);
                 WriteAndValidate(custom, typeof(IContent), json, options, writerOptions: default);
             }
 
             {
-                var options = new JsonSerializerOptions();
+                var options = new JsonSerializerOptions
+                {
+                    Converters = { new CustomConverter() }
+                };
                 var writerOptions = new JsonWriterOptions { Indented = true };
                 WriteAndValidate(direct, typeof(DeepArray), $"{{{Environment.NewLine}  \"array\": [{Environment.NewLine}    1{Environment.NewLine}  ]{Environment.NewLine}}}", options, writerOptions);
                 WriteAndValidate(custom, typeof(IContent), jsonFormatted, options, writerOptions);
@@ -261,7 +275,6 @@ namespace System.Text.Json.Serialization.Tests
 
             static void WriteAndValidate(object input, Type type, string expected, JsonSerializerOptions options, JsonWriterOptions writerOptions)
             {
-                options.Converters.Add(new CustomConverter());
                 using (var stream = new MemoryStream())
                 {
                     using (var writer = new Utf8JsonWriter(stream, writerOptions))
