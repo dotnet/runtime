@@ -8,7 +8,7 @@
     <ToolSetCommonDirectory>$(RepoRoot)artifacts\toolset\Common\</ToolSetCommonDirectory>
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
     <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.depproj'">$(RepositoryEngineeringDir)depProj.common.targets</LanguageTargets>
-    <RuntimePropsFile>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'tmp', '$(Configuration)', 'RuntimeOS.props'))</RuntimePropsFile>
+    <RuntimePropsFile>$(ArtifactsDir)\tmp\$(Configuration)\RuntimeOS.props</RuntimePropsFile>
     <RuntimeGraph>$(LibrariesProjectRoot)\OSGroups.json</RuntimeGraph>
     <BuildTargetFramework>netcoreapp5.0</BuildTargetFramework>
     <AdditionalBuildTargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(AdditionalBuildTargetFrameworks);$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-NetBSD;$(NetCoreAppCurrent)-FreeBSD</AdditionalBuildTargetFrameworks>  
