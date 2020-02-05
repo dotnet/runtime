@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Threading;
+
 namespace System.Net.Sockets.Tests
 {
     internal static class SocketTestExtensions
@@ -54,25 +57,26 @@ namespace System.Net.Sockets.Tests
         // Useful to speed up "can not connect" assertions on Windows
         public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
         {
-            IAsyncResult connectResult = socket.BeginConnect(remoteEndpoint, null, null);
-            if (connectResult.AsyncWaitHandle.WaitOne(millisecondsTimeout))
+            using var mre = new ManualResetEvent(false);
+            using var sea = new SocketAsyncEventArgs()
             {
-                try
-                {
-                    socket.EndConnect(connectResult);
-                    return true;
-                }
-                catch (SocketException)
-                {
-                    return false;
-                }
-                finally
-                {
-                    connectResult.AsyncWaitHandle.Close();
-                }
-            }
-            connectResult.AsyncWaitHandle.Close();
+                RemoteEndPoint = remoteEndpoint,
+                UserToken = mre
+            };
 
+            sea.Completed += (s, e) =>
+            {
+                if (e.UserToken is ManualResetEvent mreInner) mreInner.Set();
+            };
+
+            bool pending = socket.ConnectAsync(sea);
+            if (!pending || mre.WaitOne(millisecondsTimeout))
+            {
+                return sea.SocketError == SocketError.Success;
+            }
+
+            sea.UserToken = null; // Letting the event handler know that we timed out
+            Socket.CancelConnectAsync(sea); // this will close the socket!
             return false;
         }
     }
