@@ -217,7 +217,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(list, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$id"":""3""}]}", json);
+            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$ref"":""2""}]}", json);
 
             List<ClassIncorrectHashCode> listCopy = JsonSerializer.Deserialize<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
             // When a GetHashCode method is implemented incorrectly, round-tripping breaks,
