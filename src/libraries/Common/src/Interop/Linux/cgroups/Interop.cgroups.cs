@@ -237,12 +237,12 @@ internal static partial class Interop
         /// <param name="subsystem">The subsystem, e.g. "memory".</param>
         /// <param name="path">The found path, or null if it couldn't be found.</param>
         /// <returns></returns>
-        private static bool TryFindCGroupPathForSubsystem(string subsystem, out string? path)
+        private static bool TryFindCGroupPathForSubsystem(string subsystem, [NotNullWhen(true)] out string? path)
         {
             return TryFindCGroupPathForSubsystem(ProcCGroupFilePath, subsystem, out path);
         }
 
-        internal static bool TryFindCGroupPathForSubsystem(string procCGroupFilePath, string subsystem, out string? path)
+        internal static bool TryFindCGroupPathForSubsystem(string procCGroupFilePath, string subsystem, [NotNullWhen(true)] out string? path)
         {
             if (File.Exists(procCGroupFilePath))
             {

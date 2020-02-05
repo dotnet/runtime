@@ -1025,7 +1025,7 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
-        public static Process[] GetProcessesByName(string processName)
+        public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
         }

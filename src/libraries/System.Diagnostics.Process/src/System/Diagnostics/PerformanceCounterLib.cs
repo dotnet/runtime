@@ -237,7 +237,7 @@ namespace System.Diagnostics
                 {
                     try
                     {
-                        data = (byte[])_perfDataKey!.GetValue(item);
+                        data = (byte[])_perfDataKey.GetValue(item);
                         return data;
                     }
                     catch (IOException e)

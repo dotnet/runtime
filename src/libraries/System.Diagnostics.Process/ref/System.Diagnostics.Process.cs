@@ -105,8 +105,8 @@ namespace System.Diagnostics
         public static System.Diagnostics.Process GetProcessById(int processId, string machineName) { throw null; }
         public static System.Diagnostics.Process[] GetProcesses() { throw null; }
         public static System.Diagnostics.Process[] GetProcesses(string machineName) { throw null; }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName) { throw null; }
-        public static System.Diagnostics.Process[] GetProcessesByName(string processName, string machineName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string? processName) { throw null; }
+        public static System.Diagnostics.Process[] GetProcessesByName(string? processName, string machineName) { throw null; }
         public void Kill() { }
         public void Kill(bool entireProcessTree) { }
         public static void LeaveDebugMode() { }
