@@ -5572,16 +5572,14 @@ ClrDataAccess::Initialize(void)
 
     if (m_globalBase == 0)
     {
-        // Caller didn't specify which CLR to debug.  This supports Whidbey SOS cases, so we should
-        // be using a legacy data target.
+        // Caller didn't specify which CLR to debug, we should be using a legacy data target.
         if (m_pLegacyTarget == NULL)
         {
             DacError(E_INVALIDARG);
             UNREACHABLE();
         }
 
-        // Since this is Whidbey, assume there's only 1 CLR named "mscorwks.dll" and pick that.
-        IfFailRet(m_pLegacyTarget->GetImageBase(MAIN_CLR_DLL_NAME_W, &base));
+        IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
 
         m_globalBase = TO_TADDR(base);
     }
