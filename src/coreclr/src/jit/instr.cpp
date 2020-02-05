@@ -1817,6 +1817,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
  */
 instruction CodeGen::ins_Copy(var_types dstType)
 {
+    assert(emitTypeActSz[dstType] != 0);
 #if defined(TARGET_XARCH)
     if (varTypeIsSIMD(dstType))
     {
