@@ -38,6 +38,9 @@ namespace System.Text.RegularExpressions
         public void Dump() => Root.Dump();
 
         [ExcludeFromCodeCoverage]
+        public override string ToString() => Root.ToString();
+
+        [ExcludeFromCodeCoverage]
         public bool Debug => (Options & RegexOptions.Debug) != 0;
 #endif
     }

@@ -173,14 +173,14 @@ namespace System.Security.Cryptography
             return CreateDecryptor(Key, IV);
         }
 
-        public abstract ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV);
 
         public virtual ICryptoTransform CreateEncryptor()
         {
             return CreateEncryptor(Key, IV);
         }
 
-        public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV);
+        public abstract ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV);
 
         public void Dispose()
         {

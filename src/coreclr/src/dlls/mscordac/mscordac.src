@@ -3,11 +3,11 @@
 ; See the LICENSE file in the project root for more information.
 
 EXPORTS
-    OutOfProcessFunctionTableCallback
-    OutOfProcessFunctionTableCallbackEx
     DacDbiInterfaceInstance
 
 #ifndef TARGET_UNIX
+    OutOfProcessFunctionTableCallback
+    OutOfProcessFunctionTableCallbackEx
     OutOfProcessExceptionEventCallback
     OutOfProcessExceptionEventSignatureCallback
 #endif // TARGET_UNIX

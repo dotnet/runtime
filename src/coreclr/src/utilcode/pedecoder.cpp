@@ -3102,8 +3102,6 @@ BOOL PEDecoder::GetForceRelocs()
 
 BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 {
-    // Use static contracts to avoid recursion, as the dynamic contracts
-    // do WszLoadLibrary(MSCOREE_SHIM_W).
 #ifdef _DEBUG
 		STATIC_CONTRACT_NOTHROW;                                        \
 		ANNOTATION_DEBUG_ONLY;                                          \
@@ -3113,11 +3111,6 @@ BOOL PEDecoder::ForceRelocForDLL(LPCWSTR lpFileName)
 #if defined(DACCESS_COMPILE) || defined(TARGET_UNIX)
     return TRUE;
 #else
-
-    // Contracts in ConfigDWORD do WszLoadLibrary(MSCOREE_SHIM_W).
-    // This check prevents recursion.
-    if (wcsstr(lpFileName, MSCOREE_SHIM_W) != 0)
-        return TRUE;
 
     if (!GetForceRelocs())
         return TRUE;

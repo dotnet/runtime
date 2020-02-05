@@ -113,7 +113,7 @@ else()
 endif()
 
 if ($ENV{__BuildArch} STREQUAL "x86_64" OR $ENV{__BuildArch} STREQUAL "amd64")
-    add_definitions(-DBIT64=1)
+    add_definitions(-DTARGET_64BIT=1)
 endif ()
 
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "DEBUG")

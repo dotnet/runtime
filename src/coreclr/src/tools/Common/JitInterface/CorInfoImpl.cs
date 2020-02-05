@@ -1758,16 +1758,29 @@ namespace Internal.JitInterface
                     {
                         result = TypeCompareState.Must;
                     }
-                    // For negative results, the unknown type parameter in
-                    // fromClass might match some instantiated interface,
-                    // either directly or via variance.
+                    // We have __Canon parameter(s) in fromClass, somewhere.
                     //
-                    // However, CanCastTo will report failure in such cases since
-                    // __Canon won't match the instantiated type on the
-                    // interface (which can't be __Canon since we screened out
-                    // canonical subtypes for toClass above). So only report
-                    // failure if the interface is not instantiated.
-                    else if (!toType.HasInstantiation)
+                    // In CanCastTo, these __Canon(s) won't match the interface or
+                    // instantiated types on the interface, so CanCastTo may
+                    // return false negatives.
+                    //
+                    // Only report MustNot if the fromClass is not __Canon
+                    // and the interface is not instantiated; then there is
+                    // no way for the fromClass __Canon(s) to confuse things.
+                    //
+                    //    __Canon       -> IBar             May
+                    //    IFoo<__Canon> -> IFoo<string>     May
+                    //    IFoo<__Canon> -> IBar             MustNot
+                    //
+                    else if (fromType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        result = TypeCompareState.May;
+                    }
+                    else if (toType.HasInstantiation)
+                    {
+                        result = TypeCompareState.May;
+                    }
+                    else
                     {
                         result = TypeCompareState.MustNot;
                     }

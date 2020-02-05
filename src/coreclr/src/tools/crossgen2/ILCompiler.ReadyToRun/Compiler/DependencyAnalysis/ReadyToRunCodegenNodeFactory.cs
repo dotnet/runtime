@@ -402,7 +402,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        CreateMethodEntrypointNodeHelper(method, signatureContext),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
@@ -413,7 +413,7 @@ namespace ILCompiler.DependencyAnalysis
                         this,
                         ReadyToRunFixupKind.MethodEntry,
                         method,
-                        CreateMethodEntrypointNodeHelper(method, isUnboxingStub, isInstantiatingStub, signatureContext),
+                        CreateMethodEntrypointNodeHelper(method, signatureContext),
                         isUnboxingStub,
                         isInstantiatingStub,
                         signatureContext);
@@ -445,7 +445,7 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>();
 
-        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod, bool isUnboxingStub, bool isInstantiatingStub, SignatureContext signatureContext)
+        private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod, SignatureContext signatureContext)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
@@ -817,11 +817,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // TODO: cross-bubble RVA field
                 throw new NotSupportedException($"{ecmaField} ... {ecmaField.Module.Assembly}");
-            }
-            if (TypeSystemContext.InputFilePaths.Count > 1)
-            {
-                // TODO: RVA fields in merged multi-file compilation
-                throw new NotSupportedException($"{ecmaField} ... {string.Join("; ", TypeSystemContext.InputFilePaths.Keys)}");
             }
 
             return _copiedFieldRvas.GetOrAdd(new ModuleAndIntValueKey(ecmaField.GetFieldRvaValue(), ecmaField.Module));
