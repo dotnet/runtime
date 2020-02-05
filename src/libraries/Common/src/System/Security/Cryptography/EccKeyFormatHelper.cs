@@ -607,7 +607,7 @@ namespace System.Security.Cryptography
             ref int k2,
             ref int k3)
         {
-            byte[] polynomial = ecParameters.Curve.Polynomial;
+            byte[] polynomial = ecParameters.Curve.Polynomial!;
             int lastIndex = polynomial.Length - 1;
 
             // The most significant byte needs a set bit, and the least significant bit must be set.
@@ -693,8 +693,8 @@ namespace System.Security.Cryptography
         private static void WriteCurve(in ECCurve curve, AsnWriter writer)
         {
             writer.PushSequence();
-            WriteFieldElement(curve.A, writer);
-            WriteFieldElement(curve.B, writer);
+            WriteFieldElement(curve.A!, writer);
+            WriteFieldElement(curve.B!, writer);
 
             if (curve.Seed != null)
             {

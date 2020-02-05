@@ -4,7 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Internal.Cryptography;
@@ -274,7 +273,7 @@ namespace System.Security.Cryptography
             int kdfCount,
             Span<byte> destination,
             out int bytesWritten,
-            [NotNullWhen(true)] out byte[]? allocated)
+            out byte[]? allocated)
         {
             using (SafeUnicodeStringHandle stringHandle = new SafeUnicodeStringHandle(password))
             {

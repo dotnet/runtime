@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Text;
 
 namespace System.Security.Cryptography
@@ -103,6 +104,7 @@ namespace System.Security.Cryptography
             // StringBuilder to need to grow.
 
             DSAParameters keyParameters = ExportParameters(includePrivateParameters);
+            Debug.Assert(keyParameters.P != null);
             StringBuilder builder = new StringBuilder((keyParameters.P.Length << 1) / 3);
             builder.Append("<DSAKeyValue>");
             XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.P), keyParameters.P, builder);

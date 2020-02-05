@@ -220,16 +220,16 @@ namespace System.Security.Cryptography
                         }
 
                         // The Q length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
-                        if (parameters.Q.Length != Sha1HashOutputSize)
+                        if (parameters.Q!.Length != Sha1HashOutputSize)
                             throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
 
                         Interop.BCrypt.Emit(blob, ref offset, parameters.Q);
 
                         Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB)}");
 
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.P);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.G);
-                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.P!);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.G!);
+                        Interop.BCrypt.Emit(blob, ref offset, parameters.Y!);
                         if (includePrivate)
                         {
                             Interop.BCrypt.Emit(blob, ref offset, parameters.X!);
@@ -256,11 +256,11 @@ namespace System.Security.Cryptography
                 {
                     int blobSize =
                         sizeof(BCRYPT_DSA_KEY_BLOB_V2) +
-                        (parameters.Seed == null ? parameters.Q.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
-                        parameters.Q.Length +
-                        parameters.P.Length +
-                        parameters.G.Length +
-                        parameters.Y.Length +
+                        (parameters.Seed == null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
+                        parameters.Q!.Length +
+                        parameters.P!.Length +
+                        parameters.G!.Length +
+                        parameters.Y!.Length +
                         (includePrivateParameters ? parameters.X!.Length : 0);
 
                     blob = new byte[blobSize];

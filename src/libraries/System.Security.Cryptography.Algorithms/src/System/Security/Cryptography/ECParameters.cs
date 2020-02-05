@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
-                    hasErrors = (D != null && (D.Length != Curve.Order.Length));
+                    hasErrors = (D != null && (D.Length != Curve.Order!.Length));
                 }
                 else if (Curve.IsNamed)
                 {

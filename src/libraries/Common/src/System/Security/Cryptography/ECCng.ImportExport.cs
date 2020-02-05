@@ -93,12 +93,12 @@ namespace System.Security.Cryptography
                 //     byte[cbSubgroupOrder]        D
 
                 int blobSize = sizeof(BCRYPT_ECCFULLKEY_BLOB) +
-                    curve.Prime.Length +
-                    curve.A.Length +
-                    curve.B.Length +
+                    curve.Prime!.Length +
+                    curve.A!.Length +
+                    curve.B!.Length +
                     curve.G.X!.Length +
                     curve.G.Y!.Length +
-                    curve.Order.Length +
+                    curve.Order!.Length +
                     curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length) +
                     parameters.Q.X!.Length +
@@ -279,12 +279,12 @@ namespace System.Security.Cryptography
                 //     byte[cbSeed]                 Seed
 
                 int blobSize = sizeof(BCRYPT_ECC_PARAMETER_HEADER) +
-                    curve.Prime.Length +
-                    curve.A.Length +
-                    curve.B.Length +
+                    curve.Prime!.Length +
+                    curve.A!.Length +
+                    curve.B!.Length +
                     curve.G.X!.Length +
                     curve.G.Y!.Length +
-                    curve.Order.Length +
+                    curve.Order!.Length +
                     curve.Cofactor!.Length +
                     (curve.Seed == null ? 0 : curve.Seed.Length);
 
