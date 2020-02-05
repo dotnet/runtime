@@ -21,7 +21,7 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
 // CoreCLR.dll uses linker .def files to control the exported symbols.
 // Define DLLEXPORT macro as empty on Windows.
 #define DLLEXPORT
