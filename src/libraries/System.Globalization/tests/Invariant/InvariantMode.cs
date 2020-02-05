@@ -646,6 +646,7 @@ namespace System.Globalization.Tests
         [InlineData("hello", "hello", 0)]
         [InlineData("prefix", "prefix-with-more-data", -1)]
         [InlineData("prefix-with-more-data", "prefix", 1)]
+        [InlineData("e", "\u0115", -1)] // U+0115 = LATIN SMALL LETTER E WITH BREVE, tests endianness handling
         public void TestSortKey_Compare_And_Equals(string value1, string value2, int expectedSign)
         {
             // These tests are in the "invariant" unit test project because we rely on Invariant mode

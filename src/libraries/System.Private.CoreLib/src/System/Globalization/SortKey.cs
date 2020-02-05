@@ -63,27 +63,14 @@ namespace System.Globalization
             Debug.Assert(key2Data != null, "key2Data != null");
 
             // SortKey comparisons are done as an ordinal comparison by the raw sort key bytes.
-            // We go byte-by-byte through both buffers until we find the first difference, then
-            // we report the comparison based on that single byte. If one buffer is a strict
-            // prefix of the other, the shorter buffer sorts first.
 
-            int compLen = Math.Min(key1Data.Length, key2Data.Length);
-            for (int i = 0; i < compLen; i++)
-            {
-                int diff = key1Data[i] - key2Data[i];
-                if (diff != 0)
-                {
-                    return diff;
-                }
-            }
-
-            return key1Data.Length - key2Data.Length;
+            return new ReadOnlySpan<byte>(key1Data).SequenceCompareTo(key2Data);
         }
 
         public override bool Equals(object? value)
         {
             return value is SortKey other
-                && new ReadOnlySpan<byte>(this._keyData).SequenceEqual(other._keyData);
+                && new ReadOnlySpan<byte>(_keyData).SequenceEqual(other._keyData);
         }
 
         public override int GetHashCode()
