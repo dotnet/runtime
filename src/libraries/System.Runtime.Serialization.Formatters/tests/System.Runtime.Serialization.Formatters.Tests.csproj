@@ -32,4 +32,7 @@
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Text.Json" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+  </ItemGroup>
 </Project>

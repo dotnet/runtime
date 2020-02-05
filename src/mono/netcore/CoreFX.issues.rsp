@@ -930,3 +930,12 @@
 -nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
 
 -nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
+
+####################################################################
+##  System.Data.SqlClient
+####################################################################
+
+# The tests are loading wrong System.Data.SqlClient - https://github.com/dotnet/runtime/issues/31799
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
+-noclass System.Data.Common.DbProviderFactoriesTests

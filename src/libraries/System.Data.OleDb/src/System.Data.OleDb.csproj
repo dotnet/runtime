@@ -102,7 +102,6 @@
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Data.SqlClient" />
     <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.Diagnostics.PerformanceCounter" />
     <Reference Include="System.Security.Principal.Windows" />

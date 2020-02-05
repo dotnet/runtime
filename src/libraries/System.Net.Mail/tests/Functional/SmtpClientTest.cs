@@ -339,7 +339,7 @@ namespace System.Net.Mail.Tests
         [InlineData("howdydoo")]
         [InlineData("")]
         [InlineData(null)]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeTestModes.CheckedRuntime)]
         [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestMailDeliveryAsync(string body)
         {
@@ -358,7 +358,7 @@ namespace System.Net.Mail.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // NTLM support required, see https://github.com/dotnet/corefx/issues/28961
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeTestModes.CheckedRuntime)]
         [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task TestCredentialsCopyInAsyncContext()
         {
