@@ -18,9 +18,9 @@ namespace System.Threading
 
         private const int ThreadPoolThreadTimeoutMs = 20 * 1000; // If you change this make sure to change the timeout times in the tests.
 
-#if BIT64
+#if TARGET_64BIT
         private const short MaxPossibleThreadCount = short.MaxValue;
-#elif BIT32
+#elif TARGET_32BIT
         private const short MaxPossibleThreadCount = 1023;
 #else
         #error Unknown platform
@@ -40,7 +40,7 @@ namespace System.Threading
         [StructLayout(LayoutKind.Explicit, Size = CacheLineSize * 5)]
         private struct CacheLineSeparated
         {
-#if ARM64
+#if TARGET_ARM64
             private const int CacheLineSize = 128;
 #else
             private const int CacheLineSize = 64;

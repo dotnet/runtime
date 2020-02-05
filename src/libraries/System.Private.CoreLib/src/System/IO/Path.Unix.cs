@@ -137,7 +137,7 @@ namespace System.IO
         {
             get
             {
-                #if PLATFORM_OSX
+                #if TARGET_OSX
                     return false;
                 #else
                     return true;

@@ -26,7 +26,7 @@ namespace ILCompiler
 
         public string TargetArch { get; set; }
         public string TargetOS { get; set; }
-        public string JitPath { get; set; }
+        public FileInfo JitPath { get; set; }
         public string SystemModule { get; set; }
         public bool WaitForDebugger { get; set; }
         public bool Tuning { get; set; }
@@ -136,7 +136,7 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--jitpath" }, "Path to JIT compiler library") 
                 { 
-                    Argument =  new Argument<string>() 
+                    Argument =  new Argument<FileInfo>() 
                 },
                 new Option(new[] { "--singlemethodtypename" }, "Single method compilation: name of the owning type") 
                 { 

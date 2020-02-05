@@ -447,10 +447,108 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<ulong> CompareTestScalar(Vector64<ulong> left, Vector64<ulong> right) => CompareTestScalar(left, right);
 
             /// <summary>
+            /// float32x2_t vdiv_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FDIV Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> Divide(Vector64<float> left, Vector64<float> right) => Divide(left, right);
+
+            /// <summary>
+            /// float64x2_t vdivq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FDIV Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) => Divide(left, right);
+
+            /// <summary>
+            /// float32x4_t vdivq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FDIV Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) => Divide(left, right);
+
+            /// <summary>
+            /// float64x2_t vmaxq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAX Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
+
+            /// <summary>
+            /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMAX Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MaxScalar(Vector64<double> left, Vector64<double> right) => MaxScalar(left, right);
+
+            /// <summary>
+            /// float32_t vmaxs_f32 (float32_t a, float32_t b)
+            ///   A64: FMAX Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MaxScalar(Vector64<float> left, Vector64<float> right) => MaxScalar(left, right);
+
+            /// <summary>
+            /// float64x2_t vminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMIN Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) => Min(left, right);
+
+            /// <summary>
+            /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
+            ///   A64: FMIN Dd, Dn, Dm
+            /// </summary>
+            public static Vector64<double> MinScalar(Vector64<double> left, Vector64<double> right) => MinScalar(left, right);
+
+            /// <summary>
+            /// float32_t vmins_f32 (float32_t a, float32_t b)
+            ///   A64: FMIN Sd, Sn, Sm
+            /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+            /// </summary>
+            public static Vector64<float> MinScalar(Vector64<float> left, Vector64<float> right) => MinScalar(left, right);
+
+            /// <summary>
+            /// float64x2_t vmulq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMUL Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> Multiply(Vector128<double> left, Vector128<double> right) => Multiply(left, right);
+
+            /// <summary>
+            /// float64x2_t vnegq_f64 (float64x2_t a)
+            ///   A64: FNEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Negate(Vector128<double> value) => Negate(value);
+
+            /// <summary>
+            /// int64x2_t vnegq_s64 (int64x2_t a)
+            ///   A64: NEG Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<long> Negate(Vector128<long> value) => Negate(value);
+
+            /// <summary>
+            /// int64x1_t vneg_s64 (int64x1_t a)
+            ///   A64: NEG Dd, Dn
+            /// </summary>
+            public static Vector64<long> NegateScalar(Vector64<long> value) => NegateScalar(value);
+
+            /// <summary>
+            /// float32x2_t vsqrt_f32 (float32x2_t a)
+            ///   A64: FSQRT Vd.2S, Vn.2S
+            /// </summary>
+            public static Vector64<float> Sqrt(Vector64<float> value) => Sqrt(value);
+
+            /// <summary>
+            /// float64x2_t vsqrtq_f64 (float64x2_t a)
+            ///   A64: FSQRT Vd.2D, Vn.2D
+            /// </summary>
+            public static Vector128<double> Sqrt(Vector128<double> value) => Sqrt(value);
+
+            /// <summary>
+            /// float32x4_t vsqrtq_f32 (float32x4_t a)
+            ///   A64: FSQRT Vd.4S, Vn.4S
+            /// </summary>
+            public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
+
+            /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FSUB Vd.2D, Vn.2D, Vm.2D
             /// </summary>
-            public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Add(left, right);
+            public static Vector128<double> Subtract(Vector128<double> left, Vector128<double> right) => Subtract(left, right);
 
             /// <summary>
             /// uint8x8_t vrbit_u8 (uint8x8_t a)
@@ -1458,50 +1556,50 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint8x8_t vand_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> And(Vector64<byte> left, Vector64<byte> right) => And(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vand_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> And(Vector64<double> left, Vector64<double> right) => And(left, right);
+        /// <summary>
+        /// float64x1_t vand_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> And(Vector64<double> left, Vector64<double> right) => And(left, right);
 
         /// <summary>
         /// int16x4_t vand_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> And(Vector64<short> left, Vector64<short> right) => And(left, right);
 
         /// <summary>
-        /// int32x2_t vand_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vand_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> And(Vector64<int> left, Vector64<int> right) => And(left, right);
 
-        // /// <summary>
-        // /// int64x1_t vand_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> And(Vector64<long> left, Vector64<long> right) => And(left, right);
+        /// <summary>
+        /// int64x1_t vand_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> And(Vector64<long> left, Vector64<long> right) => And(left, right);
 
         /// <summary>
         /// int8x8_t vand_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> And(Vector64<sbyte> left, Vector64<sbyte> right) => And(left, right);
 
         /// <summary>
         /// float32x2_t vand_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> And(Vector64<float> left, Vector64<float> right) => And(left, right);
@@ -1509,239 +1607,239 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vand_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> And(Vector64<ushort> left, Vector64<ushort> right) => And(left, right);
 
         /// <summary>
         /// uint32x2_t vand_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> And(Vector64<uint> left, Vector64<uint> right) => And(left, right);
 
-        // /// <summary>
-        // /// uint64x1_t vand_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VAND Dd, Dn, Dm
-        // ///   A64: AND Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> And(Vector64<ulong> left, Vector64<ulong> right) => And(left, right);
+        /// <summary>
+        /// uint64x1_t vand_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VAND Dd, Dn, Dm
+        ///   A64: AND Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> And(Vector64<ulong> left, Vector64<ulong> right) => And(left, right);
 
         /// <summary>
-        /// uint8x16_t vand_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint8x16_t vandq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> And(Vector128<byte> left, Vector128<byte> right) => And(left, right);
 
         /// <summary>
-        /// float64x2_t vand_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// float64x2_t vandq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> And(Vector128<double> left, Vector128<double> right) => And(left, right);
 
         /// <summary>
-        /// int16x8_t vand_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int16x8_t vandq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> And(Vector128<short> left, Vector128<short> right) => And(left, right);
 
         /// <summary>
-        /// int32x4_t vand_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int32x4_t vandq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> And(Vector128<int> left, Vector128<int> right) => And(left, right);
 
         /// <summary>
-        /// int64x2_t vand_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int64x2_t vandq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> And(Vector128<long> left, Vector128<long> right) => And(left, right);
 
         /// <summary>
-        /// int8x16_t vand_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// int8x16_t vandq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> And(Vector128<sbyte> left, Vector128<sbyte> right) => And(left, right);
 
         /// <summary>
-        /// float32x4_t vand_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// float32x4_t vandq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> And(Vector128<float> left, Vector128<float> right) => And(left, right);
 
         /// <summary>
-        /// uint16x8_t vand_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint16x8_t vandq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> And(Vector128<ushort> left, Vector128<ushort> right) => And(left, right);
 
         /// <summary>
-        /// uint32x4_t vand_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint32x4_t vandq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> And(Vector128<uint> left, Vector128<uint> right) => And(left, right);
 
         /// <summary>
-        /// uint64x2_t vand_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VAND Dd, Dn, Dm
-        ///   A64: AND Vd, Vn, Vm
+        /// uint64x2_t vandq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VAND Qd, Qn, Qm
+        ///   A64: AND Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> And(Vector128<ulong> left, Vector128<ulong> right) => And(left, right);
 
         /// <summary>
         /// uint8x8_t vbic_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<byte> AndNot(Vector64<byte> left, Vector64<byte> right) => AndNot(left, right);
+        public static Vector64<byte> BitwiseClear(Vector64<byte> value, Vector64<byte> mask) => BitwiseClear(value, mask);
 
-        // /// <summary>
-        // /// float64x1_t vbic_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> AndNot(Vector64<double> left, Vector64<double> right) => AndNot(left, right);
+        /// <summary>
+        /// float64x1_t vbic_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VBIC Dd, Dn, Dm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> BitwiseClear(Vector64<double> value, Vector64<double> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// int16x4_t vbic_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<short> AndNot(Vector64<short> left, Vector64<short> right) => AndNot(left, right);
+        public static Vector64<short> BitwiseClear(Vector64<short> value, Vector64<short> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// int32x2_t vbic_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vbic_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<int> AndNot(Vector64<int> left, Vector64<int> right) => AndNot(left, right);
+        public static Vector64<int> BitwiseClear(Vector64<int> value, Vector64<int> mask) => BitwiseClear(value, mask);
 
-        // /// <summary>
-        // /// int64x1_t vbic_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> AndNot(Vector64<long> left, Vector64<long> right) => AndNot(left, right);
+        /// <summary>
+        /// int64x1_t vbic_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VBIC Dd, Dn, Dm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> BitwiseClear(Vector64<long> value, Vector64<long> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// int8x8_t vbic_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<sbyte> AndNot(Vector64<sbyte> left, Vector64<sbyte> right) => AndNot(left, right);
+        public static Vector64<sbyte> BitwiseClear(Vector64<sbyte> value, Vector64<sbyte> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// float32x2_t vbic_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> AndNot(Vector64<float> left, Vector64<float> right) => AndNot(left, right);
+        public static Vector64<float> BitwiseClear(Vector64<float> value, Vector64<float> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// uint16x4_t vbic_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<ushort> AndNot(Vector64<ushort> left, Vector64<ushort> right) => AndNot(left, right);
+        public static Vector64<ushort> BitwiseClear(Vector64<ushort> value, Vector64<ushort> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// uint32x2_t vbic_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<uint> AndNot(Vector64<uint> left, Vector64<uint> right) => AndNot(left, right);
-
-        // /// <summary>
-        // /// uint64x1_t vbic_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VBIC Dd, Dn, Dm
-        // ///   A64: BIC Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> AndNot(Vector64<ulong> left, Vector64<ulong> right) => AndNot(left, right);
+        public static Vector64<uint> BitwiseClear(Vector64<uint> value, Vector64<uint> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// uint8x16_t vbic_u8 (uint8x16_t a, uint8x16_t b)
+        /// uint64x1_t vbic_u64 (uint64x1_t a, uint64x1_t b)
         ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector128<byte> AndNot(Vector128<byte> left, Vector128<byte> right) => AndNot(left, right);
+        public static Vector64<ulong> BitwiseClear(Vector64<ulong> value, Vector64<ulong> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// float64x2_t vbic_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint8x16_t vbicq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> BitwiseClear(Vector128<byte> value, Vector128<byte> mask) => BitwiseClear(value, mask);
+
+        /// <summary>
+        /// float64x2_t vbicq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<double> AndNot(Vector128<double> left, Vector128<double> right) => AndNot(left, right);
+        public static Vector128<double> BitwiseClear(Vector128<double> value, Vector128<double> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// int16x8_t vbic_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int16x8_t vbicq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<short> AndNot(Vector128<short> left, Vector128<short> right) => AndNot(left, right);
+        public static Vector128<short> BitwiseClear(Vector128<short> value, Vector128<short> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// int32x4_t vbic_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int32x4_t vbicq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<int> AndNot(Vector128<int> left, Vector128<int> right) => AndNot(left, right);
+        public static Vector128<int> BitwiseClear(Vector128<int> value, Vector128<int> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// int64x2_t vbic_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int64x2_t vbicq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<long> AndNot(Vector128<long> left, Vector128<long> right) => AndNot(left, right);
+        public static Vector128<long> BitwiseClear(Vector128<long> value, Vector128<long> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// int8x16_t vbic_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// int8x16_t vbicq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<sbyte> AndNot(Vector128<sbyte> left, Vector128<sbyte> right) => AndNot(left, right);
+        public static Vector128<sbyte> BitwiseClear(Vector128<sbyte> value, Vector128<sbyte> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// float32x4_t vbic_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// float32x4_t vbicq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<float> AndNot(Vector128<float> left, Vector128<float> right) => AndNot(left, right);
+        public static Vector128<float> BitwiseClear(Vector128<float> value, Vector128<float> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// uint16x8_t vbic_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint16x8_t vbicq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) => AndNot(left, right);
+        public static Vector128<ushort> BitwiseClear(Vector128<ushort> value, Vector128<ushort> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// uint32x4_t vbic_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint32x4_t vbicq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<uint> AndNot(Vector128<uint> left, Vector128<uint> right) => AndNot(left, right);
+        public static Vector128<uint> BitwiseClear(Vector128<uint> value, Vector128<uint> mask) => BitwiseClear(value, mask);
 
         /// <summary>
-        /// uint64x2_t vbic_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VBIC Dd, Dn, Dm
-        ///   A64: BIC Vd, Vn, Vm
+        /// uint64x2_t vbicq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VBIC Qd, Qn, Qm
+        ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ulong> AndNot(Vector128<ulong> left, Vector128<ulong> right) => AndNot(left, right);
+        public static Vector128<ulong> BitwiseClear(Vector128<ulong> value, Vector128<ulong> mask) => BitwiseClear(value, mask);
 
         /// <summary>
         /// uint8x8_t vbsl_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
@@ -2474,6 +2572,21 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<uint> CompareTest(Vector128<uint> left, Vector128<uint> right) => CompareTest(left, right);
 
         /// <summary>
+        /// float64x1_t vdiv_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VDIV.F64 Dd, Dn, Dm
+        ///   A64: FDIV Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> DivideScalar(Vector64<double> left, Vector64<double> right) => DivideScalar(left, right);
+
+        /// <summary>
+        /// float32_t vdivs_f32 (float32_t a, float32_t b)
+        ///   A32: VDIV.F32 Sd, Sn, Sm
+        ///   A64: FDIV Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
@@ -2740,196 +2853,576 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector128<ulong> LoadVector128(ulong* address) => LoadVector128(address);
 
         /// <summary>
+        /// uint8x8_t vmax_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMAX.U8 Dd, Dn, Dm
+        ///   A64: UMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Max(Vector64<byte> left, Vector64<byte> right) => Max(left, right);
+
+        /// <summary>
+        /// int16x4_t vmax_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMAX.S16 Dd, Dn, Dm
+        ///   A64: SMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Max(Vector64<short> left, Vector64<short> right) => Max(left, right);
+
+        /// <summary>
+        /// int32x2_t vmax_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMAX.S32 Dd, Dn, Dm
+        ///   A64: SMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Max(Vector64<int> left, Vector64<int> right) => Max(left, right);
+
+        /// <summary>
+        /// int8x8_t vmax_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMAX.S8 Dd, Dn, Dm
+        ///   A64: SMAX Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Max(Vector64<sbyte> left, Vector64<sbyte> right) => Max(left, right);
+
+        /// <summary>
+        /// float32x2_t vmax_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMAX.F32 Dd, Dn, Dm
+        ///   A64: FMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Max(Vector64<float> left, Vector64<float> right) => Max(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmax_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMAX.U16 Dd, Dn, Dm
+        ///   A64: UMAX Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Max(Vector64<ushort> left, Vector64<ushort> right) => Max(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmax_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMAX.U32 Dd, Dn, Dm
+        ///   A64: UMAX Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Max(Vector64<uint> left, Vector64<uint> right) => Max(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmaxq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMAX.U8 Qd, Qn, Qm
+        ///   A64: UMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Max(Vector128<byte> left, Vector128<byte> right) => Max(left, right);
+
+        /// <summary>
+        /// int16x8_t vmaxq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMAX.S16 Qd, Qn, Qm
+        ///   A64: SMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Max(Vector128<short> left, Vector128<short> right) => Max(left, right);
+
+        /// <summary>
+        /// int32x4_t vmaxq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMAX.S32 Qd, Qn, Qm
+        ///   A64: SMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Max(Vector128<int> left, Vector128<int> right) => Max(left, right);
+
+        /// <summary>
+        /// int8x16_t vmaxq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMAX.S8 Qd, Qn, Qm
+        ///   A64: SMAX Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Max(Vector128<sbyte> left, Vector128<sbyte> right) => Max(left, right);
+
+        /// <summary>
+        /// float32x4_t vmaxq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMAX.F32 Qd, Qn, Qm
+        ///   A64: FMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Max(Vector128<float> left, Vector128<float> right) => Max(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmaxq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMAX.U16 Qd, Qn, Qm
+        ///   A64: UMAX Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) => Max(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmaxq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMAX.U32 Qd, Qn, Qm
+        ///   A64: UMAX Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Max(Vector128<uint> left, Vector128<uint> right) => Max(left, right);
+
+        /// <summary>
+        /// uint8x8_t vmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMIN.U8 Dd, Dn, Dm
+        ///   A64: UMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Min(Vector64<byte> left, Vector64<byte> right) => Min(left, right);
+
+        /// <summary>
+        /// int16x4_t vmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMIN.S16 Dd, Dn, Dm
+        ///   A64: SMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Min(Vector64<short> left, Vector64<short> right) => Min(left, right);
+
+        /// <summary>
+        /// int32x2_t vmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMIN.S32 Dd, Dn, Dm
+        ///   A64: SMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Min(Vector64<int> left, Vector64<int> right) => Min(left, right);
+
+        /// <summary>
+        /// int8x8_t vmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMIN.S8 Dd, Dn, Dm
+        ///   A64: SMIN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Min(Vector64<sbyte> left, Vector64<sbyte> right) => Min(left, right);
+
+        /// <summary>
+        /// float32x2_t vmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMIN.F32 Dd, Dn, Dm
+        ///   A64: FMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Min(Vector64<float> left, Vector64<float> right) => Min(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMIN.U16 Dd, Dn, Dm
+        ///   A64: UMIN Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Min(Vector64<ushort> left, Vector64<ushort> right) => Min(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMIN.U32 Dd, Dn, Dm
+        ///   A64: UMIN Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Min(Vector64<uint> left, Vector64<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// uint8x16_t vminq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMIN.U8 Qd, Qn, Qm
+        ///   A64: UMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Min(Vector128<byte> left, Vector128<byte> right) => Min(left, right);
+
+        /// <summary>
+        /// int16x8_t vminq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMIN.S16 Qd, Qn, Qm
+        ///   A64: SMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Min(Vector128<short> left, Vector128<short> right) => Min(left, right);
+
+        /// <summary>
+        /// int32x4_t vminq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMIN.S32 Qd, Qn, Qm
+        ///   A64: SMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Min(Vector128<int> left, Vector128<int> right) => Min(left, right);
+
+        /// <summary>
+        /// int8x16_t vminq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMIN.S8 Qd, Qn, Qm
+        ///   A64: SMIN Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Min(Vector128<sbyte> left, Vector128<sbyte> right) => Min(left, right);
+
+        /// <summary>
+        /// float32x4_t vminq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMIN.F32 Qd, Qn, Qm
+        ///   A64: FMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Min(Vector128<float> left, Vector128<float> right) => Min(left, right);
+
+        /// <summary>
+        /// uint16x8_t vminq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMIN.U16 Qd, Qn, Qm
+        ///   A64: UMIN Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Min(Vector128<ushort> left, Vector128<ushort> right) => Min(left, right);
+
+        /// <summary>
+        /// uint32x4_t vminq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMIN.U32 Qd, Qn, Qm
+        ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// uint8x8_t vmul_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> Multiply(Vector64<byte> left, Vector64<byte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int16x4_t vmul_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> Multiply(Vector64<short> left, Vector64<short> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int32x2_t vmul_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> Multiply(Vector64<int> left, Vector64<int> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x8_t vmul_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VMUL.I8 Dd, Dn, Dm
+        ///   A64: MUL Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> Multiply(Vector64<sbyte> left, Vector64<sbyte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float32x2_t vmul_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMUL.F32 Dd, Dn, Dm
+        ///   A64: FMUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> Multiply(Vector64<float> left, Vector64<float> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint16x4_t vmul_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VMUL.I16 Dd, Dn, Dm
+        ///   A64: MUL Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> Multiply(Vector64<ushort> left, Vector64<ushort> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint32x2_t vmul_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VMUL.I32 Dd, Dn, Dm
+        ///   A64: MUL Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> Multiply(Vector64<uint> left, Vector64<uint> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint8x16_t vmulq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> Multiply(Vector128<byte> left, Vector128<byte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int16x8_t vmulq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> Multiply(Vector128<short> left, Vector128<short> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int32x4_t vmulq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> Multiply(Vector128<int> left, Vector128<int> right) => Multiply(left, right);
+
+        /// <summary>
+        /// int8x16_t vmulq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VMUL.I8 Qd, Qn, Qm
+        ///   A64: MUL Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> Multiply(Vector128<sbyte> left, Vector128<sbyte> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float32x4_t vmulq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMUL.F32 Qd, Qn, Qm
+        ///   A64: FMUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> Multiply(Vector128<float> left, Vector128<float> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint16x8_t vmulq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VMUL.I16 Qd, Qn, Qm
+        ///   A64: MUL Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> Multiply(Vector128<ushort> left, Vector128<ushort> right) => Multiply(left, right);
+
+        /// <summary>
+        /// uint32x4_t vmulq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VMUL.I32 Qd, Qn, Qm
+        ///   A64: MUL Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> Multiply(Vector128<uint> left, Vector128<uint> right) => Multiply(left, right);
+
+        /// <summary>
+        /// float64x1_t vmul_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMUL.F64 Dd, Dn, Dm
+        ///   A64: FMUL Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MultiplyScalar(Vector64<double> left, Vector64<double> right) => MultiplyScalar(left, right);
+
+        /// <summary>
+        /// float32_t vmuls_f32 (float32_t a, float32_t b)
+        ///   A32: VMUL.F32 Sd, Sn, Sm
+        ///   A64: FMUL Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) => MultiplyScalar(left, right);
+
+        /// <summary>
+        /// int16x4_t vneg_s16 (int16x4_t a)
+        ///   A32: VNEG.S16 Dd, Dm
+        ///   A64: NEG Vd.4H, Vn.4H
+        /// </summary>
+        public static Vector64<short> Negate(Vector64<short> value) => Negate(value);
+
+        /// <summary>
+        /// int32x2_t vneg_s32 (int32x2_t a)
+        ///   A32: VNEG.S32 Dd, Dm
+        ///   A64: NEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<int> Negate(Vector64<int> value) => Negate(value);
+
+        /// <summary>
+        /// int8x8_t vneg_s8 (int8x8_t a)
+        ///   A32: VNEG.S8 Dd, Dm
+        ///   A64: NEG Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<sbyte> Negate(Vector64<sbyte> value) => Negate(value);
+
+        /// <summary>
+        /// float32x2_t vneg_f32 (float32x2_t a)
+        ///   A32: VNEG.F32 Dd, Dm
+        ///   A64: FNEG Vd.2S, Vn.2S
+        /// </summary>
+        public static Vector64<float> Negate(Vector64<float> value) => Negate(value);
+
+        /// <summary>
+        /// int16x8_t vnegq_s16 (int16x8_t a)
+        ///   A32: VNEG.S16 Qd, Qm
+        ///   A64: NEG Vd.8H, Vn.8H
+        /// </summary>
+        public static Vector128<short> Negate(Vector128<short> value) => Negate(value);
+
+        /// <summary>
+        /// int32x4_t vnegq_s32 (int32x4_t a)
+        ///   A32: VNEG.S32 Qd, Qm
+        ///   A64: NEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<int> Negate(Vector128<int> value) => Negate(value);
+
+        /// <summary>
+        /// int8x16_t vnegq_s8 (int8x16_t a)
+        ///   A32: VNEG.S8 Qd, Qm
+        ///   A64: NEG Vd.16B, Vn.16B
+        /// </summary>
+        public static Vector128<sbyte> Negate(Vector128<sbyte> value) => Negate(value);
+
+        /// <summary>
+        /// float32x4_t vnegq_f32 (float32x4_t a)
+        ///   A32: VNEG.F32 Qd, Qm
+        ///   A64: FNEG Vd.4S, Vn.4S
+        /// </summary>
+        public static Vector128<float> Negate(Vector128<float> value) => Negate(value);
+
+        /// <summary>
+        /// float64x1_t vneg_f64 (float64x1_t a)
+        ///   A32: VNEG.F64 Dd, Dm
+        ///   A64: FNEG Dd, Dn
+        /// </summary>
+        public static Vector64<double> NegateScalar(Vector64<double> value) => NegateScalar(value);
+
+        /// <summary>
+        /// float32_t vnegs_f32 (float32_t a)
+        ///   A32: VNEG.F32 Sd, Sm
+        ///   A64: FNEG Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> NegateScalar(Vector64<float> value) => NegateScalar(value);
+
+        /// <summary>
         /// uint8x8_t vmvn_u8 (uint8x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<byte> Not(Vector64<byte> value) => Not(value);
 
-        // /// <summary>
-        // /// float64x1_t vmvn_f64 (float64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Not(Vector64<double> value) => Not(value);
+        /// <summary>
+        /// float64x1_t vmvn_f64 (float64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Not(Vector64<double> value) => Not(value);
 
         /// <summary>
         /// int16x4_t vmvn_s16 (int16x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<short> Not(Vector64<short> value) => Not(value);
 
         /// <summary>
-        /// int32x2_t vmvn_s32(int32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int32x2_t vmvn_s32 (int32x2_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<int> Not(Vector64<int> value) => Not(value);
 
-        // /// <summary>
-        // /// int64x1_t vmvn_s64 (int64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Not(Vector64<long> value) => Not(value);
+        /// <summary>
+        /// int64x1_t vmvn_s64 (int64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<long> Not(Vector64<long> value) => Not(value);
 
         /// <summary>
         /// int8x8_t vmvn_s8 (int8x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<sbyte> Not(Vector64<sbyte> value) => Not(value);
 
         /// <summary>
         /// float32x2_t vmvn_f32 (float32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Not(Vector64<float> value) => Not(value);
 
         /// <summary>
         /// uint16x4_t vmvn_u16 (uint16x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<ushort> Not(Vector64<ushort> value) => Not(value);
 
         /// <summary>
         /// uint32x2_t vmvn_u32 (uint32x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
         /// </summary>
         public static Vector64<uint> Not(Vector64<uint> value) => Not(value);
 
-        // /// <summary>
-        // /// uint64x1_t vmvn_u64 (uint64x1_t a)
-        // ///   A32: VMVN Dd, Dn, Dm
-        // ///   A64: MVN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Not(Vector64<ulong> value) => Not(value);
+        /// <summary>
+        /// uint64x1_t vmvn_u64 (uint64x1_t a)
+        ///   A32: VMVN Dd, Dm
+        ///   A64: MVN Vd.8B, Vn.8B
+        /// </summary>
+        public static Vector64<ulong> Not(Vector64<ulong> value) => Not(value);
 
         /// <summary>
-        /// uint8x16_t vmvn_u8 (uint8x16_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint8x16_t vmvnq_u8 (uint8x16_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<byte> Not(Vector128<byte> value) => Not(value);
 
         /// <summary>
-        /// float64x2_t vmvn_f64 (float64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// float64x2_t vmvnq_f64 (float64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Not(Vector128<double> value) => Not(value);
 
         /// <summary>
-        /// int16x8_t vmvn_s16 (int16x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int16x8_t vmvnq_s16 (int16x8_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<short> Not(Vector128<short> value) => Not(value);
 
         /// <summary>
-        /// int32x4_t vmvn_s32(int32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int32x4_t vmvnq_s32 (int32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<int> Not(Vector128<int> value) => Not(value);
 
         /// <summary>
-        /// int64x2_t vmvn_s64 (int64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int64x2_t vmvnq_s64 (int64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<long> Not(Vector128<long> value) => Not(value);
 
         /// <summary>
-        /// int8x16_t vmvn_s8 (int8x16_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// int8x16_t vmvnq_s8 (int8x16_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<sbyte> Not(Vector128<sbyte> value) => Not(value);
 
         /// <summary>
-        /// float32x4_t vmvn_f32 (float32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// float32x4_t vmvnq_f32 (float32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Not(Vector128<float> value) => Not(value);
 
         /// <summary>
-        /// uint16x8_t vmvn_u16 (uint16x8_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint16x8_t vmvnq_u16 (uint16x8_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<ushort> Not(Vector128<ushort> value) => Not(value);
 
         /// <summary>
-        /// uint32x4_t vmvn_u32 (uint32x4_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint32x4_t vmvnq_u32 (uint32x4_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<uint> Not(Vector128<uint> value) => Not(value);
 
         /// <summary>
-        /// uint64x2_t vmvn_u64 (uint64x2_t a)
-        ///   A32: VMVN Dd, Dn, Dm
-        ///   A64: MVN Vd, Vn, Vm
+        /// uint64x2_t vmvnq_u64 (uint64x2_t a)
+        ///   A32: VMVN Qd, Qm
+        ///   A64: MVN Vd.16B, Vn.16B
         /// </summary>
         public static Vector128<ulong> Not(Vector128<ulong> value) => Not(value);
 
         /// <summary>
         /// uint8x8_t vorr_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Or(Vector64<byte> left, Vector64<byte> right) => Or(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vorr_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Or(Vector64<double> left, Vector64<double> right) => Or(left, right);
+        /// <summary>
+        /// float64x1_t vorr_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Or(Vector64<double> left, Vector64<double> right) => Or(left, right);
 
         /// <summary>
         /// int16x4_t vorr_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> Or(Vector64<short> left, Vector64<short> right) => Or(left, right);
 
         /// <summary>
-        /// int32x2_t vorr_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vorr_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> Or(Vector64<int> left, Vector64<int> right) => Or(left, right);
 
-        // /// <summary>
-        // /// int64x1_t vorr_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Or(Vector64<long> left, Vector64<long> right) => Or(left, right);
+        /// <summary>
+        /// int64x1_t vorr_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> Or(Vector64<long> left, Vector64<long> right) => Or(left, right);
 
         /// <summary>
         /// int8x8_t vorr_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Or(Vector64<sbyte> left, Vector64<sbyte> right) => Or(left, right);
 
         /// <summary>
         /// float32x2_t vorr_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Or(Vector64<float> left, Vector64<float> right) => Or(left, right);
@@ -2937,143 +3430,143 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vorr_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> Or(Vector64<ushort> left, Vector64<ushort> right) => Or(left, right);
 
         /// <summary>
         /// uint32x2_t vorr_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> Or(Vector64<uint> left, Vector64<uint> right) => Or(left, right);
 
-        // /// <summary>
-        // /// uint64x1_t vorr_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VORR Dd, Dn, Dm
-        // ///   A64: ORR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Or(Vector64<ulong> left, Vector64<ulong> right) => Or(left, right);
+        /// <summary>
+        /// uint64x1_t vorr_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VORR Dd, Dn, Dm
+        ///   A64: ORR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> Or(Vector64<ulong> left, Vector64<ulong> right) => Or(left, right);
 
         /// <summary>
-        /// uint8x16_t vorr_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint8x16_t vorrq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Or(Vector128<byte> left, Vector128<byte> right) => Or(left, right);
 
         /// <summary>
-        /// float64x2_t vorr_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// float64x2_t vorrq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Or(Vector128<double> left, Vector128<double> right) => Or(left, right);
 
         /// <summary>
-        /// int16x8_t vorr_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int16x8_t vorrq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> Or(Vector128<short> left, Vector128<short> right) => Or(left, right);
 
         /// <summary>
-        /// int32x4_t vorr_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int32x4_t vorrq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> Or(Vector128<int> left, Vector128<int> right) => Or(left, right);
 
         /// <summary>
-        /// int64x2_t vorr_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int64x2_t vorrq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> Or(Vector128<long> left, Vector128<long> right) => Or(left, right);
 
         /// <summary>
-        /// int8x16_t vorr_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// int8x16_t vorrq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Or(Vector128<sbyte> left, Vector128<sbyte> right) => Or(left, right);
 
         /// <summary>
-        /// float32x4_t vorr_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// float32x4_t vorrq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Or(Vector128<float> left, Vector128<float> right) => Or(left, right);
 
         /// <summary>
-        /// uint16x8_t vorr_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint16x8_t vorrq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> Or(Vector128<ushort> left, Vector128<ushort> right) => Or(left, right);
 
         /// <summary>
-        /// uint32x4_t vorr_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint32x4_t vorrq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> Or(Vector128<uint> left, Vector128<uint> right) => Or(left, right);
 
         /// <summary>
-        /// uint64x2_t vorr_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VORR Dd, Dn, Dm
-        ///   A64: ORR Vd, Vn, Vm
+        /// uint64x2_t vorrq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VORR Qd, Qn, Qm
+        ///   A64: ORR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> Or(Vector128<ulong> left, Vector128<ulong> right) => Or(left, right);
 
         /// <summary>
         /// uint8x8_t vorn_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> OrNot(Vector64<byte> left, Vector64<byte> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
+        /// <summary>
+        /// float64x1_t vorn_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> OrNot(Vector64<double> left, Vector64<double> right) => OrNot(left, right);
 
         /// <summary>
         /// int16x4_t vorn_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> OrNot(Vector64<short> left, Vector64<short> right) => OrNot(left, right);
 
         /// <summary>
-        /// int32x2_t vorn_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t vorn_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> OrNot(Vector64<int> left, Vector64<int> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
+        /// <summary>
+        /// int64x1_t vorn_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> OrNot(Vector64<long> left, Vector64<long> right) => OrNot(left, right);
 
         /// <summary>
         /// int8x8_t vorn_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> OrNot(Vector64<sbyte> left, Vector64<sbyte> right) => OrNot(left, right);
 
         /// <summary>
         /// float32x2_t vorn_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> OrNot(Vector64<float> left, Vector64<float> right) => OrNot(left, right);
@@ -3081,93 +3574,93 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vorn_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> OrNot(Vector64<ushort> left, Vector64<ushort> right) => OrNot(left, right);
 
         /// <summary>
         /// uint32x2_t vorn_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> OrNot(Vector64<uint> left, Vector64<uint> right) => OrNot(left, right);
 
-        // /// <summary>
-        // /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VORN Dd, Dn, Dm
-        // ///   A64: ORN Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
+        /// <summary>
+        /// uint64x1_t vorn_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VORN Dd, Dn, Dm
+        ///   A64: ORN Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> OrNot(Vector64<ulong> left, Vector64<ulong> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint8x16_t vorn_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint8x16_t vornq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> OrNot(Vector128<byte> left, Vector128<byte> right) => OrNot(left, right);
 
         /// <summary>
-        /// float64x2_t vorn_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float64x2_t vornq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> OrNot(Vector128<double> left, Vector128<double> right) => OrNot(left, right);
 
         /// <summary>
-        /// int16x8_t vorn_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int16x8_t vornq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> OrNot(Vector128<short> left, Vector128<short> right) => OrNot(left, right);
 
         /// <summary>
-        /// int32x4_t vorn_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int32x4_t vornq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> OrNot(Vector128<int> left, Vector128<int> right) => OrNot(left, right);
 
         /// <summary>
-        /// int64x2_t vorn_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int64x2_t vornq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> OrNot(Vector128<long> left, Vector128<long> right) => OrNot(left, right);
 
         /// <summary>
-        /// int8x16_t vorn_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// int8x16_t vornq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> OrNot(Vector128<sbyte> left, Vector128<sbyte> right) => OrNot(left, right);
 
         /// <summary>
-        /// float32x4_t vorn_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// float32x4_t vornq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> OrNot(Vector128<float> left, Vector128<float> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint16x8_t vorn_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint16x8_t vornq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> OrNot(Vector128<ushort> left, Vector128<ushort> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint32x4_t vorn_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint32x4_t vornq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> OrNot(Vector128<uint> left, Vector128<uint> right) => OrNot(left, right);
 
         /// <summary>
-        /// uint64x2_t vorn_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VORN Dd, Dn, Dm
-        ///   A64: ORN Vd, Vn, Vm
+        /// uint64x2_t vornq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VORN Qd, Qn, Qm
+        ///   A64: ORN Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> OrNot(Vector128<ulong> left, Vector128<ulong> right) => OrNot(left, right);
 
@@ -3200,30 +3693,45 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector128<sbyte> PopCount(Vector128<sbyte> value) => PopCount(value);
 
         /// <summary>
+        /// float64x1_t vsqrt_f64 (float64x1_t a)
+        ///   A32: VSQRT.F64 Dd, Dm
+        ///   A64: FSQRT Dd, Dn
+        /// </summary>
+        public static Vector64<double> SqrtScalar(Vector64<double> value) => SqrtScalar(value);
+
+        /// <summary>
+        /// float32_t vsqrts_f32 (float32_t a)
+        ///   A32: VSQRT.F32 Sd, Sm
+        ///   A64: FSQRT Sd, Sn
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> SqrtScalar(Vector64<float> value) => SqrtScalar(value);
+
+        /// <summary>
         /// uint8x8_t vsub_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
-        ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
+        ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Subtract(Vector64<byte> left, Vector64<byte> right) => Subtract(left, right);
 
         /// <summary>
         /// int16x4_t vsub_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VSUB.I16 Dd, Dn, Dm
-        ///   A64: ADD Vd.4H, Vn.4H, Vm.4H
+        ///   A64: SUB Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<short> Subtract(Vector64<short> left, Vector64<short> right) => Subtract(left, right);
 
         /// <summary>
         /// int32x2_t vsub_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VSUB.I32 Dd, Dn, Dm
-        ///   A64: ADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: SUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<int> Subtract(Vector64<int> left, Vector64<int> right) => Subtract(left, right);
 
         /// <summary>
         /// int8x8_t vsub_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VSUB.I8 Dd, Dn, Dm
-        ///   A64: ADD Vd.8B, Vn.8B, Vm.8B
+        ///   A64: SUB Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Subtract(Vector64<sbyte> left, Vector64<sbyte> right) => Subtract(left, right);
 
@@ -3237,49 +3745,49 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t vsub_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VSUB.I16 Dd, Dn, Dm
-        ///   A64: ADD Vd.4H, Vn.4H, Vm.4H
+        ///   A64: SUB Vd.4H, Vn.4H, Vm.4H
         /// </summary>
         public static Vector64<ushort> Subtract(Vector64<ushort> left, Vector64<ushort> right) => Subtract(left, right);
 
         /// <summary>
         /// uint32x2_t vsub_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VSUB.I32 Dd, Dn, Dm
-        ///   A64: ADD Vd.2S, Vn.2S, Vm.2S
+        ///   A64: SUB Vd.2S, Vn.2S, Vm.2S
         /// </summary>
         public static Vector64<uint> Subtract(Vector64<uint> left, Vector64<uint> right) => Subtract(left, right);
 
         /// <summary>
         /// uint8x16_t vsubq_u8 (uint8x16_t a, uint8x16_t b)
         ///   A32: VSUB.I8 Qd, Qn, Qm
-        ///   A64: ADD Vd.16B, Vn.16B, Vm.16B
+        ///   A64: SUB Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Subtract(Vector128<byte> left, Vector128<byte> right) => Subtract(left, right);
 
         /// <summary>
         /// int16x8_t vsubq_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VSUB.I16 Qd, Qn, Qm
-        ///   A64: ADD Vd.8H, Vn.8H, Vm.8H
+        ///   A64: SUB Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<short> Subtract(Vector128<short> left, Vector128<short> right) => Subtract(left, right);
 
         /// <summary>
         /// int32x4_t vsubq_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VSUB.I32 Qd, Qn, Qm
-        ///   A64: ADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: SUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<int> Subtract(Vector128<int> left, Vector128<int> right) => Subtract(left, right);
 
         /// <summary>
         /// int64x2_t vsubq_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VSUB.I64 Qd, Qn, Qm
-        ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
+        ///   A64: SUB Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<long> Subtract(Vector128<long> left, Vector128<long> right) => Subtract(left, right);
 
         /// <summary>
         /// int8x16_t vsubq_s8 (int8x16_t a, int8x16_t b)
         ///   A32: VSUB.I8 Qd, Qn, Qm
-        ///   A64: ADD Vd.16B, Vn.16B, Vm.16B
+        ///   A64: SUB Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Subtract(Vector128<sbyte> left, Vector128<sbyte> right) => Subtract(left, right);
 
@@ -3293,98 +3801,100 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x8_t vsubq_u16 (uint16x8_t a, uint16x8_t b)
         ///   A32: VSUB.I16 Qd, Qn, Qm
-        ///   A64: ADD Vd.8H, Vn.8H, Vm.8H
+        ///   A64: SUB Vd.8H, Vn.8H, Vm.8H
         /// </summary>
         public static Vector128<ushort> Subtract(Vector128<ushort> left, Vector128<ushort> right) => Subtract(left, right);
 
         /// <summary>
         /// uint32x4_t vsubq_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VSUB.I32 Qd, Qn, Qm
-        ///   A64: ADD Vd.4S, Vn.4S, Vm.4S
+        ///   A64: SUB Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Subtract(Vector128<uint> left, Vector128<uint> right) => Subtract(left, right);
 
         /// <summary>
         /// uint64x2_t vsubq_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VSUB.I64 Qd, Qn, Qm
-        ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
+        ///   A64: SUB Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> Subtract(Vector128<ulong> left, Vector128<ulong> right) => Subtract(left, right);
 
-        // /// <summary>
-        // /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VSUB.F64 Dd, Dn, Dm
-        // ///   A64: FSUB Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) => Subtract(left, right);
-
-        // /// <summary>
-        // /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) => SubtractScalar(left, right);
-
-        // /// <summary>
-        // /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VSUB.I64 Dd, Dn, Dm
-        // ///   A64: ADD Dd, Dn, Dm
-        // /// </summary>
-        // public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractScalar(left, right);
+        /// <summary>
+        /// float64x1_t vsub_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VSUB.F64 Dd, Dn, Dm
+        ///   A64: FSUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> SubtractScalar(Vector64<double> left, Vector64<double> right) => SubtractScalar(left, right);
 
         /// <summary>
+        /// int64x1_t vsub_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<long> SubtractScalar(Vector64<long> left, Vector64<long> right) => SubtractScalar(left, right);
+
+        /// <summary>
+        /// float32_t vsubs_f32 (float32_t a, float32_t b)
         ///   A32: VSUB.F32 Sd, Sn, Sm
-        ///   A64:
+        ///   A64: FSUB Sd, Sn, Sm
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> SubtractScalar(Vector64<float> left, Vector64<float> right) => SubtractScalar(left, right);
 
         /// <summary>
+        /// uint64x1_t vsub_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VSUB.I64 Dd, Dn, Dm
+        ///   A64: SUB Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<ulong> SubtractScalar(Vector64<ulong> left, Vector64<ulong> right) => SubtractScalar(left, right);
+
+        /// <summary>
         /// uint8x8_t veor_u8 (uint8x8_t a, uint8x8_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<byte> Xor(Vector64<byte> left, Vector64<byte> right) => Xor(left, right);
 
-        // /// <summary>
-        // /// float64x1_t veor_f64 (float64x1_t a, float64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
-        // /// </summary>
-        // public static Vector64<double> Xor(Vector64<double> left, Vector64<double> right) => Xor(left, right);
+        /// <summary>
+        /// float64x1_t veor_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> Xor(Vector64<double> left, Vector64<double> right) => Xor(left, right);
 
         /// <summary>
         /// int16x4_t veor_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<short> Xor(Vector64<short> left, Vector64<short> right) => Xor(left, right);
 
         /// <summary>
-        /// int32x2_t veor_s32(int32x2_t a, int32x2_t b)
+        /// int32x2_t veor_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<int> Xor(Vector64<int> left, Vector64<int> right) => Xor(left, right);
 
-        // /// <summary>
-        // /// int64x1_t veor_s64 (int64x1_t a, int64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<long> Xor(Vector64<long> left, Vector64<long> right) => Xor(left, right);
+        /// <summary>
+        /// int64x1_t veor_s64 (int64x1_t a, int64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<long> Xor(Vector64<long> left, Vector64<long> right) => Xor(left, right);
 
         /// <summary>
         /// int8x8_t veor_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<sbyte> Xor(Vector64<sbyte> left, Vector64<sbyte> right) => Xor(left, right);
 
         /// <summary>
         /// float32x2_t veor_f32 (float32x2_t a, float32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> Xor(Vector64<float> left, Vector64<float> right) => Xor(left, right);
@@ -3392,93 +3902,93 @@ namespace System.Runtime.Intrinsics.Arm
         /// <summary>
         /// uint16x4_t veor_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<ushort> Xor(Vector64<ushort> left, Vector64<ushort> right) => Xor(left, right);
 
         /// <summary>
         /// uint32x2_t veor_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
         /// </summary>
         public static Vector64<uint> Xor(Vector64<uint> left, Vector64<uint> right) => Xor(left, right);
 
-        // /// <summary>
-        // /// uint64x1_t veor_u64 (uint64x1_t a, uint64x1_t b)
-        // ///   A32: VEOR Dd, Dn, Dm
-        // ///   A64: EOR Vd, Vn, Vm
-        // /// </summary>
-        // public static Vector64<ulong> Xor(Vector64<ulong> left, Vector64<ulong> right) => Xor(left, right);
+        /// <summary>
+        /// uint64x1_t veor_u64 (uint64x1_t a, uint64x1_t b)
+        ///   A32: VEOR Dd, Dn, Dm
+        ///   A64: EOR Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<ulong> Xor(Vector64<ulong> left, Vector64<ulong> right) => Xor(left, right);
 
         /// <summary>
-        /// uint8x16_t veor_u8 (uint8x16_t a, uint8x16_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint8x16_t veorq_u8 (uint8x16_t a, uint8x16_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<byte> Xor(Vector128<byte> left, Vector128<byte> right) => Xor(left, right);
 
         /// <summary>
-        /// float64x2_t veor_f64 (float64x2_t a, float64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// float64x2_t veorq_f64 (float64x2_t a, float64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<double> Xor(Vector128<double> left, Vector128<double> right) => Xor(left, right);
 
         /// <summary>
-        /// int16x8_t veor_s16 (int16x8_t a, int16x8_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int16x8_t veorq_s16 (int16x8_t a, int16x8_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<short> Xor(Vector128<short> left, Vector128<short> right) => Xor(left, right);
 
         /// <summary>
-        /// int32x4_t veor_s32(int32x4_t a, int32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int32x4_t veorq_s32 (int32x4_t a, int32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<int> Xor(Vector128<int> left, Vector128<int> right) => Xor(left, right);
 
         /// <summary>
-        /// int64x2_t veor_s64 (int64x2_t a, int64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int64x2_t veorq_s64 (int64x2_t a, int64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<long> Xor(Vector128<long> left, Vector128<long> right) => Xor(left, right);
 
         /// <summary>
-        /// int8x16_t veor_s8 (int8x16_t a, int8x16_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// int8x16_t veorq_s8 (int8x16_t a, int8x16_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<sbyte> Xor(Vector128<sbyte> left, Vector128<sbyte> right) => Xor(left, right);
 
         /// <summary>
-        /// float32x4_t veor_f32 (float32x4_t a, float32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// float32x4_t veorq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> Xor(Vector128<float> left, Vector128<float> right) => Xor(left, right);
 
         /// <summary>
-        /// uint16x8_t veor_u16 (uint16x8_t a, uint16x8_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint16x8_t veorq_u16 (uint16x8_t a, uint16x8_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ushort> Xor(Vector128<ushort> left, Vector128<ushort> right) => Xor(left, right);
 
         /// <summary>
-        /// uint32x4_t veor_u32 (uint32x4_t a, uint32x4_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint32x4_t veorq_u32 (uint32x4_t a, uint32x4_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<uint> Xor(Vector128<uint> left, Vector128<uint> right) => Xor(left, right);
 
         /// <summary>
-        /// uint64x2_t veor_u64 (uint64x2_t a, uint64x2_t b)
-        ///   A32: VEOR Dd, Dn, Dm
-        ///   A64: EOR Vd, Vn, Vm
+        /// uint64x2_t veorq_u64 (uint64x2_t a, uint64x2_t b)
+        ///   A32: VEOR Qd, Qn, Qm
+        ///   A64: EOR Vd.16B, Vn.16B, Vm.16B
         /// </summary>
         public static Vector128<ulong> Xor(Vector128<ulong> left, Vector128<ulong> right) => Xor(left, right);
     }

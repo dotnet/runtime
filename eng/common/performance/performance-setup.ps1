@@ -50,7 +50,7 @@ if ($Internal) {
 }
 
 # FIX ME: This is a workaround until we get this from the actual pipeline
-$CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations"
+$CommonSetupArguments="--channel master --queue $Queue --build-number $BuildNumber --build-configs $Configurations --architecture $Architecture"
 $SetupArguments = "--repository https://github.com/$Repository --branch $Branch --get-perf-hash --commit-sha $CommitSha $CommonSetupArguments"
 
 if ($RunFromPerformanceRepo) {

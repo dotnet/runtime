@@ -89,7 +89,7 @@ namespace System.Collections
             return GetPrime(newSize);
         }
 
-#if BIT64
+#if TARGET_64BIT
         // Returns approximate reciprocal of the divisor: ceil(2**64 / divisor)
         public static ulong GetFastModMultiplier(uint divisor)
             => ulong.MaxValue / divisor + 1;

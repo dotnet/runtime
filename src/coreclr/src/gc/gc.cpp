@@ -36219,7 +36219,11 @@ HRESULT GCHeap::Initialize()
 #endif //TRACE_GC
 
     bool is_restricted;
-    gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted);
+    gc_heap::total_physical_mem = (size_t)GCConfig::GetGCTotalPhysicalMemory();
+    if (!(gc_heap::total_physical_mem))
+    {
+        gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted);
+    }
 
 #ifdef HOST_64BIT
     gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
