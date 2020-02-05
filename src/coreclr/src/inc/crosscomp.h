@@ -8,11 +8,11 @@
 
 #pragma once
 
-#if (!defined(BIT64) && defined(_TARGET_64BIT_)) || (defined(BIT64) && !defined(_TARGET_64BIT_))
+#if (!defined(HOST_64BIT) && defined(TARGET_64BIT)) || (defined(HOST_64BIT) && !defined(TARGET_64BIT))
 #define CROSSBITNESS_COMPILE
 #endif
 
-#if !defined(_ARM_) && defined(_TARGET_ARM_) // Non-ARM Host managing ARM related code
+#if !defined(HOST_ARM) && defined(TARGET_ARM) // Non-ARM Host managing ARM related code
 
 #ifndef CROSS_COMPILE
 #define CROSS_COMPILE
@@ -92,8 +92,8 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
 // each frame function.
 //
 
-#ifndef FEATURE_PAL
-#ifdef _X86_
+#ifndef TARGET_UNIX
+#ifdef HOST_X86
 typedef struct _RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
@@ -120,8 +120,8 @@ typedef struct _UNWIND_HISTORY_TABLE {
     DWORD HighAddress;
     UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
 } UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
-#endif // _X86_
-#endif // !FEATURE_PAL
+#endif // HOST_X86
+#endif // !TARGET_UNIX
 
 
 //
@@ -177,7 +177,7 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PUCHAR NonVolatileRegisters;
 } T_DISPATCHER_CONTEXT, *PT_DISPATCHER_CONTEXT;
 
-#if defined(FEATURE_PAL) || defined(_X86_)
+#if defined(TARGET_UNIX) || defined(HOST_X86)
 #define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
 #define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
 #else
@@ -187,7 +187,7 @@ typedef struct _T_RUNTIME_FUNCTION {
 } T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
 #endif
 
-#elif defined(_AMD64_) && defined(_TARGET_ARM64_)  // Host amd64 managing ARM64 related code
+#elif defined(HOST_AMD64) && defined(TARGET_ARM64)  // Host amd64 managing ARM64 related code
 
 #ifndef CROSS_COMPILE
 #define CROSS_COMPILE

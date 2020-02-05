@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #include "instrsxarch.h"
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 #include "instrsarm.h"
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 #include "instrsarm64.h"
 #else
 #error Unsupported or unset target architecture

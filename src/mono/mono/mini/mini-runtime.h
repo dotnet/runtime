@@ -385,6 +385,7 @@ extern GList* mono_aot_paths;
 extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
 extern char *sdb_options;
+extern MonoMethodDesc *mono_stats_method_desc;
 
 /*
 This struct describes what execution engine feature to use.
@@ -427,6 +428,7 @@ MONO_API void        mono_parse_env_options         (int *ref_argc, char **ref_a
 MONO_API char       *mono_parse_options_from        (const char *options, int *ref_argc, char **ref_argv []);
 MONO_API int         mono_regression_test_step      (int verbose_level, const char *image, const char *method_name);
 
+void                   mono_runtime_print_stats      (void);
 
 void                   mono_interp_stub_init         (void);
 void                   mini_install_interp_callbacks (const MonoEECallbacks *cbs);

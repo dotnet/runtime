@@ -51,7 +51,7 @@ namespace System.Collections.Generic
 
         private int[]? _buckets;
         private Entry[]? _entries;
-#if BIT64
+#if TARGET_64BIT
         private ulong _fastModMultiplier;
 #endif
         private int _count;
@@ -79,7 +79,7 @@ namespace System.Collections.Generic
         {
             if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             if (capacity > 0) Initialize(capacity);
-            if (comparer != EqualityComparer<TKey>.Default)
+            if (comparer != null && comparer != EqualityComparer<TKey>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -460,7 +460,7 @@ namespace System.Collections.Generic
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _freeList = -1;
-#if BIT64
+#if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)size);
 #endif
             _buckets = buckets;
@@ -743,7 +743,7 @@ namespace System.Collections.Generic
 
             // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
             _buckets = new int[newSize];
-#if BIT64
+#if TARGET_64BIT
             _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
 #endif
             for (int i = 0; i < count; i++)
@@ -1166,7 +1166,7 @@ namespace System.Collections.Generic
         private ref int GetBucket(uint hashCode)
         {
             int[] buckets = _buckets!;
-#if BIT64
+#if TARGET_64BIT
             return ref buckets[HashHelpers.FastMod(hashCode, (uint)buckets.Length, _fastModMultiplier)];
 #else
             return ref buckets[hashCode % (uint)buckets.Length];

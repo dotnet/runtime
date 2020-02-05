@@ -23,11 +23,11 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     }
     CONTRACTL_END;
 
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_PAL)
+#if !defined(DACCESS_COMPILE) && defined(TARGET_UNIX)
 
     return PAL_ProbeMemory((PVOID)start, len, FALSE);
 
-#else // !DACCESS_COMPILE && FEATURE_PAL
+#else // !DACCESS_COMPILE && TARGET_UNIX
 
     //
     // To accomplish this in a no-throw way, we have to touch each and every page
@@ -92,7 +92,7 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     }
 
     return 1;
-#endif // !DACCESS_COMPILE && FEATURE_PAL
+#endif // !DACCESS_COMPILE && TARGET_UNIX
 }
 
 
@@ -207,7 +207,7 @@ void *DumpEnvironmentBlock(void)
     return WszGetEnvironmentStrings();
 }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
 /*******************************************************************/
 // Dump the SEH chain to stderr
 void PrintSEHChain(void)
@@ -227,7 +227,7 @@ void PrintSEHChain(void)
         pEHR = pEHR->Next;
     }
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 /*******************************************************************/
 MethodDesc* IP2MD(ULONG_PTR IP)
@@ -600,7 +600,7 @@ int DumpCurrentStack()
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     BYTE* top = (BYTE *)GetCurrentSP();
 
         // go back at most 64K, it will stop if we go off the
@@ -609,7 +609,7 @@ int DumpCurrentStack()
 #else
     _ASSERTE(!"@NYI - DumpCurrentStack(DebugHelp.cpp)");
     return 0;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 /*******************************************************************/
@@ -792,7 +792,7 @@ void PrintException(OBJECTREF pObjectRef)
 /*******************************************************************/
 /* sends a current stack trace to the debug window */
 
-const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamTracker);
+const char* FormatSig(MethodDesc* pMD, AllocMemTracker *pamTracker);
 
 struct PrintCallbackData {
     BOOL toStdout;
@@ -845,7 +845,7 @@ StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
                       _TRUNCATE,
                       W("%S %S  "),
                       pMD->GetName(),
-                      FormatSig(pMD, pCF->GetAppDomain(), &dummyAmTracker));
+                      FormatSig(pMD, &dummyAmTracker));
 
         dummyAmTracker.SuppressRelease();
         if (buffLen < 0 )
@@ -1012,7 +1012,7 @@ void PrintDomainName(size_t ob)
     }
 }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 #include "gcdump.h"
 

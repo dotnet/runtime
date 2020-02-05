@@ -8,11 +8,11 @@
 #define _DATAIMAGE_H_
 
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
-#else // !_TARGET_64BIT_
+#else // !TARGET_64BIT
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_HIGHLOW
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
 // Special NGEN-specific relocation type for relative pointer (used to make NGen relocation section smaller)
 #define IMAGE_REL_BASED_RELPTR            0x7D

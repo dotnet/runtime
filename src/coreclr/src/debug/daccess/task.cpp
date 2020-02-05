@@ -4074,7 +4074,7 @@ ClrDataMethodInstance::GetILOffsetsByAddress(
         ULONG32 codeOffset;
         ULONG32 hits = 0;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         address &= ~THUMB_CODE; // on ARM windbg passes in an address with the mode flag set... need to workaround
 #endif
         if ((status = m_dac->GetMethodNativeMap(m_methodDesc,

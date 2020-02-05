@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Needed for unreached()
 #include "error.h"
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define BitScanForwardPtr BitScanForward64
 #else
 #define BitScanForwardPtr BitScanForward
@@ -752,11 +752,11 @@ private:
 namespace MagicDivide
 {
 uint32_t GetUnsigned32Magic(uint32_t d, bool* add /*out*/, int* shift /*out*/);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/);
 #endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 #endif
 }

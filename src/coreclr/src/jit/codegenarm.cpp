@@ -15,7 +15,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 #include "codegen.h"
 #include "lower.h"
 #include "gcinfo.h"
@@ -1848,4 +1848,4 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 #endif // USING_SCOPE_INFO
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM

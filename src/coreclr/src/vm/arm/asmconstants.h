@@ -7,9 +7,9 @@
 // Be sure to rebuild clr/src/vm/ceemain.cpp after changing this file, to
 // ensure that the constants match the expected C/C++ values
 
-// #ifndef _ARM_
+// #ifndef HOST_ARM
 // #error this file should only be used on an ARM platform
-// #endif // _ARM_
+// #endif // HOST_ARM
 
 #include "../../inc/switches.h"
 

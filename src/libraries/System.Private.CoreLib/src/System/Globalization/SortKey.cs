@@ -99,7 +99,7 @@ namespace System.Globalization
 
         public override int GetHashCode()
         {
-            return CompareInfo.GetCompareInfo(_localeName).GetHashCodeOfString(_string, _options);
+            return CompareInfo.GetCompareInfo(_localeName).GetHashCode(_string, _options);
         }
 
         public override string ToString()

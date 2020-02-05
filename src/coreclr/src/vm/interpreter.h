@@ -313,7 +313,7 @@ public:
     bool IsLargeStruct(CEEInfo* ceeInfo) const
     {
         intptr_t asInt = reinterpret_cast<intptr_t>(m_tp);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if (asInt == CORINFO_TYPE_SHIFTED_REFANY)
         {
             return true;
@@ -988,11 +988,11 @@ private:
             }
         }
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
         static const int MaxNumFPRegArgSlots = 16;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         static const int MaxNumFPRegArgSlots = 8;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
         static const int MaxNumFPRegArgSlots = 4;
 #endif
 
@@ -1008,7 +1008,7 @@ private:
         // of slots.  Important that this be called in argument order.
         void AddFPArg(unsigned canonIndex, unsigned short numSlots, bool doubleAlign);
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         // We have a special function for AMD64 because both integer/float registers overlap. However, all
         // callers are expected to call AddArg/AddFPArg directly.
         void AddArgAmd64(unsigned canonIndex, unsigned short numSlots, bool isFloatingType);
@@ -1085,7 +1085,7 @@ private:
     {
         if (!m_directCall)
         {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             // In AMD64, a reference to the struct is passed if its size exceeds the word size.
             // Dereference the arg to get to the ref of the struct.
             if (GetArgType(argNum).IsLargeStruct(&m_interpCeeInfo))
@@ -2037,14 +2037,14 @@ private:
 #endif // INTERP_TRACING
 };
 
-#if defined(_X86_)
+#if defined(HOST_X86)
 inline
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 2; }
-#elif  defined(_AMD64_)
+#elif  defined(HOST_AMD64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
-#elif  defined(_ARM_)
+#elif  defined(HOST_ARM)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 4; }
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 unsigned short Interpreter::NumberOfIntegerRegArgs() { return 8; }
 #else
 #error Unsupported architecture.

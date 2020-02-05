@@ -1871,9 +1871,9 @@ struct CORINFO_String : public CORINFO_Object
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1897,9 +1897,9 @@ struct CORINFO_Array : public CORINFO_Object
 struct CORINFO_Array8 : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
     union
     {
@@ -1914,9 +1914,9 @@ struct CORINFO_Array8 : public CORINFO_Object
 struct CORINFO_RefArray : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1945,7 +1945,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */ + sizeof(unsigned __int32) /* alignpad */)
 #else
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */)
