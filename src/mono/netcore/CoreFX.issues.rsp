@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Runtime.Loader.RefEmitLoadContext.Tests
-####################################################################
-
-# Relies on AssemblyLoadContext.GetLoadContext, which is not implemented
--nomethod System.Runtime.Loader.Tests.RefEmitLoadContextTests.LoadRefEmitAssembly
-
-####################################################################
 ##  System.Threading.Overlapped.Tests
 ####################################################################
 
