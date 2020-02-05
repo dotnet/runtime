@@ -1700,7 +1700,7 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<byte> AndNot(Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<byte> BitwiseClear(Vector64<byte> value, Vector64<byte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x1_t vbic_f64 (float64x1_t a, float64x1_t b)
@@ -1708,35 +1708,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<double> AndNot(Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<double> BitwiseClear(Vector64<double> value, Vector64<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vbic_s16 (int16x4_t a, int16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<short> AndNot(Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<short> BitwiseClear(Vector64<short> value, Vector64<short> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x2_t vbic_s32 (int32x2_t a, int32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<int> AndNot(Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<int> BitwiseClear(Vector64<int> value, Vector64<int> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int64x1_t vbic_s64 (int64x1_t a, int64x1_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<long> AndNot(Vector64<long> left, Vector64<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<long> BitwiseClear(Vector64<long> value, Vector64<long> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x8_t vbic_s8 (int8x8_t a, int8x8_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<sbyte> AndNot(Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<sbyte> BitwiseClear(Vector64<sbyte> value, Vector64<sbyte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x2_t vbic_f32 (float32x2_t a, float32x2_t b)
@@ -1744,35 +1744,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector64<float> AndNot(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<float> BitwiseClear(Vector64<float> value, Vector64<float> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x4_t vbic_u16 (uint16x4_t a, uint16x4_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<ushort> AndNot(Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ushort> BitwiseClear(Vector64<ushort> value, Vector64<ushort> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x2_t vbic_u32 (uint32x2_t a, uint32x2_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<uint> AndNot(Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<uint> BitwiseClear(Vector64<uint> value, Vector64<uint> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint64x1_t vbic_u64 (uint64x1_t a, uint64x1_t b)
         ///   A32: VBIC Dd, Dn, Dm
         ///   A64: BIC Vd.8B, Vn.8B, Vm.8B
         /// </summary>
-        public static Vector64<ulong> AndNot(Vector64<ulong> left, Vector64<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector64<ulong> BitwiseClear(Vector64<ulong> value, Vector64<ulong> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x16_t vbicq_u8 (uint8x16_t a, uint8x16_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<byte> AndNot(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte> BitwiseClear(Vector128<byte> value, Vector128<byte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float64x2_t vbicq_f64 (float64x2_t a, float64x2_t b)
@@ -1780,35 +1780,35 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<double> AndNot(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<double> BitwiseClear(Vector128<double> value, Vector128<double> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x8_t vbicq_s16 (int16x8_t a, int16x8_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<short> AndNot(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short> BitwiseClear(Vector128<short> value, Vector128<short> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int32x4_t vbicq_s32 (int32x4_t a, int32x4_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<int> AndNot(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int> BitwiseClear(Vector128<int> value, Vector128<int> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int64x2_t vbicq_s64 (int64x2_t a, int64x2_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<long> AndNot(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long> BitwiseClear(Vector128<long> value, Vector128<long> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int8x16_t vbicq_s8 (int8x16_t a, int8x16_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<sbyte> AndNot(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<sbyte> BitwiseClear(Vector128<sbyte> value, Vector128<sbyte> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// float32x4_t vbicq_f32 (float32x4_t a, float32x4_t b)
@@ -1816,28 +1816,28 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
-        public static Vector128<float> AndNot(Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<float> BitwiseClear(Vector128<float> value, Vector128<float> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint16x8_t vbicq_u16 (uint16x8_t a, uint16x8_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ushort> AndNot(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> BitwiseClear(Vector128<ushort> value, Vector128<ushort> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint32x4_t vbicq_u32 (uint32x4_t a, uint32x4_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<uint> AndNot(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint> BitwiseClear(Vector128<uint> value, Vector128<uint> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint64x2_t vbicq_u64 (uint64x2_t a, uint64x2_t b)
         ///   A32: VBIC Qd, Qn, Qm
         ///   A64: BIC Vd.16B, Vn.16B, Vm.16B
         /// </summary>
-        public static Vector128<ulong> AndNot(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong> BitwiseClear(Vector128<ulong> value, Vector128<ulong> mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// uint8x8_t vbsl_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
