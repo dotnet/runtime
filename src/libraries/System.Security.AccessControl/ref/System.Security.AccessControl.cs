@@ -332,7 +332,7 @@ namespace System.Security.AccessControl
         protected void Persist(System.Runtime.InteropServices.SafeHandle handle, System.Security.AccessControl.AccessControlSections includeSections, object? exceptionContext) { }
         protected sealed override void Persist(string name, System.Security.AccessControl.AccessControlSections includeSections) { }
         protected void Persist(string name, System.Security.AccessControl.AccessControlSections includeSections, object? exceptionContext) { }
-        protected internal delegate System.Exception ExceptionFromErrorCode(int errorCode, string? name, System.Runtime.InteropServices.SafeHandle? handle, object? context);
+        protected internal delegate System.Exception? ExceptionFromErrorCode(int errorCode, string? name, System.Runtime.InteropServices.SafeHandle? handle, object? context);
     }
     public abstract partial class ObjectAccessRule : System.Security.AccessControl.AccessRule
     {
