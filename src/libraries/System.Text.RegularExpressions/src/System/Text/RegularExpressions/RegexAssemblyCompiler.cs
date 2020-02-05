@@ -255,7 +255,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Begins the definition of a new method (no args) with a specified return value.</summary>
         private static ILGenerator DefineMethod(TypeBuilder typeBuilder, string methname, Type? returnType) =>
-            typeBuilder.DefineMethod(methname, MethodAttributes.Public | MethodAttributes.Virtual, returnType, null).GetILGenerator();
+            typeBuilder.DefineMethod(methname, MethodAttributes.Family | MethodAttributes.Virtual, returnType, null).GetILGenerator();
     }
 }
 #endif
