@@ -657,6 +657,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
         }
 
+        [Fact]
+        public static void NullExtensionPropertyIsIgnoredWhenSerializedAndOptionsConfigured()
+        {
+            ClassWithMultipleDictionaries obj = new ClassWithMultipleDictionaries
+            {
+                MyOverflow = new Dictionary<string, object>
+                {
+                    ["Prop1"] = "valid",
+                    ["Prop2"] = null
+                },
+
+                ActualDictionary = new Dictionary<string, object>
+                {
+                    ["Prop1"] = "valid",
+                    ["Prop2"] = null
+                }
+            };
+
+            string expected = @"{""ActualDictionary"":{""Prop1"":""valid"",""Prop2"":null},""Prop1"":""valid""}";
+            string actual = JsonSerializer.Serialize(obj, new JsonSerializerOptions
+            {
+                IgnoreNullValues = true
+            });
+            Assert.Equal(expected, actual);
+        }
+
         private class ClassWithExtensionPropertyAlreadyInstantiated
         {
             public ClassWithExtensionPropertyAlreadyInstantiated()

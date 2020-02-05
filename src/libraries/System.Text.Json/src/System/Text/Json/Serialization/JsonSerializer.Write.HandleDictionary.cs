@@ -89,6 +89,11 @@ namespace System.Text.Json
                         jsonPropertyInfo.GetDictionaryKeyAndValue(ref state.Current, out key, out value);
                     }
 
+                    if (state.Current.ExtensionDataStatus == ExtensionDataWriteStatus.Writing && value == null && options.IgnoreNullValues)
+                    {
+                        return false;
+                    }
+
                     if (options.DictionaryKeyPolicy != null && state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
                     {
                         Debug.Assert(key != null);
