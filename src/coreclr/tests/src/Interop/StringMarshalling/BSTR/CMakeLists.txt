@@ -4,11 +4,11 @@ set(SOURCES BStrTestNative.cpp)
 # add the executable
 add_library (BStrTestNative SHARED ${SOURCES})
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         OleAut32.lib
     )
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(BStrTestNative ${LINK_LIBRARIES_ADDITIONAL})
 

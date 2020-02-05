@@ -5,11 +5,11 @@ set(SOURCES VariantNative.cpp)
 # add the executable
 add_library (VariantNative SHARED ${SOURCES})
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         OleAut32.lib
     )
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(VariantNative ${LINK_LIBRARIES_ADDITIONAL})
 

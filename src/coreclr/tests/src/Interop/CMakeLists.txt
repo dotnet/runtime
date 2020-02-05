@@ -1,10 +1,10 @@
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         ole32.lib
         advapi32.lib
         OleAut32.lib
     )
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
 

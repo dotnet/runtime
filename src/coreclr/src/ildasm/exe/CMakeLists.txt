@@ -75,7 +75,7 @@ set(ILDASM_LINK_LIBRARIES
     corguids
 )
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND ILDASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -97,7 +97,7 @@ else()
         mscorrc_debug
         palrt
     )
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm

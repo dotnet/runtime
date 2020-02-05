@@ -58,7 +58,7 @@ set(DBGSHIM_LIBRARIES
     utilcodestaticnohost
 )
 
-if(CLR_CMAKE_TARGET_WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND DBGSHIM_LIBRARIES
         kernel32.lib
         ${STATIC_MT_CRT_LIB}
@@ -78,7 +78,7 @@ else()
         mscorrc_debug
         palrt
     )
-endif(CLR_CMAKE_TARGET_WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 
