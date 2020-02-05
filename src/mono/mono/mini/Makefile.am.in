@@ -826,7 +826,7 @@ unaligned.exe: unaligned.cs TestDriver.dll MemoryIntrinsics.dll
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll
 
-%.exe: %.il
+%.exe: %.il TestDriver.dll
 	$(ILASM) -output=$@ $<
 
 TestDriver.dll: $(srcdir)/TestDriver.cs $(srcdir)/TestHelpers.cs

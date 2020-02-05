@@ -68,19 +68,19 @@
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DefineConstants>BIT64;AMD64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
-    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
-    <DefineConstants>BIT32;ARM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>BIT64;ARM64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->

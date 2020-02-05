@@ -10,7 +10,7 @@
     <OptionCompare>Binary</OptionCompare>
     <WarningsNotAsErrors>42025</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
-    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),PLATFORM_WINDOWS=True</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants),TARGET_WINDOWS=True</DefineConstants>
     <NoWarn Condition="'$(TargetsWindows)' != 'true'">$(NoWarn);CA1823</NoWarn> <!-- Avoid unused fields warnings in Unix build -->
     <AssemblyName>Microsoft.VisualBasic.Core</AssemblyName>
     <NoStdLib>true</NoStdLib>
