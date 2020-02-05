@@ -364,7 +364,7 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
         private void And() => _ilg!.Emit(OpCodes.And);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
+        /// <summary>A macro for _ilg.Emit(OpCodes.Or).</summary>
         private void Or() => _ilg!.Emit(OpCodes.Or);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Shl).</summary>
@@ -4734,7 +4734,7 @@ namespace System.Text.RegularExpressions
             // so we store it into a temporary local.
             Stloc(tempLocal);
 
-            // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixess),
+            // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
             // it's cheaper and smaller to compare against each than it is to use a lookup table.
             if (!invariant)
             {
