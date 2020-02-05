@@ -24,7 +24,7 @@ namespace System.Globalization
     /// A writing system is the collection of scripts and orthographic rules
     /// required to represent a language as text.
     /// </summary>
-    public partial class TextInfo : ICloneable, IDeserializationCallback
+    public sealed partial class TextInfo : ICloneable, IDeserializationCallback
     {
         private enum Tristate : byte
         {
@@ -64,13 +64,13 @@ namespace System.Globalization
             throw new PlatformNotSupportedException();
         }
 
-        public virtual int ANSICodePage => _cultureData.ANSICodePage;
+        public int ANSICodePage => _cultureData.ANSICodePage;
 
-        public virtual int OEMCodePage => _cultureData.OEMCodePage;
+        public int OEMCodePage => _cultureData.OEMCodePage;
 
-        public virtual int MacCodePage => _cultureData.MacCodePage;
+        public int MacCodePage => _cultureData.MacCodePage;
 
-        public virtual int EBCDICCodePage => _cultureData.EBCDICCodePage;
+        public int EBCDICCodePage => _cultureData.EBCDICCodePage;
 
         // Just use the LCID from our text info name
         public int LCID => CultureInfo.GetCultureInfo(_textInfoName).LCID;
@@ -79,7 +79,7 @@ namespace System.Globalization
 
         public bool IsReadOnly => _isReadOnly;
 
-        public virtual object Clone()
+        public object Clone()
         {
             object o = MemberwiseClone();
             ((TextInfo)o).SetReadOnlyState(false);
@@ -123,7 +123,7 @@ namespace System.Globalization
         /// <summary>
         /// Returns the string used to separate items in a list.
         /// </summary>
-        public virtual string ListSeparator
+        public string ListSeparator
         {
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
@@ -142,7 +142,7 @@ namespace System.Globalization
         /// Converts the character or string to lower case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToLower(char c)
+        public char ToLower(char c)
         {
             if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
@@ -152,7 +152,7 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
-        public virtual string ToLower(string str)
+        public string ToLower(string str)
         {
             if (str == null)
             {
@@ -534,7 +534,7 @@ namespace System.Globalization
         /// Converts the character or string to upper case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToUpper(char c)
+        public char ToUpper(char c)
         {
             if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
@@ -544,7 +544,7 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
-        public virtual string ToUpper(string str)
+        public string ToUpper(string str)
         {
             if (str == null)
             {

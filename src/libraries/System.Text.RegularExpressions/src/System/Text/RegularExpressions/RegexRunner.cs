@@ -14,10 +14,8 @@
 // methods to push new subpattern match results into (or remove
 // backtracked results from) the Match instance.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 
 namespace System.Text.RegularExpressions
 {
@@ -90,13 +88,6 @@ namespace System.Text.RegularExpressions
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            // Store arguments into fields for derived runner to examine
-            runregex = regex;
-            runtext = text;
-            runtextbeg = textbeg;
-            runtextend = textend;
-            runtextpos = runtextstart = textstart;
-
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -114,19 +105,23 @@ namespace System.Text.RegularExpressions
 
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-            // bump by 1 and stop at runtextend, but if we're examining right-to-left, we instead bump
-            // by -1 and stop at runtextbeg.
-            int bump = 1, stoppos = runtextend;
-            if (runregex.RightToLeft)
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = textend;
+            if (regex.RightToLeft)
             {
                 bump = -1;
-                stoppos = runtextbeg;
+                stoppos = textbeg;
             }
+
+            // Store runtextpos into field, as we may bump it in next check.  The remaining arguments
+            // are stored below once we're past the potential return in the next check.
+            runtextpos = textstart;
 
             // If previous match was empty or failed, advance by one before matching.
             if (prevlen == 0)
             {
-                if (runtextpos == stoppos)
+                if (textstart == stoppos)
                 {
                     return Match.Empty;
                 }
@@ -134,12 +129,20 @@ namespace System.Text.RegularExpressions
                 runtextpos += bump;
             }
 
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            runtext = text;
+            runtextstart = textstart;
+            runtextbeg = textbeg;
+            runtextend = textend;
+
             // Main loop: FindFirstChar/Go + bump until the ending position.
             bool initialized = false;
             while (true)
             {
 #if DEBUG
-                if (runregex.IsDebug)
+                if (regex.IsDebug)
                 {
                     Debug.WriteLine("");
                     Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
@@ -164,7 +167,7 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (runregex.IsDebug)
+                    if (regex.IsDebug)
                     {
                         Debug.WriteLine($"Executing engine starting at {runtextpos}");
                         Debug.WriteLine("");
@@ -178,8 +181,11 @@ namespace System.Text.RegularExpressions
                     Match match = runmatch!;
                     if (match._matchcount[0] > 0)
                     {
+                        runtext = null; // drop reference to text to avoid keeping it alive in a cache
+
                         if (quick)
                         {
+                            runmatch!.Text = null!; // drop reference
                             return null;
                         }
 
@@ -198,6 +204,8 @@ namespace System.Text.RegularExpressions
                 // We failed to match at this position.  If we're at the stopping point, we're done.
                 if (runtextpos == stoppos)
                 {
+                    runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                    if (runmatch != null) runmatch.Text = null!;
                     return Match.Empty;
                 }
 
@@ -212,13 +220,6 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, TimeSpan timeout)
         {
-            // Store arguments into fields for derived runner to examine
-            runregex = regex;
-            runtext = text;
-            runtextbeg = 0;
-            runtextend = text.Length;
-            runtextpos = runtextstart = textstart;
-
             // Handle timeout argument
             _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
             bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
@@ -235,21 +236,29 @@ namespace System.Text.RegularExpressions
 
             // Configure the additional value to "bump" the position along each time we loop around
             // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-            // bump by 1 and stop at runtextend, but if we're examining right-to-left, we instead bump
-            // by -1 and stop at runtextbeg.
-            int bump = 1, stoppos = runtextend;
-            if (runregex.RightToLeft)
+            // bump by 1 and stop at text.Length, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at 0.
+            int bump = 1, stoppos = text.Length;
+            if (regex.RightToLeft)
             {
                 bump = -1;
-                stoppos = runtextbeg;
+                stoppos = 0;
             }
+
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            runtextstart = runtextpos = textstart;
+            runtext = text;
+            runtextend = text.Length;
+            runtextbeg = 0;
 
             // Main loop: FindFirstChar/Go + bump until the ending position.
             bool initialized = false;
             while (true)
             {
 #if DEBUG
-                if (runregex.IsDebug)
+                if (regex.IsDebug)
                 {
                     Debug.WriteLine("");
                     Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
@@ -274,7 +283,7 @@ namespace System.Text.RegularExpressions
                     }
 
 #if DEBUG
-                    if (runregex.IsDebug)
+                    if (regex.IsDebug)
                     {
                         Debug.WriteLine($"Executing engine starting at {runtextpos}");
                         Debug.WriteLine("");
@@ -294,6 +303,7 @@ namespace System.Text.RegularExpressions
                         if (!callback(ref state, match))
                         {
                             // If the callback returns false, we're done.
+                            match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
                             return;
                         }
 
@@ -305,6 +315,7 @@ namespace System.Text.RegularExpressions
                         {
                             if (runtextpos == stoppos)
                             {
+                                match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
                                 return;
                             }
 
@@ -324,6 +335,8 @@ namespace System.Text.RegularExpressions
                 // We failed to match at this position.  If we're at the stopping point, we're done.
                 if (runtextpos == stoppos)
                 {
+                    runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                    if (runmatch != null) runmatch.Text = null!;
                     return;
                 }
 

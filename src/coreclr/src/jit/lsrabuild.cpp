@@ -1627,6 +1627,12 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
                 {
                     minRegCount++;
                 }
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                else if (newRefPosition->refType == RefTypeUpperVectorSave)
+                {
+                    minRegCount++;
+                }
+#endif
                 if (newRefPosition->getInterval()->isSpecialPutArg)
                 {
                     minRegCount++;
