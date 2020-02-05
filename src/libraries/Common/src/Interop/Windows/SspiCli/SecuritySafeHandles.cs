@@ -429,7 +429,6 @@ namespace System.Net.Security
 
             // Optional output buffer that may need to be freed.
             SafeFreeContextBuffer outFreeContextBuffer = null;
-            Span<IntPtr> ptr = stackalloc IntPtr[3];
             try
             {
                 // Allocate always maximum to allow better code optimization.
