@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Reflection.Metadata.Tests
-####################################################################
-
-# Test broken on Mono, added in https://github.com/dotnet/corefx/pull/40581
--nomethod System.Reflection.Tests.MetadataLoadContextTests.RelocatableAssembly
-
-####################################################################
 ##  System.Runtime.Loader.RefEmitLoadContext.Tests
 ####################################################################
 
