@@ -11,3 +11,5 @@ Makefile.in
 /install-sh
 /ltmain.sh
 /missing
+
+mono_crash*
