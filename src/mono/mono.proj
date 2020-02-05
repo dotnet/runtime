@@ -132,7 +132,15 @@
 
   <!-- Run netcore\sample\HelloWorld sample using Mono Runtime -->
   <Target Name="RunSample" DependsOnTargets="PatchLocalMonoDotnet">
-    <Exec Command="$(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
+    <PropertyGroup>
+      <EnvVars Condition="'$(OS)' != 'Windows_NT'"><![CDATA[
+      COMPlus_DebugWriteToStdErr=1 \
+      MONO_ENV_OPTIONS="" \
+      ]]>
+      </EnvVars>
+    </PropertyGroup>
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore/sample/HelloWorld" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->
