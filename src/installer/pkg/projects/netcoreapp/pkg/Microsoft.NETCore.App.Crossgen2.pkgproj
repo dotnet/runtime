@@ -34,7 +34,7 @@
     so we need to assemble the self-contained framework here.
   -->
   <Target Name="GetCrossgen2Files"
-          DependsOnTargets="GetFiles"
+          DependsOnTargets="ConvertItems"
           BeforeTargets="GetPackageFiles">
     <ItemGroup>
       <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" />
