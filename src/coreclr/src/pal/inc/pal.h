@@ -4844,7 +4844,6 @@ public:
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
 #endif
 
-
 #define PAL_SHLIB_PREFIX    "lib"
 #define PAL_SHLIB_PREFIX_W  u"lib"
 
