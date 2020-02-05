@@ -76,6 +76,7 @@
     <Compile Include="System\Data\DeletedRowInaccessibleExceptionTest.cs" />
     <Compile Include="System\Data\DuplicateNameExceptionTest.cs" />
     <Compile Include="System\Data\EvaluateExceptionTest.cs" />
+    <Compile Include="System\Data\FacadeTest.cs" />
     <Compile Include="System\Data\ForeignKeyConstraintTest.cs" />
     <Compile Include="System\Data\ForeignKeyConstraintTest2.cs" />
     <Compile Include="System\Data\InRowChangingEventExceptionTest.cs" />
@@ -118,5 +119,8 @@
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
   </ItemGroup>
 </Project>

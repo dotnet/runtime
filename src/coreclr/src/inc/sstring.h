@@ -70,7 +70,7 @@ typedef const UTF8 *LPCUTF8;
 
 
 typedef DPTR(class SString) PTR_SString;
-class SString : private SBuffer
+class EMPTY_BASES_DECL SString : private SBuffer
 {
     friend struct _DacGlobals;
 
@@ -335,7 +335,7 @@ private:
 
  protected:
 
-    class UIndex : public SBuffer::Index
+    class EMPTY_BASES_DECL UIndex : public SBuffer::Index
     {
         friend class SString;
         friend class Indexer<WCHAR, UIterator>;
@@ -354,7 +354,7 @@ private:
 
  public:
 
-    class UIterator : public UIndex, public Indexer<WCHAR, UIterator>
+    class EMPTY_BASES_DECL UIterator : public UIndex, public Indexer<WCHAR, UIterator>
     {
         friend class SString;
 
@@ -389,7 +389,7 @@ private:
 
  protected:
 
-    class Index : public SBuffer::Index
+    class EMPTY_BASES_DECL Index : public SBuffer::Index
     {
         friend class SString;
 
@@ -421,7 +421,7 @@ private:
 
  public:
 
-    class CIterator : public Index, public Indexer<const WCHAR, CIterator>
+    class EMPTY_BASES_DECL CIterator : public Index, public Indexer<const WCHAR, CIterator>
     {
         friend class SString;
 
@@ -461,7 +461,7 @@ private:
         WCHAR operator[](int index) const { return Index::operator[](index); }
     };
 
-    class Iterator : public Index, public Indexer<WCHAR, Iterator>
+    class EMPTY_BASES_DECL Iterator : public Index, public Indexer<WCHAR, Iterator>
     {
         friend class SString;
 
@@ -805,7 +805,7 @@ private:
 // ===========================================================================
 
 template <COUNT_T MEMSIZE>
-class InlineSString : public SString
+class EMPTY_BASES_DECL InlineSString : public SString
 {
 private:
     BYTE m_inline[SBUFFER_PADDED_SIZE(MEMSIZE)];
@@ -978,7 +978,7 @@ typedef InlineSString<2 * 260> LongPathString;
 // ScratchBuffer classes are used by the GetXXX() routines to allocate scratch space in.
 // ================================================================================
 
-class SString::AbstractScratchBuffer : private SString
+class EMPTY_BASES_DECL SString::AbstractScratchBuffer : private SString
 {
   protected:
     // Do not use this class directly - use
@@ -987,7 +987,7 @@ class SString::AbstractScratchBuffer : private SString
 };
 
 template <COUNT_T MEMSIZE>
-class ScratchBuffer : public SString::AbstractScratchBuffer
+class EMPTY_BASES_DECL ScratchBuffer : public SString::AbstractScratchBuffer
 {
   private:
     BYTE m_inline[MEMSIZE];

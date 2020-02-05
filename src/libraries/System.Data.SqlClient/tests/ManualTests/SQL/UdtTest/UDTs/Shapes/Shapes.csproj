@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;</TargetFrameworks>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="Line.cs" />
-    <Compile Include="Point.cs" />
-  </ItemGroup>
-</Project>
