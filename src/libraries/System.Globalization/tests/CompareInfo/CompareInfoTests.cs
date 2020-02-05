@@ -349,12 +349,18 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(SortKey_TestData))]
-        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expected)
+        public void SortKeyTest(CompareInfo compareInfo, string string1, string string2, CompareOptions options, int expectedSign)
         {
             SortKey sk1 = compareInfo.GetSortKey(string1, options);
             SortKey sk2 = compareInfo.GetSortKey(string2, options);
 
-            Assert.Equal(expected, SortKey.Compare(sk1, sk2));
+            Assert.Equal(expectedSign, Math.Sign(SortKey.Compare(sk1, sk2)));
+            Assert.Equal(expectedSign == 0, sk1.Equals(sk2));
+            Assert.Equal(Math.Sign(compareInfo.Compare(string1, string2, options)), Math.Sign(SortKey.Compare(sk1, sk2)));
+
+            Assert.Equal(compareInfo.GetHashCode(string1, options), sk1.GetHashCode());
+            Assert.Equal(compareInfo.GetHashCode(string2, options), sk2.GetHashCode());
+
             Assert.Equal(string1, sk1.OriginalString);
             Assert.Equal(string2, sk2.OriginalString);
         }
@@ -388,6 +394,9 @@ namespace System.Globalization.Tests
             Assert.Equal(sk4, sk5);
             Assert.Equal(sk4.GetHashCode(), sk5.GetHashCode());
             Assert.Equal(sk4.KeyData, sk5.KeyData);
+
+            Assert.False(sk1.Equals(null));
+            Assert.True(sk1.Equals(sk1));
 
             AssertExtensions.Throws<ArgumentNullException>("source", () => ci.GetSortKey(null));
             AssertExtensions.Throws<ArgumentException>("options", () => ci.GetSortKey(s1, CompareOptions.Ordinal));
