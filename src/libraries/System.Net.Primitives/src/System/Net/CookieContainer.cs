@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -232,7 +233,7 @@ namespace System.Net
                     nameof(cookie) + "." + nameof(cookie.Domain));
             }
 
-            Uri uri;
+            Uri? uri;
             var uriSb = new StringBuilder();
 
             // We cannot add an invalid cookie into the container.
@@ -273,7 +274,7 @@ namespace System.Net
         // Add(Cookie cookie) the cookie is in a reasonable condition.
         internal void Add(Cookie cookie, bool throwOnError)
         {
-            PathList pathList;
+            PathList? pathList;
 
             if (cookie.Value.Length > m_maxCookieSize)
             {
@@ -288,7 +289,7 @@ namespace System.Net
             {
                 lock (m_domainTable.SyncRoot)
                 {
-                    pathList = (PathList)m_domainTable[cookie.DomainKey];
+                    pathList = (PathList?)m_domainTable[cookie.DomainKey];
                     if (pathList == null)
                     {
                         m_domainTable[cookie.DomainKey] = (pathList = new PathList());
@@ -296,10 +297,10 @@ namespace System.Net
                 }
                 int domain_count = pathList.GetCookiesCount();
 
-                CookieCollection cookies;
+                CookieCollection? cookies;
                 lock (pathList.SyncRoot)
                 {
-                    cookies = (CookieCollection)pathList[cookie.Path];
+                    cookies = (CookieCollection?)pathList[cookie.Path]!;
 
                     if (cookies == null)
                     {
@@ -368,7 +369,7 @@ namespace System.Net
         // (this.GetCookies method).
         //
         // Param. 'domain' == null means to age in the whole container.
-        private bool AgeCookies(string domain)
+        private bool AgeCookies(string? domain)
         {
             Debug.Assert(m_maxCookies != 0);
             Debug.Assert(m_maxCookiesPerDomain != 0);
@@ -377,9 +378,9 @@ namespace System.Net
             DateTime oldUsed = DateTime.MaxValue;
             DateTime tempUsed;
 
-            CookieCollection lruCc = null;
-            string lruDomain = null;
-            string tempDomain = null;
+            CookieCollection? lruCc = null;
+            string? lruDomain = null;
+            string tempDomain;
 
             PathList pathList;
             int domain_count = 0;
@@ -395,24 +396,26 @@ namespace System.Net
             }
             lock (m_domainTable.SyncRoot)
             {
-                foreach (DictionaryEntry entry in m_domainTable)
+                foreach (object? item in m_domainTable)
                 {
+                    DictionaryEntry entry = (DictionaryEntry)item!;
                     if (domain == null)
                     {
                         tempDomain = (string)entry.Key;
-                        pathList = (PathList)entry.Value; // Aliasing to trick foreach
+                        pathList = (PathList)entry.Value!; // Aliasing to trick foreach
                     }
                     else
                     {
                         tempDomain = domain;
-                        pathList = (PathList)m_domainTable[domain];
+                        pathList = (PathList)m_domainTable[domain]!;
                     }
 
                     domain_count = 0; // Cookies in the domain
                     lock (pathList.SyncRoot)
                     {
-                        foreach (CookieCollection cc in pathList.Values)
+                        foreach (CookieCollection? cc in pathList.Values)
                         {
+                            Debug.Assert(cc != null);
                             itemp = ExpireCollection(cc);
                             removed += itemp;
                             m_count -= itemp; // Update this container's count
@@ -440,9 +443,9 @@ namespace System.Net
                         {
                             cookies = Array.CreateInstance(typeof(CookieCollection), pathList.Count);
                             stamps = Array.CreateInstance(typeof(DateTime), pathList.Count);
-                            foreach (CookieCollection cc in pathList.Values)
+                            foreach (CookieCollection? cc in pathList.Values)
                             {
-                                stamps.SetValue(cc.TimeStamp(CookieCollection.Stamp.Check), itemp);
+                                stamps.SetValue(cc!.TimeStamp(CookieCollection.Stamp.Check), itemp);
                                 cookies.SetValue(cc, itemp);
                                 ++itemp;
                             }
@@ -452,7 +455,7 @@ namespace System.Net
                         itemp = 0;
                         for (int i = 0; i < cookies.Length; ++i)
                         {
-                            CookieCollection cc = (CookieCollection)cookies.GetValue(i);
+                            CookieCollection cc = (CookieCollection)cookies.GetValue(i)!;
 
                             lock (cc)
                             {
@@ -501,7 +504,7 @@ namespace System.Net
             }
 
             // Remove oldest cookies from the least used collection.
-            lock (lruCc)
+            lock (lruCc!)
             {
                 while (m_count >= m_maxCookies && lruCc.Count > 0)
                 {
@@ -527,14 +530,14 @@ namespace System.Net
                 while (enumerator.MoveNext())
                 {
                     currentDomain = (string)enumerator.Key;
-                    pathList = (PathList)enumerator.Value;
+                    pathList = (PathList)enumerator.Value!;
 
                     lock (pathList.SyncRoot)
                     {
                         IDictionaryEnumerator e = pathList.GetEnumerator();
                         while (e.MoveNext())
                         {
-                            CookieCollection cc = (CookieCollection)e.Value;
+                            CookieCollection cc = (CookieCollection)e.Value!;
                             if (cc.Count == 0)
                             {
                                 removePathList.Add(e.Key);
@@ -586,7 +589,7 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(cookies));
             }
-            foreach (Cookie c in cookies)
+            foreach (Cookie c in (ICollection<Cookie>)cookies)
             {
                 Add(c);
             }
@@ -688,15 +691,15 @@ namespace System.Net
             }
 
             bool isLocalDomain = IsLocalDomain(uri.Host);
-            foreach (Cookie c in cookies)
+            foreach (Cookie? c in cookies)
             {
-                Cookie new_cookie = c.Clone();
+                Cookie new_cookie = c!.Clone();
                 new_cookie.VerifySetDefaults(new_cookie.Variant, uri, isLocalDomain, m_fqdnMyDomain, true, true);
                 Add(new_cookie, true);
             }
         }
 
-        internal CookieCollection CookieCutter(Uri uri, string headerName, string setCookieHeader, bool isThrow)
+        internal CookieCollection CookieCutter(Uri uri, string? headerName, string setCookieHeader, bool isThrow)
         {
             if (NetEventSource.IsEnabled)
             {
@@ -726,7 +729,7 @@ namespace System.Net
                 CookieParser parser = new CookieParser(setCookieHeader);
                 do
                 {
-                    Cookie cookie = parser.Get();
+                    Cookie? cookie = parser.Get();
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
                     if (cookie == null)
@@ -790,7 +793,7 @@ namespace System.Net
             return InternalGetCookies(uri) ?? new CookieCollection();
         }
 
-        internal CookieCollection InternalGetCookies(Uri uri)
+        internal CookieCollection? InternalGetCookies(Uri uri)
         {
             if (m_count == 0)
             {
@@ -799,10 +802,10 @@ namespace System.Net
 
             bool isSecure = (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss);
             int port = uri.Port;
-            CookieCollection cookies = null;
+            CookieCollection? cookies = null;
 
             var domainAttributeMatchAnyCookieVariant = new System.Collections.Generic.List<string>();
-            System.Collections.Generic.List<string> domainAttributeMatchOnlyCookieVariantPlain = null;
+            System.Collections.Generic.List<string>? domainAttributeMatchOnlyCookieVariantPlain = null;
 
             string fqdnRemote = uri.Host;
 
@@ -865,14 +868,14 @@ namespace System.Net
             return cookies;
         }
 
-        private void BuildCookieCollectionFromDomainMatches(Uri uri, bool isSecure, int port, ref CookieCollection cookies, System.Collections.Generic.List<string> domainAttribute, bool matchOnlyPlainCookie)
+        private void BuildCookieCollectionFromDomainMatches(Uri uri, bool isSecure, int port, ref CookieCollection? cookies, System.Collections.Generic.List<string> domainAttribute, bool matchOnlyPlainCookie)
         {
             for (int i = 0; i < domainAttribute.Count; i++)
             {
                 PathList pathList;
                 lock (m_domainTable.SyncRoot)
                 {
-                    pathList = (PathList)m_domainTable[domainAttribute[i]];
+                    pathList = (PathList)m_domainTable[domainAttribute[i]]!;
                     if (pathList == null)
                     {
                         continue;
@@ -888,7 +891,7 @@ namespace System.Net
                         string path = (string)list.GetKey(e);
                         if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path), StringComparison.Ordinal))
                         {
-                            CookieCollection cc = (CookieCollection)list.GetByIndex(e);
+                            CookieCollection cc = (CookieCollection)list.GetByIndex(e)!;
                             cc.TimeStamp(CookieCollection.Stamp.Set);
                             MergeUpdateCollections(ref cookies, cc, port, isSecure, matchOnlyPlainCookie);
                         }
@@ -906,7 +909,7 @@ namespace System.Net
             }
         }
 
-        private void MergeUpdateCollections(ref CookieCollection destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)
+        private void MergeUpdateCollections(ref CookieCollection? destination, CookieCollection source, int port, bool isSecure, bool isPlainOnly)
         {
             lock (source)
             {
@@ -984,7 +987,7 @@ namespace System.Net
 
         internal string GetCookieHeader(Uri uri, out string optCookie2)
         {
-            CookieCollection cookies = InternalGetCookies(uri);
+            CookieCollection? cookies = InternalGetCookies(uri);
             if (cookies == null)
             {
                 optCookie2 = string.Empty;
@@ -1046,7 +1049,7 @@ namespace System.Net
                 int listCount = list.Count;
                 for (int i = 0; i < listCount; i++)
                 {
-                    count += ((CookieCollection)list[i]).Count;
+                    count += ((CookieCollection)list[i]!).Count;
                 }
             }
             return count;
@@ -1060,7 +1063,7 @@ namespace System.Net
             }
         }
 
-        internal object this[string s]
+        internal object? this[string s]
         {
             get
             {
@@ -1105,10 +1108,10 @@ namespace System.Net
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();
 
-            int IComparer.Compare(object ol, object or)
+            int IComparer.Compare(object? ol, object? or)
             {
-                string pathLeft = CookieParser.CheckQuoted((string)ol);
-                string pathRight = CookieParser.CheckQuoted((string)or);
+                string pathLeft = CookieParser.CheckQuoted((string)ol!);
+                string pathRight = CookieParser.CheckQuoted((string)or!);
                 int ll = pathLeft.Length;
                 int lr = pathRight.Length;
                 int length = Math.Min(ll, lr);
