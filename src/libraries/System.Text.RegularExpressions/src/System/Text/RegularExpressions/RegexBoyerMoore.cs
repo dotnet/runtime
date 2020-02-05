@@ -341,7 +341,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
         /// <summary>Used when dumping for debugging.</summary>
         [ExcludeFromCodeCoverage]
-        public override string ToString() => Pattern;
+        public override string ToString() => Dump(string.Empty);
 
         [ExcludeFromCodeCoverage]
         public string Dump(string indent)
