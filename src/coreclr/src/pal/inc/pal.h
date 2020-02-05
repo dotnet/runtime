@@ -4838,27 +4838,10 @@ public:
 #define MAKEDLLNAME_A(name)  "lib" name  ".so"
 #endif
 
-// Target platform-specific library naming
-//
-#ifdef TARGET_WINDOWS
-#define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
-#define MAKE_TARGET_DLLNAME_A(name) name ".dll"
-#else // TARGET_WINDOWS
-#ifdef TARGET_OSX
-#define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
-#define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
-#else
-#define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".so")
-#define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".so"
-#endif
-#endif // TARGET_WINDOWS
-
 #ifdef UNICODE
 #define MAKEDLLNAME(x) MAKEDLLNAME_W(x)
-#define MAKE_TARGET_DLLNAME(name) MAKE_TARGET_DLLNAME_W(name)
 #else
 #define MAKEDLLNAME(x) MAKEDLLNAME_A(x)
-#define MAKE_TARGET_DLLNAME(name) MAKE_TARGET_DLLNAME_A(name)
 #endif
 
 
