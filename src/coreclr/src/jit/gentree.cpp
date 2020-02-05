@@ -5398,6 +5398,13 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_ARR_ELEM:
         case GT_ARR_OFFSET:
             return true;
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+        {
+            GenTreeSIMD* simdNode = (const_cast<GenTree*>(this))->AsSIMD();
+            return simdNode->OperIsMemoryLoad();
+        }
+#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
@@ -18324,6 +18331,18 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
         return gtNewOperNode(GT_COMMA, type, node, dummyNode);
     }
     return node;
+}
+
+// Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeSIMD::OperIsMemoryLoad()
+{
+#ifdef _TARGET_XARCH_
+    if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+    {
+        return true;
+    }
+#endif // _TARGET_XARCH_
+    return false;
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise

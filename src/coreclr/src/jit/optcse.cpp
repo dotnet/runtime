@@ -3295,7 +3295,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 #endif // FEATURE_HW_INTRINSICS
 
         case GT_INTRINSIC:
-             return true; // allow Intrinsics to be CSE-ed
+            return true; // allow Intrinsics to be CSE-ed
 
         case GT_OBJ:
             return varTypeIsEnregisterable(type); // Allow enregisterable GT_OBJ's to be CSE-ed. (i.e. SIMD types)

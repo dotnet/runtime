@@ -144,7 +144,7 @@ private:
     static const unsigned VNFOA_ArityShift = 2;
     static const unsigned VNFOA_ArityBits  = 3;
     static const unsigned VNFOA_MaxArity   = (1 << VNFOA_ArityBits) - 1; // Max arity we can represent.
-    static const unsigned VNFOA_ArityMask  = (VNFOA_Arity4 | VNFOA_Arity2| VNFOA_Arity1);
+    static const unsigned VNFOA_ArityMask  = (VNFOA_Arity4 | VNFOA_Arity2 | VNFOA_Arity1);
 
     // These enum constants are used to encode the cast operation in the lowest bits by VNForCastOper
     enum VNFCastAttrib

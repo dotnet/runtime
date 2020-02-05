@@ -1889,8 +1889,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(arg0VN != NoVN && arg1VN != NoVN);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments carry no exceptions.
     assert(arg1VN == VNNormalValue(arg1VN)); // Arguments carry no exceptions.
-    assert(VNFuncArity(func) == 2);  // or HWI_Shuffle
-    assert(func != VNF_MapSelect);           // Precondition: use the special function VNForMapSelect defined for that.
+    assert(VNFuncArity(func) == 2);
+    assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
     ValueNum resultVN;
 
@@ -5285,14 +5285,14 @@ void ValueNumStore::InitValueNumStoreStatics()
 
     int vnfNum = VNF_Boundary + 1; // The macro definition below will update this after using it.
 
-#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                        \
-    if (commute)                                                                                \
-        vnfOpAttribs[vnfNum] |= VNFOA_Commutative;                                              \
-    if (knownNonNull)                                                                           \
-        vnfOpAttribs[vnfNum] |= VNFOA_KnownNonNull;                                             \
-    if (sharedStatic)                                                                           \
-        vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                             \
-    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);                                        \
+#define ValueNumFuncDef(vnf, arity, commute, knownNonNull, sharedStatic)                                               \
+    if (commute)                                                                                                       \
+        vnfOpAttribs[vnfNum] |= VNFOA_Commutative;                                                                     \
+    if (knownNonNull)                                                                                                  \
+        vnfOpAttribs[vnfNum] |= VNFOA_KnownNonNull;                                                                    \
+    if (sharedStatic)                                                                                                  \
+        vnfOpAttribs[vnfNum] |= VNFOA_SharedStatic;                                                                    \
+    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);                                                               \
     vnfNum++;
 
 #include "valuenumfuncs.h"
@@ -5300,16 +5300,18 @@ void ValueNumStore::InitValueNumStoreStatics()
 
     assert(vnfNum == VNF_COUNT);
 
-#define ValueNumFuncSetArity(vnfNum, arity)                                                     \
-    vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;             /* clear old arity value   */         \
-    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift);  /* set the new arity value */
+#define ValueNumFuncSetArity(vnfNum, arity)                                                                            \
+    vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;            /* clear old arity value   */                                 \
+    vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift); /* set the new arity value */
 
-    // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC it always has two operands.
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+    // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
     ValueNumFuncSetArity(VNF_HWI_SSE2_Shuffle, 2)
+#endif
 
 #undef ValueNumFuncSetArity
 
-    for (unsigned i = 0; i < _countof(genTreeOpsIllegalAsVNFunc); i++)
+        for (unsigned i = 0; i < _countof(genTreeOpsIllegalAsVNFunc); i++)
     {
         vnfOpAttribs[genTreeOpsIllegalAsVNFunc[i]] |= VNFOA_IllegalGenTreeOp;
     }
@@ -6353,7 +6355,16 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
-            tree->gtVNPair.SetBoth(vnStore->VNForLongCon(INT64(tree->AsIntConCommon()->LngValue())));
+
+#ifdef _TARGET_64BIT_
+            // Only zero SIMD constants are currently allowed
+            //
+            assert(tree->AsIntConCommon()->LngValue() == 0);
+            tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->LngValue()));
+#else // 32BIT
+            assert(tree->AsIntConCommon()->IconValue() == 0);
+            tree->gtVNPair.SetBoth(vnStore->VNForIntCon(tree->AsIntConCommon()->IconValue()));
+#endif
             break;
 #endif // FEATURE_SIMD
 
@@ -8345,7 +8356,6 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
     assert(tree->OperGet() == GT_SIMD);
     GenTreeSIMD* simdNode = tree->AsSIMD();
     assert(simdNode != nullptr);
-
     ValueNumPair excSetPair;
     ValueNumPair normalPair;
 
@@ -8362,7 +8372,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         // We have a SIMD node in the GT_LIST form with 3 or more args
         // For now we will generate a unique value number for this case.
 
-        // Generate unique VN 
+        // Generate a unique VN
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }
@@ -8371,6 +8381,48 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         ValueNumPair op1vnp;
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
+#ifdef _TARGET_XARCH_
+        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+        {
+            // rationalize rewrites this as an explicit load with op1 as the base address
+
+            ValueNumPair op2vnp;
+            if (tree->AsOp()->gtOp2 == nullptr)
+            {
+                // a nullptr for op2 means that we have an impicit index of zero
+                op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
+
+                excSetPair = op1Xvnp;
+            }
+            else // We have an explicit index in op2
+            {
+                ValueNumPair op2Xvnp;
+                vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+            }
+
+            ValueNum addrVN =
+                vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
+                vnPrint(addrVN, 0);
+            }
+#endif // DEBUG
+
+            // The address points into the heap, so it is an ByrefExposed load.
+            //
+            ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
+            tree->gtVNPair.SetLiberal(loadVN);
+            tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
+            fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+            return;
+        }
+#endif //  _TARGET_XARCH_
 
         if (tree->AsOp()->gtOp2 == nullptr)
         {
@@ -8399,9 +8451,9 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     assert(tree->OperGet() == GT_HWINTRINSIC);
     GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
     assert(hwIntrinsicNode != nullptr);
-    int lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode);
-    VNFunc func = GetVNFuncForNode(tree);
-    unsigned  fixedArity = vnStore->VNFuncArity(func);
+    int      lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode);
+    VNFunc   func          = GetVNFuncForNode(tree);
+    unsigned fixedArity    = vnStore->VNFuncArity(func);
     //
     // fixedArity is the numArgs column in "hwinstrinsiclistxarch.h"
     // a -1 value is translated into an unsigned value of 7
@@ -8423,7 +8475,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
         // Or the numArgs waspecifdied as -1 in the numArgs column in "hwinstrinsiclistxarch.h"
         // For now we will generate a unique value number for this case.
 
-        // Generate unique VN 
+        // Generate unique VN
         tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
         return;
     }

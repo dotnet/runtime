@@ -4536,6 +4536,9 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
     {
     }
 
+    bool OperIsMemoryLoad(); // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics,
+                             // false otherwise
+
 #if DEBUGGABLE_GENTREE
     GenTreeSIMD() : GenTreeJitIntrinsic()
     {

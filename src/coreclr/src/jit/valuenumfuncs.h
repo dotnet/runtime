@@ -174,6 +174,8 @@ ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of t
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_AsByte
 
+#elif defined (_TARGET_ARM_)
+// No Hardware Intrinsics on ARM32
 #else
 #error Unsupported platform
 #endif
