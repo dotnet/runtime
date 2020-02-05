@@ -2833,6 +2833,39 @@ CORCOMPILE_METHOD_PROFILE_LIST *PEDecoder::GetNativeProfileDataList(COUNT_T * pS
 
 #endif // FEATURE_PREJIT
 
+PTR_IMAGE_DATA_DIRECTORY PEDecoder::GetReadyToRunSection(DWORD section) const
+{
+    CONTRACT(PTR_IMAGE_DATA_DIRECTORY)
+    {
+        INSTANCE_CHECK;
+        PRECONDITION(HasReadyToRunHeader());
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACT_END;
+
+    READYTORUN_HEADER* pHeader = GetReadyToRunHeader();
+
+    PTR_IMAGE_DATA_DIRECTORY pDir = NULL;
+
+    PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
+    for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
+    {
+        // Verify that section types are sorted
+        _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
+
+        READYTORUN_SECTION* pSection = pSections + i;
+        if (pSection->Type == section)
+        {
+            // Set pDir to the address of the manifest metadata section
+            pDir = dac_cast<PTR_IMAGE_DATA_DIRECTORY>(&pSection->Section);
+            break;
+        }
+    }
+
+    RETURN pDir;
+}
+
 PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
 {
     CONTRACT(PTR_CVOID)
@@ -2854,22 +2887,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     else
 #endif
     {
-        READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
-
-        PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
-        for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
-        {
-            // Verify that section types are sorted
-            _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
-
-            READYTORUN_SECTION * pSection = pSections + i;
-            if (pSection->Type == READYTORUN_SECTION_MANIFEST_METADATA)
-            {
-                // Set pDir to the address of the manifest metadata section
-                pDir = &pSection->Section;
-                break;
-            }
-        }
+        pDir = GetReadyToRunSection(READYTORUN_SECTION_MANIFEST_METADATA);
 
         // ReadyToRun file without large version bubble support doesn't have the READYTORUN_SECTION_MANIFEST_METADATA
         if (pDir == NULL)

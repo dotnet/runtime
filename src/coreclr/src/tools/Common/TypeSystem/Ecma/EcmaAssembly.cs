@@ -50,7 +50,8 @@ namespace Internal.TypeSystem.Ecma
                 AssemblyName an = new AssemblyName();
                 an.Name = metadataReader.GetString(_assemblyDefinition.Name);
                 an.Version = _assemblyDefinition.Version;
-                an.SetPublicKey(metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
+                if ((_assemblyDefinition.Flags & AssemblyFlags.PublicKey) != 0)
+                    an.SetPublicKey(metadataReader.GetBlobBytes(_assemblyDefinition.PublicKey));
 
                 an.CultureName = metadataReader.GetString(_assemblyDefinition.Culture);
                 an.ContentType = GetContentTypeFromAssemblyFlags(_assemblyDefinition.Flags);

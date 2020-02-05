@@ -26,6 +26,7 @@ namespace ILCompiler
         private bool _generateMapFile;
         private int _parallelism;
         private string _jitPath;
+        private bool _generateNativeDependencies;
 
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
@@ -108,6 +109,11 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder WithNativeDependenciesTable(bool enable)
+        {
+            _generateNativeDependencies = enable;
+            return this;
+        }
 
         public override ICompilation ToCompilation()
         {
@@ -149,6 +155,12 @@ namespace ILCompiler
             flags |= _compilationGroup.GetReadyToRunFlags();
 
             var header = new HeaderNode(_context.Target, flags);
+
+            if (_generateNativeDependencies)
+            {
+                var nativeDependencies = new NativeDependencieNode(_context.Target);
+                header.Add(Internal.Runtime.ReadyToRunSectionType.NativeDependencies, nativeDependencies, nativeDependencies);
+            }
 
             NodeFactory factory = new NodeFactory(
                 _context,

@@ -705,3 +705,6 @@ Crst MethodDescBackpatchInfoTracker
     AcquiredBefore FuncPtrStubs ThreadStore SystemDomain
     AcquiredAfter ReJITGlobalRequest
 End
+
+Crst NativeImageDependencies
+End

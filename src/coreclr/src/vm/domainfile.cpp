@@ -512,6 +512,9 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 
     case FILE_LOAD_EAGER_FIXUPS:
         EagerFixups();
+#ifndef CROSSGEN_COMPILE
+        VerifyReadyToRunImageDependencies();
+#endif
         break;
 
     case FILE_LOAD_DELIVER_EVENTS:
@@ -546,6 +549,59 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
 #endif
 
     return TRUE;
+}
+
+void DomainAssembly::VerifyReadyToRunImageDependencies()
+{
+    //
+    // Verify that the IL image is consistent with the R2R images loaded into appdomain
+    //
+
+    AssemblySpec spec;
+    spec.InitializeSpec(GetFile());
+
+    GUID mvid;
+    GetFile()->GetMVID(&mvid);
+
+    GetLoaderAllocator()->CheckForMismatchedNativeImages(&spec, &mvid);
+    
+    if (GetFile()->IsILImageReadyToRun())
+    {
+        PTR_PEImage pImage = GetFile()->GetILimage();
+
+        PTR_PEImageLayout pLayout = pImage->GetLayout(PEImageLayout::LAYOUT_ANY, 0);
+        PTR_IMAGE_DATA_DIRECTORY pDependencyDirectory = pLayout->GetReadyToRunSection(READYTORUN_SECTION_NATIVE_DEPENDENCIES);
+        if (pDependencyDirectory != NULL)
+        {
+            READYTORUN_DEPENDENCY* pDependencies = (READYTORUN_DEPENDENCY*)pLayout->GetDirectoryData(pDependencyDirectory);
+            COUNT_T cDependencies = pDependencyDirectory->Size / sizeof(READYTORUN_DEPENDENCY);
+            for (COUNT_T iDependency = 0; iDependency < cDependencies; iDependency++)
+            {
+                READYTORUN_DEPENDENCY* pDependency = &(pDependencies[iDependency]);
+
+                mdToken token;
+                IMDInternalImport* mdImport;
+                if (pDependency->ModuleId < m_pModule->GetAssemblyRefMax())
+                {
+                    token = TokenFromRid(pDependency->ModuleId, mdtAssemblyRef);
+                    mdImport = pImage->GetMDImport();
+                }
+                else
+                {
+                    token = TokenFromRid(pDependency->ModuleId - m_pModule->GetAssemblyRefMax(), mdtAssemblyRef);
+                    mdImport = pImage->GetNativeMDImport();
+                }
+
+                AssemblySpec name;
+                name.InitializeSpec(token,
+                    mdImport,
+                    GetDomainAssembly());
+                name.SetBindingContext(spec.GetBindingContext());
+
+                GetLoaderAllocator()->CheckForMismatchedNativeImages(&name, &pDependency->Mvid);
+            }
+        }
+    }
 }
 
 #ifdef FEATURE_PREJIT
@@ -1452,7 +1508,7 @@ void DomainAssembly::FindNativeImage()
         GUID mvid;
         GetFile()->GetMVID(&mvid);
 
-        GetAppDomain()->CheckForMismatchedNativeImages(&spec, &mvid);
+        GetLoaderAllocator()->CheckForMismatchedNativeImages(&spec, &mvid);
     }
 
     CheckZapRequired();
@@ -1856,13 +1912,13 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
     CORCOMPILE_VERSION_INFO *pVersionInfo = pNativeImage->GetLoadedLayout()->GetNativeVersionInfo();
 
     // Check our own assembly first
-    GetAppDomain()->CheckForMismatchedNativeImages(&spec, &pVersionInfo->sourceAssembly.mvid);
+    GetLoaderAllocator()->CheckForMismatchedNativeImages(&spec, &pVersionInfo->sourceAssembly.mvid);
 
     // Check MVID in metadata against MVID in CORCOMPILE_VERSION_INFO - important when metadata is loaded from IL instead of NI
     ReleaseHolder<IMDInternalImport> pImport(this->GetFile()->GetMDImportWithRef());
     GUID mvid;
     IfFailThrow(pImport->GetScopeProps(NULL, &mvid));
-    GetAppDomain()->CheckForMismatchedNativeImages(&spec, &mvid);
+    GetLoaderAllocator()->CheckForMismatchedNativeImages(&spec, &mvid);
 
     // Now Check dependencies
     COUNT_T cDependencies;
@@ -1886,7 +1942,7 @@ BOOL DomainAssembly::CheckZapDependencyIdentities(PEImage *pNativeImage)
                 name.SetBindingContext(pParentAssemblyBindingContext);
             }
 
-            GetAppDomain()->CheckForMismatchedNativeImages(&name, &pDependencies->signAssemblyDef.mvid);
+            GetLoaderAllocator()->CheckForMismatchedNativeImages(&name, &pDependencies->signAssemblyDef.mvid);
         }
 
         pDependencies++;

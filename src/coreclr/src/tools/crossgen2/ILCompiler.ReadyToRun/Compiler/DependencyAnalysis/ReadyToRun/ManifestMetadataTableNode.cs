@@ -10,6 +10,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -140,13 +141,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("ManifestMetadataTableNode");
         }
 
-        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        internal IEnumerable<(int Index, Guid Mvid)> GetFragileDependencies(CompilerTypeSystemContext context)
         {
-            if (relocsOnly)
-            {
-                return new ObjectData(Array.Empty<byte>(), null, 1, null);
-            }
+            // Freeze the moduleId to assembly name map to catch possible ordering bugs.
+            CompleteEmission();
 
+            foreach (var assemblyNameAndIndex in  _assemblyRefToModuleIdMap.OrderBy(x => x.Value))
+            {
+                var module = (EcmaModule)context.GetModuleForSimpleName(assemblyNameAndIndex.Key, throwIfNotFound: false);
+                if (module == null)
+                    continue;
+
+                Guid mvid = module.MetadataReader.GetGuid(module.MetadataReader.GetModuleDefinition().Mvid);
+                yield return (assemblyNameAndIndex.Value, mvid);
+            }
+        }
+
+        private void CompleteEmission()
+        {
             if (!_emissionCompleted)
             {
                 foreach (ISignatureEmitter emitter in _signatureEmitters)
@@ -156,6 +168,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 _emissionCompleted = true;
             }
+        }
+
+        public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        {
+            if (relocsOnly)
+            {
+                return new ObjectData(Array.Empty<byte>(), null, 1, null);
+            }
+
+            CompleteEmission();
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
@@ -204,7 +226,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     name: metadataBuilder.GetOrAddString(assemblyName.Name),
                     version: assemblyName.Version,
                     culture: metadataBuilder.GetOrAddString(assemblyName.CultureName),
-                    publicKeyOrToken: metadataBuilder.GetOrAddBlob(publicKeyOrToken),
+                    publicKeyOrToken: publicKeyOrToken == null ? default : metadataBuilder.GetOrAddBlob(publicKeyOrToken),
                     flags: assemblyFlags,
                     hashValue: default(BlobHandle) /* TODO */);
             }

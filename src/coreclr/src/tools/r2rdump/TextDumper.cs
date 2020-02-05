@@ -403,6 +403,12 @@ namespace R2RDump
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
                     break;
+                case ReadyToRunSection.SectionType.READYTORUN_SECTION_NATIVE_DEPENDENCIES:
+                    int ndOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int ndEndOffset = ndOffset + section.Size;
+                    NativeDependenciesSection nativeDependenciesSection = new NativeDependenciesSection(_r2r, ndOffset, ndEndOffset);
+                    _writer.WriteLine(nativeDependenciesSection.ToString());
+                    break;
             }
         }
 

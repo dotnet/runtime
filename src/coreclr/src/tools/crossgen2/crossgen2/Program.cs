@@ -319,6 +319,7 @@ namespace ILCompiler
                         DependencyTrackingLevel.None : (_commandLineOptions.GenerateFullDgmlLog ? DependencyTrackingLevel.All : DependencyTrackingLevel.First);
 
                     builder
+                        .WithNativeDependenciesTable(_commandLineOptions.InputBubble)
                         .UseIbcTuning(_commandLineOptions.Tuning)
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)

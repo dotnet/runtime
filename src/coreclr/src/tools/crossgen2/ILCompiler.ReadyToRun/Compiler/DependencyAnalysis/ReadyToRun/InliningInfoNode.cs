@@ -22,6 +22,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly EcmaModule _globalContext;
 
+        protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+
+        public override int ClassCode => (int)ObjectNodeOrder.InliningInfoNode;
+
         public InliningInfoNode(TargetDetails target, EcmaModule globalContext)
             : base(target)
         {
@@ -143,7 +147,5 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
         }
-
-        public override int ClassCode => -87382891;
     }
 }

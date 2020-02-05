@@ -493,7 +493,7 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 AssemblySpec spec;
                 spec.InitializeSpec(domainAssemblyToRemove->GetFile());
                 VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
-                pAppDomain->RemoveNativeImageDependency(&spec);
+                pDomainLoaderAllocatorDestroyIterator->RemoveNativeImageDependency(&spec);
             }
 
             domainAssemblyIt++;
@@ -1061,6 +1061,8 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);
 #endif
 
+    m_NativeImageDependenciesCrst.Init(CrstNativeImageDependencies);
+
 #ifndef CROSSGEN_COMPILE
     m_methodDescBackpatchInfoTracker.Initialize(this);
 #endif
@@ -1323,6 +1325,8 @@ void LoaderAllocator::Terminate()
     m_InteropDataCrst.Destroy();
 #endif
     m_LoaderAllocatorReferences.RemoveAll();
+
+    m_NativeImageDependenciesCrst.Destroy();
 
     // In collectible types we merge the low frequency and high frequency heaps
     // So don't destroy them twice.
@@ -1973,5 +1977,100 @@ BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableD
 }
 
 #endif // FEATURE_COMINTEROP
+
+static void NormalizeAssemblySpecForNativeDependencies(AssemblySpec* pSpec)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (pSpec->IsStrongNamed() && pSpec->HasPublicKey())
+    {
+        pSpec->ConvertPublicKeyToToken();
+    }
+
+    //
+    // CoreCLR binder unifies assembly versions. Ignore assembly version here to 
+    // detect more types of potential mismatches.
+    //
+    AssemblyMetaDataInternal* pContext = pSpec->GetContext();
+    pContext->usMajorVersion = (USHORT)-1;
+    pContext->usMinorVersion = (USHORT)-1;
+    pContext->usBuildNumber = (USHORT)-1;
+    pContext->usRevisionNumber = (USHORT)-1;
+
+    // Ignore the WinRT type while considering if two assemblies have the same identity.
+    pSpec->SetWindowsRuntimeType(NULL, NULL);
+}
+
+void LoaderAllocator::CheckForMismatchedNativeImages(AssemblySpec* pSpec, const GUID* pGuid)
+{
+    STANDARD_VM_CONTRACT;
+
+    //
+    // The native images are ever used only for trusted images in CoreCLR.
+    // We don't wish to open the IL file at runtime so we just forgo any
+    // eager consistency checking. But we still want to prevent mistmatched 
+    // NGen images from being used. We record all mappings between assembly 
+    // names and MVID, and fail once we detect mismatch.
+    //
+    NormalizeAssemblySpecForNativeDependencies(pSpec);
+
+    CrstHolder ch(&m_NativeImageDependenciesCrst);
+
+    const NativeImageDependenciesEntry* pEntry = m_NativeImageDependencies.Lookup(pSpec);
+
+    if (pEntry != NULL)
+    {
+        if (*pGuid != pEntry->m_guidMVID)
+        {
+            SString msg;
+            msg.Printf("ERROR: Native images generated against multiple versions of assembly %s. ", pSpec->GetName());
+            WszOutputDebugString(msg.GetUnicode());
+            COMPlusThrowNonLocalized(kFileLoadException, msg.GetUnicode());
+        }
+    }
+    else
+    {
+        //
+        // No entry yet - create one
+        //
+        NativeImageDependenciesEntry* pNewEntry = new NativeImageDependenciesEntry();
+        pNewEntry->m_AssemblySpec.CopyFrom(pSpec);
+        pNewEntry->m_AssemblySpec.CloneFields(AssemblySpec::ALL_OWNED);
+        pNewEntry->m_guidMVID = *pGuid;
+        m_NativeImageDependencies.Add(pNewEntry);
+    }
+}
+
+BOOL LoaderAllocator::RemoveNativeImageDependency(AssemblySpec* pSpec)
+{
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        PRECONDITION(CheckPointer(pSpec));
+    }
+    CONTRACTL_END;
+
+    BOOL result = FALSE;
+    NormalizeAssemblySpecForNativeDependencies(pSpec);
+
+    CrstHolder ch(&m_NativeImageDependenciesCrst);
+
+    const NativeImageDependenciesEntry* pEntry = m_NativeImageDependencies.Lookup(pSpec);
+
+    if (pEntry != NULL)
+    {
+        m_NativeImageDependencies.Remove(pSpec);
+        delete pEntry;
+        result = TRUE;
+    }
+
+    return result;
+}
 
 #endif // !DACCESS_COMPILE

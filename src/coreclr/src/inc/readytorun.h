@@ -68,6 +68,7 @@ enum ReadyToRunSectionType
     READYTORUN_SECTION_MANIFEST_METADATA            = 112, // Added in V2.3
     READYTORUN_SECTION_ATTRIBUTEPRESENCE            = 113, // Added in V3.1
     READYTORUN_SECTION_INLINING_INFO2               = 114, // Added in V4.1
+    READYTORUN_SECTION_NATIVE_DEPENDENCIES          = 115, // Added in V4.1
 
 	// If you add a new section consider whether it is a breaking or non-breaking change.
 	// Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -368,6 +369,12 @@ struct READYTORUN_EXCEPTION_CLAUSE
 enum ReadyToRunRuntimeConstants : DWORD
 {
     READYTORUN_PInvokeTransitionFrameSizeInPointerUnits = 11
+};
+
+struct READYTORUN_DEPENDENCY
+{
+    DWORD               ModuleId;
+    GUID                Mvid;
 };
 
 #endif // __READYTORUN_H__

@@ -59,9 +59,11 @@ namespace ILCompiler.DependencyAnalysis
             //
             CorHeaderNode,
             ReadyToRunHeaderNode,
+            InliningInfoNode,
             ImportSectionsTableNode,
             ImportSectionNode,
             MethodEntrypointTableNode,
+            NativeDependenciesNode,
 
 
             //
