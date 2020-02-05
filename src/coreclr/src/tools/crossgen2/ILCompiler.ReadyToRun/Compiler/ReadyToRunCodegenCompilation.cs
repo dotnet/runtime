@@ -18,6 +18,8 @@ using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
+using Internal.TypeSystem.Ecma;
+using System.Linq;
 
 namespace ILCompiler
 {
@@ -189,7 +191,7 @@ namespace ILCompiler
         /// <summary>
         /// Name of the compilation input MSIL file.
         /// </summary>
-        private readonly string _inputFilePath;
+        private readonly IEnumerable<EcmaModule> _inputModules;
 
         private bool _resilient;
 
@@ -206,37 +208,32 @@ namespace ILCompiler
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            string inputFilePath,
-            IEnumerable<ModuleDesc> modulesBeingInstrumented,
+            IEnumerable<EcmaModule> inputModules,
             bool resilient,
             bool generateMapFile,
             int parallelism)
-            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, modulesBeingInstrumented, logger)
+            : base(dependencyGraph, nodeFactory, roots, ilProvider, devirtualizationManager, inputModules, logger)
         {
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
 
-            _inputFilePath = inputFilePath;
+            _inputModules = inputModules;
 
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
         }
 
         public override void Compile(string outputFile)
         {
-            using (FileStream inputFile = File.OpenRead(_inputFilePath))
+            _dependencyGraph.ComputeMarkedNodes();
+            var nodes = _dependencyGraph.MarkedNodeList;
+
+            using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
-                PEReader inputPeReader = new PEReader(inputFile);
-
-                _dependencyGraph.ComputeMarkedNodes();
-                var nodes = _dependencyGraph.MarkedNodeList;
-
-                using (PerfEventSource.StartStopEvents.EmittingEvents())
-                {
-                    NodeFactory.SetMarkingComplete();
-                    ReadyToRunObjectWriter.EmitObject(inputPeReader, outputFile, nodes, NodeFactory, _generateMapFile);
-                }
+                NodeFactory.SetMarkingComplete();
+                // Temporary, before we change object writer to not need an input MSIL module
+                ReadyToRunObjectWriter.EmitObject(_inputModules.First().PEReader, outputFile, nodes, NodeFactory, _generateMapFile);
             }
         }
 

@@ -205,7 +205,7 @@ namespace ILCompiler
                     }
 
                     string systemModuleName = _commandLineOptions.SystemModule ?? DefaultSystemModule;
-                    typeSystemContext.SetSystemModule(typeSystemContext.GetModuleForSimpleName(systemModuleName));
+                    typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
 
                     if (typeSystemContext.InputFilePaths.Count == 0)
                         throw new CommandLineException(SR.NoInputFiles);
@@ -306,13 +306,7 @@ namespace ILCompiler
                     // Compile
                     //
 
-                    string inputFilePath = "";
-                    foreach (var input in typeSystemContext.InputFilePaths)
-                    {
-                        inputFilePath = input.Value;
-                        break;
-                    }
-                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, inputFilePath);
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, _commandLineOptions.Composite, inputModules);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 

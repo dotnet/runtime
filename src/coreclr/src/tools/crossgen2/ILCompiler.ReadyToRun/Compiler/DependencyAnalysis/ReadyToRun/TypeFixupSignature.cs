@@ -49,6 +49,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"TypeFixupSignature({_fixupKind.ToString()}): ");
             sb.Append(nameMangler.GetMangledTypeName(_typeDesc));
+            sb.Append(" <= ");
+            sb.Append(_signatureContext.ToString());
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

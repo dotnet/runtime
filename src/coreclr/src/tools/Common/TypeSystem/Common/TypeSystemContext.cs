@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection;
 
 using Internal.NativeFormat;
+using Internal.TypeSystem.Ecma;
 
 namespace Internal.TypeSystem
 {
@@ -45,13 +46,13 @@ namespace Internal.TypeSystem
             get;
         }
 
-        public ModuleDesc SystemModule
+        public EcmaModule SystemModule
         {
             get;
             private set;
         }
 
-        protected void InitializeSystemModule(ModuleDesc systemModule)
+        protected void InitializeSystemModule(EcmaModule systemModule)
         {
             Debug.Assert(SystemModule == null);
             SystemModule = systemModule;

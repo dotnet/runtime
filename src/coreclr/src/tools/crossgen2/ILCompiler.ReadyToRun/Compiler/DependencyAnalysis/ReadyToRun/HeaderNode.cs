@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
     }
 
-    public class HeaderNode : ObjectNode, ISymbolDefinitionNode
+    public abstract class HeaderNode : ObjectNode, ISymbolDefinitionNode
     {
         struct HeaderItem
         {
@@ -61,11 +61,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly List<HeaderItem> _items = new List<HeaderItem>();
         private readonly TargetDetails _target;
         private readonly ReadyToRunFlags _flags;
+        private readonly bool _isGlobalHeader;
 
-        public HeaderNode(TargetDetails target, ReadyToRunFlags flags)
+        public HeaderNode(TargetDetails target, ReadyToRunFlags flags, bool isGlobalHeader)
         {
             _target = target;
             _flags = flags;
+            _isGlobalHeader = isGlobalHeader;
         }
 
         public void Add(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol)
@@ -73,15 +75,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _items.Add(new HeaderItem(id, node, startSymbol));
         }
 
-        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
-        {
-            sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunHeader");
-        }
         public int Offset => 0;
         public override bool IsShareable => false;
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
+
+        protected abstract void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb);
+
+        public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb) => AppendMangledHeaderName(nameMangler, sb);
 
         public override bool StaticDependenciesAreComputed => true;
 
@@ -106,12 +107,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!relocsOnly)
                 _items.Sort((x, y) => Comparer<int>.Default.Compare((int)x.Id, (int)y.Id));
 
-            // ReadyToRunHeader.Magic
-            builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));
+            if (_isGlobalHeader)
+            {
+                // ReadyToRunHeader.Magic
+                builder.EmitInt((int)(ReadyToRunHeaderConstants.Signature));
 
-            // ReadyToRunHeader.MajorVersion
-            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMajorVersion));
-            builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
+                // ReadyToRunHeader.MajorVersion
+                builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMajorVersion));
+                builder.EmitShort((short)(ReadyToRunHeaderConstants.CurrentMinorVersion));
+            }
 
             // ReadyToRunHeader.Flags
             builder.EmitInt((int)_flags);
@@ -140,7 +144,46 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;
+    }
+
+    public class GlobalHeaderNode : HeaderNode
+    {
+        public GlobalHeaderNode(TargetDetails target, ReadyToRunFlags flags)
+            : base(target, flags, isGlobalHeader: true)
+        {
+        }
+
+        protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunHeader");
+        }
 
         public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunHeaderNode;
+    }
+
+    public class AssemblyHeaderNode : HeaderNode
+    {
+        private readonly int _index;
+
+        public AssemblyHeaderNode(TargetDetails target, ReadyToRunFlags flags, int index)
+            : base(target, flags, isGlobalHeader: false)
+        {
+            _index = index;
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            return _index - ((AssemblyHeaderNode)other)._index;
+        }
+
+        protected override void AppendMangledHeaderName(NameMangler nameMangler, Utf8StringBuilder sb)
+        {
+            sb.Append(nameMangler.CompilationUnitPrefix);
+            sb.Append("__ReadyToRunAssemblyHeader__");
+            sb.Append(_index.ToString());
+        }
+
+        public override int ClassCode => (int)ObjectNodeOrder.ReadyToRunAssemblyHeaderNode;
     }
 }

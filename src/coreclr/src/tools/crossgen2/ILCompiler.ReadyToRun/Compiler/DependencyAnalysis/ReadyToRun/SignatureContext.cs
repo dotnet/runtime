@@ -109,5 +109,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             return LocalContext.CompareTo(other.LocalContext);
         }
+
+        public override string ToString()
+        {
+            return GlobalContext.Assembly.GetName().Name;
+        }
     }
 }

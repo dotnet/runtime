@@ -129,6 +129,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             sb.Append(": ");
             _method.AppendMangledName(nameMangler, sb);
+            sb.Append(" << ");
+            sb.Append(_signatureContext.ToString());
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

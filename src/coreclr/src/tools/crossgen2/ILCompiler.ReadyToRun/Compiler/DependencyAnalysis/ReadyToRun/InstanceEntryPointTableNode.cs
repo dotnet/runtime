@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
 using Internal.JitInterface;
@@ -19,9 +20,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class InstanceEntryPointTableNode : HeaderTableNode
     {
-        public InstanceEntryPointTableNode(TargetDetails target)
-            : base(target)
+        private readonly NodeFactory _factory;
+
+        public InstanceEntryPointTableNode(NodeFactory factory)
+            : base(factory.Target)
         {
+            _factory = factory;
         }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -52,9 +56,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
-                    bool enforceOwningType = false;
-                    ModuleToken moduleToken = factory.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
-                    if (moduleToken.Module != factory.SignatureContext.GlobalContext)
+                    // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
+                    bool enforceOwningType = _factory.Composite;
+                    EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
+                    ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+                    if (!_factory.Composite && moduleToken.Module != factory.SignatureContext.GlobalContext)
                     {
                         enforceOwningType = true;
                     }
@@ -65,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         enforceDefEncoding: true,
                         enforceOwningType,
                         factory.SignatureContext,
-                        isUnboxingStub: false, 
+                        isUnboxingStub: false,
                         isInstantiatingStub: false);
                     byte[] signature = signatureBuilder.ToArray();
                     BlobVertex signatureBlob;

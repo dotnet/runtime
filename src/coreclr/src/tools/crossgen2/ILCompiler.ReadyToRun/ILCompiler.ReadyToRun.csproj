@@ -99,6 +99,7 @@
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AssemblyTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryNode.cs" />

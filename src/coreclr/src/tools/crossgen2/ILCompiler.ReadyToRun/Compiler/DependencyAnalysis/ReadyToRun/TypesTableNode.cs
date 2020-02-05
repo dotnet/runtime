@@ -18,13 +18,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class TypesTableNode : HeaderTableNode
     {
-        public TypesTableNode(TargetDetails target)
-            : base(target) {}
+        private readonly EcmaModule _module;
+
+        public TypesTableNode(TargetDetails target, EcmaModule module)
+            : base(target)
+        {
+            _module = module;
+        }
         
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAvailableTypesTable");
+            sb.Append("__ReadyToRunAvailableTypesTable__");
+            sb.Append(_module.Assembly.GetName().Name);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -88,6 +94,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+        }
+
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
+        {
+            TypesTableNode otherTypesTable = (TypesTableNode)other;
+            return _module.Assembly.GetName().Name.CompareTo(otherTypesTable._module.Assembly.GetName().Name);
         }
 
         public override int ClassCode => -944318825;

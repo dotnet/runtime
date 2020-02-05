@@ -137,6 +137,7 @@ namespace Internal.JitInterface
 
         private readonly ReadyToRunCodegenCompilation _compilation;
         private IReadyToRunMethodCodeNode _methodCodeNode;
+        private InputModule _moduleBeingCompiled;
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
@@ -208,6 +209,8 @@ namespace Internal.JitInterface
         {
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
+            EcmaModule containingModule = ((EcmaMethod)_methodCodeNode.Method.GetTypicalMethodDefinition()).Module;
+            _moduleBeingCompiled = _compilation.NodeFactory.InputModules[containingModule];
 
             try
             {
@@ -308,6 +311,7 @@ namespace Internal.JitInterface
                             helperId,
                             helperArg,
                             methodContext);
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;

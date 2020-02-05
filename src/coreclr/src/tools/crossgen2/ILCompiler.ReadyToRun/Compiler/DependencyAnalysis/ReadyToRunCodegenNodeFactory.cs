@@ -43,6 +43,20 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
+    public sealed class InputModule
+    {
+        public readonly EcmaModule Module;
+        public readonly ModuleTokenResolver Resolver;
+        public readonly SignatureContext Context;
+
+        public InputModule(EcmaModule module, ModuleTokenResolver resolver, SignatureContext context)
+        {
+            Module = module;
+            Resolver = resolver;
+            Context = context;
+        }
+    }
+
     // To make the code future compatible to the composite R2R story
     // do NOT attempt to pass and store _inputModule here
     public sealed class NodeFactory
@@ -57,6 +71,10 @@ namespace ILCompiler.DependencyAnalysis
 
         public NameMangler NameMangler { get; }
 
+        public bool Composite { get; }
+
+        public Dictionary<EcmaModule, InputModule> InputModules { get; }
+
         public MetadataManager MetadataManager { get; }
 
         public bool MarkingComplete => _markingComplete;
@@ -68,7 +86,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public IMethodNode MethodEntrypoint(MethodDesc method)
         {
-            ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
+            EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
+            InputModule inputModule = InputModules[module];
+            ModuleToken moduleToken = inputModule.Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
             return MethodEntrypoint(
                 new MethodWithToken(method, moduleToken, constrainedType: null),
                 isUnboxingStub: false,
@@ -85,16 +105,16 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromDict;
 
-        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromDictionaryLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner, SignatureContext context)
         {
-            return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
+            return _genericReadyToRunHelpersFromDict.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner, context));
         }
 
         private NodeCache<ReadyToRunGenericHelperKey, ISymbolNode> _genericReadyToRunHelpersFromType;
 
-        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner)
+        public ISymbolNode ReadyToRunHelperFromTypeLookup(ReadyToRunHelperId id, Object target, TypeSystemEntity dictionaryOwner, SignatureContext context)
         {
-            return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner));
+            return _genericReadyToRunHelpersFromType.GetOrAdd(new ReadyToRunGenericHelperKey(id, target, dictionaryOwner, context));
         }
 
         private NodeCache<ReadOnlyDataBlobKey, BlobNode> _readOnlyDataBlobs;
@@ -109,12 +129,14 @@ namespace ILCompiler.DependencyAnalysis
             public readonly object Target;
             public readonly TypeSystemEntity DictionaryOwner;
             public readonly ReadyToRunHelperId HelperId;
+            public readonly SignatureContext Context;
 
-            public ReadyToRunGenericHelperKey(ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner)
+            public ReadyToRunGenericHelperKey(ReadyToRunHelperId helperId, object target, TypeSystemEntity dictionaryOwner, SignatureContext context)
             {
                 HelperId = helperId;
                 Target = target;
                 DictionaryOwner = dictionaryOwner;
+                Context = context;
             }
 
             public bool Equals(ReadyToRunGenericHelperKey other)
@@ -174,27 +196,39 @@ namespace ILCompiler.DependencyAnalysis
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
             NameMangler nameMangler,
-            ModuleTokenResolver moduleTokenResolver,
-            SignatureContext signatureContext,
+            bool composite,
+            IEnumerable<EcmaModule> inputModules,
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
             AttributePresenceFilterNode attributePresenceFilterNode,
-            HeaderNode headerNode)
+            ReadyToRunFlags flags)
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
             Target = context.Target;
             NameMangler = nameMangler;
+            Composite = composite;
             MetadataManager = new ReadyToRunTableManager(context);
+<<<<<<< HEAD
             Resolver = moduleTokenResolver;
             SignatureContext = signatureContext;
+=======
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             AttributePresenceFilter = attributePresenceFilterNode;
-            Header = headerNode;
+            Header = new GlobalHeaderNode(Target, flags);
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
+
+            InputModules = new Dictionary<EcmaModule, InputModule>();
+            foreach (EcmaModule inputModule in inputModules)
+            {
+                ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(CompilationModuleGroup, context);
+                SignatureContext signatureContext = new SignatureContext(inputModule, moduleTokenResolver);
+                InputModules.Add(inputModule, new InputModule(inputModule, moduleTokenResolver, signatureContext));
+            }
 
             CreateNodeCaches();
         }
@@ -214,7 +248,12 @@ namespace ILCompiler.DependencyAnalysis
                     GetGenericStaticHelper(helperKey.HelperId),
                     TypeSignature(
                         ReadyToRunFixupKind.Invalid,
+<<<<<<< HEAD
                         (TypeDesc)helperKey.Target));
+=======
+                        (TypeDesc)helperKey.Target,
+                        helperKey.Context));
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             });
 
             _genericReadyToRunHelpersFromType = new NodeCache<ReadyToRunGenericHelperKey, ISymbolNode>(helperKey =>
@@ -225,7 +264,12 @@ namespace ILCompiler.DependencyAnalysis
                     GetGenericStaticHelper(helperKey.HelperId),
                     TypeSignature(
                         ReadyToRunFixupKind.Invalid,
+<<<<<<< HEAD
                         (TypeDesc)helperKey.Target));
+=======
+                        (TypeDesc)helperKey.Target,
+                        helperKey.Context));
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             });
 
             _readOnlyDataBlobs = new NodeCache<ReadOnlyDataBlobKey, BlobNode>(key =>
@@ -240,9 +284,13 @@ namespace ILCompiler.DependencyAnalysis
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
 
-            _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>(key =>
+            _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
             {
+<<<<<<< HEAD
                 return new MethodWithGCInfo(key.Method.Method);
+=======
+                return new MethodWithGCInfo(key);
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             });
 
             _methodSignatures = new NodeCache<MethodFixupKey, MethodFixupSignature>(key =>
@@ -257,7 +305,11 @@ namespace ILCompiler.DependencyAnalysis
 
             _typeSignatures = new NodeCache<TypeFixupKey, TypeFixupSignature>(key =>
             {
+<<<<<<< HEAD
                 return new TypeFixupSignature(key.FixupKind, key.TypeDesc);
+=======
+                return new TypeFixupSignature(key.FixupKind, key.TypeDesc, key.SignatureContext);
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             });
 
             _dynamicHelperCellCache = new NodeCache<DynamicHelperCellKey, ISymbolNode>(key =>
@@ -320,17 +372,20 @@ namespace ILCompiler.DependencyAnalysis
             });
         }
 
+<<<<<<< HEAD
         public SignatureContext SignatureContext;
 
         public ModuleTokenResolver Resolver;
 
+=======
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
         public CopiedCorHeaderNode CopiedCorHeaderNode;
 
         public DebugDirectoryNode DebugDirectoryNode;
 
         public Win32ResourcesNode Win32ResourcesNode;
 
-        public HeaderNode Header;
+        public GlobalHeaderNode Header;
 
         public RuntimeFunctionsTableNode RuntimeFunctionsTable;
 
@@ -338,13 +393,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ProfileDataSectionNode ProfileDataSection;
 
-        public MethodEntryPointTableNode MethodEntryPointTable;
-
         public InstanceEntryPointTableNode InstanceEntryPointTable;
 
         public ManifestMetadataTableNode ManifestMetadataTable;
-
-        public TypesTableNode TypesTable;
 
         public ImportSectionsTableNode ImportSectionsTable;
 
@@ -355,8 +406,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
-
-        public InliningInfoNode InliningInfoTable;
 
         public AttributePresenceFilterNode AttributePresenceFilter;
 
@@ -428,13 +477,14 @@ namespace ILCompiler.DependencyAnalysis
             return _importMethods.GetOrAdd(key);
         }
 
-        private NodeCache<TypeAndMethod, MethodWithGCInfo> _localMethodCache = new NodeCache<TypeAndMethod, MethodWithGCInfo>();
+        private NodeCache<MethodDesc, MethodWithGCInfo> _localMethodCache;
 
         private MethodWithGCInfo CreateMethodEntrypointNodeHelper(MethodWithToken targetMethod)
         {
             Debug.Assert(CompilationModuleGroup.ContainsMethodBody(targetMethod.Method, false));
 
             MethodDesc localMethod = targetMethod.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+<<<<<<< HEAD
 
             TypeAndMethod localMethodKey = new TypeAndMethod(localMethod.OwningType,
                 new MethodWithToken(localMethod, default(ModuleToken), constrainedType: null),
@@ -442,6 +492,9 @@ namespace ILCompiler.DependencyAnalysis
                 isInstantiatingStub: false,
                 isPrecodeImportRequired: false);
             return _localMethodCache.GetOrAdd(localMethodKey);
+=======
+            return _localMethodCache.GetOrAdd(localMethod);
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
         }
 
         public IEnumerable<MethodWithGCInfo> EnumerateCompiledMethods()
@@ -558,19 +611,51 @@ namespace ILCompiler.DependencyAnalysis
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ExceptionInfo, exceptionInfoLookupTableNode, exceptionInfoLookupTableNode);
             graph.AddRoot(exceptionInfoLookupTableNode, "ExceptionInfoLookupTable is always generated");
 
+<<<<<<< HEAD
             MethodEntryPointTable = new MethodEntryPointTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, MethodEntryPointTable, MethodEntryPointTable);
 
             ManifestMetadataTable = new ManifestMetadataTableNode(SignatureContext.GlobalContext, this);
+=======
+            ManifestMetadataTable = new ManifestMetadataTableNode(this);
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ManifestMetadata, ManifestMetadataTable, ManifestMetadataTable);
 
-            Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
+            AssemblyTableNode assemblyTable = null;
 
-            InstanceEntryPointTable = new InstanceEntryPointTableNode(Target);
+            if (InputModules.Count > 1)
+            {
+                assemblyTable = new AssemblyTableNode(Target);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
+            }
+
+            // Generate per assembly header tables
+            int assemblyIndex = -1;
+            foreach (InputModule inputModule in InputModules.Values)
+            {
+                assemblyIndex++;
+                HeaderNode tableHeader = Header;
+                if (assemblyTable != null)
+                {
+                    AssemblyHeaderNode perAssemblyHeader = new AssemblyHeaderNode(Target, ReadyToRunFlags.READYTORUN_FLAG_Component, assemblyIndex);
+                    assemblyTable.Add(perAssemblyHeader);
+                    tableHeader = perAssemblyHeader;
+                }
+
+                MethodEntryPointTableNode methodEntryPointTable = new MethodEntryPointTableNode(inputModule.Module, Target);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.MethodDefEntryPoints, methodEntryPointTable, methodEntryPointTable);
+
+                inputModule.Resolver.SetModuleIndexLookup(ManifestMetadataTable.ModuleToIndex);
+
+                TypesTableNode typesTable = new TypesTableNode(Target, inputModule.Module);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
+
+                InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule.Context.GlobalContext);
+                Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+            }
+
+            InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InstanceMethodEntryPoints, InstanceEntryPointTable, InstanceEntryPointTable);
-
-            TypesTable = new TypesTableNode(Target);
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, TypesTable, TypesTable);
 
             ImportSectionsTable = new ImportSectionsTableNode(this);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.ImportSections, ImportSectionsTable, ImportSectionsTable.StartSymbol);
@@ -578,9 +663,12 @@ namespace ILCompiler.DependencyAnalysis
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
 
+<<<<<<< HEAD
             InliningInfoTable = new InliningInfoNode(Target, SignatureContext.GlobalContext);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, InliningInfoTable, InliningInfoTable);
 
+=======
+>>>>>>> Refactoring of Crossgen2 node factory / JIT interface for composite
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are
             // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
