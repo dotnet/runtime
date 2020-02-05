@@ -12,7 +12,7 @@ set(DACTABLEGEN_SOURCES
 set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "")
 
 set(CMAKE_CSharp_FLAGS "/platform:anycpu32bitpreferred")
-add_executable(dactablegen ${DACTABLEGEN_SOURCES})
+add_executable_clr(dactablegen ${DACTABLEGEN_SOURCES})
 
 set_target_properties(dactablegen PROPERTIES VS_DOTNET_REFERENCES "System")
 set_target_properties(dactablegen PROPERTIES VS_DOTNET_REFERENCE_DIALib ${CMAKE_CURRENT_SOURCE_DIR}/DIALib.dll)
