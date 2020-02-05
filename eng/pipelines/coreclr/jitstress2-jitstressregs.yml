@@ -21,6 +21,8 @@ jobs:
     jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
+    # Linux tests are built on the OSX machines.
+    - OSX_x64
     - Linux_arm
     - Linux_arm64
     - Linux_x64
