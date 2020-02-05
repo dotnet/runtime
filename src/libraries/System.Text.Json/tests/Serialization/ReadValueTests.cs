@@ -676,40 +676,6 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                var options = new JsonSerializerOptions();
-                options.Converters.Add(new CustomConverter());
-
-                Assert.Throws<JsonException>(() =>
-                {
-                    var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 65 });
-                    JsonSerializer.Deserialize<DeepArray>(ref reader, options);
-                });
-
-                Assert.Throws<JsonException>(() =>
-                {
-                    var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 65 });
-                    JsonSerializer.Deserialize<IContent>(ref reader, options);
-                });
-            }
-
-            {
-                var options = new JsonSerializerOptions { MaxDepth = 256 };
-                options.Converters.Add(new CustomConverter());
-
-                Assert.Throws<JsonException>(() =>
-                {
-                    var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 65 });
-                    JsonSerializer.Deserialize<DeepArray>(ref reader, options);
-                });
-
-                Assert.Throws<JsonException>(() =>
-                {
-                    var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 65 });
-                    JsonSerializer.Deserialize<IContent>(ref reader, options);
-                });
-            }
-
-            {
                 var options = new JsonSerializerOptions { MaxDepth = 256 };
                 options.Converters.Add(new CustomConverter());
 
@@ -723,16 +689,48 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 var options = new JsonSerializerOptions();
+                ReadAndValidate(utf8, options, new JsonReaderOptions { MaxDepth = 65 }, expectedThrow: true);
+            }
+
+            {
+                var options = new JsonSerializerOptions { MaxDepth = 256 };
+                ReadAndValidate(utf8, options, new JsonReaderOptions { MaxDepth = 65 }, expectedThrow: true);
+            }
+
+            {
+                var options = new JsonSerializerOptions();
+                ReadAndValidate(utf8, options, new JsonReaderOptions { MaxDepth = 256 }, expectedThrow: false);
+            }
+
+            static void ReadAndValidate(byte[] utf8, JsonSerializerOptions options, JsonReaderOptions readerOptions, bool expectedThrow)
+            {
                 options.Converters.Add(new CustomConverter());
 
-                var reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 256 });
-                DeepArray direct = JsonSerializer.Deserialize<DeepArray>(ref reader, options);
-                Assert.Equal(1, direct.array.GetArrayLength());
+                if (expectedThrow)
+                {
+                    Assert.Throws<JsonException>(() =>
+                    {
+                        var reader = new Utf8JsonReader(utf8, readerOptions);
+                        JsonSerializer.Deserialize<DeepArray>(ref reader, options);
+                    });
 
-                reader = new Utf8JsonReader(utf8, new JsonReaderOptions { MaxDepth = 256 });
-                IContent custom = JsonSerializer.Deserialize<IContent>(ref reader, options);
-                Assert.True(custom is DeepArray);
-                Assert.Equal(1, ((DeepArray)custom).array.GetArrayLength());
+                    Assert.Throws<JsonException>(() =>
+                    {
+                        var reader = new Utf8JsonReader(utf8, readerOptions);
+                        JsonSerializer.Deserialize<IContent>(ref reader, options);
+                    });
+                }
+                else
+                {
+                    var reader = new Utf8JsonReader(utf8, readerOptions);
+                    DeepArray direct = JsonSerializer.Deserialize<DeepArray>(ref reader, options);
+                    Assert.Equal(1, direct.array.GetArrayLength());
+
+                    reader = new Utf8JsonReader(utf8, readerOptions);
+                    IContent custom = JsonSerializer.Deserialize<IContent>(ref reader, options);
+                    Assert.True(custom is DeepArray);
+                    Assert.Equal(1, ((DeepArray)custom).array.GetArrayLength());
+                }
             }
         }
     }
@@ -782,7 +780,7 @@ namespace System.Text.Json.Serialization.Tests
             writer.WriteStartObject();
             writer.WriteString("type", "array");
             writer.WritePropertyName("array");
-            JsonSerializer.Serialize<JsonElement>(writer, ((DeepArray)value).array, options);
+            JsonSerializer.Serialize(writer, ((DeepArray)value).array, options);
             writer.WriteEndObject();
         }
     }
