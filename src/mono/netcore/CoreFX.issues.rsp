@@ -6,12 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.ComponentModel.Composition.Tests
-####################################################################
-
--nomethod System.ComponentModel.Composition.ExportCollectionTests.ImportCollectionsFromContainerOnly
-
-####################################################################
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
