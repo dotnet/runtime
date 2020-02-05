@@ -3,7 +3,7 @@
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;nullable</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == ''">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFrameworkSuffix)' == ''">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.6.0.0</AssemblyVersion>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true'">$(DefineConstants);NETSTANDARD2_0</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">$(DefineConstants);FEATURE_TCPKEEPALIVE</DefineConstants>
@@ -15,11 +15,11 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' or '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != '' and '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != '' and '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Data\SqlClient\PoolBlockingPeriod.cs" />
     <Compile Include="Microsoft\SqlServer\Server\SqlFacetAttribute.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != ''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != ''">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -274,7 +274,7 @@
     </Compile>
     <Compile Include="System\Data\SqlClient\SqlFileStream.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != '' and '$(TargetsNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != '' and '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Data\Common\DbConnectionStringCommon.NetCoreApp.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPool.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionString.NetCoreApp.cs" />
@@ -282,7 +282,7 @@
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetCoreApp.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetCoreApp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != '' and '$(TargetsNetCoreApp)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != '' and '$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.NetStandard.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.NetStandard.cs" />
   </ItemGroup>
@@ -422,7 +422,7 @@
     </Compile>
   </ItemGroup>
   <!-- Common (Windows and Unix) dependencies for MANAGED_SNI build -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != ''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != ''">
     <Reference Include="System.Memory" />
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs">
       <Link>Common\System\Net\ContextFlagsPal.cs</Link>
@@ -449,7 +449,7 @@
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != ''">
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != ''">
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs">
@@ -512,7 +512,7 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(OSGroup)' != ''">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' and '$(TargetFrameworkSuffix)' != ''">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
