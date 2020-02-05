@@ -49,11 +49,11 @@ DataBuffer::DataBuffer(
     m_cbSize = source.m_cbSize;
 } // DataBuffer::DataBuffer
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     #define const_pbBadFood (((BYTE *)NULL) + 0xbaadf00dbaadf00d)
-#else //!BIT64
+#else //!HOST_64BIT
     #define const_pbBadFood (((BYTE *)NULL) + 0xbaadf00d)
-#endif //!BIT64
+#endif //!HOST_64BIT
 
 // --------------------------------------------------------------------------------------
 //

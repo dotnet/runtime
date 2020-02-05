@@ -20,17 +20,17 @@ DisasmInstruction_t *Disassembler::External_DisasmInstruction = nullptr;
 
 Disassembler::ExternalDisassembler *Disassembler::s_availableExternalDisassembler = nullptr;
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 // static
 bool Disassembler::IsRexPrefix(UINT8 potentialRexByte)
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     return (potentialRexByte & 0xf0) == REX_PREFIX_BASE;
-#else // !_TARGET_AMD64_
+#else // !TARGET_AMD64
     return false;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 }
 
 // static
@@ -53,7 +53,7 @@ UINT8 Disassembler::DecodeRmFromModRm(UINT8 modRm)
     LIMITED_METHOD_CONTRACT;
     return modRm & 0x7;
 }
-#endif // defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#endif // defined(TARGET_AMD64) || defined(TARGET_X86)
 
 // static
 bool Disassembler::IsAvailable()
@@ -176,11 +176,11 @@ Disassembler::Disassembler()
         // - A string of the form "x86_64-pc-win32"
         externalDisassembler = External_InitDisasm(Target_Host);
     #elif USE_MSVC_DISASSEMBLER
-    #ifdef _TARGET_X86_
+    #ifdef TARGET_X86
         externalDisassembler = ExternalDisassembler::PdisNew(ExternalDisassembler::distX86);
-    #elif defined(_TARGET_AMD64_)
+    #elif defined(TARGET_AMD64)
         externalDisassembler = ExternalDisassembler::PdisNew(ExternalDisassembler::distX8664);
-    #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     #endif // USE_COREDISTOOLS_DISASSEMBLER || USE_MSVC_DISASSEMBLER
     }
 
@@ -263,9 +263,9 @@ InstructionType Disassembler::DetermineInstructionType(
     switch (instructionCode[i])
     {
         case 0xe8: // call near rel
-        #ifdef _TARGET_X86_
+        #ifdef TARGET_X86
         case 0x9a: // call far ptr
-        #endif // _TARGET_X86_
+        #endif // TARGET_X86
             return InstructionType::Call_DirectUnconditional;
 
         case 0xff:

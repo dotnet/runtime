@@ -892,7 +892,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1074,7 +1074,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
 
     void* cookie;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (block->bbFlags & BBF_FINALLY_TARGET)
     {
         // Use the offset of the beginning of the NOP padding, not the main block.
@@ -1084,7 +1084,7 @@ void* Compiler::ehEmitCookie(BasicBlock* block)
         cookie = block->bbUnwindNopEmitCookie;
     }
     else
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     {
         cookie = block->bbEmitCookie;
     }

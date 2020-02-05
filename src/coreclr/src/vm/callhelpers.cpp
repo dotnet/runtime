@@ -73,7 +73,7 @@ void CallDescrWorkerWithHandler(
 }
 
 
-#if !defined(BIT64) && defined(_DEBUG)
+#if !defined(HOST_64BIT) && defined(_DEBUG)
 
 //*******************************************************************************
 // assembly code, in i386/asmhelpers.asm
@@ -119,7 +119,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
     _ASSERTE(!curThread->HasUnbreakableLock() &&
              (curThread->m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     _ASSERTE(IsThumbCode(pCallDescrData->pTarget));
 #endif
 
@@ -132,7 +132,7 @@ void CallDescrWorker(CallDescrData * pCallDescrData)
 
     ENABLESTRESSHEAP();
 }
-#endif // !defined(BIT64) && defined(_DEBUG)
+#endif // !defined(HOST_64BIT) && defined(_DEBUG)
 
 void DispatchCallDebuggerWrapper(
     CallDescrData *   pCallDescrData,
@@ -556,7 +556,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         _ASSERTE((DWORD)cbReturnValue <= sizeof(callDescrData.returnValue));
         memcpyNoGCRefs(pReturnValue, &callDescrData.returnValue, cbReturnValue);
 
-#if !defined(BIT64) && BIGENDIAN
+#if !defined(HOST_64BIT) && BIGENDIAN
         {
             GCX_FORBID();
 
@@ -565,7 +565,7 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                 pReturnValue[0] >>= 32;
             }
         }
-#endif // !defined(BIT64) && BIGENDIAN
+#endif // !defined(HOST_64BIT) && BIGENDIAN
     }
 }
 

@@ -612,7 +612,10 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         return;
     }
 
-    DWORD stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
+    DWORD stackArgSize = 0;
+
+#if !defined(UNIX_X86_ABI)
+    stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
 
     if (stackArgSize & ~0xFFFF)
     {
@@ -624,6 +627,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         stackArgSize = pMD->GetStackArgumentSize();
     }
+#endif
 
     /* The return address is just above the "ESP" */
     pRD->PCTAddr = PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
@@ -893,7 +897,7 @@ void DynamicHelperFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 // header issues with cgencpu.h including dbginterface.h.
 WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 {
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #error Make sure this works before porting to platforms other than x86.
 #endif
     CONTRACT(WORD) {
@@ -930,7 +934,7 @@ WORD GetUnpatchedCodeData(LPCBYTE pAddr)
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 //-------------------------------------------------------------------------
 // One-time creation of special prestub to initialize UMEntryThunks.
 //-------------------------------------------------------------------------
@@ -980,7 +984,7 @@ Stub *GenerateUMThunkPrestub()
 
     RETURN psl->Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 }
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 Stub *GenerateInitPInvokeFrameHelper()
 {
@@ -1131,7 +1135,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #endif // !EnC_SUPPORTED
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #pragma warning(push)
 #pragma warning(disable: 4035)
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
@@ -1205,7 +1209,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 
 #pragma warning(pop)
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 
 extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
 {
@@ -1251,7 +1255,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 {

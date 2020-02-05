@@ -63,7 +63,7 @@ protected:
     CBlobFetcher& operator=(const CBlobFetcher & src);
 
 public:
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     // needs to be 64 so that we can purposefully cache align code in ngen'd images
     enum { maxAlign = 64 }; // maximum alignment we support
 #else

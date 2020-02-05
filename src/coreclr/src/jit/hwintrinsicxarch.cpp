@@ -669,7 +669,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -677,7 +677,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
             {
@@ -728,7 +728,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsLong(baseType))
             {
                 // TODO-XARCH-CQ: It may be beneficial to emit the movq
@@ -736,7 +736,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // works on 32-bit x86 systems.
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             if (compSupports(InstructionSet_AVX))
             {

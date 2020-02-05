@@ -6387,7 +6387,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CO
 // can think of these members as not being part of the context, ie they don't represent something
 // which gets saved or restored on context switches. They are just space we shouldn't overwrite.
 // See issue 630276 for more details.
-#if defined DBG_TARGET_AMD64
+#if defined TARGET_AMD64
     pRemoteContext += offsetof(CONTEXT, ContextFlags); // immediately follows the 6 parameters P1-P6
     pCtxSource += offsetof(CONTEXT, ContextFlags);
     sizeToWrite -= offsetof(CONTEXT, ContextFlags);
@@ -7108,7 +7108,7 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     if (*pfPatchFound == false)
     {
         // Read one instruction from the faulting address...
-#if defined(DBG_TARGET_ARM) || defined(DBG_TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
         PRD_TYPE TrapCheck = 0;
 #else
         BYTE TrapCheck = 0;
@@ -7153,7 +7153,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     DWORD fCheckInt3 = configCheckInt3.val(CLRConfig::INTERNAL_DbgCheckInt3);
     if (fCheckInt3)
     {
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         if (size == 1 && buffer[0] == 0xCC)
         {
             CONSISTENCY_CHECK_MSGF(false,
@@ -7162,7 +7162,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
                 "(This assert is only enabled under the COM+ knob DbgCheckInt3.)\n",
                 CORDB_ADDRESS_TO_PTR(address)));
         }
-#endif // DBG_TARGET_X86 || DBG_TARGET_AMD64
+#endif // TARGET_X86 || TARGET_AMD64
 
         // check if we're replaced an opcode.
         if (size == 1)
@@ -7625,7 +7625,7 @@ HRESULT CordbProcess::GetRuntimeOffsets()
             m_hHelperThread = pfnOpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
             CONSISTENCY_CHECK_MSGF(m_hHelperThread != NULL, ("Failed to get helper-thread handle. tid=0x%x\n", dwHelperTid));
         }
-#elif FEATURE_PAL
+#elif TARGET_UNIX
         m_hHelperThread = NULL; //RS is supposed to be able to live without a helper thread handle.
 #else
         m_hHelperThread = OpenThread(SYNCHRONIZE, FALSE, dwHelperTid);
@@ -9033,9 +9033,9 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 {
     // There should have been an int3 there already. Since we already put it in there,
     // we should be able to safely read it out.
-#if defined(DBG_TARGET_ARM) || defined(DBG_TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
     PRD_TYPE opcodeTest = 0;
-#elif defined(DBG_TARGET_AMD64) || defined(DBG_TARGET_X86)
+#elif defined(TARGET_AMD64) || defined(TARGET_X86)
     BYTE opcodeTest = 0;
 #else
     PORTABILITY_ASSERT("NYI: Architecture specific opcode type to read");
@@ -9098,10 +9098,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
     HRESULT hr = S_OK;
 
     NativePatch * p = NULL;
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     const BYTE patch = CORDbg_BREAK_INSTRUCTION;
     BYTE opcode;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
     const PRD_TYPE patch = CORDbg_BREAK_INSTRUCTION;
     PRD_TYPE opcode;
 #else
@@ -9140,10 +9140,10 @@ CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufs
         goto ErrExit;
 
     // It's all successful, so now update our out-params & internal bookkeaping.
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     opcode = (BYTE)p->opcode;
     buffer[0] = opcode;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
     opcode = p->opcode;
     memcpy_s(buffer, bufsize, &opcode, sizeof(opcode));
 #else
@@ -9728,7 +9728,7 @@ void CordbProcess::MarshalManagedEvent(DebuggerIPCEvent * pManagedEvent)
 //    The event still needs to be Marshaled before being used. (see code:CordbProcess::MarshalManagedEvent)
 //
 //---------------------------------------------------------------------------------------
-#if defined(_MSC_VER) && defined(_TARGET_ARM_)
+#if defined(_MSC_VER) && defined(TARGET_ARM)
 // This is a temporary workaround for an ARM specific MS C++ compiler bug (internal LKG build 18.1).
 // Branch < if (ptrRemoteManagedEvent == NULL) > was always taken and the function always returned false.
 // TODO: It should be removed once the bug is fixed.
@@ -9780,7 +9780,7 @@ bool CordbProcess::CopyManagedEventFromTarget(
 
     return true;
 }
-#if defined(_MSC_VER) && defined(_TARGET_ARM_)
+#if defined(_MSC_VER) && defined(TARGET_ARM)
 #pragma optimize("", on)
 #endif
 
@@ -11246,7 +11246,7 @@ const EXCEPTION_RECORD * CordbProcess::ValidateExceptionRecord(
     //
 
     // @dbgtodo - , cross-plat: Once we do cross-plat, these should be based off target-architecture not host's.
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     if (format != FORMAT_WINDOWS_EXCEPTIONRECORD64)
     {
         ThrowHR(E_INVALIDARG);
@@ -12790,9 +12790,9 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         tempDebugContext.ContextFlags = DT_CONTEXT_FULL;
         DbiGetThreadContext(pUnmanagedThread->m_handle, &tempDebugContext);
         CordbUnmanagedThread::LogContext(&tempDebugContext);
-#if defined(DBG_TARGET_X86) || defined(DBG_TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         const ULONG_PTR breakpointOpcodeSize = 1;
-#elif defined(DBG_TARGET_ARM64)
+#elif defined(TARGET_ARM64)
         const ULONG_PTR breakpointOpcodeSize = 4;
 #else
         const ULONG_PTR breakpointOpcodeSize = 1;
@@ -13009,7 +13009,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
 
                 // Because hijacks don't return normally they might have pushed handlers without poping them
                 // back off. To take care of that we explicitly restore the old SEH chain.
-    #ifdef DBG_TARGET_X86
+    #ifdef TARGET_X86
                 hr = pUnmanagedThread->RestoreLeafSeh();
                 _ASSERTE(SUCCEEDED(hr));
     #endif
@@ -13382,7 +13382,7 @@ void EnableDebugTrace(CordbUnmanagedThread *ut)
         return;
 
     // Give us a nop so that we can setip in the optimized case.
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     __asm {
         nop
     }
@@ -14572,7 +14572,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
     // and dispatch it inband w/the other callbacks.
     if (!fDetach)
     {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         // Cleanup the transport pipe and semaphore files that might be left by the target (LS) process.
         m_pNativePipeline->CleanupTargetProcess();
 #endif

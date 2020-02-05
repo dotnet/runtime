@@ -65,7 +65,7 @@ include_directories(include)
 # Compile options
 
 if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  add_definitions(-D_TARGET_MAC64)
+  add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
     arch/amd64/activationhandlerwrapper.S
@@ -79,9 +79,7 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
 endif(FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
-add_definitions(-DPLATFORM_UNIX)
 add_definitions(-DLP64COMPATIBLE)
-add_definitions(-DFEATURE_PAL)
 add_definitions(-DCORECLR)
 add_definitions(-DPIC)
 add_definitions(-D_FILE_OFFSET_BITS=64)

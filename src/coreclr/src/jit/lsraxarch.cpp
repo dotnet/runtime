@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -180,7 +180,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 
         case GT_LONG:
             assert(tree->IsUnusedValue()); // Contained nodes are already processed, only unused GT_LONG can reach here.
@@ -194,7 +194,7 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildUse(tree->gtGetOp2());
             break;
 
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
         case GT_BOX:
         case GT_COMMA:
@@ -301,7 +301,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
@@ -340,7 +340,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildModDiv(tree->AsOp());
             break;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         case GT_MUL_LONG:
             dstCount = 2;
             __fallthrough;
@@ -421,7 +421,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSZ:
         case GT_ROL:
         case GT_ROR:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case GT_LSH_HI:
         case GT_RSH_LO:
 #endif
@@ -668,14 +668,14 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 1);
             RefPosition* internalDef = nullptr;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             // On 64-bit we always need a temporary register:
             //   - if the index is `native int` then we need to load the array
             //     length into a register to widen it to `native int`
             //   - if the index is `int` (or smaller) then we need to widen
             //     it to `long` to peform the address calculation
             internalDef = buildInternalIntRegisterDefForNode(tree);
-#else  // !_TARGET_64BIT_
+#else  // !TARGET_64BIT
             assert(!varTypeIsLong(tree->AsIndexAddr()->Index()->TypeGet()));
             switch (tree->AsIndexAddr()->gtElemSize)
             {
@@ -689,7 +689,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     internalDef = buildInternalIntRegisterDefForNode(tree);
                     break;
             }
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
             srcCount = BuildBinaryUses(tree->AsOp());
             if (internalDef != nullptr)
             {
@@ -782,7 +782,7 @@ bool LinearScan::isRMWRegOper(GenTree* tree)
         case GT_STORE_OBJ:
         case GT_SWITCH_TABLE:
         case GT_LOCKADD:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case GT_LONG:
 #endif
             return false;
@@ -823,7 +823,7 @@ int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
     regMaskTP op1Candidates = candidates;
     regMaskTP op2Candidates = candidates;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (varTypeIsByte(node))
     {
         regMaskTP byteCandidates = (candidates == RBM_NONE) ? allByteRegs() : (candidates & allByteRegs());
@@ -838,7 +838,7 @@ int LinearScan::BuildRMWUses(GenTreeOp* node, regMaskTP candidates)
             op2Candidates = byteCandidates;
         }
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     bool prefOp1 = false;
     bool prefOp2 = false;
@@ -961,7 +961,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // operand size.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // The first operand of a GT_LSH_HI and GT_RSH_LO oper is a GT_LONG so that
     // we can have a three operand form.
     if (tree->OperGet() == GT_LSH_HI || tree->OperGet() == GT_RSH_LO)
@@ -1061,7 +1061,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Set destination candidates for return value of the call.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
     {
         // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
@@ -1070,7 +1070,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates = RBM_PINVOKE_TCB;
     }
     else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         if (hasMultiRegRetVal)
     {
         assert(retTypeDesc != nullptr);
@@ -1079,12 +1079,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
     }
     else if (varTypeIsFloating(registerType))
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // The return value will be on the X87 stack, and we will need to move it.
         dstCandidates = allRegs(registerType);
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
         dstCandidates = RBM_FLOATRET;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
     }
     else if (registerType == TYP_LONG)
     {
@@ -1236,7 +1236,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
             ctrlExprCandidates = RBM_RAX;
         }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
@@ -1249,7 +1249,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
             assert(ctrlExpr->isIndir() && ctrlExpr->isContained());
             ctrlExprCandidates = RBM_VIRTUAL_STUB_TARGET;
         }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #if FEATURE_VARARG
         // If it is a fast tail call, it is already preferenced to use RAX.
@@ -1313,7 +1313,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     SetContainsAVXFlags();
                 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 if ((size & 1) != 0)
                 {
                     // We'll need to store a byte so a byte register is needed on x86.
@@ -1328,7 +1328,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 sizeRegMask    = RBM_RCX;
                 break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             case GenTreeBlk::BlkOpKindHelper:
                 dstAddrRegMask = RBM_ARG_0;
                 srcRegMask     = RBM_ARG_1;
@@ -1369,7 +1369,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     if ((size % XMM_REGSIZE_BYTES) != 0)
                     {
                         regMaskTP regMask = allRegs(TYP_INT);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         if ((size & 1) != 0)
                         {
                             // We'll need to store a byte so a byte register is needed on x86.
@@ -1392,7 +1392,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     sizeRegMask    = RBM_RCX;
                     break;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;
                     srcRegMask     = RBM_ARG_1;
@@ -1484,9 +1484,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             const var_types fieldType   = fieldNode->TypeGet();
             const unsigned  fieldOffset = use.GetOffset();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             assert(fieldType != TYP_LONG);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #if defined(FEATURE_SIMD)
             // Note that we need to check the GT_FIELD_LIST type, not 'fieldType'. This is because the
@@ -1498,7 +1498,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             }
 #endif // defined(FEATURE_SIMD)
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (putArgStk->gtPutArgStkKind == GenTreePutArgStk::Kind::Push)
             {
                 // We can treat as a slot any field that is stored at a slot boundary, where the previous
@@ -1517,7 +1517,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                     intTemp->registerAssignment &= allByteRegs();
                 }
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             prevOffset = fieldOffset;
         }
@@ -1539,7 +1539,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
     GenTree*  src  = putArgStk->gtOp1;
     var_types type = src->TypeGet();
 
-#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#if defined(FEATURE_SIMD) && defined(TARGET_X86)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
     if (putArgStk->isSIMD12())
     {
@@ -1549,7 +1549,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
         buildInternalRegisterUses();
         return srcCount;
     }
-#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
 
     if (type != TYP_STRUCT)
     {
@@ -1573,7 +1573,7 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
             {
                 regMaskTP regMask = allRegs(TYP_INT);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 if ((size % 2) != 0)
                 {
                     regMask &= ~RBM_NON_BYTE_REGS;
@@ -1582,11 +1582,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
                 buildInternalIntRegisterDefForNode(putArgStk, regMask);
             }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (size >= 8)
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
             if (size >= XMM_REGSIZE_BYTES)
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
             {
                 // If we have a buffer larger than or equal to XMM_REGSIZE_BYTES on x64/ux,
                 // or larger than or equal to 8 bytes on x86, reserve an XMM register to use it for a
@@ -1670,7 +1670,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
                     // No need to initialize allocated stack space.
                     if (sizeVal < compiler->eeGetPageSize())
                     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // x86 needs a register here to avoid generating "sub" on ESP.
                         buildInternalIntRegisterDefForNode(tree);
 #endif
@@ -1738,7 +1738,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         dstCandidates = RBM_RAX;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (op1->OperGet() == GT_LONG)
     {
         assert(op1->isContained());
@@ -1811,12 +1811,12 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             internalFloatDef = buildInternalFloatRegisterDefForNode(tree, internalFloatRegCandidates());
             break;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case CORINFO_INTRINSIC_Cos:
         case CORINFO_INTRINSIC_Sin:
             NYI_X86("Math intrinsics Cos and Sin");
             break;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
         case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Round:
@@ -1893,7 +1893,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // we can use the full int value.
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
             if (op1->OperGet() == GT_LONG)
             {
                 assert(op1->isContained());
@@ -1921,7 +1921,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                 }
                 buildUses = false;
             }
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         }
         break;
 
@@ -2109,7 +2109,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                         buildInternalFloatRegisterDefForNode(simdTree);
                     }
                 }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 // This logic is duplicated from genSIMDIntrinsicGetItem().
                 // When we generate code for a SIMDIntrinsicGetItem, under certain circumstances we need to
                 // generate a movzx/movsx. On x86, these require byteable registers. So figure out which
@@ -2137,7 +2137,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
                         dstCandidates = allByteRegs();
                     }
                 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
             }
         }
         break;
@@ -2198,7 +2198,7 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             // We need an internal register different from targetReg.
             setInternalRegsDelayFree = true;
             buildInternalFloatRegisterDefForNode(simdTree);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (simdTree->gtSIMDBaseType == TYP_LONG)
             {
                 buildInternalFloatRegisterDefForNode(simdTree);
@@ -2463,7 +2463,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     buildInternalIntRegisterDefForNode(intrinsicTree);
                 }
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 else if (varTypeIsByte(baseType))
                 {
                     dstCandidates = allByteRegs();
@@ -2472,7 +2472,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             case NI_SSE42_Crc32:
             case NI_SSE42_X64_Crc32:
             {
@@ -2489,7 +2489,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 buildUses = false;
                 break;
             }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
             case NI_BMI2_MultiplyNoFlags:
             case NI_BMI2_X64_MultiplyNoFlags:
@@ -2711,7 +2711,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     const var_types castType = cast->gtCastType;
 
     regMaskTP candidates = RBM_NONE;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (varTypeIsByte(castType))
     {
         candidates = allByteRegs();
@@ -2793,7 +2793,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
             {
                 regMaskTP srcCandidates = RBM_NONE;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 // Determine if we need byte regs for the non-mem source, if any.
                 // Note that BuildShiftRotate (above) will handle the byte requirement as needed,
                 // but STOREIND isn't itself an RMW op, so we have to explicitly set it for that case.
@@ -2829,14 +2829,14 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
                     GenTree* dstIndex = indirTree->Index();
                     CheckAndMoveRMWLastUse(index, dstIndex);
                 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
                 srcCount += BuildBinaryUses(source->AsOp(), srcCandidates);
             }
         }
         else
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (varTypeIsByte(indirTree) && !source->isContained())
             {
                 BuildUse(source, allByteRegs());
@@ -2899,7 +2899,7 @@ int LinearScan::BuildMul(GenTree* tree)
 
     // This special widening 32x32->64 MUL is not used on x64
     CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     if (tree->OperGet() != GT_MUL_LONG)
 #endif
     {
@@ -2924,7 +2924,7 @@ int LinearScan::BuildMul(GenTree* tree)
         // upper 32 bits of the result set the destination candidate to REG_RDX.
         dstCandidates = RBM_RDX;
     }
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     else if (tree->OperGet() == GT_MUL_LONG)
     {
         // have to use the encoding:RDX:RAX = RAX * rm
@@ -2967,4 +2967,4 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
     }
 }
 
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH

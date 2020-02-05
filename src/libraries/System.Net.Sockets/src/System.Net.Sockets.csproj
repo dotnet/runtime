@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -197,6 +197,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAConnect.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSAConnect.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs">
+      <Link>Common\Interop\Windows\WinSock\Interop.WSADuplicateSocket.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.WSAGetOverlappedResult.cs</Link>
     </Compile>
@@ -235,6 +238,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleInformation.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\CompletionPortHelper.Windows.cs">
       <Link>Common\System\Net\CompletionPortHelper.Windows.cs</Link>

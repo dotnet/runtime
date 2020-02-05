@@ -21,9 +21,9 @@
 
 #include "typestring.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "eventtrace.h"
 #undef ExitProcess
@@ -505,7 +505,7 @@ void SafeExitProcess(UINT exitCode, BOOL fAbort = FALSE, ShutdownCompleteAction 
         // Watson code
         CONTRACT_VIOLATION(ThrowsViolation);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         if (fAbort)
         {
             TerminateProcess(GetCurrentProcess(), exitCode);
@@ -888,7 +888,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                         GetClrInstanceId());
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Write an event log entry. We do allocate some resources here (spread between the stack and maybe the heap for longer
     // messages), so it's possible for the event write to fail. If needs be we can use a more elaborate scheme here in the future
     // (maybe trying multiple approaches and backing off on failure, falling back on a limited size static buffer as a last
@@ -958,7 +958,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifdef _DEBUG
     // If we're native-only (Win32) debugging this process, we'd love to break now.
@@ -1107,7 +1107,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             fef.InitAndLink(pExceptionInfo->ContextRecord);
         }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (IsWatsonEnabled() && (g_pDebugInterface != NULL))
         {
             _ASSERTE(pExceptionInfo != NULL);
@@ -1117,7 +1117,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
             param.pExceptionRecord = pExceptionInfo->ExceptionRecord;
             g_pDebugInterface->RequestFavor(ResetWatsonBucketsFavorWorker, reinterpret_cast<void *>(&param));
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         WatsonLastChance(pThread, pExceptionInfo,
             (fTreatAsNativeUnhandledException == FALSE)? TypeOfReportedError::UnhandledException: TypeOfReportedError::NativeThreadUnhandledException);
@@ -1127,7 +1127,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     UNREACHABLE();
 }
 
-#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
 // This noinline method is required to ensure that RtlCaptureContext captures
 // the context of HandleFatalError. On x86 RtlCaptureContext will not capture
 // the current method's context
@@ -1141,7 +1141,7 @@ int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
     return 0;
 }
 #pragma optimize("", on)
-#endif // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#endif // defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 // This method must return a value to avoid getting non-actionable dumps on x86.
 // If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
@@ -1164,10 +1164,10 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         ZeroMemory(&context, sizeof(context));
 
         context.ContextFlags = CONTEXT_CONTROL;
-#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
         // Add a frame to ensure that the context captured is this method and not the caller
         WrapperClrCaptureContext(&context);
-#else // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+#else // defined(TARGET_X86) && defined(TARGET_WINDOWS)
         ClrCaptureContext(&context);
 #endif
 
@@ -1265,9 +1265,9 @@ void EEPolicy::HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, L
         // Since we have no exception object, make sure
         // UE tracker is clean so that RetrieveManagedBucketParameters
         // does not take any bucket details.
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         pThread->GetExceptionState()->GetUEWatsonBucketTracker()->ClearWatsonBucketDetails();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
         pPolicy->HandleFatalError(COR_E_CODECONTRACTFAILED, NULL, pMessage);
         break;
     }

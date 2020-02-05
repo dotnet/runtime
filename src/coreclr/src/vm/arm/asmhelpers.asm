@@ -2180,23 +2180,5 @@ ProbeLoop
     EPILOG_BRANCH_REG lr
     NESTED_END
 
-#ifdef FEATURE_TIERED_COMPILATION
-
-    IMPORT OnCallCountThresholdReached
-
-    NESTED_ENTRY OnCallCountThresholdReachedStub
-        PROLOG_WITH_TRANSITION_BLOCK
-
-        add     r0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     r1, r12 ; stub-identifying token
-        bl      OnCallCountThresholdReached
-        mov     r12, r0
-
-        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        EPILOG_BRANCH_REG r12
-    NESTED_END
-
-#endif ; FEATURE_TIERED_COMPILATION
-
 ; Must be at very end of file
     END

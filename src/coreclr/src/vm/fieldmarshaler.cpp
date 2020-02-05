@@ -107,7 +107,7 @@ VOID ParseNativeType(Module*                     pModule,
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER, sizeof(INT32), alignof(INT32));
                 break;
             case MarshalInfo::MARSHAL_TYPE_GENERIC_8:
-#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER, sizeof(INT64), 4);
 #else
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_BLITTABLE_INTEGER, sizeof(INT64), sizeof(INT64));
@@ -131,7 +131,7 @@ VOID ParseNativeType(Module*                     pModule,
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_R4, sizeof(float), sizeof(float));
                 break;
             case MarshalInfo::MARSHAL_TYPE_DOUBLE:
-#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_R8, sizeof(double), 4);
 #else
                 *pNFD = NativeFieldDescriptor(NATIVE_FIELD_CATEGORY_R8, sizeof(double), sizeof(double));
