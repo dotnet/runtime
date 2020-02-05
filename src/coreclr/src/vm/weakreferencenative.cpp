@@ -519,6 +519,9 @@ void FinalizeWeakReference(Object * obj)
     }
 
     // Release the spin lock
+    // This is necessary even when the spin lock is not acquired
+    // (i.e. When ThreadSuspend::SysIsSuspended() == true)
+    // so that the new handle value is set.
     ReleaseWeakHandleSpinLock(pThis, handle);
 
     if (handleToDestroy != NULL)
