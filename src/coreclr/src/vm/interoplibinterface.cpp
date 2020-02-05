@@ -141,7 +141,7 @@ namespace
         };
 
     private:
-        friend class InteropLibImports::RuntimeCallContext;
+        friend struct InteropLibImports::RuntimeCallContext;
         SHash<Traits> _hashMap;
         Crst _lock;
 
@@ -537,7 +537,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_ANY;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
@@ -556,7 +556,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
-            MODE_ANY;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
 
@@ -589,6 +589,31 @@ namespace InteropLibImports
         DestroyHandleCommon(objectHandle, InstanceHandleType);
     }
 
+    bool GetGlobalPeggingState() noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        return (RCWWalker::s_bIsGlobalPeggingOn != FALSE);
+    }
+
+    void SetGlobalPeggingState(_In_ bool state) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        BOOL newState = state ? TRUE : FALSE;
+        VolatileStore(&RCWWalker::s_bIsGlobalPeggingOn, newState);
+    }
+
     HRESULT GetOrCreateTrackerTargetForExternal(
         _In_ InteropLib::OBJECTHANDLE impl,
         _In_ IUnknown* externalComObject,
@@ -613,6 +638,7 @@ namespace InteropLibImports
 
         // Switch to Cooperative mode since object references
         // are being manipulated.
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
             GCX_COOP();
 
@@ -626,31 +652,27 @@ namespace InteropLibImports
 
             gc.implRef = ObjectFromHandle(implHandle);
 
-            EX_TRY
-            {
-                // Get wrapper for external object
-                gc.objRef = GetOrCreateObjectForComInstanceInternal(
-                    gc.implRef,
-                    externalComObject,
-                    externalObjectFlags);
+            // Get wrapper for external object
+            gc.objRef = GetOrCreateObjectForComInstanceInternal(
+                gc.implRef,
+                externalComObject,
+                externalObjectFlags);
 
-                // Get wrapper for managed object
-                *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
-                    gc.implRef,
-                    gc.objRef,
-                    trackerTargetFlags);
-            }
-            EX_CATCH_HRESULT(hr);
+            // Get wrapper for managed object
+            *trackerTarget = GetOrCreateComInterfaceForObjectInternal(
+                gc.implRef,
+                gc.objRef,
+                trackerTargetFlags);
 
             GCPROTECT_END();
         }
+        END_EXTERNAL_ENTRYPOINT;
 
         return hr;
     }
 
-    class RuntimeCallContext
+    struct RuntimeCallContext
     {
-    public:
         RuntimeCallContext(_In_ ExtObjCxtCache* cache, _In_ ExtObjCxtRefCache* refCache)
             : Curr{ cache->_hashMap.Begin() }
             , End{ cache->_hashMap.End() }
@@ -922,6 +944,35 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     //
     RCWWalker::OnGCStarted(nCondemnedGeneration);
 
+    //
+    // Note that we could get nested GCStart/GCEnd calls, such as :
+    // GCStart for Gen 2 background GC
+    //    GCStart for Gen 0/1 foregorund GC
+    //    GCEnd   for Gen 0/1 foreground GC
+    //    ....
+    // GCEnd for Gen 2 background GC
+    //
+    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
+    //
+    // See Interop::OnGCFinished()
+    if (nCondemnedGeneration >= 2)
+    {
+        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+        _ASSERTE(cache != NULL);
+
+        RCWRefCache *refCache = GetAppDomain()->GetRCWRefCache();
+
+        // Reset the ref cache
+        refCache->ResetDependentHandles();
+
+        // Create a call context for the InteropLib.
+        InteropLibImports::RuntimeCallContext cxt(cache, refCache);
+        (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
+
+        // Shrink cache and clear unused handles.
+        refCache->ShrinkDependentHandles();
+    }
+
 #endif // FEATURE_COMINTEROP
 }
 
@@ -939,6 +990,38 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     // Tell Jupiter GC has finished
     //
     RCWWalker::OnGCFinished(nCondemnedGeneration);
+
+    //
+    // Note that we could get nested GCStart/GCEnd calls, such as :
+    // GCStart for Gen 2 background GC
+    //    GCStart for Gen 0/1 foregorund GC
+    //    GCEnd   for Gen 0/1 foreground GC
+    //    ....
+    // GCEnd for Gen 2 background GC
+    //
+    // The nCondemnedGeneration >= 2 check takes care of this nesting problem
+    //
+    // See Interop::OnGCStarted()
+    if (nCondemnedGeneration >= 2)
+        (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+
+#endif // FEATURE_COMINTEROP
+}
+
+void Interop::OnRuntimeShutdown()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+#ifdef FEATURE_COMINTEROP
+    // Release IJupiterGCMgr*
+    RCWWalker::OnEEShutdown();
+
+    InteropLib::Shutdown();
 
 #endif // FEATURE_COMINTEROP
 }

@@ -21,12 +21,22 @@ namespace InteropLibImports
     // Free the previously allocated memory.
     void MemFree(_In_ void* mem, _In_ AllocScenario scenario) noexcept;
 
+    // Add memory pressure to the runtime's GC calculations.
     HRESULT AddMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept;
+
+    // Remove memory pressure from the runtime's GC calculations.
     HRESULT RemoveMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept;
-    //HRESULT RequestGarbageCollectionForExternal() noexcept;
+
+    // [TODO] HRESULT RequestGarbageCollectionForExternal() noexcept;
 
     // Delete Object instance handle
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
+
+    // Get the current global pegging state.
+    bool GetGlobalPeggingState() noexcept;
+
+    // Set the current global pegging state.
+    void SetGlobalPeggingState(_In_ bool state) noexcept;
 
     // Get next External Object Context from the Runtime calling context.
     // S_OK - Context is valid.
@@ -51,7 +61,6 @@ namespace InteropLibImports
         _In_ INT32 externalObjectFlags,
         _In_ INT32 trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept;
-
 }
 
 #endif // _INTEROP_INC_INTEROPLIBIMPORTS_H_

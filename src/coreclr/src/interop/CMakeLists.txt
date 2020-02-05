@@ -2,6 +2,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE inc)
 
 set(INTEROP_COMMON_SOURCES
+    interoplib.cpp
 )
 
 set(INTEROP_COMMON_HEADERS

@@ -277,7 +277,21 @@ namespace
     static_assert(sizeof(ManagedObjectWrapper_IReferenceTrackerTargetImpl) == (7 * sizeof(void*)), "Unexpected vtable size");
 }
 
-ManagedObjectWrapper* ManagedObjectWrapper::MapIUnknownToWrapper(_In_ IUnknown* pUnk)
+void ManagedObjectWrapper::GetIUnknownImpl(
+    _Out_ void** fpQueryInterface,
+    _Out_ void** fpAddRef,
+    _Out_ void** fpRelease)
+{
+    _ASSERTE(fpQueryInterface != nullptr
+            && fpAddRef != nullptr
+            && fpRelease != nullptr);
+
+    *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
+    *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
+    *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
+}
+
+ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 {
     _ASSERTE(pUnk != nullptr);
 
@@ -507,7 +521,10 @@ ULONG ManagedObjectWrapper::Release(void)
 {
     OBJECTHANDLE local = Target;
     ULONG refCount = (ULONG)::InterlockedDecrement64(&_refCount);
-    if (refCount == 0)
+
+    // It is possible that a target wasn't set during an
+    // attempt to reactive the wrapper.
+    if (refCount == 0 && local != nullptr)
     {
         // Attempt to reset the target if its current value is the same.
         // It is possible the wrapper is in the middle of being reactivated.
@@ -625,125 +642,4 @@ void* NativeObjectWrapperContext::GetRuntimeContext() const
 IReferenceTracker* NativeObjectWrapperContext::GetReferenceTrackerFast() const
 {
     return _trackerObject;
-}
-
-namespace InteropLib
-{
-    namespace Com
-    {
-        HRESULT CreateWrapperForObject(
-            _In_ OBJECTHANDLE instance,
-            _In_ INT32 vtableCount,
-            _In_ void* vtablesRaw,
-            _In_ INT32 flagsRaw,
-            _Outptr_ IUnknown** wrapper) noexcept
-        {
-            if (instance == nullptr || (vtablesRaw == nullptr && vtableCount != 0) || vtableCount < 0)
-                return E_INVALIDARG;
-
-            if (wrapper == nullptr)
-                return E_POINTER;
-
-            HRESULT hr;
-
-            // Convert inputs to appropriate types.
-            auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
-            auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
-
-            ManagedObjectWrapper* mow;
-            RETURN_IF_FAILED(ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables, &mow));
-
-            *wrapper = static_cast<IUnknown*>(mow->As(IID_IUnknown));
-            return S_OK;
-        }
-
-        void DestroyWrapperForObject(_In_ void* wrapperMaybe) noexcept
-        {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(static_cast<IUnknown*>(wrapperMaybe));
-
-            // A caller should not be destroying a wrapper without knowing if the wrapper is valid.
-            _ASSERTE(wrapper != nullptr);
-
-            ManagedObjectWrapper::Destroy(wrapper);
-        }
-
-        HRESULT CreateWrapperForExternal(
-            _In_ IUnknown* external,
-            _In_ INT32 flagsRaw,
-            _In_ size_t contextSize, 
-            _Outptr_ void** context) noexcept
-        {
-            if (external == nullptr)
-                return E_INVALIDARG;
-
-            if (context == nullptr)
-                return E_POINTER;
-
-            HRESULT hr;
-
-            // Convert input to appropriate type.
-            auto flags = static_cast<CreateObjectFlags>(flagsRaw);
-
-            NativeObjectWrapperContext* wrapperContext;
-            RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
-
-            *context = wrapperContext->GetRuntimeContext();
-            return S_OK;
-        }
-
-        void DestroyWrapperForExternal(_In_ void* contextMaybe) noexcept
-        {
-            NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
-
-            // A caller should not be destroying a context without knowing if the context is valid.
-            _ASSERTE(context != nullptr);
-
-            // Check if the tracker object manager should be informed prior to being destroyed.
-            if (context->GetReferenceTrackerFast() != nullptr)
-            {
-                // We only call this during a GC so ignore the failure as
-                // there is no way we can handle that failure at this point.
-                HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(context);
-                _ASSERTE(SUCCEEDED(hr));
-                (void)hr;
-            }
-
-            NativeObjectWrapperContext::Destroy(context);
-        }
-
-        bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept
-        {
-            return TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(objectHandle);
-        }
-
-        void GetIUnknownImpl(
-            _Out_ void** fpQueryInterface,
-            _Out_ void** fpAddRef,
-            _Out_ void** fpRelease) noexcept
-        {
-            _ASSERTE(fpQueryInterface != nullptr
-                    && fpAddRef != nullptr
-                    && fpRelease != nullptr);
-
-            *fpQueryInterface = ManagedObjectWrapper_IUnknownImpl.QueryInterface;
-            *fpAddRef = ManagedObjectWrapper_IUnknownImpl.AddRef;
-            *fpRelease = ManagedObjectWrapper_IUnknownImpl.Release;
-        }
-
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
-        {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapIUnknownToWrapper(wrapperMaybe);
-            if (wrapper == nullptr || handle == nullptr)
-                return E_INVALIDARG;
-
-            ULONG count = wrapper->AddRef();
-            if (count == 1)
-            {
-                ::InterlockedExchangePointer(&wrapper->Target, handle);
-                return S_FALSE;
-            }
-
-            return S_OK;
-        }
-    }
 }

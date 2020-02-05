@@ -6,7 +6,6 @@
 #define _INTEROP_COMWRAPPERS_H_
 
 #include "platform.h"
-#include <objidl.h> // COM interfaces
 #include <interoplib.h>
 #include "referencetrackertypes.h"
 
@@ -57,8 +56,15 @@ private:
     const CreateComInterfaceFlags _flags;
 
 public: // static
-    // Convert the IUnknown if the instance is a ManagedObjectWrapper into a ManagedObjectWrapper, otherwise null.
-    static ManagedObjectWrapper* MapIUnknownToWrapper(_In_ IUnknown* pUnk);
+    // Get the implementation for IUnknown.
+    static void GetIUnknownImpl(
+            _Out_ void** fpQueryInterface,
+            _Out_ void** fpAddRef,
+            _Out_ void** fpRelease);
+
+    // Convert the IUnknown if the instance is a ManagedObjectWrapper
+    // into a ManagedObjectWrapper, otherwise null.
+    static ManagedObjectWrapper* MapFromIUnknown(_In_ IUnknown* pUnk);
 
     // Create a ManagedObjectWrapper instance
     static HRESULT Create(
@@ -179,13 +185,13 @@ public:
     static HRESULT BeforeWrapperDestroyed(_In_ NativeObjectWrapperContext* cxt);
 
 public:
-    // Called when GC started
-    static void OnGCStarted(_In_ int nCondemnedGeneration);
+    // Begin the reference tracking process for external objects.
+    static HRESULT BeginReferenceTracking(InteropLibImports::RuntimeCallContext* cxt);
 
-    // Called when GC finished
-    static void OnGCFinished(_In_ int nCondemnedGeneration);
+    // End the reference tracking process for external object.
+    static HRESULT EndReferenceTracking();
 
-    // Cleanup stuff when runtime is about to shutdown
+    // Clean up internal resources used for reference tracking.
     static void OnShutdown();
 };
 

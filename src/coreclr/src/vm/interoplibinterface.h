@@ -47,4 +47,7 @@ public:
 
     // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
+
+    // Notify when the runtime is shutting down.
+    static void OnRuntimeShutdown();
 };

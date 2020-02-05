@@ -11,12 +11,15 @@ namespace InteropLibImports
     // This class is used by the consuming runtime to pass through details
     // that may be required during a subsequent callback from the InteropLib.
     // InteropLib never directly modifies or inspects supplied instances.
-    class RuntimeCallContext;
+    struct RuntimeCallContext;
 }
 
 namespace InteropLib
 {
     using OBJECTHANDLE = void*;
+
+    // Clean up the interop library.
+    void Shutdown() noexcept;
 
 #ifdef _WIN32
 
@@ -57,15 +60,21 @@ namespace InteropLib
             _Out_ void** fpRelease) noexcept;
 
         // Ensure the wrapper is active and take an AddRef.
-        // S_OK    - the wrapper is active and the OBJECTHANDLE wasn't needed.
-        // S_FALSE - the wrapper was inactive and the OBJECTHANDLE argument was used.
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
+        // S_OK     - the wrapper is active and the OBJECTHANDLE wasn't needed.
+        // S_FALSE  - the wrapper was inactive and the OBJECTHANDLE argument was used.
+        // E_HANDLE - the supplied wrapper is inactive and an OBJECTHANDLE wasn't supplied.
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_opt_ OBJECTHANDLE handle) noexcept;
 
-        //HRESULT TrackExternalObjectReferences(_In_ RuntimeCallContext* cxt);
+        // Begin the reference tracking process on external COM objects.
+        // This should only be called during a runtime's GC phase.
+        HRESULT BeginExternalObjectReferenceTracking(_In_ InteropLibImports::RuntimeCallContext* cxt) noexcept;
+
+        // End the reference tracking process.
+        // This should only be called during a runtime's GC phase.
+        HRESULT EndExternalObjectReferenceTracking() noexcept;
     }
 
 #endif // _WIN32
-
 }
 
 #endif // _INTEROP_INC_INTEROPLIB_H_

@@ -186,7 +186,7 @@
 #include "runtimecallablewrapper.h"
 #include "notifyexternals.h"
 #include "mngstdinterfaces.h"
-#include "rcwwalker.h"
+#include "interoplibinterface.h"
 #endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT

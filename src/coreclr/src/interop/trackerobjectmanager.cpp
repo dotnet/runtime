@@ -9,6 +9,7 @@
 #include <interoplibimports.h>
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
+using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace
 {
@@ -83,11 +84,13 @@ namespace
         {
         }
 
+        // InteropLibImports::TriggerGC()
         return E_NOTIMPL; // [TODO]
     }
 
     STDMETHODIMP HostServices::ReleaseDisconnectedReferenceSources()
     {
+        // InteropLibImports::WaitForFinalizer()
         return E_NOTIMPL; // [TODO]
     }
 
@@ -97,6 +100,9 @@ namespace
     //
     STDMETHODIMP HostServices::NotifyEndOfReferenceTrackingOnThread()
     {
+        // InteropLibImports::ReleaseObjectsInContext()
+        // This probably should be done via a callback back into managed and
+        // let the object creator handle the neutering of the object.
         return E_NOTIMPL; // [TODO]
     }
 
@@ -136,13 +142,13 @@ namespace
         ComHolder<IUnknown> identity;
         RETURN_IF_FAILED(obj->QueryInterface(&identity));
 
-        // Get or create an existing implementation for the this external.
+        // Get or create an existing implementation for this external.
         ComHolder<IUnknown> target;
-        RETURN_IF_FAILED(GetOrCreateTrackerTargetForExternal(
+        RETURN_IF_FAILED(InteropLibImports::GetOrCreateTrackerTargetForExternal(
             impl,
             identity,
-            CreateRCWFlags::TrackerObject,
-            CreateCCWFlags::TrackerSupport,
+            (INT32)CreateObjectFlags::TrackerObject,
+            (INT32)CreateComInterfaceFlags::TrackerSupport,
             (void**)&target));
 
         return target->QueryInterface(IID_IReferenceTrackerTarget, (void**)ppNewReference);
@@ -157,67 +163,49 @@ namespace
     {
         return InteropLibImports::RemoveMemoryPressureForExternal(bytesAllocated);
     }
-}
 
-namespace
-{
-    // [TODO]
-    Volatile<IReferenceTrackerManager*> s_TrackerManager; // The one and only Tracker Manager instance
-    Volatile<BOOL> s_IsGCStarted = FALSE;
+    VolatilePtr<IReferenceTrackerManager> s_TrackerManager; // The one and only Tracker Manager instance
+    Volatile<BOOL> s_HasTrackingStarted = FALSE;
 
-    //
-    // Tells GC whether walking all the Jupiter RCW is necessary, which only should happen
-    // if we have seen jupiter RCWs
-    // [TODO]
-    BOOL NeedToWalkRCWs()
+    // Indicates if walking the external objects is needed.
+    // (i.e. Have any IReferenceTracker instances been found?)
+    bool ShouldWalkExternalObjects()
     {
-        return (s_TrackerManager.load() != nullptr);
+        return (s_TrackerManager != nullptr);
     }
 
-    //
     // Callback implementation of IFindReferenceTargetsCallback
-    // [TODO]
     class FindDependentWrappersCallback : public IFindReferenceTargetsCallback
     {
+        NativeObjectWrapperContext* _nowCxt;
+        RuntimeCallContext* _runtimeCallCxt;
+
     public:
-        FindDependentWrappersCallback(_In_ RCWInstance* rcw, _In_ TrackerRCWEnum* rcwEnum)
-            : _rcw{ rcw }
-            , _rcwEnum{ rcwEnum }
+        FindDependentWrappersCallback(_In_ NativeObjectWrapperContext* nowCxt, _In_ RuntimeCallContext* runtimeCallCxt)
+            : _nowCxt{ nowCxt }
+            , _runtimeCallCxt{ runtimeCallCxt }
         {
+            _ASSERTE(_nowCxt != nullptr && runtimeCallCxt != nullptr);
         }
 
         STDMETHOD(FoundTrackerTarget)(_In_ IReferenceTrackerTarget* target)
         {
-            assert(target != nullptr);
-
             HRESULT hr;
 
-            CCW* ccw = CCW::MapIUnknownToWrapper(target);
+            if (target != nullptr)
+                return E_POINTER;
+
+            ManagedObjectWrapper* mow = ManagedObjectWrapper::MapFromIUnknown(target);
 
             // Not a target we implemented.
-            if (ccw == nullptr)
+            if (mow == nullptr)
                 return S_OK;
 
-            //
-            // Skip dependent handle creation if RCW/CCW points to the same managed object
-            //
-            if (_rcw->GetObjectGCHandle() == ccw->GetObjectGCHandle())
-                return S_OK;
-
-            //
-            // Jupiter might return CCWs with outstanding references that are either :
-            // 1. Neutered - in this case it is unsafe to touch m_ppThis
-            // 2. RefCounted handle NULLed out by GC
-            //
-            // Skip those to avoid crashes
-            //
-            if (!ccw->IsAlive())
-                return S_OK;
-
-            //
-            // Add a reference from rcw -> ccw so that GC knows about this reference
-            //
-            RETURN_IF_FAILED(_rcwEnum->AddReferenceFromRCWToCCW(_rcw, ccw));
+            // Notify the runtime a reference path was found.
+            RETURN_IF_FAILED(InteropLibImports::FoundReferencePath(
+                _runtimeCallCxt,
+                _nowCxt->GetRuntimeContext(),
+                mow->Target));
 
             return S_OK;
         }
@@ -250,125 +238,59 @@ namespace
             (void)AddRef();
             return S_OK;
         }
-
-    private:
-        RCWInstance* _rcw;
-        TrackerRCWEnum* _rcwEnum;
     };
 
-    //
-    // Ask Jupiter all the CCWs referenced (through native code) by this RCW and build reference for RCW -> CCW
-    // so that GC knows about this reference
-    // [TODO]
-    HRESULT WalkOneRCW(_In_ RCWInstance* rcw, _In_ TrackerRCWEnum* rcwEnum)
+    HRESULT OnExternalTrackerObject(_In_ NativeObjectWrapperContext* nowc, _In_ RuntimeCallContext* cxt)
     {
-        assert(rcw != nullptr && rcwEnum != nullptr);
+        _ASSERTE(nowc != nullptr && cxt != nullptr);
 
         HRESULT hr;
 
-        // Get IReferenceTracker * from RCW - we can call IReferenceTracker* from any thread and it won't be a proxy
+        // Get IReferenceTracker * from wrapper - we can call IReferenceTracker from any thread and it won't be a proxy
         ComHolder<IReferenceTracker> obj;
-        RETURN_IF_FAILED(rcw->GetInstanceProxy(&obj));
+        RETURN_IF_FAILED(nowc->GetInstanceProxy(&obj));
 
-        FindDependentWrappersCallback cb{ rcw, rcwEnum };
+        // Ask the tracker instance to find all reference targets.
+        FindDependentWrappersCallback cb{ nowc, cxt };
         RETURN_IF_FAILED(obj->FindTrackerTargets(&cb));
 
         return S_OK;
     }
-}
 
-void TrackerRCWManager::OnGCStartedWorker()
-{
-    // Due to the nesting GCStart/GCEnd pairs (see comment for this function), we need to check
-    // those flags inside nCondemnedGeneration >= 2 check
-    assert(s_IsGCStarted == FALSE);
-    assert(s_IsGlobalPeggingOn == TRUE);
-
-    s_IsGCStarted = TRUE;
-
-    //
-    // Let Jupiter know we are about to walk RCWs so that they can lock their reference cache
-    // Note that Jupiter doesn't need to unpeg all CCWs at this point and they can do the pegging/unpegging in FindTrackerTargetsCompleted
-    //
-    assert(s_TrackerManager.load() != nullptr);
-    s_TrackerManager.load()->ReferenceTrackingStarted();
-
-    // From this point, jupiter decides whether a CCW should be pegged or not as global pegging flag is now off
-    s_IsGlobalPeggingOn = FALSE;
-
-    //
-    // OK. Time to walk all the reference RCWs
-    //
-    WalkRCWs();
-}
-
-void TrackerRCWManager::OnGCFinishedWorker()
-{
-    //
-    // Let Jupiter know RCW walk is done and they need to:
-    // 1. Unpeg all CCWs if the CCW needs to be unpegged (when the CCW is only reachable by other jupiter RCWs)
-    // 2. Peg all CCWs if the CCW needs to be pegged (when the above condition is not true)
-    // 3. Unlock reference cache when they are done
-    //
-    // If the walk has failed - Jupiter doesn't need to do anything and could just return immediately
-    //
-    assert(s_TrackerManager.load() != nullptr);
-    s_TrackerManager.load()->ReferenceTrackingCompleted();
-
-    s_IsGlobalPeggingOn = TRUE;
-    s_IsGCStarted = FALSE;
-}
-
-//
-// Walk all the jupiter RCWs in all AppDomains and build references from RCW -> CCW as we go
-//
-void TrackerRCWManager::WalkRCWs()
-{
-    BOOL walkFailed = FALSE;
-    HRESULT hr;
-
-    try
+    // [TODO]
+    HRESULT WalkExternalTrackerObjects(_In_ RuntimeCallContext* cxt)
     {
-        TrackerRCWEnum* rcwEnum = TrackerRCWEnum::GetInstance();
-        assert(rcwEnum != nullptr);
+        BOOL walkFailed = FALSE;
+        HRESULT hr;
 
-        //
-        // Reset the cache
-        //
-        rcwEnum->ResetDependentHandles();
+        void* extObjContext = nullptr;
+        while (S_OK == (hr = InteropLibImports::IteratorNext(cxt, &extObjContext)))
+        {
+            _ASSERTE(extObjContext != nullptr);
 
-        //
-        // Enumerate Jupiter RCWs
-        //
-        hr = rcwEnum->EnumerateJupiterRCWs(WalkOneRCW);
+            NativeObjectWrapperContext* nowc = NativeObjectWrapperContext::MapFromRuntimeContext(extObjContext);
 
-        //
-        // Shrink the dependent handle cache if necessary and clear unused handles.
-        //
-        rcwEnum->ShrinkDependentHandles();
+            // Check if the object is a tracker object.
+            if (nowc->GetReferenceTrackerFast() == nullptr)
+                continue;
+
+            hr = OnExternalTrackerObject(nowc, cxt);
+            if (FAILED(hr))
+                break;
+        }
+
+        if (FAILED(hr))
+        {
+            // Remember the fact that we've failed and stop walking
+            walkFailed = TRUE;
+            InteropLibImports::SetGlobalPeggingState(true);
+        }
+
+        _ASSERTE(s_TrackerManager != nullptr);
+        (void)s_TrackerManager->FindTrackerTargetsCompleted(walkFailed);
+
+        return hr;
     }
-    catch (...)
-    {
-        hr = E_FAIL;
-    }
-
-    if (FAILED(hr))
-    {
-        // Remember the fact that we've failed and stop walking
-        walkFailed = TRUE;
-        s_IsGlobalPeggingOn = TRUE;
-    }
-
-    //
-    // Let Jupiter know RCW walk is done and they need to:
-    // 1. Unpeg all CCWs if the CCW needs to be unpegged (when the CCW is only reachable by other jupiter RCWs)
-    // 2. Peg all CCWs if the CCW needs to be pegged (when the above condition is not true)
-    // 3. Unlock reference cache when they are done
-    //
-    // If the walk has failed - Jupiter doesn't need to do anything and could just return immediately
-    //
-    assert(s_TrackerManager.load() != nullptr);
-    s_TrackerManager.load()->FindTrackerTargetsCompleted(walkFailed);
 }
 
 bool TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current)
@@ -382,7 +304,7 @@ bool TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(_In_ OBJECTHAND
 HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* obj)
 {
     _ASSERTE(obj != nullptr);
-    if (s_TrackerManager.load() != nullptr)
+    if (s_TrackerManager != nullptr)
         return S_OK;
 
     // Retrieve IReferenceTrackerManager
@@ -390,23 +312,14 @@ HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* o
     ComHolder<IReferenceTrackerManager> trackerManager;
     RETURN_IF_FAILED(obj->GetReferenceTrackerManager(&trackerManager));
 
-    ComHolder<IReferenceTrackerHost> clrServices;
-    RETURN_IF_FAILED(g_HostServicesInstance.QueryInterface(IID_IReferenceTrackerHost, (void**)&clrServices));
+    ComHolder<IReferenceTrackerHost> hostServices;
+    RETURN_IF_FAILED(g_HostServicesInstance.QueryInterface(IID_IReferenceTrackerHost, (void**)&hostServices));
 
-    // [TODO] Temporarily switch back to coop and disable GC to avoid racing with the very first RCW walk
-    //GCX_COOP();
-    //GCX_FORBID();
-
-    IReferenceTrackerManager* expected = nullptr;
-    if (s_TrackerManager.compare_exchange_strong(expected, trackerManager.p))
+    // Attempt to set the tracker instance.
+    if (::InterlockedCompareExchangePointer((void**)&s_TrackerManager, trackerManager.p, nullptr) == nullptr)
     {
         (void)trackerManager.Detach(); // Ownership has been transfered
-
-        //
-        // OK. It is time to do our initialization
-        // It's safe to do it here because we are in COOP and only one thread wins the race
-        //
-        RETURN_IF_FAILED(s_TrackerManager.load()->SetReferenceTrackerHost(clrServices));
+        RETURN_IF_FAILED(s_TrackerManager->SetReferenceTrackerHost(hostServices));
     }
 
     return S_OK;
@@ -482,68 +395,71 @@ namespace
         }
         __except (RCWWalker_UnhandledExceptionFilter(GetExceptionCode(), GetExceptionInformation()))
         {
-            assert(false && "Should not get here");
+            _ASSERTE(false && "Should not get here");
         }
     }
 }
 
-//
-// Note that we could get nested GCStart/GCEnd calls, such as :
-// GCStart for Gen 2 background GC
-//    GCStart for Gen 0/1 foregorund GC
-//    GCEnd   for Gen 0/1 foreground GC
-//    ....
-// GCEnd for Gen 2 background GC
-//
-// The nCondemnedGeneration >= 2 check takes care of this nesting problem
-//
-void TrackerObjectManager::OnGCStarted(_In_ int nCondemnedGeneration)
+HRESULT TrackerObjectManager::BeginReferenceTracking(_In_ RuntimeCallContext* cxt)
 {
-    if (nCondemnedGeneration < 2)  // We are only doing walk in Gen2 GC
-        return;
+    _ASSERTE(cxt != nullptr);
 
-    if (!NeedToWalkRCWs()) // Have we seen Jupiter RCWs?
-        return;
+    if (!ShouldWalkExternalObjects())
+        return S_FALSE;
 
-    // Make sure we fail fast if anything goes wrong when we interact with Jupiter
-    SetupFailFastFilterAndCall(TrackerObjectManager::OnGCStartedWorker);
+    HRESULT hr;
+
+    _ASSERTE(s_HasTrackingStarted == FALSE);
+    _ASSERTE(InteropLibImports::GetGlobalPeggingState());
+
+    s_HasTrackingStarted = TRUE;
+
+    // From this point, the tracker runtime decides whether a target
+    // should be pegged or not as the global pegging flag is now off.
+    InteropLibImports::SetGlobalPeggingState(false);
+
+    // Let the tracker runtime know we are about to walk external objects so that
+    // they can lock their reference cache. Note that the tracker runtime doesn't need to
+    // unpeg all external objects at this point and they can do the pegging/unpegging.
+    // in FindTrackerTargetsCompleted.
+    _ASSERTE(s_TrackerManager != nullptr);
+    RETURN_IF_FAILED(s_TrackerManager->ReferenceTrackingStarted());
+
+    // Time to walk the external objects
+    RETURN_IF_FAILED(WalkExternalTrackerObjects(cxt));
+
+    return S_OK;
 }
 
-//
-// Note that we could get nested GCStart/GCEnd calls, such as :
-// GCStart for Gen 2 background GC
-//    GCStart for Gen 0/1 foregorund GC
-//    GCEnd   for Gen 0/1 foreground GC
-//    ....
-// GCEnd for Gen 2 background GC
-//
-// The nCondemnedGeneration >= 2 check takes care of this nesting problem
-//
-void TrackerObjectManager::OnGCFinished(_In_ int nCondemnedGeneration)
+HRESULT TrackerObjectManager::EndReferenceTracking()
 {
-    //
-    // Note that we need to check in both OnGCFinished and OnGCStarted
-    // As there could be multiple OnGCFinished with nCondemnedGeneration < 2 in the case of Gen 2 GC
-    //
-    // Also, if this is background GC, the NeedToWalkRCWs predicate may change from FALSE to TRUE while
-    // the GC is running. We don't want to do any work if it's the case (i.e. if s_IsGCStarted is FALSE).
-    //
-    if (nCondemnedGeneration >= 2   // We are only doing walk in Gen2 GC
-        && NeedToWalkRCWs()         // Have we seen Jupiter RCWs?
-        && s_IsGCStarted == TRUE)   // Had we seen Jupiter RCWs when the GC started?
-    {
-        // Make sure we fail fast if anything goes wrong when we interact with Jupiter
-        SetupFailFastFilterAndCall(TrackerObjectManager::OnGCFinishedWorker);
-    }
+    if (s_HasTrackingStarted != TRUE
+        || !ShouldWalkExternalObjects())
+        return S_FALSE;
+
+    HRESULT hr;
+
+    // Let the tracker runtime know the external object walk is done and they need to:
+    // 1. Unpeg all managed object wrappers (mow) if the (mow) needs to be unpegged
+    //       (i.e. when the (mow) is only reachable by other external tracker objects).
+    // 2. Peg all mows if the mow needs to be pegged (i.e. when the above condition is not true)
+    // 3. Unlock reference cache when they are done.
+    _ASSERTE(s_TrackerManager != nullptr);
+    hr = s_TrackerManager->ReferenceTrackingCompleted();
+    _ASSERTE(SUCCEEDED(hr));
+
+    InteropLibImports::SetGlobalPeggingState(true);
+    s_HasTrackingStarted = FALSE;
+
+    return hr;
 }
 
 void TrackerObjectManager::OnShutdown()
 {
-    IReferenceTrackerManager* trackerManager = s_TrackerManager.exchange(nullptr);
-    if (trackerManager != nullptr)
+    IReferenceTrackerManager* trackerManager = s_TrackerManager;
+    if (::InterlockedCompareExchangePointer((void**)&s_TrackerManager, nullptr, trackerManager) == trackerManager)
     {
-        // Make sure s_TrackerManager is always either null or a valid IReferenceTrackerManager *
-        // this will make crash easier to diagnose
+        // Make sure s_TrackerManager is either null or a valid pointer.
         trackerManager->Release();
     }
 }

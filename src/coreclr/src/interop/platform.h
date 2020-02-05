@@ -15,6 +15,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
+#include <objidl.h> // COM interfaces
 
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
