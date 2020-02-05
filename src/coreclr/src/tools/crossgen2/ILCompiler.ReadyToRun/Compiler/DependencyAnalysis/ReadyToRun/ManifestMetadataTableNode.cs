@@ -160,9 +160,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             MetadataBuilder metadataBuilder = new MetadataBuilder();
 
-            string inputModuleName = inputModule.Module.Assembly.GetName().Name;
+            string manifestMetadataAssemblyName = "ManifestMetadata";
             metadataBuilder.AddAssembly(
-                metadataBuilder.GetOrAddString(inputModuleName),
+                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
                 new Version(0, 0, 0, 0),
                 culture: default(StringHandle),
                 publicKey: default(BlobHandle),
@@ -171,7 +171,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             metadataBuilder.AddModule(
                 0,
-                metadataBuilder.GetOrAddString(inputModuleName),
+                metadataBuilder.GetOrAddString(manifestMetadataAssemblyName),
                 default(GuidHandle), default(GuidHandle), default(GuidHandle));
 
             // Module type

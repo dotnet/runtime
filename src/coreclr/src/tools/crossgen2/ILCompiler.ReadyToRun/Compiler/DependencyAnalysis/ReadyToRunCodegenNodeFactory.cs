@@ -507,9 +507,9 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     methodCodeNode = localMethodImport.MethodCodeNode;
                 }
-                if (methodCodeNode == null && methodNode is PrecodeMethodImport PrecodeMethodImport)
+                if (methodCodeNode == null && methodNode is PrecodeMethodImport precodeMethodImport)
                 {
-                    methodCodeNode = PrecodeMethodImport.MethodCodeNode;
+                    methodCodeNode = precodeMethodImport.MethodCodeNode;
                 }
 
                 if (methodCodeNode != null && !methodCodeNode.IsEmpty)
@@ -651,7 +651,7 @@ namespace ILCompiler.DependencyAnalysis
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.AvailableTypes, typesTable, typesTable);
 
                 InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule.Context.GlobalContext);
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+                tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
             }
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
@@ -761,7 +761,10 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
-            graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated");
+            if (!Composite)
+            {
+                graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for single-file R2R files");
+            }
             graph.AddRoot(DebugDirectoryNode, "Debug Directory will always contain at least one entry");
 
             if (Win32ResourcesNode != null)

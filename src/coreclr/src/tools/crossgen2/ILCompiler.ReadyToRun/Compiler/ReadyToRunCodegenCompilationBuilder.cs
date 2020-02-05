@@ -113,7 +113,7 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
-            CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModules.First());
+            CopiedCorHeaderNode corHeaderNode = (_composite ? null : new CopiedCorHeaderNode(_inputModules.First()));
             AttributePresenceFilterNode attributePresenceFilterNode = null;
             // TODO: proper support for multiple input files
             DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(_inputModules.First());

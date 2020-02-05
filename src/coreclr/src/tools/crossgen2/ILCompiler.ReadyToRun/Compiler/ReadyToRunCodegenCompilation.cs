@@ -232,8 +232,7 @@ namespace ILCompiler
             using (PerfEventSource.StartStopEvents.EmittingEvents())
             {
                 NodeFactory.SetMarkingComplete();
-                // Temporary, before we change object writer to not need an input MSIL module
-                ReadyToRunObjectWriter.EmitObject(_inputModules.First().PEReader, outputFile, nodes, NodeFactory, _generateMapFile);
+                ReadyToRunObjectWriter.EmitObject(outputFile, nodes, NodeFactory, _generateMapFile);
             }
         }
 
