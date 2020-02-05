@@ -274,6 +274,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31797", TargetFrameworkMonikers.Mono)]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(StackTrace stackTrace, string expectedToString)
         {

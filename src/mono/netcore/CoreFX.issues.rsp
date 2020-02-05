@@ -5,9 +5,6 @@
 -notrait category=failing
 -notrait category=IgnoreForCI
 
-# Assert.Contains() Failure
--nomethod System.Diagnostics.Tests.StackTraceTests.ToString_Invoke_ReturnsExpected
-
 ####################################################################
 ##  System.Reflection.Metadata.Tests
 ####################################################################
