@@ -36,7 +36,7 @@ namespace System.Diagnostics
         }
 
         /// <internalonly/>
-        internal static string? ComputerName => LazyInitializer.EnsureInitialized<string>(ref s_computerName, ref s_internalSyncObject, () => Interop.Kernel32.GetComputerName()!);
+        internal static string ComputerName => LazyInitializer.EnsureInitialized<string>(ref s_computerName, ref s_internalSyncObject, () => Interop.Kernel32.GetComputerName() ?? "");
 
         internal Dictionary<int, string> NameTable
         {
@@ -65,7 +65,7 @@ namespace System.Diagnostics
         {
             string lcidString = culture.Name.ToLowerInvariant();
             if (machineName.CompareTo(".") == 0)
-                machineName = ComputerName!.ToLowerInvariant();
+                machineName = ComputerName.ToLowerInvariant();
             else
                 machineName = machineName.ToLowerInvariant();
 
