@@ -51,7 +51,7 @@ unsigned __int64 getTimeStamp() {
 
 #endif // TARGET_X86
 
-#if defined(TARGET_X86) && !defined(TARGET_UNIX)
+#if defined(TARGET_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
 /* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
@@ -174,7 +174,7 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
     GetSystemTimeAsFileTime (&theLog.startTime);
     theLog.startTimeStamp = getTimeStamp();
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
     theLog.moduleOffset = (SIZE_T)hMod; // HMODULES are base addresses.
 
 #ifdef _DEBUG
@@ -183,9 +183,9 @@ void StressLog::Initialize(unsigned facilities,  unsigned level, unsigned maxByt
             GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
 #endif // _DEBUG
 
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
     theLog.moduleOffset = (SIZE_T)PAL_GetSymbolModuleBase((void *)StressLog::Initialize);
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #if !defined (STRESS_LOG_READONLY)
     StressLogChunk::s_LogChunkHeap = ClrHeapCreate (0, STRESSLOG_CHUNK_SIZE * 128, 0);
