@@ -63,8 +63,13 @@ namespace Mono.Linker.Steps
 			if (_assembly != null)
 				Context.Resolver.CacheAssembly (_assembly);
 
-			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
+			var ignoreUnresolved = Context.Resolver.IgnoreUnresolved;
+			if (_rootVisibility == RootVisibility.PublicAndFamily) {
+				Context.Resolver.IgnoreUnresolved = false;
+			}
 
+			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
+			Context.Resolver.IgnoreUnresolved = ignoreUnresolved;
 			if (_rootVisibility != RootVisibility.Any && HasInternalsVisibleTo (assembly)) {
 				_rootVisibility = RootVisibility.PublicAndFamilyAndAssembly;
 			}
