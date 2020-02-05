@@ -16,6 +16,39 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { [Intrinsic] get { return false; } }
 
+        // [Intrinsic]
+        // public new abstract class Arm32 : ArmBase.Arm32
+        // {
+        //     internal Arm32() { }
+        //
+        //     public static new bool IsSupported { [Intrinsic] get { return false; } }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        //     ///   A32: VMLA.F32 Qd, Qn, Qm
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        //     ///   A32: VMLA.F64 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<double> MultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) { throw new PlatformNotSupportedException(); }
+        //
+        //     /// <summary>
+        //     /// float32_t vmlas_f32 (float32_t a, float32_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Sd, Sn, Sm
+        //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+        // }
+
         public new abstract class Arm64 : ArmBase.Arm64
         {
             internal Arm64() { }
@@ -3260,6 +3293,90 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplyAdd(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x4_t vmla_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyAdd(Vector64<short> acc, Vector64<short> left, Vector64<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x2_t vmla_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyAdd(Vector64<int> acc, Vector64<int> left, Vector64<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x8_t vmla_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplyAdd(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x4_t vmla_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplyAdd(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x2_t vmla_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplyAdd(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint8x16_t vmlaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplyAdd(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int16x8_t vmlaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyAdd(Vector128<short> acc, Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int32x4_t vmlaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyAdd(Vector128<int> acc, Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// int8x16_t vmlaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint16x8_t vmlaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplyAdd(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// uint32x4_t vmlaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplyAdd(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
