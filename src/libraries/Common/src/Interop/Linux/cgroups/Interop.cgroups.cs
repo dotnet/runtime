@@ -3,10 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-
 using System;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 internal static partial class Interop
@@ -148,12 +148,12 @@ internal static partial class Interop
         /// <param name="root">The path of the directory in the filesystem which forms the root of this mount; null if not found.</param>
         /// <param name="path">The path of the mount point relative to the process's root directory; null if not found.</param>
         /// <returns>true if the mount was found; otherwise, null.</returns>
-        private static bool TryFindHierarchyMount(string subsystem, out CGroupVersion version, out string? root, out string? path)
+        private static bool TryFindHierarchyMount(string subsystem, out CGroupVersion version, [NotNullWhen(true)] out string? root, [NotNullWhen(true)] out string? path)
         {
             return TryFindHierarchyMount(ProcMountInfoFilePath, subsystem, out version, out root, out path);
         }
 
-        internal static bool TryFindHierarchyMount(string mountInfoFilePath, string subsystem, out CGroupVersion version, out string? root, out string? path)
+        internal static bool TryFindHierarchyMount(string mountInfoFilePath, string subsystem, out CGroupVersion version, [NotNullWhen(true)] out string? root, [NotNullWhen(true)] out string? path)
         {
             if (File.Exists(mountInfoFilePath))
             {

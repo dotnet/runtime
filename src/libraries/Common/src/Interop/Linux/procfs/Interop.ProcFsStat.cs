@@ -418,7 +418,7 @@ internal static partial class Interop
             return true;
         }
 
-        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, [NotNullWhen(true)]out string? fileContents)
+        private static bool TryReadFile(string filePath, ReusableTextReader reusableReader, [NotNullWhen(true)] out string? fileContents)
         {
             try
             {
