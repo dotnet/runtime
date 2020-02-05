@@ -2669,12 +2669,12 @@ inline void Compiler::impCurStmtOffsSet(IL_OFFSET offs)
         JITDUMP("bla");
     }
 #endif
-    if (compIsForInlining())
+    /*if (compIsForInlining())
     {
         Statement* callStmt = impInlineInfo->iciStmt;
         impCurStmtOffs      = callStmt->GetILOffsetX();
     }
-    else
+    else*/
     {
         assert(offs == BAD_IL_OFFSET || (offs & IL_OFFSETX_BITS) == 0);
         IL_OFFSETX stkBit = (verCurrentState.esStackDepth > 0) ? IL_OFFSETX_STKBIT : 0;
