@@ -141,20 +141,9 @@
     <Exec Command="$(CoreClrTest) -coreroot=&quot;$(CoreClrTestCoreRoot)&quot;"/>
   </Target>
 
-  <!-- Make sure coreclr tests are built (in $(CoreClrTestConfig) configuration), e.g. 
-    *nix: `cd ../coreclr && ./build.sh -release && ./build-testh.sh -release` 
-    Windows: `cd ../coreclr && build.cmd -release` -->
+  <!-- Run coreclr tests using runtest.py -->
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
-    <ItemGroup>	
-        <CoreClrTests Include="$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\**\*$(ScriptExt)" />	
-    </ItemGroup>
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="&quot;%(CoreClrTests.Identity)&quot; -coreroot &quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="ErrorAndContinue" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="bash &quot;%(CoreClrTests.Identity)&quot; -coreroot=&quot;$(CoreClrTestCoreRoot)&quot;" ContinueOnError="ErrorAndContinue" />
-  </Target>
-
-  <!-- Run coreclr tests using runtest.sh
-       It currently crashes on start becase of a bug in Mono (AppContext.BaseDirectory is empty) -->
-  <Target Name="RunCoreClrTests2" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\coreclr\tests\runtest.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 

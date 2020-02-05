@@ -40,7 +40,6 @@ run-tests-coreclr:
 	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" $(MONO_PROJ)
 
 # run all coreclr tests
-# change to RunCoreClrTests2 in order to run tests via runtest.py
 run-tests-coreclr-all:
 	$(DOTNET) msbuild /t:RunCoreClrTests $(MONO_PROJ)
 

@@ -20,9 +20,11 @@ namespace System
         private static string? s_defaultBaseDirectory;
 
         public static string BaseDirectory =>
+#if !MONO // https://github.com/dotnet/runtime/issues/31800
             // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type.
             // Otherwise the caller will get invalid cast exception
             (string?)GetData("APP_CONTEXT_BASE_DIRECTORY") ??
+#endif
             (s_defaultBaseDirectory ??= GetBaseDirectoryCore());
 
         public static string? TargetFrameworkName =>
