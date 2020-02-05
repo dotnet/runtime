@@ -102,15 +102,18 @@
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
-    <Copy SourceFiles="$(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(LocalDotnetRuntimeDir)"
-          SkipUnchangedFiles="true" />
+    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
+          DestinationFolder="$(LocalDotnetRuntimeDir)" />
   </Target>
 
   <!-- Copy Coreclr runtime bits to the local .dotnet dir -->
   <Target Name="RestoreLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
+    <PropertyGroup>
+      <LocalDotnetRuntimeDir>$([System.IO.Directory]::GetDirectories("$(LocalDotnetDir)\shared\Microsoft.NETCore.App")[0])</LocalDotnetRuntimeDir>
+    </PropertyGroup>
     <Copy SourceFiles="$(CoreCLRArtifactsPath)\System.Private.CoreLib.dll"
-          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll" />
+          DestinationFiles="$(LocalDotnetRuntimeDir)\System.Private.CoreLib.dll"  />
     <Copy SourceFiles="$(CoreCLRArtifactsPath)\$(_CoreClrFileName)"
           DestinationFiles="$(LocalDotnetRuntimeDir)\$(_CoreClrFileName)" />
   </Target>
@@ -121,9 +124,9 @@
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
+    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(CoreClrTestCoreRoot)" 
-          SkipUnchangedFiles="true"/>
+          DestinationFolder="$(CoreClrTestCoreRoot)" />
   </Target>
 
   <!-- Copy Coreclr runtime bits back to Core_Root -->
@@ -159,12 +162,7 @@
   <!-- Run coreclr tests using runtest.sh
        It currently crashes on start becase of a bug in Mono (AppContext.BaseDirectory is empty) -->
   <Target Name="RunCoreClrTests2" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig) --runincontext --sequential" ContinueOnError="ErrorAndContinue" />
-  </Target>
-
-  <!-- Show summary for coreclr tests -->
-  <Target Name="CoreClrTestsSummary">
-    <Exec Command="python $(MonoProjectRoot)..\coreclr\tests\runtest.py --analyze_results_only -test_location $(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig) -build_type $(CoreClrTestConfig)" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
   </Target>
 
   <Target Name="RunBenchmarks">
