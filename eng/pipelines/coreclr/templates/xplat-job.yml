@@ -109,12 +109,8 @@ jobs:
     - ${{ if ne(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: 'cross'
-      - name: crossPackagesArg
-        value: '-__DoCrossArchBuild=1'
     - ${{ if eq(parameters.crossrootfsDir, '') }}:
       - name: crossArg
-        value: ''
-      - name: crossPackagesArg
         value: ''
 
     - ${{ each variable in parameters.variables }}:
