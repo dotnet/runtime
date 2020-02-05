@@ -326,7 +326,7 @@ namespace ILCompiler
                         .UseResilience(_commandLineOptions.Resilient)
                         .UseMapFile(_commandLineOptions.Map)
                         .UseParallelism(_commandLineOptions.Parallelism)
-                        .UseJitPath(_commandLineOptions.JitPath.FullName)
+                        .UseJitPath(_commandLineOptions.JitPath)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)
