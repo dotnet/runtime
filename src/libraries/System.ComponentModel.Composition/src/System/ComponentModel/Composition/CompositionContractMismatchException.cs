@@ -18,7 +18,7 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="CompositionContractMismatchException"/> class.
         /// </summary>
         public CompositionContractMismatchException()
-            : this((string)null, (Exception)null)
+            : this((string?)null, (Exception?)null)
         {
         }
 
@@ -31,8 +31,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionContractMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
-        public CompositionContractMismatchException(string message)
-            : this(message, (Exception)null)
+        public CompositionContractMismatchException(string? message)
+            : this(message, (Exception?)null)
         {
         }
 
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionContractMismatchException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
-        public CompositionContractMismatchException(string message, Exception innerException)
+        public CompositionContractMismatchException(string? message, Exception? innerException)
             : base(message, innerException)
         {
         }

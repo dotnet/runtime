@@ -48,14 +48,14 @@ namespace Internal.Cryptography
             try
             {
                 StringBuilder output = new StringBuilder();
-                AsnReader reader = new AsnReader(rawData, AsnEncodingRules.DER);
-                AsnReader collectionReader = reader.ReadSequence();
+                AsnValueReader reader = new AsnValueReader(rawData, AsnEncodingRules.DER);
+                AsnValueReader collectionReader = reader.ReadSequence();
 
                 reader.ThrowIfNotEmpty();
 
                 while (collectionReader.HasData)
                 {
-                    GeneralNameAsn.Decode(collectionReader, out GeneralNameAsn generalName);
+                    GeneralNameAsn.Decode(ref collectionReader, rawData, out GeneralNameAsn generalName);
 
                     if (output.Length != 0)
                     {

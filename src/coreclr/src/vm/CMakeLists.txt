@@ -558,7 +558,7 @@ if(FEATURE_STANDALONE_GC)
         )
 endif(FEATURE_STANDALONE_GC)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
 
 set(VM_SOURCES_DAC_AND_WKS_WIN32
     amsi.cpp
@@ -590,7 +590,6 @@ list(APPEND VM_SOURCES_WKS
     dispparammarshaler.cpp
     dwreport.cpp
     eventreporter.cpp
-    extensibleclassfactory.cpp
     mngstdinterfaces.cpp
     notifyexternals.cpp
     olecontexthelpers.cpp
@@ -619,7 +618,6 @@ list(APPEND VM_HEADERS_WKS
     dispparammarshaler.h
     dwreport.h
     eventreporter.h
-    extensibleclassfactory.h
     mngstdinterfaces.h
     notifyexternals.h
     olecontexthelpers.h
@@ -645,6 +643,10 @@ list(APPEND VM_HEADERS_DAC
     clrprivbinderwinrt.h
     clrprivtypecachewinrt.h
 )
+
+endif(CLR_CMAKE_TARGET_WIN32)
+
+if(WIN32)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
     set(VM_SOURCES_WKS_ARCH_ASM

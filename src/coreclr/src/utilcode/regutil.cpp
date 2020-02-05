@@ -21,7 +21,7 @@
 #define COMPLUS_PREFIX W("COMPlus_")
 #define LEN_OF_COMPLUS_PREFIX 8
 
-#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(FEATURE_PAL)
+#if (!defined(FEATURE_UTILCODE_NO_DEPENDENCIES) || defined(DEBUG)) && !defined(TARGET_UNIX)
 #define ALLOW_REGISTRY
 #endif
 
@@ -201,8 +201,6 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
     ULONGLONG rtn;
     ULONGLONG ret = 0;
     DWORD type = 0;
-    HKEY userKey;
-    HKEY machineKey;
     DWORD size = 4;
 
     FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
@@ -250,7 +248,7 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
         {
             LONG retVal = ERROR_SUCCESS;
             BOOL bCloseHandle = FALSE;
-            userKey = s_hUserFrameworkKey;
+            HKEY userKey = s_hUserFrameworkKey;
 
             if (userKey == INVALID_HANDLE_VALUE)
             {
@@ -281,7 +279,7 @@ HRESULT REGUTIL::GetConfigInteger(LPCWSTR name, ULONGLONG defValue, __out ULONGL
         {
             LONG retVal = ERROR_SUCCESS;
             BOOL bCloseHandle = FALSE;
-            machineKey = s_hMachineFrameworkKey;
+            HKEY machineKey = s_hMachineFrameworkKey;
 
             if (machineKey == INVALID_HANDLE_VALUE)
             {

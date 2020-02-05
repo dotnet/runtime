@@ -169,11 +169,6 @@ namespace ILCompiler
                 IMethodNode methodEntryPoint = _factory.MethodEntrypoint(canonMethod);
                 _rootAdder(methodEntryPoint, reason);
             }
-
-            public void AddCompilationRoot(TypeDesc type, string reason)
-            {
-                _rootAdder(_factory.ConstructedTypeSymbol(type), reason);
-            }
         }
     }
 
@@ -185,11 +180,6 @@ namespace ILCompiler
 
     public sealed class ReadyToRunCodegenCompilation : Compilation
     {
-        /// <summary>
-        /// JIT configuration provider.
-        /// </summary>
-        private readonly JitConfigProvider _jitConfigProvider;
-
         /// <summary>
         /// We only need one CorInfoImpl per thread, and we don't want to unnecessarily construct them
         /// because their construction takes a significant amount of time.
@@ -207,18 +197,15 @@ namespace ILCompiler
 
         private bool _generateMapFile;
 
-        public new ReadyToRunCodegenNodeFactory NodeFactory { get; }
-
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
 
         internal ReadyToRunCodegenCompilation(
             DependencyAnalyzerBase<NodeFactory> dependencyGraph,
-            ReadyToRunCodegenNodeFactory nodeFactory,
+            NodeFactory nodeFactory,
             IEnumerable<ICompilationRootProvider> roots,
             ILProvider ilProvider,
             Logger logger,
             DevirtualizationManager devirtualizationManager,
-            JitConfigProvider configProvider,
             string inputFilePath,
             IEnumerable<ModuleDesc> modulesBeingInstrumented,
             bool resilient,
@@ -229,14 +216,11 @@ namespace ILCompiler
             _resilient = resilient;
             _parallelism = parallelism;
             _generateMapFile = generateMapFile;
-            NodeFactory = nodeFactory;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory);
-            _jitConfigProvider = configProvider;
 
             _inputFilePath = inputFilePath;
 
             _corInfoImpls = new ConditionalWeakTable<Thread, CorInfoImpl>();
-            CorInfoImpl.RegisterJITModule(configProvider);
         }
 
         public override void Compile(string outputFile)

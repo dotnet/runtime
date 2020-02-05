@@ -18,16 +18,16 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         internal ReadOnlyMemory<byte> Subject;
         internal System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn SubjectPublicKeyInfo;
         internal System.Security.Cryptography.Asn1.AttributeAsn[] Attributes;
-      
+
         internal void Encode(AsnWriter writer)
         {
             Encode(writer, Asn1Tag.Sequence);
         }
-    
+
         internal void Encode(AsnWriter writer, Asn1Tag tag)
         {
             writer.PushSequence(tag);
-            
+
             writer.WriteInteger(Version);
             // Validator for tag constraint for Subject
             {
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
             for (int i = 0; i < Attributes.Length; i++)
             {
-                Attributes[i].Encode(writer); 
+                Attributes[i].Encode(writer);
             }
             writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
 
@@ -55,41 +55,39 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
-        
+
         internal static CertificationRequestInfoAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
         {
-            AsnReader reader = new AsnReader(encoded, ruleSet);
-            
-            Decode(reader, expectedTag, out CertificationRequestInfoAsn decoded);
+            AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+
+            Decode(ref reader, expectedTag, encoded, out CertificationRequestInfoAsn decoded);
             reader.ThrowIfNotEmpty();
             return decoded;
         }
 
-        internal static void Decode(AsnReader reader, out CertificationRequestInfoAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificationRequestInfoAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
-            Decode(reader, Asn1Tag.Sequence, out decoded);
+            Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(AsnReader reader, Asn1Tag expectedTag, out CertificationRequestInfoAsn decoded)
+        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CertificationRequestInfoAsn decoded)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
-
             decoded = default;
-            AsnReader sequenceReader = reader.ReadSequence(expectedTag);
-            AsnReader collectionReader;
-            
+            AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
+            AsnValueReader collectionReader;
+            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            int offset;
+            ReadOnlySpan<byte> tmpSpan;
+
             decoded.Version = sequenceReader.ReadInteger();
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();
             }
 
-            decoded.Subject = sequenceReader.ReadEncodedValue();
-            System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn.Decode(sequenceReader, out decoded.SubjectPublicKeyInfo);
+            tmpSpan = sequenceReader.ReadEncodedValue();
+            decoded.Subject = rebindSpan.Overlaps(tmpSpan, out offset) ? rebind.Slice(offset, tmpSpan.Length) : tmpSpan.ToArray();
+            System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn.Decode(ref sequenceReader, rebind, out decoded.SubjectPublicKeyInfo);
 
             // Decode SEQUENCE OF for Attributes
             {
@@ -99,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
                 while (collectionReader.HasData)
                 {
-                    System.Security.Cryptography.Asn1.AttributeAsn.Decode(collectionReader, out tmpItem); 
+                    System.Security.Cryptography.Asn1.AttributeAsn.Decode(ref collectionReader, rebind, out tmpItem);
                     tmpList.Add(tmpItem);
                 }
 

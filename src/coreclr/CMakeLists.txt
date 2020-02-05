@@ -6,7 +6,7 @@ cmake_policy(SET CMP0042 NEW)
 project(CoreCLR)
 
 # Include cmake functions
-include(functions.cmake)
+include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
 if (WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
@@ -128,6 +128,8 @@ endif(CLR_CROSS_COMPONENTS_BUILD)
 # Enable PGO support
 #-------------------
 include(pgosupport.cmake)
+
+add_subdirectory(src/libraries-native)
 
 #-----------------------------------------
 # Add Projects

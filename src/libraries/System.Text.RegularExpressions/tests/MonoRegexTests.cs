@@ -9,7 +9,6 @@
 //         (c) 2002
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -23,16 +22,16 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexTestCasesWithOptions))]
         public void ValidateRegex(string pattern, RegexOptions options, string input, string expected)
         {
-            string result;
+            string result = "Fail.";
             try
             {
                 var re = new Regex(pattern, options);
-                int[] groupNums = re.GetGroupNumbers();
                 Match m = re.Match(input);
 
                 if (m.Success)
                 {
                     result = "Pass.";
+                    int[] groupNums = re.GetGroupNumbers();
                     for (int i = 0; i < m.Groups.Count; ++i)
                     {
                         int gid = groupNums[i];
@@ -45,12 +44,8 @@ namespace System.Text.RegularExpressions.Tests
                         }
                     }
                 }
-                else
-                {
-                    result = "Fail.";
-                }
             }
-            catch
+            catch (ArgumentException)
             {
                 result = "Error.";
             }
@@ -62,7 +57,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (object[] obj in RegexTestCases())
             {
-                yield return new object[] { obj[0], (RegexOptions)obj[1], obj[2], obj[3] };
+                yield return new object[] { obj[0], obj[1], obj[2], obj[3] };
                 yield return new object[] { obj[0], RegexOptions.CultureInvariant | (RegexOptions)obj[1], obj[2], obj[3] };
                 yield return new object[] { obj[0], RegexOptions.Compiled | (RegexOptions)obj[1], obj[2], obj[3] };
                 yield return new object[] { obj[0], RegexOptions.Compiled | RegexOptions.CultureInvariant | (RegexOptions)obj[1], obj[2], obj[3] };
@@ -1064,7 +1059,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"a{1,2147483647}", RegexOptions.None, "a", "Pass. Group[0]=(0,1)" };
             yield return new object[] { @"^((\[(?<NAME>[^\]]+)\])|(?<NAME>[^\.\[\]]+))$", RegexOptions.None, "[a]", "Pass. Group[0]=(0,3) Group[1]=(0,3) Group[2]=(0,3) Group[3]=(1,1)" };
 
-            //// Ported from https://github.com/mono/mono/blob/0f2995e95e98e082c7c7039e17175cf2c6a00034/mcs/class/System/Test/System.Text.RegularExpressions/RegexMatchTests.cs
+            // Ported from https://github.com/mono/mono/blob/0f2995e95e98e082c7c7039e17175cf2c6a00034/mcs/class/System/Test/System.Text.RegularExpressions/RegexMatchTests.cs
             yield return new object[] { @"(a)(b)(c)", RegexOptions.ExplicitCapture, "abc", "Pass. Group[0]=(0,3)" };
             yield return new object[] { @"(a)(?<1>b)(c)", RegexOptions.ExplicitCapture, "abc", "Pass. Group[0]=(0,3) Group[1]=(1,1)" };
             yield return new object[] { @"(a)(?<2>b)(c)", RegexOptions.None, "abc", "Pass. Group[0]=(0,3) Group[1]=(0,1) Group[2]=(1,1)(2,1)" };

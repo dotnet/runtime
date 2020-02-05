@@ -716,8 +716,8 @@ get_data_item_index (TransformData *td, void *ptr)
 	return index;
 }
 
-static gboolean
-jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
+gboolean
+mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
@@ -732,6 +732,8 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->is_inflated)
 		return FALSE;
 	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -2191,8 +2193,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_add_ins (td, MINT_LDIND_I);
 			td->last_ins->data [0] = csignature->param_count;
 		} else if (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class) {
-			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
-				/* managed pointer on the stack, we need to deref that puppy */
+			/*
+			 * Constrained expects a managed pointer that normally needs dereferencing.
+			 * For value types that have their storage on the vtstack, a managed pointer
+			 * to it is identical to the internal pointer that is passed on the stack
+			 * when using the value type, not needing any dereferencing.
+			 */
+			g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+			if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 				/* Always load the entire stackval, to handle also the case where the enum has long storage */
 				interp_add_ins (td, MINT_LDIND_I8);
 				td->last_ins->data [0] = csignature->param_count;
@@ -2207,7 +2215,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 * but that type doesn't override the method we're
 				 * calling, so we need to box `this'.
 				 */
-				if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
+				g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+				if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 					/* managed pointer on the stack, we need to deref that puppy */
 					/* Always load the entire stackval, to handle also the case where the enum has long storage */
 					interp_add_ins (td, MINT_LDIND_I8);
@@ -2376,7 +2385,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [1] = get_data_item_index (td, mono_method_signature_internal (target_method));
 		}
 #endif
-	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
+	} else if (!calli && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
@@ -7625,6 +7634,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	mono_os_mutex_unlock (&calc_section);
 
 	mono_domain_lock (domain);
+	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
+		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));
+		mono_runtime_print_stats ();
+	}
 	if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, imethod->method))
 		g_hash_table_insert (domain_jit_info (domain)->seq_points, imethod->method, imethod->jinfo->seq_points);
 	mono_domain_unlock (domain);

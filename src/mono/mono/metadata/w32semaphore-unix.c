@@ -238,7 +238,7 @@ exit:
 
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
-	const gunichar2 *name, gint32 name_length, gint32 *win32error, MonoError *error)
+	const gunichar2 *name, gint32 name_length, gint32 *win32error)
 { 
 	if (maximumCount <= 0) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: maximumCount <= 0", __func__);
@@ -258,14 +258,17 @@ invalid_parameter:
 	 */
 	mono_w32error_set_last (ERROR_SUCCESS);
 
+	ERROR_DECL (error);
+
 	gpointer sem = name ? namedsem_create (initialCount, maximumCount, name, name_length, error)
 			    : sem_create (initialCount, maximumCount);
 	*win32error = mono_w32error_get_last ();
+	mono_error_set_pending_exception (error);				\
 	return sem;
 }
 
 MonoBoolean
-ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount, MonoError *error)
+ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle, gint32 releaseCount, gint32 *prevcount)
 {
 	MonoW32Handle *handle_data = NULL;
 	MonoW32HandleSemaphore *sem_handle;
@@ -319,10 +322,11 @@ exit:
 
 gpointer
 ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name, gint32 name_length,
-	gint32 rights, gint32 *win32error, MonoError *error)
+	gint32 rights, gint32 *win32error)
 {
 	g_assert (name);
 	gpointer handle = NULL;
+	ERROR_DECL (error);
 
 	*win32error = ERROR_SUCCESS;
 
@@ -352,6 +356,7 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name,
 
 exit:
 	g_free (utf8_name);
+	mono_error_set_pending_exception (error);				\
 	return handle;
 }
 

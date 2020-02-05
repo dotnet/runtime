@@ -29,7 +29,8 @@ namespace ILCompiler.DependencyAnalysis
         //
         // Relocations for R2R image production
         //
-        IMAGE_REL_SYMBOL_SIZE = 0x1000,             // The size of data in the image represented by the target symbol node
+        IMAGE_REL_SYMBOL_SIZE           = 0x1000,   // The size of data in the image represented by the target symbol node
+        IMAGE_REL_FILE_ABSOLUTE         = 0x1001,   // 32 bit offset from begining of image
     }
 
     public struct Relocation
@@ -272,6 +273,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -305,6 +307,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:

@@ -914,6 +914,37 @@ assert_printer_callback (void)
 	mono_dump_native_crash_info ("SIGABRT", NULL, NULL);
 }
 
+#if !defined (HOST_WIN32)
+/**
+ * fork_crash_safe:
+ *
+ * Version of \c fork that is safe to call from an async context such as a
+ * signal handler even if the process crashed inside libc.
+ *
+ * Returns 0 to the child process, >0 to the parent process or <0 on error.
+ */
+static pid_t
+fork_crash_safe (void)
+{
+	pid_t pid;
+	/*
+	 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
+	 * it will deadlock. Call the syscall directly instead.
+	 */
+#if defined(HOST_ANDROID)
+	/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
+	g_assert_not_reached ();
+#elif !defined(HOST_DARWIN) && defined(SYS_fork)
+	pid = (pid_t) syscall (SYS_fork);
+#elif HAVE_FORK
+	pid = (pid_t) fork ();
+#else
+	g_assert_not_reached ();
+#endif
+	return pid;
+}
+#endif
+
 static void
 dump_native_stacktrace (const char *signal, MonoContext *mctx)
 {
@@ -956,159 +987,150 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	}
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
-	if (!mini_debug_options.no_gdb_backtrace) {
-		/* From g_spawn_command_line_sync () in eglib */
-		pid_t pid;
-		int status;
-		pid_t crashed_pid = getpid ();
+	pid_t crashed_pid = getpid ();
 
 #ifndef DISABLE_CRASH_REPORTING
-		gchar *output = NULL;
-		MonoStackHash hashes;
-		MonoStateMem merp_mem;
-		memset (&merp_mem, 0, sizeof (merp_mem));
+	gchar *output = NULL;
+	MonoStackHash hashes;
+	MonoStateMem merp_mem;
+	memset (&merp_mem, 0, sizeof (merp_mem));
 
-		if (!double_faulted) {
-			gboolean leave = FALSE;
-			gboolean dump_for_merp = FALSE;
+	if (!double_faulted) {
+		gboolean leave = FALSE;
+		gboolean dump_for_merp = FALSE;
 #if defined(TARGET_OSX)
-			dump_for_merp = mono_merp_enabled ();
+		dump_for_merp = mono_merp_enabled ();
 #endif
 
 #ifndef DISABLE_STRUCTURED_CRASH
-			mini_register_sigterm_handler ();
+		mini_register_sigterm_handler ();
 #endif
 
-			if (!dump_for_merp) {
+		if (!dump_for_merp) {
 #ifdef DISABLE_STRUCTURED_CRASH
-				leave = TRUE;
+			leave = TRUE;
 #endif
-			}
-
-			MonoContext *passed_ctx = NULL;
-			if (!leave && mctx) {
-				passed_ctx = mctx;
-			}
-
-			g_async_safe_printf ("\n=================================================================\n");
-			g_async_safe_printf ("\tTelemetry Dumper:\n");
-			g_async_safe_printf ("=================================================================\n");
-
-			if (!leave) {
-				mono_summarize_timeline_start ();
-				mono_summarize_toggle_assertions (TRUE);
-
-				int mono_max_summary_len = 500000;
-				int mono_state_tmp_file_tag = 1;
-				mono_state_alloc_mem (&merp_mem, mono_state_tmp_file_tag, mono_max_summary_len * sizeof (gchar));
-
-				// Returns success, so leave if !success
-				leave = !mono_threads_summarize (passed_ctx, &output, &hashes, FALSE, TRUE, (gchar *) merp_mem.mem, mono_max_summary_len);
-			}
-
-			if (!leave) {
-				// Wait for the other threads to clean up and exit their handlers
-				// We can't lock / wait indefinitely, in case one of these threads got stuck somehow
-				// while dumping. 
-				g_async_safe_printf ("\nWaiting for dumping threads to resume\n");
-				sleep (1);
-			}
-
-			// We want our crash, and don't have telemetry
-			// So we dump to disk
-			if (!leave && !dump_for_merp) {
-				mono_summarize_timeline_phase_log (MonoSummaryCleanup);
-				mono_crash_dump (output, &hashes);
-				mono_summarize_timeline_phase_log (MonoSummaryDone);
-				mono_summarize_toggle_assertions (FALSE);
-			}
 		}
+
+		MonoContext *passed_ctx = NULL;
+		if (!leave && mctx) {
+			passed_ctx = mctx;
+		}
+
+		g_async_safe_printf ("\n=================================================================\n");
+		g_async_safe_printf ("\tTelemetry Dumper:\n");
+		g_async_safe_printf ("=================================================================\n");
+
+		if (!leave) {
+			mono_summarize_timeline_start ();
+			mono_summarize_toggle_assertions (TRUE);
+
+			int mono_max_summary_len = 500000;
+			int mono_state_tmp_file_tag = 1;
+			mono_state_alloc_mem (&merp_mem, mono_state_tmp_file_tag, mono_max_summary_len * sizeof (gchar));
+
+			// Returns success, so leave if !success
+			leave = !mono_threads_summarize (passed_ctx, &output, &hashes, FALSE, TRUE, (gchar *) merp_mem.mem, mono_max_summary_len);
+		}
+
+		if (!leave) {
+			// Wait for the other threads to clean up and exit their handlers
+			// We can't lock / wait indefinitely, in case one of these threads got stuck somehow
+			// while dumping. 
+			g_async_safe_printf ("\nWaiting for dumping threads to resume\n");
+			sleep (1);
+		}
+
+		// We want our crash, and don't have telemetry
+		// So we dump to disk
+		if (!leave && !dump_for_merp) {
+			mono_summarize_timeline_phase_log (MonoSummaryCleanup);
+			mono_crash_dump (output, &hashes);
+			mono_summarize_timeline_phase_log (MonoSummaryDone);
+			mono_summarize_toggle_assertions (FALSE);
+		}
+	}
 #endif // DISABLE_CRASH_REPORTING
 
-		/*
-		* glibc fork acquires some locks, so if the crash happened inside malloc/free,
-		* it will deadlock. Call the syscall directly instead.
-		*/
-#if defined(HOST_ANDROID)
-		/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
-		g_assert_not_reached ();
-#elif !defined(HOST_DARWIN) && defined(SYS_fork)
-		pid = (pid_t) syscall (SYS_fork);
-#elif HAVE_FORK
-		pid = (pid_t) fork ();
-#else
-		g_assert_not_reached ();
+	pid_t pid = crashed_pid; /* init to some >0 value */
+	gboolean need_to_fork = !mini_debug_options.no_gdb_backtrace;
+
+#if defined (TARGET_OSX) && !defined (DISABLE_CRASH_REPORTING)
+	need_to_fork |= mono_merp_enabled ();
 #endif
 
+	if (need_to_fork)
+		pid = fork_crash_safe ();
+
 #if defined (HAVE_PRCTL) && defined(PR_SET_PTRACER)
-		if (pid > 0) {
-			// Allow gdb to attach to the process even if ptrace_scope sysctl variable is set to
-			// a value other than 0 (the most permissive ptrace scope). Most modern Linux
-			// distributions set the scope to 1 which allows attaching only to direct children of
-			// the current process
-			prctl (PR_SET_PTRACER, pid, 0, 0, 0);
-		}
+	if (need_to_fork && pid > 0) {
+		// Allow gdb to attach to the process even if ptrace_scope sysctl variable is set to
+		// a value other than 0 (the most permissive ptrace scope). Most modern Linux
+		// distributions set the scope to 1 which allows attaching only to direct children of
+		// the current process
+		prctl (PR_SET_PTRACER, pid, 0, 0, 0);
+	}
 #endif
 
 #if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
-		if (!double_faulted && mono_merp_enabled ()) {
-			if (pid == 0) {
-				if (output) {
-					gboolean merp_upload_success = mono_merp_invoke (crashed_pid, signal, output, &hashes);
+	if (!double_faulted && mono_merp_enabled ()) {
+		/* FIXME: why are we running mono_merp_invoke in the forked process? */
+		if (pid == 0) {
+			if (output) {
+				gboolean merp_upload_success = mono_merp_invoke (crashed_pid, signal, output, &hashes);
 
-					if (!merp_upload_success) {
-						g_async_safe_printf("\nThe MERP upload step has failed.\n");
-					} else {
-						// Remove
-						g_async_safe_printf("\nThe MERP upload step has succeeded.\n");
-						mono_summarize_timeline_phase_log (MonoSummaryDone);
-					}
-					mono_summarize_toggle_assertions (FALSE);
+				if (!merp_upload_success) {
+					g_async_safe_printf("\nThe MERP upload step has failed.\n");
 				} else {
-					g_async_safe_printf("\nMerp dump step not run, no dump created.\n");
+					// Remove
+					g_async_safe_printf("\nThe MERP upload step has succeeded.\n");
+					mono_summarize_timeline_phase_log (MonoSummaryDone);
 				}
+				mono_summarize_toggle_assertions (FALSE);
+			} else {
+				g_async_safe_printf("\nMerp dump step not run, no dump created.\n");
 			}
 		}
+	}
 #endif
 
-		if (pid == 0) {
-			dup2 (STDERR_FILENO, STDOUT_FILENO);
+	if (!mini_debug_options.no_gdb_backtrace && pid == 0) {
+		dup2 (STDERR_FILENO, STDOUT_FILENO);
 
-			g_async_safe_printf ("\n=================================================================\n");
-			g_async_safe_printf("\tExternal Debugger Dump:\n");
-			g_async_safe_printf ("=================================================================\n");
-			mono_gdb_render_native_backtraces (crashed_pid);
-			_exit (1);
-		} else if (pid > 0) {
-			waitpid (pid, &status, 0);
-		} else {
-			// If we can't fork, do as little as possible before exiting
+		g_async_safe_printf ("\n=================================================================\n");
+		g_async_safe_printf("\tExternal Debugger Dump:\n");
+		g_async_safe_printf ("=================================================================\n");
+		mono_gdb_render_native_backtraces (crashed_pid);
+		_exit (1);
+	} else if (need_to_fork && pid > 0) {
+		int status;
+		waitpid (pid, &status, 0);
+	} else {
+		// If we can't fork, do as little as possible before exiting
 #ifndef DISABLE_CRASH_REPORTING
-			output = NULL;
-#endif
-		}
-
-		if (double_faulted) {
-			g_async_safe_printf("\nExiting early due to double fault.\n");
-#ifndef DISABLE_CRASH_REPORTING
-			mono_state_free_mem (&merp_mem);
-#endif
-			_exit (-1);
-		}
-
-#ifndef DISABLE_CRASH_REPORTING
-		if (output) {
-			// We've already done our gdb dump and our telemetry steps. Before exiting,
-			// see if we can notify any attached debugger instances.
-			//
-			// At this point we are accepting that the below step might end in a crash
-			mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
-		}
 		output = NULL;
+#endif
+	}
+
+	if (double_faulted) {
+		g_async_safe_printf("\nExiting early due to double fault.\n");
+#ifndef DISABLE_CRASH_REPORTING
 		mono_state_free_mem (&merp_mem);
 #endif
-
+		_exit (-1);
 	}
+
+#ifndef DISABLE_CRASH_REPORTING
+	if (output) {
+		// We've already done our gdb dump and our telemetry steps. Before exiting,
+		// see if we can notify any attached debugger instances.
+		//
+		// At this point we are accepting that the below step might end in a crash
+		mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
+	}
+	output = NULL;
+	mono_state_free_mem (&merp_mem);
+#endif
 #endif
 #else
 #ifdef HOST_ANDROID
@@ -1238,8 +1260,10 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	}
 
 #if defined(HOST_DARWIN)
-	if (native_stack_with_lldb (crashed_pid, argv, commands_handle, commands_filename))
-		goto exec;
+	// lldb hangs on attaching on Catalina
+	return;
+	//if (native_stack_with_lldb (crashed_pid, argv, commands_handle, commands_filename))
+	//	goto exec;
 #endif
 
 	if (native_stack_with_gdb (crashed_pid, argv, commands_handle, commands_filename))

@@ -110,7 +110,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
-                    var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl) { Version = UseVersion };
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
 
@@ -153,7 +153,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Post, origUrl) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Post, origUrl) { Version = UseVersion };
                     request.Content = new StringContent(ExpectedContent);
                     request.Headers.TransferEncodingChunked = true;
 
@@ -276,8 +276,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectWithoutLocation_ReturnsOriginalResponse()
         {
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/24819", TestPlatforms.Windows)]
-            if (IsWinHttpHandler)
+            if (IsWinHttpHandler) // see https://github.com/dotnet/corefx/issues/24819#issuecomment-338776074 for details
             {
                 return;
             }

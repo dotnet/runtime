@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Principal" />

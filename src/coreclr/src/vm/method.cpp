@@ -1033,7 +1033,7 @@ PCODE MethodDesc::GetNativeCode()
         // This means that NativeCodeSlot::GetValueMaybeNullAtPtr(GetAddrOfNativeCodeSlot())
         // is not stable. It can turn from non-zero to zero.
         PCODE pCode = PCODE(NativeCodeSlot::GetValueMaybeNullAtPtr(GetAddrOfNativeCodeSlot()) & ~FIXUP_LIST_MASK);
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         if (pCode != NULL)
             pCode |= THUMB_CODE;
 #endif
@@ -1329,18 +1329,18 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
 
 ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
 {
-#ifdef BIT64
+#ifdef HOST_64BIT
     // For simplicity, we don't hijack in funclets, but if you ever change that,
     // be sure to choose the OnHijack... callback type to match that of the FUNCLET
     // not the main method (it would probably be Scalar).
-#endif // BIT64
+#endif // HOST_64BIT
 
     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
     // Mark that we are performing a stackwalker like operation on the current thread.
     // This is necessary to allow the signature parsing functions to work without triggering any loads
     ClrFlsValueSwitch threadStackWalking(TlsIdx_StackWalkerWalkingThread, GetThread());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     MetaSig msig(this);
     if (msig.HasFPReturn())
     {
@@ -1350,7 +1350,7 @@ ReturnKind MethodDesc::GetReturnKind(INDEBUG(bool supportStringConstructors))
         // restore of the return value around the call to OnHijackScalarWorker.
         return RT_Float;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     return ParseReturnKindFromSig(INDEBUG(supportStringConstructors));
 }
@@ -1796,7 +1796,7 @@ UINT MethodDesc::SizeOfNativeArgStack()
 #endif
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 //*******************************************************************************
 UINT MethodDesc::CbStackPop()
 {
@@ -1806,7 +1806,7 @@ UINT MethodDesc::CbStackPop()
     ArgIterator argit(&msig);
     return argit.CbStackPop();
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 
@@ -2683,7 +2683,7 @@ void MethodDesc::Save(DataImage *image)
         if (!pNMD->MarshalingRequired())
         {
             // import thunk is only needed if the P/Invoke is inlinable
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
             image->SavePrecode(pNMD->GetNDirectImportThunkGlue(), pNMD, PRECODE_NDIRECT_IMPORT, DataImage::ITEM_METHOD_PRECODE_COLD);
 #else
             image->StoreStructure(pNMD->GetNDirectImportThunkGlue(), sizeof(NDirectImportThunkGlue), DataImage::ITEM_METHOD_PRECODE_COLD);
@@ -4173,7 +4173,7 @@ BOOL MethodDesc::IsRestored()
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 #include <pshpack1.h>
 static const struct CentralJumpCode {
@@ -4204,7 +4204,7 @@ c_CentralJumpCode = {
 };
 #include <poppack.h>
 
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
 
 #include <pshpack1.h>
 static const struct CentralJumpCode {
@@ -4244,7 +4244,7 @@ c_CentralJumpCode = {
 };
 #include <poppack.h>
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
 #include <pshpack1.h>
 struct CentralJumpCode {
@@ -4283,7 +4283,7 @@ static_assert_no_msg((TEP_CENTRAL_JUMP_SIZE & 1) == 0);
 
 #define TEP_ENTRY_SIZE          4
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 #define TEP_HALF_ENTRY_SIZE (TEP_ENTRY_SIZE / 2)
 
@@ -4340,24 +4340,24 @@ static uint16_t EncodeBranchToCentralJump (int16_t offset)
 
 #endif // DACCESS_COMPILE
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
 #define TEP_MAX_BEFORE_INDEX    (1 + (127 / TEP_ENTRY_SIZE))
 #define TEP_MAX_BLOCK_INDEX     (TEP_MAX_BEFORE_INDEX + (128 - TEP_CENTRAL_JUMP_SIZE) / TEP_ENTRY_SIZE)
 #define TEP_FULL_BLOCK_SIZE     (TEP_MAX_BLOCK_INDEX * TEP_ENTRY_SIZE + TEP_CENTRAL_JUMP_SIZE)
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
     // Compact entrypoints start at odd addresses
     return (addr & 1) != 0;
 
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
 
     // Compact entrypoints start at odd addresses (thumb) with second bit set to 1
     uint8_t compactEntryPointMask = THUMB_CODE | COMPACT_ENTRY_ARM_CODE;
@@ -4381,23 +4381,23 @@ BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
     // Always do consistency check in debug
     if (fSpeculative INDEBUG(|| TRUE))
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         TADDR instrCodeAddr = PCODEToPINSTR(addr);
         if (!IsCompactEntryPointAtAddress(addr) ||
             *PTR_BYTE(instrCodeAddr) != TEP_ENTRY_INSTR1_BYTE1 ||
             *PTR_BYTE(instrCodeAddr+1) != TEP_ENTRY_INSTR1_BYTE2)
-#else // _TARGET_ARM_
+#else // TARGET_ARM
         if ((addr & 3) != 1 ||
             *PTR_BYTE(addr) != X86_INSTR_MOV_AL ||
             *PTR_BYTE(addr+2) != X86_INSTR_JMP_REL8)
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
         {
             if (fSpeculative) return NULL;
             _ASSERTE(!"Unexpected code in temporary entrypoint");
         }
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
     // On ARM compact entry points are thumb
     _ASSERTE ((addr & THUMB_CODE) != 0);
@@ -4410,12 +4410,12 @@ BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
     TADDR centralJump = addr + offset;
     int index = (centralJump - addr - TEP_ENTRY_SIZE) / TEP_ENTRY_SIZE;
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
     int index = *PTR_BYTE(addr+1);
     TADDR centralJump = addr + 4 + *PTR_SBYTE(addr+3);
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     CentralJumpCode* pCentralJumpCode = PTR_CentralJumpCode(centralJump);
 
@@ -4433,18 +4433,18 @@ BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
             }
         }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
         _ASSERTE_IMPL(pCentralJumpCode->CheckTarget(GetPreStubCompactARMEntryPoint()));
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
         _ASSERTE_IMPL(pCentralJumpCode->CheckTarget(GetPreStubEntryPoint()));
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Go through all MethodDesc in MethodDescChunk and find the one with the required index
     PTR_MethodDescChunk pChunk = *((DPTR(PTR_MethodDescChunk))(centralJump + offsetof(CentralJumpCode, m_pChunk)));
     TADDR pMD = PTR_HOST_TO_TADDR (pChunk->GetFirstMethodDesc ());
@@ -4466,9 +4466,9 @@ BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
     }
 
     return PTR_MethodDesc (pMD);
-#else // _TARGET_ARM_
+#else // TARGET_ARM
     return PTR_MethodDesc((TADDR)pCentralJumpCode->m_pBaseMD + index * MethodDesc::ALIGNMENT);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 //*******************************************************************************
@@ -4476,11 +4476,11 @@ SIZE_T MethodDescChunk::SizeOfCompactEntryPoints(int count)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
     return COMPACT_ENTRY_ARM_CODE + count * TEP_ENTRY_SIZE + TEP_CENTRAL_JUMP_SIZE;
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
     int fullBlocks = count / TEP_MAX_BLOCK_INDEX;
     int remainder = count % TEP_MAX_BLOCK_INDEX;
@@ -4488,7 +4488,7 @@ SIZE_T MethodDescChunk::SizeOfCompactEntryPoints(int count)
     return 1 + (fullBlocks * TEP_FULL_BLOCK_SIZE) +
         (remainder * TEP_ENTRY_SIZE) + ((remainder != 0) ? TEP_CENTRAL_JUMP_SIZE : 0);
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
 
 #ifndef DACCESS_COMPILE
@@ -4505,24 +4505,24 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
 
     TADDR temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, sizeof(TADDR)));
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     BYTE* p = (BYTE*)temporaryEntryPoints + COMPACT_ENTRY_ARM_CODE;
     int relOffset        = count * TEP_ENTRY_SIZE - TEP_ENTRY_SIZE; // relative offset for the short jump
 
     _ASSERTE (relOffset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-#else // _TARGET_ARM_
+#else // TARGET_ARM
     // make the temporary entrypoints unaligned, so they are easy to identify
     BYTE* p = (BYTE*)temporaryEntryPoints + 1;
     int indexInBlock     = TEP_MAX_BLOCK_INDEX;         // recompute relOffset in first iteration
     int relOffset        = 0;                           // relative offset for the short jump
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     MethodDesc * pBaseMD = 0;                   // index of the start of the block
 
     MethodDesc * pMD = GetFirstMethodDesc();
     for (int index = 0; index < count; index++)
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
         uint8_t *pMovInstrByte1 = (uint8_t *)p;
         uint8_t *pMovInstrByte2 = (uint8_t *)p+1;
@@ -4534,7 +4534,7 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
 
         p += TEP_ENTRY_SIZE;
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
         if (indexInBlock == TEP_MAX_BLOCK_INDEX)
         {
@@ -4569,13 +4569,13 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
 
         indexInBlock++;
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
         relOffset -= TEP_ENTRY_SIZE;
         pMD = (MethodDesc *)((BYTE *)pMD + pMD->SizeOf());
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
     CentralJumpCode* pCode = (CentralJumpCode*)p;
     memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
@@ -4583,11 +4583,11 @@ TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAlloca
 
     _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPoints + size);
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
     _ASSERTE(p == (BYTE*)temporaryEntryPoints + size);
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
     ClrFlushInstructionCache((LPVOID)temporaryEntryPoints, size);
 
@@ -4608,11 +4608,11 @@ PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
 #ifdef HAS_COMPACT_ENTRYPOINTS
     if (HasCompactEntryPoints())
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
         return GetTemporaryEntryPoints() + COMPACT_ENTRY_ARM_CODE + THUMB_CODE + index * TEP_ENTRY_SIZE;
 
-#else // _TARGET_ARM_
+#else // TARGET_ARM
 
         int fullBlocks = index / TEP_MAX_BLOCK_INDEX;
         int remainder = index % TEP_MAX_BLOCK_INDEX;
@@ -4620,7 +4620,7 @@ PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
         return GetTemporaryEntryPoints() + 1 + (fullBlocks * TEP_FULL_BLOCK_SIZE) +
             (remainder * TEP_ENTRY_SIZE) + ((remainder >= TEP_MAX_BEFORE_INDEX) ? TEP_CENTRAL_JUMP_SIZE : 0);
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
     }
 #endif // HAS_COMPACT_ENTRYPOINTS
 
@@ -5063,7 +5063,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 
     if (HasNativeCodeSlot())
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         _ASSERTE(IsThumbCode(addr) || (addr==NULL));
         addr &= ~THUMB_CODE;
 
@@ -5264,13 +5264,13 @@ FARPROC NDirectMethodDesc::FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE hMod
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     FARPROC pFunc = GetProcAddress(hMod, entryPointName);
 #else
     FARPROC pFunc = PAL_GetProcAddressDirect(hMod, entryPointName);
 #endif
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
     if (pFunc)
     {
@@ -5325,7 +5325,7 @@ LPVOID NDirectMethodDesc::FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const
 
     FARPROC pFunc = NULL;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Handle ordinals.
     if (funcName[0] == '#')
     {
@@ -5867,7 +5867,7 @@ void ComPlusCallMethodDesc::InitRetThunk()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (m_pComPlusCallInfo->m_pRetThunk != NULL)
         return;
 
@@ -5879,7 +5879,7 @@ void ComPlusCallMethodDesc::InitRetThunk()
     LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
 
     FastInterlockCompareExchangePointer<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE
 #endif // FEATURE_COMINTEROP

@@ -16,7 +16,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly MethodWithGCInfo _localMethod;
 
         public LocalMethodImport(
-            ReadyToRunCodegenNodeFactory factory,
+            NodeFactory factory,
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             MethodWithGCInfo localMethod,

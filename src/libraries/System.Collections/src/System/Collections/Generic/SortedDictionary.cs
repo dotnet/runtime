@@ -343,7 +343,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+                if (value == null && !(default(TValue) == null))
                     throw new ArgumentNullException(nameof(value));
 
                 try
@@ -372,7 +372,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (value == null && !(default(TValue) == null))
                 throw new ArgumentNullException(nameof(value));
 
             try

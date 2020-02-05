@@ -14,7 +14,10 @@ namespace System.Security.Cryptography
 
     public abstract class SHA512 : HashAlgorithm
     {
-        protected SHA512() { }
+        protected SHA512()
+        {
+            HashSizeValue = 512;
+        }
 
         public static new SHA512 Create() => new Implementation();
 

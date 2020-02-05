@@ -3,9 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1</TargetFrameworks>
     <DebugType>full</DebugType>
-    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
   </PropertyGroup>
 
 </Project>

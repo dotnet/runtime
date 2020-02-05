@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -41,12 +42,81 @@ namespace System.Net.Sockets
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
-            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED | Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);;
+            IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                                                                                                                Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
             socket = new SafeSocketHandle(handle, ownsHandle: true);
-            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            if (socket.IsInvalid)
+            {
+                SocketError error = GetLastSocketError();
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                socket.Dispose();
+                return error;
+            }
 
-            return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
+            if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+            return SocketError.Success;
+        }
+
+        public static unsafe SocketError CreateSocket(
+            SocketInformation socketInformation,
+            out SafeSocketHandle socket,
+            ref AddressFamily addressFamily,
+            ref SocketType socketType,
+            ref ProtocolType protocolType)
+        {
+            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < sizeof(Interop.Winsock.WSAPROTOCOL_INFOW))
+            {
+                throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
+            }
+
+            fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
+            {
+                // Sockets are non-inheritable in .NET Core.
+                // Handle properties like HANDLE_FLAG_INHERIT are not cloned with socket duplication, therefore
+                // we need to disable handle inheritance when constructing the new socket handle from Protocol Info.
+                // Additionally, it looks like WSA_FLAG_NO_HANDLE_INHERIT has no effect when being used with the Protocol Info
+                // variant of WSASocketW, so it is being passed to that call only for consistency.
+                // Inheritance is being disabled with SetHandleInformation(...) after the WSASocketW call.
+                IntPtr handle = Interop.Winsock.WSASocketW(
+                    (AddressFamily)(-1),
+                    (SocketType)(-1),
+                    (ProtocolType)(-1),
+                    (IntPtr)protocolInfoBytes,
+                    0,
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
+                    Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
+
+                socket = new SafeSocketHandle(handle, ownsHandle: true);
+
+                if (socket.IsInvalid)
+                {
+                    SocketError error = GetLastSocketError();
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"WSASocketW failed with error {error}");
+                    socket.Dispose();
+                    return error;
+                }
+
+                if (!Interop.Kernel32.SetHandleInformation(socket, Interop.Kernel32.HandleFlags.HANDLE_FLAG_INHERIT, 0))
+                {
+                    // Returning SocketError for consistency, since the call site can deal with conversion, and
+                    // the most common SetHandleInformation error (AccessDenied) is included in SocketError anyways:
+                    SocketError error = GetLastSocketError();
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(null, $"SetHandleInformation failed with error {error}");
+                    socket.Dispose();
+
+                    return error;
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.Info(null, socket);
+
+                Interop.Winsock.WSAPROTOCOL_INFOW* protocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
+                addressFamily = protocolInfo->iAddressFamily;
+                socketType = protocolInfo->iSocketType;
+                protocolType = protocolInfo->iProtocol;
+
+                return SocketError.Success;
+            }
         }
 
         public static SocketError SetBlocking(SafeSocketHandle handle, bool shouldBlock, out bool willBlock)
@@ -1245,6 +1315,21 @@ namespace System.Net.Sockets
             }
 
             return errorCode;
+        }
+
+        internal static unsafe SocketError DuplicateSocket(SafeSocketHandle handle, int targetProcessId, out SocketInformation socketInformation)
+        {
+            socketInformation = new SocketInformation
+            {
+                ProtocolInformation = new byte[sizeof(Interop.Winsock.WSAPROTOCOL_INFOW)]
+            };
+
+            fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
+            {
+                Interop.Winsock.WSAPROTOCOL_INFOW* lpProtocolInfo = (Interop.Winsock.WSAPROTOCOL_INFOW*)protocolInfoBytes;
+                int result = Interop.Winsock.WSADuplicateSocket(handle, (uint)targetProcessId, lpProtocolInfo);
+                return result == 0 ? SocketError.Success : GetLastSocketError();
+            }
         }
     }
 }

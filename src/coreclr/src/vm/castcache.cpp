@@ -10,8 +10,8 @@
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-OBJECTHANDLE CastCache::s_cache = NULL;
-DWORD CastCache::s_lastFlushSize = INITIAL_CACHE_SIZE;
+BASEARRAYREF* CastCache::s_pTableRef = NULL;
+DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 {
@@ -66,7 +66,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 
     // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
     DWORD bitCnt;
-#if BIT64
+#if HOST_64BIT
     BitScanReverse64(&bitCnt, size - 1);
     HashShift(table) = (BYTE)(63 - bitCnt);
 #else
@@ -93,7 +93,7 @@ BOOL CastCache::MaybeReplaceCacheWithLarger(DWORD size)
         return FALSE;
     }
 
-    StoreObjectInHandle(s_cache, newTable);
+    SetObjectReference((OBJECTREF *)s_pTableRef, newTable);
     return TRUE;
 }
 
@@ -107,10 +107,10 @@ void CastCache::FlushCurrentCache()
     }
     CONTRACTL_END;
 
-    BASEARRAYREF currentTableRef = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    BASEARRAYREF currentTableRef = *s_pTableRef;
     s_lastFlushSize = !currentTableRef ? INITIAL_CACHE_SIZE : CacheElementCount(currentTableRef);
 
-    StoreObjectInHandle(s_cache, NULL);
+    *s_pTableRef = NULL;
 }
 
 void CastCache::Initialize()
@@ -123,7 +123,10 @@ void CastCache::Initialize()
     }
     CONTRACTL_END;
 
-    s_cache = CreateGlobalHandle(NULL);
+    FieldDesc* pTableField = MscorlibBinder::GetField(FIELD__CASTHELPERS__TABLE);
+
+    GCX_COOP();
+    s_pTableRef = (BASEARRAYREF*)pTableField->GetCurrentStaticAddress();
 }
 
 TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
@@ -136,59 +139,58 @@ TypeHandle::CastResult CastCache::TryGet(TADDR source, TADDR target)
     }
     CONTRACTL_END;
 
-    BASEARRAYREF table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    BASEARRAYREF table = *s_pTableRef;
 
     // we use NULL as a sentinel for a rare case when a table could not be allocated
-    // because we avoid OOMs in conversions
+    // because we avoid OOMs.
     // we could use 0-element table instead, but then we would have to check the size here.
-    if (!table)
+    if (table != NULL)
     {
-        return TypeHandle::MaybeCast;
-    }
-
-    DWORD index = KeyToBucket(table, source, target);
-    CastCacheEntry* pEntry = &Elements(table)[index];
-
-    for (DWORD i = 0; i < BUCKET_SIZE; i++)
-    {
-        // must read in this order: version -> entry parts -> version
-        // if version is odd or changes, the entry is inconsistent and thus ignored
-        DWORD version1 = VolatileLoad(&pEntry->version);
-        TADDR entrySource = pEntry->source;
-
-        if (entrySource == source)
+        DWORD index = KeyToBucket(table, source, target);
+        for (DWORD i = 0; i < BUCKET_SIZE;)
         {
-            TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+            CastCacheEntry* pEntry = &Elements(table)[index];
 
-            // target never has its lower bit set.
-            // a matching entryTargetAndResult would have same bits, except for the lowest one, which is the result.
-            entryTargetAndResult ^= target;
-            if (entryTargetAndResult <= 1)
+            // must read in this order: version -> entry parts -> version
+            // if version is odd or changes, the entry is inconsistent and thus ignored
+            DWORD version1 = VolatileLoad(&pEntry->version);
+            TADDR entrySource = pEntry->source;
+
+            // mask the lower version bit to make it even.
+            // This way we can check if version is odd or changing in just one compare.
+            version1 &= ~1;
+
+            if (entrySource == source)
             {
-                DWORD version2 = pEntry->version;
-                if (version2 != version1 || (version1 & 1))
+                TADDR entryTargetAndResult = VolatileLoad(&pEntry->targetAndResult);
+                // target never has its lower bit set.
+                // a matching entryTargetAndResult would have the same bits, except for the lowest one, which is the result.
+                entryTargetAndResult ^= target;
+                if (entryTargetAndResult <= 1)
                 {
-                    // oh, so close, the entry is in inconsistent state.
-                    // it is either changing or has changed while we were reading.
-                    // treat it as a miss.
-                    break;
+                    if (version1 != pEntry->version)
+                    {
+                        // oh, so close, the entry is in inconsistent state.
+                        // it is either changing or has changed while we were reading.
+                        // treat it as a miss.
+                        break;
+                    }
+
+                    return TypeHandle::CastResult(entryTargetAndResult);
                 }
-
-                return TypeHandle::CastResult(entryTargetAndResult);
             }
-        }
 
-        if (version1 == 0)
-        {
-            // the rest of the bucket is unclaimed, no point to search further
-            break;
-        }
+            if (version1 == 0)
+            {
+                // the rest of the bucket is unclaimed, no point to search further
+                break;
+            }
 
-        // quadratic reprobe
-        index += i;
-        pEntry = &Elements(table)[index & TableMask(table)];
+            // quadratic reprobe
+            i++;
+            index = (index + i) & TableMask(table);
+        }
     }
-
     return TypeHandle::MaybeCast;
 }
 
@@ -207,7 +209,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
 
     do
     {
-        table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+        table = *s_pTableRef;
         if (!table)
         {
             // we did not allocate a table or flushed it, try replacing, but do not continue looping.
@@ -219,7 +221,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
         DWORD index = bucket;
         CastCacheEntry* pEntry = &Elements(table)[index];
 
-        for (DWORD i = 0; i < BUCKET_SIZE; i++)
+        for (DWORD i = 0; i < BUCKET_SIZE;)
         {
             // claim the entry if unused or is more distant than us from its origin.
             // Note - someone familiar with Robin Hood hashing will notice that
@@ -255,6 +257,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
             }
 
             // quadratic reprobe
+            i++;
             index += i;
             pEntry = &Elements(table)[index & TableMask(table)];
         }
@@ -263,7 +266,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     } while (TryGrow(table));
 
     // reread table after TryGrow.
-    table = (BASEARRAYREF)ObjectFromHandle(s_cache);
+    table = *s_pTableRef;
     if (!table)
     {
         // we did not allocate a table.

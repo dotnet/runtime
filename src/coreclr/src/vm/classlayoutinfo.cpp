@@ -244,7 +244,7 @@ namespace
         {
             // Safe cast - no primitive type is larger than 4gb!
             pManagedPlacementInfo->m_size = ((UINT32)CorTypeInfo::Size(corElemType));
-#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+#if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (corElemType)
             {
                 // The System V ABI for i386 defines different packing for these types.
@@ -262,7 +262,7 @@ namespace
                 break;
             }
             }
-#else // _TARGET_X86_ && UNIX_X86_ABI
+#else // TARGET_X86 && UNIX_X86_ABI
             pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
 #endif
 
@@ -1083,7 +1083,7 @@ CorElementType EEClassNativeLayoutInfo::GetNativeHFATypeRaw() const
     {
     case ELEMENT_TYPE_R4: elemSize = sizeof(float); break;
     case ELEMENT_TYPE_R8: elemSize = sizeof(double); break;
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     case ELEMENT_TYPE_VALUETYPE: elemSize = 16; break;
 #endif
     default: _ASSERTE(!"Invalid HFA Type");

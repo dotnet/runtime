@@ -85,7 +85,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/1332")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1332")]
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Bsd()

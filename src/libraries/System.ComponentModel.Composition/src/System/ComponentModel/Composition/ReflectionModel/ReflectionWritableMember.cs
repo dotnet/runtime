@@ -11,6 +11,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             get;
         }
 
-        public abstract void SetValue(object instance, object value);
+        public abstract void SetValue(object? instance, object? value);
     }
 }

@@ -123,6 +123,7 @@ else()
         ${END_WHOLE_ARCHIVE}
         mscorrc_debug
         palrt
+        System.Globalization.Native-Static
     )
 endif(WIN32)
 
@@ -159,16 +160,16 @@ if(WIN32)
       get_include_directories(INC_DIR)
       get_compile_definitions(PREPROCESS_DEFINITIONS)
       list(APPEND INC_DIR -I${CLR_DIR}/src/vm -I${CLR_DIR}/src/vm/${ARCH_SOURCES_DIR} -I${CLR_DIR}/src/debug/ee -I${CLR_DIR}/src/gc)
-      list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DDBG_TARGET_64BIT)
+      list(APPEND PREPROCESS_DEFINITIONS -DDACCESS_COMPILE -DTARGET_64BIT)
 
       if (CLR_CMAKE_HOST_ARCH_AMD64)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_AMD64)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_AMD64)
       elseif (CLR_CMAKE_HOST_ARCH_ARM64)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_ARM64)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM64)
       elseif (CLR_CMAKE_HOST_ARCH_ARM)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_ARM)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_ARM)
       elseif (CLR_CMAKE_HOST_ARCH_I386)
-          list(APPEND PREPROCESS_DEFINITIONS -DDBG_TARGET_X86)
+          list(APPEND PREPROCESS_DEFINITIONS -DTARGET_X86)
       else()
           clr_unknown_arch()
       endif()

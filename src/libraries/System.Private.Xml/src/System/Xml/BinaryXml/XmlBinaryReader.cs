@@ -98,9 +98,10 @@ namespace System.Xml
                 return this.prefix.GetHashCode() ^ this.localname.GetHashCode();
             }
 
-            public int GetNSHashCode(SecureStringHasher hasher)
+            public int GetNSHashCode()
             {
-                return hasher.GetHashCode(this.namespaceUri) ^ hasher.GetHashCode(this.localname);
+                // ValueTuple uses HashCode.Combine with the randomized string.GetHashCode as inputs
+                return (namespaceUri, localname).GetHashCode();
             }
 
 
@@ -189,11 +190,11 @@ namespace System.Xml
                 namespaceUri = this.name.namespaceUri;
             }
 
-            public int GetLocalnameAndNamespaceUriAndHash(SecureStringHasher hasher, out string localname, out string namespaceUri)
+            public int GetLocalnameAndNamespaceUriAndHash(out string localname, out string namespaceUri)
             {
                 localname = this.name.localname;
                 namespaceUri = this.name.namespaceUri;
-                return this.hashCode = this.name.GetNSHashCode(hasher);
+                return this.hashCode = this.name.GetNSHashCode();
             }
 
             public bool MatchNS(string localname, string namespaceUri)
@@ -332,7 +333,6 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private readonly SecureStringHasher _hasher;
         private XmlCharType _xmlCharType;
         private readonly Encoding _unicode;
 
@@ -368,8 +368,7 @@ namespace System.Xml
             _qnameOther.Clear();
             _qnameElement.Clear();
             _xmlspacePreserve = false;
-            _hasher = new SecureStringHasher();
-            _namespaces = new Dictionary<string, NamespaceDecl>(_hasher);
+            _namespaces = new Dictionary<string, NamespaceDecl>();
             AddInitNamespace(string.Empty, string.Empty);
             AddInitNamespace(_xml, _xnt.Add(XmlReservedNs.NsXml));
             AddInitNamespace(_xmlns, _nsxmlns);
@@ -2721,7 +2720,7 @@ namespace System.Xml
             for (int i = 0; i < _attrCount; i++)
             {
                 string localname, namespaceUri;
-                int hash = _attributes[i].GetLocalnameAndNamespaceUriAndHash(_hasher, out localname, out namespaceUri);
+                int hash = _attributes[i].GetLocalnameAndNamespaceUriAndHash(out localname, out namespaceUri);
                 int index = hash & (tblSize - 1);
                 int next = _attrHashTbl[index];
                 _attrHashTbl[index] = i + 1;

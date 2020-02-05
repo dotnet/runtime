@@ -112,8 +112,7 @@ namespace System.ComponentModel.Composition.Hosting
             Requires.NotNull(part, nameof(part));
             Requires.NotNull(key, nameof(key));
 
-            object untypedValue = null;
-            if (part.Metadata.TryGetValue(key, out untypedValue))
+            if (part.Metadata.TryGetValue(key, out object? untypedValue))
             {
                 if (value == null)
                 {

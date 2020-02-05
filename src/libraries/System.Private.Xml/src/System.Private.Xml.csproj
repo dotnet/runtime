@@ -163,7 +163,6 @@
     <Compile Include="System\Xml\Core\ReadContentAsBinaryHelperAsync.cs" />
     <Compile Include="System\Xml\Core\ReadOnlyTernaryTree.cs" />
     <Compile Include="System\Xml\Core\ReadState.cs" />
-    <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
     <Compile Include="System\Xml\Core\ValidatingReaderNodeData.cs" />
     <Compile Include="System\Xml\Core\ValidationType.cs" />
     <Compile Include="System\Xml\Core\WhitespaceHandling.cs" />
@@ -570,8 +569,6 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Console" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.FileSystem" />
@@ -582,7 +579,6 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -590,7 +586,6 @@
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup>

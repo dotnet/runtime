@@ -59,7 +59,7 @@ namespace BasicEventSourceTests
         /// For NuGet EventSources we validate both "runtime" and "validation" behavior
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19091", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/19091")]
         public void Test_GenerateManifest_InvalidEventSources()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

@@ -45,6 +45,7 @@
 #include <process.h>
 #endif
 #include <ws2tcpip.h>
+#include <windows.h>
 #endif
 
 #ifdef HOST_ANDROID
@@ -103,6 +104,13 @@
 #ifndef DISABLE_SDB
 
 #include <mono/utils/mono-os-mutex.h>
+
+#include <fcntl.h>
+#include <sys/stat.h>
+
+#ifndef S_IWUSR
+	#define S_IWUSR S_IWRITE
+#endif
 
 #define THREAD_TO_INTERNAL(thread) (thread)->internal_thread
 
@@ -603,6 +611,10 @@ static MonoThreadHandle *debugger_thread_handle;
 
 static int log_level;
 
+static int file_check_valid_memory = -1;
+
+static char* filename_check_valid_memory;
+
 static gboolean embedding;
 
 static FILE *log_file;
@@ -728,6 +740,7 @@ static void* create_breakpoint_events (GPtrArray *ss_reqs, GPtrArray *bp_reqs, M
 static void process_breakpoint_events (void *_evts, MonoMethod *method, MonoContext *ctx, int il_offset);
 static int ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args);
 static void ss_args_destroy (SingleStepArgs *ss_args);
+static int handle_multiple_ss_requests (void);
 
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (fixed_buffer, "System.Runtime.CompilerServices", "FixedBufferAttribute")
 
@@ -958,6 +971,7 @@ debugger_agent_init (void)
 	cbs.process_breakpoint_events = process_breakpoint_events;
 	cbs.ss_create_init_args = ss_create_init_args;
 	cbs.ss_args_destroy = ss_args_destroy;
+	cbs.handle_multiple_ss_requests = handle_multiple_ss_requests;
 
 	mono_de_init (&cbs);
 
@@ -1104,6 +1118,12 @@ mono_debugger_agent_cleanup (void)
 	ids_cleanup ();
 
 	mono_de_cleanup ();
+
+	if (file_check_valid_memory != -1) {
+		remove (filename_check_valid_memory);
+		g_free (filename_check_valid_memory);
+		close (file_check_valid_memory);
+	}
 }
 
 /*
@@ -4898,6 +4918,8 @@ debugger_agent_single_step_from_context (MonoContext *ctx)
 
 	g_assert (tls);
 
+	tls->terminated = FALSE;
+
 	/* Have to save/restore the restore_ctx as we can be called recursively during invokes etc. */
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
@@ -4924,6 +4946,11 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx)
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
 	g_assert (tls);
+	
+	//if a thread was suspended and doesn't have any managed stack, it was considered as terminated, 
+	//but it wasn't really terminated because it can execute managed code again, and stop in a breakpoint so here we set terminated as FALSE
+	tls->terminated = FALSE;
+
 	memcpy (&orig_restore_state, &tls->restore_state, sizeof (MonoThreadUnwindState));
 	mono_thread_state_init_from_monoctx (&tls->restore_state, ctx);
 	memcpy (&tls->handler_ctx, ctx, sizeof (MonoContext));
@@ -4941,6 +4968,12 @@ ss_args_destroy (SingleStepArgs *ss_args)
 {
 	if (ss_args->frames)
 		free_frames ((StackFrame**)ss_args->frames, ss_args->nframes);
+}
+
+static int
+handle_multiple_ss_requests (void)
+{
+	return DE_ERR_NOT_IMPLEMENTED;
 }
 
 static int
@@ -9506,6 +9539,44 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	return ERR_NONE;
 }
 
+static void 
+create_file_to_check_memory_address (void) 
+{
+	if (file_check_valid_memory != -1)
+		return;
+	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", getpid());
+	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
+	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
+	g_free (file_name);
+}
+
+static gboolean 
+valid_memory_address (gpointer addr, gint size)
+{
+#ifndef _MSC_VER
+	gboolean ret = TRUE;
+	create_file_to_check_memory_address ();
+	if(file_check_valid_memory < 0) {
+		return TRUE;
+	}
+	write (file_check_valid_memory,  (gpointer)addr, 1);
+	if (errno == EFAULT) {
+		ret = FALSE;
+	}
+#else
+	int i = 0;
+	gboolean ret = FALSE;
+	__try {
+		for (i = 0; i < size; i++)
+			*((volatile char*)addr+i);
+		ret = TRUE;
+	} __except(1) {
+		return ret;
+	}
+#endif	
+	return ret;
+}
+
 static ErrorCode
 pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -9513,6 +9584,9 @@ pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	gint64 addr;
 	MonoClass* klass;
 	MonoDomain* domain = NULL;
+	MonoType *type = NULL;
+	int align;
+	int size = 0;
 
 	switch (command) {
 	case CMD_POINTER_GET_VALUE:
@@ -9524,7 +9598,13 @@ pointer_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		if (m_class_get_byval_arg (klass)->type != MONO_TYPE_PTR)
 			return ERR_INVALID_ARGUMENT;
 
-		buffer_add_value (buf, m_class_get_byval_arg (m_class_get_element_class (klass)), (gpointer)addr, domain);
+		type =  m_class_get_byval_arg (m_class_get_element_class (klass));
+		size = mono_type_size (type, &align);
+		
+		if (!valid_memory_address((gpointer)addr, size))
+			return ERR_INVALID_ARGUMENT;
+
+		buffer_add_value (buf, type, (gpointer)addr, domain);
 
 		break;
 	default:

@@ -49,10 +49,10 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
     }
     CONTRACTL_END;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     LOG((LF_EH, LL_INFO100, "In ExInfo::CopyAndClearSource: m_dEsp=%08x, %08x <- [%08x], stackAddress = 0x%p <- 0x%p\n",
          from->m_dEsp, &(this->m_dEsp), &from->m_dEsp, this->m_StackAddress, from->m_StackAddress));
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     // If we have a handle to an exception object in this ExInfo already, then go ahead and destroy it before we
     // loose it.
@@ -75,11 +75,11 @@ void ExInfo::CopyAndClearSource(ExInfo *from)
     // Finally, initialize the source ExInfo.
     from->Init();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Clear the Watson Bucketing information as well since they
     // have been transferred over by the "memcpy" above.
     from->GetWatsonBucketTracker()->Init();
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 void ExInfo::Init()
@@ -121,10 +121,10 @@ void ExInfo::Init()
 
     m_pTopMostHandlerDuringSO = NULL;
 
-#if defined(_TARGET_X86_) && defined(DEBUGGING_SUPPORTED)
+#if defined(TARGET_X86) && defined(DEBUGGING_SUPPORTED)
     m_InterceptionContext.Init();
     m_ValidInterceptionContext = FALSE;
-#endif //_TARGET_X86_ && DEBUGGING_SUPPORTED
+#endif //TARGET_X86 && DEBUGGING_SUPPORTED
 }
 
 ExInfo::ExInfo()
@@ -134,10 +134,10 @@ ExInfo::ExInfo()
     m_hThrowable = NULL;
     Init();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Init the WatsonBucketTracker
     m_WatsonBucketTracker.Init();
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 }
 
 //*******************************************************************************
@@ -205,11 +205,11 @@ void ExInfo::UnwindExInfo(VOID* limit)
             pPrevNestedInfo->DestroyExceptionHandle();
         }
 
-        #ifndef FEATURE_PAL
+        #ifndef TARGET_UNIX
         // Free the Watson bucket details when ExInfo
         // is being released
         pPrevNestedInfo->GetWatsonBucketTracker()->ClearWatsonBucketDetails();
-        #endif // FEATURE_PAL
+        #endif // TARGET_UNIX
 
         pPrevNestedInfo->m_StackTraceInfo.FreeStackTrace();
 
@@ -257,10 +257,10 @@ void ExInfo::UnwindExInfo(VOID* limit)
         // We just do a basic Init of the current top ExInfo here.
         Init();
 
-        #ifndef FEATURE_PAL
+        #ifndef TARGET_UNIX
         // Init the Watson buckets as well
         GetWatsonBucketTracker()->ClearWatsonBucketDetails();
-        #endif // FEATURE_PAL
+        #endif // TARGET_UNIX
     }
 }
 #endif // DACCESS_COMPILE

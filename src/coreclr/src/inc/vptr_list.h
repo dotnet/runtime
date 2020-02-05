@@ -46,9 +46,9 @@ VPTR_CLASS(PEImageLayout)
 VPTR_CLASS(RawImageLayout)
 VPTR_CLASS(ConvertedImageLayout)
 VPTR_CLASS(MappedImageLayout)
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_PAL)
+#if !defined(CROSSGEN_COMPILE) && !defined(TARGET_UNIX)
 VPTR_CLASS(LoadedImageLayout)
-#endif // !CROSSGEN_COMPILE && !FEATURE_PAL
+#endif // !CROSSGEN_COMPILE && !TARGET_UNIX
 VPTR_CLASS(FlatImageLayout)
 #ifdef FEATURE_COMINTEROP
 VPTR_CLASS(ComMethodFrame)
@@ -88,7 +88,7 @@ VPTR_CLASS(ExternalMethodFrame)
 #ifdef FEATURE_READYTORUN
 VPTR_CLASS(DynamicHelperFrame)
 #endif
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 VPTR_CLASS(UMThkCallFrame)
 #endif
 VPTR_CLASS(TailCallFrame)

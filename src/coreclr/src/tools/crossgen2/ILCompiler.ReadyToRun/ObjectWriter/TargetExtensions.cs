@@ -42,6 +42,9 @@ namespace ILCompiler.PEWriter
                 case Internal.TypeSystem.TargetArchitecture.ARM64:
                     return Machine.Arm64;
 
+                case Internal.TypeSystem.TargetArchitecture.ARM:
+                    return Machine.ArmThumb2;
+
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());
             }

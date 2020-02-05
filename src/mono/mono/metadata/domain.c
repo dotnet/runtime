@@ -733,9 +733,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_defaults.exception_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System", "Exception");
 
-	mono_defaults.threadabortexception_class = mono_class_load_from_name (
-                mono_defaults.corlib, "System.Threading", "ThreadAbortException");
-
 	mono_defaults.thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "Thread");
 
@@ -745,6 +742,9 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 #else
 	mono_defaults.internal_thread_class = mono_class_load_from_name (
                 mono_defaults.corlib, "System.Threading", "InternalThread");
+
+	mono_defaults.threadabortexception_class = mono_class_load_from_name (
+                mono_defaults.corlib, "System.Threading", "ThreadAbortException");
 #endif
 
 	mono_defaults.appdomain_class = mono_class_get_appdomain_class ();

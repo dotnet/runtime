@@ -299,31 +299,14 @@ public:
 
 };
 
-//-------------------------------------------------------------------------------------------
-//
-// Introducing AccessCheckContext so that we can defer caller resolution as much as possible.
-// Stack walk is expensive and we should avoid it if we can determine accessibility without
-// knowing the caller. For example, public transparent APIs without link demand should always
-// be accessible.
-// We will have two types of AccessCheckContext.
-//   1. StaticAccessCheckContext is used by JIT and other places where the caller is statically known.
-//   2. RefSecContext is used by reflection and resolves the caller by performing a stack walk.
-//
-//-------------------------------------------------------------------------------------------
+//******************************************************************************
+// AccessCheckContext encapsulates input of an accessibility check
+
 class AccessCheckContext
 {
 public:
-    virtual MethodDesc*     GetCallerMethod() = 0;      // The method that wants access.
-    virtual MethodTable*    GetCallerMT() = 0;          // The class that wants access; NULL if interop caller.
-    virtual Assembly*       GetCallerAssembly() = 0;    // Assembly containing that class.
-    virtual bool            IsCalledFromInterop() = 0;
-};
 
-class StaticAccessCheckContext : public AccessCheckContext
-{
-public:
-
-    StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType, Assembly* pCallerAssembly)
+    AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType, Assembly* pCallerAssembly)
         : m_pCallerMethod(pCallerMethod),
           m_pCallerMT(pCallerType),
           m_pCallerAssembly(pCallerAssembly)
@@ -338,32 +321,26 @@ public:
         CONTRACTL_END;
     }
 
-    StaticAccessCheckContext(MethodDesc* pCallerMethod);
+    AccessCheckContext(MethodDesc* pCallerMethod);
 
-    StaticAccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType);
+    AccessCheckContext(MethodDesc* pCallerMethod, MethodTable* pCallerType);
 
-    virtual MethodDesc* GetCallerMethod()
+    MethodDesc* GetCallerMethod()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCallerMethod;
     }
 
-    virtual MethodTable* GetCallerMT()
+    MethodTable* GetCallerMT()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pCallerMT;
     }
 
-    virtual Assembly* GetCallerAssembly()
+    Assembly* GetCallerAssembly()
     {
         WRAPPER_NO_CONTRACT;
         return m_pCallerAssembly;
-    }
-
-    virtual bool IsCalledFromInterop()
-    {
-        WRAPPER_NO_CONTRACT;
-        return false;
     }
 
 private:
@@ -435,13 +412,6 @@ public:
         return m_accessCheckType == kNormalAccessibilityChecks;
     }
 
-    // Do visibility checks including security demands for reflection access to members
-    BOOL DoReflectionAccessibilityChecks() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return !DoNormalAccessibilityChecks();
-    }
-
     BOOL Throws() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -450,12 +420,6 @@ public:
 
     BOOL DemandMemberAccessOrFail(AccessCheckContext *pContext, MethodTable * pTargetMT, BOOL visibilityCheck) const;
     BOOL FailOrThrow(AccessCheckContext *pContext) const;
-
-    BOOL TransparencyCheckNeeded() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_accessCheckType != kNormalAccessNoTransparency && m_accessCheckType != kRestrictedMemberAccessNoTransparency);
-    }
 
     static AccessCheckOptions* s_pNormalAccessChecks;
 
@@ -529,8 +493,8 @@ class ClassLoader
     friend class AppDomain;
     friend class Assembly;
     friend class Module;
+    friend class InstantiatedMethodDesc;
     friend class CLRPrivTypeCacheWinRT;
-    friend class CLRPrivTypeCacheReflectionOnlyWinRT;
 
     // the following two classes are friends because they will call LoadTypeHandleForTypeKey by token directly
     friend class COMDynamicWrite;
