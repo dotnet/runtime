@@ -107,7 +107,7 @@ namespace JIT.HardwareIntrinsics.Arm
 #>
         public static <#= typeName #> And(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & op2);
 
-        public static <#= typeName #> AndNot(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & ~op2);
+        public static <#= typeName #> BitwiseClear(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 & ~op2);
 
         public static <#= typeName #> BitwiseSelect(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3)
         {
@@ -144,7 +144,7 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double Not(double op1) => BitConverter.Int64BitsToDouble(~BitConverter.DoubleToInt64Bits(op1));
 
 <#
-        foreach (string helperName in new string[] { "And", "AndNot", "Or", "OrNot", "Xor" })
+        foreach (string helperName in new string[] { "And", "BitwiseClear", "Or", "OrNot", "Xor" })
         {
 #>
         public static float <#= helperName #>(float op1, float op2) => BitConverter.Int32BitsToSingle(<#= helperName #>(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));

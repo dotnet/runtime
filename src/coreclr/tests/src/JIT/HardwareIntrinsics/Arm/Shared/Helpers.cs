@@ -276,7 +276,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static sbyte And(sbyte op1, sbyte op2) => (sbyte)(op1 & op2);
 
-        public static sbyte AndNot(sbyte op1, sbyte op2) => (sbyte)(op1 & ~op2);
+        public static sbyte BitwiseClear(sbyte op1, sbyte op2) => (sbyte)(op1 & ~op2);
 
         public static sbyte BitwiseSelect(sbyte op1, sbyte op2, sbyte op3)
         {
@@ -307,7 +307,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte And(byte op1, byte op2) => (byte)(op1 & op2);
 
-        public static byte AndNot(byte op1, byte op2) => (byte)(op1 & ~op2);
+        public static byte BitwiseClear(byte op1, byte op2) => (byte)(op1 & ~op2);
 
         public static byte BitwiseSelect(byte op1, byte op2, byte op3)
         {
@@ -338,7 +338,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static short And(short op1, short op2) => (short)(op1 & op2);
 
-        public static short AndNot(short op1, short op2) => (short)(op1 & ~op2);
+        public static short BitwiseClear(short op1, short op2) => (short)(op1 & ~op2);
 
         public static short BitwiseSelect(short op1, short op2, short op3)
         {
@@ -369,7 +369,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort And(ushort op1, ushort op2) => (ushort)(op1 & op2);
 
-        public static ushort AndNot(ushort op1, ushort op2) => (ushort)(op1 & ~op2);
+        public static ushort BitwiseClear(ushort op1, ushort op2) => (ushort)(op1 & ~op2);
 
         public static ushort BitwiseSelect(ushort op1, ushort op2, ushort op3)
         {
@@ -400,7 +400,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int And(int op1, int op2) => (int)(op1 & op2);
 
-        public static int AndNot(int op1, int op2) => (int)(op1 & ~op2);
+        public static int BitwiseClear(int op1, int op2) => (int)(op1 & ~op2);
 
         public static int BitwiseSelect(int op1, int op2, int op3)
         {
@@ -431,7 +431,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint And(uint op1, uint op2) => (uint)(op1 & op2);
 
-        public static uint AndNot(uint op1, uint op2) => (uint)(op1 & ~op2);
+        public static uint BitwiseClear(uint op1, uint op2) => (uint)(op1 & ~op2);
 
         public static uint BitwiseSelect(uint op1, uint op2, uint op3)
         {
@@ -462,7 +462,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static long And(long op1, long op2) => (long)(op1 & op2);
 
-        public static long AndNot(long op1, long op2) => (long)(op1 & ~op2);
+        public static long BitwiseClear(long op1, long op2) => (long)(op1 & ~op2);
 
         public static long BitwiseSelect(long op1, long op2, long op3)
         {
@@ -493,7 +493,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong And(ulong op1, ulong op2) => (ulong)(op1 & op2);
 
-        public static ulong AndNot(ulong op1, ulong op2) => (ulong)(op1 & ~op2);
+        public static ulong BitwiseClear(ulong op1, ulong op2) => (ulong)(op1 & ~op2);
 
         public static ulong BitwiseSelect(ulong op1, ulong op2, ulong op3)
         {
@@ -530,9 +530,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double And(double op1, double op2) => BitConverter.Int64BitsToDouble(And(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
 
-        public static float AndNot(float op1, float op2) => BitConverter.Int32BitsToSingle(AndNot(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
+        public static float BitwiseClear(float op1, float op2) => BitConverter.Int32BitsToSingle(BitwiseClear(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
 
-        public static double AndNot(double op1, double op2) => BitConverter.Int64BitsToDouble(AndNot(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
+        public static double BitwiseClear(double op1, double op2) => BitConverter.Int64BitsToDouble(BitwiseClear(BitConverter.DoubleToInt64Bits(op1), BitConverter.DoubleToInt64Bits(op2)));
 
         public static float Or(float op1, float op2) => BitConverter.Int32BitsToSingle(Or(BitConverter.SingleToInt32Bits(op1), BitConverter.SingleToInt32Bits(op2)));
 
