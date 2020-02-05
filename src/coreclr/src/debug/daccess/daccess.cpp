@@ -5572,16 +5572,14 @@ ClrDataAccess::Initialize(void)
 
     if (m_globalBase == 0)
     {
-        // Caller didn't specify which CLR to debug.  This supports Whidbey SOS cases, so we should
-        // be using a legacy data target.
+        // Caller didn't specify which CLR to debug, we should be using a legacy data target.
         if (m_pLegacyTarget == NULL)
         {
             DacError(E_INVALIDARG);
             UNREACHABLE();
         }
 
-        // Since this is Whidbey, assume there's only 1 CLR named "mscorwks.dll" and pick that.
-        IfFailRet(m_pLegacyTarget->GetImageBase(MAIN_CLR_DLL_NAME_W, &base));
+        IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
 
         m_globalBase = TO_TADDR(base);
     }
@@ -7136,11 +7134,11 @@ HRESULT ClrDataAccess::VerifyDlls()
                 "error.  If you really want to try and use the mimatched DLLs, you can disable this\n"\
                 "check by setting COMPlus_DbgDACSkipVerifyDlls=1.  However, using a mismatched DAC\n"\
                 "DLL will usually result in arbitrary debugger failures.\n",
-                MAIN_CLR_DLL_NAME_A,
-                MAIN_CLR_DLL_NAME_A,
-                MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
                 szExpectedTime,
-                MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
                 szActualTime);
             _ASSERTE_MSG(false, szMsgBuf);
         }
@@ -7276,7 +7274,7 @@ ClrDataAccess::GetDacGlobals()
 
     if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 
@@ -7284,7 +7282,7 @@ ClrDataAccess::GetDacGlobals()
         resourceSectionRVA, (DWORD)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
         &rsrcRVA, &rsrcSize)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 
@@ -7294,7 +7292,7 @@ ClrDataAccess::GetDacGlobals()
 
     if (FAILED(status = ReadFromDataTarget(m_pTarget, m_globalBase + rsrcRVA, (BYTE*)rsrcData, rsrcSize)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 

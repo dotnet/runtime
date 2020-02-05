@@ -32,11 +32,11 @@
     <PackageReference Include="System.Memory" Version="4.5.3" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &gt;= 1.1)" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' or '$(TargetsNetfx)' == 'true'" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" Condition="'$(TargetsNetfx)' == 'true'" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>

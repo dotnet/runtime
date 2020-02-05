@@ -3,3 +3,6 @@
 
 /src/libraries/Common/src/System/Net/Http/Http2/                    @dotnet/http2
 /src/libraries/Common/tests/Tests/System/Net/Http2/                 @dotnet/http2
+/src/libraries/System.Text.Json/                                    @ahsonkhan @steveharter @layomia @Jozkee
+/src/libraries/System.Buffers/                                      @ahsonkhan
+/src/libraries/System.Memory/                                       @ahsonkhan

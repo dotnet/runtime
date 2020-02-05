@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
-public class Program
+public partial class Program
 {
     private static int _errors = 0;
 
@@ -98,6 +98,8 @@ public class Program
         ThrowsNRE(() => { IsValueTypeRef(ref _varNullableIntNull); });
         ThrowsNRE(() => { IsValueTypeRef(ref _varStringNull); });
 
+        TestIsAssignableFrom();
+
         return 100 + _errors;
     }
 
@@ -135,25 +137,25 @@ public class Program
     private static dynamic CreateDynamic2() => new { Name = "Test" };
 
 
-    static void IsTrue(bool expression, [CallerLineNumber] int line = 0)
+    static void IsTrue(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (!expression)
         {
-            Console.WriteLine($"Line {line}: test failed (expected: true).");
+            Console.WriteLine($"{file}:L{line} test failed (expected: true).");
             _errors++;
         }
     }
 
-    static void IsFalse(bool expression, [CallerLineNumber] int line = 0)
+    static void IsFalse(bool expression, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         if (expression)
         {
-            Console.WriteLine($"Line {line}: test failed (expected: false).");
+            Console.WriteLine($"{file}:L{line} test failed (expected: false).");
             _errors++;
         }
     }
 
-    static void ThrowsNRE(Action action, [CallerLineNumber] int line = 0)
+    static void ThrowsNRE(Action action, [CallerLineNumber] int line = 0, [CallerFilePath] string file = "")
     {
         try
         {
@@ -165,7 +167,7 @@ public class Program
         }
         catch (Exception exc)
         {
-            Console.WriteLine($"Line {line}: {exc}");
+            Console.WriteLine($"{file}:L{line} {exc}");
         }
         Console.WriteLine($"Line {line}: test failed (expected: NullReferenceException)");
     }

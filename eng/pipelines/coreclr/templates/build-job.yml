@@ -124,7 +124,7 @@ jobs:
           installDotnet: true
 
     # Build System.Private.CoreLib
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset corelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
       displayName: Build System.Private.CoreLib
 
     # Build CoreCLR
@@ -136,7 +136,7 @@ jobs:
         displayName: Build CoreCLR Runtime
 
     # Build managed tools
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
       displayName: Build managed tools
 
     # Build native test components
@@ -188,7 +188,7 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Build packages
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg)
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset packages $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
       displayName: Build packages
 
     # Save packages using the prepare-signed-artifacts format.

@@ -21,7 +21,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <Diagnostics.DebuggerHiddenAttribute()>
         Friend Shared Sub SetTime(ByVal dtTime As DateTime)
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim systime As New NativeTypes.SystemTime
 
             SafeNativeMethods.GetLocalTime(systime)
@@ -45,7 +45,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         <Diagnostics.DebuggerHiddenAttribute()>
         Friend Shared Sub SetDate(ByVal vDate As DateTime)
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim systime As New NativeTypes.SystemTime
 
             SafeNativeMethods.GetLocalTime(systime)

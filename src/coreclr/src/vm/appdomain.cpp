@@ -2260,12 +2260,10 @@ struct CallersDataWithStackMark
     BOOL foundMe;
     MethodDesc* pFoundMethod;
     MethodDesc* pPrevMethod;
-    AppDomain*  pAppDomain;
 };
 
 /*static*/
-MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark,
-                                           AppDomain **ppAppDomain/*=NULL*/)
+MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark)
 
 {
     CONTRACTL
@@ -2286,16 +2284,13 @@ MethodDesc* SystemDomain::GetCallersMethod(StackCrawlMark* stackMark,
     GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
-        if (ppAppDomain)
-            *ppAppDomain = cdata.pAppDomain;
         return cdata.pFoundMethod;
     } else
         return NULL;
 }
 
 /*static*/
-MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark,
-                                          AppDomain **ppAppDomain/*=NULL*/)
+MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark)
 
 {
     CONTRACTL
@@ -2314,16 +2309,13 @@ MethodTable* SystemDomain::GetCallersType(StackCrawlMark* stackMark,
     GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
-        if (ppAppDomain)
-            *ppAppDomain = cdata.pAppDomain;
         return cdata.pFoundMethod->GetMethodTable();
     } else
         return NULL;
 }
 
 /*static*/
-Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark,
-                                       AppDomain **ppAppDomain/*=NULL*/)
+Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
 
 {
     CONTRACTL
@@ -2344,8 +2336,6 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark,
     GetThread()->StackWalkFrames(CallersMethodCallbackWithStackMark, &cdata, FUNCTIONSONLY | LIGHTUNWIND);
 
     if(cdata.pFoundMethod) {
-        if (ppAppDomain)
-            *ppAppDomain = cdata.pAppDomain;
         return cdata.pFoundMethod->GetModule();
     } else
         return NULL;
@@ -2358,11 +2348,10 @@ struct CallersData
 };
 
 /*static*/
-Assembly* SystemDomain::GetCallersAssembly(StackCrawlMark *stackMark,
-                                           AppDomain **ppAppDomain/*=NULL*/)
+Assembly* SystemDomain::GetCallersAssembly(StackCrawlMark *stackMark)
 {
     WRAPPER_NO_CONTRACT;
-    Module* mod = GetCallersModule(stackMark, ppAppDomain);
+    Module* mod = GetCallersModule(stackMark);
     if (mod)
         return mod->GetAssembly();
     return NULL;
@@ -2393,7 +2382,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
         {
             // save the current in case it is the one we want
             pCaller->pPrevMethod = pFunc;
-            pCaller->pAppDomain = pCf->GetAppDomain();
             return SWA_CONTINUE;
         }
 
@@ -2457,7 +2445,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     if (!pCaller->stackMark)
     {
         pCaller->pFoundMethod = pFunc;
-        pCaller->pAppDomain = pCf->GetAppDomain();
         return SWA_ABORT;
     }
 
@@ -2478,23 +2465,7 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
         return SWA_CONTINUE;
     }
 
-    // If remoting is not available, we only set the caller if the crawlframe is from the same domain.
-    // Why? Because if the callerdomain is different from current domain,
-    // there have to be interop/native frames in between.
-    // For example, in the CORECLR, if we find the caller to be in a different domain, then the
-    // call into reflection is due to an unmanaged call into mscorlib. For that
-    // case, the caller really is an INTEROP method.
-    // In general, if the caller is INTEROP, we set the caller/callerdomain to be NULL
-    // (To be precise: they are already NULL and we don't change them).
-    if (pCf->GetAppDomain() == GetAppDomain())
-    // We must either be looking for the caller, or the caller's caller when
-    // we've already found the caller (we used a non-null value in pFoundMethod
-    // simply as a flag, the correct method to return in both case is the
-    // current method).
-    {
-        pCaller->pFoundMethod = pFunc;
-        pCaller->pAppDomain = pCf->GetAppDomain();
-    }
+    pCaller->pFoundMethod = pFunc;
 
     return SWA_ABORT;
 }

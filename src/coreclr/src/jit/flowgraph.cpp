@@ -22617,18 +22617,8 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            // It would be nice to assert that "tree" is side-effect
-            // free, before we bash it.
-            //
-            // But we expect to see the GTF_CALL flag set, because
-            // this tree is an ancestor of an inline return
-            // value placeholder, and those always have GTF_CALL set,
-            // since if inlining fails we'd swap the call back in
-            // place.
-            //
-            // So, check that at least everything else is clear.
-            assert((tree->gtFlags & (GTF_SIDE_EFFECT & ~GTF_CALL)) == 0);
-
+            // Had hoped to assert here that we are not losing any
+            // side effects, but can't find a way to express it properly.
             tree->gtBashToNOP();
 
             BasicBlock* bTaken    = nullptr;

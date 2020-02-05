@@ -1,13 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageConfigurations>
-      netstandard2.0;
-    </PackageConfigurations>
     <BuildConfigurations>
-      $(PackageConfigurations);
       $(NetCoreAppCurrent);
-      <!-- Use inbox facade on $(NetFrameworkCurrent) -->
-      _$(NetFrameworkCurrent);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

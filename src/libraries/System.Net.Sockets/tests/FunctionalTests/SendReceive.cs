@@ -864,7 +864,7 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
             {
-                (Socket client, Socket server) = CreateConnectedSocketPair();
+                (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (client)
                 using (server)
                 using (var b = new Barrier(2))
@@ -902,7 +902,7 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
             {
-                (Socket client, Socket server) = CreateConnectedSocketPair();
+                (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (client)
                 using (server)
                 using (var b = new Barrier(2))
@@ -931,21 +931,6 @@ namespace System.Net.Sockets.Tests
                             error.ToString());
                     }
                 }
-            }
-        }
-
-        protected static (Socket, Socket) CreateConnectedSocketPair()
-        {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                client.Connect(listener.LocalEndPoint);
-                Socket server = listener.Accept();
-
-                return (client, server);
             }
         }
 
@@ -1017,7 +1002,7 @@ namespace System.Net.Sockets.Tests
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1116,7 +1101,7 @@ namespace System.Net.Sockets.Tests
             byte[] receiveBuffer = new byte[1024];
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket1)
                 using (socket2)
                 {
@@ -1588,7 +1573,7 @@ namespace System.Net.Sockets.Tests
                 ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
 
                 // Create twice that many socket pairs, for good measure.
-                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => CreateConnectedSocketPair()).ToArray();
+                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => SocketTestExtensions.CreateConnectedSocketPair()).ToArray();
                 try
                 {
                     // Ensure that on Unix all of the first socket in each pair are configured for sync-over-async.
