@@ -111,7 +111,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] 
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
-        // [ActiveIssue("https://github.com/mono/mono/issues/15141", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15141", TargetFrameworkMonikers.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
         {
             (string, string, int) rethrownExceptionStackFrame = (null, null, 0);
