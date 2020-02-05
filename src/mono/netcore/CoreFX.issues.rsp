@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Threading.Overlapped.Tests
-####################################################################
-
-# Test not run
--nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
-
-####################################################################
 ##  System.Runtime.Extensions.Tests
 ####################################################################
 

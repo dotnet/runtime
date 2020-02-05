@@ -10,6 +10,7 @@ using Xunit;
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
+    [ActiveIssue("https://github.com/mono/mono/issues/15313", TargetFrameworkMonikers.Mono)]
     public unsafe void PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException()
     {
         AssertExtensions.Throws<ArgumentNullException>("callback", () =>
