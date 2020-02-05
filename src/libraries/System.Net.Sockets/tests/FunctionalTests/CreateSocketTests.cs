@@ -189,9 +189,7 @@ namespace System.Net.Sockets.Tests
                                 listener.Dispose();
                                 using (var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                                 {
-                                    IAsyncResult connectResult = tmpClient.BeginConnect(ep, null, null);
-                                    bool connected = connectResult.AsyncWaitHandle.WaitOne(ConnectionTimeoutMs);
-                                    connectResult.AsyncWaitHandle.Close();
+                                    bool connected = tmpClient.TryConnect(ep, ConnectionTimeoutMs);
 
                                     // Let the child process terminate.
                                     serverPipe.WriteByte(42);

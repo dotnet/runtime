@@ -203,12 +203,9 @@ namespace System.Net.Sockets.Tests
                     // Close the listening socket:
                     listenerDuplicate.Dispose();
 
-                    IAsyncResult connectResult = client.BeginConnect(ep, null, null);
-                    bool connected = connectResult.AsyncWaitHandle.WaitOne(ConnectionTimeoutMs);
-                    connectResult.AsyncWaitHandle.Close();
-                    serverPipe.WriteByte(42);
-
                     // Validate that we after closing the listening socket, we're not able to connect:
+                    bool connected = client.TryConnect(ep, ConnectionTimeoutMs);
+                    serverPipe.WriteByte(42);
                     Assert.False(connected);
                 }
             }

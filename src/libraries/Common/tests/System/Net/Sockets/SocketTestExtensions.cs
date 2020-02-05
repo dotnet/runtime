@@ -49,5 +49,31 @@ namespace System.Net.Sockets.Tests
 
             return (client, server);
         }
+
+        // Tries to connect within the provided timeout interval
+        // Useful to speed up "can not connect" assertions on Windows
+        public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
+        {
+            IAsyncResult connectResult = socket.BeginConnect(remoteEndpoint, null, null);
+            if (connectResult.AsyncWaitHandle.WaitOne(millisecondsTimeout))
+            {
+                try
+                {
+                    socket.EndConnect(connectResult);
+                    return true;
+                }
+                catch (SocketException)
+                {
+                    return false;
+                }
+                finally
+                {
+                    connectResult.AsyncWaitHandle.Close();
+                }
+            }
+            connectResult.AsyncWaitHandle.Close();
+
+            return false;
+        }
     }
 }
