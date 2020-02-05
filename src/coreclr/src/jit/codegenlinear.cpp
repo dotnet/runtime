@@ -426,7 +426,9 @@ void CodeGen::genCodeForBBlist()
             }
         }
 #endif // DEBUG
-
+        JITDUMP("\n\n\n");
+        compiler->fgDumpBlock(block);
+        
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
         for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
         {
@@ -446,8 +448,10 @@ void CodeGen::genCodeForBBlist()
                 genIPmappingAdd(currentILOffset, firstMapping);
                 firstMapping = false;
 #ifdef DEBUG
-                /*assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
-                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);*/
+                assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
+                       (ilOffset->gtInlineContext != nullptr && ilOffset->gtInlineContext->GetOffset() <= compiler->info.compILCodeSize &&
+                        ilOffset->gtStmtILoffsx <= ilOffset->gtInlineContext->GetImportedILSize()) ||
+                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
 
                 if (compiler->opts.dspCode && compiler->opts.dspInstrs && ilOffset->gtStmtLastILoffs != BAD_IL_OFFSET)
                 {
