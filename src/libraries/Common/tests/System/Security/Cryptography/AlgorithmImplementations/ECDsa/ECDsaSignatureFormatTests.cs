@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             if (ECDsaFactory.ExplicitCurvesSupported)
             {
-                yield return OpenKey(EccTestData.GetNistP256ExplicitTestData());
+                yield return OpenKey(EccTestData.GetNistP256ReferenceKeyExplicit());
             }
         }
     }
