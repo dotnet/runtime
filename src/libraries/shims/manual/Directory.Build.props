@@ -11,10 +11,13 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
     <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(TargetFramework)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
-    <CoreCLROSGroup>$(_bc_OSGroup)</CoreCLROSGroup>
-    <MonoOSGroup>$(_bc_OSGroup)</MonoOSGroup>
+    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)/</RefPath>
+    <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
+    <MonoOSGroup>$(OSGroup)</MonoOSGroup>
+    <TargetFrameworks>netcoreapp5.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

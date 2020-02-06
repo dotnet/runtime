@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcore-FreeBSD-Debug;netcore-FreeBSD-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FileSystemWatcher.cs" />

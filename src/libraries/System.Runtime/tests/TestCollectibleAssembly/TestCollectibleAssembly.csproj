@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>

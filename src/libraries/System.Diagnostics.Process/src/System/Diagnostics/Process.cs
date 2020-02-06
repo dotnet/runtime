@@ -24,13 +24,13 @@ namespace System.Diagnostics
         private bool _haveProcessId;
         private int _processId;
         private bool _haveProcessHandle;
-        private SafeProcessHandle _processHandle;
+        private SafeProcessHandle? _processHandle;
         private bool _isRemoteMachine;
         private string _machineName;
-        private ProcessInfo _processInfo;
+        private ProcessInfo? _processInfo;
 
-        private ProcessThreadCollection _threads;
-        private ProcessModuleCollection _modules;
+        private ProcessThreadCollection? _threads;
+        private ProcessModuleCollection? _modules;
 
         private bool _haveWorkingSetLimits;
         private IntPtr _minWorkingSet;
@@ -42,11 +42,11 @@ namespace System.Diagnostics
         private bool _havePriorityClass;
         private ProcessPriorityClass _priorityClass;
 
-        private ProcessStartInfo _startInfo;
+        private ProcessStartInfo? _startInfo;
 
         private bool _watchForExit;
         private bool _watchingForExit;
-        private EventHandler _onExited;
+        private EventHandler? _onExited;
         private bool _exited;
         private int _exitCode;
 
@@ -58,11 +58,11 @@ namespace System.Diagnostics
         private bool _havePriorityBoostEnabled;
 
         private bool _raisedOnExited;
-        private RegisteredWaitHandle _registeredWaitHandle;
-        private WaitHandle _waitHandle;
-        private StreamReader _standardOutput;
-        private StreamWriter _standardInput;
-        private StreamReader _standardError;
+        private RegisteredWaitHandle? _registeredWaitHandle;
+        private WaitHandle? _waitHandle;
+        private StreamReader? _standardOutput;
+        private StreamWriter? _standardInput;
+        private StreamReader? _standardError;
         private bool _disposed;
 
         private bool _standardInputAccessed;
@@ -71,12 +71,12 @@ namespace System.Diagnostics
         private StreamReadMode _errorStreamReadMode;
 
         // Support for asynchronously reading streams
-        public event DataReceivedEventHandler OutputDataReceived;
-        public event DataReceivedEventHandler ErrorDataReceived;
+        public event DataReceivedEventHandler? OutputDataReceived;
+        public event DataReceivedEventHandler? ErrorDataReceived;
 
         // Abstract the stream details
-        internal AsyncStreamReader _output;
-        internal AsyncStreamReader _error;
+        internal AsyncStreamReader? _output;
+        internal AsyncStreamReader? _error;
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
@@ -103,7 +103,7 @@ namespace System.Diagnostics
             _errorStreamReadMode = StreamReadMode.Undefined;
         }
 
-        private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo processInfo)
+        private Process(string machineName, bool isRemoteMachine, int processId, ProcessInfo? processInfo)
         {
             GC.SuppressFinalize(this);
             _processInfo = processInfo;
@@ -146,7 +146,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.BasePriority;
+                return _processInfo!.BasePriority;
             }
         }
 
@@ -307,7 +307,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PoolNonPagedBytes;
+                return _processInfo!.PoolNonPagedBytes;
             }
         }
 
@@ -317,7 +317,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PoolNonPagedBytes);
+                return unchecked((int)_processInfo!.PoolNonPagedBytes);
             }
         }
 
@@ -327,7 +327,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PageFileBytes;
+                return _processInfo!.PageFileBytes;
             }
         }
 
@@ -337,7 +337,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PageFileBytes);
+                return unchecked((int)_processInfo!.PageFileBytes);
             }
         }
 
@@ -347,7 +347,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PoolPagedBytes;
+                return _processInfo!.PoolPagedBytes;
             }
         }
 
@@ -357,7 +357,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PoolPagedBytes);
+                return unchecked((int)_processInfo!.PoolPagedBytes);
             }
         }
 
@@ -367,7 +367,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PageFileBytesPeak;
+                return _processInfo!.PageFileBytesPeak;
             }
         }
 
@@ -377,7 +377,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PageFileBytesPeak);
+                return unchecked((int)_processInfo!.PageFileBytesPeak);
             }
         }
 
@@ -386,7 +386,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.WorkingSetPeak;
+                return _processInfo!.WorkingSetPeak;
             }
         }
 
@@ -396,7 +396,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.WorkingSetPeak);
+                return unchecked((int)_processInfo!.WorkingSetPeak);
             }
         }
 
@@ -405,7 +405,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.VirtualBytesPeak;
+                return _processInfo!.VirtualBytesPeak;
             }
         }
 
@@ -415,7 +415,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.VirtualBytesPeak);
+                return unchecked((int)_processInfo!.VirtualBytesPeak);
             }
         }
 
@@ -480,7 +480,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.PrivateBytes;
+                return _processInfo!.PrivateBytes;
             }
         }
 
@@ -490,7 +490,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.PrivateBytes);
+                return unchecked((int)_processInfo!.PrivateBytes);
             }
         }
 
@@ -505,7 +505,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.ProcessName;
+                return _processInfo!.ProcessName;
             }
         }
 
@@ -539,7 +539,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.SessionId;
+                return _processInfo!.SessionId;
             }
         }
 
@@ -592,7 +592,7 @@ namespace System.Diagnostics
                 if (_threads == null)
                 {
                     EnsureState(State.HaveProcessInfo);
-                    int count = _processInfo._threadInfoList.Count;
+                    int count = _processInfo!._threadInfoList.Count;
                     ProcessThread[] newThreadsArray = new ProcessThread[count];
                     for (int i = 0; i < count; i++)
                     {
@@ -612,7 +612,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveProcessInfo);
                 EnsureHandleCountPopulated();
-                return _processInfo.HandleCount;
+                return _processInfo!.HandleCount;
             }
         }
 
@@ -623,7 +623,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.VirtualBytes;
+                return _processInfo!.VirtualBytes;
             }
         }
 
@@ -633,7 +633,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.VirtualBytes);
+                return unchecked((int)_processInfo!.VirtualBytes);
             }
         }
 
@@ -743,7 +743,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return _processInfo.WorkingSet;
+                return _processInfo!.WorkingSet;
             }
         }
 
@@ -753,7 +753,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.HaveProcessInfo);
-                return unchecked((int)_processInfo.WorkingSet);
+                return unchecked((int)_processInfo!.WorkingSet);
             }
         }
 
@@ -773,7 +773,7 @@ namespace System.Diagnostics
         ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>
-        private void CompletionCallback(object waitHandleContext, bool wasSignaled)
+        private void CompletionCallback(object? waitHandleContext, bool wasSignaled)
         {
             Debug.Assert(waitHandleContext != null, "Process.CompletionCallback called with no waitHandleContext");
             lock (this)
@@ -823,7 +823,7 @@ namespace System.Diagnostics
             return WaitForInputIdleCore(milliseconds);
         }
 
-        public ISynchronizeInvoke SynchronizingObject { get; set; }
+        public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         /// <devdoc>
         ///    <para>
@@ -845,7 +845,7 @@ namespace System.Diagnostics
 
                 if (_haveProcessHandle)
                 {
-                    _processHandle.Dispose();
+                    _processHandle!.Dispose();
                     _processHandle = null;
                     _haveProcessHandle = false;
                 }
@@ -918,7 +918,7 @@ namespace System.Diagnostics
                 {
                     if (_haveProcessHandle)
                     {
-                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle));
+                        SetProcessId(ProcessManager.GetProcessIdFromHandle(_processHandle!));
                     }
                     else
                     {
@@ -1025,7 +1025,7 @@ namespace System.Diagnostics
         ///       local computer. These process resources share the specified process name.
         ///    </para>
         /// </devdoc>
-        public static Process[] GetProcessesByName(string processName)
+        public static Process[] GetProcessesByName(string? processName)
         {
             return GetProcessesByName(processName, ".");
         }
@@ -1079,7 +1079,7 @@ namespace System.Diagnostics
         /// </devdoc>
         protected void OnExited()
         {
-            EventHandler exited = _onExited;
+            EventHandler? exited = _onExited;
             if (exited != null)
             {
                 exited(this, EventArgs.Empty);
@@ -1143,7 +1143,7 @@ namespace System.Diagnostics
 
                 SetProcessHandle(GetProcessHandle());
             }
-            return _processHandle;
+            return _processHandle!;
         }
 
         /// <devdoc>
@@ -1229,7 +1229,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process Start(string fileName)
         {
-            return Start(new ProcessStartInfo(fileName));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName))!;
         }
 
         /// <devdoc>
@@ -1242,7 +1245,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public static Process Start(string fileName, string arguments)
         {
-            return Start(new ProcessStartInfo(fileName, arguments));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
         /// <devdoc>
@@ -1253,7 +1259,7 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
-        public static Process Start(ProcessStartInfo startInfo)
+        public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
             if (startInfo == null)
@@ -1273,8 +1279,8 @@ namespace System.Diagnostics
         {
             if (_watchingForExit)
             {
-                RegisteredWaitHandle rwh = null;
-                WaitHandle wh = null;
+                RegisteredWaitHandle? rwh = null;
+                WaitHandle? wh = null;
 
                 lock (this)
                 {
@@ -1457,10 +1463,10 @@ namespace System.Diagnostics
             _pendingErrorRead = false;
         }
 
-        internal void OutputReadNotifyUser(string data)
+        internal void OutputReadNotifyUser(string? data)
         {
             // To avoid race between remove handler and raising the event
-            DataReceivedEventHandler outputDataReceived = OutputDataReceived;
+            DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
             if (outputDataReceived != null)
             {
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
@@ -1468,10 +1474,10 @@ namespace System.Diagnostics
             }
         }
 
-        internal void ErrorReadNotifyUser(string data)
+        internal void ErrorReadNotifyUser(string? data)
         {
             // To avoid race between remove handler and raising the event
-            DataReceivedEventHandler errorDataReceived = ErrorDataReceived;
+            DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
             if (errorDataReceived != null)
             {
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);

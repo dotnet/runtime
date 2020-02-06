@@ -55,6 +55,12 @@
 
 #define ANALYZER_NORETURN
 
+#ifdef _MSC_VER
+#define EMPTY_BASES_DECL __declspec(empty_bases)
+#else
+#define EMPTY_BASES_DECL
+#endif // !_MSC_VER
+
 //
 // CPP_ASSERT() can be used within a class definition, to perform a
 // compile-time assertion involving private names within the class.

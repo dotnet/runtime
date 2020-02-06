@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.IO;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -78,9 +78,9 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(FileInfo jitPath)
         {
-            _jitPath = jitPath;
+            _jitPath = jitPath == null ? null : jitPath.FullName;
             return this;
         }
 

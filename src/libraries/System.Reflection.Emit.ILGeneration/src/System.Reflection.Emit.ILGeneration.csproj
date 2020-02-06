@@ -2,7 +2,10 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.Emit.ILGeneration</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

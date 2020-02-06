@@ -20,7 +20,7 @@ if(UTYPES_H STREQUAL UTYPES_H-NOTFOUND)
     return()
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_DARWIN)
     find_library(ICUCORE icucore)
     if(ICUCORE STREQUAL ICUCORE-NOTFOUND)
         message(FATAL_ERROR "Cannot find libicucore, skipping build for System.Globalization.Native. .NET globalization is not expected to function.")
@@ -85,7 +85,7 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME 
 
 install (TARGETS System.Globalization.Native-Static DESTINATION .)
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(NOT CLR_CMAKE_TARGET_DARWIN)
     if (GEN_SHARED_LIB)
         add_custom_command(TARGET System.Globalization.Native POST_BUILD
             COMMENT "Verifying System.Globalization.Native.so dependencies"

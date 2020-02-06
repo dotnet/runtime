@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DebugType>full</DebugType>
   </PropertyGroup>
 

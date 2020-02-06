@@ -222,7 +222,7 @@ namespace System.Numerics
                 return (int)Popcnt.X64.PopCount(value);
             }
 
-#if BIT32
+#if TARGET_32BIT
             return PopCount((uint)value) // lo
                 + PopCount((uint)(value >> 32)); // hi
 #else

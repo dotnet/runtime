@@ -100,8 +100,7 @@ namespace System.Xml
 
             public int GetNSHashCode()
             {
-                // ValueTuple uses HashCode.Combine with the randomized string.GetHashCode as inputs
-                return (namespaceUri, localname).GetHashCode();
+                return HashCode.Combine(this.namespaceUri, this.localname);
             }
 
 

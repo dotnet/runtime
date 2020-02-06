@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -141,8 +142,8 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
-            new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
+        internal static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
 
 #if DEBUG // until it can be fully implemented
         /// <summary>
@@ -363,6 +364,9 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.And).</summary>
         private void And() => _ilg!.Emit(OpCodes.And);
 
+        /// <summary>A macro for _ilg.Emit(OpCodes.Or).</summary>
+        private void Or() => _ilg!.Emit(OpCodes.Or);
+
         /// <summary>A macro for _ilg.Emit(OpCodes.Shl).</summary>
         private void Shl() => _ilg!.Emit(OpCodes.Shl);
 
@@ -481,8 +485,8 @@ namespace System.Text.RegularExpressions
         /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_S) (short jump).</summary>
         private void Bgt(Label l) => _ilg!.Emit(OpCodes.Bgt_S, l);
 
-        /// <summary>A macro for _ilg.Emit(OpCodes.Bleun_S) (short jump).</summary>
-        private void Bgtun(Label l) => _ilg!.Emit(OpCodes.Bgt_Un_S, l);
+        /// <summary>A macro for _ilg.Emit(OpCodes.Bgt_Un_S) (short jump).</summary>
+        private void BgtUn(Label l) => _ilg!.Emit(OpCodes.Bgt_Un_S, l);
 
         /// <summary>A macro for _ilg.Emit(OpCodes.Bne_S) (short jump).</summary>
         private void Bne(Label l) => _ilg!.Emit(OpCodes.Bne_Un_S, l);
@@ -1139,34 +1143,30 @@ namespace System.Text.RegularExpressions
             else if (_boyerMoorePrefix != null && _boyerMoorePrefix.NegativeUnicode == null)
             {
                 // Compiled Boyer-Moore string matching
-
                 LocalBuilder chLocal = _temp1Local;
                 LocalBuilder testLocal = _temp1Local;
-                LocalBuilder limitLocal = _temp2Local;
-                Label lDefaultAdvance = DefineLabel();
-                Label lAdvance = DefineLabel();
-                Label lStart = DefineLabel();
-                Label lPartialMatch = DefineLabel();
-
+                LocalBuilder limitLocal;
                 int beforefirst;
                 int last;
                 if (!_code.RightToLeft)
                 {
+                    limitLocal = _runtextendLocal;
                     beforefirst = -1;
                     last = _boyerMoorePrefix.Pattern.Length - 1;
                 }
                 else
                 {
+                    limitLocal = _runtextbegLocal!;
                     beforefirst = _boyerMoorePrefix.Pattern.Length;
                     last = 0;
                 }
 
                 int chLast = _boyerMoorePrefix.Pattern[last];
 
+                // string runtext = this.runtext;
                 Mvfldloc(s_runtextField, _runtextLocal);
-                Ldloc(_code.RightToLeft ? _runtextbegLocal! : _runtextendLocal);
-                Stloc(limitLocal);
 
+                // runtextpos += pattern.Length - 1; // advance to match last character
                 Ldloc(_runtextposLocal);
                 if (!_code.RightToLeft)
                 {
@@ -1179,16 +1179,26 @@ namespace System.Text.RegularExpressions
                     Sub();
                 }
                 Stloc(_runtextposLocal);
+
+                Label lStart = DefineLabel();
                 Br(lStart);
 
+                // DefaultAdvance:
+                // offset = pattern.Length;
+                Label lDefaultAdvance = DefineLabel();
                 MarkLabel(lDefaultAdvance);
                 Ldc(_code.RightToLeft ? -_boyerMoorePrefix.Pattern.Length : _boyerMoorePrefix.Pattern.Length);
 
+                // Advance:
+                // runtextpos += offset;
+                Label lAdvance = DefineLabel();
                 MarkLabel(lAdvance);
                 Ldloc(_runtextposLocal);
                 Add();
                 Stloc(_runtextposLocal);
 
+                // Start:
+                // if (runtextpos >= runtextend) goto returnFalse;
                 MarkLabel(lStart);
                 Ldloc(_runtextposLocal);
                 Ldloc(limitLocal);
@@ -1201,25 +1211,32 @@ namespace System.Text.RegularExpressions
                     BltFar(returnFalse);
                 }
 
+                // ch = runtext[runtextpos];
+                // if (ch == lastChar) goto partialMatch;
                 Rightchar();
                 if (_boyerMoorePrefix.CaseInsensitive)
                 {
                     CallToLower();
                 }
-
                 Dup();
                 Stloc(chLocal);
                 Ldc(chLast);
+
+                Label lPartialMatch = DefineLabel();
                 BeqFar(lPartialMatch);
 
+                // ch -= lowAscii;
+                // if (ch > (highAscii - lowAscii)) goto defaultAdvance;
                 Ldloc(chLocal);
                 Ldc(_boyerMoorePrefix.LowASCII);
                 Sub();
                 Dup();
                 Stloc(chLocal);
                 Ldc(_boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII);
-                Bgtun(lDefaultAdvance);
+                BgtUn(lDefaultAdvance);
 
+                // int offset = "lookupstring"[num];
+                // goto advance;
                 int negativeRange = _boyerMoorePrefix.HighASCII - _boyerMoorePrefix.LowASCII + 1;
                 if (negativeRange > 1)
                 {
@@ -1268,18 +1285,18 @@ namespace System.Text.RegularExpressions
                 }
                 BrFar(lAdvance);
 
+                // Emit a check for each character from the next to last down to the first.
                 MarkLabel(lPartialMatch);
-
                 Ldloc(_runtextposLocal);
                 Stloc(testLocal);
 
+                int prevLabelOffset = int.MaxValue;
+                Label prevLabel = default;
                 for (int i = _boyerMoorePrefix.Pattern.Length - 2; i >= 0; i--)
                 {
-                    Label lNext = DefineLabel();
-                    int charindex = _code.RightToLeft ?
-                        _boyerMoorePrefix.Pattern.Length - 1 - i :
-                        i;
+                    int charindex = _code.RightToLeft ? _boyerMoorePrefix.Pattern.Length - 1 - i : i;
 
+                    // if (runtext[--test] == pattern[index]) goto lNext;
                     Ldloc(_runtextLocal);
                     Ldloc(testLocal);
                     Ldc(1);
@@ -1291,15 +1308,31 @@ namespace System.Text.RegularExpressions
                     {
                         CallToLower();
                     }
-
                     Ldc(_boyerMoorePrefix.Pattern[charindex]);
-                    Beq(lNext);
-                    Ldc(_boyerMoorePrefix.Positive[charindex]);
-                    BrFar(lAdvance);
 
-                    MarkLabel(lNext);
+                    if (prevLabelOffset == _boyerMoorePrefix.Positive[charindex])
+                    {
+                        BneFar(prevLabel);
+                    }
+                    else
+                    {
+                        Label lNext = DefineLabel();
+                        Beq(lNext);
+
+                        // offset = positive[ch];
+                        // goto advance;
+                        prevLabel = DefineLabel();
+                        prevLabelOffset = _boyerMoorePrefix.Positive[charindex];
+                        MarkLabel(prevLabel);
+                        Ldc(prevLabelOffset);
+                        BrFar(lAdvance);
+
+                        MarkLabel(lNext);
+                    }
                 }
 
+                // this.runtextpos = test;
+                // return true;
                 Ldthis();
                 Ldloc(testLocal);
                 if (_code.RightToLeft)
@@ -1313,6 +1346,7 @@ namespace System.Text.RegularExpressions
             }
             else if (_leadingCharClasses is null)
             {
+                // return true;
                 Ldc(1);
                 Ret();
             }
@@ -4638,6 +4672,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
         private void EmitMatchCharacterClass(string charClass, bool caseInsensitive, LocalBuilder tempLocal)
         {
             // We need to perform the equivalent of calling RegexRunner.CharInClass(ch, charClass),
@@ -4646,8 +4681,8 @@ namespace System.Text.RegularExpressions
             // for which we can call a dedicated method, or a fast-path for ASCII using a lookup table.
 
             // First, see if the char class is a built-in one for which there's a better function
-            // we can just call directly.  Everything in this section must work correctly for both case
-            // sensitive and case insensitive modes, regardless of current culture or invariant.
+            // we can just call directly.  Everything in this section must work correctly for both
+            // case-sensitive and case-insensitive modes, regardless of culture.
             switch (charClass)
             {
                 case RegexCharClass.AnyClass:
@@ -4708,10 +4743,10 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    // (uint)ch - lowInclusive < highInclusive + 1 - lowInclusive
+                    // (uint)ch - lowInclusive < highInclusive - lowInclusive + 1
                     Ldc(lowInclusive);
                     Sub();
-                    Ldc((int)highInclusive - (int)lowInclusive + 1);
+                    Ldc(highInclusive - lowInclusive + 1);
                     CltUn();
                 }
 
@@ -4725,8 +4760,38 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Store the input character to a local so we can read it multiple times.
+            // All checks after this point require reading the input character multiple times,
+            // so we store it into a temporary local.
             Stloc(tempLocal);
+
+            // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
+            // it's cheaper and smaller to compare against each than it is to use a lookup table.
+            if (!invariant)
+            {
+                Span<char> setChars = stackalloc char[3];
+                int numChars = RegexCharClass.GetSetChars(charClass, setChars);
+                if (numChars > 0)
+                {
+                    // (ch == setChars[0]) | (ch == setChars[1]) { | (ch == setChars[2]) }
+                    Debug.Assert(numChars == 2 || numChars == 3);
+                    Ldloc(tempLocal);
+                    Ldc(setChars[0]);
+                    Ceq();
+                    Ldloc(tempLocal);
+                    Ldc(setChars[1]);
+                    Ceq();
+                    Or();
+                    if (numChars == 3)
+                    {
+                        Ldloc(tempLocal);
+                        Ldc(setChars[2]);
+                        Ceq();
+                        Or();
+                    }
+
+                    return;
+                }
+            }
 
             // Analyze the character set more to determine what code to generate.
             RegexCharClass.CharClassAnalysisResults analysis = RegexCharClass.Analyze(charClass);

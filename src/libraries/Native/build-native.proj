@@ -5,7 +5,10 @@
   <Target Name="Build" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" />
 
   <PropertyGroup>
-    <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) outconfig $(Configuration)</_BuildNativeArgs>
+    <!-- Hardcode version paths in a global location. -->
+    <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
+    <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">$(ArtifactsObjDir)_version.c</NativeVersionFile>
+    <_BuildNativeArgs>$(ArchGroup) $(Configuration) outconfig $(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)</_BuildNativeArgs>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"

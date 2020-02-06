@@ -18,7 +18,7 @@ steps:
             /t:test
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:ArchGroup=${{ parameters.archGroup }}
-            /p:ConfigurationGroup=${{ parameters.configuration }}
+            /p:Configuration=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UnsupportedPlatforms>Windows_NT</UnsupportedPlatforms>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EcDsaOpenSslTests.cs" />
