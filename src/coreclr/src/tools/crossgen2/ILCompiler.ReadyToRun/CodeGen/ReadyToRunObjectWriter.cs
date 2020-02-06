@@ -100,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
                     _nodeFactory.Target,
                     headerBuilder,
                     r2rHeaderExportSymbol,
-                    Path.GetFileNameWithoutExtension(_objectFilePath),
+                    Path.GetFileName(_objectFilePath),
                     GetRuntimeFunctionsTable);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;

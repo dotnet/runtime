@@ -5,8 +5,6 @@
 using System;
 using Debug = System.Diagnostics.Debug;
 
-using Internal.TypeSystem.Ecma;
-
 namespace Internal.TypeSystem
 {
     public abstract partial class MetadataTypeSystemContext : TypeSystemContext
@@ -59,7 +57,7 @@ namespace Internal.TypeSystem
         {
         }
 
-        public virtual void SetSystemModule(EcmaModule systemModule)
+        public virtual void SetSystemModule(ModuleDesc systemModule)
         {
             InitializeSystemModule(systemModule);
 

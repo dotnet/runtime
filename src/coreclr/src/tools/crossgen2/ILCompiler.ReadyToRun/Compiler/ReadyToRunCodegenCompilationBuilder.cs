@@ -124,7 +124,7 @@ namespace ILCompiler
             // as useful at this time.
             if (_inputModules.Contains(_context.SystemModule))
             {
-                 attributePresenceFilterNode = new AttributePresenceFilterNode(_context.SystemModule);
+                 attributePresenceFilterNode = new AttributePresenceFilterNode((EcmaModule)_context.SystemModule);
             }
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
