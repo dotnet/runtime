@@ -609,7 +609,7 @@ namespace System.Diagnostics
             if ((counterType & PerfCounterOptions.NtPerfCounterSizeLarge) != 0)
                 return MemoryMarshal.Read<long>(data);
             else
-                return (long)MemoryMarshal.Read<int>(data);
+                return MemoryMarshal.Read<int>(data);
         }
 
         private enum ValueId
