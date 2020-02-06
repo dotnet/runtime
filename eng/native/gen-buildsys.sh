@@ -28,7 +28,7 @@ compiler="$5"
 majorVersion="$6"
 minorVersion="$7"
 
-source "$scriptroot/detect-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
+source "$scriptroot/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
 
 CCC_CC="$CC"
 CCC_CXX="$CXX"

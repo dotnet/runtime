@@ -37,7 +37,7 @@
     <Message Text="Configuring Mono with '$(_MonoConfigureParams)'" Importance="High" />
     <MakeDir Directories="$(MonoObjDir)" />
     <Exec Command="NOCONFIGURE=1 $(MonoProjectRoot)autogen.sh" />
-    <Exec Command="bash -c 'source $(RepositoryEngineeringDir)native/detect-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureParams)'" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Command="bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureParams)'" WorkingDirectory="$(MonoObjDir)" />
     <Touch Files="$(MonoObjDir)config.h" />
   </Target>
 
