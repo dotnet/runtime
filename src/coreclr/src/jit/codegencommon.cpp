@@ -9536,7 +9536,7 @@ void CodeGen::genPreserveCalleeSavedFltRegs(unsigned lclFrameSize)
     // Offset is 16-byte aligned since we use movaps for preserving xmm regs.
     assert((offset % 16) == 0);
     instruction copyIns = ins_Copy(TYP_FLOAT);
-#else // !_TARGET_AMD64_
+#else  // !_TARGET_AMD64_
     unsigned    offset            = lclFrameSize - XMM_REGSIZE_BYTES;
     instruction copyIns           = INS_movupd;
 #endif // !_TARGET_AMD64_
