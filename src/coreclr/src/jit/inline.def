@@ -163,6 +163,8 @@ INLINE_OBSERVATION(PINVOKE_EH,                bool,   "PInvoke call site with EH
 // ------ Call Site Performance -------
 
 INLINE_OBSERVATION(RARE_GC_STRUCT,            bool,   "rarely called, has gc struct",  INFORMATION, CALLSITE)
+INLINE_OBSERVATION(INLINED_GENERIC_DICTIONARY_LOOKUP, bool,   "runtime dictionary lookup (inlined)", INFORMATION, CALLSITE)
+INLINE_OBSERVATION(INLINED_HAS_COMPLEX_HANDLE,        bool,   "complex handle access (inlined)", INFORMATION, CALLSITE)
 
 // ------ Call Site Information -------
 

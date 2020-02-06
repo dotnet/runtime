@@ -1865,9 +1865,9 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         }
         return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, compileTimeHandle);
     }
-    else if (compIsForInlining())
+    else if (compIsForInlining() && info.compInexactContext == NULL)
     {
-        // Don't import runtime lookups when inlining
+        // Don't import runtime lookups when inlining without an inexact context
         // Inlining has to be aborted in such a case
         compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
         return nullptr;
@@ -1876,6 +1876,13 @@ GenTree* Compiler::impLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     {
         // Need to use dictionary-based access which depends on the typeContext
         // which is only available at runtime, not at compile-time.
+
+        if (compIsForInlining())
+        {
+            compInlineResult->Note(InlineObservation::CALLSITE_INLINED_GENERIC_DICTIONARY_LOOKUP);
+            if (compInlineResult->IsFailure())
+                return nullptr;
+        }
 
         return impRuntimeLookupToTree(pResolvedToken, pLookup, compileTimeHandle);
     }
@@ -1947,10 +1954,21 @@ GenTree* Compiler::impMethodPointer(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         case CORINFO_CALL_CODE_POINTER:
             if (compIsForInlining())
             {
-                // Don't import runtime lookups when inlining
-                // Inlining has to be aborted in such a case
-                compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
-                return nullptr;
+                if (info.compInexactContext == NULL)
+                {
+                    // Don't import runtime lookups when inlining without inexact context
+                    // Inlining has to be aborted in such a case
+                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                    return nullptr;
+                }
+                else
+                {
+                    // Use of inexact context in inlining
+                    compInlineResult->Note(InlineObservation::CALLSITE_INLINED_GENERIC_DICTIONARY_LOOKUP);
+                    if (compInlineResult->IsFailure())
+                        return nullptr;
+                }
+                
             }
 
             op1 = impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
@@ -7748,19 +7766,29 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                     if (compIsForInlining())
                     {
-                        // Don't import runtime lookups when inlining
-                        // Inlining has to be aborted in such a case
-                        /* XXX Fri 3/20/2009
-                         * By the way, this would never succeed.  If the handle lookup is into the generic
-                         * dictionary for a candidate, you'll generate different dictionary offsets and the
-                         * inlined code will crash.
-                         *
-                         * To anyone code reviewing this, when could this ever succeed in the future?  It'll
-                         * always have a handle lookup.  These lookups are safe intra-module, but we're just
-                         * failing here.
-                         */
-                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
-                        return TYP_UNDEF;
+                        if (info.compInexactContext == NULL)
+                        {
+                            // Don't import runtime lookups when inlining
+                            // Inlining has to be aborted in such a case
+                            /* XXX Fri 3/20/2009
+                            * By the way, this would never succeed.  If the handle lookup is into the generic
+                            * dictionary for a candidate, you'll generate different dictionary offsets and the
+                            * inlined code will crash.
+                            *
+                            * To anyone code reviewing this, when could this ever succeed in the future?  It'll
+                            * always have a handle lookup.  These lookups are safe intra-module, but we're just
+                            * failing here.
+                             */
+                            compInlineResult->NoteFatal(InlineObservation::CALLSITE_HAS_COMPLEX_HANDLE);
+                            return TYP_UNDEF;
+                        }
+                        else
+                        {
+                            // Use of inexact context in inlining
+                            compInlineResult->Note(InlineObservation::CALLSITE_INLINED_HAS_COMPLEX_HANDLE);
+                            if (compInlineResult->IsFailure())
+                                return TYP_UNDEF;
+                        }
                     }
 
                     GenTree* stubAddr = impRuntimeLookupToTree(pResolvedToken, &callInfo->stubLookup, methHnd);
