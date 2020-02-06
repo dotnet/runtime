@@ -20,7 +20,7 @@ extern ProcessCLRException:proc
 
 NESTED_ENTRY GenericComPlusCallStub, _TEXT, ProcessCLRException
 
-        PROLOG_WITH_TRANSITION_BLOCK 8
+        PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         ;
         ; Call CLRToCOMWorker.
@@ -31,7 +31,7 @@ NESTED_ENTRY GenericComPlusCallStub, _TEXT, ProcessCLRException
 
         ; handle FP return values
 
-        lea             rcx, [rsp + __PWTB_FloatArgumentRegisters - 8]
+        lea             rcx, [rsp + __PWTB_FloatArgumentRegisters - ASM_ENREGISTERED_RETURNTYPE_MAXSIZE]
         cmp             rax, 4
         jne             @F
         movss           xmm0, real4 ptr [rcx]
