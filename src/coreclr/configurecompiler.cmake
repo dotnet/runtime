@@ -10,7 +10,6 @@ cmake_policy(SET CMP0083 NEW)
 
 include(CheckCXXCompilerFlag)
 
-include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 
@@ -235,14 +234,14 @@ if (CLR_CMAKE_HOST_UNIX)
   endif(CLR_CMAKE_HOST_NETBSD)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   add_definitions(-DHOST_WINDOWS)
 
   # Define the CRT lib references that link into Desktop imports
   set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)

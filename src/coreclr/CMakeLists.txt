@@ -5,13 +5,15 @@ cmake_policy(SET CMP0042 NEW)
 # Set the project name
 project(CoreCLR)
 
+include(${CLR_ENG_NATIVE_DIR}/configureplatform.cmake)
+
 # Include cmake functions
 include(${CLR_ENG_NATIVE_DIR}/functions.cmake)
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
   message(STATUS "VS_PLATFORM_TOOLSET is ${CMAKE_VS_PLATFORM_TOOLSET}")
   message(STATUS "VS_PLATFORM_NAME is ${CMAKE_VS_PLATFORM_NAME}")
-endif (WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 # Set commonly used directory names
 set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -34,8 +36,8 @@ OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
 # Ensure other tools are present
-if (WIN32)
-    if(CLR_CMAKE_HOST_ARCH STREQUAL arm)
+if (CLR_CMAKE_HOST_WIN32)
+    if(CLR_CMAKE_HOST_ARCH_ARM)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -53,7 +55,7 @@ if (WIN32)
       # Enable generic assembly compilation to avoid CMake generate VS proj files that explicitly
       # use ml[64].exe as the assembler.
       enable_language(ASM)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
+    elseif(CLR_CMAKE_HOST_ARCH_ARM64)
 
       # Confirm that Windows SDK is present
       if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
@@ -81,7 +83,7 @@ if (WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-else (WIN32)
+else (CLR_CMAKE_HOST_WIN32)
     enable_language(ASM)
 
     # Ensure that awk is present
@@ -95,7 +97,7 @@ else (WIN32)
     # to prevent applications to create executable memory mappings.
     find_program(PAXCTL paxctl)
 
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    if (CLR_CMAKE_HOST_DARWIN)
 
       # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
@@ -109,7 +111,7 @@ else (WIN32)
       endif()
 
     endif()
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #----------------------------------------------------
 # Configure compiler settings for environment
@@ -146,7 +148,7 @@ add_subdirectory(src/pal/prebuilt/inc)
 
 add_subdirectory(src/debug/debug-pal)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   add_subdirectory(src/gc/sample)
 endif()
 
@@ -155,10 +157,10 @@ add_subdirectory(src/tools/crossgen2/jitinterface)
 # Above projects do not build with these compile options
 # All of the compiler options are specified in file compileoptions.cmake
 # Do not add any new options here. They should be added in compileoptions.cmake
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   add_compile_options(/FIWarningControl.h) # force include of WarningControl.h
   add_compile_options(/Zl) # omit default library name in .OBJ
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 #--------------------------------
 # Definition directives

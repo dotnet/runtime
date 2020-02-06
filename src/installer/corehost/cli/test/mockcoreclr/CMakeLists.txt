@@ -10,7 +10,7 @@ set(SOURCES
     ./mockcoreclr.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         mockcoreclr.def)
 endif()

@@ -20,4 +20,8 @@
     <ProjectReference Condition="'$(MSBuildProjectName)' != 'netstandard'"
                       Include="netstandard.csproj" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
 </Project>

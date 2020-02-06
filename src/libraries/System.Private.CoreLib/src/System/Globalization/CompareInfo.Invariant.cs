@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -85,10 +86,10 @@ namespace System.Globalization
                 lastSourceStart = sourceCount - valueCount;
                 if (ignoreCase)
                 {
-                    char firstValueChar = InvariantToUpper(value[0]);
+                    char firstValueChar = InvariantCaseFold(value[0]);
                     for (ctrSource = 0; ctrSource <= lastSourceStart; ctrSource++)
                     {
-                        sourceChar = InvariantToUpper(source[ctrSource]);
+                        sourceChar = InvariantCaseFold(source[ctrSource]);
                         if (sourceChar != firstValueChar)
                         {
                             continue;
@@ -96,8 +97,8 @@ namespace System.Globalization
 
                         for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
                         {
-                            sourceChar = InvariantToUpper(source[ctrSource + ctrValue]);
-                            valueChar = InvariantToUpper(value[ctrValue]);
+                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
+                            valueChar = InvariantCaseFold(value[ctrValue]);
 
                             if (sourceChar != valueChar)
                             {
@@ -145,18 +146,18 @@ namespace System.Globalization
                 lastSourceStart = sourceCount - valueCount;
                 if (ignoreCase)
                 {
-                    char firstValueChar = InvariantToUpper(value[0]);
+                    char firstValueChar = InvariantCaseFold(value[0]);
                     for (ctrSource = lastSourceStart; ctrSource >= 0; ctrSource--)
                     {
-                        sourceChar = InvariantToUpper(source[ctrSource]);
+                        sourceChar = InvariantCaseFold(source[ctrSource]);
                         if (sourceChar != firstValueChar)
                         {
                             continue;
                         }
                         for (ctrValue = 1; ctrValue < valueCount; ctrValue++)
                         {
-                            sourceChar = InvariantToUpper(source[ctrSource + ctrValue]);
-                            valueChar = InvariantToUpper(value[ctrValue]);
+                            sourceChar = InvariantCaseFold(source[ctrSource + ctrValue]);
+                            valueChar = InvariantCaseFold(value[ctrValue]);
 
                             if (sourceChar != valueChar)
                             {
@@ -203,16 +204,21 @@ namespace System.Globalization
             return -1;
         }
 
-        private static char InvariantToUpper(char c)
+        private static char InvariantCaseFold(char c)
         {
+            // If we ever make Invariant mode support more than just simple ASCII-range case folding,
+            // then we should update this method to perform proper case folding instead of an
+            // uppercase conversion. For now it only understands the ASCII range and reflects all
+            // non-ASCII values unchanged.
+
             return (uint)(c - 'a') <= (uint)('z' - 'a') ? (char)(c - 0x20) : c;
         }
 
-        private unsafe SortKey InvariantCreateSortKey(string source, CompareOptions options)
+        private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
-            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
@@ -227,23 +233,41 @@ namespace System.Globalization
                 // In the invariant mode, all string comparisons are done as ordinal so when generating the sort keys we generate it according to this fact
                 keyData = new byte[source.Length * sizeof(char)];
 
-                fixed (char* pChar = source) fixed (byte* pByte = keyData)
+                if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
                 {
-                    if ((options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0)
-                    {
-                        short* pShort = (short*)pByte;
-                        for (int i = 0; i < source.Length; i++)
-                        {
-                            pShort[i] = (short)InvariantToUpper(source[i]);
-                        }
-                    }
-                    else
-                    {
-                        Buffer.MemoryCopy(pChar, pByte, keyData.Length, keyData.Length);
-                    }
+                    InvariantCreateSortKeyOrdinalIgnoreCase(source, keyData);
+                }
+                else
+                {
+                    InvariantCreateSortKeyOrdinal(source, keyData);
                 }
             }
+
             return new SortKey(Name, source, options, keyData);
+        }
+
+        private static void InvariantCreateSortKeyOrdinal(ReadOnlySpan<char> source, Span<byte> sortKey)
+        {
+            Debug.Assert(sortKey.Length >= source.Length * sizeof(char));
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                // convert machine-endian to big-endian
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)source[i]);
+                sortKey = sortKey.Slice(sizeof(ushort));
+            }
+        }
+
+        private static void InvariantCreateSortKeyOrdinalIgnoreCase(ReadOnlySpan<char> source, Span<byte> sortKey)
+        {
+            Debug.Assert(sortKey.Length >= source.Length * sizeof(char));
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                // convert machine-endian to big-endian
+                BinaryPrimitives.WriteUInt16BigEndian(sortKey, (ushort)InvariantCaseFold(source[i]));
+                sortKey = sortKey.Slice(sizeof(ushort));
+            }
         }
     }
 }

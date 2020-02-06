@@ -21,7 +21,7 @@ list(APPEND SOURCES
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
 
-if(NOT WIN32)
+if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(${DOTNET_PROJECT_NAME})
 endif()
 

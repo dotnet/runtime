@@ -2,13 +2,15 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetFrameworkSuffix)' == ''">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <Nullable>annotations</Nullable>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Linux-Debug;netstandard2.0-Linux-Release;netstandard2.0-OSX-Debug;netstandard2.0-OSX-Release;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0-Linux;netstandard2.0-OSX;netstandard2.0;net461-Windows_NT;netstandard2.0-FreeBSD;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0' AND '$(TargetFrameworkSuffix)' == 'FreeBSD'">true</ExcludeFromPackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(OSGroup)' != 'AnyOS'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetFrameworkSuffix)' != ''">
     <Compile Include="System\IO\Ports\Handshake.cs" />
     <Compile Include="System\IO\Ports\InternalResources.cs" />
     <Compile Include="System\IO\Ports\Parity.cs" />

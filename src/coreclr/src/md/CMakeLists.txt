@@ -1,4 +1,3 @@
-
 add_compile_definitions(FEATURE_METADATA_EMIT)
 add_compile_definitions(FEATURE_METADATA_INTERNAL_APIS)
 add_compile_definitions($<$<OR:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>,$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>>:FEATURE_METADATA_EMIT_IN_DEBUGGER>)
@@ -8,7 +7,7 @@ add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METAD
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METADATA_LOAD_TRUSTED_IMAGES>)
 add_compile_definitions($<$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>:FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN>)
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<CONFIG:DEBUG>>:-MTd>)
     add_compile_options($<$<AND:$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>,$<NOT:$<CONFIG:DEBUG>>>:-MT>)
     add_compile_definitions($<$<NOT:$<OR:$<BOOL:$<TARGET_PROPERTY:DAC_COMPONENT>>,$<BOOL:$<TARGET_PROPERTY:DBI_COMPONENT>>>>:FEATURE_METADATA_VERIFY_LAYOUTS>)
@@ -21,6 +20,6 @@ add_subdirectory(hotdata)
 add_subdirectory(ceefilegen)
 add_subdirectory(datasource)
 add_subdirectory(staticmd)
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     add_subdirectory(winmd)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)

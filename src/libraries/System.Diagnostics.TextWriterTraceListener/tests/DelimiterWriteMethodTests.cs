@@ -182,6 +182,76 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             Assert.Equal(expected, File.Exists(_fileName) ? File.ReadAllText(_fileName) : "");
         }
 
+        [Theory]
+        [MemberData(nameof(TraceDataObjectArrayInvariants))]
+        public void AttributeDelimiter_ChangesDelimiter_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
+        {
+            string newDelimiter = "||";
+            using (var target = GetListener())
+            {
+                target.Filter = filter;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack | TraceOptions.Callstack;
+                target.Attributes.Add("delimiter", newDelimiter);
+                target.TraceData(eventCache, source, eventType, id, data);
+                Assert.Equal(newDelimiter, target.Delimiter);
+
+                target.Delimiter = delimiter;
+                Assert.Equal(delimiter, target.Delimiter);
+            }
+
+            string expected = CommonUtilities.ExpectedTraceDataOutput(newDelimiter, filter, eventCache, source, eventType, id, data);
+            Assert.Equal(expected, File.Exists(_fileName) ? File.ReadAllText(_fileName) : "");
+        }
+
+        [Theory]
+        [MemberData(nameof(TraceDataObjectArrayInvariants))]
+        public void AttributeDelimiter_IgnoredAfterDelimiterSet_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
+        {
+            string newDelimiter = "||";
+            using (var target = GetListener())
+            {
+                target.Filter = filter;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack | TraceOptions.Callstack;
+
+                // Setting target.Delimiter here should initialize the delimiter
+                // so that future delimiter attributes aren't used.
+                target.Delimiter = delimiter;
+
+                target.Attributes.Add("delimiter", newDelimiter);
+                target.TraceData(eventCache, source, eventType, id, data);
+                Assert.Equal(delimiter, target.Delimiter);
+            }
+
+            string expected = CommonUtilities.ExpectedTraceDataOutput(delimiter, filter, eventCache, source, eventType, id, data);
+            Assert.Equal(expected, File.Exists(_fileName) ? File.ReadAllText(_fileName) : "");
+        }
+
+        [Theory]
+        [MemberData(nameof(TraceDataObjectArrayInvariants))]
+        public void AttributeDelimiter_IgnoredAfterDelimiterRead_Test(string delimiter, TraceFilter filter, TraceEventCache eventCache, string source, TraceEventType eventType, int id, object[] data)
+        {
+            string newDelimiter = "||";
+            using (var target = GetListener())
+            {
+                target.Filter = filter;
+                target.TraceOutputOptions = TraceOptions.ProcessId | TraceOptions.ThreadId | TraceOptions.DateTime | TraceOptions.Timestamp | TraceOptions.LogicalOperationStack | TraceOptions.Callstack;
+
+                // Getting target.Delimiter here should initialize the delimiter
+                // so that future delimiter attributes aren't used.
+                Assert.Equal(CommonUtilities.DefaultDelimiter, target.Delimiter);
+
+                target.Attributes.Add("delimiter", newDelimiter);
+                target.TraceData(eventCache, source, eventType, id, data);
+
+                // Expclitly setting the delimiter property will update it, though.
+                target.Delimiter = delimiter;
+                Assert.Equal(delimiter, target.Delimiter);
+            }
+
+            string expected = CommonUtilities.ExpectedTraceDataOutput(CommonUtilities.DefaultDelimiter, filter, eventCache, source, eventType, id, data);
+            Assert.Equal(expected, File.Exists(_fileName) ? File.ReadAllText(_fileName) : "");
+        }
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

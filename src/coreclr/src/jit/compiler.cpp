@@ -822,11 +822,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_PASS_MULTIREG_BYTES)
@@ -849,11 +849,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByReference;
             useType         = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
         }
     }
 
@@ -1080,11 +1080,11 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_RET_MULTIREG_BYTES) || (FEATURE_MULTIREG_RET == 0)
@@ -1751,6 +1751,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
         compInlineResult = nullptr;
     }
 
+    // Initialize this to the first phase to run.
+    mostRecentlyActivePhase = PHASE_PRE_IMPORT;
+
+    // Initially, no phase checks are active.
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
     // but no later than a point where noway_asserts can be thrown.
@@ -1759,9 +1765,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     //    Note: JIT telemetry could gather data when compiler is not fully initialized.
     //          So you have to initialize the compiler variables you use for telemetry.
     assert((unsigned)PHASE_PRE_IMPORT == 0);
-    previousCompletedPhase = PHASE_PRE_IMPORT;
-    info.compILCodeSize    = 0;
-    info.compMethodHnd     = nullptr;
+    info.compILCodeSize = 0;
+    info.compMethodHnd  = nullptr;
     compJitTelemetry.Initialize(this);
 #endif
 
@@ -4215,6 +4220,37 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 }
 
 //------------------------------------------------------------------------
+// BeginPhase: begin execution of a phase
+//
+// Arguments:
+//    phase - the phase that is about to begin
+//
+void Compiler::BeginPhase(Phases phase)
+{
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
+// EndPhase: finish execution of a phase
+//
+// Arguments:
+//    phase - the phase that has just finished
+//
+void Compiler::EndPhase(Phases phase)
+{
+#if defined(FEATURE_JIT_METHOD_PERF)
+    if (pCompJitTimer != nullptr)
+    {
+        pCompJitTimer->EndPhase(this, phase);
+    }
+#endif
+#if DUMP_FLOWGRAPHS
+    fgDumpFlowGraph(phase);
+#endif // DUMP_FLOWGRAPHS
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
 // compCompile: run phases needed for compilation
 //
 // Arguments:
@@ -4564,7 +4600,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 #endif // DEBUG
 
     // End of the morphing phases
+    //
+    // We can now enable all phase checking
     EndPhase(PHASE_MORPH_END);
+    activePhaseChecks = PhaseChecks::CHECK_ALL;
 
     // GS security checks for unsafe buffers
     if (getNeedsGSSecurityCookie())

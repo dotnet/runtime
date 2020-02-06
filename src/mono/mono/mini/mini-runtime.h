@@ -571,7 +571,7 @@ mono_is_addr_implicit_null_check (void *addr);
 #endif
 
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler) ;
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler) ;
+void MONO_SIG_HANDLER_SIGNATURE (mono_crashing_signal_handler) ;
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);

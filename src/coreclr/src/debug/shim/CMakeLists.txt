@@ -1,8 +1,8 @@
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
   add_definitions(-DHOST_WINDOWS)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 set(DEBUGSHIM_SOURCES
   debugshim.cpp

@@ -11,7 +11,7 @@ namespace System.Net.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "NetEventSource is only part of .NET Core.")]
-        [SkipOnCoreClr("System.Net.Tests are flaky", RuntimeTestModes.CheckedRuntime)]
+        [SkipOnCoreClr("System.Net.Tests are flaky", RuntimeConfiguration.Checked)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(WebRequest).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
