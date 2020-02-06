@@ -44,7 +44,7 @@
 #include "gcenv.interlocked.h"
 #include "gcenv.interlocked.inl"
 
-#ifdef HOST_UNIX
+#ifdef TARGET_UNIX
 #include "gcenv.unix.inl"
 #else
 #include "gcenv.windows.inl"
