@@ -4,6 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="EcDsaOpenSslTests.cs" />
     <Compile Include="RSAOpenSslProvider.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
