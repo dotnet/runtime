@@ -496,6 +496,7 @@ void FinalizeWeakReference(Object * obj)
 
     WEAKREFERENCEREF pThis((WeakReferenceObject *)(obj));
 
+    // The suspension state of the runtime must be prevented from changing while in this function in order for this to be safe.
     OBJECTHANDLE handle = ThreadSuspend::SysIsSuspended() ? pThis->m_Handle.LoadWithoutBarrier() : AcquireWeakHandleSpinLock(pThis);
     OBJECTHANDLE handleToDestroy = NULL;
     bool isWeakWinRTHandle = false;

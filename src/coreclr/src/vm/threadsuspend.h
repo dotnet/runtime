@@ -192,7 +192,6 @@ private:
                                           // that the runtime was suspended
     static Thread* m_pThreadAttemptingSuspendForGC;
 
-private:
     static HRESULT SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
     static void    ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
 public:
