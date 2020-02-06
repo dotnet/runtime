@@ -6,13 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Runtime.Extensions.Tests
-####################################################################
-
-# AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
--nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
-
-####################################################################
 ##  System.Reflection.Emit.Lightweight.Tests
 ####################################################################
 
