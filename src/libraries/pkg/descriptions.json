@@ -16,7 +16,7 @@
   },
   {
     "Name": "Microsoft.Extensions.Primitives",
-    "Description": "Primitives shared by framework extensions. Commonly used types include:"
+    "Description": "Primitives shared by framework extensions. Commonly used types include:",
     "CommonTypes": [
       "Microsoft.Extensions.Primitives.IChangeToken",
       "Microsoft.Extensions.Primitives.StringValues",
