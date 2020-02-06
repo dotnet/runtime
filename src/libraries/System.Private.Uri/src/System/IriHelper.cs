@@ -29,7 +29,8 @@ namespace System
         {
             Debug.Assert(char.IsHighSurrogate(highSurr));
 
-            if (isSurrogatePair = char.IsLowSurrogate(lowSurr))
+            isSurrogatePair = char.IsLowSurrogate(lowSurr);
+            if (isSurrogatePair)
             {
                 uint utf32 = (uint)char.ConvertToUtf32(highSurr, lowSurr);
 
