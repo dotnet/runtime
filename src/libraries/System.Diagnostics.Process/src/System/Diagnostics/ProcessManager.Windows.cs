@@ -33,12 +33,11 @@ namespace System.Diagnostics
             // Otherwise enumerate all processes and compare ids
             if (!IsRemoteMachine(machineName))
             {
-                using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_INFORMATION, false, processId))
+                using SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_INFORMATION, false, processId);
+
+                if (!processHandle.IsInvalid)
                 {
-                    if (!processHandle.IsInvalid)
-                    {
-                        return true;
-                    }
+                    return true;
                 }
             }
 
