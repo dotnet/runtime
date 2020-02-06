@@ -419,7 +419,7 @@ namespace System.Diagnostics
                     }
                     else if (type.ObjectNameTitleIndex == processIndex)
                     {
-                        ProcessInfo processInfo = GetProcessInfo(in type, data.Slice(instancePos + instance.ByteLength), counters);
+                        ProcessInfo processInfo = GetProcessInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (processInfo.ProcessId == 0 && !instanceName.Equals("Idle", StringComparison.OrdinalIgnoreCase))
                         {
                             // Sometimes we'll get a process structure that is not completely filled in.
@@ -452,7 +452,7 @@ namespace System.Diagnostics
                     }
                     else if (type.ObjectNameTitleIndex == threadIndex)
                     {
-                        ThreadInfo threadInfo = GetThreadInfo(in type, data.Slice(instancePos + instance.ByteLength), counters);
+                        ThreadInfo threadInfo = GetThreadInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (threadInfo._threadId != 0) threadInfos.Add(threadInfo);
                     }
 
@@ -478,7 +478,7 @@ namespace System.Diagnostics
             return temp;
         }
 
-        private static ThreadInfo GetThreadInfo(in PERF_OBJECT_TYPE type, ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
@@ -542,7 +542,7 @@ namespace System.Diagnostics
             }
         }
 
-        private static ProcessInfo GetProcessInfo(in PERF_OBJECT_TYPE type, ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static ProcessInfo GetProcessInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ProcessInfo processInfo = new ProcessInfo();
             for (int i = 0; i < counters.Length; i++)
