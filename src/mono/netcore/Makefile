@@ -1,35 +1,46 @@
-DOTNET=../../../.dotnet/dotnet
+DOTNET := $(shell bash init-tools.sh | tail -1)
+# DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
+DOTNET_MONO = ../../../.dotnet-mono/dotnet
 
-# run sample using local .dotnet (will be patched with Mono Runtime)
-run-sample:
-	$(DOTNET) msbuild /t:RunSample ../mono.proj
+CORECLR_TESTS_CONFIG=Release
+MONO_RUNTIME_CONFIG=Release
 
-# run sample using dotnet from PATH
+# auto detect configurations for mono runtime and coreclr tests
+ifeq ($(words $(wildcard ../../../artifacts/bin/mono/*.*.*)), 1)
+	MONO_RUNTIME_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../../artifacts/bin/mono/*.*.*))))
+endif
+
+ifeq ($(words $(wildcard ../../../artifacts/tests/coreclr/*.*.*)), 1)
+	CORECLR_TESTS_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../../artifacts/tests/coreclr/*.*.*))))
+endif
+
+MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
+
+# run sample using local .dotnet-mono
+run-sample: patch-mono-dotnet
+	COMPlus_DebugWriteToStdErr=1 $(DOTNET_MONO) run -c Debug -p sample/HelloWorld
+
 run-sample-coreclr:
-	dotnet run -c Release -p sample/HelloWorld -f netcoreapp3.1
+	$(DOTNET) run -c Debug -p sample/HelloWorld
+
+bcl corelib:
+	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
 
 runtime:
-	$(DOTNET) msbuild /t:Build ../mono.proj
+	$(DOTNET) msbuild /t:Build $(MONO_PROJ)
 
-# temp: makes $(DOTNET) to use mono runtime (to run real-world apps using '$(DOTNET) run')
-patch-local-dotnet:
-	$(DOTNET) msbuild /t:PatchLocalDotnet ../mono.proj
-
-restore-local-dotnet:
-	$(DOTNET) msbuild /t:RestoreLocalDotnet ../mono.proj
+# call it if you want to use $(DOTNET_MONO) in this Makefile
+patch-mono-dotnet:
+	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
 
 # run specific coreclr test, e.g.:
-# make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Checked/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
+# make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
 run-tests-coreclr:
-	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" ../mono.proj
+	$(DOTNET) msbuild /t:RunCoreClrTest /p:CoreClrTest="$(CoreClrTest)" $(MONO_PROJ)
 
 # run all coreclr tests
 run-tests-coreclr-all:
-	$(DOTNET) msbuild /t:RunCoreClrTests ../mono.proj
-
-# show summary for coreclr tests
-tests-coreclr-summary:
-	$(DOTNET) msbuild /t:CoreClrTestsSummary ../mono.proj
+	$(DOTNET) msbuild /t:RunCoreClrTests $(MONO_PROJ)
 
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
