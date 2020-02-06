@@ -16,7 +16,7 @@ set(SOURCES
     ../fxr/fx_ver.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()

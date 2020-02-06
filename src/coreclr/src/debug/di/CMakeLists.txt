@@ -48,7 +48,7 @@ set(CORDBDI_HEADERS
     symbolinfo.h)
 
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     #use static crt
     add_definitions(-MT)
 
@@ -69,12 +69,12 @@ elseif(CLR_CMAKE_HOST_UNIX)
       )
     endif()
 
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     convert_to_absolute_path(CORDBDI_HEADERS ${CORDBDI_HEADERS})
     list(APPEND CORDBDI_SOURCES ${CORDBDI_HEADERS})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 

@@ -8,7 +8,7 @@ set(DOTNET_PROJECT_NAME "nativehost")
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(MACOSX_RPATH ON)
-if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if (CLR_CMAKE_TARGET_DARWIN)
     set(CMAKE_INSTALL_RPATH "@loader_path")
 else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
@@ -35,7 +35,7 @@ set(HEADERS
     ./resolve_component_dependencies_test.h
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ./comhost_test.cpp)
 
@@ -50,6 +50,6 @@ include(../testexe.cmake)
 target_link_libraries(${DOTNET_PROJECT_NAME} nethost)
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
+if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
     target_link_libraries(${DOTNET_PROJECT_NAME} Advapi32.lib Ole32.lib OleAut32.lib)
 endif()
