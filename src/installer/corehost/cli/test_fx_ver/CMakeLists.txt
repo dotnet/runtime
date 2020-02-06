@@ -14,7 +14,7 @@ set(SOURCES
     ../../common/trace.cpp
     ../../common/utils.cpp)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         ../../common/pal.windows.cpp
         ../../common/longfile.windows.cpp)
@@ -23,7 +23,7 @@ else()
         ../../common/pal.unix.cpp)
 endif()
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
     add_compile_options($<$<CONFIG:Release>:/MT>)
     add_compile_options($<$<CONFIG:Debug>:/MTd>)
@@ -35,10 +35,10 @@ add_executable(${EXE_NAME} ${SOURCES})
 
 install(TARGETS ${EXE_NAME} DESTINATION corehost_test)
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(CLR_CMAKE_TARGET_LINUX)
     target_link_libraries (${EXE_NAME} "dl")
 endif()
 
-if((${CMAKE_SYSTEM_NAME} MATCHES "Linux") AND CLR_CMAKE_HOST_ARCH_ARM)
+if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_ARM)
     target_link_libraries (${EXE_NAME} "atomic")
 endif()

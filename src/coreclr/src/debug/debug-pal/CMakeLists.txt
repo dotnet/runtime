@@ -4,7 +4,7 @@ include_directories(../../pal/inc)
 
 add_definitions(-DPAL_STDCPP_COMPAT)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     include_directories(../../inc) #needed for warning control
 
@@ -13,7 +13,7 @@ if(WIN32)
         win/twowaypipe.cpp
         win/processdescriptor.cpp
     )
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
 

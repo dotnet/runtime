@@ -137,7 +137,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeTestModes.CheckedRuntime)]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
         [SkipOnMono("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131")]
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {

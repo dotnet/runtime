@@ -4,7 +4,8 @@
     <Nullable>enable</Nullable>
     <!-- copy the Windows-specific implementation to net461 folder so that restore without a RID works -->
     <PackageTargetFramework Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' == 'true'">netstandard2.0;net461</PackageTargetFramework>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />

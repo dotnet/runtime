@@ -10,7 +10,7 @@
 #include "stacklevelsetter.h"
 
 StackLevelSetter::StackLevelSetter(Compiler* compiler)
-    : Phase(compiler, "StackLevelSetter", PHASE_STACK_LEVEL_SETTER)
+    : Phase(compiler, PHASE_STACK_LEVEL_SETTER)
     , currentStackLevel(0)
     , maxStackLevel(0)
     , memAllocator(compiler->getAllocator(CMK_fgArgInfoPtrArr))

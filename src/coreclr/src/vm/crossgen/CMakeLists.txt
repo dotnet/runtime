@@ -224,7 +224,7 @@ else()
   clr_unknown_arch()
 endif()
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   list(APPEND VM_CROSSGEN_SOURCES
     ../classcompat.cpp
     ../clrprivbinderwinrt.cpp
@@ -251,7 +251,7 @@ if (WIN32)
   )
 
   list(APPEND VM_CROSSGEN_SOURCES ${VM_CROSSGEN_HEADERS})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 if (CLR_CMAKE_HOST_LINUX)
   list(APPEND VM_CROSSGEN_SOURCES

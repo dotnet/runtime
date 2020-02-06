@@ -72,7 +72,7 @@ jobs:
 
         - ${{ if ne(parameters.framework, '') }}:
           - _finalFrameworkArg: -framework ${{ parameters.framework }}
-          - _extraHelixArguments: /p:TargetGroup=${{ parameters.framework }}
+          - _extraHelixArguments: /p:BuildTargetFramework=${{ parameters.framework }}
 
         - ${{ if eq(parameters.framework, 'allConfigurations') }}:
           - _finalFrameworkArg: -allConfigurations
