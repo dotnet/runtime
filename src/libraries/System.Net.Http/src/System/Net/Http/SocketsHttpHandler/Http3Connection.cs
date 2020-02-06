@@ -139,7 +139,7 @@ namespace System.Net.Http
             }
         }
 
-        public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
             Task waitTask = WaitForAvailableRequestStreamAsync(cancellationToken);
 
