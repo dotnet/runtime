@@ -10,7 +10,7 @@
 // ===========================================================================
 
 
-#if !defined(HOST_UNIX)
+#if defined(HOST_WINDOWS)
 
 #ifndef __PALCLR_H__
 #define __PALCLR_H__
@@ -19,11 +19,7 @@
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
 // of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
 // as u"" (char16_t)
-#ifdef HOST_UNIX
-#define W(str)  u##str
-#else // HOST_UNIX
 #define W(str)  L##str
-#endif // HOST_UNIX
 
 #include <windef.h>
 
@@ -631,4 +627,4 @@
 
 #include "palclr_win.h"
 
-#endif // !defined(HOST_UNIX)
+#endif // defined(HOST_WINDOWS)

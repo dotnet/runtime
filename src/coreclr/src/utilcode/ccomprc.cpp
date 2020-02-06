@@ -551,7 +551,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     }
     CONTRACTL_END;
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     HRESULT         hr;
     HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
     int length;
@@ -692,17 +692,17 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
         *szBuffer = W('\0');
 
     return hr;
-#else // !HOST_UNIX
+#else // HOST_WINDOWS
     return LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
       szBuffer, iMax, pcwchUsed);
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 }
 
 #ifndef DACCESS_COMPILE
 
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     DWORD dwLoadLibraryFlags;
     if(m_pResourceFile == m_pDefaultResource)
         dwLoadLibraryFlags = LOAD_LIBRARY_AS_DATAFILE;
@@ -712,9 +712,9 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
     if ((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL) {
         return HRESULT_FROM_GetLastError();
     }
-#else // !HOST_UNIX
+#else // HOST_WINDOWS
     PORTABILITY_ASSERT("UNIXTODO: Implement resource loading - use peimagedecoder?");
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
     return S_OK;
 }
 

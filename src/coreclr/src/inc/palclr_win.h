@@ -135,10 +135,10 @@
 #define WIN_PAL_ENDTRY_NAKED_DBG
 #endif // defined(ENABLE_CONTRACTS_IMPL)
 
-#if !defined (HOST_UNIX)
+#if defined(HOST_WINDOWS)
 // Native system libray handle.
 // In Windows, NATIVE_LIBRARY_HANDLE is the same as HMODULE.
 typedef HMODULE NATIVE_LIBRARY_HANDLE;
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 
 #endif	// __PALCLR_WIN_H__

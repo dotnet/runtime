@@ -254,10 +254,10 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
     FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
             WRAPPER_NO_CONTRACT;
 
-            #ifndef HOST_UNIX
-                return memcpy(dest, src, len);
-            #else //HOST_UNIX
+            #ifdef HOST_UNIX
                 return PAL_memcpy(dest, src, len);
+            #else //HOST_UNIX
+                return memcpy(dest, src, len);
             #endif //HOST_UNIX
 
         }

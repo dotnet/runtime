@@ -764,7 +764,7 @@ FindFirstFileExWrapper(
 
     return ret;
 }
-#endif //!HOST_WINDOWS
+#endif // HOST_WINDOWS
 
 
 #ifdef HOST_WINDOWS

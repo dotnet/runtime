@@ -523,13 +523,13 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     _ASSERTE(alignment != 0);
     _ASSERTE((alignment & (alignment - 1)) == 0);
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
 
     // The VirtualAlloc on Windows ensures 64kB alignment
     _ASSERTE(alignment <= 0x10000);
     return ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 
-#else // !HOST_UNIX
+#else // HOST_WINDOWS
 
     if(alignment < GetOsPageSize()) alignment = GetOsPageSize();
 
@@ -538,7 +538,7 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     SIZE_T addr = (SIZE_T)ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
     return (LPVOID)((addr + (alignment - 1)) & ~(alignment - 1));
 
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 }
 
 #ifdef _DEBUG
@@ -733,7 +733,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
 }
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
     return ::GetNumaProcessorNodeEx(proc_no, node_no);
@@ -767,12 +767,12 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
     return false;
 }
-#else // !HOST_UNIX
+#else // HOST_WINDOWS
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no)
 {
     return PAL_GetNumaProcessorNode(proc_no, node_no);
 }
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 #endif
 
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
@@ -808,7 +808,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     m_enableGCNumaAware = InitNumaNodeInfoAPI();
 }
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
 
 //******************************************************************************
 // CPUGroupInfo
@@ -840,7 +840,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     return ::GetSystemTimes(idleTime, kernelTime, userTime);
 #else
     return FALSE;
@@ -1238,7 +1238,7 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
     LIMITED_METHOD_CONTRACT;
     return m_threadUseAllCpuGroups;
 }
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1259,7 +1259,7 @@ int GetCurrentProcessCpuCount()
 
     unsigned int count = 0;
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
@@ -1287,20 +1287,20 @@ int GetCurrentProcessCpuCount()
             count = 64;
     }
 
-#else // !HOST_UNIX
+#else // HOST_WINDOWS
     count = PAL_GetLogicalCpuCountFromOS();
 
     uint32_t cpuLimit;
     if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
         count = cpuLimit;
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 
     cCPUs = count;
 
     return count;
 }
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
 DWORD_PTR GetCurrentProcessCpuMask()
 {
     CONTRACTL
@@ -1310,7 +1310,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     }
     CONTRACTL_END;
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
@@ -1322,7 +1322,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     return 0;
 #endif
 }
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 
 uint32_t GetOsPageSizeUncached()
 {
@@ -2958,7 +2958,7 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip)
     param.fRet = FALSE;
 
 // UNIXTODO: implement a proper version for PAL
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     PAL_TRY(Param *, pParam, &param)
     {
         PTR_BYTE pBase = dac_cast<PTR_BYTE>(pParam->hModule);
@@ -3027,7 +3027,7 @@ lDone: ;
     {
     }
     PAL_ENDTRY
-#endif // !HOST_UNIX
+#endif // HOST_WINDOWS
 
     return param.fRet;
 }
@@ -3096,7 +3096,7 @@ namespace Util
     static BOOL g_fLocalAppDataDirectoryInitted = FALSE;
     static WCHAR *g_wszLocalAppDataDirectory = NULL;
 
-#ifndef HOST_UNIX
+#ifdef HOST_WINDOWS
     // Struct used to scope suspension of client impersonation for the current thread.
     // https://docs.microsoft.com/en-us/windows/desktop/secauthz/client-impersonation
     class SuspendImpersonation
@@ -3337,7 +3337,7 @@ namespace Com
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);
     }
 } // namespace Com
-#endif //  HOST_UNIX
+#endif //  HOST_WINDOWS
 
 } // namespace Util
 } // namespace Clr
