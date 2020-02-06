@@ -83,6 +83,7 @@ inline MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::Creat
 {
     MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin tokenIn;
     ZeroMemory(&tokenIn, sizeof(tokenIn));
+    tokenIn.tokenInexactContext = (DWORDLONG)pResolvedToken->tokenInexactContext;
     tokenIn.tokenContext = (DWORDLONG)pResolvedToken->tokenContext;
     tokenIn.tokenScope   = (DWORDLONG)pResolvedToken->tokenScope;
     tokenIn.token        = (DWORD)pResolvedToken->token;

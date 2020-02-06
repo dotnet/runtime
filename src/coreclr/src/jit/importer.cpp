@@ -258,6 +258,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fnc
 
 void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind)
 {
+    pResolvedToken->tokenInexactContext = info.compInexactContext;
     pResolvedToken->tokenContext = impTokenLookupContextHandle;
     pResolvedToken->tokenScope   = info.compScopeHnd;
     pResolvedToken->token        = getU4LittleEndian(addr);
@@ -3915,6 +3916,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         {
             noway_assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
             CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenInexactContext = NULL;
             resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
             resolvedToken.tokenScope   = info.compScopeHnd;
             resolvedToken.token        = memberRef;
@@ -5316,6 +5318,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                                "must create delegates with certain IL");
 
                 CORINFO_RESOLVED_TOKEN delegateResolvedToken;
+                delegateResolvedToken.tokenInexactContext = NULL;
                 delegateResolvedToken.tokenContext = impTokenLookupContextHandle;
                 delegateResolvedToken.tokenScope   = info.compScopeHnd;
                 delegateResolvedToken.token        = delegateMethodRef;
@@ -7893,6 +7896,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // This is for a non-virtual, non-interface etc. call
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, nullptr, ilOffset);
+                call->AsCall()->inexactContext = callInfo->inexactContextHandle;
 
                 // We remove the nullcheck for the GetType call instrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
@@ -16957,6 +16961,7 @@ void Compiler::impVerifyEHBlock(BasicBlock* block, bool isTryStart)
                 {
                     CORINFO_RESOLVED_TOKEN resolvedToken;
 
+                    resolvedToken.tokenInexactContext = NULL;
                     resolvedToken.tokenContext = impTokenLookupContextHandle;
                     resolvedToken.tokenScope   = info.compScopeHnd;
                     resolvedToken.token        = HBtab->ebdTyp;
@@ -20564,6 +20569,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // First, cons up a suitable resolved token.
         CORINFO_RESOLVED_TOKEN derivedResolvedToken = {};
 
+        derivedResolvedToken.tokenInexactContext = NULL; // TODO This might be wrong here.
         derivedResolvedToken.tokenScope   = info.compCompHnd->getMethodModule(derivedMethod);
         derivedResolvedToken.tokenContext = *contextHandle;
         derivedResolvedToken.token        = info.compCompHnd->getMethodDefFromMethod(derivedMethod);

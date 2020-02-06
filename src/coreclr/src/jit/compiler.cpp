@@ -1744,9 +1744,11 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     {
         m_inlineStrategy = nullptr;
         compInlineResult = inlineInfo->inlineResult;
+        info.compInexactContext = inlineInfo->iciCall->inexactContext;
     }
     else
     {
+        info.compInexactContext = NULL;
         m_inlineStrategy = new (this, CMK_Inlining) InlineStrategy(this);
         compInlineResult = nullptr;
     }

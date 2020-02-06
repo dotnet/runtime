@@ -2991,6 +2991,40 @@ static BOOL IsTypeSpecForTypicalInstantiation(SigPointer sigptr)
     return IsSignatureForTypicalInstantiation(sigptr, ELEMENT_TYPE_VAR, ntypars);
 }
 
+void CEEInfo::EncodeInexactTokenScope(CORINFO_INEXACT_CONTEXT_HANDLE inexactContextHandle, SigBuilder &sigBuilder)
+{
+    InexactContextInfo inexactContext = GetInexactContextForHandle(inexactContextHandle);
+    if (inexactContext.parentInexactContext != NULL)
+    {
+        EncodeInexactTokenScope(inexactContext.parentInexactContext, sigBuilder);
+    }
+    if (inexactContext.tkConstrainedContext != 0)
+    {
+        sigBuilder.AppendByte(1); // HasConstrainedToken
+        sigBuilder.AppendData(inexactContext.tkConstrainedContext);
+    }
+    else
+    {
+        sigBuilder.AppendByte(0); // NoConstrainedToken
+    }
+    sigBuilder.AppendData(inexactContext.tkContext);
+}
+
+CEEInfo::InexactContextInfo CEEInfo::GetInexactContextForHandle(CORINFO_INEXACT_CONTEXT_HANDLE handle)
+{
+    return m_inexactContexts[((int)handle) - 1];
+}
+
+CORINFO_INEXACT_CONTEXT_HANDLE CEEInfo::GetInexactContextHandle(CORINFO_INEXACT_CONTEXT_HANDLE parentHandle, mdToken tkContext, mdToken tkConstrainedContext)
+{
+    InexactContextInfo info;
+    info.parentInexactContext = parentHandle;
+    info.tkContext = tkContext;
+    info.tkConstrainedContext = tkConstrainedContext;
+    m_inexactContexts.Append(info);
+    return (CORINFO_INEXACT_CONTEXT_HANDLE)(UINT_PTR)m_inexactContexts.GetCount();
+}
+
 void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entryKind,
                                                         CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                                         CORINFO_RESOLVED_TOKEN * pConstrainedResolvedToken,
@@ -3116,6 +3150,9 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         if (fInstrument)
             goto NoSpecialCase;
 
+        if (pResolvedToken->tokenInexactContext != NULL)
+            goto NoSpecialCase;
+
         // Special cases:
         // (1) Naked method type variable: look up directly in instantiation hanging off runtime md
         // (2) Reference to method-spec of current method (e.g. a recursive call) i.e. currentmeth<!0,...,!(n-1)>
@@ -3202,6 +3239,9 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
         if (fInstrument)
             goto NoSpecialCase;
 
+        if (pResolvedToken->tokenInexactContext != NULL)
+            goto NoSpecialCase;
+
         // Special cases:
         // (1) Naked class type variable: look up directly in instantiation hanging off vtable
         // (2) C<!0,...,!(n-1)> where C is the context's class and C is sealed: just return vtable ptr
@@ -3257,13 +3297,25 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
 NoSpecialCase:
 
     SigBuilder sigBuilder;
+    ULONG entryKindEncode = entryKind;
 
-    sigBuilder.AppendData(entryKind);
+    if (pResolvedToken->tokenInexactContext != NULL)
+    {
+        entryKindEncode |= HasInexactTokenResolutionScopes;
+    }
+
+    sigBuilder.AppendData(entryKindEncode);
 
     if (pResultLookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_METHODPARAM)
     {
         _ASSERTE(pContextMT->GetNumDicts() > 0);
         sigBuilder.AppendData(pContextMT->GetNumDicts() - 1);
+    }
+
+    if (pResolvedToken->tokenInexactContext != NULL)
+    {
+        EncodeInexactTokenScope(pResolvedToken->tokenInexactContext, sigBuilder);
+        sigBuilder.AppendByte(0xFF); // inexact scopes complete
     }
 
     Module * pModule = (Module *)pResolvedToken->tokenScope;
@@ -5069,6 +5121,7 @@ void CEEInfo::getCallInfo(
     INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
     pResult->stubLookup.lookupKind.needsRuntimeLookup = false;
+    pResult->inexactContextHandle = NULL;
 
     MethodDesc* pMD = (MethodDesc *)pResolvedToken->hMethod;
     TypeHandle th(pResolvedToken->hClass);
@@ -5376,6 +5429,14 @@ void CEEInfo::getCallInfo(
             {
                 // Compensate for always treating delegates as direct calls above
                 pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
+            }
+            else
+            {
+                if (pTargetMD->IsSharedByGenericInstantiations() && !IsReadyToRunCompilation())
+                {
+                    _ASSERTE(pConstrainedResolvedToken == NULL || (pResolvedToken->tokenInexactContext == pConstrainedResolvedToken->tokenInexactContext));
+                    pResult->inexactContextHandle = GetInexactContextHandle(pResolvedToken->tokenInexactContext, pResolvedToken->token, (pConstrainedResolvedToken != NULL) ? pConstrainedResolvedToken->token : 0);
+                }
             }
         }
         pResult->nullInstanceCheck = resolvedCallVirt;

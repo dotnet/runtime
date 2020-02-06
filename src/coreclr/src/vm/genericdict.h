@@ -64,6 +64,7 @@ enum DictionaryEntryKind
     DispatchStubAddrSlot = 5,
     FieldDescSlot = 6,
     DeclaringTypeHandleSlot = 7,
+    HasInexactTokenResolutionScopes = 16,
 };
 
 enum DictionaryEntrySignatureSource : BYTE

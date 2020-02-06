@@ -346,6 +346,7 @@ void Compiler::fgInstrumentMethod()
             mdMethodDef currentMethodToken = info.compCompHnd->getMethodDefFromMethod(info.compMethodHnd);
 
             CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenInexactContext = NULL;
             resolvedToken.tokenContext = MAKE_METHODCONTEXT(info.compMethodHnd);
             resolvedToken.tokenScope   = info.compScopeHnd;
             resolvedToken.token        = currentMethodToken;

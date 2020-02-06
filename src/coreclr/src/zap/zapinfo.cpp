@@ -2248,6 +2248,7 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                               pResult);
 
     pResult->methodFlags = FilterNamedIntrinsicMethodAttribs(pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
+    pResult->inexactContextHandle = NULL;
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())

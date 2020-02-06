@@ -329,7 +329,7 @@ DictionaryEntryLayout::GetKind()
     ULONG kind; // DictionaryEntryKind
     IfFailThrow(ptr.GetData(&kind));
 
-    return (DictionaryEntryKind)kind;
+    return (DictionaryEntryKind)(kind & ~HasInexactTokenResolutionScopes); 
 }
 
 #ifndef DACCESS_COMPILE
@@ -770,16 +770,115 @@ Dictionary::PopulateEntry(
         pDictionary = pMD->GetMethodDictionary();
     }
 
+    MethodTable *pMTTypeContext = pMT;
+    MethodDesc *pMDTypeContext = pMD;
+
+    if ((kind & HasInexactTokenResolutionScopes) == HasInexactTokenResolutionScopes)
+    {
+        while (true)
+        {
+            BYTE inexactType;
+            IfFailThrow(ptr.GetByte(&inexactType));
+            if (inexactType == 0xFF)
+                break;
+
+            SigTypeContext typeContextInexactProcessing;
+
+            Module *pModule;
+            if (pMTTypeContext != NULL)
+            {
+                SigTypeContext::InitTypeContext(pMTTypeContext, &typeContextInexactProcessing);
+                pModule = pMTTypeContext->GetModule();
+            }
+            else
+            {
+                SigTypeContext::InitTypeContext(pMDTypeContext, &typeContextInexactProcessing);
+                pModule = pMDTypeContext->GetModule();
+            }
+
+            mdToken tkContext;
+            mdToken tkConstrainedContext = 0;
+            if (inexactType == 1)
+            {
+                IfFailThrow(ptr.GetData(&tkConstrainedContext));
+            }
+            IfFailThrow(ptr.GetData(&tkContext));
+
+            pMTTypeContext = NULL;
+            FieldDesc *pFD = NULL;
+            TypeHandle th;
+            MethodDesc *pMDContext = NULL;
+
+            switch (TypeFromToken(tkContext))
+            {
+                case mdtMethodDef:
+                    pMDContext = MemberLoader::GetMethodDescFromMethodDef(pModule, tkContext, FALSE);
+                    th = pMDTypeContext->GetMethodTable();
+                    break;
+                
+                case mdtMemberRef:
+                    MemberLoader::GetDescFromMemberRef(pModule, tkContext, &pMDContext, &pFD, &typeContextInexactProcessing, FALSE,
+                        &th, TRUE, NULL, NULL);
+                    _ASSERTE(pFD == NULL);
+                    break;
+                case mdtMethodSpec:
+                    pMDContext = MemberLoader::GetMethodDescFromMethodSpec(pModule, tkContext, &typeContextInexactProcessing, FALSE, FALSE /* allowInstParam */,
+                    &th, TRUE, NULL, NULL, NULL, NULL);
+                    break;
+                default:
+                    _ASSERTE(FALSE);
+                    break;
+            }
+
+            if (inexactType == 1)
+            {
+                TypeHandle thConstraint;
+
+                switch (TypeFromToken(tkConstrainedContext))
+                {
+                    case mdtTypeDef:
+                    case mdtTypeRef:
+                        thConstraint = ClassLoader::LoadTypeDefOrRefThrowing(pModule, tkConstrainedContext,
+                                         ClassLoader::ThrowIfNotFound,
+                                         ClassLoader::FailIfUninstDefOrRef);
+                        break;
+                    
+                    case mdtTypeSpec:
+                        {
+                            PCCOR_SIGNATURE pTypeSpec;
+                            ULONG cbSig;
+                            IfFailThrow(pModule->GetMDImport()->GetTypeSpecFromToken(tkConstrainedContext, &pTypeSpec, &cbSig));
+                            SigPointer sigptr(pTypeSpec, cbSig);
+                            thConstraint = sigptr.GetTypeHandleThrowing(pModule, &typeContextInexactProcessing);
+                        }
+                        break;
+
+                    default:
+                        _ASSERTE(FALSE);
+                        break;
+                }
+
+                BOOL forceRuntimeLookup = FALSE;
+                pMDTypeContext = thConstraint.GetMethodTable()->TryResolveConstraintMethodApprox(th, pMDContext, &forceRuntimeLookup);
+                _ASSERTE(~forceRuntimeLookup);
+            }
+            else
+            {
+                pMDTypeContext = pMDContext;
+            }
+        }
+    }
+
     {
         SigTypeContext typeContext;
 
-        if (pMT != NULL)
+        if (pMTTypeContext != NULL)
         {
-            SigTypeContext::InitTypeContext(pMT, &typeContext);
+            SigTypeContext::InitTypeContext(pMTTypeContext, &typeContext);
         }
         else
         {
-            SigTypeContext::InitTypeContext(pMD, &typeContext);
+            SigTypeContext::InitTypeContext(pMDTypeContext, &typeContext);
         }
 
         TypeHandle constraintType;

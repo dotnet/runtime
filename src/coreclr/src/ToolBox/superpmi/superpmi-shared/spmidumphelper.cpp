@@ -16,7 +16,7 @@ std::string SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(
     const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENin& tokenIn)
 {
     char buffer[MAX_BUFFER_SIZE];
-    sprintf_s(buffer, MAX_BUFFER_SIZE, "tc-%016llX ts-%016llX tok-%08X tt-%u", tokenIn.tokenContext, tokenIn.tokenScope,
+    sprintf_s(buffer, MAX_BUFFER_SIZE, "tic-%016llX tc-%016llX ts-%016llX tok-%08X tt-%u", tokenIn.tokenInexactContext, tokenIn.tokenContext, tokenIn.tokenScope,
               tokenIn.token, tokenIn.tokenType);
     return std::string(buffer);
 }

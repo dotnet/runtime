@@ -4199,6 +4199,8 @@ struct GenTreeCall final : public GenTree
     CORINFO_CONST_LOOKUP gtEntryPoint;
 #endif
 
+    CORINFO_INEXACT_CONTEXT_HANDLE inexactContext;
+
 #if defined(DEBUG) || defined(INLINE_DATA)
     // For non-inline candidates, track the first observation
     // that blocks candidacy.

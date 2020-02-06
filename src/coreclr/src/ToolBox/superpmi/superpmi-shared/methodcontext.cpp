@@ -1512,6 +1512,7 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 DWORD                  exceptionCode;
 
+                resolvedToken.tokenInexactContext = (CORINFO_INEXACT_CONTEXT_HANDLE)key.ResolvedToken.inValue.tokenInexactContext;
                 resolvedToken.tokenContext = (CORINFO_CONTEXT_HANDLE)key.ResolvedToken.inValue.tokenContext;
                 resolvedToken.tokenScope   = (CORINFO_MODULE_HANDLE)key.ResolvedToken.inValue.tokenScope;
                 resolvedToken.token        = (mdToken)key.ResolvedToken.inValue.token;
@@ -1529,6 +1530,7 @@ void MethodContext::repGetCallInfoFromMethodHandle(CORINFO_METHOD_HANDLE methodH
                 if (key.ConstrainedResolvedToken.inValue.tokenContext != 0 &&
                     key.ConstrainedResolvedToken.inValue.tokenScope != 0)
                 {
+                    constrainedResolvedToken.tokenInexactContext = (CORINFO_INEXACT_CONTEXT_HANDLE)key.ConstrainedResolvedToken.inValue.tokenInexactContext;
                     constrainedResolvedToken.tokenContext =
                         (CORINFO_CONTEXT_HANDLE)key.ConstrainedResolvedToken.inValue.tokenContext;
                     constrainedResolvedToken.tokenScope =

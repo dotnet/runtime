@@ -8742,6 +8742,7 @@ public:
     {
         COMP_HANDLE           compCompHnd;
         CORINFO_MODULE_HANDLE compScopeHnd;
+        CORINFO_INEXACT_CONTEXT_HANDLE compInexactContext;
         CORINFO_CLASS_HANDLE  compClassHnd;
         CORINFO_METHOD_HANDLE compMethodHnd;
         CORINFO_METHOD_INFO*  compMethodInfo;

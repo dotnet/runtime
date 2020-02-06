@@ -111,6 +111,7 @@ public:
     };
     struct Agnostic_CORINFO_RESOLVED_TOKENin
     {
+        DWORDLONG tokenInexactContext;
         DWORDLONG tokenContext;
         DWORDLONG tokenScope;
         DWORD     token;

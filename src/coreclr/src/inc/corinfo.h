@@ -1611,12 +1611,15 @@ enum CorInfoTokenKind
     CORINFO_TOKENKIND_Ldvirtftn = 0x400 | CORINFO_TOKENKIND_Method,
 };
 
+typedef void* CORINFO_INEXACT_CONTEXT_HANDLE;
+
 struct CORINFO_RESOLVED_TOKEN
 {
     //
     // [In] arguments of resolveToken
     //
     CORINFO_CONTEXT_HANDLE  tokenContext;       //Context for resolution of generic arguments
+    CORINFO_INEXACT_CONTEXT_HANDLE tokenInexactContext; // Context for resolution of generic arguments in generic dictionaries
     CORINFO_MODULE_HANDLE   tokenScope;
     mdToken                 token;              //The source token
     CorInfoTokenKind        tokenType;
@@ -1689,6 +1692,8 @@ struct CORINFO_CALL_INFO
     CORINFO_CONST_LOOKUP    instParamLookup;    // Used by Ready-to-Run
 
     BOOL                    wrapperDelegateInvoke;
+
+    CORINFO_INEXACT_CONTEXT_HANDLE inexactContextHandle; // Inexact context information for generic dictionary handling
 };
 
 //----------------------------------------------------------------------------

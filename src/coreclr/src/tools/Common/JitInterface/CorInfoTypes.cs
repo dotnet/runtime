@@ -287,11 +287,17 @@ namespace Internal.JitInterface
         }
     }
 
+    public struct CORINFO_INEXACT_CONTEXT_HANDLE
+    {
+        public IntPtr handleValue;
+    }
+
     public unsafe struct CORINFO_RESOLVED_TOKEN
     {
         //
         // [In] arguments of resolveToken
         //
+        public IntPtr tokenInexactContext;
         public CORINFO_CONTEXT_STRUCT* tokenContext;       //Context for resolution of generic arguments
         public CORINFO_MODULE_STRUCT_* tokenScope;
         public mdToken token;              //The source token
@@ -1074,6 +1080,8 @@ namespace Internal.JitInterface
 
         public uint _wrapperDelegateInvoke;
         public bool wrapperDelegateInvoke { get { return _wrapperDelegateInvoke != 0; } set { _wrapperDelegateInvoke = value ? (byte)1 : (byte)0; } }
+
+        public IntPtr inexactContextHandle;
     }
 
 

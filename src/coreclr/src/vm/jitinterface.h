@@ -1195,6 +1195,19 @@ protected:
 
     bool                    m_allowInlining;
 
+    struct InexactContextInfo
+    {
+        CORINFO_INEXACT_CONTEXT_HANDLE parentInexactContext;
+        mdToken tkContext;
+        mdToken tkConstrainedContext;
+    };
+
+    SArray<InexactContextInfo> m_inexactContexts;
+
+    InexactContextInfo GetInexactContextForHandle(CORINFO_INEXACT_CONTEXT_HANDLE handle);
+    CORINFO_INEXACT_CONTEXT_HANDLE GetInexactContextHandle(CORINFO_INEXACT_CONTEXT_HANDLE parentHandle, mdToken tkContext, mdToken tkConstrainedContext);
+    void EncodeInexactTokenScope(CORINFO_INEXACT_CONTEXT_HANDLE inexactContext, SigBuilder &sigBuilder);
+
     // Tracking of module activation dependencies. We have two flavors:
     // - Fast one that gathers generic arguments from EE handles, but does not work inside generic context.
     // - Slow one that operates on typespec and methodspecs from metadata.

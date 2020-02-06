@@ -6055,6 +6055,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     node->gtRetClsHnd     = nullptr;
     node->gtControlExpr   = nullptr;
     node->gtCallMoreFlags = 0;
+    node->inexactContext  = nullptr;
 
     if (callType == CT_INDIRECT)
     {
@@ -7771,6 +7772,8 @@ GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlag
     copy->gtInlineObservation = tree->gtInlineObservation;
     copy->gtRawILOffset       = tree->AsCall()->gtRawILOffset;
 #endif
+
+    copy->inexactContext = tree->inexactContext;
 
     copy->CopyOtherRegFlags(tree);
 
