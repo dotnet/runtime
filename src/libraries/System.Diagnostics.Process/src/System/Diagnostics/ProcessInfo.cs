@@ -16,7 +16,7 @@ namespace System.Diagnostics
     {
         internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
         internal int BasePriority { get; set; }
-        internal string ProcessName { get; set; }
+        internal string ProcessName { get; set; } = string.Empty;
         internal int ProcessId { get; set; }
         internal long PoolPagedBytes { get; set; }
         internal long PoolNonPagedBytes { get; set; }
@@ -29,23 +29,5 @@ namespace System.Diagnostics
         internal long PrivateBytes { get; set; }
         internal int SessionId { get; set; }
         internal int HandleCount { get; set; }
-
-        internal ProcessInfo()
-        {
-            BasePriority = 0;
-            ProcessName = "";
-            ProcessId = 0;
-            PoolPagedBytes = 0;
-            PoolNonPagedBytes = 0;
-            VirtualBytes = 0;
-            VirtualBytesPeak = 0;
-            WorkingSet = 0;
-            WorkingSetPeak = 0;
-            PageFileBytes = 0;
-            PageFileBytesPeak = 0;
-            PrivateBytes = 0;
-            SessionId = 0;
-            HandleCount = 0;
-        }
     }
 }
