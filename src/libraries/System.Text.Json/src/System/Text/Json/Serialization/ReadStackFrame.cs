@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -37,6 +38,34 @@ namespace System.Text.Json
 
         // Add method delegate for Non-generic Stack and Queue; and types that derive from them.
         public object? AddMethodDelegate;
+
+        public JsonParameterInfo? JsonConstructorParameterInfo;
+
+        public int ConstructorParameterIndex;
+        public List<ParameterRef>? ParameterRefCache;
+
+        // Cache for parsed constructor arguments.
+        public object? ConstructorArguments;
+
+        // Data extension for objects with parameterized ctors and an extension data property.
+        public object? DataExtension;
+
+        // When deserializing objects with parameterized ctors, the properties we found on the first pass.
+        public ValueTuple<JsonPropertyInfo, JsonReaderState, long, byte[]?>[]? FoundProperties;
+
+        // When deserializing objects with parameterized ctors asynchronously, the properties we found on the first pass.
+        public ValueTuple<JsonPropertyInfo, JsonReaderState, byte[], byte[]?>[]? FoundPropertiesAsync;
+
+        public int FoundPropertyCount;
+
+        public JsonReaderState ReaderState;
+
+        public void EndConstructorParameter()
+        {
+            JsonConstructorParameterInfo = null;
+            JsonPropertyName = null;
+            PropertyState = StackFramePropertyState.None;
+        }
 
         public void EndProperty()
         {
@@ -87,14 +116,22 @@ namespace System.Text.Json
         public void Reset()
         {
             AddMethodDelegate = null;
+            ConstructorParameterIndex = 0;
+            ConstructorArguments = null;
+            DataExtension = null;
+            FoundProperties = null;
+            FoundPropertiesAsync = null;
+            FoundPropertyCount = 0;
             JsonClassInfo = null!;
             ObjectState = StackFrameObjectState.None;
             OriginalDepth = 0;
             OriginalTokenType = JsonTokenType.None;
+            ParameterRefCache = null;
             PropertyIndex = 0;
             PropertyRefCache = null;
             ReturnValue = null;
 
+            EndConstructorParameter();
             EndProperty();
         }
     }

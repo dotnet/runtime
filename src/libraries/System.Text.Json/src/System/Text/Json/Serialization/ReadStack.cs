@@ -99,7 +99,18 @@ namespace System.Text.Json
                 else
                 {
                     JsonClassInfo jsonClassInfo;
-                    if ((Current.JsonClassInfo.ClassType & (ClassType.Object | ClassType.Value | ClassType.NewValue)) != 0)
+                    if (Current.JsonClassInfo.ClassType == ClassType.Object)
+                    {
+                        if (Current.JsonPropertyInfo != null)
+                        {
+                            jsonClassInfo = Current.JsonPropertyInfo.RuntimeClassInfo;
+                        }
+                        else
+                        {
+                            jsonClassInfo = Current.JsonConstructorParameterInfo!.RuntimeClassInfo;
+                        }
+                    }
+                    else if ((Current.JsonClassInfo.ClassType & (ClassType.Value | ClassType.NewValue)) != 0)
                     {
                         // Although ClassType.Value doesn't push, a custom custom converter may re-enter serialization.
                         jsonClassInfo = Current.JsonPropertyInfo!.RuntimeClassInfo;
@@ -277,8 +288,8 @@ namespace System.Text.Json
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
                 if (utf8PropertyName == null)
                 {
-                    // Attempt to get the JSON property name from the JsonPropertyInfo.
-                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName;
+                    // Attempt to get the JSON property name from the JsonPropertyInfo or JsonParameterInfo.
+                    utf8PropertyName = frame.JsonPropertyInfo?.JsonPropertyName ?? frame.JsonConstructorParameterInfo?.JsonPropertyName;
                     if (utf8PropertyName == null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary

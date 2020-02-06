@@ -146,10 +146,10 @@ namespace System.Text.Json
             }
         }
 
-        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
+        private static void ReadValueCore(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack readStack)
         {
-            JsonReaderState readerState = reader.CurrentState;
-            CheckSupportedOptions(readerState.Options, nameof(reader));
+            JsonReaderState state = reader.CurrentState;
+            CheckSupportedOptions(state.Options, nameof(reader));
 
             // Value copy to overwrite the ref on an exception and undo the destructive reads.
             Utf8JsonReader restore = reader;
@@ -303,7 +303,7 @@ namespace System.Text.Json
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(state, ex);
+                ThrowHelper.ReThrowWithPath(readStack, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;
@@ -321,11 +321,11 @@ namespace System.Text.Json
                     valueSpan.CopyTo(rentedSpan);
                 }
 
-                JsonReaderOptions originalReaderOptions = readerState.Options;
+                JsonReaderOptions originalReaderOptions = state.Options;
 
                 var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
-                ReadCore(options, ref newReader, ref state);
+                ReadCore(options, ref newReader, ref readStack);
 
                 // The reader should have thrown if we have remaining bytes.
                 Debug.Assert(newReader.BytesConsumed == length);

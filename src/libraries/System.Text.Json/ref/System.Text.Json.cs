@@ -753,6 +753,11 @@ namespace System.Text.Json.Serialization
         public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, [System.Diagnostics.CodeAnalysis.DisallowNull] T value, System.Text.Json.JsonSerializerOptions options);
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor, AllowMultiple = false)]
+    public sealed partial class JsonConstructorAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonConstructorAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {

@@ -91,7 +91,7 @@ namespace System.Text.Json
                 result = ReadCore(returnType, options, ref reader);
 
                 // The reader should have thrown if we have remaining bytes.
-                Debug.Assert(reader.BytesConsumed == actualByteCount);
+                //Debug.Assert(reader.BytesConsumed == actualByteCount);
             }
             finally
             {

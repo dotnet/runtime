@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -217,7 +218,6 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>(@"{""Name"":""Name!""}"));
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>(@"[""foo"", 1, false]"));
@@ -228,10 +228,7 @@ namespace System.Text.Json.Serialization.Tests
 
         private class PublicParameterizedConstructorTestClass
         {
-            public PublicParameterizedConstructorTestClass(string name)
-            {
-                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
-            }
+            public PublicParameterizedConstructorTestClass(string name) { }
 
             private PublicParameterizedConstructorTestClass(int internalId)
             {

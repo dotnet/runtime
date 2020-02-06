@@ -88,7 +88,7 @@ namespace System.Text.Json
             return value;
         }
 
-        private static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
+        internal static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
         {
             // The escaped name is always longer than the unescaped, so it is safe to use escaped name for the buffer length.
             int length = utf8Source.Length;

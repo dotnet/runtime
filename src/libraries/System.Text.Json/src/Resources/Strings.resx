@@ -485,4 +485,16 @@
   <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
     <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandling to ReferenceHandling.Default.</value>
   </data>
+  <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
+    <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in constructor '{4}' on deserialization.</value>
+  </data>
+  <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
+    <value>Each parameter in constructor '{0}' on type '{1}' must bind to an object member on deserialization. </value>
+  </data>
+  <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
+    <value>The constructor '{0}' on type '{1}' may not have more than 64 parameters for deserialization.</value>
+  </data>
+  <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
+    <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
+  </data>
 </root>

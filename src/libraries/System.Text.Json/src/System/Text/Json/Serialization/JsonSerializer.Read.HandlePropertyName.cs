@@ -101,7 +101,7 @@ namespace System.Text.Json
             return jsonPropertyInfo;
         }
 
-        private static void CreateDataExtensionProperty(
+        internal static void CreateDataExtensionProperty(
             object obj,
             JsonPropertyInfo jsonPropertyInfo)
         {

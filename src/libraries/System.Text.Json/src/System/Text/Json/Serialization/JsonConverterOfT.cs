@@ -46,6 +46,11 @@ namespace System.Text.Json.Serialization
             return new JsonPropertyInfo<T>();
         }
 
+        internal override sealed JsonParameterInfo CreateJsonParameterInfo()
+        {
+            return new JsonParameterInfo<T>();
+        }
+
         internal override Type? ElementType => null;
 
         /// <summary>

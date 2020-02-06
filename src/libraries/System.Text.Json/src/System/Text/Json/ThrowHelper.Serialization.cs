@@ -39,6 +39,11 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static NotSupportedException ThrowNotSupportedException_ConstructorMaxOf64Parameters(ConstructorInfo constructorInfo, Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, constructorInfo, type));
+        }
+
         public static void ThrowInvalidOperationException_SerializerCycleDetected(int maxDepth)
         {
             throw new JsonException(SR.Format(SR.SerializerCycleDetected, maxDepth));
@@ -132,9 +137,9 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(JsonClassInfo jsonClassInfo, JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_SerializerPropertyNameConflict(Type type, JsonPropertyInfo jsonPropertyInfo)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, jsonClassInfo.Type, jsonPropertyInfo.PropertyInfo?.Name));
+            throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameConflict, type, jsonPropertyInfo.PropertyInfo?.Name));
         }
 
         [DoesNotReturn]
@@ -149,6 +154,32 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
         {
             throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_MultiplePropertiesBindToConstructorParameters(
+            Type parentType,
+            ParameterInfo parameterInfo,
+            PropertyInfo firstMatch,
+            PropertyInfo secondMatch,
+            ConstructorInfo constructorInfo)
+        {
+            throw new InvalidOperationException(
+                SR.Format(
+                    SR.MultipleMembersBindWithConstructorParameter,
+                    firstMatch.Name,
+                    secondMatch.Name,
+                    parentType,
+                    parameterInfo.Name,
+                    constructorInfo));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(ConstructorInfo constructorInfo, Type parentType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ConstructorParamIncompleteBinding, constructorInfo, parentType));
         }
 
         [DoesNotReturn]
@@ -267,9 +298,16 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonClassInfo jsonClassInfo, JsonPropertyInfo jsonPropertyInfo)
+        public static void ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<TAttribute>(Type classType)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, jsonClassInfo.Type, jsonPropertyInfo.PropertyInfo?.Name));
+            throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateTypeAttribute, classType, typeof(Attribute)));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(Type type, JsonPropertyInfo jsonPropertyInfo)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalid, type, jsonPropertyInfo.PropertyInfo?.Name));
         }
 
         [DoesNotReturn]
@@ -389,6 +427,13 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowNotSupportedException_ObjectWithParameterizedCtorRefMetadataNotHonored(Type type)
+        {
+            throw new NotSupportedException(SR.Format(SR.ObjectWithParameterizedCtorRefMetadataNotHonored, type));
         }
 
         [DoesNotReturn]
