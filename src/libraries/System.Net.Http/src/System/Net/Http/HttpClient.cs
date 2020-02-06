@@ -499,7 +499,7 @@ namespace System.Net.Http
                 cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
                 if (hasTimeout)
                 {
-                    timeoutTime = Environment.TickCount64 + (_timeout.Ticks/TimeSpan.TicksPerMillisecond);
+                    timeoutTime = Environment.TickCount64 + (_timeout.Ticks / TimeSpan.TicksPerMillisecond);
                     cts.CancelAfter(_timeout);
                 }
             }
@@ -560,6 +560,7 @@ namespace System.Net.Http
 
                 if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
                 {
+                    HandleSendAsyncTimeout(operationException);
                     throw CreateTimeoutException(operationException);
                 }
 
@@ -590,6 +591,7 @@ namespace System.Net.Http
             {
                 if (e is OperationCanceledException operationException && TimeoutFired(callerToken, timeoutTime))
                 {
+                    HandleSendAsyncTimeout(operationException);
                     throw CreateTimeoutException(operationException);
                 }
 
@@ -620,6 +622,15 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Canceled");
                 throw new OperationCanceledException(cts.Token);
+            }
+        }
+
+        private void HandleSendAsyncTimeout(OperationCanceledException e)
+        {
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Error(this, e);
+                NetEventSource.Error(this, "Canceled due to timeout");
             }
         }
 
