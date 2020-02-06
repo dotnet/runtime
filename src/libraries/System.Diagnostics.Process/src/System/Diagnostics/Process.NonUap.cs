@@ -40,7 +40,7 @@ namespace System.Diagnostics
             try
             {
                 var descendantProcesses = new Queue<Process>();
-                Process current = this;
+                Process? current = this;
 
                 do
                 {
@@ -67,7 +67,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns all immediate child processes.
         /// </summary>
-        private IReadOnlyList<Process> GetChildProcesses(Process[] processes = null)
+        private IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
         {
             bool internallyInitializedProcesses = processes == null;
             processes = processes ?? GetProcesses();
