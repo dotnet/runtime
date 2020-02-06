@@ -188,7 +188,7 @@ namespace System.Diagnostics
 
             if (processId == 0)
             {
-                throw new Win32Exception(5);
+                throw new Win32Exception(Interop.Errors.ERROR_ACCESS_DENIED);
             }
 
             // If the handle is invalid because the process has exited, only throw an exception if throwIfExited is true.
@@ -283,14 +283,14 @@ namespace System.Diagnostics
             {
                 if (!Interop.Kernel32.EnumProcesses(processIds, processIds.Length * 4, out size))
                     throw new Win32Exception();
-                if (size == processIds.Length * 4)
+                if (size == processIds.Length * sizeof(int))
                 {
                     processIds = new int[processIds.Length * 2];
                     continue;
                 }
                 break;
             }
-            int[] ids = new int[size / 4];
+            int[] ids = new int[size / sizeof(int)];
             Array.Copy(processIds, ids, ids.Length);
             return ids;
         }
