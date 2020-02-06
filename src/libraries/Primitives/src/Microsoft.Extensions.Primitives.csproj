@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
-    <Configurations>netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
     <NoWarn>$(NoWarn);CS1591;CA1200;SA1121;SA1028;SA1129;SA1027</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>

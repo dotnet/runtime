@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(DefaultNetCoreTargetFramework);net472</TargetFrameworks>
-    <Configurations>$(DefaultNetCoreTargetFramework)-Debug;$(DefaultNetCoreTargetFramework)-Release;net472-Debug;net472-Release</Configurations>
     <TestRuntime>true</TestRuntime>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
