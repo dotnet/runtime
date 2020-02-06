@@ -31,7 +31,7 @@ namespace System.Diagnostics
 
         public IntPtr FindMainWindow(int processId)
         {
-            _bestHandle = (IntPtr)0;
+            _bestHandle = IntPtr.Zero;
             _processId = processId;
 
             Interop.User32.EnumThreadWindowsCallback callback = new Interop.User32.EnumThreadWindowsCallback(EnumWindowsCallback);
@@ -43,7 +43,7 @@ namespace System.Diagnostics
 
         private bool IsMainWindow(IntPtr handle)
         {
-            if (Interop.User32.GetWindow(handle, GW_OWNER) != (IntPtr)0 || !Interop.User32.IsWindowVisible(handle))
+            if (Interop.User32.GetWindow(handle, GW_OWNER) != IntPtr.Zero || !Interop.User32.IsWindowVisible(handle))
                 return false;
 
             return true;
