@@ -10,7 +10,7 @@
     <PublicSign>true</PublicSign>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(ArcadeBuild)' == 'true' ">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <!-- Work around
          https://github.com/dotnet/arcade/issues/2321. This disables
          arcade's selection of AssemblyOriginatorKeyFile based on the

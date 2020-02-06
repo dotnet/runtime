@@ -17,8 +17,8 @@ namespace ILLink.Tests
 
 		public string SetupProject()
 		{
-			string projectRoot = "helloworld";
-			string csproj = Path.Combine(projectRoot, $"{projectRoot}.csproj");
+			string projectRoot = CreateTestFolder("helloworld");
+			string csproj = Path.Combine(projectRoot, $"helloworld.csproj");
 
 			if (File.Exists(csproj)) {
 				LogMessage ($"using existing project {csproj}");
@@ -38,9 +38,10 @@ namespace ILLink.Tests
 
 			AddLinkerReference(csproj);
 
+			AddNuGetConfig(projectRoot);
+
 			return csproj;
 		}
-
 	}
 
 	public class HelloWorldTest : IntegrationTestBase, IClassFixture<HelloWorldFixture>

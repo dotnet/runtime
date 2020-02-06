@@ -4,32 +4,34 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>LinkerAnalyzer</RootNamespace>
     <AssemblyName>illinkanalyzer</AssemblyName>
-    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
-    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
-    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT'">netcoreapp3.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' != ''">
     <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.EndsWith('Debug'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.EndsWith('Release'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj">
     </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoBuild)' == ''">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

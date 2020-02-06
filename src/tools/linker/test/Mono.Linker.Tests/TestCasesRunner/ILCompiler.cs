@@ -68,13 +68,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 #if ILLINK
 			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
-#if ARCADE
+
 			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
 			var toolsDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "..", "tools");
-#else
-			// working directory is test/Mono.Linker.Tests/bin/<config>/<tfm>
-			var toolsDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "obj", "tools");
-#endif // ARCADE
+
 			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, "ilasm", $"ilasm{extension}")).ToNPath ();
 			if (ilasmPath.FileExists ())
 				return ilasmPath;

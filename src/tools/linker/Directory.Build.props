@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition=" '$(ArcadeBuild)' == 'true' " />
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(MonoBuild)' == ''" />
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>

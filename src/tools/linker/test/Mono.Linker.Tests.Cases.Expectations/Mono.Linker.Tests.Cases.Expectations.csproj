@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' != ''">
     <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
 

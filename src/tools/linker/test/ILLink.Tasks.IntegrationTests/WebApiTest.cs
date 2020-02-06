@@ -16,8 +16,8 @@ namespace ILLink.Tests
 
 		public string SetupProject()
 		{
-			string projectRoot = "webapi";
-			string csproj = Path.Combine(projectRoot, $"{projectRoot}.csproj");
+			string projectRoot = CreateTestFolder("webapi");
+			string csproj = Path.Combine(projectRoot, $"webapi.csproj");
 
 			if (File.Exists(csproj)) {
 				LogMessage($"using existing project {csproj}");
@@ -38,6 +38,8 @@ namespace ILLink.Tests
 			PreventPublishFiltering(csproj);
 
 			AddLinkerReference(csproj);
+
+			AddNuGetConfig(projectRoot);
 
 			return csproj;
 		}

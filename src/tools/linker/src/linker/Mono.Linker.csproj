@@ -5,37 +5,35 @@
     <RootNamespace>Mono</RootNamespace>
     <Copyright>(C) 2006, Jb Evain</Copyright>
     <Version>0.2.0.0</Version>
-    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <Configurations>Debug;Release</Configurations>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
     <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
-    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT'">netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' != ''">
     <AssemblyName>monolinker</AssemblyName>
     <AssemblyTitle>Mono.Linker</AssemblyTitle>
     <Description>Mono CIL Linker</Description>
     <TargetFrameworks>net471</TargetFrameworks>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.EndsWith('Debug'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
     <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.EndsWith('Release'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
 
-  <ItemGroup Condition="$(Configuration.StartsWith('illink'))">
+  <ItemGroup Condition="'$(MonoBuild)' == ''">
     <Compile Remove="Linker\I18nAssemblies.cs" />
     <Compile Remove="Linker\XApiReader.cs" />
     <Compile Remove="Linker.Steps\LoadI18nAssemblies.cs" />
@@ -48,7 +46,11 @@
     <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <ItemGroup Condition="'$(MonoBuild)' == ''">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MonoBuild)' != ''">
     <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
   </ItemGroup>
 
