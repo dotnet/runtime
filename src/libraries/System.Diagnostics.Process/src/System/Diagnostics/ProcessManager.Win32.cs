@@ -148,7 +148,6 @@ namespace System.Diagnostics
                                 {
                                     break;
                                 }
-                                Thread.Sleep(1);
                             }
                         }
                     }
