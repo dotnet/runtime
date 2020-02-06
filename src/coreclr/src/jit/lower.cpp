@@ -5326,19 +5326,6 @@ void Lowering::DoPhase()
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-
-#ifdef DEBUG
-    JITDUMP("Liveness pass finished after lowering, IR:\n");
-    if (VERBOSE)
-    {
-        comp->fgDispBasicBlocks(true);
-    }
-
-    for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
-    {
-        assert(LIR::AsRange(block).CheckLIR(comp, true));
-    }
-#endif
 }
 
 #ifdef DEBUG

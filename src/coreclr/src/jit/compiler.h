@@ -1094,6 +1094,14 @@ extern const char*   PhaseNames[];
 extern const char*   PhaseEnums[];
 extern const LPCWSTR PhaseShortNames[];
 
+// Specify which checks should be run after each phase
+//
+enum class PhaseChecks
+{
+    CHECK_NONE,
+    CHECK_ALL
+};
+
 // The following enum provides a simple 1:1 mapping to CLR API's
 enum API_ICorJitInfo_Names
 {
@@ -8979,7 +8987,8 @@ public:
 
 #endif // !TARGET_X86
 
-    Phases previousCompletedPhase; // the most recently completed phase
+    Phases      mostRecentlyActivePhase; // the most recently active phase
+    PhaseChecks activePhaseChecks;       // the currently active phase checks
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
@@ -9492,7 +9501,8 @@ private:
     static LPCWSTR JitTimeLogCsv();        // Retrieve the file name for CSV from ConfigDWORD.
     static LPCWSTR compJitTimeLogFilename; // If a log file for JIT time is desired, filename to write it to.
 #endif
-    inline void EndPhase(Phases phase); // Indicate the end of the given phase.
+    void BeginPhase(Phases phase); // Indicate the start of the given phase.
+    void EndPhase(Phases phase);   // Indicate the end of the given phase.
 
 #if MEASURE_CLRAPI_CALLS
     // Thin wrappers that call into JitTimer (if present).
