@@ -42,7 +42,7 @@ namespace System.Threading.Tasks.Tests
 
         // Stresses on multiple continuations from a single antecedent
         [Fact]
-        [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271")]
+        [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271", RuntimeTestModes.CheckedRuntime)]
         public static void RunContinueWithStressTestsNoState()
         {
             int numIterations = 3;
