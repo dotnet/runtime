@@ -655,6 +655,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31858", TargetFrameworkMonikers.Mono)]
         [InlineData(true)]
         [InlineData(false)]
         public unsafe void SetX_NullInput_ThrowsArgumentNullException(bool skipVisibility)

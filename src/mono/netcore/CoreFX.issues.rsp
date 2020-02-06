@@ -6,14 +6,6 @@
 -notrait category=IgnoreForCI
 
 ####################################################################
-##  System.Reflection.Emit.Lightweight.Tests
-####################################################################
-
-# Need to implement System.Reflection.Emit.DynamicILInfo.SetExceptions(Byte* exceptions, Int32 exceptionsSize)
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
-
-####################################################################
 ##  System.Runtime.Loader.Tests
 ####################################################################
 
