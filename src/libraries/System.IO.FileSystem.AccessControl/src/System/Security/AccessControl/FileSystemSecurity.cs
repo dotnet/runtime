@@ -14,17 +14,17 @@ namespace System.Security.AccessControl
         private const ResourceType s_ResourceType = ResourceType.FileObject;
 
         internal FileSystemSecurity(bool isContainer)
-            : base(isContainer, s_ResourceType, _HandleErrorCode!, isContainer)
+            : base(isContainer, s_ResourceType, _HandleErrorCode, isContainer)
         {
         }
 
         internal FileSystemSecurity(bool isContainer, string name, AccessControlSections includeSections, bool isDirectory)
-            : base(isContainer, s_ResourceType, PathInternal.EnsureExtendedPrefixIfNeeded(Path.GetFullPath(name)), includeSections, _HandleErrorCode!, isDirectory)
+            : base(isContainer, s_ResourceType, PathInternal.EnsureExtendedPrefixIfNeeded(Path.GetFullPath(name)), includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
         internal FileSystemSecurity(bool isContainer, SafeFileHandle? handle, AccessControlSections includeSections, bool isDirectory)
-            : base(isContainer, s_ResourceType, handle, includeSections, _HandleErrorCode!, isDirectory)
+            : base(isContainer, s_ResourceType, handle, includeSections, _HandleErrorCode, isDirectory)
         {
         }
 
