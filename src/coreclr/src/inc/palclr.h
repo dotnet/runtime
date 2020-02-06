@@ -515,7 +515,7 @@
 #endif
 
 
-#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
+#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
 #define PAL_TRY_HANDLER_DBG_BEGIN                                               \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
     ClrDebugState *___pState = ::GetClrDebugState();                            \
@@ -560,7 +560,7 @@
 #define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;
 #define PAL_TRY_HANDLER_DBG_END                     ANNOTATION_TRY_END;
 #define PAL_ENDTRY_NAKED_DBG
-#endif // defined(ENABLE_CONTRACTS_IMPL) && !defined(JIT64_BUILD)
+#endif // defined(ENABLE_CONTRACTS_IMPL)
 
 
 #if !BIGENDIAN

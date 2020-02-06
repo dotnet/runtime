@@ -85,7 +85,7 @@
 
 
 
-#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(HOST_ARM) // @ARMTODO
+#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(HOST_ARM) // @ARMTODO
 #define WIN_PAL_TRY_HANDLER_DBG_BEGIN                                           \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
     ClrDebugState *___pState = GetClrDebugState();                              \
@@ -133,7 +133,7 @@
 #define WIN_PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;
 #define WIN_PAL_TRY_HANDLER_DBG_END                     ANNOTATION_TRY_END;
 #define WIN_PAL_ENDTRY_NAKED_DBG
-#endif // defined(ENABLE_CONTRACTS_IMPL) && !defined(JIT64_BUILD)
+#endif // defined(ENABLE_CONTRACTS_IMPL)
 
 #if !defined (HOST_UNIX)
 // Native system libray handle.
