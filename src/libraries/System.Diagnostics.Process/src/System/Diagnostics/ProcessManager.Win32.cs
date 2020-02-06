@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -169,57 +170,63 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : moduleCount);
 
-                char[] chars = new char[1024];
-
-                for (int i = 0; i < moduleCount; i++)
+                char[] chars = ArrayPool<char>.Shared.Rent(1024);
+                try
                 {
-                    if (i > 0)
+                    for (int i = 0; i < moduleCount; i++)
                     {
-                        // If the user is only interested in the main module, break now.
-                        // This avoid some waste of time. In addition, if the application unloads a DLL
-                        // we will not get an exception.
-                        if (firstModuleOnly)
+                        if (i > 0)
                         {
-                            break;
+                            // If the user is only interested in the main module, break now.
+                            // This avoid some waste of time. In addition, if the application unloads a DLL
+                            // we will not get an exception.
+                            if (firstModuleOnly)
+                            {
+                                break;
+                            }
                         }
+
+                        IntPtr moduleHandle = moduleHandles[i];
+                        Interop.Kernel32.NtModuleInfo ntModuleInfo;
+                        if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
+                        {
+                            HandleError();
+                            continue;
+                        }
+
+                        var module = new ProcessModule()
+                        {
+                            ModuleMemorySize = ntModuleInfo.SizeOfImage,
+                            EntryPointAddress = ntModuleInfo.EntryPoint,
+                            BaseAddress = ntModuleInfo.BaseOfDll
+                        };
+
+                        int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                        if (length == 0)
+                        {
+                            HandleError();
+                            continue;
+                        }
+
+                        module.ModuleName = new string(chars, 0, length);
+
+                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                        if (length == 0)
+                        {
+                            HandleError();
+                            continue;
+                        }
+
+                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
+                            new string(chars, 4, length - 4) :
+                            new string(chars, 0, length);
+
+                        modules.Add(module);
                     }
-
-                    IntPtr moduleHandle = moduleHandles[i];
-                    Interop.Kernel32.NtModuleInfo ntModuleInfo;
-                    if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
-                    {
-                        HandleError();
-                        continue;
-                    }
-
-                    var module = new ProcessModule()
-                    {
-                        ModuleMemorySize = ntModuleInfo.SizeOfImage,
-                        EntryPointAddress = ntModuleInfo.EntryPoint,
-                        BaseAddress = ntModuleInfo.BaseOfDll
-                    };
-
-                    int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
-                    if (length == 0)
-                    {
-                        HandleError();
-                        continue;
-                    }
-
-                    module.ModuleName = new string(chars, 0, length);
-
-                    length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
-                    if (length == 0)
-                    {
-                        HandleError();
-                        continue;
-                    }
-
-                    module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
-                        new string(chars, 4, length - 4) :
-                        new string(chars, 0, length);
-
-                    modules.Add(module);
+                }
+                finally
+                {
+                    ArrayPool<char>.Shared.Return(chars);
                 }
 
                 return modules;
