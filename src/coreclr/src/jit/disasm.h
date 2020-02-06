@@ -45,7 +45,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "disx86.h"
 #elif defined(TARGET_ARM64)
 #include "disarm64.h"
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
 

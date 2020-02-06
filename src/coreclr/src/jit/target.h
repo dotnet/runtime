@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 /*****************************************************************************/
-#ifndef _TARGET_H_
-#define _TARGET_H_
+#ifndef TARGET_H_
+#define TARGET_H_
 
 #if defined(FEATURE_CORECLR) && defined(TARGET_UNIX)
 #define FEATURE_VARARG 0
@@ -1986,5 +1986,5 @@ C_ASSERT(sizeof(target_size_t) == TARGET_POINTER_SIZE);
 C_ASSERT(sizeof(target_ssize_t) == TARGET_POINTER_SIZE);
 
 /*****************************************************************************/
-#endif // _TARGET_H_
+#endif // TARGET_H_
 /*****************************************************************************/

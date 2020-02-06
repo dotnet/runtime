@@ -822,11 +822,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_PASS_MULTIREG_BYTES)
@@ -849,11 +849,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByReference;
             useType         = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
         }
     }
 
@@ -1080,11 +1080,11 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_RET_MULTIREG_BYTES) || (FEATURE_MULTIREG_RET == 0)
