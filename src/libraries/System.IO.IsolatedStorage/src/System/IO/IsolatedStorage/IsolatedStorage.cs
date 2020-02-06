@@ -143,7 +143,7 @@ namespace System.IO.IsolatedStorage
             VerifyScope(scope);
             Scope = scope;
 
-            Helper.GetDefaultIdentityAndHash(out object identity, out string? hash, SeparatorInternal);
+            Helper.GetDefaultIdentityAndHash(out object identity, out string hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {

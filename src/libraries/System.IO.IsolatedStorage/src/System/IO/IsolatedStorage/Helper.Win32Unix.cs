@@ -29,7 +29,7 @@ namespace System.IO.IsolatedStorage
             return dataDirectory;
         }
 
-        internal static void GetDefaultIdentityAndHash(out object identity, out string? hash, char separator)
+        internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // In .NET Framework IsolatedStorage uses identity from System.Security.Policy.Evidence to build
             // the folder structure on disk. It would use the "best" available evidence in this order:
@@ -57,7 +57,7 @@ namespace System.IO.IsolatedStorage
             AssemblyName assemblyName = assembly.GetName();
             Uri codeBase = new Uri(assembly.CodeBase!);
 
-            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
             if (hash != null)
             {
                 hash = "StrongName" + separator + hash;
