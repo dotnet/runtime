@@ -1227,9 +1227,12 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
-        public static Process? Start(string fileName)
+        public static Process Start(string fileName)
         {
-            return Start(new ProcessStartInfo(fileName));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName))!;
         }
 
         /// <devdoc>
@@ -1240,9 +1243,12 @@ namespace System.Diagnostics
         ///       component.
         ///    </para>
         /// </devdoc>
-        public static Process? Start(string fileName, string arguments)
+        public static Process Start(string fileName, string arguments)
         {
-            return Start(new ProcessStartInfo(fileName, arguments));
+            // the underlying Start method can only return null on Windows platforms,
+            // when the ProcessStartInfo.UseShellExecute property is set to true.
+            // We can thus safely assert non-nullability for tihs overload.
+            return Start(new ProcessStartInfo(fileName, arguments))!;
         }
 
         /// <devdoc>
