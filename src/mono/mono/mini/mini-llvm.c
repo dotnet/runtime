@@ -645,6 +645,16 @@ primitive_type_to_llvm_type (MonoTypeEnum type)
 	}
 }
 
+#if __cplusplus
+
+static LLVMTypeRef
+primitive_type_to_llvm_type (long type)
+{
+	return primitive_type_to_llvm_type ((MonoTypeEnum)type);
+}
+
+#endif
+
 /*
  * type_to_llvm_type:
  *

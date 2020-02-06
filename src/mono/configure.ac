@@ -1226,7 +1226,7 @@ fi
 
 AC_SUBST(CXXFLAGS_COMMON)
 
-if test "x$enable_cxx" = "xyes"; then
+#if test "x$enable_cxx" = "xyes"; then
 
 	CXX_ADD_CFLAGS=" -xc++ $CXXFLAGS_COMMON "
 
@@ -1255,7 +1255,7 @@ if test "x$enable_cxx" = "xyes"; then
 				   CXX_REMOVE_CFLAGS="$CXX_REMOVE_CFLAGS -Wno-format-zero-length" ])
 	CXXFLAGS=$ORIG_CXXFLAGS
 	AC_LANG_POP(C++)
-fi
+#fi
 AC_SUBST(CXX_ADD_CFLAGS)
 AC_SUBST(CXX_REMOVE_CFLAGS)
 
