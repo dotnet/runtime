@@ -14,7 +14,7 @@ namespace System.Diagnostics
     /// </summary>
     internal sealed class ProcessInfo
     {
-        internal readonly List<ThreadInfo> _threadInfoList = new List<ThreadInfo>();
+        internal readonly List<ThreadInfo> _threadInfoList;
         internal int BasePriority { get; set; }
         internal string ProcessName { get; set; } = string.Empty;
         internal int ProcessId { get; set; }
@@ -29,5 +29,15 @@ namespace System.Diagnostics
         internal long PrivateBytes { get; set; }
         internal int SessionId { get; set; }
         internal int HandleCount { get; set; }
+
+        internal ProcessInfo()
+        {
+            _threadInfoList = new List<ThreadInfo>();
+        }
+
+        internal ProcessInfo(int threadsNumber)
+        {
+            _threadInfoList = new List<ThreadInfo>(threadsNumber);
+        }
     }
 }

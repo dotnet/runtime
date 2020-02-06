@@ -353,7 +353,7 @@ namespace System.Diagnostics
                 if (processIdFilter == null || processIdFilter(processInfoProcessId))
                 {
                     // get information for a process
-                    ProcessInfo processInfo = new ProcessInfo();
+                    ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads);
                     processInfo.ProcessId = processInfoProcessId;
                     processInfo.SessionId = (int)pi.SessionId;
                     processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage;
