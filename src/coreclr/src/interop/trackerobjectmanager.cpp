@@ -94,16 +94,13 @@ namespace
         return E_NOTIMPL; // [TODO]
     }
 
-    //
-    // Release context-bound RCWs and Jupiter RCWs (which are free-threaded but context-bound)
-    // in the current apartment
-    //
     STDMETHODIMP HostServices::NotifyEndOfReferenceTrackingOnThread()
     {
-        // InteropLibImports::ReleaseObjectsInContext()
-        // This probably should be done via a callback back into managed and
-        // let the object creator handle the neutering of the object.
-        return E_NOTIMPL; // [TODO]
+        OBJECTHANDLE impl = HostServices::RuntimeImpl;
+        if (impl == nullptr)
+            return E_NOT_SET;
+
+        return InteropLibImports::ReleaseExternalObjectsFromCurrentThread(impl);
     }
 
     //
@@ -245,10 +242,7 @@ namespace
         _ASSERTE(nowc != nullptr && cxt != nullptr);
 
         HRESULT hr;
-
-        // Get IReferenceTracker * from wrapper - we can call IReferenceTracker from any thread and it won't be a proxy
-        ComHolder<IReferenceTracker> obj;
-        RETURN_IF_FAILED(nowc->GetInstanceProxy(&obj));
+        IReferenceTracker* obj = nowc->GetReferenceTracker();
 
         // Ask the tracker instance to find all reference targets.
         FindDependentWrappersCallback cb{ nowc, cxt };
@@ -271,7 +265,7 @@ namespace
             NativeObjectWrapperContext* nowc = NativeObjectWrapperContext::MapFromRuntimeContext(extObjContext);
 
             // Check if the object is a tracker object.
-            if (nowc->GetReferenceTrackerFast() == nullptr)
+            if (nowc->GetReferenceTracker() == nullptr)
                 continue;
 
             hr = OnExternalTrackerObject(nowc, cxt);
@@ -330,7 +324,7 @@ HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ NativeObjectWrapperContex
     _ASSERTE(cxt != nullptr);
 
     HRESULT hr;
-    IReferenceTracker* obj = cxt->GetReferenceTrackerFast();
+    IReferenceTracker* obj = cxt->GetReferenceTracker();
     _ASSERTE(obj != nullptr);
 
     // Notify tracker runtime that we've created a new wrapper for this object.
@@ -350,8 +344,8 @@ HRESULT TrackerObjectManager::BeforeWrapperDestroyed(_In_ NativeObjectWrapperCon
     _ASSERTE(cxt != nullptr);
 
     HRESULT hr;
-    ComHolder<IReferenceTracker> obj;
-    RETURN_IF_FAILED(cxt->GetInstanceProxy(&obj));
+    IReferenceTracker* obj = cxt->GetReferenceTracker();
+    _ASSERTE(obj != nullptr);
 
     // Notify tracker runtime that we are about to destroy a wrapper
     // (same timing as short weak handle) for this object.

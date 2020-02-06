@@ -44,7 +44,8 @@ namespace InteropLib
             _In_ IUnknown* external,
             _In_ INT32 flags,
             _In_ size_t contextSize,
-            _Outptr_ void** context) noexcept;
+            _Outptr_ void** context,
+            _Outptr_ IUnknown** agileReference) noexcept;
 
         // Destroy the supplied wrapper.
         void DestroyWrapperForExternal(_In_ void* context) noexcept;

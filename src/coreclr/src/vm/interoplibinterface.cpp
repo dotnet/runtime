@@ -308,6 +308,27 @@ namespace
         return retObjRef;
     }
 
+    void CallReleaseObjects(
+        _In_ OBJECTREF* implPROTECTED,
+        _In_ OBJECTREF* objsEnumPROTECTED)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+            PRECONDITION(implPROTECTED != NULL);
+            PRECONDITION(objsEnumPROTECTED != NULL);
+        }
+        CONTRACTL_END;
+
+        PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__RELEASE_OBJECTS);
+        DECLARE_ARGHOLDER_ARRAY(args, 2);
+        args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
+        args[ARGNUM_1]  = OBJECTREF_TO_ARGHOLDER(*objsEnumPROTECTED);
+        CALL_MANAGED_METHOD_NORET(args);
+    }
+
     void* GetOrCreateComInterfaceForObjectInternal(
         _In_ OBJECTREF impl,
         _In_ OBJECTREF instance,
@@ -461,14 +482,15 @@ namespace
         }
         else
         {
-            // Create context for the possibly new external COM object.
+            // Create context and IAgileReference instance for the possibly new external COM object.
             ExtObjCxtHolder newContext;
-            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), (void**)&newContext);
+            SafeComHolder<IUnknown> agileRef;
+            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), (void**)&newContext, &agileRef);
             if (FAILED(hr))
                 COMPlusThrow(hr);
 
             // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(&gc.implRef, identity, flags);
+            gc.objRef = CallGetObject(&gc.implRef, agileRef, flags);
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
@@ -570,9 +592,44 @@ namespace InteropLibImports
         return hr;
     }
 
-    void RequestGarbageCollection() noexcept
+    HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept
     {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
 
+        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(handle);
+
+        HRESULT hr = S_OK;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            // Switch to cooperative mode so the cache can be queried.
+            GCX_COOP();
+
+            struct
+            {
+                OBJECTREF implRef;
+                OBJECTREF objsEnumRef;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            gc.implRef = ObjectFromHandle(implHandle);
+
+            //
+            // [TODO] Pass the objects along to get released.
+            //
+
+            CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
+
+            GCPROTECT_END();
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
     }
 
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept

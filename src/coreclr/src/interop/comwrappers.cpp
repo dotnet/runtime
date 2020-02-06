@@ -576,9 +576,6 @@ HRESULT NativeObjectWrapperContext::Create(
             RETURN_IF_FAILED(TrackerObjectManager::OnIReferenceTrackerFound(trackerObject));
     }
 
-    ComHolder<IAgileReference> reference;
-    RETURN_IF_FAILED(CreateAgileReference(external, &reference));
-
     // Allocate memory for the RCW
     char* cxtMem = (char*)InteropLibImports::MemAlloc(sizeof(NativeObjectWrapperContext) + runtimeContextSize, AllocScenario::NativeObjectWrapper);
     if (cxtMem == nullptr)
@@ -589,9 +586,9 @@ HRESULT NativeObjectWrapperContext::Create(
     // Contract specifically requires zeroing out runtime context.
     std::memset(runtimeContext, 0, runtimeContextSize);
 
-    NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ trackerObject, reference, runtimeContext };
+    NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ trackerObject, runtimeContext };
 
-    if (contextLocal->GetReferenceTrackerFast() != nullptr)
+    if (contextLocal->GetReferenceTracker() != nullptr)
     {
         // Inform the tracker object manager
         _ASSERTE((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject);
@@ -617,21 +614,19 @@ void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrappe
     InteropLibImports::MemFree(wrapper, AllocScenario::NativeObjectWrapper);
 }
 
-NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference, _In_ void* runtimeContext)
+NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ void* runtimeContext)
     : _trackerObject{ trackerObject }
-    , _objectReference{ reference }
     , _runtimeContext{ runtimeContext }
 #ifdef _DEBUG
     , _sentinal{ ContextSentinal }
 #endif
 {
-    (void)_objectReference->AddRef();
+    (void)_trackerObject->AddRef();
 }
 
 NativeObjectWrapperContext::~NativeObjectWrapperContext()
 {
-    _trackerObject = nullptr;
-    (void)_objectReference->Release();
+    (void)_trackerObject->Release();
 }
 
 void* NativeObjectWrapperContext::GetRuntimeContext() const
@@ -639,7 +634,7 @@ void* NativeObjectWrapperContext::GetRuntimeContext() const
     return _runtimeContext;
 }
 
-IReferenceTracker* NativeObjectWrapperContext::GetReferenceTrackerFast() const
+IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const
 {
     return _trackerObject;
 }

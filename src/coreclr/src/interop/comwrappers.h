@@ -121,7 +121,6 @@ class NativeObjectWrapperContext
 #endif
 
     IReferenceTracker* _trackerObject;
-    IAgileReference* _objectReference;
     void* _runtimeContext;
 
 public: // static
@@ -139,22 +138,15 @@ public: // static
     static void Destroy(_In_ NativeObjectWrapperContext* wrapper);
 
 private:
-    NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ IAgileReference* reference, _In_ void* runtimeContext);
+    NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ void* runtimeContext);
     ~NativeObjectWrapperContext();
 
 public:
     // Get the associated runtime context for this context.
     void* GetRuntimeContext() const;
 
-    // Get the IReferenceTracker instance without going through the reference proxy.
-    IReferenceTracker* GetReferenceTrackerFast() const;
-
-    // Get a type instance of the desired type through the reference proxy.
-    template<typename T>
-    HRESULT GetInstanceProxy(_Outptr_ T** t)
-    {
-        return _objectReference->Resolve(t);
-    }
+    // Get the IReferenceTracker instance.
+    IReferenceTracker* GetReferenceTracker() const;
 };
 
 // API for creating an IAgileReference instance to a supplied IUnknown instance.

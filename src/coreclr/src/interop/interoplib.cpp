@@ -60,10 +60,11 @@ namespace InteropLib
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
             _In_ INT32 flagsRaw,
-            _In_ size_t contextSize, 
-            _Outptr_ void** context) noexcept
+            _In_ size_t contextSize,
+            _Outptr_ void** context,
+            _Outptr_ IUnknown** agileReference) noexcept
         {
-            _ASSERTE(external != nullptr && context != nullptr);
+            _ASSERTE(external != nullptr && context != nullptr && agileReference != nullptr);
 
             HRESULT hr;
 
@@ -72,6 +73,10 @@ namespace InteropLib
 
             NativeObjectWrapperContext* wrapperContext;
             RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
+
+            ComHolder<IAgileReference> reference;
+            RETURN_IF_FAILED(CreateAgileReference(external, &reference));
+            *agileReference = reference.Detach();
 
             *context = wrapperContext->GetRuntimeContext();
             return S_OK;
@@ -85,7 +90,7 @@ namespace InteropLib
             _ASSERTE(context != nullptr);
 
             // Check if the tracker object manager should be informed prior to being destroyed.
-            if (context->GetReferenceTrackerFast() != nullptr)
+            if (context->GetReferenceTracker() != nullptr)
             {
                 // We only call this during a GC so ignore the failure as
                 // there is no way we can handle that failure at this point.

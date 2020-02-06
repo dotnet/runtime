@@ -29,6 +29,9 @@ namespace InteropLibImports
 
     // [TODO] HRESULT RequestGarbageCollectionForExternal() noexcept;
 
+    // Release objects associated with the current thread.
+    HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
+
     // Delete Object instance handle
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
