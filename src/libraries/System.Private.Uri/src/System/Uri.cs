@@ -3225,7 +3225,7 @@ namespace System
             ushort idx = _info.Offset.Scheme;
             ushort length = (ushort)_string.Length;
             Check result = Check.None;
-            UriSyntaxFlags syntaxFlags = _syntax.Flags;    // perf
+            UriSyntaxFlags syntaxFlags = _syntax.Flags;
 
             // m_Info.Offset values may be parsed twice but we lock only on m_Flags update.
 
@@ -3992,9 +3992,9 @@ namespace System
             ushort start = idx;
             newHost = null;
             bool justNormalized = false;
-            bool iriParsing = IriParsingStatic(syntax); // perf
-            bool hasUnicode = ((flags & Flags.HasUnicode) != 0); // perf
-            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
+            bool iriParsing = IriParsingStatic(syntax);
+            bool hasUnicode = ((flags & Flags.HasUnicode) != 0);
+            bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0);
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
             //Special case is an empty authority
