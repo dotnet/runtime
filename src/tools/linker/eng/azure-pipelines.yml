@@ -94,23 +94,6 @@ stages:
             displayName: Build illink.sln $(_BuildConfig)
 
       - ${{ if eq(variables.officialBuild, 'false') }}:
-        - job: Linux_Mono
-          pool:
-            name: Hosted Ubuntu 1604
-          steps:
-          - checkout: self
-            submodules: true
-          - script: |
-              mkdir -p artifacts/log/$(_BuildConfig)
-              mono --version | tee artifacts/log/$(_BuildConfig)/mono-version.txt
-              make -C monobuild CONFIGURATION=$(_BuildConfig)
-            displayName: Build and test
-          - task: PublishTestResults@2
-            inputs:
-              testResultsFormat: 'NUnit'
-              testResultsFiles: 'test/Mono.Linker.Tests/TestResults.xml'
-
-      - ${{ if eq(variables.officialBuild, 'false') }}:
         - job: macOS
           pool:
               name: Hosted MacOS
@@ -126,6 +109,22 @@ stages:
               # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
               MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
             displayName: Build illink.sln $(_BuildConfig)
+
+  - ${{ if eq(variables.officialBuild, 'false') }}:
+    - job: Linux_Mono
+      pool:
+        name: Hosted Ubuntu 1604
+      steps:
+      - checkout: self
+        submodules: true
+      - script: |
+          mono --version
+          make -C monobuild CONFIGURATION=$(_BuildConfig)
+        displayName: Build and test
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFormat: 'NUnit'
+          testResultsFiles: 'test/Mono.Linker.Tests/TestResults.xml'
 
 # Post-Build Arcade logic
 - ${{ if eq(variables.officialBuild, 'true') }}:

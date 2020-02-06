@@ -4,6 +4,5 @@
     <FileSignInfo Include="Mono.Cecil.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Mdb.dll" CertificateName="3PartySHA2" />
     <FileSignInfo Include="Mono.Cecil.Pdb.dll" CertificateName="3PartySHA2" />
-    <FileSignInfo Include="illink.dll" CertificateName="3PartySHA2" />
   </ItemGroup>
 </Project>
