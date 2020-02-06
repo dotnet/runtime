@@ -340,7 +340,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     // trashing your program...
     _ASSERTE((buflen < (DWORD) BUFFERSIZE) && "Log text is too long!") ;
 
-#if !PLATFORM_UNIX
+#if !TARGET_UNIX
     //convert NL's to CR NL to fixup notepad
     const int BUFFERSIZE2 = BUFFERSIZE + 500;
     char rgchBuffer2[BUFFERSIZE2];
@@ -361,7 +361,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     buflen = (DWORD)(d - pBuffer2);
     pBuffer = pBuffer2;
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
     if (LogFlags & LOG_ENABLE_FILE_LOGGING && LogFileHandle != INVALID_HANDLE_VALUE)
     {

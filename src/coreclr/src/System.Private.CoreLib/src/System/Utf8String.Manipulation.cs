@@ -345,7 +345,7 @@ namespace System
         [StackTraceHidden]
         private void ValidateStartIndexAndLength(int startIndex, int length)
         {
-#if BIT64
+#if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
             if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)this.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();

@@ -83,13 +83,9 @@ jobs:
         ${{ if and(eq(parameters.osGroup, 'FreeBSD'), ne(variables['System.TeamProject'], 'public')) }}:
           name: dnceng-freebsd-internal
 
-        # Official Build OSX Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted Mac Internal
-
         # Public OSX Build Pool
-        ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
-          name: Hosted macOS
+        ${{ if eq(parameters.osGroup, 'OSX') }}:
+          vmImage: 'macOS-10.14'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:

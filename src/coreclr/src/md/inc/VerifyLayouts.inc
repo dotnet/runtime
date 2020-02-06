@@ -283,7 +283,7 @@ BEGIN_TYPE(StgPoolReadOnly, sizeof(StgPoolSeg) + sizeof(void*))                 
 ALIGN_FIELD(StgPoolReadOnly, m_HotHeap, sizeof(MetaData::HotHeap), sizeof(void*))
 END_TYPE(StgPoolReadOnly, sizeof(void*))
 
-BEGIN_TYPE_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, sizeof(void*))
+BEGIN_TYPE_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, 0)
 FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_table, sizeof(void*))
 FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableSize, 4)
 FIELD_ESCAPED(IGNORE_COMMAS(MapSHash<ULONG, ULONG>), MapSHash__ULONG__ULONG, m_tableCount, 4)

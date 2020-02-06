@@ -39,7 +39,7 @@ else()
     windows/gcenv.windows.cpp)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   set(GC_HEADERS
     env/common.h
     env/etmdummy.h
@@ -75,9 +75,9 @@ if (WIN32)
     handletablepriv.h
     objecthandle.h
     softwarewritewatch.h)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   set (GC_LINK_LIBRARIES
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
@@ -85,7 +85,7 @@ if(WIN32)
     advapi32.lib)
 else()
   set (GC_LINK_LIBRARIES)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 list(APPEND GC_SOURCES ${GC_HEADERS})
 

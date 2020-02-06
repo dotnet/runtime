@@ -17,6 +17,88 @@ namespace System.Net.Sockets
 
         internal void ReplaceHandleIfNecessaryAfterFailedConnect() { /* nop on Windows */ }
 
+        public Socket(SocketInformation socketInformation)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            InitializeSockets();
+
+            SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
+                ref _addressFamily, ref _socketType, ref _protocolType);
+
+            if (errorCode != SocketError.Success)
+            {
+                Debug.Assert(_handle.IsInvalid);
+                _handle = null;
+
+                if (errorCode == SocketError.InvalidArgument)
+                {
+                    throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
+                }
+
+                // Failed to create the socket, throw.
+                throw new SocketException((int)errorCode);
+            }
+
+            if (_addressFamily != AddressFamily.InterNetwork && _addressFamily != AddressFamily.InterNetworkV6)
+            {
+                _handle.Dispose();
+                _handle = null;
+                throw new NotSupportedException(SR.net_invalidversion);
+            }
+
+            _isConnected = socketInformation.GetOption(SocketInformationOptions.Connected);
+            _willBlock = !socketInformation.GetOption(SocketInformationOptions.NonBlocking);
+            InternalSetBlocking(_willBlock);
+            _isListening = socketInformation.GetOption(SocketInformationOptions.Listening);
+
+            IPAddress tempAddress = _addressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
+            IPEndPoint ep = new IPEndPoint(tempAddress, 0);
+
+            Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(ep);
+            errorCode = SocketPal.GetSockName(_handle, socketAddress.Buffer, ref socketAddress.InternalSize);
+
+            if (errorCode == SocketError.Success)
+            {
+                _rightEndPoint = ep.Create(socketAddress);
+            }
+            else if (errorCode == SocketError.InvalidArgument)
+            {
+                // Socket is not yet bound.
+            }
+            else
+            {
+                _handle.Dispose();
+                _handle = null;
+                throw new SocketException((int)errorCode);
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+        }
+
+        public SocketInformation DuplicateAndClose(int targetProcessId)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, targetProcessId);
+
+            ThrowIfDisposed();
+
+            SocketError errorCode = SocketPal.DuplicateSocket(_handle, targetProcessId, out SocketInformation info);
+
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int)errorCode);
+            }
+
+            info.SetOption(SocketInformationOptions.Connected, Connected);
+            info.SetOption(SocketInformationOptions.NonBlocking, !Blocking);
+            info.SetOption(SocketInformationOptions.Listening, _isListening);
+
+            Close(timeout: -1);
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return info;
+        }
+
         private void EnsureDynamicWinsockMethods()
         {
             if (_dynamicWinsockMethods == null)

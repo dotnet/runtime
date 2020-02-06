@@ -306,7 +306,9 @@ namespace System.Text.Json
                     valueSpan.CopyTo(rentedSpan);
                 }
 
-                var newReader = new Utf8JsonReader(rentedSpan, isFinalBlock: true, state: default);
+                JsonReaderOptions originalReaderOptions = state.Options;
+
+                var newReader = new Utf8JsonReader(rentedSpan, originalReaderOptions);
 
                 ReadCore(options, ref newReader, ref readStack);
 

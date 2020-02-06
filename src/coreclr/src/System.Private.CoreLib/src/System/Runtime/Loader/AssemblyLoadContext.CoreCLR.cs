@@ -67,7 +67,7 @@ namespace System.Runtime.Loader
             return loadedAssembly!;
         }
 
-#if !FEATURE_PAL
+#if TARGET_WINDOWS
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyLoadContext, IntPtr hModule, ObjectHandleOnStack retAssembly);
 

@@ -9,10 +9,10 @@ namespace System.Reflection.TypeLoading
     internal sealed class RoPseudoCustomAttributeData : RoCustomAttributeData
     {
         private readonly ConstructorInfo _constructor;
-        private readonly Func<CustomAttributeArguments> _argumentsPromise;
+        private readonly Func<CustomAttributeArguments>? _argumentsPromise;
 
-        private volatile IList<CustomAttributeTypedArgument> _lazyFixedArguments;
-        private volatile IList<CustomAttributeNamedArgument> _lazyNamedArguments;
+        private volatile IList<CustomAttributeTypedArgument>? _lazyFixedArguments;
+        private volatile IList<CustomAttributeNamedArgument>? _lazyNamedArguments;
 
         //
         // For complex custom attributes, use this overload to defer the work of constructing the argument lists until needed.
@@ -23,7 +23,7 @@ namespace System.Reflection.TypeLoading
             _argumentsPromise = argumentsPromise;
         }
 
-        internal RoPseudoCustomAttributeData(ConstructorInfo constructor, IList<CustomAttributeTypedArgument> fixedArguments = null, IList<CustomAttributeNamedArgument> namedArguments = null)
+        internal RoPseudoCustomAttributeData(ConstructorInfo constructor, IList<CustomAttributeTypedArgument>? fixedArguments = null, IList<CustomAttributeNamedArgument>? namedArguments = null)
         {
             _constructor = constructor;
             _lazyFixedArguments = fixedArguments ?? Array.Empty<CustomAttributeTypedArgument>();
@@ -36,12 +36,12 @@ namespace System.Reflection.TypeLoading
         private IList<CustomAttributeTypedArgument> GetLatchedFixedArguments() => _lazyFixedArguments ?? LazilyComputeArguments().FixedArguments;
         private IList<CustomAttributeNamedArgument> GetLatchedNamedArguments() => _lazyNamedArguments ?? LazilyComputeArguments().NamedArguments;
 
-        protected sealed override Type ComputeAttributeType() => _constructor.DeclaringType;
+        protected sealed override Type? ComputeAttributeType() => _constructor.DeclaringType;
         protected sealed override ConstructorInfo ComputeConstructor() => _constructor;
 
         private CustomAttributeArguments LazilyComputeArguments()
         {
-            CustomAttributeArguments ca = _argumentsPromise();
+            CustomAttributeArguments ca = _argumentsPromise!();
             _lazyFixedArguments = ca.FixedArguments;
             _lazyNamedArguments = ca.NamedArguments;
             return ca;

@@ -68,23 +68,27 @@ namespace System.Text
         /// <summary>Creates a string from all the segments in the builder and then disposes of the builder.</summary>
         public override string ToString()
         {
+            ReadOnlyMemory<char>[] array = _array;
+            var span = new Span<ReadOnlyMemory<char>>(array, 0, _count);
+
             int length = 0;
-            foreach (ReadOnlyMemory<char> segment in AsSpan())
+            for (int i = 0; i < span.Length; i++)
             {
-                length += segment.Length;
+                length += span[i].Length;
             }
 
             string result = string.Create(length, this, (dest, builder) =>
             {
-                foreach (ReadOnlyMemory<char> segment in builder.AsSpan())
+                Span<ReadOnlyMemory<char>> localSpan = builder.AsSpan();
+                for (int i = 0; i < localSpan.Length; i++)
                 {
-                    segment.Span.CopyTo(dest);
+                    ReadOnlySpan<char> segment = localSpan[i].Span;
+                    segment.CopyTo(dest);
                     dest = dest.Slice(segment.Length);
                 }
             });
 
-            ReadOnlyMemory<char>[] array = _array;
-            AsSpan().Clear(); // clear just what's been filled
+            span.Clear();
             this = default;
             ArrayPool<ReadOnlyMemory<char>>.Shared.Return(array);
 

@@ -68,7 +68,7 @@ namespace System.Security.AccessControl
 
         public GenericAce Current
         {
-            get { return ((IEnumerator)this).Current as GenericAce; }
+            get { return (GenericAce)((IEnumerator)this).Current!; }
         }
 
         public bool MoveNext()
@@ -222,7 +222,7 @@ namespace System.Security.AccessControl
 
         public AceEnumerator GetEnumerator()
         {
-            return ((IEnumerable)this).GetEnumerator() as AceEnumerator;
+            return (AceEnumerator)((IEnumerable)this).GetEnumerator();
         }
 
         #endregion
@@ -234,7 +234,7 @@ namespace System.Security.AccessControl
         #region Private Members
 
         private byte _revision;
-        private List<GenericAce> _aces;
+        private List<GenericAce> _aces = null!; // Initialized in helper
 
         #endregion
 
@@ -986,10 +986,7 @@ nameof(binaryForm));
             }
             else
             {
-                KnownAce k_ace1 = ace1 as KnownAce;
-                KnownAce k_ace2 = ace2 as KnownAce;
-
-                if (k_ace1 != null && k_ace2 != null)
+                if (ace1 is KnownAce k_ace1 && ace2 is KnownAce k_ace2)
                 {
                     int result = k_ace1.SecurityIdentifier.CompareTo(k_ace2.SecurityIdentifier);
 
@@ -1089,7 +1086,7 @@ nameof(binaryForm));
             // Any ACE without at least one bit set in the access mask can be removed
             //
 
-            KnownAce knownAce = ace as KnownAce;
+            KnownAce? knownAce = ace as KnownAce;
 
             if (knownAce != null)
             {
@@ -1146,7 +1143,7 @@ nameof(binaryForm));
                 }
             }
 
-            QualifiedAce qualifiedAce = knownAce as QualifiedAce;
+            QualifiedAce? qualifiedAce = knownAce as QualifiedAce;
 
             if (isDacl)
             {
@@ -1242,14 +1239,14 @@ nameof(binaryForm));
             {
                 for (int i = 0; i < Count - 1; i++)
                 {
-                    QualifiedAce thisAce = _acl[i] as QualifiedAce;
+                    QualifiedAce? thisAce = _acl[i] as QualifiedAce;
 
                     if (thisAce == null)
                     {
                         continue;
                     }
 
-                    QualifiedAce nextAce = _acl[i + 1] as QualifiedAce;
+                    QualifiedAce? nextAce = _acl[i + 1] as QualifiedAce;
 
                     if (nextAce == null)
                     {
@@ -1387,10 +1384,9 @@ nameof(binaryForm));
                 //
 
 
-                if (ace is ObjectAce)
+                if (ace is ObjectAce objectAce)
                 {
                     bool commonAccessBitsWithObjectTypeExist = true;
-                    ObjectAce objectAce = ace as ObjectAce;
 
                     //
                     // if what we are trying to remove has an object type
@@ -1444,10 +1440,9 @@ nameof(binaryForm));
                 //
 
 
-                if (ace is ObjectAce)
+                if (ace is ObjectAce objectAce)
                 {
                     bool commonInheritanceFlagsExist = true;
-                    ObjectAce objectAce = ace as ObjectAce;
 
                     //
                     // if what we are trying to remove has an inherited object type
@@ -1484,8 +1479,8 @@ nameof(binaryForm));
 
         private static bool AceOpaquesMatch(QualifiedAce ace, QualifiedAce newAce)
         {
-            byte[] aceOpaque = ace.GetOpaque();
-            byte[] newAceOpaque = newAce.GetOpaque();
+            byte[]? aceOpaque = ace.GetOpaque();
+            byte[]? newAceOpaque = newAce.GetOpaque();
 
             if (aceOpaque == null || newAceOpaque == null)
             {
@@ -1713,7 +1708,7 @@ nameof(binaryForm));
                     }
                     else
                     {
-                        QualifiedAce qualifiedAce = ace as QualifiedAce;
+                        QualifiedAce? qualifiedAce = ace as QualifiedAce;
 
                         if (qualifiedAce == null)
                         {
@@ -1794,7 +1789,7 @@ nameof(binaryForm));
                     }
                     else
                     {
-                        QualifiedAce qualifiedAce = ace as QualifiedAce;
+                        QualifiedAce? qualifiedAce = ace as QualifiedAce;
 
                         if (qualifiedAce == null)
                         {
@@ -2048,14 +2043,14 @@ nameof(accessMask));
 
             for (int i = 0; i < Count; i++)
             {
-                QualifiedAce ace = _acl[i] as QualifiedAce;
+                QualifiedAce? ace = _acl[i] as QualifiedAce;
 
                 if (ace == null)
                 {
                     continue;
                 }
 
-                if (true == MergeAces(ref ace, newAce as QualifiedAce))
+                if (true == MergeAces(ref ace, (QualifiedAce)newAce))
                 {
                     aceMerged = true;
                     break;
@@ -2125,7 +2120,7 @@ nameof(accessMask));
 
             for (int i = 0; i < Count; i++)
             {
-                QualifiedAce ace = _acl[i] as QualifiedAce;
+                QualifiedAce? ace = _acl[i] as QualifiedAce;
 
                 //
                 // Not a qualified ACE - keep going
@@ -2248,7 +2243,7 @@ nameof(flags));
             {
                 for (int i = 0; i < Count; i++)
                 {
-                    QualifiedAce ace = _acl[i] as QualifiedAce;
+                    QualifiedAce? ace = _acl[i] as QualifiedAce;
 
                     //
                     // Not a qualified ACE - keep going
@@ -2440,12 +2435,12 @@ nameof(flags));
                     ps_AceFlags = ace.AceFlags;
                     unchecked { ps_AccessMask = ace.AccessMask & ~accessMask; }
 
-                    if (ace is ObjectAce)
+                    if (ace is ObjectAce oAce)
                     {
                         //
                         // determine what should be the object/inherited object types on the permission split
                         //
-                        GetObjectTypesForSplit(ace as ObjectAce, ps_AccessMask /* access mask for this split */, ps_AceFlags /* flags remain the same */, out ps_ObjectAceFlags, out ps_ObjectAceType, out ps_InheritedObjectAceType);
+                        GetObjectTypesForSplit(oAce, ps_AccessMask /* access mask for this split */, ps_AceFlags /* flags remain the same */, out ps_ObjectAceFlags, out ps_ObjectAceType, out ps_InheritedObjectAceType);
                     }
 
                     //
@@ -2469,12 +2464,12 @@ nameof(flags));
 
                         as_AccessMask = (ace.AccessMask & accessMask);
 
-                        if (ace is ObjectAce)
+                        if (ace is ObjectAce objAce)
                         {
                             //
                             // determine what should be the object/inherited object types on the audit split
                             //
-                            GetObjectTypesForSplit(ace as ObjectAce, as_AccessMask /* access mask for this split */, as_AceFlags /* flags remain the same for inheritance */, out as_ObjectAceFlags, out as_ObjectAceType, out as_InheritedObjectAceType);
+                            GetObjectTypesForSplit(objAce, as_AccessMask /* access mask for this split */, as_AceFlags /* flags remain the same for inheritance */, out as_ObjectAceFlags, out as_ObjectAceType, out as_InheritedObjectAceType);
                         }
                     }
 
@@ -2506,12 +2501,12 @@ nameof(flags));
                         {
                             mergeResultFlags |= (ms_AceFlags & AceFlags.AuditFlags);
 
-                            if (ace is ObjectAce)
+                            if (ace is ObjectAce objAce)
                             {
                                 //
                                 // determine what should be the object/inherited object types on the merge split
                                 //
-                                GetObjectTypesForSplit(ace as ObjectAce, ms_AccessMask /* access mask for this split */, mergeResultFlags /* flags for this split */, out ms_ObjectAceFlags, out ms_ObjectAceType, out ms_InheritedObjectAceType);
+                                GetObjectTypesForSplit(objAce, ms_AccessMask /* access mask for this split */, mergeResultFlags /* flags for this split */, out ms_ObjectAceFlags, out ms_ObjectAceType, out ms_InheritedObjectAceType);
                             }
                         }
                     }
@@ -2549,10 +2544,8 @@ nameof(flags));
                                 ace.AceFlags = ps_AceFlags;
                                 ace.AccessMask = ps_AccessMask;
 
-                                if (ace is ObjectAce)
+                                if (ace is ObjectAce objectAce)
                                 {
-                                    ObjectAce objectAce = ace as ObjectAce;
-
                                     objectAce.ObjectAceFlags = ps_ObjectAceFlags;
                                     objectAce.ObjectAceType = ps_ObjectAceType;
                                     objectAce.InheritedObjectAceType = ps_InheritedObjectAceType;
@@ -2661,7 +2654,7 @@ nameof(flags));
 
             for (int i = 0; i < Count; i++)
             {
-                QualifiedAce ace = _acl[i] as QualifiedAce;
+                QualifiedAce? ace = _acl[i] as QualifiedAce;
 
                 //
                 // Not a qualified ACE - keep going
@@ -2724,12 +2717,11 @@ nameof(flags));
                     // objectType and inheritedObjectType
                     //
 
-                    if ((ace is ObjectAce) && (objectFlags != ObjectAceFlags.None))
+                    if ((ace is ObjectAce objectAce) && (objectFlags != ObjectAceFlags.None))
                     {
                         //
                         // both are object aces, so must match in object type and inherited object type
                         //
-                        ObjectAce objectAce = ace as ObjectAce;
 
                         if ((!objectAce.ObjectTypesMatch(objectFlags, objectType))
                             || (!objectAce.InheritedObjectTypesMatch(objectFlags, inheritedObjectType)))
@@ -2881,7 +2873,7 @@ nameof(flags));
 
             for (int i = Count - 1; i >= 0; i--)
             {
-                KnownAce ace = _acl[i] as KnownAce;
+                KnownAce? ace = _acl[i] as KnownAce;
 
                 //
                 // Skip over unknown ACEs
@@ -3091,7 +3083,7 @@ nameof(flags));
         // after canonicalizing it
         //
 
-        public DiscretionaryAcl(bool isContainer, bool isDS, RawAcl rawAcl)
+        public DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl)
             : this(isContainer, isDS, rawAcl, false)
         {
         }
@@ -3101,7 +3093,7 @@ nameof(flags));
         // takes ownership of the given raw ACL
         //
 
-        internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl rawAcl, bool trusted)
+        internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl, bool trusted)
             : base(isContainer, isDS, rawAcl == null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
         {
         }

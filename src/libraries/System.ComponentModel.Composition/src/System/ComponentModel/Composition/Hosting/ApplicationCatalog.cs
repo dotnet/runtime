@@ -16,10 +16,10 @@ namespace System.ComponentModel.Composition.Hosting
     public partial class ApplicationCatalog : ComposablePartCatalog, ICompositionElement
     {
         private bool _isDisposed = false;
-        private volatile AggregateCatalog _innerCatalog = null;
+        private volatile AggregateCatalog? _innerCatalog = null;
         private readonly object _thisLock = new object();
-        private readonly ICompositionElement _definitionOrigin = null;
-        private readonly ReflectionContext _reflectionContext = null;
+        private readonly ICompositionElement? _definitionOrigin = null;
+        private readonly ReflectionContext? _reflectionContext = null;
 
         public ApplicationCatalog() { }
 
@@ -82,7 +82,7 @@ namespace System.ComponentModel.Composition.Hosting
                             catalogs.Add(CreateCatalog(location, "*.exe"));
                             catalogs.Add(CreateCatalog(location, "*.dll"));
 
-                            string relativeSearchPath = AppDomain.CurrentDomain.RelativeSearchPath;
+                            string? relativeSearchPath = AppDomain.CurrentDomain.RelativeSearchPath;
                             if (!string.IsNullOrEmpty(relativeSearchPath))
                             {
                                 string[] probingPaths = relativeSearchPath.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
@@ -111,7 +111,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (!_isDisposed)
                 {
-                    IDisposable innerCatalog = null;
+                    IDisposable? innerCatalog = null;
                     lock (_thisLock)
                     {
                         innerCatalog = _innerCatalog as IDisposable;
@@ -213,7 +213,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     This property always returns <see langword="null"/>.
         /// </value>
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
-        ICompositionElement ICompositionElement.Origin
+        ICompositionElement? ICompositionElement.Origin
         {
             get { return null; }
         }

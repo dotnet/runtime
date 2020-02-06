@@ -505,7 +505,7 @@ namespace System.Globalization
 
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
 
-            if ((options & ValidSortkeyCtorMaskOffFlags) != 0)
+            if ((options & ValidCompareMaskOffFlags) != 0)
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }

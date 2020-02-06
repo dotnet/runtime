@@ -58,6 +58,20 @@ namespace System.Net.Http
 
         internal static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';
 
+        internal static int ParseStatusCode(ReadOnlySpan<byte> value)
+        {
+            byte status1, status2, status3;
+            if (value.Length != 3 ||
+                !IsDigit(status1 = value[0]) ||
+                !IsDigit(status2 = value[1]) ||
+                !IsDigit(status3 = value[2]))
+            {
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, System.Text.Encoding.ASCII.GetString(value)));
+            }
+
+            return 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
+        }
+
         /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
         internal static void IgnoreExceptions(ValueTask<int> task)
         {

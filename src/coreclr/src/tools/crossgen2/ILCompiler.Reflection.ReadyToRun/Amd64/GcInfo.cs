@@ -203,42 +203,42 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"\tVersion: {Version}");
-            sb.AppendLine($"\tCodeLength: {CodeLength}");
-            sb.AppendLine($"\tReturnKind: {Enum.GetName(typeof(ReturnKinds), ReturnKind)}");
-            sb.AppendLine($"\tValidRangeStart: {ValidRangeStart}");
-            sb.AppendLine($"\tValidRangeEnd: {ValidRangeEnd}");
+            sb.AppendLine($"    Version: {Version}");
+            sb.AppendLine($"    CodeLength: {CodeLength}");
+            sb.AppendLine($"    ReturnKind: {Enum.GetName(typeof(ReturnKinds), ReturnKind)}");
+            sb.AppendLine($"    ValidRangeStart: {ValidRangeStart}");
+            sb.AppendLine($"    ValidRangeEnd: {ValidRangeEnd}");
             if (SecurityObjectStackSlot != -1)
-                sb.AppendLine($"\tSecurityObjectStackSlot: caller.sp{SecurityObjectStackSlot:+#;-#;+0}");
+                sb.AppendLine($"    SecurityObjectStackSlot: caller.sp{SecurityObjectStackSlot:+#;-#;+0}");
 
             if (GSCookieStackSlot != -1)
             {
-                sb.AppendLine($"\tGSCookieStackSlot: caller.sp{GSCookieStackSlot:+#;-#;+0}");
-                sb.AppendLine($"GS cookie valid range: [{ValidRangeStart};{ValidRangeEnd})");
+                sb.AppendLine($"    GSCookieStackSlot: caller.sp{GSCookieStackSlot:+#;-#;+0}");
+                sb.AppendLine($"    GS cookie valid range: [{ValidRangeStart};{ValidRangeEnd})");
             }
 
             if (PSPSymStackSlot != -1)
             {
                 if (_machine == Machine.Amd64)
                 {
-                    sb.AppendLine($"\tPSPSymStackSlot: initial.sp{PSPSymStackSlot:+#;-#;+0}");
+                    sb.AppendLine($"    PSPSymStackSlot: initial.sp{PSPSymStackSlot:+#;-#;+0}");
                 }
                 else
                 {
-                    sb.AppendLine($"\tPSPSymStackSlot: caller.sp{PSPSymStackSlot:+#;-#;+0}");
+                    sb.AppendLine($"    PSPSymStackSlot: caller.sp{PSPSymStackSlot:+#;-#;+0}");
                 }
             }
 
             if (GenericsInstContextStackSlot != -1)
             {
-                sb.AppendLine($"\tGenericsInstContextStackSlot: caller.sp{GenericsInstContextStackSlot:+#;-#;+0}");
+                sb.AppendLine($"    GenericsInstContextStackSlot: caller.sp{GenericsInstContextStackSlot:+#;-#;+0}");
             }
 
             if (_machine == Machine.Amd64)
             {
                 if (StackBaseRegister != 0xffffffff)
-                    sb.AppendLine($"\tStackBaseRegister: {(Amd64.Registers)StackBaseRegister}");
-                sb.AppendLine($"\tWants Report Only Leaf: {_wantsReportOnlyLeaf}");
+                    sb.AppendLine($"    StackBaseRegister: {(Amd64.Registers)StackBaseRegister}");
+                sb.AppendLine($"    Wants Report Only Leaf: {_wantsReportOnlyLeaf}");
             }
             else if (_machine == Machine.ArmThumb2 || _machine == Machine.Arm64)
             {
@@ -246,29 +246,29 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 {
                     if (_machine == Machine.ArmThumb2)
                     {
-                        sb.AppendLine($"\tStackBaseRegister: {(Arm.Registers)StackBaseRegister}");
+                        sb.AppendLine($"    StackBaseRegister: {(Arm.Registers)StackBaseRegister}");
                     }
                     else
                     {
-                        sb.AppendLine($"\tStackBaseRegister: {(Arm64.Registers)StackBaseRegister}");
+                        sb.AppendLine($"    StackBaseRegister: {(Arm64.Registers)StackBaseRegister}");
                     }
                 }
 
-                sb.AppendLine($"\tHas Tailcalls: {_wantsReportOnlyLeaf}");
+                sb.AppendLine($"    Has Tailcalls: {_wantsReportOnlyLeaf}");
             }
 
-            sb.AppendLine($"\tSize of parameter area: 0x{SizeOfStackOutgoingAndScratchArea:X}");
+            sb.AppendLine($"    Size of parameter area: 0x{SizeOfStackOutgoingAndScratchArea:X}");
             if (SizeOfEditAndContinuePreservedArea != 0xffffffff)
-                sb.AppendLine($"\tSizeOfEditAndContinuePreservedArea: 0x{SizeOfEditAndContinuePreservedArea:X}");
+                sb.AppendLine($"    SizeOfEditAndContinuePreservedArea: 0x{SizeOfEditAndContinuePreservedArea:X}");
             if (ReversePInvokeFrameStackSlot != -1)
-                sb.AppendLine($"\tReversePInvokeFrameStackSlot: {ReversePInvokeFrameStackSlot}");
-            sb.AppendLine($"\tNumSafePoints: {NumSafePoints}");
-            sb.AppendLine($"\tNumInterruptibleRanges: {NumInterruptibleRanges}");
-            sb.AppendLine($"\tSafePointOffsets:");
+                sb.AppendLine($"    ReversePInvokeFrameStackSlot: {ReversePInvokeFrameStackSlot}");
+            sb.AppendLine($"    NumSafePoints: {NumSafePoints}");
+            sb.AppendLine($"    NumInterruptibleRanges: {NumInterruptibleRanges}");
+            sb.AppendLine($"    SafePointOffsets:");
             foreach (SafePointOffset offset in SafePointOffsets)
             {
                 IEnumerable<BaseGcSlot> liveSlotsForOffset = (LiveSlotsAtSafepoints != null ? LiveSlotsAtSafepoints[offset.Index] : Enumerable.Empty<BaseGcSlot>());
-                sb.Append($"\t\t0x{offset.Value:X4}: ");
+                sb.Append($"        0x{offset.Value:X4}: ");
                 bool haveLiveSlots = false;
                 GcSlotFlags slotFlags = GcSlotFlags.GC_SLOT_INVALID;
                 foreach (BaseGcSlot slot in liveSlotsForOffset)
@@ -289,14 +289,14 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 }
                 sb.AppendLine();
             }
-            sb.AppendLine($"\tInterruptibleRanges:");
+            sb.AppendLine($"    InterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)
             {
-                sb.AppendLine($"\t\tstart:{range.StartOffset}, end:{range.StopOffset}");
+                sb.AppendLine($"        start:{range.StartOffset}, end:{range.StopOffset}");
             }
-            sb.AppendLine($"\tSlotTable:");
+            sb.AppendLine($"    SlotTable:");
             sb.Append(SlotTable.ToString());
-            sb.AppendLine($"\tSize: {Size} bytes");
+            sb.AppendLine($"    Size: {Size} bytes");
 
             return sb.ToString();
         }

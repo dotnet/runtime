@@ -349,7 +349,8 @@ mini_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 }
 
 static void
-mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, int explicit_align, gboolean native)
+mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, int explicit_align, gboolean native,
+								gboolean stack_store)
 {
 	MonoInst *iargs [4];
 	int size;
@@ -404,8 +405,8 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 
 		mini_emit_write_barrier (cfg, dest, load);
 		return;
-
-	} else if (cfg->gen_write_barriers && (m_class_has_references (klass) || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
+	} else if (cfg->gen_write_barriers && (m_class_has_references (klass) || size_ins) &&
+			   !native && !stack_store) { 	/* if native is true there should be no references in the struct */
 		/* Avoid barriers when storing to the stack */
 		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
 			  (dest->opcode == OP_LDADDR))) {
@@ -504,7 +505,7 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);
 		EMIT_NEW_TEMPSTORE (cfg, mov, tmp_var->inst_c0, value);
 		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
-		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type_internal (type), 1, FALSE);
+		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type_internal (type), 1, FALSE, (ins_flag & MONO_INST_STACK_STORE) != 0);
 	} else {
 		MonoInst *ins;
 
@@ -594,7 +595,7 @@ mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClas
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 	}
 
-	mini_emit_memory_copy_internal (cfg, dest, src, klass, explicit_align, native);
+	mini_emit_memory_copy_internal (cfg, dest, src, klass, explicit_align, native, (ins_flag & MONO_INST_STACK_STORE) != 0);
 
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */

@@ -318,7 +318,7 @@ jobs:
         parameters.archType,
         parameters.liveRuntimeBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_netcoreapp_${{ format('{0}{1}_{2}_{3}',
+    - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
@@ -328,7 +328,7 @@ jobs:
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
       - ${{ parameters.runtimeFlavor }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-      - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 

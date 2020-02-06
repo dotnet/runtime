@@ -1,20 +1,12 @@
 include(CheckPIESupported)
 
-# All code we build should be compiled as position independent
-check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES CXX)
-if(NOT MSVC AND NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
-  message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                  "PIE link options will not be passed to linker.")
-endif()
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
 #----------------------------------------
 # Detect and set platform variable names
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
 #     - for windows we use the passed in parameter to CMAKE to determine build arch
 #----------------------------------------
 set(CLR_CMAKE_HOST_OS ${CMAKE_SYSTEM_NAME})
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_HOST_OS STREQUAL Linux)
     set(CLR_CMAKE_HOST_UNIX 1)
     if(CLR_CROSS_COMPONENTS_BUILD)
         # CMAKE_HOST_SYSTEM_PROCESSOR returns the value of `uname -p` on host.
@@ -42,6 +34,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
             set(CLR_CMAKE_HOST_UNIX_AMD64 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
+            set(CLR_CMAKE_HOST_UNIX_ARMV7L 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
@@ -72,54 +65,62 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+        elseif(CLR_CMAKE_LINUX_ID STREQUAL android)
+            set(CLR_CMAKE_HOST_ANDROID 1)
+            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_DARWIN 1)
-  set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_FREEBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_OPENBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_NETBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  EXECUTE_PROCESS(
-    COMMAND isainfo -n
-    OUTPUT_VARIABLE SUNOS_NATIVE_INSTRUCTION_SET
-    )
-  if(SUNOS_NATIVE_INSTRUCTION_SET MATCHES "amd64")
+if(CLR_CMAKE_HOST_OS STREQUAL Darwin)
+    set(CLR_CMAKE_HOST_UNIX 1)
     set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-    set(CMAKE_SYSTEM_PROCESSOR "amd64")
-  else()
-    clr_unknown_arch()
-  endif()
-  set(CLR_CMAKE_HOST_SUNOS 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
+    set(CLR_CMAKE_HOST_DARWIN 1)
+    set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
+endif(CLR_CMAKE_HOST_OS STREQUAL Darwin)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Windows)
-  set(CLR_CMAKE_HOST_OS Windows_NT)
-endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
+if(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    set(CLR_CMAKE_HOST_FREEBSD 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL FreeBSD)
 
+if(CLR_CMAKE_HOST_OS STREQUAL OpenBSD)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    set(CLR_CMAKE_HOST_OPENBSD 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL OpenBSD)
+
+if(CLR_CMAKE_HOST_OS STREQUAL NetBSD)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+    set(CLR_CMAKE_HOST_NETBSD 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL NetBSD)
+
+if(CLR_CMAKE_HOST_OS STREQUAL SunOS)
+    set(CLR_CMAKE_HOST_UNIX 1)
+    EXECUTE_PROCESS(
+        COMMAND isainfo -n
+        OUTPUT_VARIABLE SUNOS_NATIVE_INSTRUCTION_SET)
+
+    if(SUNOS_NATIVE_INSTRUCTION_SET MATCHES "amd64")
+        set(CLR_CMAKE_HOST_UNIX_AMD64 1)
+        set(CMAKE_SYSTEM_PROCESSOR "amd64")
+    else()
+        clr_unknown_arch()
+    endif()
+
+    set(CLR_CMAKE_HOST_SUNOS 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL SunOS)
+
+if(CLR_CMAKE_HOST_OS STREQUAL Windows)
+    set(CLR_CMAKE_HOST_OS Windows_NT)
+    set(CLR_CMAKE_HOST_WIN32 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL Windows)
+
+if(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
+    set(CLR_CMAKE_HOST_ARCH_WASM 1)
+endif(CLR_CMAKE_HOST_OS STREQUAL Emscripten)
 
 #--------------------------------------------
 # This repo builds two set of binaries
@@ -135,6 +136,10 @@ endif(CMAKE_SYSTEM_NAME STREQUAL Windows)
 if(CLR_CMAKE_HOST_UNIX_ARM)
     set(CLR_CMAKE_HOST_ARCH_ARM 1)
     set(CLR_CMAKE_HOST_ARCH "arm")
+
+    if(CLR_CMAKE_HOST_HOST_ARMV7L)
+        set(CLR_CMAKE_HOST_ARCH_ARMV7L 1)
+    endif()
 elseif(CLR_CMAKE_HOST_UNIX_ARM64)
     set(CLR_CMAKE_HOST_ARCH_ARM64 1)
     set(CLR_CMAKE_HOST_ARCH "arm64")
@@ -206,6 +211,12 @@ if(CLR_CMAKE_TARGET_OS STREQUAL alpine)
     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
 
+if(CLR_CMAKE_TARGET_OS STREQUAL android)
+    set(CLR_CMAKE_TARGET_UNIX 1)
+    set(CLR_CMAKE_TARGET_LINUX 1)
+    set(CLR_CMAKE_TARGET_ANDROID 1)
+endif(CLR_CMAKE_TARGET_OS STREQUAL android)
+
 if(CLR_CMAKE_TARGET_OS STREQUAL Darwin)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_DARWIN 1)
@@ -267,3 +278,19 @@ else()
         message(FATAL_ERROR "Invalid host and target os/arch combination. Host Arch: ${CLR_CMAKE_HOST_ARCH} Target Arch: ${CLR_CMAKE_TARGET_ARCH}")
     endif()
 endif()
+
+if(NOT CLR_CMAKE_HOST_ARCH_WASM)
+    # All code we build should be compiled as position independent
+    get_property(languages GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if("CXX" IN_LIST languages)
+        set(CLR_PIE_LANGUAGE CXX)
+    else()
+        set(CLR_PIE_LANGUAGE C)
+    endif()
+    check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES ${CLR_PIE_LANGUAGE})
+    if(NOT MSVC AND NOT CMAKE_${CLR_PIE_LANGUAGE}_LINK_PIE_SUPPORTED)
+        message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
+                  "PIE link options will not be passed to linker.")
+    endif()
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif(NOT CLR_CMAKE_HOST_ARCH_WASM)

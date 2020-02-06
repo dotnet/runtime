@@ -11,6 +11,7 @@ namespace ILCompiler
     public class CommandLineOptions
     {
         public FileInfo[] InputFilePaths { get; set; }
+        public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
         public FileInfo OutputFilePath { get; set; }
         public bool Optimize { get; set; }
@@ -25,7 +26,7 @@ namespace ILCompiler
 
         public string TargetArch { get; set; }
         public string TargetOS { get; set; }
-        public string JitPath { get; set; }
+        public FileInfo JitPath { get; set; }
         public string SystemModule { get; set; }
         public bool WaitForDebugger { get; set; }
         public bool Tuning { get; set; }
@@ -60,6 +61,13 @@ namespace ILCompiler
                     { 
                         Arity = arbitraryArity
                     } 
+                },
+                new Option(new[] { "--mibc", "-m" }, "Mibc file(s) for profile guided optimization")
+                {
+                    Argument = new Argument<string[]>()
+                    {
+                        Arity = arbitraryArity
+                    }
                 },
                 new Option(new[] { "--outputfilepath", "--out", "-o" }, "Output file path")
                 {
@@ -128,7 +136,7 @@ namespace ILCompiler
                 },
                 new Option(new[] { "--jitpath" }, "Path to JIT compiler library") 
                 { 
-                    Argument =  new Argument<string>() 
+                    Argument =  new Argument<FileInfo>() 
                 },
                 new Option(new[] { "--singlemethodtypename" }, "Single method compilation: name of the owning type") 
                 { 

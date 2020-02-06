@@ -13,7 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
-#if CORECLR && PLATFORM_WINDOWS
+#if CORECLR && TARGET_WINDOWS
 using Internal.Win32;
 #endif
 #if ES_BUILD_AGAINST_DOTNET_V35
@@ -121,7 +121,7 @@ namespace System.Diagnostics.Tracing
         {
             m_eventProvider = providerType switch
             {
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
                 EventProviderType.ETW => new EtwEventProvider(),
 #endif
 #if FEATURE_PERFTRACING
@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tracing
             status = EventRegister(eventSource, m_etwCallback);
             if (status != 0)
             {
-#if PLATFORM_WINDOWS && !ES_BUILD_STANDALONE
+#if TARGET_WINDOWS && !ES_BUILD_STANDALONE
                 throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
 #else
                 throw new ArgumentException(Convert.ToString(unchecked((int)status)));
@@ -467,7 +467,7 @@ namespace System.Diagnostics.Tracing
 
             // However the framework version of EventSource DOES have ES_SESSION_INFO defined and thus
             // does not have this issue.
-#if (PLATFORM_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
+#if (TARGET_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
             int buffSize = 256;     // An initial guess that probably works most of the time.
             byte* buffer;
             while (true)
@@ -507,7 +507,7 @@ namespace System.Diagnostics.Tracing
                 providerInstance = (Interop.Advapi32.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
 #else
-#if !ES_BUILD_PCL && PLATFORM_WINDOWS  // TODO command arguments don't work on PCL builds...
+#if !ES_BUILD_PCL && TARGET_WINDOWS  // TODO command arguments don't work on PCL builds...
             // This code is only used in the Nuget Package Version of EventSource.  because
             // the code above is using APIs baned from UWP apps.
             //
@@ -595,7 +595,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN && PLATFORM_WINDOWS)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN && TARGET_WINDOWS)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (IntPtr.Size == 8)
                     regKey = @"Software\Wow6432Node" + regKey;
@@ -628,7 +628,7 @@ namespace System.Diagnostics.Tracing
                 if (filterData->Ptr != 0 && 0 < filterData->Size && filterData->Size <= 100*1024)
                 {
                     data = new byte[filterData->Size];
-                    Marshal.Copy((IntPtr)filterData->Ptr, data, 0, data.Length);
+                    Marshal.Copy((IntPtr)(void*)filterData->Ptr, data, 0, data.Length);
                 }
                 command = (ControllerCommand)filterData->Type;
                 return true;
@@ -1214,7 +1214,7 @@ namespace System.Diagnostics.Tracing
         private void EventUnregister(long registrationHandle) =>
             m_eventProvider.EventUnregister(registrationHandle);
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         private static bool m_setInformationMissing;
 
         internal unsafe int SetInformation(
@@ -1245,7 +1245,7 @@ namespace System.Diagnostics.Tracing
 #endif
     }
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
 
     // A wrapper around the ETW-specific API calls.
     internal sealed class EtwEventProvider : IEventProvider

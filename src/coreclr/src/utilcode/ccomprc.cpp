@@ -8,7 +8,7 @@
 #include "ndpversion.h"
 
 #include "../dlls/mscorrc/resource.h"
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include "resourcestring.h"
 #define NATIVE_STRING_RESOURCE_NAME mscorrc_debug
 __attribute__((visibility("default"))) DECLARE_NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME);
@@ -115,10 +115,10 @@ HRESULT CCompRC::AddMapNode(LocaleID langId, HRESOURCEDLL hInst, BOOL fMissing)
 LPCWSTR CCompRC::m_pDefaultResource = W("mscorrc.debug.dll");
 LPCWSTR CCompRC::m_pFallbackResource= W("mscorrc.dll");
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 LPCSTR CCompRC::m_pDefaultResourceDomain = "mscorrc.debug";
 LPCSTR CCompRC::m_pFallbackResourceDomain = "mscorrc";
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
 {
@@ -166,7 +166,7 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
         return E_OUTOFMEMORY;
     }
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     if (m_pResourceFile == m_pDefaultResource)
     {
@@ -181,7 +181,7 @@ HRESULT CCompRC::Init(LPCWSTR pResourceFile, BOOL bUseFallback)
         _ASSERTE(!"Unsupported resource file");
     }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     if (m_csMap == NULL)
     {
@@ -551,7 +551,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HRESULT         hr;
     HRESOURCEDLL    hInst = 0; //instance of cultured resource dll
     int length;
@@ -692,17 +692,17 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
         *szBuffer = W('\0');
 
     return hr;
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     return LoadNativeStringResource(NATIVE_STRING_RESOURCE_TABLE(NATIVE_STRING_RESOURCE_NAME), iResourceID,
       szBuffer, iMax, pcwchUsed);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 #ifndef DACCESS_COMPILE
 
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     DWORD dwLoadLibraryFlags;
     if(m_pResourceFile == m_pDefaultResource)
         dwLoadLibraryFlags = LOAD_LIBRARY_AS_DATAFILE;
@@ -712,9 +712,9 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
     if ((*pHInst = WszLoadLibraryEx(lpFileName, NULL, dwLoadLibraryFlags)) == NULL) {
         return HRESULT_FROM_GetLastError();
     }
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     PORTABILITY_ASSERT("UNIXTODO: Implement resource loading - use peimagedecoder?");
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     return S_OK;
 }
 

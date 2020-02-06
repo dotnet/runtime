@@ -1489,8 +1489,12 @@ mono_de_ss_create (MonoInternalThread *thread, StepSize size, StepDepth depth, S
 
 	// FIXME: Multiple requests
 	if (the_ss_req) {
-		DEBUG_PRINTF (0, "Received a single step request while the previous one was still active.\n");
-		return DE_ERR_NOT_IMPLEMENTED;
+		err = rt_callbacks.handle_multiple_ss_requests ();
+
+		if (err == DE_ERR_NOT_IMPLEMENTED) {
+			DEBUG_PRINTF (0, "Received a single step request while the previous one was still active.\n");		
+			return DE_ERR_NOT_IMPLEMENTED;
+		}
 	}
 
 	DEBUG_PRINTF (1, "[dbg] Starting single step of thread %p (depth=%s).\n", thread, ss_depth_to_string (depth));

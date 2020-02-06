@@ -98,7 +98,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
             If assem Is Utils.VBRuntimeAssembly OrElse assem Is m_CachedMSCoreLibAssembly Then
                 'Must have been from a latebound call to our own apis (potentially through context of mscorlib)
                 'This must not be allowed, as it would cause files to be shared across assemblies
-                Throw New Security.SecurityException(GetResourceString(SR.Security_LateBoundCallsNotPermitted))
+                Throw New Security.SecurityException(SR.Security_LateBoundCallsNotPermitted)
             End If
 
             Dim AssemData As AssemblyData = CType(m_AssemblyData.Item(assem), AssemblyData)

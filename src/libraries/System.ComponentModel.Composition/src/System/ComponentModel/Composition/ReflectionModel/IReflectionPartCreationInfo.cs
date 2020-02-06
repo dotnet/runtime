@@ -12,8 +12,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         Type GetPartType();
         Lazy<Type> GetLazyPartType();
-        ConstructorInfo GetConstructor();
-        IDictionary<string, object> GetMetadata();
+        ConstructorInfo? GetConstructor();
+        IDictionary<string, object?>? GetMetadata();
         IEnumerable<ExportDefinition> GetExports();
         IEnumerable<ImportDefinition> GetImports();
         bool IsDisposalRequired { get; }

@@ -28,6 +28,12 @@
 #define NOINLINE __declspec(noinline)
 #endif // _MSC_VER
 
+#ifdef _MSC_VER
+#define __UNREACHABLE() __assume(0)
+#else
+#define __UNREACHABLE() __builtin_unreachable()
+#endif
+
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX ((size_t)-1)
 #endif
@@ -49,7 +55,7 @@ typedef uint32_t ULONG;
 // -----------------------------------------------------------------------------------------------------------
 // HRESULT subset.
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 typedef int32_t HRESULT;
 #else
 // this must exactly match the typedef used by windows.h
@@ -100,7 +106,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 
 #define UNREFERENCED_PARAMETER(P)          (void)(P)
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
 #define swprintf_s swprintf
@@ -129,14 +135,14 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 #define WAIT_FAILED             0xFFFFFFFF
 
 #if defined(_MSC_VER)
- #if defined(_ARM_)
+ #if defined(HOST_ARM)
 
   __forceinline void YieldProcessor() { }
   extern "C" void __emit(const unsigned __int32 opcode);
   #pragma intrinsic(__emit)
   #define MemoryBarrier() { __emit(0xF3BF); __emit(0x8F5F); }
 
- #elif defined(_ARM64_)
+ #elif defined(HOST_ARM64)
 
   extern "C" void __yield(void);
   #pragma intrinsic(__yield)
@@ -146,7 +152,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #pragma intrinsic(__dmb)
   #define MemoryBarrier() { __dmb(_ARM64_BARRIER_SY); }
 
- #elif defined(_AMD64_)
+ #elif defined(HOST_AMD64)
 
   extern "C" void
   _mm_pause (
@@ -164,7 +170,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
   #define YieldProcessor _mm_pause
   #define MemoryBarrier _mm_mfence
 
- #elif defined(_X86_)
+ #elif defined(HOST_X86)
 
   #define YieldProcessor() __asm { rep nop }
   #define MemoryBarrier() MemoryBarrierImpl()
@@ -176,7 +182,7 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
       }
   }
 
- #else // !_ARM_ && !_AMD64_ && !_X86_
+ #else // !HOST_ARM && !HOST_AMD64 && !HOST_X86
   #error Unsupported architecture
  #endif
 #else // _MSC_VER

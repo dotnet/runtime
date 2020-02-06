@@ -183,7 +183,6 @@
 -noclass System.Reflection.Emit.Tests.CustomAttributeBuilderTests
 -nomethod System.Reflection.Emit.Tests.SignatureHelperAddArgument.*
 -nomethod System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.*
--nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_TypeCreated_ThrowsInvalidOperationException
 -nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException
@@ -931,3 +930,12 @@
 -nomethod System.Security.Cryptography.Encoding.Tests.OidTests.LookupOidByFriendlyName_Ctor
 
 -nomethod System.Tests.StringComparerTests.CreateCultureOptions_InvalidArguments_Throws
+
+####################################################################
+##  System.Data.SqlClient
+####################################################################
+
+# The tests are loading wrong System.Data.SqlClient - https://github.com/dotnet/runtime/issues/31799
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
+-noclass System.Data.Common.DbProviderFactoriesTests
