@@ -24,18 +24,8 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
 
-        // Mask used to check if Compare() has the right flags.
+        // Mask used to check if Compare() / GetHashCode(string) / GetSortKey has the right flags.
         private const CompareOptions ValidCompareMaskOffFlags =
-            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
-              CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
-
-        // Mask used to check if GetHashCode(string) has the right flags.
-        private const CompareOptions ValidHashCodeOfStringMaskOffFlags =
-            ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
-              CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType);
-
-        // Mask used to check if we have the right flags.
-        private const CompareOptions ValidSortkeyCtorMaskOffFlags =
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
@@ -1399,7 +1389,7 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if ((options & ValidHashCodeOfStringMaskOffFlags) == 0)
+            if ((options & ValidCompareMaskOffFlags) == 0)
             {
                 // No unsupported flags are set - continue on with the regular logic
                 if (GlobalizationMode.Invariant)
@@ -1428,7 +1418,7 @@ namespace System.Globalization
 
         public int GetHashCode(ReadOnlySpan<char> source, CompareOptions options)
         {
-            if ((options & ValidHashCodeOfStringMaskOffFlags) == 0)
+            if ((options & ValidCompareMaskOffFlags) == 0)
             {
                 // No unsupported flags are set - continue on with the regular logic
                 if (GlobalizationMode.Invariant)

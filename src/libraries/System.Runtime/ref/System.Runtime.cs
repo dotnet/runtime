@@ -5086,11 +5086,11 @@ namespace System.Globalization
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial class SortKey
+    public sealed partial class SortKey
     {
         internal SortKey() { }
-        public virtual byte[] KeyData { get { throw null; } }
-        public virtual string OriginalString { get { throw null; } }
+        public byte[] KeyData { get { throw null; } }
+        public string OriginalString { get { throw null; } }
         public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { throw null; }
         public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
