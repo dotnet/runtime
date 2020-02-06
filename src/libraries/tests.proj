@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <ProjectExclusions Include="$(CommonTestPath)System\Net\Prerequisites\Servers\CoreFxNetCloudService\CoreFxNetCloudService\CoreFxNetCloudService.ccproj" />
     <!-- We currently only test with C# projects. -->
     <Project Condition="'$(DirectoryToBuild)' != ''" Include="$(DirectoryToBuild)\**\*.Tests.csproj" />
     <Project Condition="'$(SkipTestRestore)' != 'true' and '$(DirectoryToBuild)' == ''" Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" Exclude="@(ProjectExclusions)" />

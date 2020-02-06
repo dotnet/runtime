@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- This constant is only here for usage in $(CommonTestPath), since not all projects using these tests have been updated yet-->
-    <DefineConstants>$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
