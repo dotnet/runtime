@@ -143,7 +143,7 @@ namespace System.Diagnostics
             // So we will try to get the privilege here.
             // We could fail if the user account doesn't have right to do this, but that's fair.
 
-            Interop.Advapi32.LUID luid = default;
+            Interop.Advapi32.LUID luid;
             if (!Interop.Advapi32.LookupPrivilegeValue(null, Interop.Advapi32.SeDebugPrivilege, out luid))
             {
                 return;
@@ -329,10 +329,9 @@ namespace System.Diagnostics
 
         public static ProcessInfo[] GetProcessInfos(string machineName, bool isRemoteMachine)
         {
-            PerformanceCounterLib? library = null;
             try
             {
-                library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
+                PerformanceCounterLib library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
                 return GetProcessInfos(library);
             }
             catch (Exception e)
