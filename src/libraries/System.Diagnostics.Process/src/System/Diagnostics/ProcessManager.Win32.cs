@@ -34,10 +34,8 @@ namespace System.Diagnostics
             _bestHandle = IntPtr.Zero;
             _processId = processId;
 
-            Interop.User32.EnumThreadWindowsCallback callback = new Interop.User32.EnumThreadWindowsCallback(EnumWindowsCallback);
-            Interop.User32.EnumWindows(callback, IntPtr.Zero);
+            Interop.User32.EnumWindows(EnumWindowsCallback, IntPtr.Zero);
 
-            GC.KeepAlive(callback);
             return _bestHandle;
         }
 
