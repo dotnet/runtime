@@ -5028,16 +5028,11 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_SIMD16:
             case TYP_SIMD32:
             {
+                // Only the zero constant is currently allowed for SIMD types
+                //
                 INT64 val = ConstantValue<INT64>(vn);
-                printf("SimdCns: ");
-                if ((val > -1000) && (val < 1000))
-                {
-                    printf(" %ld", val);
-                }
-                else
-                {
-                    printf(" 0x%llx", val);
-                }
+                assert(val == 0);
+                printf(" 0");
             }
             break;
 #endif // FEATURE_SIMD
@@ -8383,45 +8378,65 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
 #ifdef TARGET_XARCH
-        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+        switch (simdNode->gtSIMDIntrinsicID)
         {
-            // rationalize rewrites this as an explicit load with op1 as the base address
-
-            ValueNumPair op2vnp;
-            if (tree->AsOp()->gtOp2 == nullptr)
+            case SIMDIntrinsicInitArray:
             {
-                // a nullptr for op2 means that we have an impicit index of zero
-                op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
+                // rationalize rewrites this as an explicit load with op1 as the base address
 
-                excSetPair = op1Xvnp;
-            }
-            else // We have an explicit index in op2
-            {
-                ValueNumPair op2Xvnp;
-                vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+                ValueNumPair op2vnp;
+                if (tree->AsOp()->gtOp2 == nullptr)
+                {
+                    // a nullptr for op2 means that we have an impicit index of zero
+                    op2vnp = ValueNumPair(vnStore->VNZeroForType(TYP_INT), vnStore->VNZeroForType(TYP_INT));
 
-                excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
-            }
+                    excSetPair = op1Xvnp;
+                }
+                else // We have an explicit index in op2
+                {
+                    ValueNumPair op2Xvnp;
+                    vnStore->VNPUnpackExc(tree->AsOp()->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
 
-            ValueNum addrVN =
-                vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
+                    excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
+                }
+
+                ValueNum addrVN =
+                    vnStore->VNForFunc(TYP_BYREF, GetVNFuncForNode(tree), op1vnp.GetLiberal(), op2vnp.GetLiberal());
 #ifdef DEBUG
-            if (verbose)
-            {
-                printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
-                vnPrint(addrVN, 0);
-            }
+                if (verbose)
+                {
+                    printf("Treating GT_SIMD InitArray as a ByrefExposed load , addrVN is ");
+                    vnPrint(addrVN, 0);
+                }
 #endif // DEBUG
 
-            // The address points into the heap, so it is an ByrefExposed load.
-            //
-            ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
-            tree->gtVNPair.SetLiberal(loadVN);
-            tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-            tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
-            fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
-            return;
+                // The address points into the heap, so it is an ByrefExposed load.
+                //
+                ValueNum loadVN = fgValueNumberByrefExposedLoad(tree->TypeGet(), addrVN);
+                tree->gtVNPair.SetLiberal(loadVN);
+                tree->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair, excSetPair);
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
+                return;
+            }
+
+            case SIMDIntrinsicInit:
+            {
+                // Also encode the resulting type as op2vnp
+                ValueNumPair op2vnp;
+                op2vnp.SetBoth(vnStore->VNForIntCon(INT32(tree->TypeGet())));
+
+                excSetPair     = op1Xvnp;
+                normalPair     = vnStore->VNPairForFunc(tree->TypeGet(), GetVNFuncForNode(tree), op1vnp, op2vnp);
+                tree->gtVNPair = vnStore->VNPWithExc(normalPair, excSetPair);
+                return;
+            }
+
+            default:
+                // Handled below as a normal SIMD unary or binary node
+                break;
         }
+
 #endif //  TARGET_XARCH
 
         if (tree->AsOp()->gtOp2 == nullptr)
@@ -8451,6 +8466,14 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     assert(tree->OperGet() == GT_HWINTRINSIC);
     GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
     assert(hwIntrinsicNode != nullptr);
+
+    // For safety/correctness we must mutate the global heap valuenumber
+    //  for any HW intrinsic that performs a memory store operation
+    if (hwIntrinsicNode->OperIsMemoryStore())
+    {
+        fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
+    }
+
     int      lookupNumArgs = HWIntrinsicInfo::lookupNumArgs(hwIntrinsicNode);
     VNFunc   func          = GetVNFuncForNode(tree);
     unsigned fixedArity    = vnStore->VNFuncArity(func);
