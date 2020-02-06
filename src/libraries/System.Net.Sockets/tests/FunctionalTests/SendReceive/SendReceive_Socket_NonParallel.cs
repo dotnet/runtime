@@ -18,7 +18,6 @@ namespace System.Net.Sockets.Tests.SendReceive
     {
         public SendReceive_Socket_NonParallel(ITestOutputHelper output) : base(output) {}
 
-        [Trait("FlakyUDP","true")]
         [Theory]
         [MemberData(nameof(Loopbacks))]
         public async Task SendToRecvFrom_Datagram_UDP(IPAddress loopbackAddress)
