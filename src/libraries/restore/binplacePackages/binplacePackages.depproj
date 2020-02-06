@@ -5,25 +5,26 @@
     <NETStandardVersion Condition="'$(TargetsNetStandard)' == 'true'">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
+    <TargetFrameworks>net461;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp3.0;$(netcoreappCurrent)</TargetFrameworks>    
   </PropertyGroup>
 
     <!-- Ref binplacing for all configurations -->
   <ItemGroup>
-    <BinPlaceConfiguration Include="$(Configuration)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <!-- Runtime / test-runtime binplacing, when we aren't building better live version of these libs -->
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <BinPlaceConfiguration Include="$(Configuration)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(RuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(Configuration)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(TestHostRuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <!-- This is to make sure that nothing unintended gets restored for netcoreapp. -->

@@ -137,7 +137,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "test"                 { $arguments += " -test" }
     "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    "framework"            { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())" }
+    "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
     "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }

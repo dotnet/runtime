@@ -6,6 +6,7 @@
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <_NETStandardTFMFolder Condition="'$(TargetFramework)' == 'netstandard2.0'">netstandard2.0</_NETStandardTFMFolder>
+    <TargetFrameworks>netstandard1.0;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -72,13 +73,13 @@
 
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
-    <BinPlaceConfiguration Include="$(Configuration)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(Configuration)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <!-- copy shims to the testhost as well in order to be able to run the netfx tests -->
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <Target Name="AddNETStandard21Refs" AfterTargets="ResolveReferences">

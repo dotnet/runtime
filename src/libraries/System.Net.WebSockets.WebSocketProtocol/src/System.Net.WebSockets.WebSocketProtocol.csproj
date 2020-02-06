@@ -3,7 +3,8 @@
     <AssemblyName>System.Net.WebSockets.WebSocketProtocol</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;$(NetCoreAppCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Net\WebSockets\ManagedWebSocket.cs">

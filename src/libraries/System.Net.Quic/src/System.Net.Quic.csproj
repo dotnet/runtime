@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Quic</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <ItemGroup>
@@ -55,7 +55,7 @@
     <Compile Include="Interop\Windows\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>
@@ -89,7 +89,6 @@
     <Reference Include="System.Threading.Channels" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

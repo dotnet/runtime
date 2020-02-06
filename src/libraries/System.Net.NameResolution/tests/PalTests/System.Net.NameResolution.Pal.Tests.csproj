@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -20,10 +20,10 @@
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetFrameworkSuffix)' == 'Windows_NT'">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs">
