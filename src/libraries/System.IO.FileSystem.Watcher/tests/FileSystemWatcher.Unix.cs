@@ -27,7 +27,7 @@ namespace System.IO.Tests
             _output.WriteLine($"Starting 100/200 test on {TestDirectory}");
 
             RemoteInvokeOptions options = new RemoteInvokeOptions { TimeOut = 600_000 };
-            RemoteExecutor.Invoke((testDirectory) =>
+            RemoteExecutor.Invoke(testDirectory =>
             {
                 ulong maxFd = 200;
                 int count = 100;
@@ -54,7 +54,7 @@ namespace System.IO.Tests
                     // If we use all handles we may not have luck writing out errors.
                     // Try our best here. _output is not available within RemoteExec().
                     // When we run out of fd, exception may be weird from OutOfMem to "unable load type".
-                    Console.WriteLine($"Test failed for count={count}, limnit={maxFd} and path='{testDirectory}'.");
+                    Console.WriteLine($"Test failed for count={count}, limit={maxFd} and path='{testDirectory}'.");
                     Console.WriteLine(e.Message);
                     return 1;
                 }
