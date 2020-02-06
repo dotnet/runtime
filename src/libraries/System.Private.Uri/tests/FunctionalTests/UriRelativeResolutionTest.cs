@@ -617,11 +617,11 @@ namespace System.PrivateUri.Tests
             Uri baseUri = new Uri("http://nothing.com/");
             Uri testUri = new Uri("https://specialPort.com:00065535/path?query#fragment");
 
-            int throwAway = testUri.Port; // Trigger parsing.
+            _ = testUri.Port; // Trigger parsing.
 
             Uri resultUri = new Uri(baseUri, testUri);
 
-            throwAway = resultUri.Port; // For Debugging.
+            _ = resultUri.Port; // For Debugging.
 
             Assert.Equal(testUri.Port, resultUri.Port);
         }

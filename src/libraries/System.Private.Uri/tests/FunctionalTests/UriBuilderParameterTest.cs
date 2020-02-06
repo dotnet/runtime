@@ -15,9 +15,9 @@ namespace System.PrivateUri.Tests
         public void UriBuilder_Ctor_NullParameter_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentNullException>(() =>
-           {
-               UriBuilder builder = new UriBuilder((Uri)null);
-           });
+            {
+                _ = new UriBuilder((Uri)null);
+            });
         }
     }
 }

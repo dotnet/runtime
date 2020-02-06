@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -479,11 +478,11 @@ namespace System.PrivateUri.Tests
             Uri baseUri = new Uri("http://nothing.com/");
             Uri testUri = new Uri("https://specialPort.com:00065535/path?query#fragment");
 
-            int throwAway = testUri.Port; // Trigger parsing.
+            _ = testUri.Port; // Trigger parsing.
 
             Uri resultUri = new Uri(baseUri, testUri);
 
-            throwAway = resultUri.Port; // For Debugging.
+            _ = resultUri.Port; // For Debugging.
 
             Assert.Equal(testUri.Port, resultUri.Port);
         }

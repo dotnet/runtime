@@ -17,7 +17,7 @@ namespace System.PrivateUri.Tests
     public class IriTest
     {
         // List built based on https://www.microsoft.com/en-us/download/details.aspx?id=55979
-        private string[] _testedLocales =
+        private static readonly string[] s_testedLocales =
         {
             "en-us",
             "zh-cn",
@@ -26,7 +26,7 @@ namespace System.PrivateUri.Tests
             "ja-jp"
         };
 
-        private const int maxUriLength = 0xFFF0 - 1;
+        private const int MaxUriLength = 0xFFF0 - 1; // 65519
 
         [Fact]
         public void Iri_Validate_LongUriWithQuery()
@@ -36,12 +36,8 @@ namespace System.PrivateUri.Tests
                               + "435&aq=f&aqi=&aql=&oq=%F4%80%80%BA%F4%80%80%94%F4%80%80%93%F4%80%80%94%F4%80%80%95%F4"
                               + "%80%80%97%F4%80%80%93%F4%80%80%9C%F4%80%80%99&pbx=1&bav=on.2,or.r_gc.r_pw.&fp=fb838c8"
                               + "df90b57b2&biw=1600&bih=718";
-            try
-            {
-                Uri u = new Uri(uriString);
-            }
-            catch
-            { }
+
+            _ = new Uri(uriString);
 
             GC.Collect(2);
         }
@@ -58,8 +54,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(u2string, u2.AbsoluteUri);
 
             string u4string = "http://www.contoso-abcdefg.de/abcdefg" + "%F3%BE%8C%B5.html";
-            Uri u3;
-            Assert.True(Uri.TryCreate(u4string, UriKind.Absolute, out u3));
+            Assert.True(Uri.TryCreate(u4string, UriKind.Absolute, out _));
         }
 
         [Fact]
@@ -313,7 +308,7 @@ namespace System.PrivateUri.Tests
             };
 
             string[] results1 = new string[components.Length];
-            using (new ThreadCultureChange(_testedLocales[0]))
+            using (new ThreadCultureChange(s_testedLocales[0]))
             {
                 for (int i = 0; i < components.Length; i++)
                 {
@@ -321,9 +316,9 @@ namespace System.PrivateUri.Tests
                 }
             }
 
-            for (int j = 1; j < _testedLocales.Length; j++)
+            for (int j = 1; j < s_testedLocales.Length; j++)
             {
-                using (new ThreadCultureChange(_testedLocales[j]))
+                using (new ThreadCultureChange(s_testedLocales[j]))
                 {
                     string[] results2 = new string[components.Length];
                     for (int i = 0; i < components.Length; i++)
@@ -477,16 +472,16 @@ namespace System.PrivateUri.Tests
         {
             string validUriStart = "http://host/q=";
 
-            string bigString1 = GetUnicodeString(0x1000, 0x1001, 1, maxUriLength - validUriStart.Length);
+            string bigString1 = GetUnicodeString(0x1000, 0x1001, 1, MaxUriLength - validUriStart.Length);
             string test = validUriStart + bigString1;
-            Assert.True(test.Length == maxUriLength);
+            Assert.True(test.Length == MaxUriLength);
 
             Uri u1 = new Uri(validUriStart + bigString1);
             Assert.True(u1.ToString().Length > bigString1.Length);
 
             try
             {
-                string bigString2 = GetUnicodeString(0, maxUriLength + 1, 1);
+                string bigString2 = GetUnicodeString(0, MaxUriLength + 1, 1);
                 Uri u = new Uri(bigString2);
                 Assert.False(true, "Expected UriFormatException: Uri too large");
             }
@@ -495,8 +490,8 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [InlineData(maxUriLength)]
-        [InlineData(maxUriLength + 1)]
+        [InlineData(MaxUriLength)]
+        [InlineData(MaxUriLength + 1)]
         [InlineData(10 + ushort.MaxValue)]
         public void Iri_ValidateVeryLongInputString_EscapeDataString(int length)
         {
@@ -505,8 +500,8 @@ namespace System.PrivateUri.Tests
         }
 
         [Theory]
-        [InlineData(maxUriLength)]
-        [InlineData(maxUriLength + 1)]
+        [InlineData(MaxUriLength)]
+        [InlineData(MaxUriLength + 1)]
         [InlineData(10 + ushort.MaxValue)]
         public void Iri_ValidateVeryLongInputString_EscapeUriString(int length)
         {
@@ -543,12 +538,10 @@ namespace System.PrivateUri.Tests
         [InlineData("\u00E8")]
         public void Iri_RelativeUriCreation_ShouldNotNormalize(string uriString)
         {
-            Uri href;
-            Uri hrefAbsolute;
             Uri baseIri = new Uri("http://www.contoso.com");
 
-            Assert.True(Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out href));
-            Assert.True(Uri.TryCreate(baseIri, href, out hrefAbsolute));
+            Assert.True(Uri.TryCreate(uriString, UriKind.RelativeOrAbsolute, out Uri href));
+            Assert.True(Uri.TryCreate(baseIri, href, out Uri hrefAbsolute));
             Assert.Equal("http://www.contoso.com/%C3%A8", hrefAbsolute.AbsoluteUri);
         }
 
@@ -584,18 +577,18 @@ namespace System.PrivateUri.Tests
         // cases as possible. There are two limits imposed on the length of URI strings.
         // The first, 65519, is specified in the documentation and is one of the first checks
         // enforced on a URI. This limit is not enforced after expansion.
-        private static int InitialLengthLimit = 65519;
+        private const int InitialLengthLimit = MaxUriLength;
 
         // The second, 65535 (ushort.MaxValue) is only reachable via expansion as a result of
         // percent encoding. Exceeding this value used to result in a hang, but now results in
         // an exception.
-        private static int ExpandedLengthLimit = 65535;
+        private const int ExpandedLengthLimit = ushort.MaxValue;
 
         // In order to maximize compat, we have to allow a gap between the two maximum
         // values. A URI that starts below 65519 but expands to be in the range [65519,65535)
         // would have worked before this change, and so should continue to work despite
         // exceeding limit (1).
-        public static IEnumerable<Object[]> Iri_ExpandingContents_TooLong
+        public static IEnumerable<object[]> Iri_ExpandingContents_TooLong
         {
             get
             {
@@ -631,11 +624,11 @@ namespace System.PrivateUri.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
         {
-            Assert.Throws<System.UriFormatException>(() => { Uri itemUri = new Uri(input); });
+            Assert.Throws<UriFormatException>(() => { _ = new Uri(input); });
             Assert.False(Uri.TryCreate(input, UriKind.Absolute, out Uri itemUri2));
         }
 
-        public static IEnumerable<Object[]> Iri_ExpandingContents_AllowedSize
+        public static IEnumerable<object[]> Iri_ExpandingContents_AllowedSize
         {
             get
             {
@@ -662,8 +655,8 @@ namespace System.PrivateUri.Tests
         [MemberData(nameof(Iri_ExpandingContents_AllowedSize))]
         public static void Iri_ExpandingContents_DoesNotThrowIfSizeAllowed(string input)
         {
-            Uri itemUri = new Uri(input);
-            Assert.True(Uri.TryCreate(input, UriKind.Absolute, out Uri itemUri2));
+            _ = new Uri(input);
+            Assert.True(Uri.TryCreate(input, UriKind.Absolute, out Uri _));
         }
     }
 }

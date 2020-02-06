@@ -6,7 +6,6 @@
 // only internal implementation of UriParser type
 
 using System.Collections;
-using System.Diagnostics;
 
 namespace System
 {

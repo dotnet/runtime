@@ -69,19 +69,17 @@ namespace System.PrivateUri.Tests
         public void UriIsWellFormed_NewRelativeWithUnknownSchemeAndQuery_Throws()
         {
             Assert.ThrowsAny<FormatException>(() =>
-          {
+            {
                 // The generic parser allows this kind of absolute Uri, where the http parser does not
-                Uri test;
-              Assert.False(Uri.TryCreate("any:?foo", UriKind.Relative, out test), "TryCreate should have Failed");
-              test = new Uri("any:?foo", UriKind.Relative);
+                Assert.False(Uri.TryCreate("any:?foo", UriKind.Relative, out _), "TryCreate should have Failed");
+                _ = new Uri("any:?foo", UriKind.Relative);
           });
         }
 
         [Fact]
         public void UriIsWellFormed_TryCreateNewRelativeWithColon_Failure()
         {
-            Uri test;
-            Assert.False(Uri.TryCreate("http://foo", UriKind.Relative, out test));
+            Assert.False(Uri.TryCreate("http://foo", UriKind.Relative, out _));
         }
 
         // App-compat - A colon in the first segment of a relative Uri is invalid, but we cannot reject it.
@@ -89,8 +87,7 @@ namespace System.PrivateUri.Tests
         public void UriIsWellFormed_TryCreateNewRelativeWithPercentAndColon_Success()
         {
             string input = "bad%20http://foo";
-            Uri test;
-            Assert.True(Uri.TryCreate(input, UriKind.Relative, out test));
+            Assert.True(Uri.TryCreate(input, UriKind.Relative, out Uri test));
             Assert.False(test.IsWellFormedOriginalString());
             Assert.False(Uri.IsWellFormedUriString(input, UriKind.Relative));
             Assert.False(Uri.IsWellFormedUriString(input, UriKind.RelativeOrAbsolute));
