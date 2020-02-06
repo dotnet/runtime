@@ -2306,7 +2306,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
 #else
     NYI("LowerTailCallViaHelper");
-#endif // _TARGET_*
+#endif // TARGET*
 
     // Transform this call node into a call to Jit tail call helper.
     call->gtCallType    = CT_HELPER;

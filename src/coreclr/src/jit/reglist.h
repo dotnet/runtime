@@ -13,6 +13,6 @@
 typedef TinyArray<unsigned short, regNumber, REGNUM_BITS> regList;
 #else
 // The regList is unused for all other targets.
-#endif // _TARGET_*
+#endif // TARGET*
 
 #endif // REGLIST_H

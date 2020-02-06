@@ -1616,7 +1616,7 @@ public:
 
     bool isPassedInFloatRegisters()
     {
-#ifdef _TARGET_X86
+#ifdef TARGET_X86
         return false;
 #else
         return isValidFloatArgReg(GetRegNum());
