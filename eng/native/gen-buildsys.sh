@@ -37,7 +37,7 @@ check_version_exists() {
     # Set up the environment to be used for building with the desired compiler.
     if command -v "$compiler-$1.$2" > /dev/null; then
         desired_version="-$1.$2"
-    elif command -v "$compier$1$2" > /dev/null; then
+    elif command -v "$compiler$1$2" > /dev/null; then
         desired_version="$1$2"
     elif command -v "$compiler-$1$2" > /dev/null; then
         desired_version="-$1$2"
