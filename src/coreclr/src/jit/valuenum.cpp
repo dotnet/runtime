@@ -5304,7 +5304,7 @@ void ValueNumStore::InitValueNumStoreStatics()
     vnfOpAttribs[vnfNum] &= ~VNFOA_ArityMask;            /* clear old arity value   */                                 \
     vnfOpAttribs[vnfNum] |= (arity << VNFOA_ArityShift); /* set the new arity value */
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
     // SSE2_Shuffle has a -1 entry for numArgs, but when used as a HWINSTRINSIC always has two operands.
     ValueNumFuncSetArity(VNF_HWI_SSE2_Shuffle, 2)
 #endif
@@ -6356,8 +6356,8 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_SIMD16:
         case TYP_SIMD32:
 
-#ifdef _TARGET_64BIT_
-            // Only zero SIMD constants are currently allowed
+#ifdef TARGET_64BIT
+            // Only the zero constant is currently allowed for SIMD types
             //
             assert(tree->AsIntConCommon()->LngValue() == 0);
             tree->gtVNPair.SetBoth(vnStore->VNForLongCon(tree->AsIntConCommon()->LngValue()));
@@ -8382,7 +8382,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
         ValueNumPair op1Xvnp;
         vnStore->VNPUnpackExc(tree->AsOp()->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
         if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
         {
             // rationalize rewrites this as an explicit load with op1 as the base address
@@ -8422,7 +8422,7 @@ void Compiler::fgValueNumberSimd(GenTree* tree)
             fgValueNumberAddExceptionSetForIndirection(tree, tree->AsOp()->gtOp1);
             return;
         }
-#endif //  _TARGET_XARCH_
+#endif //  TARGET_XARCH
 
         if (tree->AsOp()->gtOp2 == nullptr)
         {

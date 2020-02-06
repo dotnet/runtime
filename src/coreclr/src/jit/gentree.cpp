@@ -18336,12 +18336,12 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
 // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeSIMD::OperIsMemoryLoad()
 {
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
     {
         return true;
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
     return false;
 }
 

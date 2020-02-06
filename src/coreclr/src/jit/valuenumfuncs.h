@@ -162,19 +162,19 @@ ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD i
 #include "simdintrinsiclist.h"
 #define VNF_SIMD_FIRST VNF_SIMD_None
 
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
 #define HARDWARE_INTRINSIC(id, name, isa, ival, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##id, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector128_As
 
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, ival, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS form arm64
 #include "hwintrinsiclistarm64.h"
 #define VNF_HWI_FIRST VNF_HWI_Vector64_AsByte
 
-#elif defined (_TARGET_ARM_)
+#elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32
 #else
 #error Unsupported platform
