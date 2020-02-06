@@ -18,8 +18,7 @@ namespace System.Diagnostics
     {
         public static IntPtr GetMainWindowHandle(int processId)
         {
-            MainWindowFinder finder = new MainWindowFinder();
-            return finder.FindMainWindow(processId);
+            return new MainWindowFinder().FindMainWindow(processId);
         }
     }
 
@@ -116,16 +115,13 @@ namespace System.Diagnostics
                             try
                             {
                                 hCurProcess = ProcessManager.OpenProcess(unchecked((int)Interop.Kernel32.GetCurrentProcessId()), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
-                                bool wow64Ret;
 
-                                wow64Ret = Interop.Kernel32.IsWow64Process(hCurProcess, ref sourceProcessIsWow64);
-                                if (!wow64Ret)
+                                if (!Interop.Kernel32.IsWow64Process(hCurProcess, ref sourceProcessIsWow64))
                                 {
                                     throw new Win32Exception();
                                 }
 
-                                wow64Ret = Interop.Kernel32.IsWow64Process(processHandle, ref targetProcessIsWow64);
-                                if (!wow64Ret)
+                                if (!Interop.Kernel32.IsWow64Process(processHandle, ref targetProcessIsWow64))
                                 {
                                     throw new Win32Exception();
                                 }
