@@ -271,17 +271,40 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    if (destination.Length < signatureSize)
+                    // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
+                    // maximally produces a 72-byte DER signature.
+                    // If a future version of the standard continues to enhance DSA,
+                    // we may want to bump this limit to allow the max-1 (expected size)
+                    // TryCreateSignature to pass.
+                    Span<byte> signDestination = stackalloc byte[72];
+
+                    if (destination.Length >= signatureSize)
+                    {
+                        signDestination = destination;
+                    }
+                    else if (signatureSize > signDestination.Length)
                     {
                         bytesWritten = 0;
                         return false;
                     }
 
-                    bool success = Interop.Crypto.DsaSign(key, hash, destination, out bytesWritten);
+                    bool success = Interop.Crypto.DsaSign(key, hash, signDestination, out bytesWritten);
 
                     if (!success)
                     {
+                        bytesWritten = 0;
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (destination == signDestination)
+                    {
+                        return true;
+                    }
+
+                    if (!signDestination.Slice(0, bytesWritten).TryCopyTo(destination))
+                    {
+                        bytesWritten = 0;
+                        return false;
                     }
 
                     return true;

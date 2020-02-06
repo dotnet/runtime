@@ -119,17 +119,36 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
                 {
-                    if (destination.Length < signatureLength)
+                    // secp521r1 maxes out at 89 bytes, so 128 should always be enough
+                    Span<byte> signDestination = stackalloc byte[128];
+
+                    if (destination.Length >= signatureLength)
+                    {
+                        signDestination = destination;
+                    }
+                    else if (signatureLength > signDestination.Length)
                     {
                         bytesWritten = 0;
                         return false;
                     }
 
-                    bool success = Interop.Crypto.EcDsaSign(hash, destination, out bytesWritten, key);
+                    bool success = Interop.Crypto.EcDsaSign(hash, signDestination, out bytesWritten, key);
 
                     if (!success)
                     {
+                        bytesWritten = 0;
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    if (destination == signDestination)
+                    {
+                        return true;
+                    }
+
+                    if (!signDestination.Slice(0, bytesWritten).TryCopyTo(destination))
+                    {
+                        bytesWritten = 0;
+                        return false;
                     }
 
                     return true;
