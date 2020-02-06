@@ -386,7 +386,7 @@ namespace System.Diagnostics
                     }
                     else
                     {
-                        string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.ImageName.Buffer, pi.ImageName.Length / sizeof(char)));
+                        string processName = GetProcessShortName(new ReadOnlySpan<char>(pi.ImageName.Buffer.ToPointer(), pi.ImageName.Length / sizeof(char)));
                         processInfo.ProcessName = processName;
                     }
 
@@ -430,9 +430,9 @@ namespace System.Diagnostics
         //
         // This is from GetProcessShortName in NT code base.
         // Check base\screg\winreg\perfdlls\process\perfsprc.c for details.
-        internal static string GetProcessShortName(string name)
+        internal static string GetProcessShortName(ReadOnlySpan<char> name)
         {
-            if (string.IsNullOrEmpty(name))
+            if (name.IsEmpty)
             {
                 return string.Empty;
             }
@@ -455,7 +455,7 @@ namespace System.Diagnostics
                 // if a period was found, then see if the extension is
                 // .EXE, if so drop it, if not, then use end of string
                 // (i.e. include extension in name)
-                ReadOnlySpan<char> extension = name.AsSpan(period);
+                ReadOnlySpan<char> extension = name.Slice(period);
 
                 if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
                     period--;                 // point to character before period
@@ -470,7 +470,7 @@ namespace System.Diagnostics
 
             // copy characters between period (or end of string) and
             // slash (or start of string) to make image name
-            return name.Substring(slash, period - slash + 1);
+            return name.Slice(slash, period - slash + 1).ToString();
         }
     }
 }
