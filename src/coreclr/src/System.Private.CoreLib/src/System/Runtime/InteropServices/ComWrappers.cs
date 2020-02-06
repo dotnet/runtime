@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
@@ -165,6 +166,22 @@ namespace System.Runtime.InteropServices
         // Call to execute the abstract instance function
         internal static object CallCreateObject(ComWrappers comWrappersImpl, IntPtr externalComObject, CreateObjectFlags flags)
             => comWrappersImpl.CreateObject(externalComObject, flags);
+
+        /// <summary>
+        /// Called when a request is made for a collection of objects to be released.
+        /// </summary>
+        /// <param name="objects">Collection of objects to release.</param>
+        /// <remarks>
+        /// The default implementation of this function throws <see cref="System.NotImplementedException"/>.
+        /// </remarks>
+        protected virtual void ReleaseObjects(IEnumerable objects)
+        {
+            throw new NotImplementedException();
+        }
+
+        // Call to execute the virtual instance function
+        internal static void CallReleaseObjects(ComWrappers comWrappersImpl, IEnumerable objects)
+            => comWrappersImpl.ReleaseObjects(objects);
 
         /// <summary>
         /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
