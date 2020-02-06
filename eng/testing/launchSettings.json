@@ -10,7 +10,10 @@
             "commandName": "Executable",
             "executablePath": "$(RunWorkingDirectory)$(RunCommand)",
             "commandLineArgs": "$(RunArguments) -parallel none",
-            "workingDirectory": "$(RunWorkingDirectory)"
+            "workingDirectory": "$(RunWorkingDirectory)",
+            "environmentVariables": {
+                "DEVPATH": "$(TestHostRootPath)"
+            }
         }
     }
 }
