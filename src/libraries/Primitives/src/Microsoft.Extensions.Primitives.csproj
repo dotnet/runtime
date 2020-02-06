@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.0;netstandard2.0</TargetFrameworks>
+    <Configurations>netcoreapp3.0-Debug;netcoreapp3.0-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <NoWarn>$(NoWarn);CS1591;CA1200;SA1121;SA1028;SA1129;SA1027</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{31785605-3555-4D71-8B24-59DC43F7439A}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Shared\HashCodeCombiner.cs" />
+    <Compile Include="CancellationChangeToken.cs" />
+    <Compile Include="ChangeToken.cs" />
+    <Compile Include="CompositeChangeToken.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="IChangeToken.cs" />
+    <Compile Include="InplaceStringBuilder.cs" />
+    <Compile Include="StringSegment.cs" />
+    <Compile Include="StringSegmentComparer.cs" />
+    <Compile Include="StringTokenizer.cs" />
+    <Compile Include="StringValues.cs" />
+    <Compile Include="ThrowHelper.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+</Project>
