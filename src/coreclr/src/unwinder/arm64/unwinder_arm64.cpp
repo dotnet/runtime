@@ -1609,7 +1609,7 @@ BOOL DacUnwindStackFrame(T_CONTEXT *pContext, T_KNONVOLATILE_CONTEXT_POINTERS* p
     return res;
 }
 
-#if defined(FEATURE_PAL)
+#if defined(HOST_UNIX)
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind(
     IN ULONG HandlerType,

@@ -7,21 +7,21 @@ include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckTypeSize)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CLR_CMAKE_TARGET_LINUX)
     set(PAL_UNIX_NAME \"LINUX\")
-elseif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+elseif (CLR_CMAKE_TARGET_DARWIN)
     set(PAL_UNIX_NAME \"OSX\")
 
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+elseif (CLR_CMAKE_TARGET_FREEBSD)
     set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM /usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES /usr/local/include)
-elseif (CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+elseif (CLR_CMAKE_TARGET_NETBSD)
     set(PAL_UNIX_NAME \"NETBSD\")
-elseif (CMAKE_SYSTEM_NAME STREQUAL Emscripten)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
     set(PAL_UNIX_NAME \"WEBASSEMBLY\")
 else ()
     message(FATAL_ERROR "Unknown platform.  Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
@@ -431,13 +431,12 @@ set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-    if (NOT CLR_CMAKE_PLATFORM_ANDROID)
+if (CLR_CMAKE_TARGET_LINUX)
+    if (NOT CLR_CMAKE_TARGET_ANDROID)
         set(CMAKE_REQUIRED_LIBRARIES rt)
     endif ()
 
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
-    
 endif ()
 
 check_c_source_runs(
@@ -720,8 +719,8 @@ check_c_source_compiles(
 set (CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
+if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -L/usr/local/lib")
 endif()
 
 check_symbol_exists(
@@ -743,7 +742,7 @@ set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 set (HAVE_INOTIFY 0)
 if (HAVE_INOTIFY_INIT AND HAVE_INOTIFY_ADD_WATCH AND HAVE_INOTIFY_RM_WATCH)
     set (HAVE_INOTIFY 1)
-elseif (CMAKE_SYSTEM_NAME STREQUAL Linux)
+elseif (CLR_CMAKE_TARGET_LINUX)
     message(FATAL_ERROR "Cannot find inotify functions on a Linux platform.")
 endif()
 

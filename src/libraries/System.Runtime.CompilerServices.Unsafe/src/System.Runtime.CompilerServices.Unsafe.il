@@ -13,8 +13,8 @@
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [CORE_ASSEMBLY]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 02 00 00 00 00 00 )
 
-  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = ( 01 00 07 34 2E 30 2E 30 2E 30 00 00 )             // ...4.0.0.0..
-  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = ( 01 00 07 34 2E 30 2E 30 2E 30 00 00 )             // ...4.0.0.0..
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyFileVersionAttribute::.ctor(string) = ( 01 00 07 35 2E 30 2E 30 2E 30 00 00 )             // ...5.0.0.0..
+  .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyInformationalVersionAttribute::.ctor(string) = ( 01 00 07 35 2E 30 2E 30 2E 30 00 00 )             // ...5.0.0.0..
   .custom instance void [CORE_ASSEMBLY]System.Reflection.AssemblyTitleAttribute::.ctor(string) = ( 01 00 26 53 79 73 74 65 6D 2E 52 75 6E 74 69 6D   // ..&System.Runtim
                                                                                               65 2E 43 6F 6D 70 69 6C 65 72 53 65 72 76 69 63   // e.CompilerServic
                                                                                               65 73 2E 55 6E 73 61 66 65 00 00 )                // es.Unsafe..
@@ -41,7 +41,7 @@
     01 00 00 00 00
   ) // false
   .hash algorithm 0x00008004
-  .ver 4:0:5:0
+  .ver 5:0:0:0
 }
 .module System.Runtime.CompilerServices.Unsafe.dll
 // MVID: {1E97D84A-565B-49C5-B60A-F31A1A4ACE13}

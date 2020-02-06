@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Helpers.cs" />

@@ -206,6 +206,7 @@ monoutils_sources = \
 	bsearch.h	\
 	bsearch.c	\
 	mono-signal-handler.h	\
+	mono-signal-handler.c	\
 	mono-conc-hashtable.h	\
 	mono-conc-hashtable.c	\
 	json.h	\

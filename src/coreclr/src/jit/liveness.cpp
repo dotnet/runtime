@@ -11,7 +11,7 @@
 #pragma hdrstop
 #endif
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 #include "decomposelongs.h"
 #endif
 #include "lower.h" // for LowerRange()
@@ -1006,10 +1006,10 @@ void Compiler::fgExtendDbgLifetimes()
                     LIR::Range initRange = LIR::EmptyRange();
                     initRange.InsertBefore(nullptr, zero, store);
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
                     unsigned blockWeight = block->getBBWeight(this);
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
                     m_pLowering->LowerRange(block, initRange);
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
@@ -1639,9 +1639,9 @@ void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
 
     for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
     {
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         {
             noway_assert(lvaTable[i].lvIsStructField);
         }

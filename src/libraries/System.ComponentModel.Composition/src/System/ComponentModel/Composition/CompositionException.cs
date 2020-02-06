@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
         ///     Initializes a new instance of the <see cref="CompositionException"/> class.
         /// </summary>
         public CompositionException()
-                : this((string)null, (Exception)null, (IEnumerable<CompositionError>)null)
+                : this((string?)null, (Exception?)null, (IEnumerable<CompositionError>?)null)
         {
         }
 
@@ -41,8 +41,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="CompositionException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.Message"/> property to its default value.
         /// </param>
-        public CompositionException(string message)
-            : this(message, (Exception)null, (IEnumerable<CompositionError>)null)
+        public CompositionException(string? message)
+            : this(message, (Exception?)null, (IEnumerable<CompositionError>?)null)
         {
         }
 
@@ -61,8 +61,8 @@ namespace System.ComponentModel.Composition
         ///     <see cref="ComposablePartException"/>; or <see langword="null"/> to set
         ///     the <see cref="Exception.InnerException"/> property to <see langword="null"/>.
         /// </param>
-        public CompositionException(string message, Exception innerException)
-            : this(message, innerException, (IEnumerable<CompositionError>)null)
+        public CompositionException(string? message, Exception? innerException)
+            : this(message, innerException, (IEnumerable<CompositionError>?)null)
         {
         }
 
@@ -84,12 +84,12 @@ namespace System.ComponentModel.Composition
         /// <exception cref="ArgumentException">
         ///     <paramref name="errors"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        public CompositionException(IEnumerable<CompositionError> errors)
-            : this((string)null, (Exception)null, errors)
+        public CompositionException(IEnumerable<CompositionError>? errors)
+            : this((string?)null, (Exception?)null, errors)
         {
         }
 
-        internal CompositionException(string message, Exception innerException, IEnumerable<CompositionError> errors)
+        internal CompositionException(string? message, Exception? innerException, IEnumerable<CompositionError>? errors)
                     : base(message, innerException)
         {
             Requires.NullOrNotNullElements(errors, nameof(errors));
@@ -143,8 +143,7 @@ namespace System.ComponentModel.Composition
                 {
                     if (error.Exception != null)
                     {
-                        var ce = error.Exception as CompositionException;
-                        if (ce != null)
+                        if (error.Exception is CompositionException ce)
                         {
                             if (ce.RootCauses.Count > 0)
                             {
@@ -252,7 +251,7 @@ namespace System.ComponentModel.Composition
 
             writer.AppendFormat(CultureInfo.CurrentCulture, SR.CompositionException_ElementPrefix, element.DisplayName);
 
-            while ((element = element.Origin) != null)
+            while ((element = element.Origin!) != null)
             {
                 writer.AppendFormat(CultureInfo.CurrentCulture, SR.CompositionException_OriginFormat, SR.CompositionException_OriginSeparator, element.DisplayName);
             }
@@ -310,8 +309,7 @@ namespace System.ComponentModel.Composition
 
         private static void VisitException(Exception exception, VisitContext context)
         {
-            CompositionException composition = exception as CompositionException;
-            if (composition != null)
+            if (exception is CompositionException composition)
             {
                 VisitCompositionException(composition, context);
             }

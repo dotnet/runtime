@@ -76,7 +76,7 @@ namespace System.Diagnostics
                 {
                     GC.SuppressFinalize(this);
                     _state.ReleaseRef();
-                    _state = null;
+                    _state = null!;
                 }
             }
         }
@@ -103,7 +103,7 @@ namespace System.Diagnostics
         {
             lock (s_childProcessWaitStates)
             {
-                ProcessWaitState pws;
+                ProcessWaitState? pws;
                 if (isNewChild)
                 {
                     // When the PID is recycled for a new child, we remove the old child.
@@ -159,7 +159,7 @@ namespace System.Diagnostics
         /// </summary>
         internal void ReleaseRef()
         {
-            ProcessWaitState pws;
+            ProcessWaitState? pws;
             Dictionary<int, ProcessWaitState> waitStates = _isChild ? s_childProcessWaitStates : s_processWaitStates;
             lock (waitStates)
             {
@@ -200,7 +200,7 @@ namespace System.Diagnostics
         private readonly bool _usesTerminal;
 
         /// <summary>If a wait operation is in progress, the Task that represents it; otherwise, null.</summary>
-        private Task _waitInProgress;
+        private Task? _waitInProgress;
         /// <summary>The number of alive users of this object.</summary>
         private int _outstandingRefCount;
 
@@ -214,7 +214,7 @@ namespace System.Diagnostics
         /// </summary>
         private DateTime _exitTime;
         /// <summary>A lazily-initialized event set when the process exits.</summary>
-        private ManualResetEvent _exitedEvent;
+        private ManualResetEvent? _exitedEvent;
 
         /// <summary>Initialize the wait state object.</summary>
         /// <param name="processId">The associated process' ID.</param>
@@ -278,7 +278,7 @@ namespace System.Diagnostics
                             // another operation underway, then we'll just tack ours onto the end of it.
                             _waitInProgress = _waitInProgress == null ?
                                 WaitForExitAsync() :
-                                _waitInProgress.ContinueWith((_, state) => ((ProcessWaitState)state).WaitForExitAsync(),
+                                _waitInProgress.ContinueWith((_, state) => ((ProcessWaitState)state!).WaitForExitAsync(),
                                     this, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
                         }
                     }
@@ -416,7 +416,7 @@ namespace System.Diagnostics
                 while (true)
                 {
                     bool createdTask = false;
-                    CancellationTokenSource cts = null;
+                    CancellationTokenSource? cts = null;
                     Task waitTask;
 
                     // We're in a polling loop... determine how much time remains
@@ -605,7 +605,7 @@ namespace System.Diagnostics
                     pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait();
                     if (pid > 0)
                     {
-                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState pws))
+                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
                         {
                             // Known Process.
                             if (pws.TryReapChild())
@@ -636,8 +636,8 @@ namespace System.Diagnostics
                 if (checkAll)
                 {
                     // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
-                    ProcessWaitState firstToRemove = null;
-                    List<ProcessWaitState> additionalToRemove = null;
+                    ProcessWaitState? firstToRemove = null;
+                    List<ProcessWaitState>? additionalToRemove = null;
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
                     {
                         ProcessWaitState pws = kv.Value;

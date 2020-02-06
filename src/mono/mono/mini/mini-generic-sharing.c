@@ -1179,6 +1179,9 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 			continue;
 		MonoType *ftype = get_wrapper_shared_type_full (field->type, TRUE);
+		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ftype)))
+			/* Cannot inflate generic params with byreflike types */
+			return NULL;
 		args [findex ++] = ftype;
 		if (findex >= 16)
 			break;

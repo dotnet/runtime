@@ -167,7 +167,7 @@ int coreclr_initialize(
             unsigned int* domainId)
 {
     HRESULT hr;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     DWORD error = PAL_InitializeCoreCLR(exePath);
     hr = HRESULT_FROM_WIN32(error);
 
@@ -288,7 +288,7 @@ int coreclr_shutdown(
 
     hr = host->Stop();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PAL_Shutdown();
 #endif
 
@@ -320,7 +320,7 @@ int coreclr_shutdown_2(
 
     hr = host->Stop();
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     PAL_Shutdown();
 #endif
 

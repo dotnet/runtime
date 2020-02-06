@@ -32,7 +32,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public ProcessThread this[int index]
         {
-            get { return (ProcessThread)InnerList[index]; }
+            get { return (ProcessThread)InnerList[index]!; }
         }
 
         /// <devdoc>

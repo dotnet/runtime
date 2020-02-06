@@ -1,4 +1,3 @@
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(UTILCODE_COMMON_SOURCES
@@ -116,9 +115,9 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
 set_target_properties(utilcode_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)

@@ -174,7 +174,7 @@ namespace System.Data.SqlTypes
             else
             {
                 m_fNotNull = true;
-                m_value = data; // PERF: do not String.Copy
+                m_value = data;
             }
         }
 

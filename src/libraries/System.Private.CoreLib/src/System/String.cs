@@ -47,7 +47,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [PreserveDependency("Ctor(System.Char[])", "System.String")]
-        public extern String(char[] value);
+        public extern String(char[]? value);
 
 #if !CORECLR
         static
@@ -217,7 +217,7 @@ namespace System
             if (numBytes == 0)
                 return Empty;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);

@@ -7,11 +7,6 @@ using System.IO;
 
 internal class Program
 {
-    public static bool IsTimestampByte(int i)
-    {
-        return i >= 136 && i < 140;
-    }
-
     public static int Main()
     {
         byte[] file1 = File.ReadAllBytes("crossgen2smoke1.ildll");
@@ -24,9 +19,9 @@ internal class Program
 
         for (int i = 0; i < file1.Length; ++i)
         {
-            if (file1[i] != file2[i] && !IsTimestampByte(i))
+            if (file1[i] != file2[i])
             {
-                Console.WriteLine($"Difference at non-timestamp byte {i}");
+                Console.WriteLine($"Difference at byte {i}");
                 return 1;
             }
         }

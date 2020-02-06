@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.IO;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -78,9 +78,9 @@ namespace ILCompiler
             return _ilProvider;
         }
 
-        public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
+        public ReadyToRunCodegenCompilationBuilder UseJitPath(FileInfo jitPath)
         {
-            _jitPath = jitPath;
+            _jitPath = jitPath == null ? null : jitPath.FullName;
             return this;
         }
 
@@ -115,7 +115,8 @@ namespace ILCompiler
             SignatureContext signatureContext = new SignatureContext(_inputModule, moduleTokenResolver);
             CopiedCorHeaderNode corHeaderNode = new CopiedCorHeaderNode(_inputModule);
             AttributePresenceFilterNode attributePresenceFilterNode = null;
-            
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(_inputModule);
+
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are
             // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
@@ -156,6 +157,7 @@ namespace ILCompiler
                 moduleTokenResolver,
                 signatureContext,
                 corHeaderNode,
+                debugDirectoryNode,
                 win32Resources,
                 attributePresenceFilterNode,
                 header);

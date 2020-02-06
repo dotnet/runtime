@@ -87,7 +87,7 @@ class ArgDestination;
 
 struct RCW;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define OBJHEADER_SIZE      (sizeof(DWORD) /* m_alignpad */ + sizeof(DWORD) /* m_SyncBlockValue */)
 #else
 #define OBJHEADER_SIZE      sizeof(DWORD) /* m_SyncBlockValue */
@@ -96,7 +96,7 @@ struct RCW;
 #define OBJECT_SIZE         TARGET_POINTER_SIZE /* m_pMethTab */
 #define OBJECT_BASESIZE     (OBJHEADER_SIZE + OBJECT_SIZE)
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define ARRAYBASE_SIZE      (OBJECT_SIZE /* m_pMethTab */ + sizeof(DWORD) /* m_NumComponents */ + sizeof(DWORD) /* pad */)
 #else
 #define ARRAYBASE_SIZE      (OBJECT_SIZE /* m_pMethTab */ + sizeof(DWORD) /* m_NumComponents */)
@@ -560,9 +560,9 @@ private:
     // Object::GetSize() looks at m_NumComponents even though it may not be an array (the
     // values is shifted out if not an array, so it's ok).
     DWORD       m_NumComponents;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     DWORD       pad;
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
     SVAL_DECL(INT32, s_arrayBoundsZero); // = 0
 
@@ -1537,9 +1537,9 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "pshpack4.h"
-#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#endif // defined(TARGET_X86) && !defined(TARGET_UNIX)
 class AssemblyLoadContextBaseObject : public Object
 {
     friend class MscorlibBinder;
@@ -1548,7 +1548,7 @@ class AssemblyLoadContextBaseObject : public Object
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     OBJECTREF     _unloadLock;
     OBJECTREF     _resovlingUnmanagedDll;
     OBJECTREF     _resolving;
@@ -1558,7 +1558,7 @@ class AssemblyLoadContextBaseObject : public Object
     int64_t       _id; // On 64-bit platforms this is a value type so it is placed after references and pointers
     DWORD         _state;
     CLR_BOOL      _isCollectible;
-#else // _TARGET_64BIT_
+#else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
     OBJECTREF     _unloadLock;
     OBJECTREF     _resovlingUnmanagedDll;
@@ -1568,7 +1568,7 @@ class AssemblyLoadContextBaseObject : public Object
     INT_PTR       _nativeAssemblyLoadContext;
     DWORD         _state;
     CLR_BOOL      _isCollectible;
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
   protected:
     AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
@@ -1577,9 +1577,9 @@ class AssemblyLoadContextBaseObject : public Object
   public:
     INT_PTR GetNativeAssemblyLoadContext() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
 };
-#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
 #include "poppack.h"
-#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
+#endif // defined(TARGET_X86) && !defined(TARGET_UNIX)
 
 // AssemblyNameBaseObject
 // This class is the base class for assembly names

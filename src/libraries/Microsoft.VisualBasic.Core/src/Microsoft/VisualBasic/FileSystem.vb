@@ -158,7 +158,7 @@ Namespace Microsoft.VisualBasic
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
 
             If Attributes = FileAttribute.Volume Then
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
                 Dim Result As Integer
                 Dim VolumeName As StringBuilder = New StringBuilder(256)
                 Dim RootName As String = Nothing
@@ -469,7 +469,7 @@ Namespace Microsoft.VisualBasic
 
         'IMPORTANT: This call provides sensitive information whether a device exists and should be used with extreme care
         Private Function UnsafeValidDrive(ByVal cDrive As Char) As Boolean 'Return of True means not a valid drive
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim iDrive As Integer = AscW(cDrive) - AscW(chLetterA)
             Return (CLng(UnsafeNativeMethods.GetLogicalDrives()) And CLng(&H2 ^ iDrive)) <> 0
 #Else
@@ -1170,7 +1170,7 @@ Namespace Microsoft.VisualBasic
             OldPath = VB6CheckPathname(oAssemblyData, OldPath, CType(OpenModeTypes.Any, OpenMode))
             NewPath = VB6CheckPathname(oAssemblyData, NewPath, CType(OpenModeTypes.Any, OpenMode))
 
-#If PLATFORM_WINDOWS Then
+#If TARGET_WINDOWS Then
             Dim Result As Integer
             Dim ErrCode As Integer
 

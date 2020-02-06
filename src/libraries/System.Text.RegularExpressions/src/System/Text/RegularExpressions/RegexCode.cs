@@ -15,7 +15,6 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -395,7 +394,10 @@ namespace System.Text.RegularExpressions
         }
 
         [ExcludeFromCodeCoverage]
-        public void Dump()
+        public void Dump() => Debug.WriteLine(ToString());
+
+        [ExcludeFromCodeCoverage]
+        public override string ToString()
         {
             var sb = new StringBuilder();
 
@@ -426,7 +428,7 @@ namespace System.Text.RegularExpressions
             }
             sb.AppendLine();
 
-            Debug.WriteLine(sb.ToString());
+            return sb.ToString();
         }
 #endif
     }

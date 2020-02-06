@@ -1,9 +1,0 @@
-﻿<Project DefaultTargets="Build">
-  <PropertyGroup>
-    <!-- Needs $(NetFrameworkCurrent) configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
-    <BuildConfigurations>
-      $(NetFrameworkCurrent);
-      $(NetCoreAppCurrent);
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

@@ -59,6 +59,7 @@ namespace System.Net.Sockets
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
                         bool closed = IsClosed;
+                        bool alreadyBound = !IsInvalid && !IsClosed && (exception is ArgumentException);
                         CloseAsIs(abortive: false);
                         if (closed)
                         {
@@ -67,6 +68,12 @@ namespace System.Net.Sockets
                             // instead propagate as an ObjectDisposedException.
                             ThrowSocketDisposedException(exception);
                         }
+
+                        if (alreadyBound)
+                        {
+                            throw new InvalidOperationException(SR.net_sockets_asyncoperations_notallowed, exception);
+                        }
+
                         throw;
                     }
 

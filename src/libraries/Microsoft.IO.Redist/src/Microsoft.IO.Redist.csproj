@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.IO.Redist</AssemblyName>
-    <Configurations>$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetFrameworkCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>

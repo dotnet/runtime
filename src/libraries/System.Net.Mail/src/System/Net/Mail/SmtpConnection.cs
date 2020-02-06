@@ -153,25 +153,29 @@ namespace System.Net.Mail
         {
             if (!_isClosed)
             {
-                lock (this)
+                try
                 {
-                    if (!_isClosed && _tcpClient != null)
+                    lock (this)
                     {
-                        //free CBT buffer
-                        if (_channelBindingToken != null)
+                        if (!_isClosed && _tcpClient != null)
                         {
-                            _channelBindingToken.Close();
-                        }
+                            _channelBindingToken?.Close();
 
-                        // must destroy manually since sending a QUIT here might not be
-                        // interpreted correctly by the server if it's in the middle of a
-                        // DATA command or some similar situation.  This may send a RST
-                        // but this is ok in this situation.  Do not reuse this connection
-                        _tcpClient.LingerState = new LingerOption(true, 0);
-                        _networkStream?.Close();
-                        _tcpClient.Dispose();
+                            // Must destroy manually since sending a QUIT here might not be
+                            // interpreted correctly by the server if it's in the middle of a
+                            // DATA command or some similar situation.  This may send a RST
+                            // but this is ok in this situation.  Do not reuse this connection
+                            _tcpClient.LingerState = new LingerOption(true, 0);
+                            _networkStream?.Close();
+                            _tcpClient.Dispose();
+                        }
+                        _isClosed = true;
                     }
-                    _isClosed = true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                    // catch additional exception types here if need demonstrates.
                 }
             }
             _isConnected = false;

@@ -39,7 +39,7 @@ namespace Microsoft.Internal.Collections
 
             Type collectionType = typeof(CollectionOfObject<>).MakeGenericType(underlyingItemType);
 
-            return (ICollection<object>)Activator.CreateInstance(collectionType, collectionObject);
+            return (ICollection<object>)Activator.CreateInstance(collectionType, collectionObject)!;
         }
 
         private class CollectionOfObjectList : ICollection<object>

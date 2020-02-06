@@ -38,7 +38,7 @@ HINSTANCE g_hThisInst;  // This library.
 
 extern "C" IExecutionEngine* IEE();
 
-#ifdef PLATFORM_WINDOWS
+#ifdef TARGET_WINDOWS
 
 #include <process.h> // for __security_init_cookie()
 
@@ -99,11 +99,11 @@ extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpRe
     return result;
 }
 
-#endif // PLATFORM_WINDOWS
+#endif // TARGET_WINDOWS
 
 
 extern "C"
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
 BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
@@ -114,7 +114,7 @@ BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
     {
     case DLL_PROCESS_ATTACH:
         {
-#ifndef PLATFORM_WINDOWS
+#ifndef TARGET_WINDOWS
             // It's critical that we invoke InitUtilCode() before the CRT initializes.
             // We have a lot of global ctors that will break if we let the CRT initialize without
             // this step having been done.

@@ -1,4 +1,4 @@
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
 
   list(APPEND CORDBEE_SOURCES_WKS ${CORDBEE_HEADERS_WKS})
 
@@ -35,7 +35,7 @@ else ()
     message(FATAL_ERROR "Unknown platform")
   endif()
 
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 target_precompile_header(TARGET cordbee_wks HEADER stdafx.h)
 add_dependencies(cordbee_wks eventing_headers)

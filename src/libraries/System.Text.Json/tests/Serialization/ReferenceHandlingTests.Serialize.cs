@@ -217,12 +217,12 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(list, s_serializerOptionsPreserve);
-            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$id"":""3""}]}", json);
+            Assert.Equal(@"{""$id"":""1"",""$values"":[{""$id"":""2""},{""$ref"":""2""}]}", json);
 
             List<ClassIncorrectHashCode> listCopy = JsonSerializer.Deserialize<List<ClassIncorrectHashCode>>(json, s_serializerOptionsPreserve);
-            // When a GetHashCode method is implemented incorrectly, round-tripping breaks,
-            // that is a user error and this validates that we are always calling user's GetHashCode.
-            Assert.NotSame(listCopy[0], listCopy[1]);
+            // Make sure that our DefaultReferenceResolver calls the ReferenceEqualityComparer that implements RuntimeHelpers.GetHashCode, and never object.GetHashCode,
+            // otherwise objects would not be correctly identified when searching for them in the dictionary.
+            Assert.Same(listCopy[0], listCopy[1]);
         }
     }
 }

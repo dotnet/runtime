@@ -637,7 +637,7 @@ const char* FormatSig(MethodDesc * pMD, LoaderHeap * pHeap, AllocMemTracker * pa
 }
 
 /*******************************************************************/
-const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamTracker)
+const char* FormatSig(MethodDesc* pMD, AllocMemTracker *pamTracker)
 {
     CONTRACTL
     {
@@ -646,7 +646,7 @@ const char* FormatSig(MethodDesc* pMD, AppDomain *pDomain, AllocMemTracker *pamT
     }
     CONTRACTL_END;
 
-    return FormatSig(pMD,pDomain->GetLowFrequencyHeap(),pamTracker);
+    return FormatSig(pMD,GetAppDomain()->GetLowFrequencyHeap(),pamTracker);
 }
 #endif
 #endif

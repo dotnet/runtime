@@ -385,7 +385,7 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
     INDEBUG(m_gcPtrsInitialized = true;)
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 {
     assert(m_gcPtrsInitialized);
@@ -415,4 +415,4 @@ ClassLayout* ClassLayout::GetPPPQuirkLayout(CompAllocator alloc)
 
     return m_pppQuirkLayout;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64

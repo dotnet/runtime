@@ -176,7 +176,7 @@ jobs:
           SecretsFilter: 'dotnetfeed-storage-access-key-1,microsoft-symbol-server-pat,symweb-symbol-server-pat'
 
     # Build packages
-    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossPackagesArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
+    - script: $(coreClrRepoRootDir)build-packages$(scriptExt) -BuildArch=$(archType) -BuildType=$(_BuildConfig) $(crossArg) $(officialBuildIdArg) -ci --configuration $(_BuildConfig)
       displayName: Build packages
 
     # Save packages using the prepare-signed-artifacts format.

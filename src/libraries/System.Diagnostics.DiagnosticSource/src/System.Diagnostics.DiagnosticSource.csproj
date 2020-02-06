@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
          we also have a separate complilation of this DLL that works for V4.5
@@ -13,7 +13,10 @@
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1'">$(DefineConstants);EVENTSOURCE_ACTIVITY_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.1' and '$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);EVENTSOURCE_ENUMERATE_SUPPORT</DefineConstants>
     <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants);ALLOW_PARTIALLY_TRUSTED_CALLERS;ENABLE_HTTP_HANDLER</DefineConstants>
-    <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <TargetFrameworks>netstandard1.1;netstandard1.3;net45;net46;$(NetCoreAppCurrent);netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == 'netstandard2.0'">true</ExcludeFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />

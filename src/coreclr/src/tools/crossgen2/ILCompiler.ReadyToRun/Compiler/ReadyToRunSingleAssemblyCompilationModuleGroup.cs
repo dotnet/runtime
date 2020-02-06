@@ -34,34 +34,7 @@ namespace ILCompiler
 
             if (_profileGuidedCompileRestriction != null)
             {
-                bool found = false;
-
-                if (!method.HasInstantiation && !method.OwningType.HasInstantiation)
-                {
-                    // Check only the defining module for non-generics
-                    MetadataType mdType = method.OwningType as MetadataType;
-                    if (mdType != null)
-                    {
-                        if (_profileGuidedCompileRestriction.GetDataForModuleDesc(mdType.Module).GetMethodProfileData(method) != null)
-                        {
-                            found = true;
-                        }
-                    }
-                }
-                else
-                {
-                    // For generics look in the profile data of all modules being compiled
-                    foreach (ModuleDesc module in _compilationModuleSet)
-                    {
-                        if (_profileGuidedCompileRestriction.GetDataForModuleDesc(module).GetMethodProfileData(method) != null)
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found == false)
+                if (!_profileGuidedCompileRestriction.IsMethodInProfileData(method))
                     return false;
             }
 
