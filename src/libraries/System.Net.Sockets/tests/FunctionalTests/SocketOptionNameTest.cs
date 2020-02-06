@@ -520,9 +520,8 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [Collection("NoParallelTests")]
-    // Set of tests to not run  together with any other tests.
-    public partial class NoParallelTests
+    [Collection(nameof(NoParallelTests))]
+    public class SocketOptionNameTest_NonParallel
     {
         [Fact]
         public void BindDuringTcpWait_Succeeds()

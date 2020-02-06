@@ -11,11 +11,11 @@ using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Net.Sockets.Tests
+namespace System.Net.Sockets.Tests.SendReceive
 {
-    public abstract class SendReceive<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
+    public abstract class SendReceive_Socket<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        public SendReceive(ITestOutputHelper output) : base(output) {}
+        public SendReceive_Socket(ITestOutputHelper output) : base(output) {}
 
         [Theory]
         [InlineData(null, 0, 0)] // null array
@@ -1128,7 +1128,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public class SendReceive
+    public class SendReceive_Socket
     {
         [Fact]
         public void SendRecvIovMaxTcp_Success()
@@ -1402,408 +1402,278 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(0, receiver.Available);
             }
         }
-    }
 
-    public sealed class SendReceiveUdpClient : MemberDatas
-    {
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendToRecvFromAsync_Datagram_UDP_UdpClient(IPAddress loopbackAddress)
+        public class Sync
         {
-            IPAddress leftAddress = loopbackAddress, rightAddress = loopbackAddress;
-
-            const int DatagramSize = 256;
-            const int DatagramsToSend = 256;
-            const int AckTimeout = 20000;
-            const int TestTimeout = 60000;
-
-            using (var left = new UdpClient(new IPEndPoint(leftAddress, 0)))
-            using (var right = new UdpClient(new IPEndPoint(rightAddress, 0)))
+            public sealed class Array : SendReceive_Socket<SocketHelperArraySync>
             {
-                var leftEndpoint = (IPEndPoint)left.Client.LocalEndPoint;
-                var rightEndpoint = (IPEndPoint)right.Client.LocalEndPoint;
+                public Array(ITestOutputHelper output) : base(output) { }
 
-                var receiverAck = new ManualResetEventSlim();
-                var senderAck = new ManualResetEventSlim();
-
-                var receivedChecksums = new uint?[DatagramsToSend];
-                int receivedDatagrams = 0;
-
-                Task receiverTask = Task.Run(async () =>
+                [OuterLoop]
+                [Fact]
+                public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
                 {
-                    for (; receivedDatagrams < DatagramsToSend; receivedDatagrams++)
+                    RemoteExecutor.Invoke(() =>
                     {
-                        UdpReceiveResult result = await left.ReceiveAsync();
+                        // Set the max number of worker threads to a low value.
+                        ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
+                        ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
 
-                        receiverAck.Set();
-                        Assert.True(senderAck.Wait(AckTimeout));
-                        senderAck.Reset();
+                        // Create twice that many socket pairs, for good measure.
+                        (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => SocketTestExtensions.CreateConnectedSocketPair()).ToArray();
+                        try
+                        {
+                            // Ensure that on Unix all of the first socket in each pair are configured for sync-over-async.
+                            foreach ((Socket, Socket) pair in socketPairs)
+                            {
+                                pair.Item1.ForceNonBlocking(force: true);
+                            }
 
-                        Assert.Equal(DatagramSize, result.Buffer.Length);
-                        Assert.Equal(rightEndpoint, result.RemoteEndPoint);
+                            // Queue a work item for each first socket to do a blocking receive.
+                            Task[] receives =
+                                (from pair in socketPairs
+                                 select Task.Factory.StartNew(() => pair.Item1.Receive(new byte[1]), CancellationToken.None, TaskCreationOptions.PreferFairness, TaskScheduler.Default))
+                                 .ToArray();
 
-                        int datagramId = (int)result.Buffer[0];
-                        Assert.Null(receivedChecksums[datagramId]);
+                            // Give a bit of time for the pool to start executing the receives.  It's possible this won't be enough,
+                            // in which case the test we could get a false negative on the test, but we won't get spurious failures.
+                            Thread.Sleep(1000);
 
-                        receivedChecksums[datagramId] = Fletcher32.Checksum(result.Buffer, 0, result.Buffer.Length);
-                    }
-                });
+                            // Now send to each socket.
+                            foreach ((Socket, Socket) pair in socketPairs)
+                            {
+                                pair.Item2.Send(new byte[1]);
+                            }
 
-                var sentChecksums = new uint[DatagramsToSend];
-                int sentDatagrams = 0;
-
-                Task senderTask = Task.Run(async () =>
-                {
-                    var random = new Random();
-                    var sendBuffer = new byte[DatagramSize];
-
-                    for (; sentDatagrams < DatagramsToSend; sentDatagrams++)
-                    {
-                        random.NextBytes(sendBuffer);
-                        sendBuffer[0] = (byte)sentDatagrams;
-
-                        int sent = await right.SendAsync(sendBuffer, DatagramSize, leftEndpoint);
-
-                        Assert.True(receiverAck.Wait(AckTimeout));
-                        receiverAck.Reset();
-                        senderAck.Set();
-
-                        Assert.Equal(DatagramSize, sent);
-                        sentChecksums[sentDatagrams] = Fletcher32.Checksum(sendBuffer, 0, sent);
-                    }
-                });
-
-                await (new[] { receiverTask, senderTask }).WhenAllOrAnyFailed(TestTimeout);
-                for (int i = 0; i < DatagramsToSend; i++)
-                {
-                    Assert.NotNull(receivedChecksums[i]);
-                    Assert.Equal(sentChecksums[i], (uint)receivedChecksums[i]);
+                            // And wait for all the receives to complete.
+                            Assert.True(Task.WaitAll(receives, 60_000), "Expected all receives to complete within timeout");
+                        }
+                        finally
+                        {
+                            foreach ((Socket, Socket) pair in socketPairs)
+                            {
+                                pair.Item1.Dispose();
+                                pair.Item2.Dispose();
+                            }
+                        }
+                    }).Dispose();
                 }
             }
-        }
-    }
 
-    public sealed class SendReceiveListener : MemberDatas
-    {
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(Loopbacks))]
-        public async Task SendRecvAsync_TcpListener_TcpClient(IPAddress listenAt)
-        {
-            const int BytesToSend = 123456;
-            const int ListenBacklog = 1;
-            const int LingerTime = 10;
-            const int TestTimeout = 30000;
-
-            var listener = new TcpListener(listenAt, 0);
-            listener.Start(ListenBacklog);
-
-            int bytesReceived = 0;
-            var receivedChecksum = new Fletcher32();
-            Task serverTask = Task.Run(async () =>
+            public sealed class Array_ForceNonBlocking : SendReceive_Socket<SocketHelperSyncForceNonBlocking>
             {
-                using (TcpClient remote = await listener.AcceptTcpClientAsync())
-                using (NetworkStream stream = remote.GetStream())
-                {
-                    var recvBuffer = new byte[256];
-                    while (true)
-                    {
-                        int received = await stream.ReadAsync(recvBuffer, 0, recvBuffer.Length);
-                        if (received == 0)
-                        {
-                            break;
-                        }
+                public Array_ForceNonBlocking(ITestOutputHelper output) : base(output) {}
+            }
 
-                        bytesReceived += received;
-                        receivedChecksum.Add(recvBuffer, 0, received);
-                    }
-                }
-            });
-
-            int bytesSent = 0;
-            var sentChecksum = new Fletcher32();
-            Task clientTask = Task.Run(async () =>
+            public sealed class Span : SendReceive_Socket<SocketHelperSpanSync>
             {
-                var clientEndpoint = (IPEndPoint)listener.LocalEndpoint;
+                public Span(ITestOutputHelper output) : base(output) { }
+            }
 
-                using (var client = new TcpClient(clientEndpoint.AddressFamily))
-                {
-                    await client.ConnectAsync(clientEndpoint.Address, clientEndpoint.Port);
-
-                    using (NetworkStream stream = client.GetStream())
-                    {
-                        var random = new Random();
-                        var sendBuffer = new byte[512];
-                        for (int remaining = BytesToSend, sent = 0; remaining > 0; remaining -= sent)
-                        {
-                            random.NextBytes(sendBuffer);
-
-                            sent = Math.Min(sendBuffer.Length, remaining);
-                            await stream.WriteAsync(sendBuffer, 0, sent);
-
-                            bytesSent += sent;
-                            sentChecksum.Add(sendBuffer, 0, sent);
-                        }
-
-                        client.LingerState = new LingerOption(true, LingerTime);
-                    }
-                }
-            });
-
-            await (new[] { serverTask, clientTask }).WhenAllOrAnyFailed(TestTimeout);
-
-            Assert.Equal(bytesSent, bytesReceived);
-            Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
-        }
-    }
-
-    public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync>
-    {
-        public SendReceiveSync(ITestOutputHelper output) : base(output) { }
-
-        [OuterLoop]
-        [Fact]
-        public void BlockingRead_DoesntRequireAnotherThreadPoolThread()
-        {
-            RemoteExecutor.Invoke(() =>
+            public sealed class Span_ForceNonBlocking : SendReceive_Socket<SocketHelperSpanSyncForceNonBlocking>
             {
-                // Set the max number of worker threads to a low value.
-                ThreadPool.GetMaxThreads(out int workerThreads, out int completionPortThreads);
-                ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
-
-                // Create twice that many socket pairs, for good measure.
-                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => SocketTestExtensions.CreateConnectedSocketPair()).ToArray();
-                try
-                {
-                    // Ensure that on Unix all of the first socket in each pair are configured for sync-over-async.
-                    foreach ((Socket, Socket) pair in socketPairs)
-                    {
-                        pair.Item1.ForceNonBlocking(force: true);
-                    }
-
-                    // Queue a work item for each first socket to do a blocking receive.
-                    Task[] receives =
-                        (from pair in socketPairs
-                         select Task.Factory.StartNew(() => pair.Item1.Receive(new byte[1]), CancellationToken.None, TaskCreationOptions.PreferFairness, TaskScheduler.Default))
-                         .ToArray();
-
-                    // Give a bit of time for the pool to start executing the receives.  It's possible this won't be enough,
-                    // in which case the test we could get a false negative on the test, but we won't get spurious failures.
-                    Thread.Sleep(1000);
-
-                    // Now send to each socket.
-                    foreach ((Socket, Socket) pair in socketPairs)
-                    {
-                        pair.Item2.Send(new byte[1]);
-                    }
-
-                    // And wait for all the receives to complete.
-                    Assert.True(Task.WaitAll(receives, 60_000), "Expected all receives to complete within timeout");
-                }
-                finally
-                {
-                    foreach ((Socket, Socket) pair in socketPairs)
-                    {
-                        pair.Item1.Dispose();
-                        pair.Item2.Dispose();
-                    }
-                }
-            }).Dispose();
-        }
-    }
-
-    public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking>
-    {
-        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class SendReceiveApm : SendReceive<SocketHelperApm>
-    {
-        public SendReceiveApm(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class SendReceiveTask : SendReceive<SocketHelperTask>
-    {
-        public SendReceiveTask(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class SendReceiveEap : SendReceive<SocketHelperEap>
-    {
-        public SendReceiveEap(ITestOutputHelper output) : base(output) {}
-    }
-
-    public sealed class SendReceiveSpanSync : SendReceive<SocketHelperSpanSync>
-    {
-        public SendReceiveSpanSync(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class SendReceiveSpanSyncForceNonBlocking : SendReceive<SocketHelperSpanSyncForceNonBlocking>
-    {
-        public SendReceiveSpanSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
-    }
-
-    public sealed class SendReceiveMemoryArrayTask : SendReceive<SocketHelperMemoryArrayTask>
-    {
-        public SendReceiveMemoryArrayTask(ITestOutputHelper output) : base(output) { }
-
-        [Fact]
-        public async Task Precanceled_Throws()
-        {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.BindToAnonymousPort(IPAddress.Loopback);
-                listener.Listen(1);
-
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
-                {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.SendAsync((ReadOnlyMemory<byte>)new byte[0], SocketFlags.None, cts.Token));
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReceiveAsync((Memory<byte>)new byte[0], SocketFlags.None, cts.Token));
-                }
+                public Span_ForceNonBlocking(ITestOutputHelper output) : base(output) { }
             }
         }
 
-        [Fact]
-        public async Task CanceledDuringOperation_Throws()
+        public class Async
         {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            public sealed class Apm : SendReceive_Socket<SocketHelperApm>
             {
-                listener.BindToAnonymousPort(IPAddress.Loopback);
-                listener.Listen(1);
+                public Apm(ITestOutputHelper output) : base(output) {}
+            }
 
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
+            public sealed class Task : SendReceive_Socket<SocketHelperTask>
+            {
+                public Task(ITestOutputHelper output) : base(output) {}
+            }
+
+            public sealed class Eap : SendReceive_Socket<SocketHelperEap>
+            {
+                public Eap(ITestOutputHelper output) : base(output) {}
+            }
+
+            public sealed class MemoryArrayTask : SendReceive_Socket<SocketHelperMemoryArrayTask>
+            {
+                public MemoryArrayTask(ITestOutputHelper output) : base(output) { }
+
+                [Fact]
+                public async Threading.Tasks.Task Precanceled_Throws()
                 {
-                    CancellationTokenSource cts;
-
-                    for (int len = 0; len < 2; len++)
+                    using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        cts = new CancellationTokenSource();
-                        ValueTask<int> vt = server.ReceiveAsync((Memory<byte>)new byte[len], SocketFlags.None, cts.Token);
-                        Assert.False(vt.IsCompleted);
+                        listener.BindToAnonymousPort(IPAddress.Loopback);
+                        listener.Listen(1);
+
+                        await client.ConnectAsync(listener.LocalEndPoint);
+                        using (Socket server = await listener.AcceptAsync())
+                        {
+                            var cts = new CancellationTokenSource();
+                            cts.Cancel();
+
+                            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.SendAsync((ReadOnlyMemory<byte>)new byte[0], SocketFlags.None, cts.Token));
+                            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReceiveAsync((Memory<byte>)new byte[0], SocketFlags.None, cts.Token));
+                        }
+                    }
+                }
+
+                [Fact]
+                public async Threading.Tasks.Task CanceledDuringOperation_Throws()
+                {
+                    using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        listener.BindToAnonymousPort(IPAddress.Loopback);
+                        listener.Listen(1);
+
+                        await client.ConnectAsync(listener.LocalEndPoint);
+                        using (Socket server = await listener.AcceptAsync())
+                        {
+                            CancellationTokenSource cts;
+
+                            for (int len = 0; len < 2; len++)
+                            {
+                                cts = new CancellationTokenSource();
+                                ValueTask<int> vt = server.ReceiveAsync((Memory<byte>)new byte[len], SocketFlags.None, cts.Token);
+                                Assert.False(vt.IsCompleted);
+                                cts.Cancel();
+                                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                            }
+
+                            // Make sure subsequent operations aren't canceled.
+                            await server.SendAsync((ReadOnlyMemory<byte>)new byte[1], SocketFlags.None);
+                            Assert.Equal(1, await client.ReceiveAsync((Memory<byte>)new byte[10], SocketFlags.None));
+                        }
+                    }
+                }
+
+                [Fact]
+                public async Threading.Tasks.Task CanceledOneOfMultipleReceives_Udp_Throws()
+                {
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                    {
+                        client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+                        var cts = new CancellationTokenSource();
+
+                        // Create three UDP receives, only one of which we'll cancel.
+                        byte[] buffer1 = new byte[1], buffer2 = new byte[1], buffer3 = new byte[1];
+                        ValueTask<int> r1 = client.ReceiveAsync(buffer1.AsMemory(), SocketFlags.None, cts.Token);
+                        ValueTask<int> r2 = client.ReceiveAsync(buffer2.AsMemory(), SocketFlags.None);
+                        ValueTask<int> r3 = client.ReceiveAsync(buffer3.AsMemory(), SocketFlags.None);
+
+                        // Cancel one of them, and validate it's been canceled.
                         cts.Cancel();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+                        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await r1);
+                        Assert.Equal(0, buffer1[0]);
+
+                        // Send data to complete the others, and validate they complete successfully.
+                        using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                        {
+                            server.SendTo(new byte[1] { 42 }, client.LocalEndPoint);
+                            server.SendTo(new byte[1] { 43 }, client.LocalEndPoint);
+                        }
+
+                        Assert.Equal(1, await r2);
+                        Assert.Equal(1, await r3);
+                        Assert.True(
+                            (buffer2[0] == 42 && buffer3[0] == 43) ||
+                            (buffer2[0] == 43 && buffer3[0] == 42),
+                            $"buffer2[0]={buffer2[0]}, buffer3[0]={buffer3[0]}");
                     }
-
-                    // Make sure subsequent operations aren't canceled.
-                    await server.SendAsync((ReadOnlyMemory<byte>)new byte[1], SocketFlags.None);
-                    Assert.Equal(1, await client.ReceiveAsync((Memory<byte>)new byte[10], SocketFlags.None));
-                }
-            }
-        }
-
-        [Fact]
-        public async Task CanceledOneOfMultipleReceives_Udp_Throws()
-        {
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
-            {
-                client.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-
-                var cts = new CancellationTokenSource();
-
-                // Create three UDP receives, only one of which we'll cancel.
-                byte[] buffer1 = new byte[1], buffer2 = new byte[1], buffer3 = new byte[1];
-                ValueTask<int> r1 = client.ReceiveAsync(buffer1.AsMemory(), SocketFlags.None, cts.Token);
-                ValueTask<int> r2 = client.ReceiveAsync(buffer2.AsMemory(), SocketFlags.None);
-                ValueTask<int> r3 = client.ReceiveAsync(buffer3.AsMemory(), SocketFlags.None);
-
-                // Cancel one of them, and validate it's been canceled.
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await r1);
-                Assert.Equal(0, buffer1[0]);
-
-                // Send data to complete the others, and validate they complete successfully.
-                using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
-                {
-                    server.SendTo(new byte[1] { 42 }, client.LocalEndPoint);
-                    server.SendTo(new byte[1] { 43 }, client.LocalEndPoint);
                 }
 
-                Assert.Equal(1, await r2);
-                Assert.Equal(1, await r3);
-                Assert.True(
-                    (buffer2[0] == 42 && buffer3[0] == 43) ||
-                    (buffer2[0] == 43 && buffer3[0] == 42),
-                    $"buffer2[0]={buffer2[0]}, buffer3[0]={buffer3[0]}");
-            }
-        }
-
-        [Fact]
-        public async Task DisposedSocket_ThrowsOperationCanceledException()
-        {
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.BindToAnonymousPort(IPAddress.Loopback);
-                listener.Listen(1);
-
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
+                [Fact]
+                public async Threading.Tasks.Task DisposedSocket_ThrowsOperationCanceledException()
                 {
-                    var cts = new CancellationTokenSource();
-                    cts.Cancel();
-
-                    server.Shutdown(SocketShutdown.Both);
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.SendAsync((ReadOnlyMemory<byte>)new byte[0], SocketFlags.None, cts.Token));
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReceiveAsync((Memory<byte>)new byte[0], SocketFlags.None, cts.Token));
-                }
-            }
-        }
-
-        [Fact]
-        public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
-        {
-            if (UsesSync) return;
-
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.BindToAnonymousPort(IPAddress.Loopback);
-                listener.Listen(1);
-
-                await client.ConnectAsync(listener.LocalEndPoint);
-                using (Socket server = await listener.AcceptAsync())
-                {
-                    await Task.Run(async delegate // escape the xunit sync context / task scheduler
+                    using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        const int SendDelayMs = 100;
+                        listener.BindToAnonymousPort(IPAddress.Loopback);
+                        listener.Listen(1);
 
-                        Task sendTask = Task.Delay(SendDelayMs)
-                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
-                            .Unwrap();
-                        await client.ReceiveAsync(new byte[1], SocketFlags.None);
-                        sendTask.GetAwaiter().GetResult(); // should have already completed
+                        await client.ConnectAsync(listener.LocalEndPoint);
+                        using (Socket server = await listener.AcceptAsync())
+                        {
+                            var cts = new CancellationTokenSource();
+                            cts.Cancel();
 
-                        // We may now be executing here as part of the continuation invoked synchronously
-                        // when the client ReceiveAsync task was completed. Validate that if socket callbacks block
-                        // (undesirably), other operations on that socket can still be processed.
-                        var mre = new ManualResetEventSlim();
-                        sendTask = Task.Delay(SendDelayMs)
-                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
-                            .Unwrap();
-                        Task receiveTask = client
-                            .ReceiveAsync(new byte[1], SocketFlags.None)
-                            .ContinueWith(t => { mre.Set(); return t; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
-                            .Unwrap();
-                        mre.Wait(); // block waiting for other operations on this socket to complete
-
-                        sendTask.GetAwaiter().GetResult();
-                        await sendTask;
-                        await receiveTask;
-                    });
+                            server.Shutdown(SocketShutdown.Both);
+                            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.SendAsync((ReadOnlyMemory<byte>)new byte[0], SocketFlags.None, cts.Token));
+                            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await server.ReceiveAsync((Memory<byte>)new byte[0], SocketFlags.None, cts.Token));
+                        }
+                    }
                 }
+
+                [Fact]
+                public async Threading.Tasks.Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
+                {
+                    if (UsesSync) return;
+
+                    using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        listener.BindToAnonymousPort(IPAddress.Loopback);
+                        listener.Listen(1);
+
+                        await client.ConnectAsync(listener.LocalEndPoint);
+                        using (Socket server = await listener.AcceptAsync())
+                        {
+                            await Threading.Tasks.Task.Run(async delegate // escape the xunit sync context / task scheduler
+                            {
+                                const int SendDelayMs = 100;
+
+                                Threading.Tasks.Task sendTask = Threading.Tasks.Task.Delay(SendDelayMs)
+                                    .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                                    .Unwrap();
+                                await client.ReceiveAsync(new byte[1], SocketFlags.None);
+                                sendTask.GetAwaiter().GetResult(); // should have already completed
+
+                                // We may now be executing here as part of the continuation invoked synchronously
+                                // when the client ReceiveAsync task was completed. Validate that if socket callbacks block
+                                // (undesirably), other operations on that socket can still be processed.
+                                var mre = new ManualResetEventSlim();
+                                sendTask = Threading.Tasks.Task.Delay(SendDelayMs)
+                                    .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                                    .Unwrap();
+                                Threading.Tasks.Task receiveTask = client
+                                    .ReceiveAsync(new byte[1], SocketFlags.None)
+                                    .ContinueWith(t => { mre.Set(); return t; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
+                                    .Unwrap();
+                                mre.Wait(); // block waiting for other operations on this socket to complete
+
+                                sendTask.GetAwaiter().GetResult();
+                                await sendTask;
+                                await receiveTask;
+                            });
+                        }
+                    }
+                }
+            }
+
+            public sealed class MemoryNativeTask : SendReceive_Socket<SocketHelperMemoryNativeTask>
+            {
+                public MemoryNativeTask(ITestOutputHelper output) : base(output) { }
             }
         }
     }
 
-    public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
-    {
-        public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
