@@ -174,7 +174,7 @@ Each platform has its own standard way and file formats for handling localizatio
       - Allows support for both string resources from file or memory
       - All platforms could use the same method for handling localized resources
 
-For [single-file](#single-file) support, (1) would not be sufficient and a custom solution (2) would be required.
+For [single-file](#single-file) support without any separate files, (1) would not be sufficient and a custom solution (2) would be required. For single-file support where localized resources can be included as separate files, the platform-specific solutions could be used.
 
 #### Windows-specific
 
@@ -291,7 +291,9 @@ Extracting files to disk has proven to be extremely problematic across all platf
   - Tooling to generate the format based on [translated assets](#translation-and-localized-assets)
   - Reader/parser for the custom format to retrieve the appropriate string
 
-If support for localization of native components in single-file scenarios is a priority, it would make sense to just use the custom solution (that could handle both reading from files and memory) for non-single-file scenarios as well.
+If support for localization of native components in single-file scenarios without separate resource files is a priority, it would make sense to just use the custom solution (that could handle both reading from files and memory) for non-single-file scenarios as well.
+
+Since localization would not be needed by all applications, localized resources could also be considered an add-on to single-file and not part of the single-file itself. To support localization, the developer would need to include separate localized resources alongside the single-file executable. In this case, the platform-specific solution would be used. Since Windows does provide a supported way to handle multiple embedded localized resources, the experience for localization could also be improved on Windows such that it does embed all resources into one library.
 
 ### Packaging and deployment
 
