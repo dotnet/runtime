@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using Xunit;
@@ -32,6 +33,27 @@ namespace ILLink.Tests
 			CommandHelper = new CommandHelper (logger);
 		}
 
+		protected void AddNuGetConfig(string projectRoot)
+		{
+			var nugetConfig = Path.Combine(projectRoot, "NuGet.config");
+			var xdoc = new XDocument();
+			var configuration = new XElement("configuration");
+			var packageSources = new XElement("packageSources");
+			packageSources.Add(new XElement("add",
+						new XAttribute("key", "dotnet-core"),
+						new XAttribute("value", "https://dotnet.myget.org/F/dotnet-core/api/v3/index.json")));
+			packageSources.Add(new XElement("add",
+						new XAttribute("key", "local linker feed"),
+						new XAttribute("value", TestContext.PackageSource)));
+
+			configuration.Add(packageSources);
+			xdoc.Add(configuration);
+
+			using (var fs = new FileStream(nugetConfig, FileMode.Create)) {
+				xdoc.Save(fs);
+			}
+		}
+
 		protected void AddLinkerReference(string csproj)
 		{
 			var xdoc = XDocument.Load(csproj);
@@ -57,6 +79,25 @@ namespace ILLink.Tests
 			using (var fs = new FileStream(csproj, FileMode.Create)) {
 				xdoc.Save(fs);
 			}
+		}
+
+		protected string CreateTestFolder(string projectName)
+		{
+			string tempFolder = Path.GetFullPath(Path.Combine("tests-temp", projectName));
+			Directory.CreateDirectory(tempFolder);
+
+			// write empty Directory.Build.props and Directory.Build.targets to disable accidental import of arcade from repo root
+			File.WriteAllText(Path.Combine(tempFolder, "Directory.Build.props"), "<Project></Project>");
+			File.WriteAllText(Path.Combine(tempFolder, "Directory.Build.targets"), "<Project></Project>");
+
+			return Path.Combine(tempFolder, projectName);
+		}
+
+		protected void WriteEmbeddedResource(string resourceName, string destination)
+		{
+			var assembly = Assembly.GetExecutingAssembly();
+			var resourceStream = assembly.GetManifestResourceStream(resourceName);
+			resourceStream.CopyTo(File.Create(destination));
 		}
 
 		static void AddLinkerRoots(string csproj, List<string> rootFiles)

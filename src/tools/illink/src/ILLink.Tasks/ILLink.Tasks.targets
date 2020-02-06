@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <_LinkTaskDirectoryRoot>$(MSBuildThisFileDirectory)../tools/</_LinkTaskDirectoryRoot>
-    <_LinkTaskTFM Condition=" '$(MSBuildRuntimeType)' == 'Core' ">netcoreapp2.0</_LinkTaskTFM>
+    <_LinkTaskTFM Condition=" '$(MSBuildRuntimeType)' == 'Core' ">netcoreapp3.0</_LinkTaskTFM>
     <_LinkTaskTFM Condition=" '$(_LinkTaskTFM)' == '' ">net46</_LinkTaskTFM>
     <_LinkTaskDirectory>$(_LinkTaskDirectoryRoot)$(_LinkTaskTFM)/</_LinkTaskDirectory>
     <LinkTaskDllPath Condition=" '$(LinkTaskDllPath)' == '' ">$(_LinkTaskDirectory)ILLink.Tasks.dll</LinkTaskDllPath>

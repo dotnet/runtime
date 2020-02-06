@@ -1,26 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
-    <IsTestProject>true</IsTestProject>
-    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <ILLinkBuild>true</ILLinkBuild>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
-    <DefineConstants Condition="'$(Configuration)' == 'illink_Debug'">$(DefineConstants);DEBUG</DefineConstants>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug'">$(DefineConstants);DEBUG</DefineConstants>
     <!-- Simulate https://github.com/dotnet/sdk/pull/2073 until it ships. -->
     <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);NETCOREAPP</DefineConstants>
-
-    <DefineConstants Condition="'$(ArcadeBuild)' == 'true'">$(DefineConstants);ARCADE</DefineConstants>
-    <!-- Arcade's custom test imports assume that we are using xunit. -->
-    <DisableArcadeTestFramework Condition="'$(ArcadeBuild)' == 'true'">true</DisableArcadeTestFramework>
   </PropertyGroup>
 
-  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' != ''">
     <TargetFramework>net471</TargetFramework>
-    <ILLinkBuild>false</ILLinkBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,7 +30,7 @@
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(ILLinkBuild)">
+  <ItemGroup Condition="'$(MonoBuild)' == ''">
     <PackageReference Include="System.CodeDom" Version="4.5.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
@@ -48,29 +42,37 @@
     <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
   </ItemGroup>
 
-  <Target Name="PrepareTools" BeforeTargets="Build" Condition="$(ILLinkBuild)">
+  <Target Name="PrepareTools" BeforeTargets="Build" Condition="'$(MonoBuild)' == ''">
     <!-- Restore ilasm using ilasm.ilproj. Restore must be done
          separately from copy with a different set of input
          properties, to force MSBuild to re-evaluate using new props
          and targets from the restored package. -->
     <PropertyGroup>
       <IlasmProject>$(MSBuildThisFileDirectory)../../eng/ilasm.ilproj</IlasmProject>
-      <IlasmDir Condition="'$(ArcadeBuild)' == 'true'">$(ArtifactsDir)tools</IlasmDir>
-      <IlasmDir Condition="'$(ArcadeBuild)' != 'true'">$(MSBuildThisFileDirectory)$(BaseIntermediateOutputPath)tools</IlasmDir>
+      <IlasmDir>$(ArtifactsDir)tools</IlasmDir>
     </PropertyGroup>
 
     <MSBuild Projects="$(IlasmProject)" Targets="Restore" Properties="BaseIntermediateOutputPath=$(IlasmDir)" />
     <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" Properties="BaseIntermediateOutputPath=$(IlasmDir);__BuildPhase=Copy" />
   </Target>
 
-  <ItemGroup Condition="!$(ILLinkBuild)">
+  <ItemGroup Condition="'$(MonoBuild)' != ''">
     <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
     <PackageReference Include="NUnit" Version="3.10.0" />
     <PackageReference Include="NUnit.ConsoleRunner" Version="3.10.0" />
   </ItemGroup>
 
-  <Target Name="RunTestsOnMono" Condition="!$(ILLinkBuild)">
+  <Target Name="RunTestsOnMono" Condition="'$(MonoBuild)' != ''">
     <Exec Command="mono $(PkgNUnit_ConsoleRunner)/tools/nunit3-console.exe --result=TestResults.xml $(OutputPath)Mono.Linker.Tests.dll" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- Arcade's custom test imports assume that we are using xunit. -->
+  <!-- Map the Arcade "Test" target to the "VSTest" target used by "dotnet test" -->
+  <Target Name="Test"
+          Condition="'$(MonoBuild)' == ''">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="VSTest" />
   </Target>
 
 </Project>

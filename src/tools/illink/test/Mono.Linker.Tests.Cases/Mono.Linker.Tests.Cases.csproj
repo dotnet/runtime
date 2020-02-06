@@ -6,18 +6,16 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <LangVersion>8.0</LangVersion>
-    <Configurations>Debug;Release;illink_Debug;illink_Release</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
-  <PropertyGroup Condition="$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' == ''">
     <TargetFramework>netcoreapp3.0</TargetFramework>
-    <ILLinkBuild>true</ILLinkBuild>
     <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
 
-  <PropertyGroup Condition="!$(Configuration.StartsWith('illink'))">
+  <PropertyGroup Condition="'$(MonoBuild)' != ''">
     <TargetFramework>net471</TargetFramework>
-    <ILLinkBuild>false</ILLinkBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -131,7 +129,7 @@
     <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
   </ItemGroup>
 
-  <ItemGroup Condition="$(ILLinkBuild)">
+  <ItemGroup Condition="'$(MonoBuild)' == ''">
     <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
     <PackageReference Include="NUnit" Version="3.6.1" />
     <PackageReference Include="NUnit.ConsoleRunner" Version="3.6.1" />
