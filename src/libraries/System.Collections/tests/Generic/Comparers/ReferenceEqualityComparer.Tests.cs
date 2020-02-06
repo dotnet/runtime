@@ -24,7 +24,7 @@ namespace System.Collections.Generic.Tests
             Assert.NotNull(comparer);
 
             // use reflection to call property getter and make sure it's the exact same instance
-            object comparerFromReflection = typeof(ReferenceEqualityComparer).InvokeMember("get_Instance", BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Instance, null, null, null);
+            object comparerFromReflection = typeof(ReferenceEqualityComparer).GetProperty("Instance").GetValue(null);
             Assert.Same(comparer, comparerFromReflection);
         }
 
@@ -64,7 +64,7 @@ namespace System.Collections.Generic.Tests
         [Fact]
         public void GetHashCode_UsesRuntimeHelpers()
         {
-            object o = new ClassWithBadGetHashCodeImplementation(); // make sure we don't call object.GetHashCode()
+            ClassWithBadGetHashCodeImplementation o = new ClassWithBadGetHashCodeImplementation(); // make sure we don't call object.GetHashCode()
 
             ReferenceEqualityComparer comparer1 = ReferenceEqualityComparer.Instance;
             IEqualityComparer comparer2 = ReferenceEqualityComparer.Instance;

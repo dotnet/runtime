@@ -14,7 +14,12 @@ namespace System.Collections.Generic
     /// The <see cref="ReferenceEqualityComparer"/> type cannot be instantiated. Instead, use the <see cref="Instance"/> property
     /// to access the singleton instance of this type.
     /// </remarks>
-    public sealed class ReferenceEqualityComparer : IEqualityComparer<object>, IEqualityComparer
+#if INTERNAL_REFERENCE_EQUALITY_COMPARER
+    internal
+#else
+    public
+#endif
+    sealed class ReferenceEqualityComparer : IEqualityComparer<object?>, IEqualityComparer
     {
         private ReferenceEqualityComparer() { }
 
@@ -48,6 +53,12 @@ namespace System.Collections.Generic
         /// This API is a wrapper around <see cref="RuntimeHelpers.GetHashCode(object)"/>.
         /// It is not necessarily equivalent to calling <see cref="object.GetHashCode()"/>.
         /// </remarks>
-        public int GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
+        public int GetHashCode(object? obj)
+        {
+            // Depending on target framework, RuntimeHelpers.GetHashCode might not be annotated
+            // with the proper nullability attribute. We'll suppress any warning that might
+            // result.
+            return RuntimeHelpers.GetHashCode(obj!);
+        }
     }
 }

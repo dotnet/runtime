@@ -14,6 +14,8 @@
     <NoWarn />
     <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true'">$(NoWarn);nullable</NoWarn>
     <Nullable>enable</Nullable>
+    <!-- For pulling in the shared ReferenceEqualityComparer if needed but not exposing it via public API -->
+    <DefineConstants>$(DefineConstants);INTERNAL_REFERENCE_EQUALITY_COMPARER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
@@ -179,7 +181,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
-    <Compile Include="System\Collections\Generic\ReferenceEqualityComparer.netstandard.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs">
