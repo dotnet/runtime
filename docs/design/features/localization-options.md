@@ -53,7 +53,7 @@ The host has multiple components that are deployed in different ways, live in se
 
 ### Runtime
 
-On Windows, the English resource strings are in separate `mscorrc.debug` and `mscorrc` libraries. On Linux and OSX, the English resource strings are compiled into `coreclr` itself (as code, not an embedded resource). String resources exist in both native (.rc) and managed (.resx).
+On Windows, the English resource strings are in separate `mscorrc.debug` and `mscorrc` libraries. On Linux and OSX, the English resource strings are compiled into `coreclr` itself (as string constants, not an embedded resource). String resources exist in both native (.rc) and managed (.resx).
 
 Some infrastructure is in place for loading of resources on Windows, but is not fully tested. Infrastructure for resource loading on Linux existed (recently removed), but was also untested. There was never any attempt at support for resource loading on OSX.
 
