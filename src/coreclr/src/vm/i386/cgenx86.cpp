@@ -612,10 +612,7 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         return;
     }
 
-    DWORD stackArgSize = 0;
-
-#if !defined(UNIX_X86_ABI)
-    stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
+    DWORD stackArgSize = (DWORD) dac_cast<TADDR>(m_Datum);
 
     if (stackArgSize & ~0xFFFF)
     {
@@ -627,7 +624,6 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
         stackArgSize = pMD->GetStackArgumentSize();
     }
-#endif
 
     /* The return address is just above the "ESP" */
     pRD->PCTAddr = PTR_HOST_MEMBER_TADDR(InlinedCallFrame, this,
