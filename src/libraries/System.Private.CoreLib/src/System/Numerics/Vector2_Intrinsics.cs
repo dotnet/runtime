@@ -111,6 +111,22 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Returns the z-value of the cross product of two vectors.
+        /// Since the Vector2 is in the x-y plane, a 3D cross product
+        /// only produces the z-value
+        /// </summary>
+        /// <param name="value1">The first vector.</param>
+        /// <param name="value2">The second vector.</param>
+        /// <returns>The value of the z-coordinate from the cross product.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Cross(Vector2 value1, Vector2 value2)
+        {
+            return value1.X * value2.Y
+                   - value1.Y * value2.X;
+        }
+
+        /// <summary>
         /// Returns a vector whose elements are the minimum of each of the pairs of elements in the two source vectors.
         /// </summary>
         /// <param name="value1">The first source vector.</param>

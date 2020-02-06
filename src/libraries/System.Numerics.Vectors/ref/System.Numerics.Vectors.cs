@@ -314,6 +314,7 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
+        public static float Cross(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
         public override readonly bool Equals(object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }
@@ -432,6 +433,7 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
+        public static Vector4 Cross(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
         public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
         public override readonly bool Equals(object? obj) { throw null; }
         public override readonly int GetHashCode() { throw null; }

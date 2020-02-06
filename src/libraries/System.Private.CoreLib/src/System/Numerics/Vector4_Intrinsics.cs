@@ -161,6 +161,25 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Computes the cross product of two vectors. For homogeneous
+        /// coordinates, the product of the weights is the new weight
+        /// for the resulting product.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <returns>The cross product.</returns>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Cross(Vector4 vector1, Vector4 vector2)
+        {
+            return new Vector4(
+                vector1.Y * vector2.Z - vector1.Z * vector2.Y,
+                vector1.Z * vector2.X - vector1.X * vector2.Z,
+                vector1.X * vector2.Y - vector1.Y * vector2.X,
+                vector1.W * vector2.W);
+        }
+
+        /// <summary>
         /// Returns a vector whose elements are the minimum of each of the pairs of elements in the two source vectors.
         /// </summary>
         /// <param name="value1">The first source vector.</param>

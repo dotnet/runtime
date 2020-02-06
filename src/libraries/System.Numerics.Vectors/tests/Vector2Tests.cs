@@ -172,6 +172,26 @@ namespace System.Numerics.Tests
             Assert.True(float.IsNegativeInfinity(actual), "Vector2f.Dot did not return the expected value.");
         }
 
+        // A test for Cross (Vector2f, Vector2f)
+        [Fact]
+        public void Vector2CrossTest()
+        {
+            Vector3 a3 = new Vector3(1.0f, 2.0f, 0.0f);
+            Vector3 b3 = new Vector3(3.0f, 4.0f, 0.0f);
+
+
+            Vector2 a2 = new Vector2(1.0f, 2.0f);
+            Vector2 b2 = new Vector2(3.0f, 4.0f);
+
+
+
+            float expectedZ = Vector3.Cross(a3, b3).Z;
+            float actual;
+
+            actual = Vector2.Cross(a2, b2);
+            Assert.True(MathHelper.Equal(expectedZ, actual), "Vector2f.Cross did not return the expected value.");
+        }
+
         // A test for Length ()
         [Fact]
         public void Vector2LengthTest()
