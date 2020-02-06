@@ -139,8 +139,8 @@
       ]]>
       </EnvVars>
     </PropertyGroup>
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore/sample/HelloWorld" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c Release -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c $(Configuration) -p $(MonoProjectRoot)netcore/sample/HelloWorld" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(EnvVars) $(LocalMonoDotnet) run -c $(Configuration) -p $(MonoProjectRoot)netcore\sample\HelloWorld" />
   </Target>
 
   <!-- Run CoreCLR runtime test using testhost -->
