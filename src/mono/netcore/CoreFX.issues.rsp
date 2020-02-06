@@ -9,16 +9,6 @@
 ##  System.Reflection.Emit.Lightweight.Tests
 ####################################################################
 
-# Need to implement System.Reflection.Emit.DynamicILInfo.SetLocalSignature(Byte[] localSignature)
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_CtorMethodAndField_Success
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_String_Success
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_StringGenerics_Success
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_CallGM
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_Exception_Success
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_DynamicMethod_Success
-
 # Need to implement System.Reflection.Emit.DynamicILInfo.SetExceptions(Byte* exceptions, Int32 exceptionsSize)
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
 -nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException

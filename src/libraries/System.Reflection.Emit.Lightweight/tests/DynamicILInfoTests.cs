@@ -13,6 +13,7 @@ namespace System.Reflection.Emit.Tests
         private static string HelloWorld() => "hello, world".ToUpper();
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_String_Success()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(HelloWorld), typeof(string), new Type[] { }, typeof(DynamicILInfoTests), false);
@@ -43,6 +44,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_DynamicMethod_Success()
         {
             // Calling DynamicMethod recursively
@@ -117,6 +119,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_CtorMethodAndField_Success()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(Mock), typeof(Person), new Type[] { }, typeof(DynamicILInfoTests), false);
@@ -248,6 +251,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_StringGenerics_Success()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(ContactString), typeof(string), Type.EmptyTypes, typeof(DynamicILInfoTests), false);
@@ -343,6 +347,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void GetTokenFor_Exception_Success()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(ExceptionTest), typeof(int), Type.EmptyTypes, typeof(DynamicILInfoTests), false);
@@ -424,6 +429,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void Test_GenericMethod()
         {
             DynamicMethod dynamicMethod = new DynamicMethod(nameof(GenericMethod), typeof(bool), Type.EmptyTypes, typeof(DynamicILInfoTests), false);
@@ -503,6 +509,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void Test_TwoDimTest()
         {
             // 2-D array (set/address/get)
@@ -576,6 +583,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31857", TargetFrameworkMonikers.Mono)]
         public void Test_CallGM()
         {
             // GenericMethod inside GenericType
