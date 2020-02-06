@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
 
         int IEqualityComparer<T>.GetHashCode(T obj)
         {
-            return RuntimeHelpers.GetHashCode(obj);
+            return RuntimeHelpers.GetHashCode(obj!);
         }
     }
 }
