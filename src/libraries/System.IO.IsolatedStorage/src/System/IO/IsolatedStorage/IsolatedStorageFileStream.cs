@@ -23,7 +23,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, IsolatedStorageFile? isf)
             : this(path, mode, (mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite), FileShare.None, isf)
         {
         }
@@ -33,7 +33,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, IsolatedStorageFile? isf)
             : this(path, mode, access, access == FileAccess.Read ? FileShare.Read : FileShare.None, DefaultBufferSize, isf)
         {
         }
@@ -43,7 +43,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, IsolatedStorageFile? isf)
             : this(path, mode, access, share, DefaultBufferSize, isf)
         {
         }
@@ -53,7 +53,7 @@ namespace System.IO.IsolatedStorage
         {
         }
 
-        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
+        public IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
             : this(path, mode, access, share, bufferSize, InitializeFileStream(path, mode, access, share, bufferSize, isf))
         {
         }
@@ -81,7 +81,7 @@ namespace System.IO.IsolatedStorage
         }
 
         // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
-        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile isf)
+        private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -302,12 +302,12 @@ namespace System.IO.IsolatedStorage
             _fs.WriteByte(value);
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object? stateObject)
         {
             return _fs.BeginRead(array, offset, numBytes, userCallback, stateObject);
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object? stateObject)
         {
             return _fs.BeginWrite(array, offset, numBytes, userCallback, stateObject);
         }
