@@ -1,7 +1,8 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
-  <ItemGroup>
+  <!-- only build during the AllConfigurations leg -->
+  <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
     <Project Include="Microsoft.Private.PackageBaseline.pkgproj"/>
   </ItemGroup>
 
