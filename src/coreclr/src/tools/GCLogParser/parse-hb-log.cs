@@ -1,4 +1,4 @@
-﻿// parse-hb-log.exe -ia 1 -l gclog.pid.log
+// parse-hb-log.exe -ia 1 -l gclog.pid.log
 // where gclog.pid.log is the log you get from GC with HEAP_BALANCE_LOG. See
 // comments for it in gcpriv.h
 //
