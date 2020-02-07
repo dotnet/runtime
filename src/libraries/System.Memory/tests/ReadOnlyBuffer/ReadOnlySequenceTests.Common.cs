@@ -118,6 +118,7 @@ namespace System.Memory.Tests
 
         private (BufferSegment<T> bufferSegment1, BufferSegment<T> bufferSegment4) GetBufferSegment()
         {
+            // [50] -> [50] -> [0] -> [50]
             var bufferSegment1 = new BufferSegment<T>(new T[50]);
             BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[50]);
             BufferSegment<T> bufferSegment3 = bufferSegment2.Append(new T[0]);
@@ -166,6 +167,31 @@ namespace System.Memory.Tests
         }
 
         [Fact]
+        public void GetOffset_MultiSegment_BoundaryConditions()
+        {
+            // [50] -> [50] -> [0] -> [50]
+            var bufferSegment1 = new BufferSegment<T>(new T[50]);
+            BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[50]);
+            BufferSegment<T> bufferSegment3 = bufferSegment2.Append(new T[0]);
+            BufferSegment<T> bufferSegment4 = bufferSegment3.Append(new T[50]);
+            var sequence = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 50);
+
+
+            // Non empty adjacent segment
+            Assert.Equal(50, sequence.GetOffset(new SequencePosition(bufferSegment1, 50)));
+            Assert.Equal(50, sequence.GetOffset(new SequencePosition(bufferSegment2, 0)));
+            Assert.Equal(51, sequence.GetOffset(new SequencePosition(bufferSegment2, 1)));
+
+            // Empty adjacent segment
+            Assert.Equal(100, sequence.GetOffset(new SequencePosition(bufferSegment2, 50)));
+            Assert.Equal(100, sequence.GetOffset(new SequencePosition(bufferSegment3, 0)));
+            Assert.Equal(101, sequence.GetOffset(new SequencePosition(bufferSegment4, 1)));
+
+            // Cannot get 101 starting from empty adjacent segment
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequence.GetOffset(new SequencePosition(bufferSegment3, 1)));
+        }
+
+        [Fact]
         public void GetOffset_SingleSegment_PositionOutOfRange()
         {
             var positionObject = new T[50];
@@ -197,6 +223,32 @@ namespace System.Memory.Tests
             Assert.Throws<InvalidCastException>(() => buffer.GetOffset(buffer2.GetPosition(25)));
         }
 
+        [Fact]
+        public void GetOffset_MultiSegment_SequencePositionSegment()
+        {
+            // [0] -> [0] -> [0] -> [50]
+            var bufferSegment1 = new BufferSegment<T>(new T[0]);
+            BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[0]);
+            BufferSegment<T> bufferSegment3 = bufferSegment2.Append(new T[0]);
+            BufferSegment<T> bufferSegment4 = bufferSegment3.Append(new T[50]);
+
+            var sequence = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 50);
+
+            Assert.Equal(0, sequence.GetOffset(new SequencePosition(bufferSegment1, 0)));
+            Assert.Equal(0, sequence.GetOffset(new SequencePosition(bufferSegment2, 0)));
+            Assert.Equal(0, sequence.GetOffset(new SequencePosition(bufferSegment3, 0)));
+            Assert.Equal(0, sequence.GetOffset(new SequencePosition(bufferSegment4, 0)));
+
+            // Invalid positions
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequence.GetOffset(new SequencePosition(bufferSegment1, 1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequence.GetOffset(new SequencePosition(bufferSegment2, 1)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequence.GetOffset(new SequencePosition(bufferSegment3, 1)));
+
+            for (int i = 0; i <= bufferSegment4.Memory.Length; i++)
+            {
+                Assert.Equal(i, sequence.GetOffset(new SequencePosition(bufferSegment4, i)));
+            }
+        }
         #endregion
 
         #region First

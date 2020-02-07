@@ -537,8 +537,8 @@ namespace System.Buffers
         public long GetOffset(SequencePosition position)
         {
             object? positionSequenceObject = position.GetObject();
-            bool positionIsNotNull = positionSequenceObject != null;
-            BoundsCheck(position, positionIsNotNull);
+            bool positionIsNull = positionSequenceObject == null;
+            BoundsCheck(position, !positionIsNull);
 
             object? startObject = _startObject;
             object? endObject = _endObject;
@@ -546,11 +546,20 @@ namespace System.Buffers
             uint positionIndex = (uint)GetIndex(position);
 
             // if sequence object is null we suppose start segment
-            if (!positionIsNotNull)
+            if (positionIsNull)
             {
                 positionSequenceObject = _startObject;
                 positionIndex = (uint)GetIndex(_startInteger);
             }
+            else
+            {
+                // Verify position validity
+                Debug.Assert(positionSequenceObject != null);
+
+                if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+            }
+
 
             // Single-Segment Sequence
             if (startObject == endObject)
