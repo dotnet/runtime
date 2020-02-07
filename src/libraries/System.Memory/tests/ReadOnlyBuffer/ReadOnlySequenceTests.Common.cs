@@ -192,6 +192,46 @@ namespace System.Memory.Tests
         }
 
         [Fact]
+        public void GetOffset_MultiSegment_Enumerate()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            for (int i = 0; i <= buffer.Length; i++)
+            {
+                Assert.Equal(i, buffer.GetOffset(buffer.GetPosition(i)));
+            }
+        }
+
+        [Fact]
+        public void GetOffset_SingleSegment_Enumerate()
+        {
+            ReadOnlySequence<T> buffer = new ReadOnlySequence<T>(new T[50]);
+            for (int i = 0; i <= buffer.Length; i++)
+            {
+                Assert.Equal(i, buffer.GetOffset(buffer.GetPosition(i)));
+            }
+        }
+
+        [Fact]
+        public void GetOffset_MultiSegment_Slice()
+        {
+            ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
+            for (int i = 0; i <= buffer.Length; i++)
+            {
+                Assert.Equal(buffer.Slice(0, i).Length, buffer.GetOffset(buffer.GetPosition(i)));
+            }
+        }
+
+        [Fact]
+        public void GetOffset_SingleSegment_Slice()
+        {
+            ReadOnlySequence<T> buffer = new ReadOnlySequence<T>(new T[50]);
+            for (int i = 0; i <= buffer.Length; i++)
+            {
+                Assert.Equal(buffer.Slice(0, i).Length, buffer.GetOffset(buffer.GetPosition(i)));
+            }
+        }
+
+        [Fact]
         public void GetOffset_SingleSegment_PositionOutOfRange()
         {
             var positionObject = new T[50];
@@ -221,6 +261,17 @@ namespace System.Memory.Tests
             ReadOnlySequence<T> buffer = GetFourSegmentsReadOnlySequence();
             ReadOnlySequence<T> buffer2 = new ReadOnlySequence<T>(new T[50]);
             Assert.Throws<InvalidCastException>(() => buffer.GetOffset(buffer2.GetPosition(25)));
+        }
+
+        [Fact]
+        public void GetOffset_SingleSegment_SequencePositionSegment()
+        {
+            var data = new T[0];
+            var sequence = new ReadOnlySequence<T>(data);
+            Assert.Equal(0, sequence.GetOffset(new SequencePosition(data, 0)));
+
+            // Invalid positions
+            Assert.Throws<ArgumentOutOfRangeException>(() => sequence.GetOffset(new SequencePosition(data, 1)));
         }
 
         [Fact]

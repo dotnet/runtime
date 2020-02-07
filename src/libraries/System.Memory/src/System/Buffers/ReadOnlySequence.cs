@@ -551,15 +551,6 @@ namespace System.Buffers
                 positionSequenceObject = _startObject;
                 positionIndex = (uint)GetIndex(_startInteger);
             }
-            else
-            {
-                // Verify position validity
-                Debug.Assert(positionSequenceObject != null);
-
-                if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
-                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
-            }
-
 
             // Single-Segment Sequence
             if (startObject == endObject)
@@ -568,6 +559,14 @@ namespace System.Buffers
             }
             else
             {
+                // Verify position validity, this is not covered by BoundsCheck for Multi-Segment Sequence
+                // BoundsCheck for Multi-Segment Sequence check only validity inside current sequence but not for SequencePosition validity.
+                // For single segment position bound check is implicit.
+                Debug.Assert(positionSequenceObject != null);
+
+                if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
+
                 // Multi-Segment Sequence
                 ReadOnlySequenceSegment<T>? currentSegment = (ReadOnlySequenceSegment<T>?)startObject;
                 while (currentSegment != null && currentSegment != positionSequenceObject)
