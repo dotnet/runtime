@@ -612,6 +612,72 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Min(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
+            /// uint8_t vminv_u8 (uint8x8_t a)
+            ///   A64: UMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector64<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vminv_s16 (int16x4_t a)
+            ///   A64: SMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector64<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vminv_s8 (int8x8_t a)
+            ///   A64: SMINV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector64<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vminv_u16 (uint16x4_t a)
+            ///   A64: UMINV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector64<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint8_t vminvq_u8 (uint8x16_t a)
+            ///   A64: UMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MinAcross(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int16_t vminvq_s16 (int16x8_t a)
+            ///   A64: SMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MinAcross(Vector128<short> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int32_t vaddvq_s32 (int32x4_t a)
+            ///   A64: SMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MinAcross(Vector128<int> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// int8_t vminvq_s8 (int8x16_t a)
+            ///   A64: SMINV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MinAcross(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// float32_t vminvq_f32 (float32x4_t a)
+            ///   A64: FMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MinAcross(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint16_t vminvq_u16 (uint16x8_t a)
+            ///   A64: UMINV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MinAcross(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// uint32_t vminvq_u32 (uint32x4_t a)
+            ///   A64: UMINV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MinAcross(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
             /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMIN Dd, Dn, Dm
             /// </summary>
