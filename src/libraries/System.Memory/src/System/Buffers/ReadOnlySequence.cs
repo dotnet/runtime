@@ -560,7 +560,7 @@ namespace System.Buffers
             else
             {
                 // Multi-Segment Sequence
-                ReadOnlySequenceSegment<T> currentSegment = (ReadOnlySequenceSegment<T>)startObject!;
+                ReadOnlySequenceSegment<T>? currentSegment = (ReadOnlySequenceSegment<T>?)startObject;
                 while (currentSegment != null && currentSegment != positionSequenceObject)
                 {
                     currentSegment = currentSegment.Next!;
