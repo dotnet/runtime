@@ -1004,7 +1004,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	if (!double_faulted) {
 		gboolean leave = FALSE;
 		gboolean dump_for_merp = FALSE;
-#if defined(TARGET_OSX)
+#if defined(TARGET_DARWIN)
 		dump_for_merp = mono_merp_enabled ();
 #endif
 
@@ -1061,7 +1061,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	pid_t pid = crashed_pid; /* init to some >0 value */
 	gboolean need_to_fork = !mini_debug_options.no_gdb_backtrace;
 
-#if defined (TARGET_OSX) && !defined (DISABLE_CRASH_REPORTING)
+#if defined (TARGET_DARWIN) && !defined (DISABLE_CRASH_REPORTING)
 	need_to_fork |= mono_merp_enabled ();
 #endif
 
@@ -1078,7 +1078,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	}
 #endif
 
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 	if (!double_faulted && mono_merp_enabled ()) {
 		/* FIXME: why are we running mono_merp_invoke in the forked process? */
 		if (pid == 0) {

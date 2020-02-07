@@ -28,7 +28,7 @@
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsDarwin)' == 'true'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs">
       <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
     </Compile>

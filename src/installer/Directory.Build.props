@@ -211,7 +211,7 @@
 
   <PropertyGroup>
     <TargetsWindows>false</TargetsWindows>
-    <TargetsOSX>false</TargetsOSX>
+    <TargetsDarwin>false</TargetsDarwin>
     <TargetsLinux>false</TargetsLinux>
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
@@ -232,7 +232,7 @@
     </When>
     <When Condition="$(OutputRid.StartsWith('osx'))">
       <PropertyGroup>
-        <TargetsOSX>true</TargetsOSX>
+        <TargetsDarwin>true</TargetsDarwin>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>

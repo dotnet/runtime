@@ -467,7 +467,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
 
-#if defined(TARGET_OSX) || defined(__linux__)
+#if defined(TARGET_DARWIN) || defined(__linux__)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
 #endif
 

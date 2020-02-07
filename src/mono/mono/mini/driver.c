@@ -67,7 +67,7 @@
 #include <locale.h>
 #include "version.h"
 #include "debugger-agent.h"
-#if TARGET_OSX
+#if TARGET_DARWIN
 #   include <sys/resource.h>
 #endif
 
@@ -1636,7 +1636,7 @@ mini_usage (void)
 		"                           Currently the only supported option is 'disable'.\n"
 		"    --llvm, --nollvm       Controls whenever the runtime uses LLVM to compile code.\n"
 	        "    --gc=[sgen,boehm]      Select SGen or Boehm GC (runs mono or mono-sgen)\n"
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 		"    --arch=[32,64]         Select architecture (runs mono32 or mono64)\n"
 #endif
 #ifdef HOST_WIN32
@@ -1936,7 +1936,7 @@ switch_gc (char* argv[], const char* target_gc)
 #endif
 }
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 
 /*
  * tries to increase the minimum number of files, if the number is below 1024
@@ -2117,7 +2117,7 @@ mono_main (int argc, char* argv[])
 
 	setlocale (LC_ALL, "");
 
-#if TARGET_OSX
+#if TARGET_DARWIN
 	darwin_change_default_file_handles ();
 #endif
 
@@ -2221,7 +2221,7 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv[i], "--gc-debug=", 11) == 0) {
 			mono_gc_debug_set (argv[i] + 11);
 		}
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 		else if (strcmp (argv [i], "--arch=32") == 0) {
 			switch_arch (argv, "32");
 		} else if (strcmp (argv [i], "--arch=64") == 0) {

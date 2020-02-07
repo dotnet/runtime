@@ -89,7 +89,7 @@
     <When Condition="'$(OSGroup)'=='OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
+        <TargetsDarwin>true</TargetsDarwin>
         <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>

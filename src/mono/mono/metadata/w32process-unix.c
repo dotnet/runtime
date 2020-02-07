@@ -104,7 +104,7 @@
 /* The process' environment strings */
 #if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (TARGET_DARWIN)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
@@ -116,7 +116,7 @@ G_END_DECLS
 #else
 static char *mono_environ[1] = { NULL };
 #define environ mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (TARGET_DARWIN) */
 #else
 G_BEGIN_DECLS
 extern char **environ;

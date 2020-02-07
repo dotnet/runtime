@@ -12,7 +12,7 @@
 #include <config.h>
 #include <glib.h>
 
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 #include "mono-merp.h"
 
 #include <unistd.h>
@@ -423,7 +423,7 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 	merp->moduleOffset = 0;
 
 	merp->uiLidArg = MONO_LOCALE_INVARIANT;
-#if defined (TARGET_OSX)
+#if defined (TARGET_DARWIN)
 	merp->osVersion = macos_version_string ();
 #else
 	merp->osVersion = kernel_version_string ();
@@ -657,4 +657,4 @@ mono_merp_enabled (void)
 
 MONO_EMPTY_SOURCE_FILE (mono_merp);
 
-#endif // TARGET_OSX
+#endif // TARGET_DARWIN

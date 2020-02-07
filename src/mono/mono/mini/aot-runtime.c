@@ -75,7 +75,7 @@
 
 #ifndef DISABLE_AOT
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 #define ENABLE_AOT_CACHE
 #endif
 

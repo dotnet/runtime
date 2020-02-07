@@ -137,7 +137,7 @@ namespace System.IO
         {
             get
             {
-                #if TARGET_OSX
+                #if TARGET_DARWIN
                     return false;
                 #else
                     return true;

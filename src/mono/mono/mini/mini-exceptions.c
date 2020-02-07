@@ -3116,7 +3116,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	size_t stsize = 0;
 	stack_t sa;
 	guint8 *staddr = NULL;
-#if defined(TARGET_OSX) || defined(_AIX)
+#if defined(TARGET_DARWIN) || defined(_AIX)
 	/*
 	 * On macOS Mojave we are encountering a bug when changing mapping for main thread
 	 * stack pages. Stack overflow on main thread will kill the app.

@@ -482,7 +482,7 @@
       <Link>Common\System\Security\Cryptography\RSACng.SignVerify.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true' ">
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -589,7 +589,7 @@
     <Compile Include="System\Security\Cryptography\ECDsaOpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\ECDiffieHellman.Create.OpenSsl.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>

@@ -6575,7 +6575,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 #endif
 			// FIXME: XEN
 			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
-#elif defined(TARGET_AMD64) && defined(TARGET_OSX)
+#elif defined(TARGET_AMD64) && defined(TARGET_DARWIN)
 			/* See mono_amd64_emit_tls_get () */
 			int offset = mono_amd64_get_tls_gs_offset () + (ins->inst_offset * 8);
 

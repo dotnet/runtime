@@ -126,7 +126,7 @@ The build system sets a few MSBuild properties, depending on the OSGroup setting
 
 * TargetsWindows
 * TargetsLinux
-* TargetsOSX
+* TargetsDarwin
 * TargetsUnix
 
 TargetsUnix is true for both OSX and Linux builds and can be used to include code that can be used on both Linux and OSX (e.g. it is written against a POSIX API that is present on both platforms).

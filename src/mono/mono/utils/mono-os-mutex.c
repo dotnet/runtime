@@ -14,7 +14,7 @@
 
 #if !defined(HOST_WIN32)
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_DARWIN)
 /* So we can use the declaration of pthread_cond_timedwait_relative_np () */
 #undef _XOPEN_SOURCE
 #endif
@@ -36,7 +36,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	/* ms = 10^-3, us = 10^-6, ns = 10^-9 */
 
 	/* This function only seems to be available on 64bit osx */
-#if defined(HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP) && defined(TARGET_OSX)
+#if defined(HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP) && defined(TARGET_DARWIN)
 	memset (&ts, 0, sizeof (struct timespec));
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;

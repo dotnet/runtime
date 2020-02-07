@@ -34,7 +34,7 @@ mono_w32process_get_name (pid_t pid)
 {
 	gchar *ret = NULL;
 
-#if defined (__mono_ppc__) || !defined (TARGET_OSX)
+#if defined (__mono_ppc__) || !defined (TARGET_DARWIN)
 	size_t size;
 	struct kinfo_proc *pi;
 	gint mib[] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, pid };
@@ -102,7 +102,7 @@ mono_w32process_get_name (pid_t pid)
 gchar*
 mono_w32process_get_path (pid_t pid)
 {
-#if defined(__mono_ppc__) || !defined(TARGET_OSX)
+#if defined(__mono_ppc__) || !defined(TARGET_DARWIN)
 	return mono_w32process_get_name (pid);
 #else
 	gchar buf [PROC_PIDPATHINFO_MAXSIZE];

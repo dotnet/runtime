@@ -6431,7 +6431,7 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoo
 void
 ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 {
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 	mono_merp_disable ();
 #else
 	// Icall has platform check in managed too.
@@ -6442,7 +6442,7 @@ ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 void
 ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *value)
 {
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 	if (!mono_merp_enabled ())
 		g_error ("Cannot add attributes to telemetry without enabling subsystem");
 	mono_merp_add_annotation (key, value);
@@ -6455,7 +6455,7 @@ ves_icall_Mono_Runtime_AnnotateMicrosoftTelemetry (const char *key, const char *
 void
 ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (const char *appBundleID, const char *appSignature, const char *appVersion, const char *merpGUIPath, const char *appPath, const char *configDir, MonoError *error)
 {
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath, appPath, configDir);
 
 	mono_get_runtime_callbacks ()->install_state_summarizer ();
@@ -6514,7 +6514,7 @@ ves_icall_Mono_Runtime_ExceptionToState (MonoExceptionHandle exc_handle, guint64
 void
 ves_icall_Mono_Runtime_SendMicrosoftTelemetry (const char *payload, guint64 portable_hash, guint64 unportable_hash, MonoError *error)
 {
-#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
+#if defined(TARGET_DARWIN) && !defined(DISABLE_CRASH_REPORTING)
 	if (!mono_merp_enabled ())
 		g_error ("Cannot send telemetry without registering parameters first");
 
@@ -7609,7 +7609,7 @@ ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_na
 #ifndef _MSC_VER
 #ifndef __MINGW32_VERSION
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (TARGET_DARWIN)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
  * arm-apple-darwin9.  We'll manually define the symbol on Apple as it does
  * in fact exist on all implementations (so far) 
@@ -7621,7 +7621,7 @@ G_END_DECLS
 #else
 static char *mono_environ[1] = { NULL };
 #define environ mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (TARGET_DARWIN) */
 #else
 G_BEGIN_DECLS
 extern

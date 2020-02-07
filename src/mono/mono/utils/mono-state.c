@@ -33,7 +33,7 @@ extern GCStats mono_gc_stats;
 #include <mono/utils/mono-threads-debug.h>
 #include <mono/utils/mono-merp.h>
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 #include <mach/mach.h>
 #include <mach/task_info.h>
 #endif
@@ -46,7 +46,7 @@ extern GCStats mono_gc_stats;
 #include <sys/mman.h>
 #endif
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 // OSX 10.9 does not have MAP_ANONYMOUS
 #if !defined(MAP_ANONYMOUS)
   #define NO_MAP_ANONYMOUS
@@ -216,7 +216,7 @@ mono_summarize_timeline_phase_log (MonoSummaryStage next)
 			out_level = MonoSummaryStateWriterDone;
 			break;
 		case MonoSummaryStateWriterDone:
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 			if (mono_merp_enabled ()) {
 				out_level = MonoSummaryMerpWriter;
 			} else
@@ -889,7 +889,7 @@ mono_native_state_add_memory (MonoStateWriter *writer)
 	mono_state_writer_printf(writer, "{\n");
 	writer->indent++;
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	struct task_basic_info t_info;
 	memset (&t_info, 0, sizeof (t_info));
 	mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;

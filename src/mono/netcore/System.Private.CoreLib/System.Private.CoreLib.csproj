@@ -96,8 +96,8 @@
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
-    <DefineConstants>TARGET_OSX;$(DefineConstants)</DefineConstants>
+  <PropertyGroup Condition="'$(TargetsDarwin)' == 'true'">
+    <DefineConstants>TARGET_DARWIN;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Assembly attributes -->

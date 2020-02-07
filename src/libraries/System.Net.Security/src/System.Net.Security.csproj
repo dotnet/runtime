@@ -6,7 +6,7 @@
     <!-- This is needed so that code for TlsCipherSuite will have no namespace (causes compile errors) when used within T4 template  -->
     <DefineConstants>$(DefineConstants);PRODUCT</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <PropertyGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <DefineConstants>$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
@@ -314,7 +314,7 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.Unix.cs" />
     <Compile Include="System\Net\Security\TlsCipherSuiteData.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true' ">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
     <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Unix.cs" />
@@ -396,7 +396,7 @@
       <Link>Common\System\Net\Security\Unix\SafeFreeSslCredentials.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>

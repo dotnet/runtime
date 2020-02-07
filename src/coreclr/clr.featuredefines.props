@@ -74,6 +74,6 @@
 
         <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);TARGET_UNIX</DefineConstants>
         <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
-        <DefineConstants Condition="'$(TargetsOSX)' == 'true'">$(DefineConstants);TARGET_OSX</DefineConstants>
+        <DefineConstants Condition="'$(TargetsDarwin)' == 'true'">$(DefineConstants);TARGET_DARWIN</DefineConstants>
     </PropertyGroup>
 </Project>

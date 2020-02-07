@@ -5,8 +5,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition=" '$(TargetsOSX)' == 'true' " />
-  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsOSX)' == 'true' " />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition=" '$(TargetsDarwin)' == 'true' " />
+  <Import Project="$(CommonPath)System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsDarwin)' == 'true' " />
   <ItemGroup>
     <Compile Include="Internal\Cryptography\AsnFormatter.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.cs" />
@@ -57,7 +57,7 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true' ">
     <Compile Include="Internal\Cryptography\AsnFormatter.Unix.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.Unix.cs" />
     <Compile Include="Internal\Cryptography\OpenSslAsnFormatter.cs" />
@@ -95,7 +95,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\X509ExtensionSafeHandles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs">
       <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
@@ -140,7 +140,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Threading" />
   </ItemGroup>

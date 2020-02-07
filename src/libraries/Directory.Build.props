@@ -87,7 +87,7 @@
     <When Condition="'$(TargetFrameworkSuffix)' == 'OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
+        <TargetsDarwin>true</TargetsDarwin>
         <PackageTargetRuntime>osx</PackageTargetRuntime>
       </PropertyGroup>
     </When>

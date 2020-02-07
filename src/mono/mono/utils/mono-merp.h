@@ -15,7 +15,7 @@
 #include <glib.h>
 #include <mono/metadata/threads-types.h>
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 
 /**
  * Unregister the MERP-based handler
@@ -54,6 +54,6 @@ mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *du
 void
 mono_merp_add_annotation (const char *key, const char *value);
 
-#endif // TARGET_OSX
+#endif // TARGET_DARWIN
 
 #endif // MONO_UTILS_MERP

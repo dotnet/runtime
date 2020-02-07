@@ -1522,7 +1522,7 @@
 #cmakedefine TARGET_IOS 1
 
 /* The JIT/AOT targets OSX */
-#cmakedefine TARGET_OSX 1
+#cmakedefine TARGET_DARWIN 1
 
 /* The JIT/AOT targets Apple platforms */
 #cmakedefine TARGET_MACH 1

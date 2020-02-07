@@ -145,13 +145,13 @@
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <Compile Include="System\IO\Ports\SerialPort.Linux.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' ">
     <Compile Include="System\IO\Ports\SerialPort.OSX.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' ">
     <Compile Include="System\IO\Ports\SerialPort.FreeBSD.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' or '$(TargetsDarwin)' == 'true' or '$(TargetsFreeBSD)' == 'true'">
     <Compile Include="System\IO\Ports\SafeSerialDeviceHandle.Unix.cs" />
     <Compile Include="System\IO\Ports\SerialStream.Unix.cs" />
     <Compile Include="Interop\Unix\Interop.Termios.cs" />
@@ -190,7 +190,7 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' or '$(TargetsDarwin)' == 'true'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.ComponentModel.Primitives" />

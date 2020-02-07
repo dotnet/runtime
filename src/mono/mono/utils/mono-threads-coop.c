@@ -30,7 +30,7 @@
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-debug.h>
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 #include <mono/utils/mach-support.h>
 #endif
 

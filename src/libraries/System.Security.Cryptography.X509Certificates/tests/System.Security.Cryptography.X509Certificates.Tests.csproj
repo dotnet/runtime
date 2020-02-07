@@ -63,7 +63,7 @@
     <Compile Include="RSAOther.cs" />
     <Compile Include="TestDataGenerator.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true' ">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
@@ -94,7 +94,7 @@
     </Compile>
     <Compile Include="HostnameMatchTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>

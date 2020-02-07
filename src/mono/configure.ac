@@ -149,7 +149,7 @@ case "$host" in
 		# FIXME:
 		RID="osx-x64"
 		COREARCH="wasm32"
-		CORETARGETS="-p:TargetsUnix=true -p:TargetsOSX=true"
+		CORETARGETS="-p:TargetsUnix=true -p:TargetsDarwin=true"
 		build_darwin=yes
 		;;
 	*-mingw*|*-*-cygwin*)
@@ -409,7 +409,7 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
-		CORETARGETS="-p:TargetsUnix=true -p:TargetsOSX=true"
+		CORETARGETS="-p:TargetsUnix=true -p:TargetsDarwin=true"
 		libgc_threads=pthreads
 		has_dtrace=yes
 		if test "x$cross_compiling" = "xyes"; then
@@ -4903,9 +4903,9 @@ if test "x$target_mach" = "xyes"; then
        #error fail this for ios
        #endif
        ], [
-	   	  AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
-          CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_OSX"
-          CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_OSX"
+	   	  AC_DEFINE(TARGET_DARWIN,1,[The JIT/AOT targets OSX])
+          CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_DARWIN"
+          CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_DARWIN"
           target_osx=yes
        ], [
           AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
@@ -4918,7 +4918,7 @@ if test "x$target_mach" = "xyes"; then
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
 fi
 
-AM_CONDITIONAL(TARGET_OSX, test x$target_osx = xyes)
+AM_CONDITIONAL(TARGET_DARWIN, test x$target_osx = xyes)
 
 AC_SUBST(SIZEOF_VOID_P,[$ac_cv_sizeof_void_p])
 

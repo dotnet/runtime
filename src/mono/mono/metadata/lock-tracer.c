@@ -52,7 +52,7 @@
 
 #ifdef LOCK_TRACER
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 #include <dlfcn.h>
 #endif
 
@@ -83,7 +83,7 @@ mono_locks_tracer_init (void)
 	trace_file = fopen (name, "w+");
 	g_free (name);
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	res = dladdr ((void*)&mono_locks_tracer_init, &info);
 	/* The 0x1000 offset was found by empirically trying it. */
 	if (res)

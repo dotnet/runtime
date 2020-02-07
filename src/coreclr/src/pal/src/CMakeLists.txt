@@ -65,7 +65,7 @@ include_directories(include)
 # Compile options
 
 if(CLR_CMAKE_TARGET_DARWIN)
-  add_definitions(-DTARGET_OSX)
+  add_definitions(-DTARGET_DARWIN)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
     arch/amd64/activationhandlerwrapper.S

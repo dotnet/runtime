@@ -295,7 +295,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true' ">
     <AsnXml Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml" />
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml.cs">
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointAsn.xml</DependentUpon>
@@ -452,7 +452,7 @@
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs">
       <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.Hash.cs</Link>
     </Compile>
@@ -769,7 +769,7 @@
     <Reference Include="System.Security.Cryptography.Cng" />
     <Reference Include="System.Security.Cryptography.Csp" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsDarwin)' != 'true'">
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
   </ItemGroup>

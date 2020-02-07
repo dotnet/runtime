@@ -214,7 +214,7 @@ extern "C" {
 #ifndef PAL_IMPLEMENTATION
 
 // OS X already defines these types in 64 bit
-#if !defined(TARGET_OSX)
+#if !defined(TARGET_DARWIN)
 typedef __int64 int64_t;
 typedef unsigned __int64 uint64_t;
 typedef __int32 int32_t;

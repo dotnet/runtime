@@ -14,7 +14,7 @@
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
     <_CoreClrFileName Condition="'$(TargetsWindows)' == 'true'">coreclr.dll</_CoreClrFileName>
-    <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
+    <_CoreClrFileName Condition="'$(TargetsDarwin)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
     <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
@@ -69,7 +69,7 @@
     <PropertyGroup>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x64'">$(MonoObjDir)x64\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(TargetsWindows)' == 'true' and '$(Platform)' == 'x86'">$(MonoObjDir)Win32\Bin\$(Configuration)\mono-2.0-sgen.dll</_MonoRuntimeFilePath>
-      <_MonoRuntimeFilePath Condition="'$(TargetsOSX)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
+      <_MonoRuntimeFilePath Condition="'$(TargetsDarwin)' == 'true'">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.dylib</_MonoRuntimeFilePath>
       <_MonoRuntimeFilePath Condition="'$(_MonoRuntimeFilePath)' == ''">$(MonoObjDir)mono\mini\.libs\libmonosgen-2.0.so</_MonoRuntimeFilePath>
     </PropertyGroup>
 

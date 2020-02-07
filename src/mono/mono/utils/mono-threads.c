@@ -2087,7 +2087,7 @@ mono_thread_info_wait_multiple_handle (MonoThreadHandle **thread_handles, gsize 
 void
 mono_threads_join_lock (void)
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	mono_os_mutex_lock (&join_mutex);
 #endif
 }
@@ -2095,7 +2095,7 @@ mono_threads_join_lock (void)
 void
 mono_threads_join_unlock (void)
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	mono_os_mutex_unlock (&join_mutex);
 #endif
 }

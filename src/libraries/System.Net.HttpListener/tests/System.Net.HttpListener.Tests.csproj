@@ -27,7 +27,7 @@
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
+  <ItemGroup Condition="'$(TargetsDarwin)'=='true'">
     <TestCommandLines Include="ulimit -n 7000" />
   </ItemGroup>
 </Project>

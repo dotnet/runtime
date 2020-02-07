@@ -87,7 +87,7 @@
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true'">
     <Compile Include="System\IO\FileSystemWatcher.OSX.cs" />
     <Compile Include="$(LibrariesProjectRoot)System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs">
       <Link>System.IO.FileSystem\src\System\IO\FileSystem.Exists.Unix.cs</Link>
@@ -142,7 +142,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition="'$(TargetsDarwin)' == 'true'">
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

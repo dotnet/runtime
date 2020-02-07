@@ -402,7 +402,7 @@
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+  <ItemGroup Condition=" '$(TargetsDarwin)' == 'true'">
     <Compile Include="System\Diagnostics\Process.BSD.cs" />
     <Compile Include="System\Diagnostics\Process.OSX.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.BSD.cs" />

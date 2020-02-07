@@ -67,12 +67,12 @@ Revision History:
 #include <machine/vmparam.h>
 #endif  // HAVE_MACHINE_VMPARAM_H
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_DARWIN)
 #include <mach/vm_statistics.h>
 #include <mach/mach_types.h>
 #include <mach/mach_init.h>
 #include <mach/mach_host.h>
-#endif // defined(TARGET_OSX)
+#endif // defined(TARGET_DARWIN)
 
 // On some platforms sys/user.h ends up defining _DEBUG; if so
 // remove the definition before including the header and put

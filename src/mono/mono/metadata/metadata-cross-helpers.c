@@ -72,7 +72,7 @@ dump_os (void)
 #elif defined (HOST_ANDROID)
 	g_print ("#ifdef TARGET_ANDROID\n");
 #elif defined (HOST_DARWIN)
-	g_print ("#ifdef TARGET_OSX\n");
+	g_print ("#ifdef TARGET_DARWIN\n");
 #elif defined (PLATFORM_IOS)
 	g_print ("#ifdef TARGET_IOS\n");
 #else

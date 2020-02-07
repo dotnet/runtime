@@ -1173,14 +1173,14 @@ typedef OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK *POUT_OF_PROCESS_FUNCTION_TABLE_C
 #define OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK_EXPORT_NAME \
     "OutOfProcessFunctionTableCallback"
 
-// #if !defined(TARGET_OSX)
+// #if !defined(TARGET_DARWIN)
 // typedef LONG (*PEXCEPTION_ROUTINE)(
     // IN PEXCEPTION_POINTERS pExceptionPointers,
     // IN LPVOID lpvParam);
 
 // #define DISPATCHER_CONTEXT    LPVOID
 
-// #else // defined(TARGET_OSX)
+// #else // defined(TARGET_DARWIN)
 
 //
 // Define unwind history table structure.
@@ -1285,7 +1285,7 @@ typedef struct _DISPATCHER_CONTEXT {
 
 #endif
 
-// #endif // !defined(TARGET_OSX)
+// #endif // !defined(TARGET_DARWIN)
 
 typedef DISPATCHER_CONTEXT *PDISPATCHER_CONTEXT;
 

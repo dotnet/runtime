@@ -4307,7 +4307,7 @@ mono_arch_have_fast_tls (void)
 int
 mono_amd64_get_tls_gs_offset (void)
 {
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	return tls_gs_offset;
 #else
 	g_assert_not_reached ();

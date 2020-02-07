@@ -497,7 +497,7 @@ void mono_atomic_store_ptr(volatile gpointer *dst, gpointer val)
 
 #if defined (NEED_64BIT_CMPXCHG_FALLBACK)
 
-#if defined (TARGET_OSX)
+#if defined (TARGET_DARWIN)
 
 #ifdef MONO_ATOMIC_USES_LOCK
 #error MONO_ATOMIC_USES_LOCK defined

@@ -12162,7 +12162,7 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS ""
 #endif
 
-#if defined(TARGET_OSX)
+#if defined(TARGET_DARWIN)
 #define AS_NAME "clang"
 #elif defined(TARGET_WIN32_MSVC)
 #define AS_NAME "clang.exe"
@@ -12226,7 +12226,7 @@ compile_asm (MonoAotCompile *acfg)
 		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname);
 	}
 
-#ifdef TARGET_OSX
+#ifdef TARGET_DARWIN
 	g_string_append (acfg->as_args, "-c -x assembler");
 #endif
 

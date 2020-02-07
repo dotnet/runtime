@@ -44,9 +44,9 @@
     <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
     <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
     <TargetsNetBSD Condition="'$(OSGroup)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
+    <TargetsDarwin Condition="'$(OSGroup)' == 'OSX'">true</TargetsDarwin>
     <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsDarwin)' == 'true'">true</TargetsUnix>
   </PropertyGroup>
 
   <PropertyGroup>
