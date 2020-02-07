@@ -32,10 +32,7 @@
     static_assert(offsetof(CRITICAL_SECTION, LockCount)      == offsetof(T_CRITICAL_SECTION, LockCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
     static_assert(offsetof(CRITICAL_SECTION, RecursionCount) == offsetof(T_CRITICAL_SECTION, RecursionCount), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
     static_assert(offsetof(CRITICAL_SECTION, OwningThread)   == offsetof(T_CRITICAL_SECTION, OwningThread),   T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, LockSemaphore)  == offsetof(T_CRITICAL_SECTION, LockSemaphore),  T_CRITICAL_SECTION_VALIDATION_MESSAGE);
     static_assert(offsetof(CRITICAL_SECTION, SpinCount)      == offsetof(T_CRITICAL_SECTION, SpinCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, bInternal)      == offsetof(T_CRITICAL_SECTION, bInternal),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
-    static_assert(offsetof(CRITICAL_SECTION, dwInitState)    == offsetof(T_CRITICAL_SECTION, dwInitState),    T_CRITICAL_SECTION_VALIDATION_MESSAGE);
 #endif // defined(DAC_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
 
 #ifndef DACCESS_COMPILE

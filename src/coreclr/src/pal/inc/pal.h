@@ -2377,11 +2377,8 @@ typedef struct _CRITICAL_SECTION {
     LONG LockCount;
     LONG RecursionCount;
     HANDLE OwningThread;
-    HANDLE LockSemaphore;
     ULONG_PTR SpinCount;
 
-    BOOL bInternal;
-    volatile DWORD dwInitState;
     union CSNativeDataStorage
     {
         BYTE rgNativeDataStorage[PAL_CS_NATIVE_DATA_SIZE];
