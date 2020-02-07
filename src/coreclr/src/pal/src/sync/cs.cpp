@@ -158,11 +158,12 @@ typedef struct _PAL_CRITICAL_SECTION {
     Volatile<LONG> LockCount;
     LONG RecursionCount;
     SIZE_T OwningThread;
-    HANDLE LockSemaphore;
     ULONG_PTR SpinCount;
     // Private Unix part
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     BOOL fInternal;
     Volatile<PalCsInitState> cisInitState;
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
     PAL_CRITICAL_SECTION_NATIVE_DATA csndNativeData;
 } PAL_CRITICAL_SECTION, *PPAL_CRITICAL_SECTION, *LPPAL_CRITICAL_SECTION;
 
@@ -628,8 +629,6 @@ namespace CorUnix
         pPalCriticalSection->RecursionCount    = 0;
         pPalCriticalSection->SpinCount         = dwSpinCount;
         pPalCriticalSection->OwningThread      = 0;
-        pPalCriticalSection->LockSemaphore     = NULL;
-        pPalCriticalSection->fInternal         = fInternal;
 
 #ifdef _DEBUG
         CPalThread * pThread =
@@ -660,6 +659,7 @@ namespace CorUnix
         }
 
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
+        pPalCriticalSection->fInternal         = fInternal;
         InterlockedIncrement(fInternal ?
             &g_lPALCSInternalInitializeCount : &g_lPALCSInitializeCount);
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
@@ -1444,13 +1444,12 @@ namespace CorUnix
             printf("\tLockCount \t= %#x\n"
                    "\tRecursionCount \t= %d\n"
                    "\tOwningThread \t= %p\n"
-                   "\tLockSemaphore \t= %p\n"
                    "\tSpinCount \t= %u\n"
                    "\tfInternal \t= %d\n"
                    "\teInitState \t= %u\n"
                    "\tpNativeData \t= %p ->\n",
                    pCS->LockCount.Load(), pCS->RecursionCount, (void *)pCS->OwningThread,
-                   pCS->LockSemaphore, (unsigned)pCS->SpinCount, (int)pCS->fInternal,
+                   (unsigned)pCS->SpinCount, (int)pCS->fInternal,
                    pCS->cisInitState.Load(), &pCS->csndNativeData);
 
             printf("\t{\n\t\t[mutex]\n\t\t[condition]\n"

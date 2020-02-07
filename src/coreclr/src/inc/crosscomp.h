@@ -435,6 +435,11 @@ struct T_CRITICAL_SECTION {
     HANDLE OwningThread;
     ULONG_PTR SpinCount;
 
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
+    BOOL bInternal;
+    volatile DWORD dwInitState;
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
+
     union CSNativeDataStorage
     {
         BYTE rgNativeDataStorage[DAC_CS_NATIVE_DATA_SIZE];
