@@ -61,6 +61,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Sockets\Fletcher32.cs">
       <Link>SocketCommon\Fletcher32.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\Sockets\TestPortPool.cs">
+      <Link>SocketCommon\TestPortPool.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Sockets\SocketTestExtensions.cs">
       <Link>SocketCommon\SocketTestExtensions.cs</Link>
     </Compile>

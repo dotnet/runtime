@@ -835,7 +835,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
+                using PortLease portLease = serverSocket.BindToPoolPort(listenOn);
+                int port = portLease.Port;
                 serverSocket.Listen(1);
                 IAsyncResult async = serverSocket.BeginAccept(null, null);
                 SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
@@ -938,7 +939,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp))
             {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
+                using PortLease portLease = serverSocket.BindToPoolPort(listenOn);
+                int port = portLease.Port;
                 serverSocket.Listen(1);
 
                 SocketAsyncEventArgs args = new SocketAsyncEventArgs();
@@ -1573,7 +1575,8 @@ namespace System.Net.Sockets.Tests
             using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
                 serverSocket.ReceiveTimeout = 500;
-                int port = serverSocket.BindToAnonymousPort(listenOn);
+                using PortLease portLease = serverSocket.BindToPoolPort(listenOn);
+                int port = portLease.Port;
 
                 EndPoint receivedFrom = new IPEndPoint(connectTo, port);
                 IAsyncResult async = serverSocket.BeginReceiveFrom(new byte[1], 0, 1, SocketFlags.None, ref receivedFrom, null, null);
@@ -1924,7 +1927,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
-                int port = serverSocket.BindToAnonymousPort(listenOn);
+                using PortLease portLease = serverSocket.BindToPoolPort(listenOn);
+                int port = portLease.Port;
 
                 EndPoint receivedFrom = new IPEndPoint(connectTo, port);
                 SocketFlags socketFlags = SocketFlags.None;
@@ -2439,9 +2443,10 @@ namespace System.Net.Sockets.Tests
         protected class SocketServer : IDisposable
         {
             private readonly ITestOutputHelper _output;
-            private Socket _server;
+            private readonly Socket _server;
             private Socket _acceptedSocket;
-            private EventWaitHandle _waitHandle = new AutoResetEvent(false);
+            private readonly EventWaitHandle _waitHandle = new AutoResetEvent(false);
+            private readonly PortLease _portLease;
 
             public EventWaitHandle WaitHandle
             {
@@ -2461,7 +2466,8 @@ namespace System.Net.Sockets.Tests
                     _server = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 }
 
-                port = _server.BindToAnonymousPort(address);
+                _portLease = _server.BindToPoolPort(address);
+                port = _portLease.Port;
                 _server.Listen(1);
 
                 IPAddress remoteAddress = address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any;
@@ -2491,10 +2497,11 @@ namespace System.Net.Sockets.Tests
                 try
                 {
                     _server.Dispose();
-                    if (_acceptedSocket != null)
-                        _acceptedSocket.Dispose();
+                    _acceptedSocket?.Dispose();
                 }
                 catch (Exception) { }
+
+                _portLease.Dispose();
             }
         }
 
@@ -2572,8 +2579,9 @@ namespace System.Net.Sockets.Tests
         protected class SocketUdpServer : IDisposable
         {
             private readonly ITestOutputHelper _output;
-            private Socket _server;
-            private EventWaitHandle _waitHandle = new AutoResetEvent(false);
+            private readonly Socket _server;
+            private readonly EventWaitHandle _waitHandle = new AutoResetEvent(false);
+            private readonly PortLease _portLease;
 
             public EventWaitHandle WaitHandle
             {
@@ -2593,7 +2601,8 @@ namespace System.Net.Sockets.Tests
                     _server = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
                 }
 
-                port = _server.BindToAnonymousPort(address);
+                _portLease = _server.BindToPoolPort(address);
+                port = _portLease.Port;
 
                 SocketAsyncEventArgs e = new SocketAsyncEventArgs();
                 e.SetBuffer(new byte[1], 0, 1);
@@ -2620,6 +2629,8 @@ namespace System.Net.Sockets.Tests
                     _server.Dispose();
                 }
                 catch (Exception) { }
+
+                _portLease.Dispose();
             }
         }
 
@@ -2685,7 +2696,8 @@ namespace System.Net.Sockets.Tests
             using (Socket serverSocket = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {
                 serverSocket.ReceiveTimeout = 1000;
-                int port = serverSocket.BindToAnonymousPort(listenOn);
+                using PortLease portLease = serverSocket.BindToPoolPort(listenOn);
+                int port = portLease.Port;
 
                 SocketUdpClient client = new SocketUdpClient(_log, serverSocket, connectTo, port, sendNow: false);
 

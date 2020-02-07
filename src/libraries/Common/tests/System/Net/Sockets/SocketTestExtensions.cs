@@ -13,6 +13,13 @@ namespace System.Net.Sockets.Tests
             return ((IPEndPoint)socket.LocalEndPoint).Port;
         }
 
+        public static PortLease BindToPoolPort(this Socket socket, IPAddress address)
+        {
+            PortLease portLease = TestPortPool.RentPort();
+            socket.Bind(new IPEndPoint(address, portLease.Port));
+            return portLease;
+        }
+
         // Binds to an OS-assigned port.
         public static TcpListener CreateAndStartTcpListenerOnAnonymousPort(out int port)
         {
