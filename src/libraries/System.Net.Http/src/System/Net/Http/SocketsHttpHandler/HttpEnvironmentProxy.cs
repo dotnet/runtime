@@ -249,11 +249,15 @@ namespace System.Net.Http
                         }
 
                     }
-                    else
+                    else if (string.Equals(s, input.Host, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (string.Equals(s, input.Host, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                    }
+                    else if (string.Equals(s, "localhost", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if(IPAddress.TryParse(input.Host, out var ipAddress))
                         {
-                            return true;
+                            return IPAddress.IsLoopback(ipAddress);
                         }
                     }
                 }
