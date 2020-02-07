@@ -1,11 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
