@@ -1138,11 +1138,11 @@ namespace System.Text.RegularExpressions
                     case RegexCode.Oneloop:
                     case RegexCode.Oneloopatomic:
                         {
-                            int c = Math.Min(Operand(1), Forwardchars());
+                            int len = Math.Min(Operand(1), Forwardchars());
                             char ch = (char)Operand(0);
                             int i;
 
-                            for (i = c; i > 0; i--)
+                            for (i = len; i > 0; i--)
                             {
                                 if (Forwardcharnext() != ch)
                                 {
@@ -1151,9 +1151,9 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i && _operator == RegexCode.Oneloop)
+                            if (len > i && _operator == RegexCode.Oneloop)
                             {
-                                TrackPush(c - i - 1, runtextpos - Bump());
+                                TrackPush(len - i - 1, runtextpos - Bump());
                             }
                         }
                         advance = 2;
@@ -1162,22 +1162,41 @@ namespace System.Text.RegularExpressions
                     case RegexCode.Notoneloop:
                     case RegexCode.Notoneloopatomic:
                         {
-                            int c = Math.Min(Operand(1), Forwardchars());
+                            int len = Math.Min(Operand(1), Forwardchars());
                             char ch = (char)Operand(0);
                             int i;
 
-                            for (i = c; i > 0; i--)
+                            if (!_rightToLeft && !_caseInsensitive)
                             {
-                                if (Forwardcharnext() == ch)
+                                // We're left-to-right and case-sensitive, so we can employ the vectorized IndexOf
+                                // to search for the character.
+                                i = runtext!.AsSpan(runtextpos, len).IndexOf(ch);
+                                if (i == -1)
                                 {
-                                    Backwardnext();
-                                    break;
+                                    runtextpos += len;
+                                    i = 0;
+                                }
+                                else
+                                {
+                                    runtextpos += i;
+                                    i = len - i;
+                                }
+                            }
+                            else
+                            {
+                                for (i = len; i > 0; i--)
+                                {
+                                    if (Forwardcharnext() == ch)
+                                    {
+                                        Backwardnext();
+                                        break;
+                                    }
                                 }
                             }
 
-                            if (c > i && _operator == RegexCode.Notoneloop)
+                            if (len > i && _operator == RegexCode.Notoneloop)
                             {
-                                TrackPush(c - i - 1, runtextpos - Bump());
+                                TrackPush(len - i - 1, runtextpos - Bump());
                             }
                         }
                         advance = 2;
@@ -1186,13 +1205,13 @@ namespace System.Text.RegularExpressions
                     case RegexCode.Setloop:
                     case RegexCode.Setloopatomic:
                         {
-                            int c = Math.Min(Operand(1), Forwardchars());
+                            int len = Math.Min(Operand(1), Forwardchars());
                             int operand0 = Operand(0);
                             string set = _code.Strings[operand0];
                             ref int[]? setLookup = ref _code.StringsAsciiLookup[operand0];
                             int i;
 
-                            for (i = c; i > 0; i--)
+                            for (i = len; i > 0; i--)
                             {
                                 // Check the timeout every 2048th iteration.
                                 if ((uint)i % LoopTimeoutCheckCount == 0)
@@ -1207,9 +1226,9 @@ namespace System.Text.RegularExpressions
                                 }
                             }
 
-                            if (c > i && _operator == RegexCode.Setloop)
+                            if (len > i && _operator == RegexCode.Setloop)
                             {
-                                TrackPush(c - i - 1, runtextpos - Bump());
+                                TrackPush(len - i - 1, runtextpos - Bump());
                             }
                         }
                         advance = 2;
