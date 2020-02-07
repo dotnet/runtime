@@ -197,64 +197,64 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Add(Vector128<double> left, Vector128<double> right) => Add(left, right);
 
             /// <summary>
-            /// uint8_t vaddv_u8(uint8x8_t a)
+            /// uint8_t vaddv_u8 (uint8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<byte> AddAcross(Vector64<byte> value) => AddAcross(value);
 
             /// <summary>
-            /// int16_t vaddv_s16(int16x4_t a)
+            /// int16_t vaddv_s16 (int16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<short> AddAcross(Vector64<short> value) => AddAcross(value);
 
             /// <summary>
-            /// int8_t vaddv_s8(int8x8_t a)
+            /// int8_t vaddv_s8 (int8x8_t a)
             ///   A64: ADDV Bd, Vn.8B
             /// </summary>
             public static Vector64<sbyte> AddAcross(Vector64<sbyte> value) => AddAcross(value);
 
             /// <summary>
-            /// uint16_t vaddv_u16(uint16x4_t a)
+            /// uint16_t vaddv_u16 (uint16x4_t a)
             ///   A64: ADDV Hd, Vn.4H
             /// </summary>
             public static Vector64<ushort> AddAcross(Vector64<ushort> value) => AddAcross(value);
 
             /// <summary>
-            /// uint8_t vaddvq_u8(uint8x16_t a)
+            /// uint8_t vaddvq_u8 (uint8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<byte> AddAcross(Vector128<byte> value) => AddAcross(value);
+            public static Vector64<byte> AddAcross(Vector128<byte> value) => AddAcross(value);
 
             /// <summary>
-            /// int16_t vaddvq_s16(int16x8_t a)
+            /// int16_t vaddvq_s16 (int16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<short> AddAcross(Vector128<short> value) => AddAcross(value);
+            public static Vector64<short> AddAcross(Vector128<short> value) => AddAcross(value);
 
             /// <summary>
-            /// int32_t vaddvq_s32(int32x4_t a)
+            /// int32_t vaddvq_s32 (int32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<int> AddAcross(Vector128<int> value) => AddAcross(value);
+            public static Vector64<int> AddAcross(Vector128<int> value) => AddAcross(value);
 
             /// <summary>
-            /// int8_t vaddvq_s8(int8x16_t a)
+            /// int8_t vaddvq_s8 (int8x16_t a)
             ///   A64: ADDV Bd, Vn.16B
             /// </summary>
-            public static Vector128<sbyte> AddAcross(Vector128<sbyte> value) => AddAcross(value);
+            public static Vector64<sbyte> AddAcross(Vector128<sbyte> value) => AddAcross(value);
 
             /// <summary>
-            /// uint16_t vaddvq_u16(uint16x8_t a)
+            /// uint16_t vaddvq_u16 (uint16x8_t a)
             ///   A64: ADDV Hd, Vn.8H
             /// </summary>
-            public static Vector128<ushort> AddAcross(Vector128<ushort> value) => AddAcross(value);
+            public static Vector64<ushort> AddAcross(Vector128<ushort> value) => AddAcross(value);
 
             /// <summary>
-            /// uint32_t vaddvq_u32(uint32x4_t a)
+            /// uint32_t vaddvq_u32 (uint32x4_t a)
             ///   A64: ADDV Sd, Vn.4S
             /// </summary>
-            public static Vector128<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
+            public static Vector64<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
 
             /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
