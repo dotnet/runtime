@@ -27,7 +27,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\AppContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomainSetup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\AppDomainUnloadedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationId.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentOutOfRangeException.cs" />
@@ -119,6 +121,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CodeDom\Compiler\GeneratedCodeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\CodeDom\Compiler\IndentedTextWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ArrayList.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\CompatibleComparer.cs" />
@@ -174,6 +177,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Context.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.Base64.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CoreLib.cs" />
@@ -314,6 +318,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidTimeZoneException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\BinaryWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\BufferedStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\DirectoryNotFoundException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EncodingCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\EndOfStreamException.cs" />
@@ -327,6 +332,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileShare.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\HandleInheritability.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\InvalidDataException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\IOException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\MemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" />
@@ -337,6 +343,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Stream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamWriter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StringReader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\StringWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextReader.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\TextWriter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryAccessor.cs" />
@@ -348,6 +356,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimizationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LocalAppContextSwitches.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LocalDataStoreSlot.cs" />
@@ -368,6 +378,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\MissingMemberException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MissingMethodException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MulticastNotSupportedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Net\WebUtility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NonSerializedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NotFiniteNumberException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NotImplementedException.cs" />
@@ -433,6 +444,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameProxy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyProductAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblySignatureKeyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyTitleAttribute.cs" />
@@ -611,6 +623,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StringFreezingAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StrongBox.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SwitchExpressionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TaskAwaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TupleElementNamesAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
@@ -727,6 +740,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\NgenServicingAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\ProfileOptimization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Remoting\ObjectHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\DeserializationToken.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\DeserializationTracker.cs" />
@@ -745,7 +759,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Serialization\StreamingContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ComponentGuaranteesOptions.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\FrameworkName.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceConsumptionAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceExposureAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\ResourceScope.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\VersioningHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\RuntimeType.cs" Condition="'$(TargetsCoreRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SByte.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\AllowPartiallyTrustedCallersAttribute.cs" />
@@ -754,7 +775,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\ISecurityEncodable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\IStackWalk.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\PartialTrustVisibilityLevel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\PermissionState.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\SecurityAction.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\SecurityAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\SecurityPermissionAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\Permissions\SecurityPermissionFlag.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\PermissionSet.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\Principal\IIdentity.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\Principal\IPrincipal.cs" />
@@ -790,6 +816,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\String.Searching.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StringComparison.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\StringNormalizationExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
@@ -1441,6 +1468,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Windows.cs" />
@@ -1689,6 +1717,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Loader\LibraryNameVariation.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\MemoryFailPoint.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\Marshal.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Versioning\VersioningHelper.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" />

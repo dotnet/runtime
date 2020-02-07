@@ -3679,4 +3679,52 @@
   <data name="Argument_SpansMustHaveSameLength" xml:space="preserve">
     <value>Length of items must be same as length of keys.</value>
   </data>
+  <data name="NotSupported_CannotWriteToBufferedStreamIfReadBufferCannotBeFlushed" xml:space="preserve">
+    <value>Cannot write to a BufferedStream while the read buffer is not empty if the underlying stream is not seekable. Ensure that the stream underlying this BufferedStream can seek or avoid interleaving read and write operations on this BufferedStream.</value>
+  </data>
+  <data name="GenericInvalidData" xml:space="preserve">
+    <value>Found invalid data while decoding.</value>
+  </data>
+  <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
+    <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
+  </data>
+  <data name="ArgumentNull_TypeRequiredByResourceScope" xml:space="preserve">
+    <value>The type parameter cannot be null when scoping the resource's visibility to Private or Assembly.</value>
+  </data>
+  <data name="Argument_BadResourceScopeTypeBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource type bits may be set.</value>
+  </data>
+  <data name="Argument_BadResourceScopeVisibilityBits" xml:space="preserve">
+    <value>Unknown value for the ResourceScope: {0}  Too many resource visibility bits may be set.</value>
+  </data>
+  <data name="net_emptystringcall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
+  <data name="Argument_EmptyApplicationName" xml:space="preserve">
+    <value>ApplicationId cannot have an empty string for the name.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalid" xml:space="preserve">
+    <value> FrameworkName is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameInvalidVersion" xml:space="preserve">
+    <value>FrameworkName version component is invalid.</value>
+  </data>
+  <data name="Argument_FrameworkNameMissingVersion" xml:space="preserve">
+    <value>FrameworkName version component is missing.</value>
+  </data>
+  <data name="Argument_FrameworkNameTooShort" xml:space="preserve">
+    <value>FrameworkName cannot have less than two components or more than three components.</value>
+  </data>
+  <data name="Arg_SwitchExpressionException" xml:space="preserve">
+    <value>Non-exhaustive switch expression failed to match its input.</value>
+  </data>
+  <data name="Arg_ContextMarshalException" xml:space="preserve">
+    <value>Attempted to marshal an object across a context boundary.</value>
+  </data>
+  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
+    <value>Attempted to access an unloaded AppDomain.</value>
+  </data>
+  <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
+    <value>Unmatched value was {0}.</value>
+  </data>
 </root>
