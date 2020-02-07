@@ -17,7 +17,7 @@
     <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)/</RefPath>
     <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
     <MonoOSGroup>$(OSGroup)</MonoOSGroup>
-    <TargetFrameworks>netcoreapp5.0</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

@@ -67,7 +67,7 @@ const char* CodeGen::genInsName(instruction ins)
         #include "instrs.h"
 
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
     };
     // clang-format on
@@ -905,7 +905,7 @@ void CodeGen::inst_RV_SH(
 
 #else
     NYI("inst_RV_SH - unknown target");
-#endif // _TARGET_*
+#endif // TARGET*
 }
 
 /*****************************************************************************
@@ -1854,8 +1854,8 @@ instruction CodeGen::ins_Copy(var_types dstType)
     assert(!varTypeIsSIMD(dstType));
     assert(!varTypeIsFloating(dstType));
     return INS_mov;
-#else // _TARGET_*
-#error "Unknown _TARGET_"
+#else // TARGET*
+#error "Unknown TARGET"
 #endif
 }
 
@@ -2316,7 +2316,7 @@ void CodeGen::instGen_MemoryBarrier()
 #elif defined(TARGET_ARM64)
     GetEmitter()->emitIns_BARR(INS_dmb, barrierType);
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -2331,7 +2331,7 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 #elif defined(TARGET_ARMARCH)
     GetEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
     regSet.verifyRegUsed(reg);
 }
@@ -2348,7 +2348,7 @@ void CodeGen::instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg)
 #elif defined(TARGET_ARMARCH)
     GetEmitter()->emitIns_R_I(INS_cmp, size, reg, 0);
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -2362,7 +2362,7 @@ void CodeGen::instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumbe
 #if defined(TARGET_XARCH) || defined(TARGET_ARMARCH)
     GetEmitter()->emitIns_R_R(INS_cmp, size, reg1, reg2);
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 }
 
@@ -2409,7 +2409,7 @@ void CodeGen::instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ss
             assert(!"Invalid immediate for instGen_Compare_Reg_To_Imm");
         }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
     }
 }

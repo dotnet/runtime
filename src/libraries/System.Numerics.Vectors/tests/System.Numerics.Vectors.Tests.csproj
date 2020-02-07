@@ -39,10 +39,4 @@
       <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="GenericVectorTests.netcoreapp.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>GenericVectorTests.netcoreapp.cs</LastGenOutput>
-    </Content>
-  </ItemGroup>
 </Project>

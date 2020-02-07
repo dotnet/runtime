@@ -192,10 +192,9 @@ private:
                                           // that the runtime was suspended
     static Thread* m_pThreadAttemptingSuspendForGC;
 
-public:
     static HRESULT SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason);
     static void    ResumeRuntime(BOOL bFinishedGC, BOOL SuspendSucceded);
-
+public:
     // Initialize thread suspension support
     static void    Initialize();
 
@@ -229,6 +228,8 @@ private:
     // But there won't be any corruption or AV.  More details on the profiler API scenario in VsWhidbey bug 454936.
     static bool     s_fSuspendRuntimeInProgress;
 
+    static bool     s_fSuspended;
+
     static void SetSuspendRuntimeInProgress();
     static void ResetSuspendRuntimeInProgress();
 
@@ -236,6 +237,7 @@ private:
 
 public:
     static bool SysIsSuspendInProgress() { return s_fSuspendRuntimeInProgress; }
+    static bool SysIsSuspended() { return s_fSuspended; }
 
 public:
     //suspend all threads

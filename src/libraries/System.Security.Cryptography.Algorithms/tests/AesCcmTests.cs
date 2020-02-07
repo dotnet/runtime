@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2176", TestPlatforms.OSX)]
     public class AesCcmTests : AesAEADTests
     {
         [Theory]

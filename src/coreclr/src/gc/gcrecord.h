@@ -61,19 +61,19 @@ enum gc_condemn_reason_condition
     gen_induced_noforce_p = 14,
     gen_before_bgc = 15,
     gen_almost_max_alloc = 16,
-    gen_joined_avoid_unproductive = 17,    /* This happens when the GC detects previous attempts to do a full compacting GC is not making progress and therefore reduce its generation */
-    gen_joined_pm_induced_fullgc_p = 18,   /* This happens when a full gc is induced under provisional mode */
-    gen_joined_pm_alloc_loh = 19,          /* This happens when a large object heap allocation is requested under provisional mode */
-    gen_joined_last_gen2_fragmented = 20,  /* This happens when we had a high memory and high fragmentation detected after the last full blocking GC, indicating we have lot of pinned objects in gen 2, so reducing its generation */
-    gen_joined_limit_before_oom = 21,      /* This happens when the last gc was oom */
-    gen_joined_limit_loh_frag = 22,        /* This happens when we had a heap limit and the fragmentation is reaching 1/8 of it */
-    gen_joined_limit_loh_reclaim = 23,     /* This happens when we had a heap limit and we could reclaim 1/8 of it */
-    gen_joined_servo_initial = 24,         /* This happen when the servo tuning is trying to get some initial data */
-    gen_joined_servo_ngc = 25,             /* This happen when the servo tuning decides a background gc is appropriate */
-    gen_joined_servo_bgc = 26,             /* This happen when the servo tuning decides a background gc is appropriate */
-    gen_joined_servo_postpone = 27,        /* This happen when the servo tuning decides a gen2 gc should be postponed */
-    gen_joined_stress_mix = 28,            /* This happen in GCStress mix mode, every 10th GC is gen2  */
-    gen_joined_stress = 29,                /* This happen in GCStress, every GC is gen2  */
+    gen_joined_avoid_unproductive = 17,
+    gen_joined_pm_induced_fullgc_p = 18,
+    gen_joined_pm_alloc_loh = 19,
+    gen_joined_gen1_in_pm = 20,
+    gen_joined_limit_before_oom = 21,
+    gen_joined_limit_loh_frag = 22,
+    gen_joined_limit_loh_reclaim = 23,
+    gen_joined_servo_initial = 24,
+    gen_joined_servo_ngc = 25,
+    gen_joined_servo_bgc = 26,
+    gen_joined_servo_postpone = 27,
+    gen_joined_stress_mix = 28,
+    gen_joined_stress = 29,
     gcrc_max = 30
 };
 

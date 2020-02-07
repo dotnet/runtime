@@ -4,4 +4,5 @@
 
 using Xunit;
 
-[assembly: SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
+[assembly: SkipOnCoreClr("https://github.com/dotnet/runtime/issues/2176", TestPlatforms.OSX)]
+[assembly: SkipOnMono("https://github.com/dotnet/runtime/issues/2176", TestPlatforms.OSX)]

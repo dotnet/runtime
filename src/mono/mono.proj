@@ -33,13 +33,13 @@
     </PropertyGroup>
     <PropertyGroup>
         <_MonoConfigureParams Condition="$(MonoEnableLLVM) == true">$(_MonoConfigureParams) --enable--llvm </_MonoConfigureParams>
-        <_MonoConfigureParams>$(_MonoConfigureParams) --with-core=only CC=clang CXX=clang++ CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) --enable-maintainer-mode --enable-compile-warnings --with-core=only CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
     </PropertyGroup>
 
     <Message Text="Configuring Mono with '$(_MonoConfigureParams)'" Importance="High" />
     <MakeDir Directories="$(MonoObjDir)" />
     <Exec Command="NOCONFIGURE=1 $(MonoProjectRoot)autogen.sh" />
-    <Exec Command="$(MonoProjectRoot)configure $(_MonoConfigureParams)" WorkingDirectory="$(MonoObjDir)" />
+    <Exec Command="bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(Platform) clang &amp;&amp; $(MonoProjectRoot)configure $(_MonoConfigureParams)'" WorkingDirectory="$(MonoObjDir)" />
     <Touch Files="$(MonoObjDir)config.h" />
   </Target>
 

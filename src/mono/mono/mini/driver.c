@@ -200,6 +200,7 @@ static gboolean
 parse_debug_options (const char* p)
 {
 	MonoDebugOptions *opt = mini_get_debug_options ();
+	opt->enabled = TRUE;
 
 	do {
 		if (!*p) {
@@ -216,6 +217,11 @@ parse_debug_options (const char* p)
 		} else if (!strncmp (p, "gdb", 3)) {
 			opt->gdb = TRUE;
 			p += 3;
+#ifdef ENABLE_NETCORE
+		} else if (!strncmp (p, "ignore", 6)) {
+			opt->enabled = FALSE;
+			p += 6;
+#endif
 		} else {
 			fprintf (stderr, "Invalid debug option `%s', use --help-debug for details\n", p);
 			return FALSE;
@@ -1605,7 +1611,12 @@ mini_usage (void)
 		"\n"
 		"Development:\n"
 		"    --aot[=<options>]      Compiles the assembly to native code\n"
+#ifdef ENABLE_NETCORE
+		"    --debug=ignore         Disable debugging support (on by default)\n"
+		"    --debug=[<options>]    Disable debugging support or enable debugging extras, use --help-debug for details\n"
+#else
 		"    --debug[=<options>]    Enable debugging support, use --help-debug for details\n"
+#endif
  		"    --debugger-agent=options Enable the debugger agent\n"
 		"    --profile[=profiler]   Runs in profiling mode with the specified profiler module\n"
 		"    --trace[=EXPR]         Enable tracing, use --help-trace for details\n"
@@ -1664,10 +1675,17 @@ mini_debug_usage (void)
 {
 	fprintf (stdout,
 		 "Debugging options:\n"
+#ifdef ENABLE_NETCORE
+		 "   --debug[=OPTIONS]     Disable debugging support or enable debugging extras, optional OPTIONS is a comma\n"
+#else
 		 "   --debug[=OPTIONS]     Enable debugging support, optional OPTIONS is a comma\n"
+#endif
 		 "                         separated list of options\n"
 		 "\n"
 		 "OPTIONS is composed of:\n"
+#ifdef ENABLE_NETCORE
+		 "    ignore               Disable debugging support (on by default).\n"
+#endif
 		 "    casts                Enable more detailed InvalidCastException messages.\n"
 		 "    mdb-optimizations    Disable some JIT optimizations which are normally\n"
 		 "                         disabled when running inside the debugger.\n"
@@ -2125,6 +2143,10 @@ mono_main (int argc, char* argv[])
 
 	opt = mono_parse_default_optimizations (NULL);
 
+#ifdef ENABLE_NETCORE
+	enable_debugging = TRUE;
+#endif
+
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
 			break;
@@ -2360,6 +2382,13 @@ mono_main (int argc, char* argv[])
 			enable_debugging = TRUE;
 			if (!parse_debug_options (argv [i] + 8))
 				return 1;
+#ifdef ENABLE_NETCORE
+			MonoDebugOptions *opt = mini_get_debug_options ();
+
+			if (!opt->enabled) {
+				enable_debugging = FALSE;
+			}
+#endif
  		} else if (strncmp (argv [i], "--debugger-agent=", 17) == 0) {
 			MonoDebugOptions *opt = mini_get_debug_options ();
 
