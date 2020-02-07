@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    PEReader inputPeReader = _nodeFactory.InputModules[0].Module.PEReader;
+                    PEReader inputPeReader = _nodeFactory.InputModules[0].PEReader;
                     headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;
@@ -237,6 +237,10 @@ namespace ILCompiler.DependencyAnalysis
                 ISymbolNode definedSymbol = data.DefinedSymbols[symbolIndex];
                 NodeInfo alreadyWrittenSymbol;
                 string symbolName = definedSymbol.GetMangledName(_nodeFactory.NameMangler);
+                if (symbolName.Contains("ToString"))
+                {
+                    Console.WriteLine(symbolName);
+                }
                 if (_previouslyWrittenNodeNames.TryGetValue(symbolName, out alreadyWrittenSymbol))
                 {
                     Console.WriteLine($@"Duplicate symbol - 1st occurrence: [{alreadyWrittenSymbol.NodeIndex}:{alreadyWrittenSymbol.SymbolIndex}], {alreadyWrittenSymbol.Node.GetMangledName(_nodeFactory.NameMangler)}");

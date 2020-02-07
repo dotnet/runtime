@@ -60,16 +60,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bool enforceOwningType = _factory.Composite;
                     EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
                     ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
-                    if (!_factory.Composite && moduleToken.Module != factory.SignatureContext.GlobalContext)
+                    if (!_factory.Composite && moduleToken.Module != factory.InputModules[0])
                     {
                         enforceOwningType = true;
-                    }
-
-                    SignatureContext context = _factory.InputModules[_factory.InputModuleIndex[typicalMethod.Module]].Context;
-                    if (_factory.Composite)
-                    {
-                        // Enforce module overrides on owning types
-                        context = context.InnerContext(null);
                     }
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();

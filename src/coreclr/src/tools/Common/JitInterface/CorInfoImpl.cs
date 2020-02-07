@@ -1045,7 +1045,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _moduleBeingCompiled.Resolver.AddModuleTokenForMethod(method, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForMethod(method, HandleToModuleToken(ref pResolvedToken));
                 }
 #endif
             }
@@ -1071,7 +1071,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _moduleBeingCompiled.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForField(field, HandleToModuleToken(ref pResolvedToken));
                 }
 #endif
             }
@@ -1082,7 +1082,7 @@ namespace Internal.JitInterface
 #if READYTORUN
                 if (recordToken)
                 {
-                    _moduleBeingCompiled.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
+                    _compilation.NodeFactory.Resolver.AddModuleTokenForType(type, HandleToModuleToken(ref pResolvedToken));
                 }
 #endif
 

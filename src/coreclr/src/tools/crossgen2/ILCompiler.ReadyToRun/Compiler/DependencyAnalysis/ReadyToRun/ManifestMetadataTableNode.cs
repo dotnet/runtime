@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     throw new InternalCompilerErrorException("Multiple input files specified without the composite flag");
                 }
-                MetadataReader mdReader = _nodeFactory.InputModules[0].Module.MetadataReader;
+                MetadataReader mdReader = _nodeFactory.InputModules[0].MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
                 for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
                 {
@@ -99,9 +99,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Fill in entries for all input modules right away to make sure they have parallel indices
                 int nextExpectedId = 2;
-                foreach (InputModule inputModule in _nodeFactory.InputModules)
+                foreach (EcmaModule inputModule in _nodeFactory.InputModules)
                 {
-                    int acquiredId = ModuleToIndexInternal(inputModule.Module);
+                    int acquiredId = ModuleToIndexInternal(inputModule);
                     if (acquiredId != nextExpectedId)
                     {
                         throw new InternalCompilerErrorException($"Manifest metadata consistency error - acquired ID {acquiredId}, expected {nextExpectedId}");
