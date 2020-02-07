@@ -47,7 +47,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"foo", s);
 
             uriHostNameType = uri.HostNameType;
-            Assert.Equal<UriHostNameType>(UriHostNameType.Dns, uriHostNameType);
+            Assert.Equal(UriHostNameType.Dns, uriHostNameType);
 
             b = uri.IsAbsoluteUri;
             Assert.True(b);
@@ -74,7 +74,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"/bar/baz", s);
 
             i = uri.Port;
-            Assert.Equal<int>(80, i);
+            Assert.Equal(80, i);
 
             s = uri.Query;
             Assert.Equal(@"", s);
@@ -135,7 +135,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"www.contoso.com", s);
 
             uriHostNameType = uri.HostNameType;
-            Assert.Equal<UriHostNameType>(UriHostNameType.Dns, uriHostNameType);
+            Assert.Equal(UriHostNameType.Dns, uriHostNameType);
 
             b = uri.IsAbsoluteUri;
             Assert.True(b);
@@ -162,7 +162,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"/catalog/shownew.htm?date=today", s);
 
             i = uri.Port;
-            Assert.Equal<int>(80, i);
+            Assert.Equal(80, i);
 
             s = uri.Query;
             Assert.Equal(@"?date=today", s);
@@ -171,7 +171,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(@"http", s);
 
             ss = uri.Segments;
-            Assert.Equal<int>(3, ss.Length);
+            Assert.Equal(3, ss.Length);
             Assert.Equal(@"/", ss[0]);
             Assert.Equal(@"catalog/", ss[1]);
             Assert.Equal(@"shownew.htm", ss[2]);

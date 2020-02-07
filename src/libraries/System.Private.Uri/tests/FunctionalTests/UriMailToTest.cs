@@ -24,11 +24,7 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriMailTo_SchemeAndBackslash_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                Uri uri = new Uri(@"mailto:\");
-                ValidateNotCorrupt(uri);
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri(@"mailto:\"));
         }
 
         [Fact]
@@ -69,30 +65,19 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriMailTo_SchemeUserAt_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                Uri uri = new Uri("mailto:User@");
-                ValidateNotCorrupt(uri);
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@"));
         }
 
         [Fact]
         public void UriMailTo_SchemeUserColonPasswordAt_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                _ = new Uri("mailto:User:Password@");
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User:Password@"));
         }
 
         [Fact]
         public void UriMailTo_SchemeUserAtQuery_Throws()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                Uri uri = new Uri("mailto:User@?to=User2@Host2.com;cc=User3@Host3com");
-                ValidateNotCorrupt(uri);
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@?to=User2@Host2.com;cc=User3@Host3com"));
         }
 
         [Fact]
@@ -135,21 +120,13 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void UriMailTo_TwoSemiColonSepratedAddresses_Success()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                Uri uri = new Uri("mailto:User@Host;User@Host");
-                ValidateNotCorrupt(uri);
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host;User@Host"));
         }
 
         [Fact]
         public void UriMailTo_TwoCommaSepratedAddresses_Success()
         {
-            Assert.ThrowsAny<FormatException>(() =>
-            {
-                Uri uri = new Uri("mailto:User@Host,User@Host");
-                ValidateNotCorrupt(uri);
-            });
+            Assert.ThrowsAny<FormatException>(() => new Uri("mailto:User@Host,User@Host"));
         }
 
         [Fact]
@@ -202,25 +179,5 @@ namespace System.PrivateUri.Tests
             Assert.Equal("", uri.AbsolutePath);
             Assert.Equal("\u30AF@\u30AF", uri.GetComponents(UriComponents.UserInfo | UriComponents.Host, UriFormat.SafeUnescaped));
         }
-
-
-        #region Helper methods
-
-        // private void ValidateResult(Uri result, string absoluteUri, string scheme, string host,
-
-        // Some MailTo Uri's succesfully parse in the contructor or TryParse, but then they throw when accessing properties.
-        private void ValidateNotCorrupt(Uri uri)
-        {
-            try
-            {
-                string result = uri.AbsoluteUri;
-            }
-            catch (Exception ex)
-            {
-                Assert.False(true, "Exception thrown too late: " + ex);
-            }
-        }
-
-        #endregion Helper methods
     }
 }

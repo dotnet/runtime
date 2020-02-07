@@ -96,8 +96,7 @@ namespace System.PrivateUri.Tests
             string u1 = "http://b.contos.oc.om/entry/d.contos.oc.om/AbcDefg/21234567/1234567890";
             string u2 = "http://d.contos.oc.om/keyword/" + "%C6%F3%BC%A1%B8%B5";
             Uri baseUri = new Uri(u1);
-            Uri resultUri;
-            Uri.TryCreate(baseUri, u2, out resultUri);
+            Uri.TryCreate(baseUri, u2, out Uri resultUri);
             Assert.Equal(u2, resultUri.AbsoluteUri);
 
             string u3 = "http://con.tosoco.ntosoc.com/abcdefghi/jk" + "%c8%f3%b7%a2%b7%bf%b2%fa";
@@ -108,7 +107,7 @@ namespace System.PrivateUri.Tests
                 resultUri.ToString());
 
             string u4 = "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5";
-            Uri uri4 = new Uri(u4);
+            _ = new Uri(u4);
             Uri.TryCreate(
                 "http://co.ntsosocon.com/abcd/" + "%A2%F3%BD%CB%FC%FB%D5%E9%F3%B7%AA%B5",
                 UriKind.Absolute,
@@ -290,8 +289,7 @@ namespace System.PrivateUri.Tests
                 sb.Append(input);
             }
 
-            input = sb.ToString();
-            return input;
+            return sb.ToString();
         }
 
         private void VerifyUriNormalizationForEscapedCharacters(string uriInput)
@@ -328,9 +326,7 @@ namespace System.PrivateUri.Tests
 
                     for (int i = 0; i < components.Length; i++)
                     {
-                        Assert.Equal(
-                            0,
-                            string.CompareOrdinal(results1[i], results2[i]));
+                        Assert.Equal(results1[i], results2[i], StringComparer.Ordinal);
                     }
                 }
             }
@@ -338,7 +334,6 @@ namespace System.PrivateUri.Tests
 
         private string EscapeUnescapeTestComponent(string uriInput, UriComponents component)
         {
-            string ret = null;
             string uriString = null;
 
             switch (component)
@@ -383,6 +378,7 @@ namespace System.PrivateUri.Tests
                     break;
             }
 
+            string ret;
             try
             {
                 Uri u = new Uri(uriString);
@@ -404,7 +400,7 @@ namespace System.PrivateUri.Tests
         /// First column contains input characters found to be potential issues with the current implementation.
         /// The second column contains the current (.NET Core 2.1/Framework 4.7.2) Uri behavior for Uri normalization.
         /// </summary>
-        private static string[,] s_checkIsReservedEscapingStrings =
+        private static readonly string[,] s_checkIsReservedEscapingStrings =
         {
             // : [ ] in host.
             {"http://user@ser%3Aver.srv:123/path/path/resource.ext?query=expression#fragment", null},
@@ -624,8 +620,8 @@ namespace System.PrivateUri.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
         {
-            Assert.Throws<UriFormatException>(() => { _ = new Uri(input); });
-            Assert.False(Uri.TryCreate(input, UriKind.Absolute, out Uri itemUri2));
+            Assert.Throws<UriFormatException>(() => new Uri(input));
+            Assert.False(Uri.TryCreate(input, UriKind.Absolute, out Uri _));
         }
 
         public static IEnumerable<object[]> Iri_ExpandingContents_AllowedSize

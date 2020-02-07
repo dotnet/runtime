@@ -18,11 +18,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IdnHost_Call_ThrowsException()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-            {
-                Uri u = new Uri("/test/test2/file.tst", UriKind.Relative);
-                string s = u.IdnHost;
-            });
+            Uri u = new Uri("/test/test2/file.tst", UriKind.Relative);
+            Assert.Throws<InvalidOperationException>(() => u.IdnHost);
         }
 
         [Fact]
@@ -94,11 +91,8 @@ namespace System.PrivateUri.Tests
         [Fact]
         public void IdnHost_Internal_Call_ThrowsException()
         {
-            Assert.Throws<InvalidOperationException>(() =>
-          {
-              Uri u = new Uri("/test/test2/file.tst", UriKind.Relative);
-              string s = u.DnsSafeHost;
-          });
+            Uri u = new Uri("/test/test2/file.tst", UriKind.Relative);
+            Assert.Throws<InvalidOperationException>(() => u.DnsSafeHost);
         }
 
         #region Helpers
@@ -123,8 +117,7 @@ namespace System.PrivateUri.Tests
             string expectedDnsSafeHost,
             string expectedIdnHost)
         {
-            Uri uri;
-            Assert.True(Uri.TryCreate(scheme + "://" + host, UriKind.Absolute, out uri));
+            Assert.True(Uri.TryCreate(scheme + "://" + host, UriKind.Absolute, out Uri uri));
             Assert.Equal(expectedHost, uri.Host);
             Assert.Equal(expectedDnsSafeHost, uri.DnsSafeHost);
             Assert.Equal(expectedHostType, uri.HostNameType);
