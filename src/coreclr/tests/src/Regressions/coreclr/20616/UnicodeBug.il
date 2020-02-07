@@ -1,4 +1,4 @@
-﻿.assembly extern mscorlib { }
+.assembly extern mscorlib { }
 
 .assembly UnicodeBug { }
 
