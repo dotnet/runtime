@@ -162,8 +162,8 @@ typedef struct _PAL_CRITICAL_SECTION {
     // Private Unix part
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     BOOL fInternal;
-    Volatile<PalCsInitState> cisInitState;
 #endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
+    Volatile<PalCsInitState> cisInitState;
     PAL_CRITICAL_SECTION_NATIVE_DATA csndNativeData;
 } PAL_CRITICAL_SECTION, *PPAL_CRITICAL_SECTION, *LPPAL_CRITICAL_SECTION;
 
