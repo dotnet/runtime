@@ -1449,7 +1449,12 @@ namespace CorUnix
                    "\teInitState \t= %u\n"
                    "\tpNativeData \t= %p ->\n",
                    pCS->LockCount.Load(), pCS->RecursionCount, (void *)pCS->OwningThread,
-                   (unsigned)pCS->SpinCount, (int)pCS->fInternal,
+                   (unsigned)pCS->SpinCount,
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
+                   (int)pCS->fInternal,
+#else
+                   (int)0,
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
                    pCS->cisInitState.Load(), &pCS->csndNativeData);
 
             printf("\t{\n\t\t[mutex]\n\t\t[condition]\n"
