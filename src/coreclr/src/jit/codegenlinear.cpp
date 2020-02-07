@@ -449,7 +449,7 @@ void CodeGen::genCodeForBBlist()
                 {
                     inlineContext = nullptr; // if inline context is root then use nullptr
                 }
-                genIPmappingAdd(currentILOffset, firstMapping, inlineContext);
+                genIPmappingAdd(currentILOffset, firstMapping, ilOffset->gtInlineContext);
                 firstMapping = false;
 #ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
