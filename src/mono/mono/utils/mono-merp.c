@@ -145,7 +145,8 @@ typedef enum
 	MERP_EXC_SIGFPE = 7 ,
 	MERP_EXC_SIGTRAP = 8,
 	MERP_EXC_SIGKILL = 9,
-	MERP_EXC_HANG  = 10
+	MERP_EXC_HANG  = 10,
+	MERP_EXC_MANAGED_EXCEPTION = 11
 } MERPExcType;
 
 typedef struct {
@@ -262,6 +263,8 @@ get_merp_exctype (MERPExcType exc)
 			return "0x04000000";
 		case MERP_EXC_HANG: 
 			return "0x02000000";
+		case MERP_EXC_MANAGED_EXCEPTION:
+			return "0x05000000";
 		case MERP_EXC_NONE:
 			// Exception type documented as optional, not optional
 			g_assert_not_reached ();
@@ -295,6 +298,9 @@ parse_exception_type (const char *signal)
 	// We need a default for this
 	if (!strcmp (signal, mono_get_signame (SIGTERM)))
 		return MERP_EXC_HANG;
+
+	if (!strcmp (signal, "MANAGED_EXCEPTION"))
+		return MERP_EXC_MANAGED_EXCEPTION;
 
 	// FIXME: There are no other such signal
 	// strings passed to mono_handle_native_crash at the
