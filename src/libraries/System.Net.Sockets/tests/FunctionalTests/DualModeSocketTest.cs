@@ -112,12 +112,14 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectV4IPAddressToV6Host_Fails()
         {
             DualModeConnect_IPAddressToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectV6IPAddressToV4Host_Fails()
         {
@@ -203,12 +205,14 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectV4IPEndPointToV6Host_Fails()
         {
             DualModeConnect_IPEndPointToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectV6IPEndPointToV4Host_Fails()
         {
@@ -274,6 +278,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
@@ -281,6 +286,7 @@ namespace System.Net.Sockets.Tests
             Assert.ThrowsAny<SocketException>(() => DualModeConnect_IPAddressListToHost_Success(connectTo, listenOn, dualModeServer));
         }
 
+        [OuterLoop] // Long running
         [Theory]
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Success_Data))]
         public void DualModeConnect_IPAddressListToHost_Success(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
@@ -298,6 +304,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConnectToHostString : DualModeBase
     {
+        [OuterLoop] // Long running
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
@@ -315,6 +322,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConnectToDnsEndPoint : DualModeBase
     {
+        [OuterLoop] // Long running
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
@@ -349,12 +357,15 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public Task BeginConnectV4IPAddressToV4Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
 
+        [OuterLoop] // Long running
         [Fact]
         public Task BeginConnectV6IPAddressToV6Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public Task BeginConnectV4IPAddressToV6Host_Fails() => DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public Task BeginConnectV6IPAddressToV4Host_Fails() => DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
 
@@ -431,6 +442,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
+    [OuterLoop] // Long-running
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeBeginConnect : DualModeBase
@@ -505,12 +517,14 @@ namespace System.Net.Sockets.Tests
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectAsyncV4IPEndPointToV6Host_Fails()
         {
             DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void ConnectAsyncV6IPEndPointToV4Host_Fails()
         {
@@ -567,6 +581,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Long running
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
@@ -593,6 +608,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [OuterLoop] // Long running
         [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20893")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
@@ -719,6 +735,7 @@ namespace System.Net.Sockets.Tests
             Accept_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToSpecificV4_CantConnect()
@@ -729,6 +746,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV4BoundToSpecificV6_CantConnect()
@@ -739,6 +757,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // https://github.com/dotnet/corefx/issues/5832
         public void AcceptV6BoundToAnyV4_CantConnect()
@@ -798,6 +817,7 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_BeginAccept_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void BeginAcceptV6BoundToSpecificV4_CantConnect()
         {
@@ -807,6 +827,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void BeginAcceptV4BoundToSpecificV6_CantConnect()
         {
@@ -816,6 +837,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void BeginAcceptV6BoundToAnyV4_CantConnect()
         {
@@ -902,6 +924,7 @@ namespace System.Net.Sockets.Tests
             DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void AcceptAsyncV6BoundToSpecificV4_CantConnect()
         {
@@ -911,6 +934,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void AcceptAsyncV4BoundToSpecificV6_CantConnect()
         {
@@ -920,6 +944,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Failing connection attempt takes long on Windows
         [Fact]
         public void AcceptAsyncV6BoundToAnyV4_CantConnect()
         {
@@ -1406,6 +1431,7 @@ namespace System.Net.Sockets.Tests
             ReceiveFrom_Helper(IPAddress.IPv6Any, IPAddress.IPv6Loopback);
         }
 
+        [OuterLoop] // Long running
         [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
         public void ReceiveFromV6BoundToSpecificV4_NotReceived()
@@ -1427,6 +1453,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [OuterLoop] // Long running
         [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
         public void ReceiveFromV6BoundToAnyV4_NotReceived()
