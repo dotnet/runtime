@@ -27,6 +27,8 @@ namespace System.Threading
     [DebuggerDisplay("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
     public class ThreadLocal<T> : IDisposable
     {
+        private const int valuePerSlot = 64;
+
         // a delegate that returns the created value, if null the created value will be default(T)
         private Func<T>? _valueFactory;
 
@@ -187,6 +189,7 @@ namespace System.Threading
                 _initialized = false;
 
                 Debug.Assert(_linkedSlot != null, "Should be non-null if not yet disposed");
+                // TODO: This is wrong! LinkedSlots are shared and therefore should only reduce reference count
                 for (LinkedSlot? linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                 {
                     LinkedSlotVolatile[]? slotArray = linkedSlot._slotArray;
@@ -257,14 +260,16 @@ namespace System.Threading
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 LinkedSlot? slot;
                 int id = ~_idComplement;
+                int slot_id = id / valuePerSlot;
+                int within_slot_id = id % valuePerSlot;
 
                 //
                 // Attempt to get the value using the fast path
                 //
                 if (slotArray != null   // Has the slot array been initialized?
-                    && id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
-                    && id < slotArray.Length   // Is the table large enough?
-                    && (slot = slotArray[id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
+                    && slot_id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
+                    && slot_id < slotArray.Length   // Is the table large enough?
+                    && (slot = slotArray[slot_id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
                     && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                 )
                 {
@@ -273,7 +278,7 @@ namespace System.Threading
                     //
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
-                    return slot._value;
+                    return slot._value[within_slot_id];
                 }
 
                 return GetValueSlow();
@@ -283,12 +288,14 @@ namespace System.Threading
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 LinkedSlot? slot;
                 int id = ~_idComplement;
+                int slot_id = id / valuePerSlot;
+                int within_slot_id = id % valuePerSlot;
 
                 // Attempt to set the value using the fast path
                 if (slotArray != null   // Has the slot array been initialized?
-                    && id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
-                    && id < slotArray.Length   // Is the table large enough?
-                    && (slot = slotArray[id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
+                    && slot_id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
+                    && slot_id < slotArray.Length   // Is the table large enough?
+                    && (slot = slotArray[slot_id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
                     && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                     )
                 {
@@ -297,7 +304,7 @@ namespace System.Threading
                     //
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
-                    slot._value = value;
+                    slot._value[within_slot_id] = value;
                 }
                 else
                 {
@@ -342,6 +349,8 @@ namespace System.Threading
         private void SetValueSlow(T value, LinkedSlotVolatile[]? slotArray)
         {
             int id = ~_idComplement;
+            int slot_id = id / valuePerSlot;
+            int within_slot_id = id % valuePerSlot;
 
             // If the object has been disposed, id will be -1.
             if (id < 0)
@@ -352,15 +361,15 @@ namespace System.Threading
             // If a slot array has not been created on this thread yet, create it.
             if (slotArray == null)
             {
-                slotArray = new LinkedSlotVolatile[GetNewTableSize(id + 1)];
+                slotArray = new LinkedSlotVolatile[GetNewTableSize(slot_id + 1)];
                 ts_finalizationHelper = new FinalizationHelper(slotArray, _trackAllValues);
                 ts_slotArray = slotArray;
             }
 
             // If the slot array is not big enough to hold this ID, increase the table size.
-            if (id >= slotArray.Length)
+            if (slot_id >= slotArray.Length)
             {
-                GrowTable(ref slotArray!, id + 1);
+                GrowTable(ref slotArray!, slot_id + 1);
                 Debug.Assert(ts_finalizationHelper != null, "Should have been initialized when this thread's slot array was created.");
                 ts_finalizationHelper.SlotArray = slotArray;
                 ts_slotArray = slotArray;
@@ -368,7 +377,7 @@ namespace System.Threading
 
             // If we are using the slot in this table for the first time, create a new LinkedSlot and add it into
             // the linked list for this ThreadLocal instance.
-            if (slotArray[id].Value == null)
+            if (slotArray[slot_id].Value == null)
             {
                 CreateLinkedSlot(slotArray, id, value);
             }
@@ -376,7 +385,7 @@ namespace System.Threading
             {
                 // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                 // that follows will not be reordered before the read of slotArray[id].
-                LinkedSlot? slot = slotArray[id].Value;
+                LinkedSlot? slot = slotArray[slot_id].Value;
 
                 // It is important to verify that the ThreadLocal instance has not been disposed. The check must come
                 // after capturing slotArray[id], but before assigning the value into the slot. This ensures that
@@ -388,7 +397,7 @@ namespace System.Threading
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
 
-                slot!._value = value;
+                slot!._value[within_slot_id] = value;
             }
         }
 
@@ -397,6 +406,9 @@ namespace System.Threading
         /// </summary>
         private void CreateLinkedSlot(LinkedSlotVolatile[] slotArray, int id, T value)
         {
+            int slot_id = id / valuePerSlot;
+            int within_slot_id = id % valuePerSlot;
+
             // Create a LinkedSlot
             var linkedSlot = new LinkedSlot(slotArray);
 
@@ -417,7 +429,7 @@ namespace System.Threading
                 // (_linkedSlot is the dummy head node that should always be in the front.)
                 linkedSlot._next = firstRealNode;
                 linkedSlot._previous = _linkedSlot;
-                linkedSlot._value = value;
+                linkedSlot._value[within_slot_id] = value;
 
                 if (firstRealNode != null)
                 {
@@ -428,7 +440,7 @@ namespace System.Threading
                 // Assigning the slot under a lock prevents a race condition with Dispose (dispose also acquires the lock).
                 // Otherwise, it would be possible that the ThreadLocal instance is disposed, another one gets created
                 // with the same ID, and the write would go to the wrong instance.
-                slotArray[id].Value = linkedSlot;
+                slotArray[slot_id].Value = linkedSlot;
             }
         }
 
@@ -462,6 +474,7 @@ namespace System.Threading
             {
                 return null;
             }
+            int within_slot_id = id % valuePerSlot;
 
             // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
             var valueList = new List<T>();
@@ -469,7 +482,7 @@ namespace System.Threading
             {
                 // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
                 // objects will never be assigned to another ThreadLocal instance.
-                valueList.Add(linkedSlot._value!);
+                valueList.Add(linkedSlot._value[within_slot_id]!);
             }
 
             return valueList;
@@ -490,13 +503,14 @@ namespace System.Threading
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
+                int within_slot_id = id % valuePerSlot;
 
                 // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
                 for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                 {
                     // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
                     // objects will never be assigned to another ThreadLocal instance.
-                    yield return linkedSlot._value!;
+                    yield return linkedSlot._value[within_slot_id]!;
                 }
             }
         }
@@ -530,9 +544,12 @@ namespace System.Threading
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
+                int slot_id = id / valuePerSlot;
+                int within_slot_id = id % valuePerSlot;
 
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
-                return slotArray != null && id < slotArray.Length && slotArray[id].Value != null;
+                // This is also wrong, the existence of the shared slot no longer mean the same
+                return slotArray != null && slot_id < slotArray.Length && slotArray[slot_id].Value != null;
             }
         }
 
@@ -546,11 +563,14 @@ namespace System.Threading
             {
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 int id = ~_idComplement;
+                // This is potentially already wrong? What if the instance is disposed?
+                int slot_id = id / valuePerSlot;
+                int within_slot_id = id % valuePerSlot;
 
                 LinkedSlot? slot;
-                if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
+                if (slotArray == null || id >= slotArray.Length || (slot = slotArray[slot_id].Value) == null || !_initialized)
                     return default!;
-                return slot._value;
+                return slot._value[within_slot_id];
             }
         }
 
@@ -661,6 +681,10 @@ namespace System.Threading
             internal LinkedSlot(LinkedSlotVolatile[]? slotArray)
             {
                 _slotArray = slotArray;
+                if (slotArray != null)
+                {
+                    _value = new T[valuePerSlot];
+                }
             }
 
             // The next LinkedSlot for this ThreadLocal<> instance
@@ -673,7 +697,10 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            [AllowNull, MaybeNull] internal T _value = default;
+            [AllowNull, MaybeNull] internal T[] _value;
+
+            // A bitmap on which slot is used
+            internal long used;
         }
 
         /// <summary>
