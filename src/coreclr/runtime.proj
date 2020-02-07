@@ -16,8 +16,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build.cmd</_CoreClrBuildScript>
-      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build.sh</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
+      <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and there's an existing warning in the native build. -->
