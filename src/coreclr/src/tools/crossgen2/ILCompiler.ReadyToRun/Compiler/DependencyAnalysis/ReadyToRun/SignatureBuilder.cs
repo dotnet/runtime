@@ -607,7 +607,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public SignatureContext EmitFixup(NodeFactory factory, ReadyToRunFixupKind fixupKind, EcmaModule targetModule, SignatureContext outerContext)
         {
-            if (targetModule == outerContext.LocalContext)
+            if (!factory.Composite && targetModule == outerContext.LocalContext)
             {
                 EmitByte((byte)fixupKind);
                 return outerContext;

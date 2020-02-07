@@ -210,7 +210,7 @@ namespace Internal.JitInterface
             bool codeGotPublished = false;
             _methodCodeNode = methodCodeNodeNeedingCode;
             EcmaModule containingModule = ((EcmaMethod)_methodCodeNode.Method.GetTypicalMethodDefinition()).Module;
-            _moduleBeingCompiled = _compilation.NodeFactory.InputModules[containingModule];
+            _moduleBeingCompiled = _compilation.NodeFactory.InputModules[_compilation.NodeFactory.InputModuleIndex[containingModule]];
 
             try
             {

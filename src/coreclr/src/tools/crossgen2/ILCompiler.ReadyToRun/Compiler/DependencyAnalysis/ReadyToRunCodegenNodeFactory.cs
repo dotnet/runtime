@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using ILCompiler.DependencyAnalysisFramework;
@@ -73,7 +74,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public bool Composite { get; }
 
-        public Dictionary<EcmaModule, InputModule> InputModules { get; }
+        public InputModule[] InputModules { get; }
+
+        public Dictionary<EcmaModule, int> InputModuleIndex { get; }
 
         public MetadataManager MetadataManager { get; }
 
@@ -87,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
         public IMethodNode MethodEntrypoint(MethodDesc method)
         {
             EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
-            InputModule inputModule = InputModules[module];
+            InputModule inputModule = InputModules[InputModuleIndex[module]];
             ModuleToken moduleToken = inputModule.Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
             return MethodEntrypoint(
                 new MethodWithToken(method, moduleToken, constrainedType: null),
@@ -222,12 +225,16 @@ namespace ILCompiler.DependencyAnalysis
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
-            InputModules = new Dictionary<EcmaModule, InputModule>();
+            InputModules = new InputModule[inputModules.Count()];
+            InputModuleIndex = new Dictionary<EcmaModule, int>();
+            int inputModuleIndex = 0;
             foreach (EcmaModule inputModule in inputModules)
             {
                 ModuleTokenResolver moduleTokenResolver = new ModuleTokenResolver(CompilationModuleGroup, context);
                 SignatureContext signatureContext = new SignatureContext(inputModule, moduleTokenResolver);
-                InputModules.Add(inputModule, new InputModule(inputModule, moduleTokenResolver, signatureContext));
+                InputModules[inputModuleIndex] = new InputModule(inputModule, moduleTokenResolver, signatureContext);
+                InputModuleIndex.Add(inputModule, inputModuleIndex);
+                inputModuleIndex++;
             }
 
             CreateNodeCaches();
@@ -623,7 +630,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (InputModules.Count > 1)
+            if (InputModules.Length > 1)
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
@@ -631,7 +638,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Generate per assembly header tables
             int assemblyIndex = -1;
-            foreach (InputModule inputModule in InputModules.Values)
+            foreach (InputModule inputModule in InputModules)
             {
                 assemblyIndex++;
                 HeaderNode tableHeader = Header;

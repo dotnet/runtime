@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    PEReader inputPeReader = _nodeFactory.InputModules.Keys.First().PEReader;
+                    PEReader inputPeReader = _nodeFactory.InputModules[0].Module.PEReader;
                     headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;

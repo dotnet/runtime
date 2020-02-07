@@ -65,6 +65,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         enforceOwningType = true;
                     }
 
+                    SignatureContext context = _factory.InputModules[_factory.InputModuleIndex[typicalMethod.Module]].Context;
+                    if (_factory.Composite)
+                    {
+                        // Enforce module overrides on owning types
+                        context = context.InnerContext(null);
+                    }
+
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         new MethodWithToken(method.Method, moduleToken, constrainedType: null),

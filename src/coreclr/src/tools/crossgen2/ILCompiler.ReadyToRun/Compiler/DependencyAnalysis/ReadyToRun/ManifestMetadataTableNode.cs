@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     throw new InternalCompilerErrorException("Multiple input files specified without the composite flag");
                 }
-                MetadataReader mdReader = _nodeFactory.InputModules.Keys.First().MetadataReader;
+                MetadataReader mdReader = _nodeFactory.InputModules[0].Module.MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
                 for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
                 {
@@ -94,6 +94,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
             _nextModuleId = _assemblyRefCount + 2;
+
+            if (_nodeFactory.Composite)
+            {
+                // Fill in entries for all input modules right away to make sure they have parallel indices
+                int nextExpectedId = 2;
+                foreach (InputModule inputModule in _nodeFactory.InputModules)
+                {
+                    int acquiredId = ModuleToIndexInternal(inputModule.Module);
+                    if (acquiredId != nextExpectedId)
+                    {
+                        throw new InternalCompilerErrorException($"Manifest metadata consistency error - acquired ID {acquiredId}, expected {nextExpectedId}");
+                    }
+                    nextExpectedId++;
+                }
+            }
         }
 
         public void RegisterEmitter(ISignatureEmitter emitter)
@@ -110,6 +125,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 throw new InvalidOperationException("Cannot get ModuleToIndex mapping until marking is complete.");
             }
 
+            return ModuleToIndexInternal(module);
+        }
+
+        private int ModuleToIndexInternal(EcmaModule module)
+        {
             AssemblyName assemblyName = module.Assembly.GetName();
             int assemblyRefIndex;
             if (!_assemblyRefToModuleIdMap.TryGetValue(assemblyName.Name, out assemblyRefIndex))

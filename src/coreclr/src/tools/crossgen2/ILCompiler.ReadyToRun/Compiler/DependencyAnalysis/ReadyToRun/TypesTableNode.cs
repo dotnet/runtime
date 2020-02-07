@@ -46,8 +46,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             section.Place(typesHashtable);
 
             ReadyToRunTableManager r2rManager = (ReadyToRunTableManager)factory.MetadataManager;
-
-            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes())
+            foreach (TypeInfo<TypeDefinitionHandle> defTypeInfo in r2rManager.GetDefinedTypes(_module))
             {
                 TypeDefinitionHandle defTypeHandle = defTypeInfo.Handle;
                 int hashCode = 0;
