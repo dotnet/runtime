@@ -150,20 +150,4 @@ public class Vector2_3_4Test
             return newVector;
         }));
     }
-
-    private static void RunLPVector2_3_4Tests()
-    {
-        Assert.AreEqual((decimal)StartingIntValue, Vector2_3_4TestNative.CreateLPDecimalFromInt(StartingIntValue));
-
-        Assert.IsTrue(Vector2_3_4TestNative.LPDecimalEqualToInt((decimal)StartingIntValue, StartingIntValue));
-
-        decimal localDecimal = (decimal)StartingIntValue;
-        Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeLPDecimal(ref localDecimal, StartingIntValue, NewIntValue));
-        Assert.AreEqual((decimal)NewIntValue, localDecimal);
-
-        Vector2_3_4TestNative.GetLPDecimalForInt(NewIntValue, out var dec);
-        Assert.AreEqual((decimal)NewIntValue, dec);
-
-        Vector2_3_4TestNative.PassThroughLPDecimalToCallback((decimal)NewIntValue, d => Assert.AreEqual((decimal)NewIntValue, d));
-    }
 }
