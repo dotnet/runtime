@@ -456,7 +456,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         return false;
     }
-#else  //!_TARGET_AMD64 = TARGET_X86
+#else  //! TARGET_AMD64 = TARGET_X86
     return false;
 #endif //! TARGET_AMD64
 }
@@ -7952,7 +7952,7 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 #ifdef TARGET_AMD64
         // how many bytes per instruction we format for
         const size_t digits = 10;
-#else // _TARGET_X86
+#else // TARGET_X86
         const size_t digits = 6;
 #endif
         printf(" ");
@@ -14283,7 +14283,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency = PERFSCORE_LATENCY_1C;
             }
             break;
-#endif // _TARGET_X86
+#endif // TARGET_X86
 
 #ifdef TARGET_AMD64
         case INS_movsq:

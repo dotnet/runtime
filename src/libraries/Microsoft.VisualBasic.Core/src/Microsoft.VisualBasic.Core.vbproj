@@ -18,7 +18,7 @@
     <RootNamespace />
     <!-- Disable this as it seems to break windows builds for now. -->
     <DocumentationFile />
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />

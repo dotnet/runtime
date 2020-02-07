@@ -4,7 +4,8 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_RegistryAccessControl</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />

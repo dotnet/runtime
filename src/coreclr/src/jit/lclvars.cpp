@@ -557,7 +557,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #elif defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     // On System V type environment the float registers are not indexed together with the int ones.
     varDscInfo->floatRegArgNum = varDscInfo->intRegArgNum;
-#endif // _TARGET_*
+#endif // TARGET*
 
     CORINFO_ARG_LIST_HANDLE argLst = info.compMethodInfo->args.args;
 
@@ -1000,7 +1000,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
             //
             varDscInfo->setAllRegArgUsed(argType);
 
-#endif // _TARGET_XXX_
+#endif // TARGET_XXX
 
 #if FEATURE_FASTTAILCALL
             varDsc->lvStkOffs = varDscInfo->stackArgSize;
@@ -5370,9 +5370,9 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
             varDsc->lvStkOffs = argOffs;
             argOffs += argSize;
         }
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
     }
     else
     {

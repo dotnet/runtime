@@ -16,7 +16,7 @@ namespace System.Diagnostics
     {
         private bool _haveMainWindow;
         private IntPtr _mainWindowHandle;
-        private string _mainWindowTitle;
+        private string? _mainWindowTitle;
 
         private bool _haveResponding;
         private bool _responding;

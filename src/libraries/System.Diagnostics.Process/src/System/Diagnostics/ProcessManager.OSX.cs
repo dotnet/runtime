@@ -45,7 +45,7 @@ namespace System.Diagnostics
             {
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
                 Interop.libproc.proc_taskallinfo temp = info.Value;
-                unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm)); }
+                unsafe { procInfo.ProcessName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm))!; }
                 procInfo.BasePriority = temp.pbsd.pbi_nice;
                 procInfo.VirtualBytes = (long)temp.ptinfo.pti_virtual_size;
                 procInfo.WorkingSet = (long)temp.ptinfo.pti_resident_size;

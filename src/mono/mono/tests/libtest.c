@@ -8,6 +8,7 @@
 #include <time.h>
 #include <math.h>
 #include <setjmp.h>
+#include <signal.h>
 #include "../utils/mono-errno.h"
 #include "../utils/mono-compiler.h"
 
@@ -8009,6 +8010,64 @@ LIBTEST_API void STDCALL
 mono_test_MerpCrashUnhandledExceptionHook (void)
 {
 	g_assert_not_reached ();
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalTerm (void)
+{
+	raise (SIGTERM);
+}
+
+// for the rest of the signal tests, we use SIGTERM as a fallback
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalAbrt (void)
+{
+#if defined (SIGABRT)
+	raise (SIGABRT);
+#else
+	raise (SIGTERM);
+#endif
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalFpe (void)
+{
+#if defined (SIGFPE)
+	raise (SIGFPE);
+#else
+	raise (SIGTERM);
+#endif
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalBus (void)
+{
+#if defined (SIGBUS)
+	raise (SIGBUS);
+#else
+	raise (SIGTERM);
+#endif
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalSegv (void)
+{
+#if defined (SIGSEGV)
+	raise (SIGSEGV);
+#else
+	raise (SIGTERM);
+#endif
+}
+
+LIBTEST_API void STDCALL
+mono_test_MerpCrashSignalIll (void)
+{
+#if defined (SIGILL)
+	raise (SIGILL);
+#else
+	raise (SIGTERM);
+#endif
 }
 
 #ifdef __cplusplus

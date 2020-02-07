@@ -1,4 +1,10 @@
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
+    preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+
+    list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
+endif (CLR_CMAKE_TARGET_WIN32)
+
+if (CLR_CMAKE_HOST_WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
 
     list(APPEND CLR_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/coreclr.def)
@@ -22,11 +28,11 @@ if (WIN32)
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
 
-else()
+else(CLR_CMAKE_HOST_WIN32)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/coreclr.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
         # This option is necessary to ensure that the overloaded delete operator defined inside
         # of the utilcode will be used instead of the standard library delete operator.
         add_link_options("LINKER:-Bsymbolic,-Bsymbolic-functions")
@@ -41,17 +47,17 @@ else()
         set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
 
         set(EXPORTS_LINKER_OPTION -Wl,--version-script=${EXPORTS_FILE})
-    endif(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    endif(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
 
-    if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    if(CLR_CMAKE_TARGET_DARWIN)
         # These options are used to force every object to be included even if it's unused.
         set(START_WHOLE_ARCHIVE -force_load)
         set(END_WHOLE_ARCHIVE )
 
         set(EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${EXPORTS_FILE})
-    endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    endif(CLR_CMAKE_TARGET_DARWIN)
 
-endif (WIN32)
+endif (CLR_CMAKE_HOST_WIN32)
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=CoreCLR.dll)
 
@@ -100,7 +106,7 @@ set(CORECLR_LIBRARIES
     v3binder
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CORECLR_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -125,15 +131,15 @@ else()
         palrt
         System.Globalization.Native-Static
     )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_TARGET_LINUX)
     list(APPEND CORECLR_LIBRARIES
         ${START_WHOLE_ARCHIVE}
         tracepointprovider
         ${END_WHOLE_ARCHIVE}
     )
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CLR_CMAKE_TARGET_LINUX)
 
 if(FEATURE_PERFTRACING)
     list(APPEND CORECLR_LIBRARIES
@@ -151,7 +157,7 @@ endif(FEATURE_EVENT_TRACE)
 
 target_link_libraries(coreclr ${CORECLR_LIBRARIES})
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     if (NOT CMAKE_GENERATOR MATCHES "Visual Studio .*")
       add_custom_target(inject_debug_resources ALL COMMAND UNABLE_TO_EMBED_DAC_ON_WINDOWS_NON_VS_GENERATOR)
       add_dependencies(inject_debug_resources coreclr mscordaccore mscordbi)
@@ -197,7 +203,7 @@ if(WIN32)
       endif()
     endif()
 
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 # add the install targets
 install_clr(TARGETS coreclr)

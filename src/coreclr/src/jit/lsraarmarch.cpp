@@ -502,7 +502,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
                 currentRegCount = node->AsMultiRegOp()->GetRegCount();
             }
             else
-#endif // _TARGET_ARM
+#endif // TARGET_ARM
             {
                 assert(!node->IsMultiRegNode());
                 currentRegCount = 1;

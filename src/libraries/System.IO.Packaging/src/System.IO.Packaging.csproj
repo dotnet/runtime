@@ -1,9 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
-    <Configurations>net46-Debug;net46-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <TargetFrameworks>net46;netstandard1.3;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />

@@ -81,10 +81,11 @@ namespace ILCompiler.Reflection.ReadyToRun
     }
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/pal/inc/pal.h">src/pal/inc/pal.h</a> _RUNTIME_FUNCTION
+    /// A runtime function corresponds to a contiguous fragment of code that implements a method.
     /// </summary>
     public class RuntimeFunction
     {
+        // based on <a href= "https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/inc/pal.h" > src / pal / inc / pal.h </ a > _RUNTIME_FUNCTION
         private ReadyToRunReader _readyToRunReader;
         private EHInfo _ehInfo;
         private DebugInfo _debugInfo;

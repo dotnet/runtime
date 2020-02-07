@@ -1,12 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <!-- shared configurations between shims and apicompat -->
-    <BuildConfigurations>
-      $(BuildConfigurations);
-      $(NetCoreAppCurrent);
-    </BuildConfigurations>
-  </PropertyGroup>
-
   <Import Project="..\Directory.Build.props" />
 
   <Import Project="netfxreference.props" />

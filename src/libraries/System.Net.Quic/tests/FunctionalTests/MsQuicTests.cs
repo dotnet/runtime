@@ -13,11 +13,12 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public class MsQuicTests : MsQuicTestBase
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task BasicTest()
         {
             for (int i = 0; i < 100; i++)
@@ -62,7 +63,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task MultipleReadsAndWrites()
         {
             for (int j = 0; j < 100; j++)
@@ -127,7 +128,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task MultipleStreamsOnSingleConnection()
         {
             Task listenTask = Task.Run(async () =>
@@ -209,7 +210,7 @@ namespace System.Net.Quic.Tests
             await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task AbortiveConnectionFromClient()
         {
             using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
@@ -226,7 +227,7 @@ namespace System.Net.Quic.Tests
             Assert.Throws<NullReferenceException>(() => stream.CanRead);
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task TestStreams()
         {
             using (QuicListener listener = new QuicListener(
@@ -264,7 +265,7 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task UnidirectionalAndBidirectionalStreamCountsWork()
         {
             using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
@@ -276,7 +277,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task UnidirectionalAndBidirectionalChangeValues()
         {
             QuicClientConnectionOptions options = new QuicClientConnectionOptions()
@@ -298,7 +299,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
         }
 
-        [Fact(Skip = "MsQuic not available")]
+        [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
             using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
@@ -327,7 +328,7 @@ namespace System.Net.Quic.Tests
             Assert.Equal(24, res);
         }
 
-        [Theory(Skip = "MsQuic not available")]
+        [Theory]
         [MemberData(nameof(QuicStream_ReadWrite_Random_Success_Data))]
         public async Task QuicStream_ReadWrite_Random_Success(int readSize, int writeSize)
         {
