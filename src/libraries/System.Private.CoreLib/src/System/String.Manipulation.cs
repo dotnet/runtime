@@ -1023,6 +1023,13 @@ namespace System
                 index = ci.IndexOf(this, oldValue, startIndex, this.Length - startIndex, options, &matchLength);
                 if (index >= 0)
                 {
+                    // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
+                    // If this is the case, we need to fail immediately so that we don't enter an infinite loop.
+                    if (matchLength == 0)
+                    {
+                        throw new ArgumentException(SR.Argument_StringZeroLength, nameof(oldValue));
+                    }
+
                     // append the unmodified portion of string
                     result.Append(this.AsSpan(startIndex, index - startIndex));
 
