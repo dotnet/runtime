@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -49,6 +48,7 @@ namespace System.Text.RegularExpressions
 
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
         private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
@@ -4752,6 +4752,24 @@ namespace System.Text.RegularExpressions
 
                 // Negate the answer if the negation flag was set
                 if (RegexCharClass.IsNegated(charClass))
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                return;
+            }
+
+            // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
+            // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
+            // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
+            if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            {
+                // char.GetUnicodeInfo(ch) == category
+                Call(s_charGetUnicodeInfo);
+                Ldc((int)category);
+                Ceq();
+                if (negated)
                 {
                     Ldc(0);
                     Ceq();

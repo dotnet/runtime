@@ -27,6 +27,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- System.Data.SqlClient is not live-built anymore -->
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <!-- Exclude live-built dependencies -->
+    <FileToExclude Include="Microsoft.Win32.Registry" />
+    <FileToExclude Include="System.Security.AccessControl" />
+    <FileToExclude Include="System.Security.Principal.Windows" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Condition="'$(TargetFramework)' == 'netcoreapp3.0'" Include="Microsoft.Private.Corefx.NETCoreApp" Version="4.6.0-rc2.19462.14" />
   </ItemGroup>
 

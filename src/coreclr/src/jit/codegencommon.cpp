@@ -243,8 +243,8 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
     //     pushed ebp
     callerSPtoFPdelta -= 2 * REGSIZE_BYTES;
 #else
-#error "Unknown _TARGET_"
-#endif // _TARGET_*
+#error "Unknown TARGET"
+#endif // TARGET*
 
     assert(callerSPtoFPdelta <= 0);
     return callerSPtoFPdelta;
@@ -273,8 +273,8 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
         callerSPtoSPdelta -= REGSIZE_BYTES;
     }
 #else
-#error "Unknown _TARGET_"
-#endif // _TARGET_*
+#error "Unknown TARGET"
+#endif // TARGET*
 
     assert(callerSPtoSPdelta <= 0);
     return callerSPtoSPdelta;
@@ -1509,7 +1509,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARMARCH
+#endif // !TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1587,7 +1587,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARMARCH
+#endif // !TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -5383,7 +5383,7 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
 #else
     assert(!"Unknown TARGET");
-#endif // _TARGET_*
+#endif // TARGET*
 }
 
 #if defined(TARGET_ARM)
@@ -5622,7 +5622,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
                 fltInitReg = reg;
@@ -5657,7 +5657,7 @@ void CodeGen::genZeroInitFltRegs(const regMaskTP& initFltRegs, const regMaskTP& 
 #elif defined(TARGET_ARM64)
                 // We will just zero out the entire vector register. This sets it to a double/float zero value
                 GetEmitter()->emitIns_R_I(INS_movi, EA_16BYTE, reg, 0x00, INS_OPTS_16B);
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
 #endif
                 dblInitReg = reg;
@@ -6071,7 +6071,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
     noway_assert(compiler->compCalleeRegsPushed == popCount);
 }
 
-#endif // _TARGET_*
+#endif // TARGET*
 
 // We need a register with value zero. Zero the initReg, if necessary, and set *pInitRegZeroed if so.
 // Return the register to use. On ARM64, we never touch the initReg, and always just return REG_ZR.
@@ -6353,9 +6353,9 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
 #endif // !UNIX_AMD64_ABI
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
     }
     else if (genInitStkLclCnt > 0)
     {
@@ -8249,7 +8249,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 regSet.verifyRegUsed(REG_ECX);
             }
             else
-#endif // _TARGET_X86
+#endif // TARGET_X86
             {
                 /* Add 'compiler->compLclFrameSize' to ESP */
                 /* Generate "add esp, <stack-size>" */
@@ -8319,7 +8319,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                 inst_RV(INS_pop, REG_ECX, TYP_I_IMPL);
                 regSet.verifyRegUsed(REG_ECX);
             }
-#endif // _TARGET_X86
+#endif // TARGET_X86
             else
             {
                 // We need to make ESP point to the callee-saved registers
@@ -8547,9 +8547,9 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     }
 }
 
-#else // _TARGET_*
+#else // TARGET*
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
 #if defined(FEATURE_EH_FUNCLETS)
 
@@ -9239,7 +9239,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     }
 }
 
-#else // _TARGET_*
+#else // TARGET*
 
 /*****************************************************************************
  *
@@ -9274,7 +9274,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
     }
 }
 
-#endif // _TARGET_*
+#endif // TARGET*
 
 /*-----------------------------------------------------------------------------
  *
@@ -9423,11 +9423,11 @@ void CodeGen::genSetPSPSym(regNumber initReg, bool* pInitRegZeroed)
 
     GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaPSPSym, 0);
 
-#else // _TARGET_*
+#else // TARGET*
 
     NYI("Set function PSP sym");
 
-#endif // _TARGET_*
+#endif // TARGET*
 }
 
 #endif // FEATURE_EH_FUNCLETS
@@ -9866,7 +9866,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
     return baseVarNum;
 #elif defined(TARGET_AMD64)
     return 0;
-#else  // _TARGET_X86
+#else  // TARGET_X86
     // Not implemented for x86.
     NYI_X86("getFirstArgWithStackSlot not yet implemented for x86.");
     return BAD_VAR_NUM;

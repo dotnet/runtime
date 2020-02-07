@@ -42,6 +42,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Console" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.Runtime" />

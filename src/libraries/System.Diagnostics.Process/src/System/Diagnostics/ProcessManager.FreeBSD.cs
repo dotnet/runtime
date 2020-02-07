@@ -16,7 +16,7 @@ namespace System.Diagnostics
             return Interop.Process.ListAllPids();
         }
 
-        internal static string GetProcPath(int processId)
+        internal static string? GetProcPath(int processId)
         {
             return Interop.Process.GetProcPath(processId);
         }

@@ -8,11 +8,11 @@ namespace System.Diagnostics
 {
     public sealed partial class ProcessStartInfo
     {
-        private string _domain;
+        private string? _domain;
 
         private const bool CaseSensitiveEnvironmentVariables = false;
 
-        public string PasswordInClearText { get; set; }
+        public string? PasswordInClearText { get; set; }
 
         public string Domain
         {
@@ -23,6 +23,6 @@ namespace System.Diagnostics
         public bool LoadUserProfile { get; set; }
 
         [CLSCompliant(false)]
-        public SecureString Password { get; set; }
+        public SecureString? Password { get; set; }
     }
 }

@@ -655,7 +655,7 @@ FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
     if (h == NULL)
         return;
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
     PAL_FreeLibraryDirect(h);
 #else
     FreeLibrary(h);

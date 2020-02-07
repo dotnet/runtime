@@ -50,7 +50,7 @@ BOOL g_fEEHostedStartup = FALSE;
 
 #include "eventtracepriv.h"
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
@@ -60,7 +60,7 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
 #ifdef FEATURE_REDHAWK
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
@@ -246,7 +246,7 @@ extern "C"
 /*************************************/
 /* Function to append a frame to an existing stack */
 /*************************************/
-#if  !defined(TARGET_UNIX)
+#if  !defined(HOST_UNIX)
 void ETW::SamplingLog::Append(SIZE_T currentFrame)
 {
     LIMITED_METHOD_CONTRACT;
@@ -424,7 +424,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
     return ETW::SamplingLog::Completed;
 }
 
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
 #endif // !FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -1137,7 +1137,7 @@ void BulkComLogger::FlushRcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currRcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1146,7 +1146,7 @@ void BulkComLogger::FlushRcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRCW(m_currRcw, instance, sizeof(EventRCWEntry) * m_currRcw, m_etwRcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1227,7 +1227,7 @@ void BulkComLogger::FlushCcw()
 
     unsigned short instance = GetClrInstanceId();
 
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[3];
     EventDataDescCreate(&eventData[0], &m_currCcw, sizeof(const unsigned int));
     EventDataDescCreate(&eventData[1], &instance, sizeof(const unsigned short));
@@ -1236,7 +1236,7 @@ void BulkComLogger::FlushCcw()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootCCW, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
-#endif //!defined(TARGET_UNIX)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootCCW(m_currCcw, instance, sizeof(EventCCWEntry) * m_currCcw, m_etwCcwData);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -1431,7 +1431,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     unsigned short instance = GetClrInstanceId();
     unsigned __int64 appDomain = (unsigned __int64)m_domain;
 
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
     EVENT_DATA_DESCRIPTOR eventData[4];
     EventDataDescCreate(&eventData[0], &m_count, sizeof(const unsigned int)  );
     EventDataDescCreate(&eventData[1], &appDomain, sizeof(unsigned __int64)  );
@@ -1441,7 +1441,7 @@ void BulkStaticsLogger::FireBulkStaticsEvent()
     ULONG result = EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &GCBulkRootStaticVar, _countof(eventData), eventData);
 #else
     ULONG result = FireEtXplatGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
-#endif //!defined(TARGET_UNIX)
+#endif //!defined(HOST_UNIX)
     result |= EventPipeWriteEventGCBulkRootStaticVar(m_count, appDomain, instance, m_used, m_buffer);
 
     _ASSERTE(result == ERROR_SUCCESS);
@@ -4176,7 +4176,7 @@ void InitializeEventTracing()
     if (FAILED(hr))
         return;
 
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
     // Register CLR providers with the OS
     if (g_pEtwTracer == NULL)
     {
@@ -4192,9 +4192,9 @@ void InitializeEventTracing()
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
 
-#if defined(TARGET_UNIX) && defined (FEATURE_PERFTRACING)
+#if defined(HOST_UNIX) && defined (FEATURE_PERFTRACING)
     XplatEventLogger::InitializeLogger();
-#endif // TARGET_UNIX && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
@@ -4207,12 +4207,12 @@ void InitializeEventTracing()
 // a suitable token, this implementation has a different callback for every EventPipe provider
 // that ultimately funnels them all into a common handler.
 
-#if defined(TARGET_UNIX)
+#if defined(HOST_UNIX)
 // CLR_GCHEAPCOLLECT_KEYWORD is defined by the generated ETW manifest on Windows.
 // On non-Windows, we need to make sure that this is defined.  Given that we can't change
 // the value due to compatibility, we specify it here rather than generating defines based on the manifest.
 #define CLR_GCHEAPCOLLECT_KEYWORD 0x800000
-#endif // defined(TARGET_UNIX)
+#endif // defined(HOST_UNIX)
 
 // CallbackProviderIndex provides a quick identification of which provider triggered the
 // ETW callback.
@@ -4238,13 +4238,13 @@ VOID EtwCallbackCommon(
     LIMITED_METHOD_CONTRACT;
 
     bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
     static_assert(GCEventLevel_Fatal == TRACE_LEVEL_FATAL, "GCEventLevel_Fatal value mismatch");
     static_assert(GCEventLevel_Error == TRACE_LEVEL_ERROR, "GCEventLevel_Error value mismatch");
     static_assert(GCEventLevel_Warning == TRACE_LEVEL_WARNING, "GCEventLevel_Warning mismatch");
     static_assert(GCEventLevel_Information == TRACE_LEVEL_INFORMATION, "GCEventLevel_Information mismatch");
     static_assert(GCEventLevel_Verbose == TRACE_LEVEL_VERBOSE, "GCEventLevel_Verbose mismatch");
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
     GCEventKeyword keywords = static_cast<GCEventKeyword>(MatchAnyKeyword);
     GCEventLevel level = static_cast<GCEventLevel>(Level);
     GCHeapUtilities::RecordEventStateChange(bIsPublicTraceHandle, keywords, level);
@@ -4286,7 +4286,7 @@ VOID EtwCallbackCommon(
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.
         LONGLONG l64ClientSequenceNumber = 0;
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
         PEVENT_FILTER_DESCRIPTOR FilterData = (PEVENT_FILTER_DESCRIPTOR)pFilterData;
         if ((FilterData != NULL) &&
            (FilterData->Type == 1) &&
@@ -4294,7 +4294,7 @@ VOID EtwCallbackCommon(
         {
             l64ClientSequenceNumber = *(LONGLONG *) (FilterData->Ptr);
         }
-#endif // !defined(TARGET_UNIX)
+#endif // !defined(HOST_UNIX)
         ETW::GCLog::ForceGC(l64ClientSequenceNumber);
     }
     // TypeSystemLog needs a notification when certain keywords are modified, so
@@ -4364,7 +4364,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
 }
 
 
-#if !defined(TARGET_UNIX)
+#if !defined(HOST_UNIX)
 HRESULT ETW::CEtwTracer::Register()
 {
     WRAPPER_NO_CONTRACT;
@@ -4580,7 +4580,7 @@ extern "C"
 }
 #endif // FEATURE_REDHAWK
 
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 #ifndef FEATURE_REDHAWK
 
 /****************************************************************************/
@@ -5041,7 +5041,7 @@ VOID ETW::InfoLog::RuntimeInformation(INT32 type)
 
 VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
 {
-#if  !defined(TARGET_UNIX) //UNIXTODO: Enable EmitCodeSymbols
+#if  !defined(HOST_UNIX) //UNIXTODO: Enable EmitCodeSymbols
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
@@ -5098,7 +5098,7 @@ VOID ETW::CodeSymbolLog::EmitCodeSymbols(Module* pModule)
             }
         }
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
-#endif//  !defined(TARGET_UNIX)
+#endif//  !defined(HOST_UNIX)
 }
 
 /* Returns the length of an in-memory symbol stream
@@ -7642,10 +7642,10 @@ bool EventPipeHelper::IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONG
 }
 #endif // FEATURE_PERFTRACING
 
-#if defined(TARGET_UNIX)  && defined(FEATURE_PERFTRACING)
+#if defined(HOST_UNIX)  && defined(FEATURE_PERFTRACING)
 // This is a wrapper method for LTTng. See https://github.com/dotnet/coreclr/pull/27273 for details.
 extern "C" bool XplatEventLoggerIsEnabled()
 {
     return XplatEventLogger::IsEventLoggingEnabled();
 }
-#endif // TARGET_UNIX && FEATURE_PERFTRACING
+#endif // HOST_UNIX && FEATURE_PERFTRACING
