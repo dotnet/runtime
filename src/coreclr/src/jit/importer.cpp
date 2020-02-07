@@ -4226,6 +4226,45 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     op1 = nullptr;
 
+    if (intrinsicID == CORINFO_INTRINSIC_Pow && impStackTop().val->IsCnsFltOrDbl())
+    {
+        double    power = impStackTop().val->AsDblCon()->gtDconVal;
+        var_types type  = impStackTop().val->TypeGet();
+        if (power == 2.0)
+        {
+            // Math.Pow(x, 2) -> x*x
+            impPopStack();
+            GenTree* arg0 = impPopStack().val;
+            if (arg0->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                return gtNewOperNode(GT_MUL, type, arg0, gtCloneExpr(arg0));
+            }
+            // introduce a temp variable for the first Math.Pow argument
+            unsigned temp = lvaGrabTemp(true DEBUGARG("pow arg"));
+            impAssignTempGen(temp, arg0, static_cast<unsigned>(CHECK_SPILL_NONE));
+            return gtNewOperNode(GT_MUL, type, gtNewLclvNode(temp, type), gtNewLclvNode(temp, type));
+        }
+        else if (power == 1.0)
+        {
+            // Math.Pow(x, 1) -> x
+            impPopStack();
+            return impPopStack().val;
+        }
+        else if (power == -1.0)
+        {
+            // Math.Pow(x, -1) -> 1/x
+            impPopStack();
+            return gtNewOperNode(GT_DIV, type, gtNewDconNode(1, type), impPopStack().val);
+        }
+        else if (power == 0.0)
+        {
+            // Math.Pow(x, 0) -> 1
+            impPopStack();
+            impPopStack();
+            return gtNewDconNode(1, type);
+        }
+    }
+
 #if !defined(TARGET_X86)
     // Intrinsics that are not implemented directly by target instructions will
     // be re-materialized as users calls in rationalizer. For prefixed tail calls,
