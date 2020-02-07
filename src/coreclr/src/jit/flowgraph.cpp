@@ -21926,6 +21926,7 @@ void Compiler::fgInline()
         for (Statement* stmt : block->Statements())
         {
             stmt->SetInlineContext(rootContext);
+#ifdef DEBUG
             if (stmt->GetInlineContext() != nullptr)
             {
                 JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
@@ -21936,6 +21937,7 @@ void Compiler::fgInline()
                 JITDUMP("\ninlined %d from root\n", stmt->GetILOffsetX());
             }
             gtDispStmt(stmt, nullptr);
+#endif
         }
     }
 
@@ -22965,9 +22967,11 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         for (Statement* stmt : block->Statements())
         {
             stmt->SetInlineContext(calleeContext);
+#ifdef DEBUG
             gtDispStmt(stmt, nullptr);
             JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
                     eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+#endif
         }
     }
 
@@ -23657,6 +23661,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     {
         assert(addedStmt->GetInlineContext() == nullptr);
         addedStmt->SetInlineContext(context);
+#ifdef DEBUG
         gtDispStmt(addedStmt, nullptr);
         if (addedStmt->GetInlineContext() != nullptr)
         {
@@ -23667,6 +23672,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             JITDUMP("\ninlined %d from root\n", addedStmt->GetILOffsetX());
         }
+#endif
     }
 
     return afterStmt;
