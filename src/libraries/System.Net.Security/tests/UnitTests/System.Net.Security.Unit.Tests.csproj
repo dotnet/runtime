@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
@@ -10,7 +10,7 @@
     <NoWarn>436</NoWarn>
     <!-- Disable: CLSCompliant attribute is not needed -->
     <NoWarn>$(NoWarn);3021</NoWarn>
-    <Configurations>$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SslApplicationProtocolTests.cs" />

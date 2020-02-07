@@ -24,7 +24,7 @@ namespace Microsoft.Win32.SafeHandles
         // Process.{Safe}Handle to initalize and use a WaitHandle to successfully use it on
         // Unix as well to wait for the process to complete.
 
-        private readonly SafeWaitHandle _handle;
+        private readonly SafeWaitHandle _handle = null!;
         private readonly bool _releaseRef;
 
         internal SafeProcessHandle(int processId, SafeWaitHandle handle) :

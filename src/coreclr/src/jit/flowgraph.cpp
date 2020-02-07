@@ -22617,8 +22617,10 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             JITDUMP(" ... found foldable jtrue at [%06u] in BB%02u\n", dspTreeID(tree), block->bbNum);
             noway_assert((block->bbNext->countOfInEdges() > 0) && (block->bbJumpDest->countOfInEdges() > 0));
 
-            // Had hoped to assert here that we are not losing any
-            // side effects, but can't find a way to express it properly.
+            // We have a constant operand, and should have the all clear to optimize.
+            // Update side effects on the tree, assert there aren't any, and bash to nop.
+            comp->gtUpdateNodeSideEffects(tree);
+            assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
             tree->gtBashToNOP();
 
             BasicBlock* bTaken    = nullptr;

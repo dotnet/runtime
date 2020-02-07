@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="System.IO.Pipes" />

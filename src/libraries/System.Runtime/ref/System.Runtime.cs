@@ -5086,11 +5086,11 @@ namespace System.Globalization
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial class SortKey
+    public sealed partial class SortKey
     {
         internal SortKey() { }
-        public virtual byte[] KeyData { get { throw null; } }
-        public virtual string OriginalString { get { throw null; } }
+        public byte[] KeyData { get { throw null; } }
+        public string OriginalString { get { throw null; } }
         public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { throw null; }
         public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -7273,7 +7273,7 @@ namespace System.Runtime.CompilerServices
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
-        public static int GetHashCode(object o) { throw null; }
+        public static int GetHashCode(object? o) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("obj")]
         public static object? GetObjectValue(object? obj) { throw null; }
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }

@@ -1,0 +1,31 @@
+{
+  "runtimes": {
+    "Unix" : {      
+    },
+    "WebAssembly" : {
+      "#import": [
+        "Linux"
+      ]
+    },
+    "Linux": {
+      "#import": [
+          "Unix"
+        ]
+      },
+    "OSX": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "FreeBSD": {
+      "#import": [
+        "Unix"
+        ]
+      },
+    "NetBSD": {
+      "#import": [
+        "Unix"
+        ]
+      }
+    }
+}

@@ -43,7 +43,7 @@ namespace System.Diagnostics
             // and why MainModule exists.
             try
             {
-                string exePath = GetProcPath(processId);
+                string? exePath = GetProcPath(processId);
                 if (!string.IsNullOrEmpty(exePath))
                 {
                     return new ProcessModuleCollection(1)

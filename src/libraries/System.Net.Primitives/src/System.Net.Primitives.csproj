@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the

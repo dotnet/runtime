@@ -438,7 +438,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             JITDUMP("  Known type Vector256<ulong>\n");
         }
         else
-#endif // defined(_TARGET_XARCH)
+#endif // defined(TARGET_XARCH)
             if (typeHnd == m_simdHandleCache->Vector128FloatHandle)
         {
             simdBaseType = TYP_FLOAT;
@@ -1763,7 +1763,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
     {
         retVal = gtNewSIMDNode(simdType, op1, SIMDIntrinsicAbs, baseType, size);
     }
-#else // !defined(_TARGET_XARCH)_ && !defined(TARGET_ARM64)
+#else // !defined(TARGET_XARCH)_ && !defined(TARGET_ARM64)
     assert(!"Abs intrinsic on non-xarch target not implemented");
 #endif // !TARGET_XARCH
 

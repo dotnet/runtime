@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Security;
 using System.Threading;
@@ -48,15 +49,15 @@ namespace System.IO.IsolatedStorage
             // to pull from we'd have to dig into the use case to try and find a reasonable solution should we
             // run into this in the wild.
 
-            Assembly assembly = Assembly.GetEntryAssembly();
+            Assembly? assembly = Assembly.GetEntryAssembly();
 
             if (assembly == null)
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
 
             AssemblyName assemblyName = assembly.GetName();
-            Uri codeBase = new Uri(assembly.CodeBase);
+            Uri codeBase = new Uri(assembly.CodeBase!);
 
-            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
+            hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
             if (hash != null)
             {
                 hash = "StrongName" + separator + hash;
@@ -71,7 +72,7 @@ namespace System.IO.IsolatedStorage
 
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
         {
-            string randomDirectory = GetExistingRandomDirectory(rootDirectory);
+            string? randomDirectory = GetExistingRandomDirectory(rootDirectory);
             if (string.IsNullOrEmpty(randomDirectory))
             {
                 using (Mutex m = CreateMutexNotOwned(rootDirectory))
@@ -101,7 +102,7 @@ namespace System.IO.IsolatedStorage
             return randomDirectory;
         }
 
-        internal static string GetExistingRandomDirectory(string rootDirectory)
+        internal static string? GetExistingRandomDirectory(string rootDirectory)
         {
             // Look for an existing random directory at the given root
             // (a set of nested directories that were created via Path.GetRandomFileName())

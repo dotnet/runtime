@@ -143,6 +143,7 @@
 
   <!-- Sources -->
   <ItemGroup>
+      <Compile Include="$(BclSourcesRoot)\Mono\Console.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoListItem.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomain.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\MonoDomainSetup.cs" />

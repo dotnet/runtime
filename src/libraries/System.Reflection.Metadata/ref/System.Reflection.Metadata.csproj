@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <TargetFrameworks>netstandard1.1;netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

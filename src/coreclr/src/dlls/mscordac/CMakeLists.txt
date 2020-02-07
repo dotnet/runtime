@@ -5,7 +5,7 @@ set(CLR_DAC_SOURCES
 
 add_definitions(-DFX_VER_INTERNALNAME_STR=mscordaccore.dll)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND CLR_DAC_SOURCES
         Native.rc
     )
@@ -24,7 +24,7 @@ if(WIN32)
     # No library groups for Win32
     set(START_LIBRARY_GROUP)
     set(END_LIBRARY_GROUP)
-else(WIN32)
+else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordac_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordac.exports)
 
@@ -71,7 +71,7 @@ else(WIN32)
         # Add lib redefines file to DAC
         list(APPEND CLR_DAC_SOURCES libredefines.S)
     endif(CLR_CMAKE_HOST_LINUX)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
@@ -135,7 +135,7 @@ set(COREDAC_LIBRARIES
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     # mscordac.def should be generated before mscordaccore.dll is built
     add_dependencies(mscordaccore mscordaccore_def)
 
@@ -170,7 +170,7 @@ if(WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
-else(WIN32)
+else(CLR_CMAKE_TARGET_WIN32)
     list(APPEND COREDAC_LIBRARIES
         mscorrc_debug
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
@@ -178,7 +178,7 @@ else(WIN32)
         palrt
         ${END_WHOLE_ARCHIVE}
     )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 
@@ -186,7 +186,7 @@ target_link_libraries(mscordaccore PRIVATE ${COREDAC_LIBRARIES})
 install_clr(TARGETS mscordaccore)
 install_clr(TARGETS mscordaccore DESTINATION sharedFramework SKIP_STRIP)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     set(LONG_NAME_HOST_ARCH ${CLR_CMAKE_HOST_ARCH})
     set(LONG_NAME_TARGET_ARCH ${CLR_CMAKE_TARGET_ARCH})
     if (LONG_NAME_HOST_ARCH STREQUAL x64)

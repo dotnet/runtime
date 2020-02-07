@@ -3035,7 +3035,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
         }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
         assert(addr->gtOper == GT_ADD);
@@ -3333,7 +3333,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_STR:
             case GT_CNS_INT:
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
             COMMON_CNS:
@@ -3532,7 +3532,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 6;
                     }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
                     /* Overflow casts are a lot more expensive */
@@ -16759,7 +16759,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                 }
                 break;
 
-#if defined(_TARGET_XARCH4_) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             case TYP_SIMD32:
                 switch (baseType)
                 {
@@ -18490,7 +18490,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             // This target needs support here!
             //

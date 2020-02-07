@@ -3,7 +3,7 @@
     <AssemblyName>System.IO.Compression</AssemblyName>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
