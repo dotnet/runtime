@@ -744,6 +744,44 @@ namespace System.Text.RegularExpressions
             !IsSubtraction(set) &&
             (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
 
+        /// <summary>Gets whether the set contains nothing other than a single UnicodeCategory (it may be negated).</summary>
+        /// <param name="set">The set to examine.</param>
+        /// <param name="category">The single category if there was one.</param>
+        /// <param name="negated">true if the single category is a not match.</param>
+        /// <returns>true if a single category could be obtained; otherwise, false.</returns>
+        public static bool TryGetSingleUnicodeCategory(string set, out UnicodeCategory category, out bool negated)
+        {
+            if (set[CategoryLengthIndex] == 1 &&
+                set[SetLengthIndex] == 0 &&
+                !IsSubtraction(set))
+            {
+                short c = (short)set[SetStartIndex];
+
+                if (c > 0)
+                {
+                    if (c != SpaceConst)
+                    {
+                        category = (UnicodeCategory)(c - 1);
+                        negated = IsNegated(set);
+                        return true;
+                    }
+                }
+                else if (c < 0)
+                {
+                    if (c != NotSpaceConst)
+                    {
+                        category = (UnicodeCategory)(-1 - c);
+                        negated = !IsNegated(set);
+                        return true;
+                    }
+                }
+            }
+
+            category = default;
+            negated = false;
+            return false;
+        }
+
         /// <summary>Attempts to get a single range stored in the set.</summary>
         /// <param name="set">The set.</param>
         /// <param name="lowInclusive">The inclusive lower-bound of the range, if available.</param>
