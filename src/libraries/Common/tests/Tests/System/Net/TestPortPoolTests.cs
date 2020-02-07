@@ -81,12 +81,6 @@ namespace System.Net.Test.Common
                 int max = int.Parse(maxStr);
                 int rangeLength = max - min;
 
-                // Modify the counter to test the behavior on overflow.
-                // Although accessing private state of the SUT is not ideal,
-                // there is no other way to test this specific behavior
-                typeof(TestPortPool).GetField("s_counter", BindingFlags.Static | BindingFlags.NonPublic)
-                    .SetValue(null, int.MaxValue - 5);
-
                 HashSet<int> allVisitedValues = new HashSet<int>();
                 for (long i = 0; i < rangeLength * 2 + 42; i++)
                 {
@@ -125,7 +119,6 @@ namespace System.Net.Test.Common
 
         [Theory]
         [InlineData(1200)]
-        // [InlineData(200)]
         public void ConcurrentAccess_AssignedPortsAreUnique(int portRangeLength)
         {
             const int levelOfParallelism = 8;
@@ -216,59 +209,6 @@ namespace System.Net.Test.Common
             }
 
             RemoteExecutor.Invoke(RunTest).Dispose();
-        }
-
-        private static readonly int[] s_mockSystemPorts =
-        {
-            FirstUnusedPort + 3, FirstUnusedPort + 42, FirstUnusedPort + 100, FirstUnusedPort + 142
-        };
-
-        [PlatformSpecific(~TestPlatforms.Linux)]
-        [Fact]
-        public void DoesNotRentReservedPorts()
-        {
-            Socket[] mockSystemSockets =
-            {
-                new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp),
-                new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp),
-                new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp),
-                new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp),
-            };
-
-            try
-            {
-                // Occupy the mock system ports before starting the test process:
-                for (int i = 0; i < 4; i++)
-                {
-                    Socket s = mockSystemSockets[i];
-                    IPAddress ip = s.AddressFamily == AddressFamily.InterNetwork
-                        ? IPAddress.Loopback
-                        : IPAddress.IPv6Loopback;
-                    int port = s_mockSystemPorts[i];
-                    s.Bind(new IPEndPoint(ip, port));
-                }
-
-                // Run the external process:
-                RemoteInvokeOptions options = CreateRemoteOptions("25010 25200");
-                RemoteExecutor.Invoke(RunTest, options).Dispose();
-            }
-            finally
-            {
-                // Unbind and release all sockets:
-                foreach (Socket socket in mockSystemSockets)
-                {
-                    socket.Dispose();
-                }
-            }
-
-            static void RunTest()
-            {
-                for (int i = 0; i < 200; i++)
-                {
-                    using PortLease lease = TestPortPool.RentPort();
-                    Assert.DoesNotContain(lease.Port, s_mockSystemPorts);
-                }
-            }
         }
     }
 }

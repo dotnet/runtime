@@ -30,8 +30,11 @@ namespace System.Net.Sockets.Tests
     }
 
     /// <summary>
-    /// Distributes ports from the range defined by <see cref="Configuration.Sockets.TestPoolPortRange"/>
-    /// in a synchronized way. Synchronization does not work across multiple processes.
+    /// Distributes unique ports from the range defined by <see cref="Configuration.Sockets.TestPoolPortRange"/>
+    /// Useful in socket testing scenarios, where port collisions across protocols are not acceptable.
+    /// This kind of uniqueness is not guaranteed when binding to OS ephemeral ports, and might lead to issues on Unix.
+    /// For more information see:
+    /// https://github.com/dotnet/runtime/issues/19162#issuecomment-523195762
     /// </summary>
     internal static class TestPortPool
     {
@@ -50,9 +53,9 @@ namespace System.Net.Sockets.Tests
         {
             for (int i = 0; i < ThrowExhaustedAfter; i++)
             {
-                // Although race conditions may happen theoretically because the following code block is not atomic,
+                // Although race may occur theoretically because the following code block is not atomic,
                 // it requires the s_counter to move at least PortRangeLength steps between Increment and TryAdd,
-                // which is very unlikely considering the actual port range.
+                // which is very unlikely considering the actual port range and the low number of tests utilizing TestPortPool
 
                 long portLong = (long)Interlocked.Increment(ref s_counter) - int.MinValue;
                 portLong = (portLong % PortRangeLength) + MinPort;
@@ -87,7 +90,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        // Exclude ports which are reserved at initialization time
+        // Exclude ports which are unavailable at initialization time
         private static ConcurrentDictionary<int, int> GetAllPortsUsedBySystem()
         {
             IPEndPoint ep4 = new IPEndPoint(IPAddress.Loopback, 0);
