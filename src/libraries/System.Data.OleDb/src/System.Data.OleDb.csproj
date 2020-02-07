@@ -3,8 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetFrameworkSuffix)' == '' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
-    <NoWarn Condition="'$(TargetFrameworkSuffix)' == '' and '$(TargetsNetStandard)' == 'true'">$(NoWarn);CS0618</NoWarn>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(TargetsAnyOS)' == 'true' and '$(TargetsNetStandard)' == 'true'">$(NoWarn);CS0618</NoWarn>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
     <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
