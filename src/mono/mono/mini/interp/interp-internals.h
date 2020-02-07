@@ -200,7 +200,6 @@ typedef struct {
 	const unsigned short  *ip;
 	GSList *finally_ips;
 	FrameClauseArgs *clause_args;
-	gboolean is_void : 1;
 } InterpState;
 
 struct _InterpFrame {
