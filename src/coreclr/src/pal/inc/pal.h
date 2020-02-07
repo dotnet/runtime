@@ -2382,7 +2382,7 @@ typedef struct _CRITICAL_SECTION {
 #ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
     BOOL bInternal;
     volatile DWORD dwInitState;
-#endif PAL_TRACK_CRITICAL_SECTIONS_DATA
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
 
     union CSNativeDataStorage
     {
