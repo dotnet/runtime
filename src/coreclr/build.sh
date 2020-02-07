@@ -18,19 +18,13 @@ fi
 
 export PYTHON
 
-usage_list=("-crossgenonly: only run native image generation.")
-usage_list+=("-disableoss: Disable Open Source Signing for System.Private.CoreLib.")
-usage_list+=("-ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.")
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-officialbuildid=^<ID^>: specify the official build ID to be used by this build.")
-usage_list+=("-partialngen: build CoreLib as PartialNGen.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipcrossgen: skip native image generation.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-skipmanagedtools: generate instrumented code for profile guided optimization enabled binaries.")
-usage_list+=("-skipmscorlib: skip native image generation of System.Private.CoreLib.")
 usage_list+=("-skiprestore: specify the official build ID to be used by this build.")
-usage_list+=("-skiprestoreoptdata: build CoreLib as PartialNGen.")
+usage_list+=("-skiprestoreoptdata: skip restoring optimization data.")
 usage_list+=("-staticanalyzer: skip native image generation.")
 
 setup_dirs_local()
@@ -108,52 +102,11 @@ build_cross_architecture_components()
     export CROSSCOMPILE
 }
 
-build_CoreLib_ni()
-{
-    local __CrossGenExec=$1
-    local __CoreLibILDir=$2
-
-    if [[ "$__PartialNgen" == 1 ]]; then
-        COMPlus_PartialNGen=1
-        export COMPlus_PartialNGen
-    fi
-
-    if [[ -e "$__CrossGenCoreLibLog" ]]; then
-        rm "$__CrossGenCoreLibLog"
-    fi
-    echo "Generating native image of System.Private.CoreLib.dll for $__BuildOS.$__BuildArch.$__BuildType. Logging to \"$__CrossGenCoreLibLog\"."
-    echo "$__CrossGenExec /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll"
-    "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__CoreLibILDir $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__CoreLibILDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-    local exit_code="$?"
-    if [[ "$exit_code" != 0 ]]; then
-        echo "${__ErrMsgPrefix}Failed to generate native image for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-        exit "$exit_code"
-    fi
-
-    if [[ "$__BuildOS" == "Linux" ]]; then
-        echo "Generating symbol file for System.Private.CoreLib.dll"
-        echo "$__CrossGenExec /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll"
-        "$__CrossGenExec" /nologo /Platform_Assemblies_Paths $__BinDir /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.dll >> $__CrossGenCoreLibLog 2>&1
-        local exit_code="$?"
-        if [[ "$exit_code" != 0 ]]; then
-            echo "${__ErrMsgPrefix}Failed to generate symbol file for System.Private.CoreLib. Refer to $__CrossGenCoreLibLog"
-            exit "$exit_code"
-        fi
-    fi
-}
-
 handle_arguments_local() {
     case "$1" in
-        crossgenonly|-crossgenonly)
-            __SkipNative=1
-            ;;
 
         disableoss|-disableoss)
             __SignTypeArg="/p:SignType=real"
-            ;;
-
-        ibcinstrument|-ibcinstrument)
-            __IbcTuning="/Tuning"
             ;;
 
         ignorewarnings|-ignorewarnings)
@@ -171,24 +124,12 @@ handle_arguments_local() {
             __OfficialBuildIdArg="/p:OfficialBuildId=$__Id"
             ;;
 
-        partialngen|-partialngen)
-            __PartialNgen=1
-            ;;
-
         pgoinstrument|-pgoinstrument)
             __PgoInstrument=1
             ;;
 
         skipcrossarchnative|-skipcrossarchnative)
             __SkipCrossArchNative=1
-            ;;
-
-        skipcrossgen|-skipcrossgen)
-            __SkipMSCorLib=1
-            ;;
-
-        skipmscorlib|-skipmscorlib)
-            __SkipMSCorLib=1
             ;;
 
         skiprestore|-skiprestore)
@@ -230,14 +171,8 @@ __CompilerMinorVersion=
 __CommonMSBuildArgs=
 __ConfigureOnly=0
 __CrossBuild=0
-__CrossgenOnly=0
 __DistroRid=""
-__IbcOptDataPath=""
-__IbcTuning=""
-__IsMSBuildOnNETCoreSupported=0
-__MSBCleanBuildArgs=
 __OfficialBuildIdArg=""
-__PartialNgen=0
 __PgoInstrument=0
 __PgoOptDataPath=""
 __PgoOptimize=1
@@ -248,12 +183,9 @@ __SignTypeArg=""
 __SkipConfigure=0
 __SkipNative=0
 __SkipCrossArchNative=0
-__SkipMSCorLib=0
 __SkipGenerateVersion=0
-__SkipMSCorLib=0
 __SkipManaged=0
 __SkipRestore=""
-__SkipRestoreArg="/p:RestoreDuringBuild=true"
 __SkipRestoreOptData=0
 __SourceDir="$__ProjectDir/src"
 __StaticAnalyzer=0
@@ -284,7 +216,6 @@ __CrossArch="$__HostArch"
 if [[ "$__CrossBuild" == 1 ]]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi
-__CrossGenCoreLibLog="$__LogsDir/CrossgenCoreLib_$__BuildOS.$__BuildArch.$__BuildType.log"
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.
 # This is needed by CLI to function.
@@ -334,39 +265,6 @@ else
         fi
     fi
 fi
-
-
-# Crossgen System.Private.CoreLib
-
-__CoreLibILDir=$__BinDir/IL
-
-if [[ "$__SkipMSCorLib" != 1 ]]; then
-    # The cross build generates a crossgen with the target architecture.
-    if [[ "$__CrossBuild" == 0 ]]; then
-        # The architecture of host pc must be same architecture with target.
-        if [[ "$__HostArch" == "$__BuildArch" ]]; then
-            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "x86" ) ]]; then
-            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-            build_CoreLib_ni "$__BinDir/crossgen" "$__CoreLibILDir"
-        else
-            exit 1
-        fi
-    else
-        if [[ ( "$__CrossArch" == "x86" ) && ( "$__BuildArch" == "arm" ) ]]; then
-            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-        elif [[ ( "$__CrossArch" == "x64" ) && ( "$__BuildArch" == "arm" ) ]]; then
-            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-        elif [[ ( "$__HostArch" == "x64" ) && ( "$__BuildArch" == "arm64" ) ]]; then
-            build_CoreLib_ni "$__CrossComponentBinDir/crossgen" "$__CoreLibILDir"
-        else
-            # Crossgen not performed, so treat the IL version as the final version
-            cp "$__CoreLibILDir"/System.Private.CoreLib.dll "$__BinDir"/System.Private.CoreLib.dll
-        fi
-    fi
-fi
-
 
 # Build complete
 

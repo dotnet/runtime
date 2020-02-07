@@ -61,7 +61,7 @@
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
-    <DefaultCoreClrSubsets>runtime-corelib-tools-packages</DefaultCoreClrSubsets>
+    <DefaultCoreClrSubsets>runtime-corelib-nativecorelib-tools-packages</DefaultCoreClrSubsets>
     <DefaultMonoSubsets>all</DefaultMonoSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
@@ -83,6 +83,7 @@
     <!-- CoreClr -->
     <SubsetName Include="Runtime" Category="CoreClr" Description="The CoreCLR .NET runtime." />
     <SubsetName Include="CoreLib" Category="CoreClr" Description="The managed System.Private.CoreLib library for CoreCLR." />
+    <SubsetName Include="NativeCoreLib" Category="CoreClr" Description="Run crossgen on System.Private.CoreLib library for CoreCLR." />
     <SubsetName Include="Tools" Category="CoreClr" Description="Managed tools that support CoreCLR development and testing." />
     <SubsetName Include="Packages" Category="CoreClr" Description="The projects that produce NuGet packages for the CoreCLR runtime, crossgen, and IL tools." />
 
@@ -112,6 +113,9 @@
     <CoreClrCoreLibProjectToBuild>
       <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrCoreLibProjectToBuild>
+    <CoreClrNativeCoreLibProjectToBuild>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+    </CoreClrNativeCoreLibProjectToBuild>
     <CoreClrManagedToolsProjectToBuild>
       <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
     </CoreClrManagedToolsProjectToBuild>
@@ -139,8 +143,13 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('runtime'))">
-    <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" BuildInParallel="false" />
+    <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)runtime.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('nativecorelib'))">
+    <CoreClrNativeCoreLibProjectToBuild Include="$(CoreClrProjectRoot)crossgen-corelib.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CoreClrNativeCoreLibProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('tools'))">

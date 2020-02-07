@@ -83,9 +83,7 @@ set __CommonMSBuildArgs=
 set __BuildNative=1
 set __BuildCrossArchNative=0
 set __SkipCrossArchNative=0
-set __BuildNativeCoreLib=1
 set __RestoreOptData=1
-set __CrossgenAltJit=
 set __OfficialBuildIdArg=
 set __CrossArch=
 set __PgoOptDataPath=
@@ -152,17 +150,15 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
-if /i "%1" == "-alpinedac"           (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxdac"            (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-alpinedac"           (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildOS=alpine&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxdac"            (set __BuildNative=0&set __BuildCrossArchNative=1&set __CrossArch=x64&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "-nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-skipmscorlib"        (set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -173,14 +169,12 @@ if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildI
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
-if /i "%1" == "nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildNative=0&set __BuildTests=&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "skipmscorlib"        (set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -280,8 +274,6 @@ set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
 
 
 if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
-set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
 
 REM Generate path to be set for CMAKE_INSTALL_PREFIX to contain forward slash
 set "__CMakeBinDir=%__BinDir%"
@@ -310,7 +302,7 @@ REM Set the remaining variables based upon the determined build configuration
 echo %__MsgPrefix%Checking prerequisites
 
 set __CMakeNeeded=1
-if %__BuildNative%==0 if %__BuildCrossArchNative%==0 if %__BuildNativeCoreLib%==0 set __CMakeNeeded=0
+if %__BuildNative%==0 if %__BuildCrossArchNative%==0 set __CMakeNeeded=0
 if %__CMakeNeeded%==1 (
     REM Eval the output from set-cmake-path.ps1
     for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
@@ -566,86 +558,6 @@ if %__BuildNative% EQU 1 (
 
 REM =========================================================================================
 REM ===
-REM === Build native System.Private.CoreLib.
-REM ===
-REM =========================================================================================
-
-REM Scope environment changes start {
-setlocal
-
-REM Need diasymreader.dll on your path for /CreatePdb
-set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft.Net\Framework\V4.0.30319
-
-if %__BuildNativeCoreLib% EQU 1 (
-    echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%. Logging to "%__CrossGenCoreLibLog%".
-    if exist "%__CrossGenCoreLibLog%" del "%__CrossGenCoreLibLog%"
-
-    REM Need VS native tools environment for the **target** arch when running instrumented binaries
-    if %__PgoInstrument% EQU 1 (
-        set __VCExecArch=%__BuildArch%
-        if /i [%__BuildArch%] == [x64] set __VCExecArch=amd64
-        echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCExecArch!
-        call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCExecArch!
-        @if defined _echo @echo on
-        if NOT !errorlevel! == 0 (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to load native tools environment for !__VCExecArch!
-            goto ExitWithError
-        )
-
-        REM HACK: Workaround for [dotnet/coreclr#13970](https://github.com/dotnet/coreclr/issues/13970)
-        set __PgoRtPath=
-        for /f "tokens=*" %%f in ('where pgort*.dll') do (
-            if not defined __PgoRtPath set "__PgoRtPath=%%~f"
-        )
-        echo %__MsgPrefix%Copying "!__PgoRtPath!" into "%__BinDir%"
-        copy /y "!__PgoRtPath!" "%__BinDir%" || (
-            echo %__ErrMsgPrefix%%__MsgPrefix%Error: copy failed
-            goto ExitWithError
-        )
-        REM End HACK
-    )
-
-    if defined __CrossgenAltJit (
-        REM Set altjit flags for the crossgen run. Note that this entire crossgen section is within a setlocal/endlocal scope,
-        REM so we don't need to save or unset these afterwards.
-        echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%.
-        echo %__MsgPrefix%Setting altjit environment variables for %__CrossgenAltJit%. >> "%__CrossGenCoreLibLog%"
-        set COMPlus_AltJit=*
-        set COMPlus_AltJitNgen=*
-        set COMPlus_AltJitName=%__CrossgenAltJit%
-        set COMPlus_AltJitAssertOnNYI=1
-        set COMPlus_NoGuiOnAssert=1
-        set COMPlus_ContinueOnAssert=0
-    )
-
-    set NEXTCMD="%__CrossgenExe%" /nologo %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
-    echo %__MsgPrefix%!NEXTCMD!
-    echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-    !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
-    if NOT !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
-        REM Put it in the same log, helpful for Jenkins
-        type %__CrossGenCoreLibLog%
-        goto ExitWithError
-    )
-
-    set NEXTCMD="%__CrossgenExe%" /nologo /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
-    echo %__MsgPrefix%!NEXTCMD!
-    echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-    !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
-    if NOT !errorlevel! == 0 (
-        echo %__ErrMsgPrefix%%__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
-        REM Put it in the same log, helpful for Jenkins
-        type %__CrossGenCoreLibLog%
-        goto ExitWithError
-    )
-)
-
-REM } Scope environment changes end
-endlocal
-
-REM =========================================================================================
-REM ===
 REM === All builds complete!
 REM ===
 REM =========================================================================================
@@ -760,7 +672,6 @@ echo.-? -h -help --help: view this message.
 echo -all: Builds all configurations and platforms.
 echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
 echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
-echo -nativemscorlib:Build the native image for an already-built System.Private.CoreLib.
 echo -nopgooptimize: do not use profile guided optimizations.
 echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
