@@ -275,7 +275,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         [MemberData(nameof(DualMode_IPAddresses_ListenOn_DualMode_Throws_Data))]
         public void DualModeConnect_IPAddressListToHost_Throws(IPAddress[] connectTo, IPAddress listenOn, bool dualModeServer)
         {
@@ -800,7 +799,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void BeginAcceptV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -810,7 +808,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void BeginAcceptV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -820,7 +817,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void BeginAcceptV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -906,7 +902,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void AcceptAsyncV6BoundToSpecificV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -916,7 +911,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void AcceptAsyncV4BoundToSpecificV6_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -926,7 +920,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void AcceptAsyncV6BoundToAnyV4_CantConnect()
         {
             Assert.Throws<SocketException>(() =>
@@ -1059,7 +1052,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void SendToV4IPEndPointToV6Host_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1069,7 +1061,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void SendToV6IPEndPointToV4Host_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1280,7 +1271,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void SendToAsyncV4IPEndPointToV6Host_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1290,7 +1280,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use
         public void SendToAsyncV6IPEndPointToV4Host_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1420,9 +1409,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also ReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
         public void ReceiveFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1432,9 +1419,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also expected behavior is different on OSX and Linux (ArgumentException instead of SocketException)
-        [PlatformSpecific(TestPlatforms.Windows)]
+        // Expected behavior is different on OSX and Linux(ArgumentException instead of SocketException)
+        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]
         public void ReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1444,9 +1430,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also ReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveFrom not supported on OSX
         public void ReceiveFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1552,9 +1536,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also BeginReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
         public void BeginReceiveFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1564,9 +1546,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also expected behavior is different on OSX and Linux (ArgumentException instead of TimeoutException)
-        [PlatformSpecific(TestPlatforms.Windows)]
+        // Expected behavior is different on OSX and Linux (ArgumentException instead of TimeoutException)
+        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]
         public void BeginReceiveFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1576,9 +1557,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        // Binds to a specific port on 'connectTo' which on Unix may already be in use
-        // Also BeginReceiveFrom not supported on OSX
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.OSX)]  // BeginReceiveFrom not supported on OSX
         public void BeginReceiveFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1912,7 +1891,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
+        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
         public void ReceiveMessageFromV6BoundToSpecificV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1922,7 +1901,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
+        [PlatformSpecific(~(TestPlatforms.Linux | TestPlatforms.OSX))]  // Expected behavior is different on OSX and Linux
         public void ReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
@@ -1932,7 +1911,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Binds to a specific port on 'connectTo' which on Unix may already be in use; ReceiveMessageFrom not supported on OSX
+        [PlatformSpecific(~TestPlatforms.OSX)]  // ReceiveMessageFrom not supported on OSX
         public void ReceiveMessageFromV6BoundToAnyV4_NotReceived()
         {
             Assert.Throws<SocketException>(() =>
