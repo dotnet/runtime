@@ -169,7 +169,7 @@ namespace System.Net.Http
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled
         // then the stream will be closed an exception thrown.
-        protected override void SerializeToStream(Stream stream, TransportContext context)
+        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
             try
@@ -181,10 +181,12 @@ namespace System.Net.Http
                 var output = new StringBuilder();
                 for (int contentIndex = 0; contentIndex < _nestedContent.Count; contentIndex++)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
                     EncodeStringToStream(stream, SerializeHeadersToString(output, contentIndex, content));
-                    content.CopyTo(stream, context);
+                    content.CopyTo(stream, context, cancellationToken);
                 }
 
                 // Write footer boundary.

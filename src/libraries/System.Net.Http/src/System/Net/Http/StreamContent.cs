@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -52,11 +53,14 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Associate(this, content);
         }
 
-        protected override void SerializeToStream(Stream stream, TransportContext context)
+        protected override void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 
             PrepareContent();
+
+            // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
+            cancellationToken.ThrowIfCancellationRequested();
 
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
             StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);

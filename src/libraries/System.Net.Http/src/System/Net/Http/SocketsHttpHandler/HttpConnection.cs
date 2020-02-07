@@ -777,7 +777,7 @@ namespace System.Net.Http
             else
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                request.Content.CopyTo(stream, _transportContext);
+                request.Content.CopyTo(stream, _transportContext, cancellationToken);
             }
 
             // Finish the content; with a chunked upload, this includes writing the terminating chunk.

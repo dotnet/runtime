@@ -319,11 +319,14 @@ namespace System.Net.Http
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
 
-        protected virtual void SerializeToStream(Stream stream, TransportContext context)
+        protected virtual void SerializeToStream(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
-            // No choice but to do sync-over-async.  Derived types should override this whenever possible.
+            // No choice but to do sync-over-async. Derived types should override this whenever possible.
             // Thankfully most CreateContentReadStreamAsync implementations actually complete synchronously.
-            Stream source = CreateContentReadStreamAsync().GetAwaiter().GetResult();
+            Stream source = CreateContentReadStreamAsync(cancellationToken).GetAwaiter().GetResult();
+
+            // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
+            cancellationToken.ThrowIfCancellationRequested();
             source.CopyTo(stream);
         }
 
@@ -338,10 +341,7 @@ namespace System.Net.Http
         // on all known HttpContent types, waiting for the request content to complete before completing the SendAsync task.
         internal virtual bool AllowDuplex => true;
 
-        public void CopyTo(Stream stream) =>
-            CopyTo(stream, null);
-
-        public void CopyTo(Stream stream, TransportContext context)
+        public void CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             CheckDisposed();
             if (stream == null)
@@ -353,11 +353,13 @@ namespace System.Net.Http
             {
                 if (TryGetBuffer(out ArraySegment<byte> buffer))
                 {
+                    // Last chance to check for timeout/cancellation, sync Stream API doesn't have any support for it.
+                    cancellationToken.ThrowIfCancellationRequested();
                     stream.Write(buffer.Array, buffer.Offset, buffer.Count);
                 }
                 else
                 {
-                    SerializeToStream(stream, context);
+                    SerializeToStream(stream, context, cancellationToken);
                 }
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
@@ -414,6 +416,49 @@ namespace System.Net.Http
             }
         }
 
+        internal void LoadIntoBuffer(long maxBufferSize, CancellationToken cancellationToken)
+        {
+            CheckDisposed();
+            if (maxBufferSize > HttpContent.MaxBufferSize)
+            {
+                // This should only be hit when called directly; HttpClient/HttpClientHandler
+                // will not exceed this limit.
+                throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
+                        SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
+            }
+
+            if (IsBuffered)
+            {
+                // If we already buffered the content, just return a completed task.
+                return;
+            }
+
+            MemoryStream tempBuffer = CreateMemoryStream(maxBufferSize, out Exception error);
+            if (tempBuffer == null)
+            {
+                throw error;
+            }
+
+            try
+            {
+                SerializeToStream(tempBuffer, null, cancellationToken);
+                tempBuffer.Seek(0, SeekOrigin.Begin); // Rewind after writing data.
+                _bufferedContent = tempBuffer;
+            }
+            catch (Exception e)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
+
+                if (StreamCopyExceptionNeedsWrapping(e))
+                {
+                    throw GetStreamCopyException(e);
+                }
+
+                throw;
+            }
+        }
+
         public Task LoadIntoBufferAsync()
         {
             return LoadIntoBufferAsync(MaxBufferSize);
@@ -446,8 +491,7 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            Exception error = null;
-            MemoryStream tempBuffer = CreateMemoryStream(maxBufferSize, out error);
+            MemoryStream tempBuffer = CreateMemoryStream(maxBufferSize, out Exception error);
             if (tempBuffer == null)
             {
                 // We don't throw in LoadIntoBufferAsync(): return a faulted task.

@@ -33,8 +33,9 @@ namespace System.Net.Http
 
         // SendAsyncCore returns already completed ValueTask for when async: false is passed.
         // Internally, it calls the synchronous Send method of the base class.
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request) =>
-            SendAsyncCore(request, false, default).GetAwaiter().GetResult();
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            SendAsyncCore(request, false, cancellationToken).GetAwaiter().GetResult();
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken) =>
@@ -72,7 +73,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        return base.Send(request);
+                        return base.Send(request, cancellationToken);
                     }
                 }
                 finally
@@ -126,7 +127,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    response = base.Send(request);
+                    response = base.Send(request, cancellationToken);
                     taskStatus = TaskStatus.RanToCompletion;
                 }
                 return response;

@@ -453,6 +453,77 @@ namespace System.Net.Http
 
         #region Advanced Send Overloads
 
+        public HttpResponseMessage Send(HttpRequestMessage request)
+        {
+            return Send(request, defaultCompletionOption, default);
+        }
+
+        public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption)
+        {
+            return Send(request, completionOption, default);
+        }
+
+        public override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            return Send(request, defaultCompletionOption, cancellationToken);
+        }
+
+        public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption,
+            CancellationToken cancellationToken)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+            CheckDisposed();
+            CheckRequestMessage(request);
+
+            SetOperationStarted();
+            PrepareRequestMessage(request);
+            // PrepareRequestMessage will resolve the request address against the base address.
+
+            // We need a CancellationTokenSource to use with the request.  We always have the global
+            // _pendingRequestsCts to use, plus we may have a token provided by the caller, and we may
+            // have a timeout.  If we have a timeout or a caller-provided token, we need to create a new
+            // CTS (we can't, for example, timeout the pending requests CTS, as that could cancel other
+            // unrelated operations).  Otherwise, we can use the pending requests CTS directly.
+            CancellationTokenSource cts;
+            bool disposeCts;
+            bool hasTimeout = _timeout != s_infiniteTimeout;
+            if (hasTimeout)
+            {
+                disposeCts = true;
+                cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _pendingRequestsCts.Token);
+                if (hasTimeout)
+                {
+                    cts.CancelAfter(_timeout);
+                }
+            }
+            else
+            {
+                disposeCts = false;
+                cts = _pendingRequestsCts;
+            }
+
+            // Initiate the send.
+            HttpResponseMessage response;
+            try
+            {
+                response = base.Send(request, cts.Token);
+            }
+            catch
+            {
+                HandleFinishSendCleanup(cts, disposeCts);
+                throw;
+            }
+
+            bool buffered = completionOption == HttpCompletionOption.ResponseContentRead &&
+                            !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase);
+
+            return FinishSend(response, request, cts, disposeCts, buffered);
+        }
+
         public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
         {
             return SendAsync(request, defaultCompletionOption, CancellationToken.None);
@@ -514,17 +585,49 @@ namespace System.Net.Http
             }
             catch
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                HandleFinishSendCleanup(cts, disposeCts);
                 throw;
             }
 
-            return completionOption == HttpCompletionOption.ResponseContentRead && !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase) ?
-                FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
-                FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
+            bool buffered = completionOption == HttpCompletionOption.ResponseContentRead &&
+                            !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase);
+
+            return FinishSendAsync(sendTask, request, cts, disposeCts, buffered);
         }
 
-        private async Task<HttpResponseMessage> FinishSendAsyncBuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
+        private HttpResponseMessage FinishSend(HttpResponseMessage response, HttpRequestMessage request, CancellationTokenSource cts,
+            bool disposeCts, bool buffered)
+        {
+            try
+            {
+                if (response == null)
+                {
+                    throw new InvalidOperationException(SR.net_http_handler_noresponse);
+                }
+
+                // Buffer the response content if we've been asked to and we have a Content to buffer.
+                if (buffered && response.Content != null)
+                {
+                    response.Content.LoadIntoBuffer(_maxResponseContentBufferSize, cts.Token);
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
+                return response;
+            }
+            catch (Exception e)
+            {
+                response?.Dispose();
+                HandleFinishSendError(e, cts);
+                throw;
+            }
+            finally
+            {
+                HandleFinishSendCleanup(cts, disposeCts);
+            }
+        }
+
+        private async Task<HttpResponseMessage> FinishSendAsync(Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts,
+            bool disposeCts, bool buffered)
         {
             HttpResponseMessage response = null;
             try
@@ -537,7 +640,7 @@ namespace System.Net.Http
                 }
 
                 // Buffer the response content if we've been asked to and we have a Content to buffer.
-                if (response.Content != null)
+                if (buffered && response.Content != null)
                 {
                     await response.Content.LoadIntoBufferAsync(_maxResponseContentBufferSize, cts.Token).ConfigureAwait(false);
                 }
@@ -548,41 +651,16 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 response?.Dispose();
-                HandleFinishSendAsyncError(e, cts);
+                HandleFinishSendError(e, cts);
                 throw;
             }
             finally
             {
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
+                HandleFinishSendCleanup(cts, disposeCts);
             }
         }
 
-        private async Task<HttpResponseMessage> FinishSendAsyncUnbuffered(
-            Task<HttpResponseMessage> sendTask, HttpRequestMessage request, CancellationTokenSource cts, bool disposeCts)
-        {
-            try
-            {
-                HttpResponseMessage response = await sendTask.ConfigureAwait(false);
-                if (response == null)
-                {
-                    throw new InvalidOperationException(SR.net_http_handler_noresponse);
-                }
-
-                if (NetEventSource.IsEnabled) NetEventSource.ClientSendCompleted(this, response, request);
-                return response;
-            }
-            catch (Exception e)
-            {
-                HandleFinishSendAsyncError(e, cts);
-                throw;
-            }
-            finally
-            {
-                HandleFinishSendAsyncCleanup(cts, disposeCts);
-            }
-        }
-
-        private void HandleFinishSendAsyncError(Exception e, CancellationTokenSource cts)
+        private void HandleFinishSendError(Exception e, CancellationTokenSource cts)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Error(this, e);
 
@@ -595,7 +673,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleFinishSendAsyncCleanup(CancellationTokenSource cts, bool disposeCts)
+        private void HandleFinishSendCleanup(CancellationTokenSource cts, bool disposeCts)
         {
             // Dispose of the CancellationTokenSource if it was created specially for this request
             // rather than being used across multiple requests.

@@ -37,7 +37,8 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public virtual HttpResponseMessage Send(HttpRequestMessage request)
+        public virtual HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             if (request == null)
             {
@@ -47,7 +48,7 @@ namespace System.Net.Http
 
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, request);
 
-            HttpResponseMessage response = _handler.Send(request);
+            HttpResponseMessage response = _handler.Send(request, cancellationToken);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this, response);
 

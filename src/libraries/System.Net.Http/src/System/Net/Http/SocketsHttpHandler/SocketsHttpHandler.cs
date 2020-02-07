@@ -331,7 +331,8 @@ namespace System.Net.Http
             return _handler;
         }
 
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request)
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request,
+            CancellationToken cancellationToken)
         {
             CheckDisposed();
             HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
@@ -342,7 +343,7 @@ namespace System.Net.Http
                 throw error;
             }
 
-            return handler.Send(request);
+            return handler.Send(request, cancellationToken);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
