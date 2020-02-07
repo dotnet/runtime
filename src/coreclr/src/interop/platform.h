@@ -25,8 +25,4 @@
 
 #define ABI_ASSERT(abi_definition) static_assert((abi_definition), "ABI is being invalidated.")
 
-// BEGIN [TODO] Remove
-#include <cstdlib>
-// END [TODO] Remove
-
 #endif // _INTEROP_PLATFORM_H_

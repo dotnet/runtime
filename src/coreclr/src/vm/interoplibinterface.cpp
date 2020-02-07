@@ -6,25 +6,13 @@
 #include "common.h"
 #include "rcwrefcache.h"
 #include "rcwwalker.h"
+#include "olecontexthelpers.h"
+#include "finalizerthread.h"
 
 // Interop library header
 #include <interoplibimports.h>
 
 #include "interoplibinterface.h"
-
-// void ____()
-// {
-//     CONTRACTL
-//     {
-//         THROWS;
-//         //NOTHROW;
-//         MODE_COOPERATIVE;
-//         // MODE_PREEMPTIVE;
-//         // MODE_ANY;
-//         // PRECONDITION(pSrc != NULL);
-//     }
-//     CONTRACTL_END;
-// }
 
 namespace
 {
@@ -35,8 +23,15 @@ namespace
         static DWORD CollectedFlag;
 
         void* Identity;
+        void* ThreadContext;
         DWORD SyncBlockIndex;
         DWORD IsCollected;
+
+        bool IsActive() const
+        {
+            return (IsCollected != CollectedFlag)
+                && (SyncBlockIndex != InvalidSyncBlockIndex);
+        }
 
         void MarkCollected()
         {
@@ -45,10 +40,18 @@ namespace
             IsCollected = CollectedFlag;
         }
 
-        bool IsActive() const
+        OBJECTREF GetObjectRef()
         {
-            return (IsCollected != CollectedFlag)
-                && (SyncBlockIndex != InvalidSyncBlockIndex);
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_COOPERATIVE;
+            }
+            CONTRACTL_END;
+
+            _ASSERTE(IsActive());
+            return ObjectToOBJECTREF(g_pSyncTable[SyncBlockIndex].m_Object);
         }
     };
 
@@ -155,6 +158,70 @@ namespace
         {
             WRAPPER_NO_CONTRACT;
             return (_lock.OwnedByCurrentThread() != FALSE);
+        }
+
+        PTRARRAYREF CreateManagedEnumerable(_In_ void* threadContext)
+        {
+            CONTRACT(PTRARRAYREF)
+            {
+                THROWS;
+                GC_TRIGGERS;
+                MODE_COOPERATIVE;
+                PRECONDITION(!IsLockHeld());
+                POSTCONDITION(RETVAL != NULL);
+            }
+            CONTRACT_END;
+
+            DWORD objCount;
+            DWORD objCountMax;
+
+            struct
+            {
+                PTRARRAYREF arrRef;
+                PTRARRAYREF arrRefTmp;
+            } gc;
+            ::ZeroMemory(&gc, sizeof(gc));
+            GCPROTECT_BEGIN(gc);
+
+            {
+                LockHolder lock(this);
+                objCountMax = _hashMap.GetCount();
+            }
+
+            // Allocate the max number of objects needed.
+            gc.arrRef = (PTRARRAYREF)AllocateObjectArray(objCountMax, g_pObjectClass);
+
+            // Populate the array
+            {
+                LockHolder lock(this);
+                Iterator curr = _hashMap.Begin();
+                Iterator end = _hashMap.End();
+
+                ExternalObjectContext* inst;
+                for (objCount = 0; curr != end && objCount < objCountMax; objCount++, curr++)
+                {
+                    inst = *curr;
+                    if (inst->ThreadContext == threadContext)
+                        gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                }
+            }
+
+            // Make the array the correct size
+            if (objCount < objCountMax)
+            {
+                gc.arrRefTmp = (PTRARRAYREF)AllocateObjectArray(objCount, g_pObjectClass);
+
+                SIZE_T elementSize = gc.arrRef->GetComponentSize();
+
+                void *src = gc.arrRef->GetDataPtr();
+                void *dest = gc.arrRefTmp->GetDataPtr();
+                memcpyNoGCRefs(dest, src, objCount * elementSize);
+                gc.arrRef = gc.arrRefTmp;
+            }
+
+            GCPROTECT_END();
+
+            RETURN gc.arrRef;
         }
 
         ExternalObjectContext* Find(_In_ IUnknown* instance)
@@ -284,6 +351,7 @@ namespace
     OBJECTREF CallGetObject(
         _In_ OBJECTREF* implPROTECTED,
         _In_ IUnknown* externalComObject,
+        _In_ IUnknown* agileObjectRef,
         _In_ INT32 flags)
     {
         CONTRACTL
@@ -299,10 +367,11 @@ namespace
         OBJECTREF retObjRef;
 
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__COMWRAPPERS__CREATE_OBJECT);
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
+        DECLARE_ARGHOLDER_ARRAY(args, 4);
         args[ARGNUM_0]  = OBJECTREF_TO_ARGHOLDER(*implPROTECTED);
         args[ARGNUM_1]  = PTR_TO_ARGHOLDER(externalComObject);
-        args[ARGNUM_2]  = DWORD_TO_ARGHOLDER(flags);
+        args[ARGNUM_2]  = PTR_TO_ARGHOLDER(agileObjectRef);
+        args[ARGNUM_3]  = DWORD_TO_ARGHOLDER(flags);
         CALL_MANAGED_METHOD(retObjRef, OBJECTREF, args);
 
         return retObjRef;
@@ -473,12 +542,7 @@ namespace
 
         if (extObjCxt != NULL)
         {
-            if (!extObjCxt->IsActive())
-            {
-                // [TODO] We are in a bad spot?
-            }
-
-            gc.objRef = ObjectToOBJECTREF(g_pSyncTable[extObjCxt->SyncBlockIndex].m_Object);
+            gc.objRef = extObjCxt->GetObjectRef();
         }
         else
         {
@@ -490,12 +554,13 @@ namespace
                 COMPlusThrow(hr);
 
             // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(&gc.implRef, agileRef, flags);
+            gc.objRef = CallGetObject(&gc.implRef, identity, agileRef, flags);
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
             // Update the new context with the object details.
             newContext->Identity = (void*)identity;
+            newContext->ThreadContext = GetCurrentCtxCookie();
             newContext->SyncBlockIndex = gc.objRef->GetSyncBlockIndex();
 
             // Attempt to insert the new context into the cache.
@@ -592,6 +657,53 @@ namespace InteropLibImports
         return hr;
     }
 
+    HRESULT RequestGarbageCollectionForExternal(_In_ GcRequest req) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            GCX_COOP_THREAD_EXISTS(GET_THREAD());
+            if (req == GcRequest::Blocking)
+            {
+                GCHeapUtilities::GetGCHeap()->GarbageCollect(2, true, collection_blocking | collection_optimized);
+            }
+            else
+            {
+                _ASSERTE(req == GcRequest::Default);
+                GCHeapUtilities::GetGCHeap()->GarbageCollect();
+            }
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
+    HRESULT WaitForRuntimeFinalizerForExternal() noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        BEGIN_EXTERNAL_ENTRYPOINT(&hr)
+        {
+            FinalizerThread::FinalizerThreadWait();
+        }
+        END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
     HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept
     {
         CONTRACTL
@@ -619,11 +731,15 @@ namespace InteropLibImports
 
             gc.implRef = ObjectFromHandle(implHandle);
 
-            //
-            // [TODO] Pass the objects along to get released.
-            //
+            // Pass the objects along to get released.
+            ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+            gc.objsEnumRef = cache->CreateManagedEnumerable(GetCurrentCtxCookie());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
+
+            //
+            // [TODO] Clear out objects' syncblocks.
+            //
 
             GCPROTECT_END();
         }
@@ -793,8 +909,7 @@ namespace InteropLibImports
 
         // Get the external object's managed wrapper
         ExternalObjectContext* extObjContext = static_cast<ExternalObjectContext*>(extObjContextRaw);
-        _ASSERTE(extObjContext->IsActive());
-        OBJECTREF source = ObjectToOBJECTREF(g_pSyncTable[extObjContext->SyncBlockIndex].m_Object);
+        OBJECTREF source = extObjContext->GetObjectRef();
 
         // Get the target of the external object's reference.
         ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);

@@ -80,18 +80,18 @@ namespace
 
     STDMETHODIMP HostServices::DisconnectUnusedReferenceSources(_In_ DWORD flags)
     {
-        if (flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND)
-        {
-        }
+        InteropLibImports::GcRequest type = InteropLibImports::GcRequest::Default;
 
-        // InteropLibImports::TriggerGC()
-        return E_NOTIMPL; // [TODO]
+        // Request an expensive blocking GC when a suspend is occurring.
+        if (flags & XAML_REFERENCETRACKER_DISCONNECT_SUSPEND)
+            type = InteropLibImports::GcRequest::Blocking;
+
+        return InteropLibImports::RequestGarbageCollectionForExternal(type);
     }
 
     STDMETHODIMP HostServices::ReleaseDisconnectedReferenceSources()
     {
-        // InteropLibImports::WaitForFinalizer()
-        return E_NOTIMPL; // [TODO]
+        return InteropLibImports::WaitForRuntimeFinalizerForExternal();
     }
 
     STDMETHODIMP HostServices::NotifyEndOfReferenceTrackingOnThread()
@@ -251,9 +251,10 @@ namespace
         return S_OK;
     }
 
-    // [TODO]
     HRESULT WalkExternalTrackerObjects(_In_ RuntimeCallContext* cxt)
     {
+        _ASSERTE(cxt != nullptr);
+
         BOOL walkFailed = FALSE;
         HRESULT hr;
 
@@ -354,44 +355,6 @@ HRESULT TrackerObjectManager::BeforeWrapperDestroyed(_In_ NativeObjectWrapperCon
     RETURN_IF_FAILED(obj->DisconnectFromTrackerSource());
 
     return S_OK;
-}
-
-namespace
-{
-    //
-    // We never expect exceptions to be thrown outside of RCWWalker
-    // So make sure we fail fast here, instead of going through normal
-    // exception processing and fail later
-    // This will make analyzing dumps much easier
-    //
-    LONG RCWWalker_UnhandledExceptionFilter(DWORD code, _In_ EXCEPTION_POINTERS* excep)
-    {
-        if ((excep->ExceptionRecord->ExceptionCode == STATUS_BREAKPOINT)
-            || (excep->ExceptionRecord->ExceptionCode == STATUS_SINGLE_STEP))
-        {
-            // We don't want to fail fast on debugger exceptions
-            return EXCEPTION_CONTINUE_SEARCH;
-        }
-
-        assert(false);
-        std::abort();
-
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    using OnGCEventProc = void(*)();
-    void SetupFailFastFilterAndCall(_In_ OnGCEventProc func)
-    {
-        __try
-        {
-            // Call the internal worker function which has the runtime contracts
-            func();
-        }
-        __except (RCWWalker_UnhandledExceptionFilter(GetExceptionCode(), GetExceptionInformation()))
-        {
-            _ASSERTE(false && "Should not get here");
-        }
-    }
 }
 
 HRESULT TrackerObjectManager::BeginReferenceTracking(_In_ RuntimeCallContext* cxt)

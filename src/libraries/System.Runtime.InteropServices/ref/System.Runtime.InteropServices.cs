@@ -1013,7 +1013,7 @@ namespace System.Runtime.InteropServices
         public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
         public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
-        protected abstract object CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        protected abstract object CreateObject(System.IntPtr externalComObject, System.IntPtr agileObjectRef, CreateObjectFlags flags);
         protected virtual void ReleaseObjects(System.Collections.IEnumerable objects) { throw null; }
         public void RegisterForReferenceTrackerHost() { }
         protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }

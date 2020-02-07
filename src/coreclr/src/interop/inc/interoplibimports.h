@@ -27,7 +27,17 @@ namespace InteropLibImports
     // Remove memory pressure from the runtime's GC calculations.
     HRESULT RemoveMemoryPressureForExternal(_In_ UINT64 memoryInBytes) noexcept;
 
-    // [TODO] HRESULT RequestGarbageCollectionForExternal() noexcept;
+    enum class GcRequest
+    {
+        Default,
+        Blocking
+    };
+
+    // Request a GC from the runtime.
+    HRESULT RequestGarbageCollectionForExternal(_In_ GcRequest req) noexcept;
+
+    // Wait for the runtime's finalizer to clean up objects.
+    HRESULT WaitForRuntimeFinalizerForExternal() noexcept;
 
     // Release objects associated with the current thread.
     HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
