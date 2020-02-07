@@ -14,7 +14,7 @@
          the same bits tests expect to see in artifacts/crossgen2. That way we never need to wonder which
          binaries are up to date and which are stale. -->
     <OutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">$(BinDir)/crossgen2</OutputPath>
-    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateDependencyFile Condition="'$(BuildingInsideVisualStudio)' == 'true'">false</GenerateDependencyFile>
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
