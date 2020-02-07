@@ -10503,7 +10503,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
                 (offsx == compiler->genIPmappingLast->ipmdILoffsx &&
                  inlineContext == compiler->genIPmappingLast->ipmdInlineContext))
             {
-                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x\n", offsx);
+                JITDUMP("genIPmappingAdd: ignoring duplicate IL offset 0x%x on same inline context\n", offsx);
                 return;
             }
             break;
@@ -10511,32 +10511,52 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
 
     /* Create a mapping entry and append it to the list */
 
-    Compiler::IPmappingDsc* addMapping = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
-    addMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
-    addMapping->ipmdILoffsx       = offsx;
-    addMapping->ipmdIsLabel       = isLabel;
-    addMapping->ipmdInlineContext = inlineContext;
-    addMapping->ipmdNext          = nullptr;
+    Compiler::IPmappingDsc* lastMapping  = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+    Compiler::IPmappingDsc* firstMapping = lastMapping;
+    lastMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
+    lastMapping->ipmdILoffsx       = offsx;
+    lastMapping->ipmdIsLabel       = isLabel;
+    lastMapping->ipmdInlineContext = inlineContext;
+    lastMapping->ipmdNext          = nullptr;
+
+    /* Add an IPMappingDsc per each inline context from root */
+    if (inlineContext != nullptr)
+    {
+        for (InlineContext *it = inlineContext, *parent = inlineContext->GetParent(); parent != nullptr;
+             it = parent, parent = parent->GetParent())
+        {
+            Compiler::IPmappingDsc* aux = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+            aux->ipmdNativeLoc.CaptureLocation(GetEmitter());
+            aux->ipmdILoffsx       = it->GetOffset();
+            aux->ipmdIsLabel       = isLabel;
+            aux->ipmdInlineContext = parent->IsRoot() ? nullptr : parent;
+            aux->ipmdNext          = firstMapping;
+            firstMapping           = aux;
+        }
+    }
 
     if (compiler->genIPmappingList != nullptr)
     {
         assert(compiler->genIPmappingLast != nullptr);
         assert(compiler->genIPmappingLast->ipmdNext == nullptr);
-        compiler->genIPmappingLast->ipmdNext = addMapping;
+        compiler->genIPmappingLast->ipmdNext = firstMapping;
     }
     else
     {
         assert(compiler->genIPmappingLast == nullptr);
-        compiler->genIPmappingList = addMapping;
+        compiler->genIPmappingList = firstMapping;
     }
 
-    compiler->genIPmappingLast = addMapping;
+    compiler->genIPmappingLast = lastMapping;
 
 #ifdef DEBUG
     if (compiler->verbose)
     {
-        printf("Added IP mapping: ");
-        genIPmappingDisp(unsigned(-1), addMapping);
+        for (; firstMapping != nullptr; firstMapping = firstMapping->ipmdNext)
+        {
+            printf("Added IP mapping: ");
+            genIPmappingDisp(unsigned(-1), firstMapping);
+        }
     }
 #endif // DEBUG
 }
@@ -10761,6 +10781,14 @@ void CodeGen::genIPmappingGen()
     if (verbose)
     {
         printf("*************** In genIPmappingGen()\n");
+        printf("*************** IPMapping entries as the have been saved:\n");
+        int                     IPindex        = 0;
+        Compiler::IPmappingDsc* itIPMappingDsc = compiler->genIPmappingList;
+        for (IPindex = 0; itIPMappingDsc != nullptr; itIPMappingDsc = itIPMappingDsc->ipmdNext, IPindex++)
+        {
+            genIPmappingDisp(IPindex, itIPMappingDsc);
+        }
+        printf("***************\n\n");
     }
 #endif
 
@@ -10775,6 +10803,7 @@ void CodeGen::genIPmappingGen()
     Compiler::IPmappingDsc* prevMapping;
     unsigned                mappingCnt;
     UNATIVE_OFFSET          lastNativeOfs;
+    InlineContext*          lastInlineContext = nullptr;
 
     /* First count the number of distinct mapping records */
 
@@ -10795,13 +10824,15 @@ void CodeGen::genIPmappingGen()
             continue;
         }
 
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        UNATIVE_OFFSET nextNativeOfs     = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        InlineContext* nextInlineContext = tmpMapping->ipmdInlineContext;
 
-        if (nextNativeOfs != lastNativeOfs)
+        if (nextNativeOfs != lastNativeOfs || nextInlineContext != lastInlineContext)
         {
             mappingCnt++;
-            lastNativeOfs = nextNativeOfs;
-            prevMapping   = tmpMapping;
+            lastNativeOfs     = nextNativeOfs;
+            lastInlineContext = nextInlineContext;
+            prevMapping       = tmpMapping;
             continue;
         }
 
@@ -10835,6 +10866,7 @@ void CodeGen::genIPmappingGen()
             noway_assert(prevMapping != nullptr);
             noway_assert(!prevMapping->ipmdNativeLoc.Valid() ||
                          lastNativeOfs == prevMapping->ipmdNativeLoc.CodeOffset(GetEmitter()));
+            noway_assert(lastInlineContext == prevMapping->ipmdInlineContext);
 
             /* The previous block had the same native offset. We have to
                discard one of the mappings. Simply reinitialize ipmdNativeLoc
@@ -10859,8 +10891,9 @@ void CodeGen::genIPmappingGen()
 
     /* Now tell them about the mappings */
 
-    mappingCnt    = 0;
-    lastNativeOfs = UNATIVE_OFFSET(~0);
+    mappingCnt        = 0;
+    lastNativeOfs     = UNATIVE_OFFSET(~0);
+    lastInlineContext = nullptr;
 
     for (tmpMapping = compiler->genIPmappingList; tmpMapping != nullptr; tmpMapping = tmpMapping->ipmdNext)
     {
@@ -10870,17 +10903,19 @@ void CodeGen::genIPmappingGen()
             continue;
         }
 
-        UNATIVE_OFFSET nextNativeOfs = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
-        IL_OFFSETX     srcIP         = tmpMapping->ipmdILoffsx;
+        UNATIVE_OFFSET nextNativeOfs     = tmpMapping->ipmdNativeLoc.CodeOffset(GetEmitter());
+        InlineContext* nextInlineContext = tmpMapping->ipmdInlineContext;
+        IL_OFFSETX     srcIP             = tmpMapping->ipmdILoffsx;
 
         if (jitIsCallInstruction(srcIP))
         {
             compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffs(srcIP), jitIsStackEmpty(srcIP), true);
         }
-        else if (nextNativeOfs != lastNativeOfs)
+        else if (nextNativeOfs != lastNativeOfs || nextInlineContext != lastInlineContext)
         {
             compiler->eeSetLIinfo(mappingCnt++, nextNativeOfs, jitGetILoffsAny(srcIP), jitIsStackEmpty(srcIP), false);
-            lastNativeOfs = nextNativeOfs;
+            lastNativeOfs     = nextNativeOfs;
+            lastInlineContext = nextInlineContext;
         }
         else if (srcIP == (IL_OFFSETX)ICorDebugInfo::EPILOG || srcIP == 0)
         {
