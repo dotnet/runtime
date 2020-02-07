@@ -1006,7 +1006,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessSendTo : DualModeBase
@@ -1104,7 +1103,6 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Sync
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessBeginSendTo : DualModeBase
@@ -1205,7 +1203,6 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Begin/End
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessSendToAsync : DualModeBase
@@ -1341,7 +1338,6 @@ namespace System.Net.Sockets.Tests
         #endregion SendTo Async/Event
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveFrom : DualModeBase
@@ -1467,7 +1463,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessBeginReceiveFrom : DualModeBase
@@ -1611,7 +1606,6 @@ namespace System.Net.Sockets.Tests
         #endregion ReceiveFrom Begin/End
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveFromAsync : DualModeBase
@@ -1774,7 +1768,6 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [OuterLoop]
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     public class DualModeConnectionlessReceiveMessageFrom : DualModeBase
