@@ -6729,37 +6729,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
 
-#if 0
-#ifdef FEATURE_SIMD
-    // TODO-CQ: For now TYP_SIMD values are not handled by value numbering to be amenable for CSE'ing.
-    if (oper == GT_SIMD)
-    {
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-        return;
-    }
-#endif
-
-#ifdef FEATURE_HW_INTRINSICS
-    if (oper == GT_HWINTRINSIC)
-    {
-        // TODO-CQ: For now hardware intrinsics are not handled by value numbering to be amenable for CSE'ing.
-        tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, TYP_UNKNOWN));
-
-        GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
-        assert(hwIntrinsicNode != nullptr);
-
-        // For safety/correctness we must mutate the global heap valuenumber
-        //  for any HW intrinsic that performs a memory store operation
-        if (hwIntrinsicNode->OperIsMemoryStore())
-        {
-            fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
-        }
-
-        return;
-    }
-#endif // FEATURE_HW_INTRINSICS
-#endif // 0
-
     var_types typ = tree->TypeGet();
     if (GenTree::OperIsConst(oper))
     {
@@ -8495,7 +8464,7 @@ void Compiler::fgValueNumberHWIntrinsic(GenTree* tree)
     else if (tree->AsOp()->gtOp1->OperIs(GT_LIST) || (fixedArity == 7))
     {
         // We have a HWINTRINSIC node in the GT_LIST form with 3 or more args
-        // Or the numArgs waspecifdied as -1 in the numArgs column in "hwinstrinsiclistxarch.h"
+        // Or the numArgs was specified as -1 in the numArgs column in "hwinstrinsiclistxarch.h"
         // For now we will generate a unique value number for this case.
 
         // Generate unique VN

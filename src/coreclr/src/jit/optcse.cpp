@@ -3290,6 +3290,37 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
+            GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
+            assert(hwIntrinsicNode != nullptr);
+            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
+
+            switch (category)
+            {
+                case HW_Category_SimpleSIMD:
+                case HW_Category_IMM:
+                case HW_Category_Scalar:
+                case HW_Category_SIMDScalar:
+                case HW_Category_Helper:
+                    break;
+
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                case HW_Category_Special:
+                default:
+                    return false;
+            }
+
+            if (hwIntrinsicNode->OperIsMemoryStore())
+            {
+                // NI_BMI2_MultiplyNoFlags, etc...
+                return false;
+            }
+            if (hwIntrinsicNode->OperIsMemoryLoad())
+            {
+                // NI_AVX2_BroadcastScalarToVector128, NI_AVX2_GatherVector128, etc...
+                return false;
+            }
+
             return true; // allow Hardware Intrinsics to be CSE-ed
 
 #endif // FEATURE_HW_INTRINSICS
