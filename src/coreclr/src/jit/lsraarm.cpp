@@ -749,7 +749,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_BITCAST:
         {
-            srcCount = 1;
             assert(dstCount == 1);
             regNumber argReg  = tree->GetRegNum();
             regMaskTP argMask = genRegMask(argReg);

@@ -5705,7 +5705,6 @@ void LinearScan::allocateRegisters()
             }
         }
 
-        bool allocateReg = true;
         if (assignedRegister != REG_NA)
         {
             RegRecord* physRegRecord = getRegisterRecord(assignedRegister);
@@ -5793,7 +5792,9 @@ void LinearScan::allocateRegisters()
 
         if (assignedRegister == REG_NA)
         {
-            if (allocateReg && currentRefPosition->RegOptional())
+            bool allocateReg = true;
+
+            if (currentRefPosition->RegOptional())
             {
                 // We can avoid allocating a register if it is a the last use requiring a reload.
                 if (currentRefPosition->lastUse && currentRefPosition->reload)

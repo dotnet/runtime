@@ -16883,8 +16883,9 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
 #endif // DEBUG
             }
         }
-        else if (varTypeIsSIMD(varDsc))
+        else if (varTypeIsSIMD(varDsc) && (genTypeSize(tree->TypeGet()) == genTypeSize(varDsc)))
         {
+            assert(tree->AsLclFld()->GetLclOffs() == 0);
             tree->gtType = varDsc->TypeGet();
             tree->ChangeOper(GT_LCL_VAR);
             JITDUMP("Replacing GT_LCL_FLD of struct with local var V%02u\n", lclNum);
