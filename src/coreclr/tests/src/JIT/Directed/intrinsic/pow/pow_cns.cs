@@ -12,8 +12,6 @@ class MathPowTests
         tests.TestCorrectnessFloat();
         tests.TestFieldArg();
         tests.TestCallArg();
-        Console.WriteLine(returnCode);
-        Console.ReadKey();
         return returnCode;
     }
 
