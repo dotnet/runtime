@@ -143,7 +143,7 @@
     <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'Linux' or '$(OSGroup)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(OSGroup)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'FreeBSD' or $([MSBuild]::IsOSPlatform('FREEBSD'))">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -296,6 +296,12 @@
       <PropertyGroup>
         <TargetsSles>true</TargetsSles>
         <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(OutputRid.StartsWith('freebsd'))">
+      <PropertyGroup>
+        <TargetsFreeBSD>true</TargetsFreeBSD>
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
