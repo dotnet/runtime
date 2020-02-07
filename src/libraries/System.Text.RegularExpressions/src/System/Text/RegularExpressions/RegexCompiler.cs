@@ -1769,7 +1769,7 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Multi:
                         // Boundaries are like set checks and don't involve repetition, either.
                         case RegexNode.Boundary:
-                        case RegexNode.Nonboundary:
+                        case RegexNode.NonBoundary:
                         case RegexNode.ECMABoundary:
                         case RegexNode.NonECMABoundary:
                         // Anchors are also trivial.
@@ -2259,7 +2259,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Boundary:
-                    case RegexNode.Nonboundary:
+                    case RegexNode.NonBoundary:
                     case RegexNode.ECMABoundary:
                     case RegexNode.NonECMABoundary:
                         EmitBoundary(node);
@@ -2418,7 +2418,7 @@ namespace System.Text.RegularExpressions
                         BrfalseFar(doneLabel);
                         break;
 
-                    case RegexNode.Nonboundary:
+                    case RegexNode.NonBoundary:
                         Callvirt(s_isBoundaryMethod);
                         BrtrueFar(doneLabel);
                         break;
@@ -3891,7 +3891,7 @@ namespace System.Text.RegularExpressions
                     }
 
                 case RegexCode.Boundary:
-                case RegexCode.Nonboundary:
+                case RegexCode.NonBoundary:
                     //: if (!IsBoundary(Textpos(), _textbeg, _textend))
                     //:     break Backward;
                     Ldthis();
@@ -4667,7 +4667,8 @@ namespace System.Text.RegularExpressions
                     break;
 
                 default:
-                    throw new NotImplementedException(SR.UnimplementedState);
+                    Debug.Fail($"Unimplemented state: {_regexopcode:X8}");
+                    break;
             }
         }
 
