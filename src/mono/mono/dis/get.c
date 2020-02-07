@@ -1577,7 +1577,8 @@ get_escaped_name (const char *name)
 	}
 
 	for (s = name; *s; s++) {
-		if (isalnum (*s) || *s == '_' || *s == '$' || *s == '@' ||
+		if (isalpha (*s) || (isdigit (*s) && s != name) ||
+		    *s == '_' || *s == '$' || *s == '@' ||
 		    *s == '?' || (*s == '.' && s != name) || *s == 0 || *s == '!' || *s == '`')
 			continue;
 
