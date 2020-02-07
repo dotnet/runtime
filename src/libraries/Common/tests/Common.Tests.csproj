@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CoverageSupported>false</CoverageSupported>
@@ -108,6 +108,9 @@
     <Compile Include="$(CoreLibSharedDir)System\PasteArguments.cs">
       <Link>System\PasteArguments.cs</Link>
     </Compile>
+    <Compile Include="System\Net\Configuration.cs" />
+    <Compile Include="System\Net\Configuration.Sockets.cs" />
+    <Compile Include="System\Net\Sockets\TestPortPool.cs" />
     <Compile Include="Tests\Interop\cgroupsTests.cs" />
     <Compile Include="Tests\Interop\procfsTests.cs" />
     <Compile Include="Tests\System\CharArrayHelpersTests.cs" />
@@ -115,6 +118,7 @@
     <Compile Include="Tests\System\IO\StringParserTests.cs" />
     <Compile Include="Tests\System\MarvinTests.cs" />
     <Compile Include="Tests\System\Net\HttpDateParserTests.cs" />
+    <Compile Include="Tests\System\Net\TestPortPoolTests.cs" />
     <Compile Include="Tests\System\PasteArgumentsTests.cs" />
     <Compile Include="Tests\System\Security\IdentityHelperTests.cs" />
     <Compile Include="Tests\System\Text\SimpleRegexTests.cs" />
