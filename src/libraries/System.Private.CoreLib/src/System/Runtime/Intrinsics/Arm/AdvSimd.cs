@@ -529,6 +529,72 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> Max(Vector128<double> left, Vector128<double> right) => Max(left, right);
 
             /// <summary>
+            /// uint8_t vmaxv_u8 (uint8x8_t a)
+            ///   A64: UMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector64<byte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int16_t vmaxv_s16 (int16x4_t a)
+            ///   A64: SMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector64<short> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int8_t vmaxv_s8 (int8x8_t a)
+            ///   A64: SMAXV Bd, Vn.8B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector64<sbyte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint16_t vmaxv_u16 (uint16x4_t a)
+            ///   A64: UMAXV Hd, Vn.4H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector64<ushort> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint8_t vmaxvq_u8 (uint8x16_t a)
+            ///   A64: UMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<byte> MaxAcross(Vector128<byte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int16_t vmaxvq_s16 (int16x8_t a)
+            ///   A64: SMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<short> MaxAcross(Vector128<short> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int32_t vmaxvq_s32 (int32x4_t a)
+            ///   A64: SMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<int> MaxAcross(Vector128<int> value) => MaxAcross(value);
+
+            /// <summary>
+            /// int8_t vmaxvq_s8 (int8x16_t a)
+            ///   A64: SMAXV Bd, Vn.16B
+            /// </summary>
+            public static Vector64<sbyte> MaxAcross(Vector128<sbyte> value) => MaxAcross(value);
+
+            /// <summary>
+            /// float32_t vmaxvq_f32 (float32x4_t a)
+            ///   A64: FMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxAcross(Vector128<float> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint16_t vmaxvq_u16 (uint16x8_t a)
+            ///   A64: UMAXV Hd, Vn.8H
+            /// </summary>
+            public static Vector64<ushort> MaxAcross(Vector128<ushort> value) => MaxAcross(value);
+
+            /// <summary>
+            /// uint32_t vmaxvq_u32 (uint32x4_t a)
+            ///   A64: UMAXV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<uint> MaxAcross(Vector128<uint> value) => MaxAcross(value);
+
+            /// <summary>
             /// float64x1_t vmax_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMAX Dd, Dn, Dm
             /// </summary>
