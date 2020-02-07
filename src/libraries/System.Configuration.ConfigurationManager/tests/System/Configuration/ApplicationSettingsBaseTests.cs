@@ -191,5 +191,52 @@ namespace System.ConfigurationTests
             Assert.Equal(typeof(TestProvider), property.Provider.GetType());
             Assert.Equal(SettingsSerializeAs.Binary, property.SerializeAs);
         }
+
+        [Fact]
+        public void SettingsChanging_Success()
+        {
+            SimpleSettings settings = new SimpleSettings();
+            bool changingFired = false;
+            int newValue = 1976;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+                {
+                    changingFired = true;
+                    Assert.Equal(nameof(SimpleSettings.IntProperty), e.SettingName);
+                    Assert.Equal(typeof(SimpleSettings).FullName, e.SettingClass);
+                    Assert.Equal(newValue, e.NewValue);
+                };
+
+            settings.IntProperty = newValue;
+
+            Assert.True(changingFired);
+            Assert.Equal(newValue, settings.IntProperty);
+        }
+
+        [Fact]
+        public void SettingsChanging_Canceled()
+        {
+            int oldValue = 1776;
+            SimpleSettings settings = new SimpleSettings
+            {
+                IntProperty = oldValue
+            };
+
+            bool changingFired = false;
+            int newValue = 1976;
+
+            settings.SettingChanging += (object sender, SettingChangingEventArgs e)
+                =>
+            {
+                changingFired = true;
+                e.Cancel = true;
+            };
+
+            settings.IntProperty = newValue;
+
+            Assert.True(changingFired);
+            Assert.Equal(oldValue, settings.IntProperty);
+        }
     }
 }
