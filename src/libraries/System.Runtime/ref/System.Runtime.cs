@@ -1048,6 +1048,12 @@ namespace System
     public readonly partial struct Double : System.IComparable, System.IComparable<double>, System.IConvertible, System.IEquatable<double>, System.IFormattable
     {
         private readonly double _dummyPrimitive;
+        public const double Epsilon = 5E-324;
+        public const double MaxValue = 1.7976931348623157E+308;
+        public const double MinValue = -1.7976931348623157E+308;
+        public const double NaN = 0.0 / 0.0;
+        public const double NegativeInfinity = -1.0 / 0.0;
+        public const double PositiveInfinity = 1.0 / 0.0;
         public int CompareTo(System.Double value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public bool Equals(System.Double obj) { throw null; }
@@ -2193,6 +2199,12 @@ namespace System
     public readonly partial struct Single : System.IComparable, System.IComparable<float>, System.IConvertible, System.IEquatable<float>, System.IFormattable
     {
         private readonly float _dummyPrimitive;
+        public const float Epsilon = 1E-45f;
+        public const float MaxValue = 3.4028235E+38f;
+        public const float MinValue = -3.4028235E+38f;
+        public const float NaN = 0.0f / 0.0f;
+        public const float NegativeInfinity = -1.0f / 0.0f;
+        public const float PositiveInfinity = 1.0f / 0.0f;
         public int CompareTo(object? value) { throw null; }
         public int CompareTo(System.Single value) { throw null; }
         public override bool Equals(object? obj) { throw null; }
@@ -2622,7 +2634,7 @@ namespace System
         public virtual System.DateTime ToLocalTime(System.DateTime time) { throw null; }
         public virtual System.DateTime ToUniversalTime(System.DateTime time) { throw null; }
     }
-    public sealed partial class TimeZoneInfo : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable, System.IEquatable<System.TimeZoneInfo?>
+    public sealed partial class TimeZoneInfo : System.IEquatable<System.TimeZoneInfo?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         internal TimeZoneInfo() { }
         public System.TimeSpan BaseUtcOffset { get { throw null; } }
@@ -2667,7 +2679,7 @@ namespace System
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public string ToSerializedString() { throw null; }
         public override string ToString() { throw null; }
-        public sealed partial class AdjustmentRule : System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable, System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>
+        public sealed partial class AdjustmentRule : System.IEquatable<System.TimeZoneInfo.AdjustmentRule?>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
         {
             internal AdjustmentRule() { }
             public System.DateTime DateEnd { get { throw null; } }
@@ -3115,13 +3127,13 @@ namespace System
         public object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Globalization.CultureInfo? culture) { throw null; }
         public abstract object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters);
         protected abstract bool IsArrayImpl();
-        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? c) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
         public virtual bool IsEnumDefined(object value) { throw null; }
-        public virtual bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? other) { throw null; }
-        public virtual bool IsInstanceOfType([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? o) { throw null; }
+        public virtual bool IsEquivalentTo([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? other) { throw null; }
+        public virtual bool IsInstanceOfType([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? o) { throw null; }
         protected virtual bool IsMarshalByRefImpl() { throw null; }
         protected abstract bool IsPointerImpl();
         protected abstract bool IsPrimitiveImpl();
@@ -3170,6 +3182,8 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public ref partial struct TypedReference
     {
+        private object _dummy;
+        private int _dummyPrimitive;
         public override bool Equals(object? o) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Type GetTargetType(System.TypedReference value) { throw null; }
@@ -3857,6 +3871,16 @@ namespace System.Buffers
     public delegate void ReadOnlySpanAction<T, in TArg>(System.ReadOnlySpan<T> span, TArg arg);
     public delegate void SpanAction<T, in TArg>(System.Span<T> span, TArg arg);
 }
+namespace System.CodeDom.Compiler
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
+    public sealed partial class GeneratedCodeAttribute : System.Attribute
+    {
+        public GeneratedCodeAttribute(string? tool, string? version) { }
+        public string? Tool { get { throw null; } }
+        public string? Version { get { throw null; } }
+    }
+}
 namespace System.Collections
 {
     public partial struct DictionaryEntry
@@ -4115,16 +4139,6 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.RemoveAt(int index) { }
     }
 }
-namespace System.CodeDom.Compiler
-{
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
-    public sealed partial class GeneratedCodeAttribute : System.Attribute
-    {
-        public GeneratedCodeAttribute(string? tool, string? version) { }
-        public string? Tool { get { throw null; } }
-        public string? Version { get { throw null; } }
-    }
-}
 namespace System.ComponentModel
 {
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
@@ -4262,6 +4276,24 @@ namespace System.Diagnostics
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void WriteLineIf(bool condition, string? message, string? category) { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
+    public sealed partial class DebuggableAttribute : System.Attribute
+    {
+        public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
+        public DebuggableAttribute(System.Diagnostics.DebuggableAttribute.DebuggingModes modes) { }
+        public System.Diagnostics.DebuggableAttribute.DebuggingModes DebuggingFlags { get { throw null; } }
+        public bool IsJITOptimizerDisabled { get { throw null; } }
+        public bool IsJITTrackingEnabled { get { throw null; } }
+        [System.FlagsAttribute]
+        public enum DebuggingModes
+        {
+            None = 0,
+            Default = 1,
+            IgnoreSymbolStoreSequencePoints = 2,
+            EnableEditAndContinue = 4,
+            DisableOptimizations = 256,
+        }
+    }
     public static partial class Debugger
     {
         public static readonly string? DefaultCategory;
@@ -4337,24 +4369,6 @@ namespace System.Diagnostics
         public string? TargetTypeName { get { throw null; } set { } }
         public string? VisualizerObjectSourceTypeName { get { throw null; } }
         public string VisualizerTypeName { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
-    public sealed partial class DebuggableAttribute : System.Attribute
-    {
-        public DebuggableAttribute(bool isJITTrackingEnabled, bool isJITOptimizerDisabled) { }
-        public DebuggableAttribute(System.Diagnostics.DebuggableAttribute.DebuggingModes modes) { }
-        public System.Diagnostics.DebuggableAttribute.DebuggingModes DebuggingFlags { get { throw null; } }
-        public bool IsJITOptimizerDisabled { get { throw null; } }
-        public bool IsJITTrackingEnabled { get { throw null; } }
-        [System.FlagsAttribute]
-        public enum DebuggingModes
-        {
-            None = 0,
-            Default = 1,
-            IgnoreSymbolStoreSequencePoints = 2,
-            EnableEditAndContinue = 4,
-            DisableOptimizations = 256,
-        }
     }
 }
 namespace System.Diagnostics.CodeAnalysis
@@ -5478,9 +5492,9 @@ namespace System.IO
         public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public virtual void Close() { }
+        public virtual void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         public void CopyTo(System.IO.Stream destination) { }
         public virtual void CopyTo(System.IO.Stream destination, int bufferSize) { }
-        public virtual void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination) { throw null; }
         public System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize) { throw null; }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -6666,7 +6680,7 @@ namespace System.Reflection
         protected override bool HasElementTypeImpl() { throw null; }
         public override object? InvokeMember(string name, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, object? target, object?[]? args, System.Reflection.ParameterModifier[]? modifiers, System.Globalization.CultureInfo? culture, string[]? namedParameters) { throw null; }
         protected override bool IsArrayImpl() { throw null; }
-        public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public override bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         protected override bool IsByRefImpl() { throw null; }
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
@@ -6694,7 +6708,7 @@ namespace System.Reflection
         public virtual System.Collections.Generic.IEnumerable<System.Reflection.MethodInfo> GetDeclaredMethods(string name) { throw null; }
         public virtual System.Reflection.TypeInfo? GetDeclaredNestedType(string name) { throw null; }
         public virtual System.Reflection.PropertyInfo? GetDeclaredProperty(string name) { throw null; }
-        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
+        public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Reflection.TypeInfo? typeInfo) { throw null; }
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
     }
 }
@@ -6876,6 +6890,11 @@ namespace System.Runtime.CompilerServices
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
+    {
+        public AsyncStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
+    }
     public partial struct AsyncTaskMethodBuilder
     {
         private object _dummy;
@@ -6901,11 +6920,6 @@ namespace System.Runtime.CompilerServices
         public void SetResult(TResult result) { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
-    public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
-    {
-        public AsyncStateMachineAttribute(System.Type stateMachineType) : base (default(System.Type)) { }
     }
     public partial struct AsyncValueTaskMethodBuilder
     {
@@ -7299,7 +7313,7 @@ namespace System.Runtime.CompilerServices
         public object WrappedException { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Module | System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Event, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Module | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class SkipLocalsInitAttribute : System.Attribute
     {
         public SkipLocalsInitAttribute() { }
@@ -7598,7 +7612,7 @@ namespace System.Runtime.InteropServices
         public StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind layoutKind) { }
         public System.Runtime.InteropServices.LayoutKind Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
     public sealed partial class SuppressGCTransitionAttribute : System.Attribute
     {
         public SuppressGCTransitionAttribute() { }
