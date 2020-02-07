@@ -4,8 +4,6 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetFrameworkCurrent);$(NetCoreAppCurrent)</TargetFrameworks>
-    <!-- For pulling in the shared ReferenceEqualityComparer if needed but not exposing it via public API -->
-    <DefineConstants>$(DefineConstants);INTERNAL_REFERENCE_EQUALITY_COMPARER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
@@ -32,7 +30,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" Link="System\Collections\Generic\ReferenceEqualityComparer.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
+      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Text.Json" />
