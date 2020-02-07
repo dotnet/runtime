@@ -149,19 +149,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            using (var ssl = new SslStream(new MemoryStream()))
-            {
-                try
-                {
-                    ssl.AuthenticateAsClient("contoso.com", null, System.Security.Authentication.SslProtocols.Tls13, false);
-                }
-                catch (Exception ex)
-                {
-                    ex.ToString();
-                    IsQuicSupported = false;
-                    return;
-                }
-            }
+            // TODO: try to initialize TLS 1.3 in SslStream.
 
             try
             {
