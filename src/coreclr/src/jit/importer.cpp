@@ -4235,11 +4235,12 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             // Math.Pow(x, 2) -> x*x
             impPopStack();
             GenTree* arg0 = impPopStack().val;
-            if (arg0->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            if (arg0->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_DBL))
             {
+                // we don't need to introduce a temp variable for the
+                // first Math.Pow argument if it's a lcl or cns
                 return gtNewOperNode(GT_MUL, type, arg0, gtCloneExpr(arg0));
             }
-            // introduce a temp variable for the first Math.Pow argument
             unsigned temp = lvaGrabTemp(true DEBUGARG("pow arg"));
             impAssignTempGen(temp, arg0, static_cast<unsigned>(CHECK_SPILL_NONE));
             return gtNewOperNode(GT_MUL, type, gtNewLclvNode(temp, type), gtNewLclvNode(temp, type));
