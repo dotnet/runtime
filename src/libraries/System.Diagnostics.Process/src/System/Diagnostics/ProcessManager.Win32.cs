@@ -131,7 +131,9 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                char[] chars = ArrayPool<char>.Shared.Rent(1024);
+                const int MaxShortPath = 260;
+                int minimumLength = MaxShortPath;
+                char[]? chars = ArrayPool<char>.Shared.Rent(minimumLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -171,14 +173,29 @@ namespace System.Diagnostics
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                        for (; ; )
+                        {
+                            length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                            if (length == chars.Length)
+                            {
+                                char[] toReturn = chars;
+                                chars = null;
+                                ArrayPool<char>.Shared.Return(toReturn);
+                                minimumLength = Math.Min(minimumLength * 2, short.MaxValue);
+                                chars = ArrayPool<char>.Shared.Rent(minimumLength);
+                                continue;
+                            }
+
+                            break;
+                        }
+
                         if (length == 0)
                         {
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
+                        module.FileName = chars.AsSpan().StartsWith(@"\\?\") ?
                             new string(chars, 4, length - 4) :
                             new string(chars, 0, length);
 
@@ -187,7 +204,10 @@ namespace System.Diagnostics
                 }
                 finally
                 {
-                    ArrayPool<char>.Shared.Return(chars);
+                    if (chars != null)
+                    {
+                        ArrayPool<char>.Shared.Return(chars);
+                    }
                 }
 
                 return modules;
