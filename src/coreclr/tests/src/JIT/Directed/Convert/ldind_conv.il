@@ -4,7 +4,7 @@
 
 
 .assembly extern mscorlib { auto }
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Console { auto }
 .assembly extern System.Runtime { auto }
 
 .assembly test { }
@@ -15,7 +15,7 @@
   {
     .maxstack 1
     ldarg 0
-    call void [System.Private.CoreLib]Internal.Console::WriteLine(class [System.Runtime]System.String)
+    call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
     ret
   }
 
