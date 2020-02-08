@@ -25,7 +25,7 @@ class MathPowTests
 
     public static void AssertEquals(double a, double b)
     {
-        if (BitConverter.DoubleToInt64Bits(a) != 
+        if (BitConverter.DoubleToInt64Bits(a) !=
             BitConverter.DoubleToInt64Bits(b))
         {
             returnCode++;
@@ -49,7 +49,7 @@ class MathPowTests
             {
                 -1000, -2, -1, -0.0, 0, 1, 2, 1000,
                 Math.PI, Math.E,
-                double.MinValue, double.MaxValue, double.NaN, 
+                double.MinValue, double.MaxValue, double.NaN,
                 double.PositiveInfinity, double.NegativeInfinity
             };
 
@@ -103,7 +103,7 @@ class MathPowTests
     private double TestCall1()
     {
         sideeffects++;
-        Math.PI;
+        return Math.PI;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -118,7 +118,7 @@ class MathPowTests
         if (sideeffects != 1)
             returnCode++;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public void TestCallArgN1()
     {
@@ -139,9 +139,9 @@ class MathPowTests
             returnCode++;
     }
 
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void TestRefArgs(ref x, ref y)
+    public void TestRefArgs(ref float x, ref float  y)
     {
         AssertEquals(Math.Pow(x, 2.0), Math.Pow(y, ToVar(2.0)));
     }
