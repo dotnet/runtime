@@ -11,8 +11,10 @@ class MathPowTests
         tests.TestCorrectnessDouble();
         tests.TestCorrectnessFloat();
         tests.TestFieldArg();
-        tests.TestCallArg();
-        
+        tests.TestCallArg1();
+        tests.TestCallArgN1();
+        tests.TestCallArg2();
+
         float x = 0, y = 0;
         tests.TestRefArgs(ref x, ref y);
         return returnCode;
@@ -96,16 +98,45 @@ class MathPowTests
     }
 
 
+    private int sideeffects = 0;
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private double TestCall1() => Math.PI;
+    private double TestCall1()
+    {
+        sideeffects++;
+        Math.PI;
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private double TestCall2() => Math.PI;
 
+
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void TestCallArg()
+    public void TestCallArg1()
     {
+        sideeffects = 0;
+        AssertEquals(Math.Pow(TestCall1(), 1.0), Math.Pow(TestCall2(), ToVar(1.0)));
+        if (sideeffects != 1)
+            returnCode++;
+    }
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void TestCallArgN1()
+    {
+        sideeffects = 0;
+        AssertEquals(Math.Pow(TestCall1(), -1.0), Math.Pow(TestCall2(), ToVar(-1.0)));
+        if (sideeffects != 1)
+            returnCode++;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void TestCallArg2()
+    {
+        sideeffects = 0;
         AssertEquals(Math.Pow(TestCall1(), 2.0), Math.Pow(TestCall2(), ToVar(2.0)));
+        // make sure it's not optimized into
+        // `TestCall1() * TestCall1()`:
+        if (sideeffects != 1)
+            returnCode++;
     }
 
     
