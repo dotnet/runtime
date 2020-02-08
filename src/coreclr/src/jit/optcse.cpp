@@ -3290,6 +3290,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
+        {
             GenTreeHWIntrinsic* hwIntrinsicNode = tree->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
             HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(hwIntrinsicNode->gtHWIntrinsicId);
@@ -3322,6 +3323,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             }
 
             return true; // allow Hardware Intrinsics to be CSE-ed
+        }
 
 #endif // FEATURE_HW_INTRINSICS
 

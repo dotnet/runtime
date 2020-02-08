@@ -5401,15 +5401,13 @@ bool GenTree::OperIsImplicitIndir() const
 #ifdef FEATURE_SIMD
         case GT_SIMD:
         {
-            GenTreeSIMD* simdNode = (const_cast<GenTree*>(this))->AsSIMD();
-            return simdNode->OperIsMemoryLoad();
+            return AsSIMD()->OperIsMemoryLoad();
         }
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
-            GenTreeHWIntrinsic* hwIntrinsicNode = (const_cast<GenTree*>(this))->AsHWIntrinsic();
-            return hwIntrinsicNode->OperIsMemoryLoadOrStore();
+            return AsHWIntrinsic()->OperIsMemoryLoadOrStore();
         }
 #endif // FEATURE_HW_INTRINSICS
         default:
@@ -18125,6 +18123,18 @@ bool GenTree::isCommutativeSIMDIntrinsic()
             return false;
     }
 }
+
+// Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
+bool GenTreeSIMD::OperIsMemoryLoad() const
+{
+#ifdef TARGET_XARCH
+    if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
+    {
+        return true;
+    }
+#endif // TARGET_XARCH
+    return false;
+}
 #endif // FEATURE_SIMD
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -18333,20 +18343,8 @@ GenTree* Compiler::gtNewMustThrowException(unsigned helper, var_types type, CORI
     return node;
 }
 
-// Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeSIMD::OperIsMemoryLoad()
-{
-#ifdef TARGET_XARCH
-    if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
-    {
-        return true;
-    }
-#endif // TARGET_XARCH
-    return false;
-}
-
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoad()
+bool GenTreeHWIntrinsic::OperIsMemoryLoad() const
 {
 #ifdef TARGET_XARCH
     // Some xarch instructions have MemoryLoad sematics
@@ -18388,7 +18386,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryStore semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryStore()
+bool GenTreeHWIntrinsic::OperIsMemoryStore() const
 {
 #ifdef TARGET_XARCH
     // Some xarch instructions have MemoryStore sematics
@@ -18423,7 +18421,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
 }
 
 // Returns true for the HW Instrinsic instructions that have MemoryLoad semantics, false otherwise
-bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
+bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 {
 #ifdef TARGET_XARCH
     return OperIsMemoryLoad() || OperIsMemoryStore();
