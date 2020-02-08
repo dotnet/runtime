@@ -201,8 +201,8 @@ namespace
         //
         // [TODO] Performance improvement should be made here to provide a custom IEnumerable
         // instead of a managed array. When the custom solution is done, the objects' syncblocks
-        // should be cleaned up of the internal IReferenceTracker instance stored within the
-        // context block held in the InteropLib side.
+        // should be updated by removing the IReferenceTracker instance stored within the
+        // context block held on the InteropLib side.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)

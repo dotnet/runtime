@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// Runtime headers
+#include <winwrap.h>
+
 #include "comwrappers.h"
 
 #if (NTDDI_VERSION >= NTDDI_WINBLUE)
@@ -24,12 +27,30 @@ WINOLEAPI RoGetAgileReference(
 
 #endif
 
+namespace
+{
+    // Global function pointer for RoGetAgileReference
+    decltype(RoGetAgileReference)* fpRoGetAgileReference;
+}
+
 template<>
 HRESULT CreateAgileReference<IUnknown>(
     _In_ IUnknown* object,
     _Outptr_ IAgileReference** agileReference)
 {
-    // [TODO] Fail gracefully on pre-Windows 8.1 plaforms.
     _ASSERTE(object != nullptr && agileReference != nullptr);
-    return ::RoGetAgileReference(AGILEREFERENCE_DEFAULT, __uuidof(object), object, agileReference);
+
+    // If the pointer isn't set, then attempt to load it in process.
+    if (fpRoGetAgileReference == nullptr)
+    {
+        HMODULE hmod = WszLoadLibrary(W("ole32.dll"));
+        if (hmod != nullptr)
+            fpRoGetAgileReference = (decltype(RoGetAgileReference)*)::GetProcAddress(hmod, "RoGetAgileReference");
+
+        // Could't find binary or export. Either way, the OS version is too old.
+        if (fpRoGetAgileReference == nullptr)
+            return HRESULT_FROM_WIN32(ERROR_OLD_WIN_VERSION);
+    }
+
+    return fpRoGetAgileReference(AGILEREFERENCE_DEFAULT, __uuidof(object), object, agileReference);
 }
