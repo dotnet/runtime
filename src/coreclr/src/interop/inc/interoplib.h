@@ -50,6 +50,9 @@ namespace InteropLib
         // Destroy the supplied wrapper.
         void DestroyWrapperForExternal(_In_ void* context) noexcept;
 
+        // Check if the context is associated with a tracker runtime.
+        bool IsReferenceTrackerInstance(_In_ void* context) noexcept;
+
         // Register a runtime implementation callback in the Reference Tracker Host scenario.
         // Returns true if registration succeeded, otherwise false.
         bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept;

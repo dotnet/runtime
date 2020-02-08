@@ -19,17 +19,52 @@ namespace
     // This class is used to track the external object within the runtime.
     struct ExternalObjectContext
     {
-        static DWORD InvalidSyncBlockIndex;
-        static DWORD CollectedFlag;
+        static const DWORD InvalidSyncBlockIndex;
 
         void* Identity;
         void* ThreadContext;
         DWORD SyncBlockIndex;
-        DWORD IsCollected;
+
+        enum
+        {
+            Flags_None = 0,
+            Flags_Collected = 1,
+            Flags_ReferenceTracker = 2,
+        };
+        DWORD Flags;
+
+        static void Construct(
+            _In_ ExternalObjectContext* cxt,
+            _In_ IUnknown* identity,
+            _In_opt_ void* threadContext,
+            _In_ DWORD syncBlockIndex,
+            _In_ DWORD flags)
+        {
+            CONTRACTL
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+                PRECONDITION(cxt != NULL);
+                PRECONDITION(threadContext != NULL);
+                PRECONDITION(syncBlockIndex != InvalidSyncBlockIndex);
+            }
+            CONTRACTL_END;
+
+            cxt->Identity = (void*)identity;
+            cxt->ThreadContext = threadContext;
+            cxt->SyncBlockIndex = syncBlockIndex;
+            cxt->Flags = flags;
+        }
+
+        bool IsSet(_In_ DWORD f) const
+        {
+            return ((Flags & f) == f);
+        }
 
         bool IsActive() const
         {
-            return (IsCollected != CollectedFlag)
+            return IsSet(Flags_Collected)
                 && (SyncBlockIndex != InvalidSyncBlockIndex);
         }
 
@@ -37,7 +72,7 @@ namespace
         {
             _ASSERTE(GCHeapUtilities::IsGCInProgress());
             SyncBlockIndex = InvalidSyncBlockIndex;
-            IsCollected = CollectedFlag;
+            Flags |= Flags_Collected;
         }
 
         OBJECTREF GetObjectRef()
@@ -55,8 +90,7 @@ namespace
         }
     };
 
-    DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
-    DWORD ExternalObjectContext::CollectedFlag = ~0;
+    const DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
 
     static_assert((sizeof(ExternalObjectContext) % sizeof(void*)) == 0, "Keep context pointer size aligned");
 
@@ -160,9 +194,13 @@ namespace
             return (_lock.OwnedByCurrentThread() != FALSE);
         }
 
-        PTRARRAYREF CreateManagedEnumerable(_In_ void* threadContext)
+        // Create a managed IEnumerable instance for this collection.
+        // The collection should respect the supplied arguments.
+        //        withFlags - If Flag_None, then ignore. Otherwise objects must have these flags.
+        //    threadContext - The object must be associated with the supplied thread context.
+        OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
-            CONTRACT(PTRARRAYREF)
+            CONTRACT(OBJECTREF)
             {
                 THROWS;
                 GC_TRIGGERS;
@@ -201,8 +239,14 @@ namespace
                 for (objCount = 0; curr != end && objCount < objCountMax; objCount++, curr++)
                 {
                     inst = *curr;
-                    if (inst->ThreadContext == threadContext)
+
+                    // Only add objects that are in the correct thread
+                    // context and have the appropriate flags set.
+                    if (inst->ThreadContext == threadContext
+                        && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
+                    {
                         gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                    }
                 }
             }
 
@@ -558,10 +602,16 @@ namespace
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
-            // Update the new context with the object details.
-            newContext->Identity = (void*)identity;
-            newContext->ThreadContext = GetCurrentCtxCookie();
-            newContext->SyncBlockIndex = gc.objRef->GetSyncBlockIndex();
+            // Construct the new context with the object details.
+            DWORD flags = InteropLib::Com::IsReferenceTrackerInstance((void*)newContext)
+                            ? ExternalObjectContext::Flags_ReferenceTracker
+                            : ExternalObjectContext::Flags_None;
+            ExternalObjectContext::Construct(
+                newContext,
+                identity,
+                GetCurrentCtxCookie(),
+                gc.objRef->GetSyncBlockIndex(),
+                flags);
 
             // Attempt to insert the new context into the cache.
             {
@@ -733,7 +783,9 @@ namespace InteropLibImports
 
             // Pass the objects along to get released.
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
-            gc.objsEnumRef = cache->CreateManagedEnumerable(GetCurrentCtxCookie());
+            gc.objsEnumRef = cache->CreateManagedEnumerable(
+                ExternalObjectContext::Flags_ReferenceTracker,
+                GetCurrentCtxCookie());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
 

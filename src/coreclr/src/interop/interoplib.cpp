@@ -102,6 +102,15 @@ namespace InteropLib
             NativeObjectWrapperContext::Destroy(context);
         }
 
+        bool IsReferenceTrackerInstance(_In_ void* contextMaybe) noexcept
+        {
+            NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
+            if (context == nullptr)
+                return false;
+
+            return (context->GetReferenceTracker() != nullptr);
+        }
+
         bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept
         {
             return TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(objectHandle);
