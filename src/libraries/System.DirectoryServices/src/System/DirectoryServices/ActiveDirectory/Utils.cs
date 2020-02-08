@@ -1935,10 +1935,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[");
+            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
             if (isBrace == true)
             {
-                if (serverName.EndsWith("]"))
+                if (serverName.EndsWith("]", StringComparison.Ordinal))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []

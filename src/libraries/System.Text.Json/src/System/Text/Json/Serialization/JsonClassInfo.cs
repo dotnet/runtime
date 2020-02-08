@@ -586,15 +586,15 @@ namespace System.Text.Json
 
             if (type.FullName != null)
             {
-                if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1"))
+                if (type.FullName.StartsWith("System.Collections.Generic.IEnumerable`1", StringComparison.Ordinal))
                 {
                     elementType = type.GetGenericArguments()[0];
                     runtimeType = typeof(List<>).MakeGenericType(elementType);
                     addMethod = default;
                     return ClassType.Enumerable;
                 }
-                else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2") ||
-                    type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2"))
+                else if (type.FullName.StartsWith("System.Collections.Generic.IDictionary`2", StringComparison.Ordinal) ||
+                    type.FullName.StartsWith("System.Collections.Generic.IReadOnlyDictionary`2", StringComparison.Ordinal))
                 {
                     Type[] genericTypes = type.GetGenericArguments();
 
