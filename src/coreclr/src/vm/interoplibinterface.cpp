@@ -198,6 +198,11 @@ namespace
         // The collection should respect the supplied arguments.
         //        withFlags - If Flag_None, then ignore. Otherwise objects must have these flags.
         //    threadContext - The object must be associated with the supplied thread context.
+        //
+        // [TODO] Performance improvement should be made here to provide a custom IEnumerable
+        // instead of a managed array. When the custom solution is done, the objects' syncblocks
+        // should be cleaned up of the internal IReferenceTracker instance stored within the
+        // context block held in the InteropLib side.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)
@@ -788,10 +793,6 @@ namespace InteropLibImports
                 GetCurrentCtxCookie());
 
             CallReleaseObjects(&gc.implRef, &gc.objsEnumRef);
-
-            //
-            // [TODO] Clear out objects' syncblocks.
-            //
 
             GCPROTECT_END();
         }
