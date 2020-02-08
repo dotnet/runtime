@@ -305,22 +305,6 @@ namespace System.Diagnostics
             return modules.Count == 0 ? null : modules[0];
         }
 
-        private static void HandleError()
-        {
-            int lastError = Marshal.GetLastWin32Error();
-            switch (lastError)
-            {
-                case Interop.Errors.ERROR_INVALID_HANDLE:
-                case Interop.Errors.ERROR_PARTIAL_COPY:
-                    // It's possible that another thread caused this module to become
-                    // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
-                    // move on.
-                    break;
-                default:
-                    throw new Win32Exception(lastError);
-            }
-        }
-
         public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
         {
             return Interop.Kernel32.GetProcessId(processHandle);

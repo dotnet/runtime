@@ -164,7 +164,7 @@ namespace System.Diagnostics
                         Interop.Kernel32.NtModuleInfo ntModuleInfo;
                         if (!Interop.Kernel32.GetModuleInformation(processHandle, moduleHandle, out ntModuleInfo))
                         {
-                            HandleError();
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -178,7 +178,7 @@ namespace System.Diagnostics
                         int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
                         if (length == 0)
                         {
-                            HandleError();
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -200,7 +200,7 @@ namespace System.Diagnostics
 
                         if (length == 0)
                         {
-                            HandleError();
+                            HandleLastWin32Error();
                             continue;
                         }
 
@@ -241,6 +241,22 @@ namespace System.Diagnostics
             }
 
             throw new Win32Exception();
+        }
+
+        private static void HandleLastWin32Error()
+        {
+            int lastError = Marshal.GetLastWin32Error();
+            switch (lastError)
+            {
+                case Interop.Errors.ERROR_INVALID_HANDLE:
+                case Interop.Errors.ERROR_PARTIAL_COPY:
+                    // It's possible that another thread caused this module to become
+                    // unloaded (e.g FreeLibrary was called on the module).  Ignore it and
+                    // move on.
+                    break;
+                default:
+                    throw new Win32Exception(lastError);
+            }
         }
     }
 
