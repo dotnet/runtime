@@ -482,44 +482,62 @@ namespace System.IO.Compression
             }
             else
             {
-                if (reader.BaseStream.Length < reader.BaseStream.Position + extraFieldLength + entry.CompressedLength + 4)
+                if (reader.BaseStream.Length < reader.BaseStream.Position + extraFieldLength + entry.CompressedLength + 12)
                 {
                     return false;
                 }
 
                 reader.BaseStream.Seek(extraFieldLength + entry.CompressedLength, SeekOrigin.Current); // seek to end of compressed file from which Data descriptor starts
-                uint dataDescriptorSignature = reader.ReadUInt32();
-                bool wasDataDescriptorSignatureRead = false;
-                int seekSize = 0;
-                if (dataDescriptorSignature == DataDescriptorSignature)
+                uint[] buffer = new uint[6];
+                // let's try to match the smallest possible structure (3 x 4) 32 bit without signature
+                buffer[0] = reader.ReadUInt32();
+                buffer[1] = reader.ReadUInt32();
+                buffer[2] = reader.ReadUInt32();
+                int seekSize = 12;
+
+                if (TestMatch(entry, DataDescriptorSignature, buffer[0], buffer[1], buffer[2]))
                 {
-                    wasDataDescriptorSignatureRead = true;
-                    seekSize = 4;
+                    compressedSize = buffer[1];
+                    uncompressedSize = buffer[2];
+                    goto MatchFound;
                 }
 
-                bool is64bit = entry._versionToExtract >= ZipVersionNeededValues.Zip64;
-                seekSize += (is64bit ? 8 : 4) * 2;   // if Zip64 read by 8 bytes else 4 bytes 2 times (compressed and uncompressed size)
+                // let's try to match the next record size (4 x 4) 32 bit with signature
+                buffer[3] = reader.ReadUInt32();
+                seekSize += 4;
+                if (TestMatch(entry, buffer[0], buffer[1], buffer[2], buffer[3]))
+                {
+                    compressedSize = buffer[2];
+                    uncompressedSize = buffer[3];
+                    goto MatchFound;
+                }
 
-                if (reader.BaseStream.Length < reader.BaseStream.Position + seekSize)
+                // At this point prior to trying to match 64 bit structures we need to make sure that version is high enough
+                if (entry._versionToExtract < ZipVersionNeededValues.Zip64)
                 {
                     return false;
                 }
 
-                // dataDescriptorSignature is optional, if it was the DataDescriptorSignature we need to skip CRC 4 bytes else we can assume CRC is alreadyskipped
-                if (wasDataDescriptorSignatureRead)
-                    reader.BaseStream.Seek(4, SeekOrigin.Current);
+                //let's try to match the 64 bit structures 64 bit without signature
+                buffer[4] = reader.ReadUInt32();
+                seekSize += 4;
+                if (TestMatch(entry, DataDescriptorSignature, buffer[0], ConvertToUlong(buffer[1], buffer[2]), ConvertToUlong(buffer[3], buffer[4])))
+                {
+                    compressedSize = (long)ConvertToUlong(buffer[1], buffer[2]);
+                    uncompressedSize = (long)ConvertToUlong(buffer[3], buffer[4]);
+                    goto MatchFound;
+                }
 
-                if (is64bit)
+                //let's try to match the 64 bit structures 64 bit with signature
+                buffer[5] = reader.ReadUInt32();
+                seekSize += 4;
+                if (TestMatch(entry, buffer[0], buffer[1], ConvertToUlong(buffer[2], buffer[3]), ConvertToUlong(buffer[4], buffer[5])))
                 {
-                    compressedSize = reader.ReadInt64();
-                    uncompressedSize = reader.ReadInt64();
+                    compressedSize = (long)ConvertToUlong(buffer[2], buffer[3]);
+                    uncompressedSize = (long)ConvertToUlong(buffer[4], buffer[5]);
+                    goto MatchFound;
                 }
-                else
-                {
-                    compressedSize = reader.ReadInt32();
-                    uncompressedSize = reader.ReadInt32();
-                }
-                reader.BaseStream.Seek(-seekSize - entry.CompressedLength - 4, SeekOrigin.Current); // Seek back to the beginning of compressed stream
+            MatchFound: reader.BaseStream.Seek(-seekSize - entry.CompressedLength - 4, SeekOrigin.Current); // Seek back to the beginning of compressed stream*/
             }
 
             if (entry.CompressedLength != compressedSize)
@@ -533,6 +551,24 @@ namespace System.IO.Compression
             }
 
             return true;
+        }
+
+        internal static ulong ConvertToUlong(uint loverAddressValue, uint higherAddressValue)
+        {
+            return checked((ulong)loverAddressValue + (((ulong)higherAddressValue) << 32));
+        }
+
+        private static bool TestMatch(ZipArchiveEntry entry, uint suspectSignature, uint suspectCrc32, ulong suspectCompressedSize, ulong suspectUncompressedSize)
+        {
+            if (DataDescriptorSignature == suspectSignature && (ulong)entry.CompressedLength == suspectCompressedSize
+                && (ulong)entry.Length == suspectUncompressedSize && entry.Crc32 == suspectCrc32)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 

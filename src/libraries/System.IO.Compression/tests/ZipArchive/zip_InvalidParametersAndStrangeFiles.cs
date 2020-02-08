@@ -130,6 +130,30 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
+        public static async Task ZipArchiveEntry_BypassValidation()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                // Disable the flag variable using reflection as corresponding AppContext value is cached
+                archive.GetType().Assembly.GetType("System.IO.Compression.ZipHelper").GetField("s_validateHeader",
+                    Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static).SetValue(null, false);
+
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    source.CopyTo(ms);
+                    Assert.Equal(ms.Position, ms.Length);  // Just making sure it was readable
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
         public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_CopyTo_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
