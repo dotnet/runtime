@@ -255,7 +255,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             {
                 regNumber srcReg = op1->GetRegNum();
                 assert(genTypeSize(op1->TypeGet()) == genTypeSize(targetType));
-                instruction ins = ins_Copy(srcReg, targetType);
 #ifdef TARGET_ARM
                 if (genTypeSize(targetType) == 8)
                 {
@@ -264,7 +263,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                     {
                         regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
                         assert(otherReg != REG_NA);
-                        inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
+                        inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
                     }
                     else
                     {
@@ -274,6 +273,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
                 else
 #endif // TARGET_ARM
                 {
+                    instruction ins = ins_Copy(srcReg, targetType);
                     inst_RV_RV(ins, targetReg, srcReg, targetType);
                 }
             }
