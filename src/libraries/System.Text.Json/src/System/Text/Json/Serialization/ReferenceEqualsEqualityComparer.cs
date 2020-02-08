@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
@@ -15,7 +16,7 @@ namespace System.Text.Json.Serialization
     {
         public static ReferenceEqualsEqualityComparer<T> Comparer = new ReferenceEqualsEqualityComparer<T>();
 
-        bool IEqualityComparer<T>.Equals(T x, T y)
+        bool IEqualityComparer<T>.Equals([AllowNull] T x, [AllowNull] T y)
         {
             return ReferenceEquals(x, y);
         }

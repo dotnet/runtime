@@ -172,7 +172,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, [NotNullWhen(true)] out Func<Export, object>? castFunction)
         {
-            castFunction = null;
+            castFunction = null!; // TODO2
 
             if (genericType == LazyOfTType)
             {
@@ -180,6 +180,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     castFunction = ExportServices.CreateStronglyTypedLazyFactory(arguments[0].UnderlyingSystemType, null);
                 }
+                // castFunction
                 return true;
             }
 
@@ -189,6 +190,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     castFunction = ExportServices.CreateStronglyTypedLazyFactory(arguments[0].UnderlyingSystemType, arguments[1].UnderlyingSystemType);
                 }
+                // castFunction
                 return true;
             }
 
@@ -200,6 +202,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         castFunction = new ExportFactoryCreator(genericType).CreateStronglyTypedExportFactoryFactory(arguments[0].UnderlyingSystemType, null);
                     }
+                    // castFunction
                     return true;
                 }
                 else if (arguments.Length == 2)
@@ -208,6 +211,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         castFunction = new ExportFactoryCreator(genericType).CreateStronglyTypedExportFactoryFactory(arguments[0].UnderlyingSystemType, arguments[1].UnderlyingSystemType);
                     }
+                    // castFunction
                     return true;
                 }
                 else

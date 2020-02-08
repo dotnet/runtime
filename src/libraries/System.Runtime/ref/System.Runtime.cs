@@ -4213,10 +4213,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) { }
+        public static void Fail(string? message) => throw null; 
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) { }
+        public static void Fail(string? message, string? detailMessage) => throw null; 
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -7447,9 +7447,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { }
+        public static void Throw(System.Exception source) => throw null; 
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {

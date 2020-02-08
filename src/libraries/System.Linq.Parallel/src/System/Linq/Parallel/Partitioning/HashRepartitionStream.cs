@@ -93,7 +93,7 @@ namespace System.Linq.Parallel
                 (HashCodeMask &
                     (_elementComparer == null ?
                         (element == null ? NULL_ELEMENT_HASH_CODE : element.GetHashCode()) :
-                        _elementComparer.GetHashCode(element)))
+                        _elementComparer.GetHashCode(element!)))
                         % _distributionMod;
         }
 
@@ -103,7 +103,7 @@ namespace System.Linq.Parallel
                 (HashCodeMask &
                     (_keyComparer == null ?
                         (key == null ? NULL_ELEMENT_HASH_CODE : key.GetHashCode()) :
-                        _keyComparer.GetHashCode(key))) % _distributionMod;
+                        _keyComparer.GetHashCode(key!))) % _distributionMod;
         }
     }
 }

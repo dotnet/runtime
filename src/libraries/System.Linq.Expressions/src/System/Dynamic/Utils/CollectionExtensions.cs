@@ -86,7 +86,7 @@ namespace System.Dynamic.Utils
             int h = 6551;
             foreach (T t in list)
             {
-                h ^= (h << 5) ^ cmp.GetHashCode(t);
+                h ^= (h << 5) ^ cmp.GetHashCode(t!);
             }
             return h;
         }

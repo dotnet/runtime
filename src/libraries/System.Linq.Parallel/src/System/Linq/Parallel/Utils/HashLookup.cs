@@ -66,7 +66,7 @@ namespace System.Linq.Parallel
             return HashCodeMask &
                 (comparer == null ?
                     (key == null ? 0 : key.GetHashCode()) :
-                    comparer.GetHashCode(key));
+                    comparer.GetHashCode(key!));
         }
 
         private bool AreKeysEqual(TKey key1, TKey key2)

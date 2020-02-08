@@ -140,10 +140,12 @@ namespace System.ComponentModel.Composition.Primitives
             if (multipleExports != null)
             {
                 multipleMatches = multipleExports;
+                // TODO2 singleMatch dould be null when returning true
+                singleMatch = null!;
             }
             else
             {
-                singleMatch = singleExport;
+                singleMatch = singleExport!;
             }
             return true;
         }

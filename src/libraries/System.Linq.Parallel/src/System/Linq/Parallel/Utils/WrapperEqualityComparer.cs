@@ -43,7 +43,7 @@ namespace System.Linq.Parallel
         public int GetHashCode(Wrapper<T> x)
         {
             Debug.Assert(_comparer != null);
-            return _comparer.GetHashCode(x.Value);
+            return _comparer.GetHashCode(x.Value!);
         }
     }
 }

@@ -303,7 +303,8 @@ namespace System
 
         public void Add<T>(T value, IEqualityComparer<T>? comparer)
         {
-            Add(comparer != null ? comparer.GetHashCode(value) : (value?.GetHashCode() ?? 0));
+            // TODO2
+            Add(comparer != null ? comparer.GetHashCode(value!) : (value?.GetHashCode() ?? 0));
         }
 
         private void Add(int value)
