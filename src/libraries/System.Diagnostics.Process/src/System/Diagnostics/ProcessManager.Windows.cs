@@ -534,7 +534,7 @@ namespace System.Diagnostics
                 case 12: return ThreadWaitReason.Suspended;
                 case 6:
                 case 13: return ThreadWaitReason.UserRequest;
-                case 14: return ThreadWaitReason.EventPairHigh; ;
+                case 14: return ThreadWaitReason.EventPairHigh;
                 case 15: return ThreadWaitReason.EventPairLow;
                 case 16: return ThreadWaitReason.LpcReceive;
                 case 17: return ThreadWaitReason.LpcReply;
