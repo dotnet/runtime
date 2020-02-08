@@ -80,90 +80,74 @@ namespace System.Diagnostics
             {
                 processHandle = ProcessManager.OpenProcess(processId, Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION | Interop.Advapi32.ProcessOptions.PROCESS_VM_READ, true);
 
-                IntPtr[] moduleHandles = new IntPtr[64];
-                int moduleCount;
-                while (true)
+                bool succeeded = Interop.Kernel32.EnumProcessModules(processHandle, null, 0, out int needed);
+
+                // The API we need to use to enumerate process modules differs on two factors:
+                //   1) If our process is running in WOW64.
+                //   2) The bitness of the process we wish to introspect.
+                //
+                // If we are not running in WOW64 or we ARE in WOW64 but want to inspect a 32 bit process
+                // we can call psapi!EnumProcessModules.
+                //
+                // If we are running in WOW64 and we want to inspect the modules of a 64 bit process then
+                // psapi!EnumProcessModules will return false with ERROR_PARTIAL_COPY (299).  In this case we can't
+                // do the enumeration at all.  So we'll detect this case and bail out.
+                if (!succeeded)
                 {
-                    bool enumResult = Interop.Kernel32.EnumProcessModules(processHandle, moduleHandles, moduleHandles.Length * IntPtr.Size, out moduleCount);
-
-                    // The API we need to use to enumerate process modules differs on two factors:
-                    //   1) If our process is running in WOW64.
-                    //   2) The bitness of the process we wish to introspect.
-                    //
-                    // If we are not running in WOW64 or we ARE in WOW64 but want to inspect a 32 bit process
-                    // we can call psapi!EnumProcessModules.
-                    //
-                    // If we are running in WOW64 and we want to inspect the modules of a 64 bit process then
-                    // psapi!EnumProcessModules will return false with ERROR_PARTIAL_COPY (299).  In this case we can't
-                    // do the enumeration at all.  So we'll detect this case and bail out.
-                    //
-                    // Also, EnumProcessModules is not a reliable method to get the modules for a process.
-                    // If OS loader is touching module information, this method might fail and copy part of the data.
-                    // This is no easy solution to this problem. The only reliable way to fix this is to
-                    // suspend all the threads in target process. Of course we don't want to do this in Process class.
-                    // So we just to try avoid the race by calling the same method 50 (an arbitrary number) times.
-                    //
-                    if (!enumResult)
+                    SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
+                    try
                     {
-                        SafeProcessHandle hCurProcess = SafeProcessHandle.InvalidHandle;
-                        try
+                        hCurProcess = ProcessManager.OpenProcess((int)Interop.Kernel32.GetCurrentProcessId(), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
+
+                        if (!Interop.Kernel32.IsWow64Process(hCurProcess, out bool sourceProcessIsWow64))
                         {
-                            hCurProcess = ProcessManager.OpenProcess((int)Interop.Kernel32.GetCurrentProcessId(), Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION, true);
-
-                            if (!Interop.Kernel32.IsWow64Process(hCurProcess, out bool sourceProcessIsWow64))
-                            {
-                                throw new Win32Exception();
-                            }
-
-                            if (!Interop.Kernel32.IsWow64Process(processHandle, out bool targetProcessIsWow64))
-                            {
-                                throw new Win32Exception();
-                            }
-
-                            if (sourceProcessIsWow64 && !targetProcessIsWow64)
-                            {
-                                // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
-                                throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
-                            }
-                        }
-                        finally
-                        {
-                            if (hCurProcess != SafeProcessHandle.InvalidHandle)
-                            {
-                                hCurProcess.Dispose();
-                            }
+                            throw new Win32Exception();
                         }
 
-                        // If the failure wasn't due to Wow64, try again.
-                        for (int i = 0; i < 50; i++)
+                        if (!Interop.Kernel32.IsWow64Process(processHandle, out bool targetProcessIsWow64))
                         {
-                            enumResult = Interop.Kernel32.EnumProcessModules(processHandle, moduleHandles, moduleHandles.Length * IntPtr.Size, out moduleCount);
-                            if (enumResult)
-                            {
-                                break;
-                            }
+                            throw new Win32Exception();
+                        }
+
+                        if (sourceProcessIsWow64 && !targetProcessIsWow64)
+                        {
+                            // Wow64 isn't going to allow this to happen, the best we can do is give a descriptive error to the user.
+                            throw new Win32Exception(Interop.Errors.ERROR_PARTIAL_COPY, SR.EnumProcessModuleFailedDueToWow);
+                        }
+                    }
+                    finally
+                    {
+                        if (hCurProcess != SafeProcessHandle.InvalidHandle)
+                        {
+                            hCurProcess.Dispose();
                         }
                     }
 
-                    if (!enumResult)
-                    {
-                        throw new Win32Exception();
-                    }
-
-                    moduleCount /= IntPtr.Size;
-                    if (moduleCount <= moduleHandles.Length)
-                        break;
-                    moduleHandles = new IntPtr[moduleHandles.Length * 2];
+                    EnumProcessModulesUntilSuccess(processHandle, null, 0, out needed);
                 }
 
-                var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : moduleCount);
+                int modulesCount;
+                IntPtr[] moduleHandles;
+                for (; ; )
+                {
+                    int size = needed;
+                    modulesCount = size / IntPtr.Size;
+                    moduleHandles = new IntPtr[modulesCount];
+                    EnumProcessModulesUntilSuccess(processHandle, moduleHandles, size, out needed);
+                    if (size == needed)
+                    {
+                        break;
+                    }
+                }
+
+                var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
                 const int MaxShortPath = 260;
                 int minimumLength = MaxShortPath;
                 char[] chars = ArrayPool<char>.Shared.Rent(minimumLength);
                 try
                 {
-                    for (int i = 0; i < moduleCount; i++)
+                    for (int i = 0; i < modulesCount; i++)
                     {
                         if (i > 0)
                         {
@@ -239,6 +223,24 @@ namespace System.Diagnostics
                     processHandle.Dispose();
                 }
             }
+        }
+
+        private static void EnumProcessModulesUntilSuccess(SafeProcessHandle processHandle, IntPtr[]? modules, int size, out int needed)
+        {
+            // EnumProcessModules is not a reliable method to get the modules for a process.
+            // If OS loader is touching module information, this method might fail and copy part of the data.
+            // This is no easy solution to this problem. The only reliable way to fix this is to
+            // suspend all the threads in target process. Of course we don't want to do this in Process class.
+            // So we just to try avoid the race by calling the same method 50 (an arbitrary number) times.
+            for (int i = 0; i < 50; i++)
+            {
+                if (Interop.Kernel32.EnumProcessModules(processHandle, modules, size, out needed))
+                {
+                    return;
+                }
+            }
+
+            throw new Win32Exception();
         }
     }
 
