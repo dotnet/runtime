@@ -669,6 +669,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
         public void DiscoverAddinsWithCombinedCustomExportAndMetadataAttribute()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(Addin1), typeof(Addin2), typeof(Addin3));
