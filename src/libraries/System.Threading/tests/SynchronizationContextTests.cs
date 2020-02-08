@@ -42,6 +42,7 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31977", TargetFrameworkMonikers.Mono)]
         public static void WaitNotificationTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
