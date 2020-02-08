@@ -97,7 +97,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
-                ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
+                ? ApplicationUri.ToLowerInvariant()
                 : null;
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
