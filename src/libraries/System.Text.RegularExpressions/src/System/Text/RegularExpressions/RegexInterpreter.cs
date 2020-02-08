@@ -53,9 +53,9 @@ namespace System.Text.RegularExpressions
 
         private void Trackto(int newpos) => runtrackpos = runtrack!.Length - newpos;
 
-        /// <summary>Push onto the backtracking stack.</summary>
         private int Trackpos() => runtrack!.Length - runtrackpos;
 
+        /// <summary>Push onto the backtracking stack.</summary>
         private void TrackPush() => runtrack![--runtrackpos] = _codepos;
 
         private void TrackPush(int i1)
@@ -161,10 +161,10 @@ namespace System.Text.RegularExpressions
         /// <summary>Pop framesize items from the backtracking stack.</summary>
         private void TrackPop(int framesize) => runtrackpos += framesize;
 
-        /// <summary>
-        /// Technically we are actually peeking at items already popped.  So if you want to
-        /// get and pop the top item from the stack, you do `TrackPop(); TrackPeek();`.
-        /// </summary>
+        /// <summary>Peek at the item popped from the stack.</summary>
+        /// <remarks>
+        /// If you want to get and pop the top item from the stack, you do `TrackPop(); TrackPeek();`.
+        /// </remarks>
         private int TrackPeek() => runtrack![runtrackpos - 1];
 
         /// <summary>Get the ith element down on the backtracking stack.</summary>

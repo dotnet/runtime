@@ -4430,6 +4430,7 @@ namespace System.Text.RegularExpressions
 
                             // runtextpos += len;
                             // i = 0;
+                            // goto loopEnd;
                             Ldloc(_runtextposLocal!);
                             Ldloc(lenLocal);
                             Add();
@@ -4441,6 +4442,7 @@ namespace System.Text.RegularExpressions
                             // charFound:
                             // runtextpos += i;
                             // i = len - i;
+                            // goto loopEnd;
                             MarkLabel(charFound);
                             Ldloc(_runtextposLocal!);
                             Ldloc(iLocal);
@@ -4519,6 +4521,7 @@ namespace System.Text.RegularExpressions
                             Stloc(_runtextposLocal!);
                         }
 
+                        // loopEnd:
                         MarkLabel(loopEnd);
                         if (Code() != RegexCode.Oneloopatomic && Code() != RegexCode.Notoneloopatomic && Code() != RegexCode.Setloopatomic)
                         {
