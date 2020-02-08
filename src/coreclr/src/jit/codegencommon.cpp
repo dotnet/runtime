@@ -10488,7 +10488,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
             {
                 if (inlineContext != nullptr)
                 {
-                    noway_assert(jitGetILoffs(offsx) <= inlineContext->GetImportedILSize());
+                    noway_assert(jitGetILoffs(offsx) <= inlineContext->GetILSize());
                 }
                 else
                 {

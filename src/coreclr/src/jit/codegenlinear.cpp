@@ -453,10 +453,8 @@ void CodeGen::genCodeForBBlist()
                 firstMapping = false;
 #ifdef DEBUG
                 assert(ilOffset->gtStmtLastILoffs <= compiler->info.compILCodeSize ||
-                       (ilOffset->gtInlineContext != nullptr &&
-                        ilOffset->gtInlineContext->GetOffset() <= compiler->info.compILCodeSize &&
-                        ilOffset->gtStmtILoffsx <= ilOffset->gtInlineContext->GetImportedILSize()) ||
-                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET);
+                       ilOffset->gtStmtLastILoffs == BAD_IL_OFFSET ||
+                       (inlineContext != nullptr && ilOffset->gtStmtLastILoffs <= inlineContext->GetILSize()));
 
                 if (compiler->opts.dspCode && compiler->opts.dspInstrs && ilOffset->gtStmtLastILoffs != BAD_IL_OFFSET)
                 {
