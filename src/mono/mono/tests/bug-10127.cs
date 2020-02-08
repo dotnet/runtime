@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace WeakReferenceTest
 {
 	public static class Cache {
-		static GCHandle[] table = new GCHandle[1024 * 1024];
+		static GCHandle[] table = new GCHandle[1024 * 512];
 
 		public static T Probe<T>(int hc) where T : class
 		{
@@ -98,7 +98,7 @@ namespace WeakReferenceTest
 				tester.Start();
 			}
 
-			for (int i = 0; i < 4; ++i)
+			for (int i = 0; i < 2; ++i)
 			{
 				Thread.Sleep(TimeSpan.FromSeconds(1));
 			}
