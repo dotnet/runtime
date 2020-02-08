@@ -529,11 +529,11 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Translate opaque <see cref="System.SequencePosition"/> value to numerical position offset
+        /// Returns the offset of a <paramref name="position" /> within this sequence from the start.
         /// </summary>
         /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
         /// <returns>The offset from the start of the sequence.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">Thrown when provided <see cref="System.SequencePosition"/> is invalid</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">The provided <see cref="System.SequencePosition"/> is invalid</exception>
         public long GetOffset(SequencePosition position)
         {
             object? positionSequenceObject = position.GetObject();
