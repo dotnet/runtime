@@ -61,12 +61,15 @@ namespace InteropLib
             _In_ IUnknown* external,
             _In_ INT32 flagsRaw,
             _In_ size_t contextSize,
-            _Outptr_ void** context,
-            _Outptr_ IUnknown** agileReference) noexcept
+            _Out_ ExternalWrapperResult* result) noexcept
         {
-            _ASSERTE(external != nullptr && context != nullptr && agileReference != nullptr);
+            _ASSERTE(external != nullptr && result != nullptr);
 
             HRESULT hr;
+
+            // Attempt to create an agile reference first.
+            ComHolder<IAgileReference> reference;
+            RETURN_IF_FAILED(CreateAgileReference(external, &reference));
 
             // Convert input to appropriate type.
             auto flags = static_cast<CreateObjectFlags>(flagsRaw);
@@ -74,11 +77,9 @@ namespace InteropLib
             NativeObjectWrapperContext* wrapperContext;
             RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
 
-            ComHolder<IAgileReference> reference;
-            RETURN_IF_FAILED(CreateAgileReference(external, &reference));
-            *agileReference = reference.Detach();
-
-            *context = wrapperContext->GetRuntimeContext();
+            result->Context = wrapperContext->GetRuntimeContext();
+            result->AgileReference = reference.Detach();
+            result->FromTrackerRuntime = (wrapperContext->GetReferenceTracker() != nullptr);
             return S_OK;
         }
 
@@ -90,11 +91,12 @@ namespace InteropLib
             _ASSERTE(context != nullptr);
 
             // Check if the tracker object manager should be informed prior to being destroyed.
-            if (context->GetReferenceTracker() != nullptr)
+            IReferenceTracker* trackerMaybe = context->GetReferenceTracker();
+            if (trackerMaybe != nullptr)
             {
                 // We only call this during a GC so ignore the failure as
-                // there is no way we can handle that failure at this point.
-                HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(context);
+                // there is no way we can handle it at this point.
+                HRESULT hr = TrackerObjectManager::BeforeWrapperDestroyed(trackerMaybe);
                 _ASSERTE(SUCCEEDED(hr));
                 (void)hr;
             }
@@ -102,13 +104,14 @@ namespace InteropLib
             NativeObjectWrapperContext::Destroy(context);
         }
 
-        bool IsReferenceTrackerInstance(_In_ void* contextMaybe) noexcept
+        void SeparateWrapperFromTrackerRuntime(_In_ void* contextMaybe) noexcept
         {
             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
-            if (context == nullptr)
-                return false;
 
-            return (context->GetReferenceTracker() != nullptr);
+            // A caller should not be separating a context without knowing if the context is valid.
+            _ASSERTE(context != nullptr);
+
+            context->DisconnectTracker();
         }
 
         bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept
@@ -133,7 +136,7 @@ namespace InteropLib
             ULONG count = wrapper->AddRef();
             if (count == 1)
             {
-                // No object was supplied so reactivation isn't possible.
+                // No object handle was supplied so reactivation isn't possible.
                 if (handle == nullptr)
                 {
                     wrapper->Release();

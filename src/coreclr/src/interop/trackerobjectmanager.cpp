@@ -237,20 +237,6 @@ namespace
         }
     };
 
-    HRESULT OnExternalTrackerObject(_In_ NativeObjectWrapperContext* nowc, _In_ RuntimeCallContext* cxt)
-    {
-        _ASSERTE(nowc != nullptr && cxt != nullptr);
-
-        HRESULT hr;
-        IReferenceTracker* obj = nowc->GetReferenceTracker();
-
-        // Ask the tracker instance to find all reference targets.
-        FindDependentWrappersCallback cb{ nowc, cxt };
-        RETURN_IF_FAILED(obj->FindTrackerTargets(&cb));
-
-        return S_OK;
-    }
-
     HRESULT WalkExternalTrackerObjects(_In_ RuntimeCallContext* cxt)
     {
         _ASSERTE(cxt != nullptr);
@@ -266,10 +252,13 @@ namespace
             NativeObjectWrapperContext* nowc = NativeObjectWrapperContext::MapFromRuntimeContext(extObjContext);
 
             // Check if the object is a tracker object.
-            if (nowc->GetReferenceTracker() == nullptr)
+            IReferenceTracker* trackerMaybe = nowc->GetReferenceTracker();
+            if (trackerMaybe == nullptr)
                 continue;
 
-            hr = OnExternalTrackerObject(nowc, cxt);
+            // Ask the tracker instance to find all reference targets.
+            FindDependentWrappersCallback cb{ nowc, cxt };
+            hr = trackerMaybe->FindTrackerTargets(&cb);
             if (FAILED(hr))
                 break;
         }
@@ -320,13 +309,11 @@ HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* o
     return S_OK;
 }
 
-HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ NativeObjectWrapperContext* cxt)
+HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ IReferenceTracker* obj)
 {
-    _ASSERTE(cxt != nullptr);
+    _ASSERTE(obj != nullptr);
 
     HRESULT hr;
-    IReferenceTracker* obj = cxt->GetReferenceTracker();
-    _ASSERTE(obj != nullptr);
 
     // Notify tracker runtime that we've created a new wrapper for this object.
     // To avoid surprises, we should notify them before we fire the first AddRefFromTrackerSource.
@@ -340,13 +327,11 @@ HRESULT TrackerObjectManager::AfterWrapperCreated(_In_ NativeObjectWrapperContex
     return S_OK;
 }
 
-HRESULT TrackerObjectManager::BeforeWrapperDestroyed(_In_ NativeObjectWrapperContext* cxt)
+HRESULT TrackerObjectManager::BeforeWrapperDestroyed(_In_ IReferenceTracker* obj)
 {
-    _ASSERTE(cxt != nullptr);
+    _ASSERTE(obj != nullptr);
 
     HRESULT hr;
-    IReferenceTracker* obj = cxt->GetReferenceTracker();
-    _ASSERTE(obj != nullptr);
 
     // Notify tracker runtime that we are about to destroy a wrapper
     // (same timing as short weak handle) for this object.

@@ -34,7 +34,7 @@ namespace
         DWORD Flags;
 
         static void Construct(
-            _In_ ExternalObjectContext* cxt,
+            _Out_ ExternalObjectContext* cxt,
             _In_ IUnknown* identity,
             _In_opt_ void* threadContext,
             _In_ DWORD syncBlockIndex,
@@ -94,34 +94,32 @@ namespace
 
     static_assert((sizeof(ExternalObjectContext) % sizeof(void*)) == 0, "Keep context pointer size aligned");
 
-    // Holder for a External Object Context
-    struct ExtObjCxtHolder
+    // Holder for a External Wrapper Result
+    struct ExternalWrapperResultHolder
     {
-        ExternalObjectContext* _cxt;
-        ExtObjCxtHolder()
-            : _cxt(nullptr)
+        ExternalWrapperResult Result;
+        ExternalWrapperResultHolder()
+            : Result{}
         { }
-        ~ExtObjCxtHolder()
+        ~ExternalWrapperResultHolder()
         {
-            if (_cxt != nullptr)
-                InteropLib::Com::DestroyWrapperForExternal(_cxt);
+            if (Result.Context != nullptr)
+                InteropLib::Com::DestroyWrapperForExternal(Result.Context);
+            if (Result.AgileRef != nullptr)
+                (void)Result.AgileRef->Release();
         }
-        ExternalObjectContext* operator->()
+        ExternalWrapperResult* operator&()
         {
-            return _cxt;
+            return &Result;
         }
-        ExternalObjectContext** operator&()
+        ExternalObjectContext* GetContext()
         {
-            return &_cxt;
+            return static_cast<ExternalObjectContext*>(Result.Context);
         }
-        operator ExternalObjectContext*()
+        ExternalObjectContext* DetachContext()
         {
-            return _cxt;
-        }
-        ExternalObjectContext* Detach()
-        {
-            ExternalObjectContext* t = _cxt;
-            _cxt = nullptr;
+            ExternalObjectContext* t = GetContext();
+            Result.Context = nullptr;
             return t;
         }
     };
@@ -200,9 +198,7 @@ namespace
         //    threadContext - The object must be associated with the supplied thread context.
         //
         // [TODO] Performance improvement should be made here to provide a custom IEnumerable
-        // instead of a managed array. When the custom solution is done, the objects' syncblocks
-        // should be updated by removing the IReferenceTracker instance stored within the
-        // context block held on the InteropLib side.
+        // instead of a managed array.
         OBJECTREF CreateManagedEnumerable(_In_ DWORD withFlags, _In_opt_ void* threadContext)
         {
             CONTRACT(OBJECTREF)
@@ -250,6 +246,9 @@ namespace
                     if (inst->ThreadContext == threadContext
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
+                        // Separate the wrapper from the tracker runtime
+                        // prior to passing this onto the caller.
+                        InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                         gc.arrRef->SetAt(objCount, inst->GetObjectRef());
                     }
                 }
@@ -264,7 +263,9 @@ namespace
 
                 void *src = gc.arrRef->GetDataPtr();
                 void *dest = gc.arrRefTmp->GetDataPtr();
-                memcpyNoGCRefs(dest, src, objCount * elementSize);
+
+                _ASSERTE(sizeof(Object*) == elementSize && "Assumption invalidated in memmoveGCRefs() usage");
+                memmoveGCRefs(dest, src, objCount * elementSize);
                 gc.arrRef = gc.arrRefTmp;
             }
 
@@ -596,23 +597,26 @@ namespace
         else
         {
             // Create context and IAgileReference instance for the possibly new external COM object.
-            ExtObjCxtHolder newContext;
-            SafeComHolder<IUnknown> agileRef;
-            hr = InteropLib::Com::CreateWrapperForExternal(identity, flags, sizeof(ExternalObjectContext), (void**)&newContext, &agileRef);
+            ExternalWrapperResultHolder resultHolder;
+            hr = InteropLib::Com::CreateWrapperForExternal(
+                identity,
+                flags,
+                sizeof(ExternalObjectContext),
+                &resultHolder);
             if (FAILED(hr))
                 COMPlusThrow(hr);
 
             // Call the implementation to create an external object wrapper.
-            gc.objRef = CallGetObject(&gc.implRef, identity, agileRef, flags);
+            gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
             if (gc.objRef == NULL)
                 COMPlusThrow(kArgumentNullException);
 
             // Construct the new context with the object details.
-            DWORD flags = InteropLib::Com::IsReferenceTrackerInstance((void*)newContext)
+            DWORD flags = resultHolder.Result.FromTrackerRuntime
                             ? ExternalObjectContext::Flags_ReferenceTracker
                             : ExternalObjectContext::Flags_None;
             ExternalObjectContext::Construct(
-                newContext,
+                resultHolder.GetContext(),
                 identity,
                 GetCurrentCtxCookie(),
                 gc.objRef->GetSyncBlockIndex(),
@@ -621,12 +625,12 @@ namespace
             // Attempt to insert the new context into the cache.
             {
                 ExtObjCxtCache::LockHolder lock(cache);
-                extObjCxt = cache->FindOrAdd(identity, newContext);
+                extObjCxt = cache->FindOrAdd(identity, resultHolder.GetContext());
             }
 
             // If the returned context matches the new context it means the
             // new context was inserted.
-            if (extObjCxt == newContext)
+            if (extObjCxt == resultHolder.GetContext())
             {
                 // Update the object's SyncBlock with a handle to the context for runtime cleanup.
                 SyncBlock* syncBlock = gc.objRef->GetSyncBlock();
@@ -635,7 +639,7 @@ namespace
                 (void)interopInfo->TrySetExternalComObjectContext((void**)extObjCxt);
 
                 // Detach from the holder to avoid cleanup.
-                (void)newContext.Detach();
+                (void)resultHolder.DetachContext();
             }
 
             _ASSERTE(extObjCxt->IsActive());
@@ -1141,7 +1145,6 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     context->MarkCollected();
 
     ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
-    _ASSERTE(cache != NULL);
     cache->Remove(context);
 }
 
@@ -1183,8 +1186,6 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     if (nCondemnedGeneration >= 2)
     {
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
-        _ASSERTE(cache != NULL);
-
         RCWRefCache *refCache = GetAppDomain()->GetRCWRefCache();
 
         // Reset the ref cache

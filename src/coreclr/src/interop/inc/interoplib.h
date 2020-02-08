@@ -36,22 +36,33 @@ namespace InteropLib
         // Destroy the supplied wrapper
         void DestroyWrapperForObject(_In_ void* wrapper) noexcept;
 
+        struct ExternalWrapperResult
+        {
+            // The returned context memory is guaranteed to be initialized to zero.
+            void* Context;
+
+            // IAgileReference instance.
+            IUnknown* AgileRef;
+
+            // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/ for
+            // details.
+            bool FromTrackerRuntime;
+        };
+
         // Allocate a wrapper context for an external object.
         // The runtime supplies the external object, flags, and a memory
         // request in order to bring the object into the runtime.
-        // The returned context memory is guaranteed to be initialized to zero.
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
             _In_ INT32 flags,
             _In_ size_t contextSize,
-            _Outptr_ void** context,
-            _Outptr_ IUnknown** agileReference) noexcept;
+            _Out_ ExternalWrapperResult* result) noexcept;
 
         // Destroy the supplied wrapper.
         void DestroyWrapperForExternal(_In_ void* context) noexcept;
 
-        // Check if the context is associated with a tracker runtime.
-        bool IsReferenceTrackerInstance(_In_ void* context) noexcept;
+        // Separate the supplied wrapper from the tracker runtime.
+        void SeparateWrapperFromTrackerRuntime(_In_ void* context) noexcept;
 
         // Register a runtime implementation callback in the Reference Tracker Host scenario.
         // Returns true if registration succeeded, otherwise false.

@@ -539,7 +539,8 @@ ULONG ManagedObjectWrapper::Release(void)
 
 namespace
 {
-    const size_t ContextSentinal = 0x0a110ced;
+    const size_t LiveContextSentinal = 0x0a110ced;
+    const size_t DeadContextSentinal = 0xdeaddead;
 }
 
 NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_In_ void* cxtMaybe)
@@ -552,7 +553,7 @@ NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_I
     NativeObjectWrapperContext* cxt = reinterpret_cast<NativeObjectWrapperContext*>(cxtRaw);
 
 #ifdef _DEBUG
-    _ASSERTE(cxt->_sentinal == ContextSentinal);
+    _ASSERTE(cxt->_sentinal == LiveContextSentinal);
 #endif
 
     return cxt;
@@ -586,13 +587,13 @@ HRESULT NativeObjectWrapperContext::Create(
     // Contract specifically requires zeroing out runtime context.
     std::memset(runtimeContext, 0, runtimeContextSize);
 
-    NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ trackerObject, runtimeContext };
+    NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ runtimeContext, trackerObject };
 
-    if (contextLocal->GetReferenceTracker() != nullptr)
+    if (trackerObject != nullptr)
     {
         // Inform the tracker object manager
         _ASSERTE((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject);
-        hr = TrackerObjectManager::AfterWrapperCreated(contextLocal);
+        hr = TrackerObjectManager::AfterWrapperCreated(trackerObject);
         if (FAILED(hr))
         {
             Destroy(contextLocal);
@@ -614,27 +615,40 @@ void NativeObjectWrapperContext::Destroy(_In_ NativeObjectWrapperContext* wrappe
     InteropLibImports::MemFree(wrapper, AllocScenario::NativeObjectWrapper);
 }
 
-NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ void* runtimeContext)
+NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ void* runtimeContext, _In_opt_ IReferenceTracker* trackerObject)
     : _trackerObject{ trackerObject }
     , _runtimeContext{ runtimeContext }
+    , _isValidTracker{ (trackerObject != nullptr ? TRUE : FALSE) }
 #ifdef _DEBUG
-    , _sentinal{ ContextSentinal }
+    , _sentinal{ LiveContextSentinal }
 #endif
 {
-    (void)_trackerObject->AddRef();
+    if (_isValidTracker == TRUE)
+        (void)_trackerObject->AddRef();
 }
 
 NativeObjectWrapperContext::~NativeObjectWrapperContext()
 {
-    (void)_trackerObject->Release();
+    DisconnectTracker();
+
+#ifdef _DEBUG
+    _sentinal = DeadContextSentinal;
+#endif
 }
 
-void* NativeObjectWrapperContext::GetRuntimeContext() const
+void* NativeObjectWrapperContext::GetRuntimeContext() const noexcept
 {
     return _runtimeContext;
 }
 
-IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const
+IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const noexcept
 {
-    return _trackerObject;
+    return ((_isValidTracker == TRUE) ? _trackerObject : nullptr);
+}
+
+void NativeObjectWrapperContext::DisconnectTracker() noexcept
+{
+    // Attempt to disconnect from the tracker.
+    if (TRUE == ::InterlockedCompareExchange(&_isValidTracker, FALSE, TRUE))
+        (void)_trackerObject->Release();
 }

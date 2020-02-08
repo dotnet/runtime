@@ -117,11 +117,12 @@ ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 class NativeObjectWrapperContext
 {
 #ifdef _DEBUG
-    const size_t _sentinal;
+    size_t _sentinal;
 #endif
 
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
+    int32_t _isValidTracker;
 
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.
@@ -138,15 +139,18 @@ public: // static
     static void Destroy(_In_ NativeObjectWrapperContext* wrapper);
 
 private:
-    NativeObjectWrapperContext(_In_ IReferenceTracker* trackerObject, _In_ void* runtimeContext);
+    NativeObjectWrapperContext(_In_ void* runtimeContext, _In_opt_ IReferenceTracker* trackerObject);
     ~NativeObjectWrapperContext();
 
 public:
     // Get the associated runtime context for this context.
-    void* GetRuntimeContext() const;
+    void* GetRuntimeContext() const noexcept;
 
     // Get the IReferenceTracker instance.
-    IReferenceTracker* GetReferenceTracker() const;
+    IReferenceTracker* GetReferenceTracker() const noexcept;
+
+    // Disconnect reference tracker instance.
+    void DisconnectTracker() noexcept;
 };
 
 // API for creating an IAgileReference instance to a supplied IUnknown instance.
@@ -171,10 +175,10 @@ public:
     static HRESULT OnIReferenceTrackerFound(_In_ IReferenceTracker* obj);
 
     // Called after wrapper has been created.
-    static HRESULT AfterWrapperCreated(_In_ NativeObjectWrapperContext* cxt);
+    static HRESULT AfterWrapperCreated(_In_ IReferenceTracker* obj);
 
     // Called before wrapper is about to be destroyed (the same lifetime as short weak handle).
-    static HRESULT BeforeWrapperDestroyed(_In_ NativeObjectWrapperContext* cxt);
+    static HRESULT BeforeWrapperDestroyed(_In_ IReferenceTracker* obj);
 
 public:
     // Begin the reference tracking process for external objects.
