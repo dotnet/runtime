@@ -4235,7 +4235,7 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             // Math.Pow(x, 2) -> x*x
             impPopStack();
             GenTree* arg0 = impPopStack().val;
-            if (arg0->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CNS_DBL))
+            if (arg0->OperIs(GT_LCL_VAR, GT_CNS_DBL))
             {
                 // we don't need to introduce a temp variable for the
                 // first Math.Pow argument if it's a lcl or cns
@@ -4256,13 +4256,6 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             // Math.Pow(x, -1) -> 1/x
             impPopStack();
             return gtNewOperNode(GT_DIV, type, gtNewDconNode(1, type), impPopStack().val);
-        }
-        else if (power == 0.0)
-        {
-            // Math.Pow(x, 0) -> 1
-            impPopStack();
-            impPopStack();
-            return gtNewDconNode(1, type);
         }
     }
 

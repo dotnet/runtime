@@ -12,6 +12,9 @@ class MathPowTests
         tests.TestCorrectnessFloat();
         tests.TestFieldArg();
         tests.TestCallArg();
+        
+        float x = 0, y = 0;
+        tests.TestRefArgs(ref x, ref y);
         return returnCode;
     }
 
@@ -103,5 +106,12 @@ class MathPowTests
     public void TestCallArg()
     {
         AssertEquals(Math.Pow(TestCall1(), 2.0), Math.Pow(TestCall2(), ToVar(2.0)));
+    }
+
+    
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void TestRefArgs(ref x, ref y)
+    {
+        AssertEquals(Math.Pow(x, 2.0), Math.Pow(y, ToVar(2.0)));
     }
 }
