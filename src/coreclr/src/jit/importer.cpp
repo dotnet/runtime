@@ -4226,8 +4226,6 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
     op1 = nullptr;
 
-    /* tmp: checking my tests for correctness on CI
-     *
     if (intrinsicID == CORINFO_INTRINSIC_Pow && impStackTop().val->IsCnsFltOrDbl())
     {
         double    power = impStackTop().val->AsDblCon()->gtDconVal;
@@ -4260,7 +4258,6 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
             return gtNewOperNode(GT_DIV, type, gtNewDconNode(1, type), impPopStack().val);
         }
     }
-    */
 
 #if !defined(TARGET_X86)
     // Intrinsics that are not implemented directly by target instructions will

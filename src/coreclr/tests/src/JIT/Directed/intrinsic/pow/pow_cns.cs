@@ -49,7 +49,7 @@ class MathPowTests
             {
                 -1000, -2, -1, -0.0, 0, 1, 2, 1000,
                 Math.PI, Math.E,
-                double.MinValue, double.MaxValue, double.NaN,
+                double.MinValue, double.MaxValue,
                 double.PositiveInfinity, double.NegativeInfinity
             };
 
@@ -71,7 +71,7 @@ class MathPowTests
             {
                 -1000, -2, -1, -0.0f, 0, 1, 2, 1000,
                 MathF.PI, MathF.E,
-                float.MinValue, float.MaxValue, float.NaN,
+                float.MinValue, float.MaxValue,
                 float.PositiveInfinity, float.NegativeInfinity
             };
 
