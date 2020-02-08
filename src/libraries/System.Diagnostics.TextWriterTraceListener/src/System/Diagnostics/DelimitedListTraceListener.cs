@@ -243,7 +243,7 @@ namespace System.Diagnostics
         {
             int index;
             int lastindex = 0;
-            while ((index = message.IndexOf('"', lastindex)) != -1)
+            while ((index = message.IndexOf('\"', lastindex)) != -1)
             {
                 sb.Append(message, lastindex, index - lastindex);
                 sb.Append("\"\"");
