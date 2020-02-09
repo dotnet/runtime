@@ -3457,6 +3457,7 @@ namespace System.Numerics
             }
         }
 
+        [Intrinsic]
         internal static unsafe Vector<T> Ceiling(Vector<T> value)
         {
             if (Vector.IsHardwareAccelerated)
@@ -3507,6 +3508,7 @@ namespace System.Numerics
             }
         }
 
+        [Intrinsic]
         internal static unsafe Vector<T> Floor(Vector<T> value)
         {
             if (Vector.IsHardwareAccelerated)
