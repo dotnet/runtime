@@ -424,7 +424,6 @@ namespace System.IO.Pipes
         // message, otherwise it is set to true.
         public bool IsMessageComplete
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 // omitting pipe broken exception to allow reader to finish getting message
@@ -465,7 +464,6 @@ namespace System.IO.Pipes
 
         public SafePipeHandle SafePipeHandle
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 if (_handle == null)
