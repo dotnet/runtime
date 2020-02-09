@@ -4217,8 +4217,7 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt32 ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64 ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil || simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;

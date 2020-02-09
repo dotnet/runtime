@@ -44,7 +44,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //   * 0b11 - Round toward zero (Truncate)
 // - Bit 2 - Source of rounding control, 0b0 for immediate.
 // - Bit 3 - Precision exception, 0b1 to ignore. (We don't raise FP exceptions)
-#define ROUNDPS_TO_NEAREST_IMM  0b1000;
+#define ROUNDPS_TO_NEAREST_IMM 0b1000;
 #define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001;
 #define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010;
 #define ROUNDPS_TOWARD_ZERO_IMM 0b1011;
@@ -1126,12 +1126,12 @@ void CodeGen::genSIMDIntrinsicUnOpWithImm(GenTreeSIMD* simdNode)
 
     regNumber   op1Reg = genConsumeReg(op1);
     unsigned    ival;
-    instruction ins    = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
+    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType, &ival);
     assert((ival >= 0) && (ival <= 255));
     GetEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op1Reg, (int8_t)ival);
 }
 
-    //----------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------
 // genSIMDIntrinsic32BitConvert: Generate code for 32-bit SIMD Convert (int/uint <-> float)
 //
 // Arguments:
