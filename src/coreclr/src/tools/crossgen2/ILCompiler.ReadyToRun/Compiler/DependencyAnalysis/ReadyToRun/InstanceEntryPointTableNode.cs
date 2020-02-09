@@ -57,10 +57,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
                     // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
-                    bool enforceOwningType = _factory.Composite;
+                    bool enforceOwningType = _factory.CompilationModuleGroup.IsCompositeBuildMode;
                     EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
                     ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
-                    if (!_factory.Composite && moduleToken.Module != factory.InputModules[0])
+                    if (!_factory.CompilationModuleGroup.IsCompositeBuildMode && moduleToken.Module != factory.CompilationModuleGroup.CompilationModuleSet.First())
                     {
                         enforceOwningType = true;
                     }

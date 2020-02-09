@@ -144,6 +144,9 @@
   <data name="InputFilesToCompile" xml:space="preserve">
     <value>Input file(s) to compile</value>
   </data>
+  <data name="UnrootedInputFilesToCompile" xml:space="preserve">
+    <value>"Input files without automatic rooting of all methods</value>
+  </data>
   <data name="JitPathOption" xml:space="preserve">
     <value>Path to JIT compiler library</value>
   </data>

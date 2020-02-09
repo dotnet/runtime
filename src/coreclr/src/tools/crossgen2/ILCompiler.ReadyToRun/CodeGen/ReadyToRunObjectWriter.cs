@@ -82,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                 int timeDateStamp;
                 ISymbolNode r2rHeaderExportSymbol;
 
-                if (_nodeFactory.Composite)
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
                 {
                     headerBuilder = PEHeaderProvider.Create(relocsStripped: false, dllCharacteristics: default(DllCharacteristics), Subsystem.Unknown, _nodeFactory.Target);
                     timeDateStamp = 0;
@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    PEReader inputPeReader = _nodeFactory.InputModules[0].PEReader;
+                    PEReader inputPeReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader;
                     headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;
@@ -150,7 +150,7 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, mapFile);
                 }
 
-                if (!_nodeFactory.Composite)
+                if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
                 {
                     r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
                 }

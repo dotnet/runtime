@@ -15,22 +15,25 @@ namespace ILCompiler
 {
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
     {
-        protected readonly HashSet<ModuleDesc> _compilationModuleSet;
+        protected readonly HashSet<EcmaModule> _compilationModuleSet;
         private readonly HashSet<ModuleDesc> _versionBubbleModuleSet;
         private Dictionary<TypeDesc, ModuleToken> _typeRefsInCompilationModuleSet;
         private readonly bool _compileGenericDependenciesFromVersionBubbleModuleSet;
+        private readonly bool _isCompositeBuildMode;
         private readonly ConcurrentDictionary<TypeDesc, bool> _containsTypeLayoutCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<TypeDesc, bool> _versionsWithTypeCache = new ConcurrentDictionary<TypeDesc, bool>();
         private readonly ConcurrentDictionary<MethodDesc, bool> _versionsWithMethodCache = new ConcurrentDictionary<MethodDesc, bool>();
 
         public ReadyToRunCompilationModuleGroupBase(
             TypeSystemContext context,
-            IEnumerable<ModuleDesc> compilationModuleSet,
+            bool isCompositeBuildMode,
+            IEnumerable<EcmaModule> compilationModuleSet,
             IEnumerable<ModuleDesc> versionBubbleModuleSet,
             bool compileGenericDependenciesFromVersionBubbleModuleSet)
         {
-            _compilationModuleSet = new HashSet<ModuleDesc>(compilationModuleSet);
+            _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
 
+            _isCompositeBuildMode = isCompositeBuildMode;
             _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 
@@ -212,6 +215,10 @@ namespace ILCompiler
 
             return _typeRefsInCompilationModuleSet.TryGetValue(type, out token);
         }
+
+        public sealed override bool IsCompositeBuildMode => _isCompositeBuildMode;
+
+        public sealed override IEnumerable<EcmaModule> CompilationModuleSet => _compilationModuleSet;
 
         private bool ComputeTypeVersionsWithCode(TypeDesc type)
         {

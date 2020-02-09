@@ -5,6 +5,8 @@
 using Internal.TypeSystem;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Internal.ReadyToRunConstants;
+using Internal.TypeSystem.Ecma;
+using System.Collections.Generic;
 
 namespace ILCompiler
 {
@@ -58,5 +60,16 @@ namespace ILCompiler
         /// Gets the flags to be stored in the generated ReadyToRun module header.
         /// </summary>
         public abstract ReadyToRunFlags GetReadyToRunFlags();
+
+        /// <summary>
+        /// Returns true when the compiler is running in composite build mode i.e. building an arbitrary number of
+        /// input MSIL assemblies into a single output R2R binary.
+        /// </summary>
+        public abstract bool IsCompositeBuildMode { get; }
+
+        /// <summary>
+        /// List of input modules to use for the compilation.
+        /// </summary>
+        public abstract IEnumerable<EcmaModule> CompilationModuleSet { get; }
     }
 }

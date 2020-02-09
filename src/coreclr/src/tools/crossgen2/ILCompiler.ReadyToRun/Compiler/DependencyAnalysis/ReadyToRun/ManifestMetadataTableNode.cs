@@ -75,13 +75,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _signatureEmitters = new List<ISignatureEmitter>();
             _nodeFactory = nodeFactory;
 
-            if (!_nodeFactory.Composite)
+            if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
-                if (_nodeFactory.InputModules.Count() > 1)
+                if (_nodeFactory.CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
                 {
                     throw new InternalCompilerErrorException("Multiple input files specified without the composite flag");
                 }
-                MetadataReader mdReader = _nodeFactory.InputModules[0].MetadataReader;
+                MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
                 for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
                 {
@@ -95,11 +95,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // AssemblyRefCount + 1 corresponds to ROWID 0 in the manifest metadata
             _nextModuleId = _assemblyRefCount + 2;
 
-            if (_nodeFactory.Composite)
+            if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
                 // Fill in entries for all input modules right away to make sure they have parallel indices
                 int nextExpectedId = 2;
-                foreach (EcmaModule inputModule in _nodeFactory.InputModules)
+                foreach (EcmaModule inputModule in _nodeFactory.CompilationModuleGroup.CompilationModuleSet)
                 {
                     int acquiredId = ModuleToIndexInternal(inputModule);
                     if (acquiredId != nextExpectedId)

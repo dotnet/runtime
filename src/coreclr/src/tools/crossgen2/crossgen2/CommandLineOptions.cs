@@ -11,6 +11,7 @@ namespace ILCompiler
     public class CommandLineOptions
     {
         public FileInfo[] InputFilePaths { get; set; }
+        public FileInfo[] UnrootedInputFilePaths { get; set; }
         public FileInfo[] Mibc { get; set; }
         public string[] Reference { get; set; }
         public FileInfo OutputFilePath { get; set; }
@@ -56,8 +57,15 @@ namespace ILCompiler
                     Description = SR.InputFilesToCompile,
                     Arity = arbitraryArity,
                 },
+                new Option(new[] { "--unrooted-input-file-paths", "-u" }, SR.UnrootedInputFilesToCompile)
+                {
+                    Argument = new Argument<FileInfo[]>()
+                    {
+                        Arity = arbitraryArity
+                    }
+                },
                 new Option(new[] { "--reference", "-r" }, SR.ReferenceFiles)
-                { 
+                {
                     Argument = new Argument<string[]>() 
                     { 
                         Arity = arbitraryArity

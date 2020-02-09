@@ -58,12 +58,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public NameMangler NameMangler { get; }
 
-        public bool Composite { get; }
-
-        public EcmaModule[] InputModules { get; }
-
-        public Dictionary<EcmaModule, int> InputModuleIndex { get; }
-
         public MetadataManager MetadataManager { get; }
 
         public bool MarkingComplete => _markingComplete;
@@ -196,7 +190,6 @@ namespace ILCompiler.DependencyAnalysis
             CompilationModuleGroup = compilationModuleGroup;
             Target = context.Target;
             NameMangler = nameMangler;
-            Composite = composite;
             MetadataManager = new ReadyToRunTableManager(context);
             Resolver = moduleTokenResolver;
             SignatureContext = signatureContext;
@@ -208,25 +201,18 @@ namespace ILCompiler.DependencyAnalysis
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 
-            InputModules = inputModules.ToArray();
-            InputModuleIndex = new Dictionary<EcmaModule, int>();
-            for (int inputModuleIndex = 0; inputModuleIndex < InputModules.Length; inputModuleIndex++)
-            {
-                InputModuleIndex.Add(InputModules[inputModuleIndex], inputModuleIndex);
-            }
-
-            if (Composite)
+            if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 // Create a null top-level signature context to force producing module overrides for all signaturess
                 Context = new SignatureContext(null, Resolver);
             }
             else
             {
-                if (InputModules.Length > 1)
+                if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
                 {
-                    throw new InternalCompilerErrorException($"Multiple input modules ({InputModules.Length}) are only supported in composite R2R build mode");
+                    throw new InternalCompilerErrorException($"Multiple input modules ({CompilationModuleGroup.CompilationModuleSet.Count()}) are only supported in composite R2R build mode");
                 }
-                Context = new SignatureContext(InputModules[0], Resolver);
+                Context = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.First(), Resolver);
             }
 
             CreateNodeCaches();
@@ -585,7 +571,7 @@ namespace ILCompiler.DependencyAnalysis
 
             AssemblyTableNode assemblyTable = null;
 
-            if (InputModules.Length > 1)
+            if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
             {
                 assemblyTable = new AssemblyTableNode(Target);
                 Header.Add(Internal.Runtime.ReadyToRunSectionType.ComponentAssemblies, assemblyTable, assemblyTable);
@@ -593,7 +579,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Generate per assembly header tables
             int assemblyIndex = -1;
-            foreach (EcmaModule inputModule in InputModules)
+            foreach (EcmaModule inputModule in CompilationModuleGroup.CompilationModuleSet)
             {
                 assemblyIndex++;
                 HeaderNode tableHeader = Header;
@@ -715,7 +701,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(PrecodeImports, "Precode helper imports are always generated");
             graph.AddRoot(StringImports, "String imports are always generated");
             graph.AddRoot(Header, "ReadyToRunHeader is always generated");
-            if (!Composite)
+            if (!CompilationModuleGroup.IsCompositeBuildMode)
             {
                 graph.AddRoot(CopiedCorHeaderNode, "MSIL COR header is always generated for single-file R2R files");
             }
