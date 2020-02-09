@@ -297,8 +297,8 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 
     // If the first Vtable entry is part of the ManagedObjectWrapper IUnknown impl,
     // we know how to interpret the IUnknown.
-    void* firstEntryInVtable = *reinterpret_cast<void**>(pUnk);
-    if (firstEntryInVtable == ManagedObjectWrapper_IUnknownImpl.QueryInterface)
+    void** vtable = *reinterpret_cast<void***>(pUnk);
+    if (*vtable != ManagedObjectWrapper_IUnknownImpl.QueryInterface)
         return nullptr;
 
     ABI::ComInterfaceDispatch* disp = reinterpret_cast<ABI::ComInterfaceDispatch*>(pUnk);

@@ -772,8 +772,6 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(handle);
-
         HRESULT hr = S_OK;
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
@@ -788,7 +786,7 @@ namespace InteropLibImports
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
-            gc.implRef = ObjectFromHandle(implHandle);
+            gc.implRef = ObjectFromHandle(static_cast<::OBJECTHANDLE>(handle));
 
             // Pass the objects along to get released.
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
@@ -815,8 +813,7 @@ namespace InteropLibImports
         }
         CONTRACTL_END;
 
-        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-        DestroyHandleCommon(objectHandle, InstanceHandleType);
+        DestroyHandleCommon(static_cast<::OBJECTHANDLE>(handle), InstanceHandleType);
     }
 
     bool GetGlobalPeggingState() noexcept
@@ -862,14 +859,10 @@ namespace InteropLibImports
         CONTRACTL_END;
 
         HRESULT hr = S_OK;
-        ::OBJECTHANDLE implHandle = static_cast<::OBJECTHANDLE>(impl);
-
-        *trackerTarget = NULL;
-
-        // Switch to Cooperative mode since object references
-        // are being manipulated.
         BEGIN_EXTERNAL_ENTRYPOINT(&hr)
         {
+            // Switch to Cooperative mode since object references
+            // are being manipulated.
             GCX_COOP();
 
             struct
@@ -880,7 +873,7 @@ namespace InteropLibImports
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
-            gc.implRef = ObjectFromHandle(implHandle);
+            gc.implRef = ObjectFromHandle(static_cast<::OBJECTHANDLE>(impl));
 
             // Get wrapper for external object
             gc.objRef = GetOrCreateObjectForComInstanceInternal(
@@ -903,18 +896,18 @@ namespace InteropLibImports
 
     struct RuntimeCallContext
     {
-        RuntimeCallContext(_In_ ExtObjCxtCache* cache, _In_ ExtObjCxtRefCache* refCache)
-            : Curr{ cache->_hashMap.Begin() }
-            , End{ cache->_hashMap.End() }
-            , RefCache{ refCache }
-        { }
-
         // Iterators for all known external objects.
         ExtObjCxtCache::Iterator Curr;
         ExtObjCxtCache::Iterator End;
 
         // Pointer to cache used to create object references.
         ExtObjCxtRefCache* RefCache;
+
+        RuntimeCallContext(_In_ ExtObjCxtCache* cache, _In_ ExtObjCxtRefCache* refCache)
+            : Curr{ cache->_hashMap.Begin() }
+            , End{ cache->_hashMap.End() }
+            , RefCache{ refCache }
+        { }
     };
 
     HRESULT IteratorNext(

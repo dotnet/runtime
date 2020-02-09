@@ -103,26 +103,27 @@ namespace
         return InteropLibImports::ReleaseExternalObjectsFromCurrentThread(impl);
     }
 
+    // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
+    // The proxy represents the following:
+    //   1. Has a managed reference pointing to the external object
+    //      and therefore forms a cycle that can be resolved by GC.
+    //   2. Forwards data binding requests.
     //
-    // Creates a proxy object that points to the given RCW
-    // The proxy
-    // 1. Has a managed reference pointing to the RCW, and therefore forms a cycle that can be resolved by GC
-    // 2. Forwards data binding requests
     // For example:
     //
-    // Grid <---- RCW             Grid <-------- RCW
+    // Grid <---- NoCW             Grid <-------- NoCW
     // | ^                         |              ^
     // | |             Becomes     |              |
     // v |                         v              |
     // Rectangle                  Rectangle ----->Proxy
     //
     // Arguments
-    //   obj        - The identity IUnknown* where a RCW points to (Grid, in this case)
-    //                    Note that
-    //                    1) we can either create a new RCW or get back an old one from cache
-    //                    2) This obj could be a regular WinRT object (such as WinRT collection) for data binding
+    //   obj        - An IUnknown* where a NoCW points to (Grid, in this case)
+    //                    Notes:
+    //                    1. We can either create a new NoCW or get back an old one from the cache.
+    //                    2. This obj could be a regular tracker runtime object for data binding.
     //  ppNewReference  - The IReferenceTrackerTarget* for the proxy created
-    //                    Jupiter will call IReferenceTrackerTarget to establish a jupiter reference
+    //                    The tracker runtime will call IReferenceTrackerTarget to establish a reference.
     //
     STDMETHODIMP HostServices::GetTrackerTarget(_In_ IUnknown* obj, _Outptr_ IReferenceTrackerTarget** ppNewReference)
     {
