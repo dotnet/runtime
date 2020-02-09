@@ -27,7 +27,7 @@ jobs:
       - ${{insert}}: ${{ variable }}
     - name: noWarnAsErrorArg
       value: ''
-    - ${{ if eq(parameters.platform, 'Windows_NT') }}:
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - name: noWarnAsErrorArg
         value: -warnAsError:0
 
