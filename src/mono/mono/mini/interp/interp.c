@@ -131,8 +131,11 @@ add_frag (FrameStack *stack, int size)
 {
 	StackFragment *new_frag;
 
-	// FIXME:
-	int frag_size = 4096;
+	// FIXME: The behavior of an allocation not
+	// fitting in current chunk is very poor. Attempt
+	// instead a scheme managing one growable chunk
+	// by using multiple adjacent alloca.
+	int frag_size = 65536;
 	if (size + sizeof (StackFragment) > frag_size)
 		frag_size = size + sizeof (StackFragment);
 	new_frag = stack_frag_new (frag_size);
@@ -461,9 +464,13 @@ get_context (void)
 		/*
 		 * Use two stacks, one for InterpFrame structures, one for data.
 		 * This is useful because InterpFrame structures don't need to be GC tracked.
+		 * It also useful to fit allocations into iframe_stack perfectly.
+		 * FIXME: The behavior when allocations do not fit in current data_stack
+		 * chunk is very poor. Attempt a scheme with one growable chunk instead
+		 * using multiple adjacent alloca.
 		 */
-		frame_stack_init (&context->iframe_stack, 8192);
-		frame_stack_init (&context->data_stack, 8192);
+		frame_stack_init (&context->iframe_stack, 1024 * sizeof (InterpFrame));
+		frame_stack_init (&context->data_stack, 65536);
 		set_context (context);
 	}
 	return context;
