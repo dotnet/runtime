@@ -315,6 +315,8 @@ namespace System.Diagnostics
         {
             try
             {
+                // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
+                // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
                 PerformanceCounterLib library = PerformanceCounterLib.GetPerformanceCounterLib(machineName, new CultureInfo("en"));
                 return GetProcessInfos(library);
             }
@@ -329,8 +331,6 @@ namespace System.Diagnostics
                     throw;
                 }
             }
-            // We don't want to call library.Close() here because that would cause us to unload all of the perflibs.
-            // On the next call to GetProcessInfos, we'd have to load them all up again, which is SLOW!
         }
 
         private static ProcessInfo[] GetProcessInfos(PerformanceCounterLib library)
