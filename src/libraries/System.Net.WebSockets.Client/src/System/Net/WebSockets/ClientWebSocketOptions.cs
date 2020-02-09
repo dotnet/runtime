@@ -85,8 +85,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly",
-            Justification = "This collection will be handed off directly to HttpWebRequest.")]
         public X509CertificateCollection ClientCertificates
         {
             get

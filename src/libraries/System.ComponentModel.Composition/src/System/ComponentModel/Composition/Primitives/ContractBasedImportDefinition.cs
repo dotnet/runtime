@@ -99,7 +99,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ContractBasedImportDefinition(string contractName, string? requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
             ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, CreationPolicy requiredCreationPolicy)
             : this(contractName, requiredTypeIdentity, requiredMetadata, cardinality, isRecomposable, isPrerequisite, requiredCreationPolicy, MetadataServices.EmptyMetadata)
@@ -161,7 +160,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///     <paramref name="cardinality"/> is not one of the <see cref="ImportCardinality"/>
         ///     values.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public ContractBasedImportDefinition(string contractName, string? requiredTypeIdentity, IEnumerable<KeyValuePair<string, Type>>? requiredMetadata,
             ImportCardinality cardinality, bool isRecomposable, bool isPrerequisite, CreationPolicy requiredCreationPolicy, IDictionary<string, object?> metadata)
             : base(contractName, cardinality, isRecomposable, isPrerequisite, metadata)
@@ -207,7 +205,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         return an empty <see cref="IEnumerable{T}"/> instead.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual IEnumerable<KeyValuePair<string, Type>> RequiredMetadata
         {
             get

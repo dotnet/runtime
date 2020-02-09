@@ -526,7 +526,6 @@ namespace System.Collections.Generic
             return GetEnumerator();
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private readonly LinkedList<T> _list;

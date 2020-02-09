@@ -6,9 +6,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
     <Compile Include="System\Net\FileWebRequest.cs" />

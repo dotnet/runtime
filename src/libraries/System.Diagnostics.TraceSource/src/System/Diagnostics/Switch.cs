@@ -34,7 +34,6 @@ namespace System.Diagnostics
 
         private object InitializedLock
         {
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
             get
             {
                 if (_initializedLock == null)
@@ -140,7 +139,6 @@ namespace System.Diagnostics
         /// </devdoc>
         protected int SwitchSetting
         {
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "reviewed for thread-safety")]
             get
             {
                 if (!_initialized)
@@ -150,7 +148,6 @@ namespace System.Diagnostics
                 }
                 return _switchSetting;
             }
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "reviewed for thread-safety")]
             set
             {
                 bool didUpdate = false;
