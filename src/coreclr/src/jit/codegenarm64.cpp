@@ -3785,6 +3785,8 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
@@ -3891,7 +3893,7 @@ insOpts CodeGen::genGetSimdInsOpt(emitAttr size, var_types elementType)
 // Arguments:
 //   intrinsicId    -   SIMD intrinsic Id
 //   baseType       -   Base type of the SIMD vector
-//   immed          -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
+//   ival           -   Out param. Any immediate byte operand that needs to be passed to SSE2 opcode
 //
 //
 // Return Value:
@@ -3976,6 +3978,10 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicWidenHi:
                 result = INS_fcvtl2;
                 break;
+            case SIMDIntrinsicCeil:
+                result = INS_frintp;
+            case SIMDIntrinsicFloor:
+                result = INS_frintm;
             default:
                 assert(!"Unsupported SIMD intrinsic");
                 unreached();
@@ -4210,7 +4216,9 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToSingle ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt32 ||
            simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToDouble ||
-           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64);
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicConvertToInt64 ||
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicCeil ||
+           simdNode->gtSIMDIntrinsicID == SIMDIntrinsicFloor);
 
     GenTree*  op1       = simdNode->gtGetOp1();
     var_types baseType  = simdNode->gtSIMDBaseType;

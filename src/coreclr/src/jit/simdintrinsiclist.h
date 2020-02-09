@@ -99,6 +99,9 @@ SIMD_INTRINSIC("op_Division",               false,       Div,                   
 // SquareRoot is recognized as an intrinsic only for float or double vectors
 SIMD_INTRINSIC("SquareRoot",                false,       Sqrt,                     "sqrt",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
 
+SIMD_INTRINSIC("Ceiling",                   false,       Ceil,                     "ceil",                   TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
+SIMD_INTRINSIC("Floor",                     false,       Floor,                    "floor",                  TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF},    {TYP_FLOAT, TYP_DOUBLE, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF, TYP_UNDEF})
+
 SIMD_INTRINSIC("Min",                       false,       Min,                      "min",                    TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 SIMD_INTRINSIC("Max",                       false,       Max,                      "max",                    TYP_STRUCT,     2,      {TYP_STRUCT, TYP_STRUCT, TYP_UNDEF},   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})
 SIMD_INTRINSIC("Abs",                       false,       Abs,                      "abs",                    TYP_STRUCT,     1,      {TYP_STRUCT, TYP_UNDEF, TYP_UNDEF },   {TYP_INT, TYP_FLOAT, TYP_DOUBLE, TYP_LONG, TYP_USHORT, TYP_UBYTE, TYP_BYTE, TYP_SHORT, TYP_UINT, TYP_ULONG})

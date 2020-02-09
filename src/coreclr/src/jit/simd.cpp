@@ -3123,6 +3123,12 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
         }
         break;
 
+        case SIMDIntrinsicCeil:
+        case SIMDIntrinsicFloor:
+            op1    = impSIMDPopStack(simdType);
+            retVal = gtNewSIMDNode(genActualType(callType), op1, simdIntrinsicID, baseType, size);
+            break;
+
         case SIMDIntrinsicAbs:
             op1    = impSIMDPopStack(simdType);
             retVal = impSIMDAbs(clsHnd, baseType, size, op1);
