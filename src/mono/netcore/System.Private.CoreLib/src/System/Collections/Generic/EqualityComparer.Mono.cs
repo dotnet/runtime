@@ -3,12 +3,26 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections.Generic
 {
 	partial class EqualityComparer<T>
 	{
-		public static EqualityComparer<T> Default { get; } = CreateComparer();
+		static volatile EqualityComparer<T> defaultComparer;
+
+		public static EqualityComparer<T> Default {
+			[MethodImplAttribute (MethodImplOptions.AggressiveInlining)]
+			get {
+				EqualityComparer<T> comparer = defaultComparer;
+				if (comparer == null) {
+					// Do not use static constructor. Generic static constructors are problematic for Mono AOT.
+					Interlocked.CompareExchange(ref defaultComparer, CreateComparer(), null);
+					comparer = defaultComparer;
+				}
+				return comparer;
+			}
+		}
 
 		static EqualityComparer<T> CreateComparer ()
 		{
