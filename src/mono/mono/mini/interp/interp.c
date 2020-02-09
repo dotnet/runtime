@@ -3812,8 +3812,8 @@ main_loop:
 					frame = child_frame;
 					frame->ip = NULL;
 					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
 				}
+				EXCEPTION_CHECKPOINT;
 			} else {
 				alloc_stack_data (context, child_frame, imethod->alloca_size);
 #if DEBUG_INTERP
@@ -3936,8 +3936,8 @@ main_loop:
 						frame = child_frame;
 						frame->ip = NULL;
 						THROW_EX (ex, NULL);
-						EXCEPTION_CHECKPOINT;
 					}
+					EXCEPTION_CHECKPOINT;
 				} else {
 					alloc_stack_data (context, child_frame, imethod->alloca_size);
 				}
@@ -4044,8 +4044,8 @@ call:;
 					frame = child_frame;
 					frame->ip = NULL;
 					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
 				}
+				EXCEPTION_CHECKPOINT;
 			} else {
 				alloc_stack_data (context, child_frame, cmethod->alloca_size);
 #if DEBUG_INTERP
