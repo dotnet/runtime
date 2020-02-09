@@ -128,7 +128,7 @@ namespace System.Diagnostics
 
                 int modulesCount;
                 IntPtr[] moduleHandles;
-                for (; ; )
+                while (true)
                 {
                     int size = needed;
                     modulesCount = size / IntPtr.Size;
