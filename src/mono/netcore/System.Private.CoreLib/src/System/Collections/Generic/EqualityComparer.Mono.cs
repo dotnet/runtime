@@ -8,19 +8,7 @@ namespace System.Collections.Generic
 {
 	partial class EqualityComparer<T>
 	{
-		static volatile EqualityComparer<T> defaultComparer;
-
-		public static EqualityComparer<T> Default {
-			[MethodImplAttribute (MethodImplOptions.AggressiveInlining)]
-			get {
-				EqualityComparer<T> comparer = defaultComparer;
-				if (comparer == null) {
-					comparer = CreateComparer();
-					defaultComparer = comparer;
-				}
-				return comparer;
-			}
-		}
+		public static EqualityComparer<T> Default { get; } = CreateComparer();
 
 		static EqualityComparer<T> CreateComparer ()
 		{
