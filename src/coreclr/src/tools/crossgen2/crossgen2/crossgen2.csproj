@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>crossgen2</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
