@@ -6,9 +6,6 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\CorrelationManager.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />

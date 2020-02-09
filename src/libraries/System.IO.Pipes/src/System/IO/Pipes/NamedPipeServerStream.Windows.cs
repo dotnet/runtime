@@ -135,7 +135,6 @@ namespace System.IO.Pipes
         // was called (but not before this server is been created, or, if we were servicing another client,
         // not before we called Disconnect), in which case, there may be some buffer already in the pipe waiting
         // for us to read.  See NamedPipeClientStream.Connect for more information.
-        [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
         public void WaitForConnection()
         {
             CheckConnectOperationsServerWithHandle();
