@@ -2789,8 +2789,9 @@ namespace System.Text.RegularExpressions
                 {
                     // For Notoneloopatomic, we're looking for a specific character, as everything until we find
                     // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
-                    // we can use the vectorized IndexOf to do the search, rather than open-coding it. (In the future,
-                    // we could consider using IndexOf with StringComparison for case insensitivity.)
+                    // we can use the vectorized IndexOf to do the search, rather than open-coding it.  The unbounded
+                    // restriction is purely for simplicity; it could be removed in the future with additional code to
+                    // handle the unbounded case.
 
                     // int i = textSpan.Slice(textSpanPos).IndexOf(char);
                     if (textSpanPos > 0)
@@ -2820,6 +2821,18 @@ namespace System.Text.RegularExpressions
                         Ldc(textSpanPos);
                         Sub();
                     }
+                    Stloc(iterationLocal);
+                }
+                else if (node.Type == RegexNode.Setloopatomic && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
+                {
+                    // .* was used with RegexOptions.Singleline, which means it'll consume everything.  Just jump to the end.
+                    // The unbounded constraint is the same as in the Notoneloopatomic case above, done purely for simplicity.
+
+                    // int i = runtextend - runtextpos;
+                    TransferTextSpanPosToRunTextPos();
+                    Ldloc(runtextendLocal);
+                    Ldloc(runtextposLocal);
+                    Sub();
                     Stloc(iterationLocal);
                 }
                 else
@@ -4454,6 +4467,25 @@ namespace System.Text.RegularExpressions
                             Stloc(iLocal);
                             BrFar(loopEnd);
                         }
+                        else if ((Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic) &&
+                            !IsRightToLeft() &&
+                            _strings![Operand(0)] == RegexCharClass.AnyClass)
+                        {
+                            Stloc(lenLocal);
+
+                            // If someone uses .* along with RegexOptions.Singleline, that becomes [anycharacter]*, which means it'll
+                            // consume everything.  As such, we can simply update our position to be the last allowed, without
+                            // actually checking anything.
+
+                            // runtextpos += len;
+                            // goto loopEnd;
+                            Ldloc(_runtextposLocal!);
+                            Ldloc(lenLocal);
+                            Add();
+                            Stloc(_runtextposLocal!);
+                            BrFar(loopEnd);
+                        }
+
                         else
                         {
                             // Otherwise, we emit the open-coded loop.
