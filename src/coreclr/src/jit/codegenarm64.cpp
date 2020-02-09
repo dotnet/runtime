@@ -3980,8 +3980,10 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicCeil:
                 result = INS_frintp;
+                break;
             case SIMDIntrinsicFloor:
                 result = INS_frintm;
+                break;
             default:
                 assert(!"Unsupported SIMD intrinsic");
                 unreached();
