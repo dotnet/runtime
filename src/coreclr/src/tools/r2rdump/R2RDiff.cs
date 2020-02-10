@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
+
+using ILCompiler.Reflection.ReadyToRun;
+using Internal.Runtime;
 
 namespace R2RDump
 {
@@ -193,7 +195,7 @@ namespace R2RDump
         {
             Dictionary<string, int> sectionMap = new Dictionary<string, int>();
 
-            foreach (KeyValuePair<ReadyToRunSection.SectionType, ReadyToRunSection> typeAndSection in reader.ReadyToRunHeader.Sections)
+            foreach (KeyValuePair<ReadyToRunSectionType, ReadyToRunSection> typeAndSection in reader.ReadyToRunHeader.Sections)
             {
                 string name = typeAndSection.Key.ToString();
                 sectionMap.Add(name, typeAndSection.Value.Size);
