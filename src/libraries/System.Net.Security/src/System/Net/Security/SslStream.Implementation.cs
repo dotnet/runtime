@@ -22,17 +22,6 @@ namespace System.Net.Security
 
         private int _nestedAuth;
 
-        private SecurityStatusPal _securityStatus;
-
-        private enum CachedSessionStatus : byte
-        {
-            Unknown = 0,
-            IsNotCached = 1,
-            IsCached = 2,
-            Renegotiated = 3
-        }
-        private CachedSessionStatus _CachedSession;
-
         private enum Framing
         {
             Unknown = 0,
@@ -247,32 +236,25 @@ namespace System.Net.Security
             {
                 ThrowIfExceptional();
 
-                //  A trick to discover and avoid cached sessions.
-                _CachedSession = CachedSessionStatus.Unknown;
-
                 if (isAsync)
                 {
-                    result = ForceAuthenticationAsync(_context.IsServer, null, cancellationToken);
+                    result = ForceAuthenticationAsync(new SslAsyncIO(this, cancellationToken), _context.IsServer, null);
+                    result.ContinueWith(t => { _nestedAuth = 0; }, cancellationToken,
+                                         TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
+                                         TaskScheduler.Default);
                 }
                 else
                 {
-                    ForceAuthentication(_context.IsServer, null);
-
-                    if (NetEventSource.IsEnabled)
-                        NetEventSource.Log.SspiSelectedCipherSuite(nameof(ProcessAuthentication),
-                                                                    SslProtocol,
-                                                                    CipherAlgorithm,
-                                                                    CipherStrength,
-                                                                    HashAlgorithm,
-                                                                    HashStrength,
-                                                                    KeyExchangeAlgorithm,
-                                                                    KeyExchangeStrength);
+                    ForceAuthenticationAsync(new SslSyncIO(this), _context.IsServer, null).GetAwaiter().GetResult();
                 }
             }
             finally
             {
-                // Operation has completed.
-                _nestedAuth = 0;
+                if (!isAsync || result.IsCompleted)
+                {
+                    // Operation has completed. (successfully or failed)
+                    _nestedAuth = 0;
+                }
             }
 
             return result;
@@ -281,7 +263,8 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private async Task ReplyOnReAuthenticationAsync(byte[] buffer, CancellationToken cancellationToken)
+        private async Task ReplyOnReAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, byte[] buffer)
+            where TReadAdapter : ISslIOAdapter
         {
             lock (SyncLock)
             {
@@ -289,81 +272,39 @@ namespace System.Net.Security
                 _lockReadState = LockHandshake;
             }
 
-            await ForceAuthenticationAsync(false, buffer, cancellationToken).ConfigureAwait(false);
+            await ForceAuthenticationAsync(adapter, false, buffer).ConfigureAwait(false);
             FinishHandshakeRead(LockNone);
         }
 
-        //
-        // This method attempts to start authentication.
-        // Incoming buffer is either null or is the result of "renegotiate" decrypted message
-        // If write is in progress the method will either wait or be put on hold
-        //
-        private void ForceAuthentication(bool receiveFirst, byte[] buffer)
-        {
-            // This will tell that we don't know the framing yet (what SSL version is)
-            _framing = Framing.Unknown;
-
-            try
-            {
-                if (receiveFirst)
-                {
-                    // Listen for a client blob.
-                    ReceiveBlob(buffer);
-                }
-                else
-                {
-                    // We start with the first blob.
-                    SendBlob(buffer, (buffer == null ? 0 : buffer.Length));
-                }
-            }
-            catch (Exception e)
-            {
-                // Failed auth, reset the framing if any.
-                _framing = Framing.Unknown;
-                _handshakeCompleted = false;
-
-                SetException(e);
-                if (_exception.SourceException != e)
-                {
-                    ThrowIfExceptional();
-                }
-                throw;
-            }
-            finally
-            {
-                if (_exception != null)
-                {
-                    // This a failed handshake. Release waiting IO if any.
-                    FinishHandshake(null);
-                }
-            }
-        }
-
-        internal async Task ForceAuthenticationAsync(bool receiveFirst, byte[] buffer, CancellationToken cancellationToken)
+        // reAuthenticationData is only used on Windows in case of renegotiation.
+        private async Task ForceAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, bool receiveFirst, byte[] reAuthenticationData)
+             where TReadAdapter : ISslIOAdapter
         {
             _framing = Framing.Unknown;
             ProtocolToken message;
-            SslReadAsync adapter = new SslReadAsync(this, cancellationToken);
 
             if (!receiveFirst)
             {
-                message = _context.NextMessage(buffer, 0, (buffer == null ? 0 : buffer.Length));
+                message = _context.NextMessage(reAuthenticationData, 0, (reAuthenticationData == null ? 0 : reAuthenticationData.Length));
+                if (message.Size > 0)
+                {
+                    await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                }
+
                 if (message.Failed)
                 {
                     // tracing done in NextMessage()
                     throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
                 }
-
-                await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
             }
 
             do
             {
-                message = await ReceiveBlobAsync(adapter, buffer, cancellationToken).ConfigureAwait(false);
+                message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
                 if (message.Size > 0)
                 {
                     // If there is message send it out even if call failed. It may contain TLS Alert.
-                    await InnerStream.WriteAsync(message.Payload, cancellationToken).ConfigureAwait(false);
+                    await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
                 }
 
                 if (message.Failed)
@@ -390,107 +331,8 @@ namespace System.Net.Security
 
         }
 
-        //
-        // Client side starts here, but server also loops through this method.
-        //
-        private void SendBlob(byte[] incoming, int count)
-        {
-            ProtocolToken message = _context.NextMessage(incoming, 0, count);
-            _securityStatus = message.Status;
-
-            if (message.Size != 0)
-            {
-                if (_context.IsServer && _CachedSession == CachedSessionStatus.Unknown)
-                {
-                    //
-                    //[Schannel] If the first call to ASC returns a token less than 200 bytes,
-                    //           then it's a reconnect (a handshake based on a cache entry).
-                    //
-                    _CachedSession = message.Size < 200 ? CachedSessionStatus.IsCached : CachedSessionStatus.IsNotCached;
-                }
-
-                if (_framing == Framing.Unified)
-                {
-                    _framing = DetectFraming(message.Payload, message.Payload.Length);
-                }
-
-                InnerStream.Write(message.Payload, 0, message.Size);
-            }
-
-            CheckCompletionBeforeNextReceive(message);
-        }
-
-        //
-        // This will check and logically complete / fail the auth handshake.
-        //
-        private void CheckCompletionBeforeNextReceive(ProtocolToken message)
-        {
-            if (message.Failed)
-            {
-                SendAuthResetSignal(null, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_auth_SSPI, message.GetException())));
-                return;
-            }
-            else if (message.Done)
-            {
-                ProtocolToken alertToken = null;
-
-                if (!CompleteHandshake(ref alertToken))
-                {
-                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
-                    return;
-                }
-
-                // Release waiting IO if any. Presumably it should not throw.
-                // Otherwise application may get not expected type of the exception.
-                FinishHandshake(null);
-                return;
-            }
-
-            ReceiveBlob(message.Payload);
-        }
-
-        //
-        // Server side starts here, but client also loops through this method.
-        //
-        private void ReceiveBlob(byte[] buffer)
-        {
-            //This is first server read.
-            buffer = EnsureBufferSize(buffer, 0, SecureChannel.ReadHeaderSize);
-
-            int readBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, 0, SecureChannel.ReadHeaderSize);
-
-            if (readBytes == 0)
-            {
-                // EOF received
-                throw new IOException(SR.net_auth_eof);
-            }
-
-            if (_framing == Framing.Unknown)
-            {
-                _framing = DetectFraming(buffer, readBytes);
-            }
-
-            int restBytes = GetRemainingFrameSize(buffer, 0, readBytes);
-
-            if (restBytes < 0)
-            {
-                throw new IOException(SR.net_ssl_io_frame);
-            }
-
-            if (restBytes == 0)
-            {
-                // EOF received
-                throw new AuthenticationException(SR.net_auth_eof, null);
-            }
-
-            buffer = EnsureBufferSize(buffer, readBytes, readBytes + restBytes);
-
-            restBytes = FixedSizeReader.ReadPacket(_innerStream, buffer, readBytes, restBytes);
-
-            SendBlob(buffer, readBytes + restBytes);
-        }
-
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync(SslReadAsync adapter, byte[] buffer, CancellationToken cancellationToken)
+        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TReadAdapter>(TReadAdapter adapter)
+                 where TReadAdapter : ISslIOAdapter
         {
             ResetReadBuffer();
             int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
@@ -754,7 +596,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslWriteAdapter
+            where TWriteAdapter : struct, ISslIOAdapter
         {
             do
             {
@@ -765,10 +607,10 @@ namespace System.Net.Security
         }
 
         private ValueTask WriteSingleChunk<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslWriteAdapter
+            where TWriteAdapter : struct, ISslIOAdapter
         {
             // Request a write IO slot.
-            Task ioSlot = writeAdapter.LockAsync();
+            Task ioSlot = writeAdapter.WriteLockAsync();
             if (!ioSlot.IsCompletedSuccessfully)
             {
                 // Operation is async and has been queued, return.
@@ -866,8 +708,8 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer)
-            where TReadAdapter : ISslReadAdapter
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(TIOAdapter adapter, Memory<byte> buffer)
+            where TIOAdapter : ISslIOAdapter
         {
             if (Interlocked.Exchange(ref _nestedRead, 1) == 1)
             {
@@ -886,7 +728,7 @@ namespace System.Net.Security
                         return copyBytes;
                     }
 
-                    copyBytes = await adapter.LockAsync(buffer).ConfigureAwait(false);
+                    copyBytes = await adapter.ReadLockAsync(buffer).ConfigureAwait(false);
                     if (copyBytes > 0)
                     {
                         return copyBytes;
@@ -946,7 +788,7 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
-                            await ReplyOnReAuthenticationAsync(extraBuffer, adapter.CancellationToken).ConfigureAwait(false);
+                            await ReplyOnReAuthenticationAsync(adapter, extraBuffer).ConfigureAwait(false);
                             // Loop on read.
                             continue;
                         }
@@ -976,7 +818,7 @@ namespace System.Net.Security
         }
 
         private ValueTask<int> FillBufferAsync<TReadAdapter>(TReadAdapter adapter, int minSize)
-            where TReadAdapter : ISslReadAdapter
+            where TReadAdapter : ISslIOAdapter
         {
             if (_internalBufferCount >= minSize)
             {
@@ -1035,7 +877,7 @@ namespace System.Net.Security
         }
 
         private async ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslWriteAdapter
+            where TWriteAdapter : struct, ISslIOAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
