@@ -126,17 +126,21 @@ namespace System.Diagnostics
                     EnumProcessModulesUntilSuccess(processHandle, null, 0, out needed);
                 }
 
-                int modulesCount;
-                IntPtr[] moduleHandles;
+                int modulesCount = needed / IntPtr.Size;
+                IntPtr[] moduleHandles = new IntPtr[modulesCount];
                 while (true)
                 {
                     int size = needed;
-                    modulesCount = size / IntPtr.Size;
-                    moduleHandles = new IntPtr[modulesCount];
                     EnumProcessModulesUntilSuccess(processHandle, moduleHandles, size, out needed);
                     if (size == needed)
                     {
                         break;
+                    }
+
+                    if (needed > size && needed / IntPtr.Size > modulesCount)
+                    {
+                        modulesCount = needed / IntPtr.Size;
+                        moduleHandles = new IntPtr[modulesCount];
                     }
                 }
 
