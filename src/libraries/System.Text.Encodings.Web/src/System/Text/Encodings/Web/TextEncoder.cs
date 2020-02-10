@@ -29,8 +29,8 @@ namespace System.Text.Encodings.Web
         // Fast cache for Ascii
         private readonly byte[][] _asciiEscape = new byte[0x80][];
 
-        private bool _isAsciiCacheInitialized;
-        private readonly bool[] _asciiNeedsEscaping = new bool[0x80];
+        private volatile bool _isAsciiCacheInitialized;
+        private AsciiNeedsEscapingData _asciiNeedsEscaping;
 
 #if NETCOREAPP
         private Vector128<sbyte> _bitMaskLookupAsciiNeedsEscaping;
@@ -959,22 +959,16 @@ namespace System.Text.Encodings.Web
         [MethodImpl(MethodImplOptions.NoInlining)]
         private unsafe void InitializeAsciiCache()
         {
-            Debug.Assert(!_isAsciiCacheInitialized);
-            Debug.Assert(_asciiNeedsEscaping.Length == 0x80);
-
-            _isAsciiCacheInitialized = true;
-            bool[] asciiNeedsEscaping = _asciiNeedsEscaping;
-
 #if NETCOREAPP
             if (Ssse3.IsSupported)
             {
-                sbyte* tmp = stackalloc sbyte[Vector128<sbyte>.Count];
-                Sse2.Store(tmp, Vector128<sbyte>.Zero);
+                Vector128<sbyte> vector = Vector128<sbyte>.Zero;
+                sbyte* tmp = (sbyte*)&vector;
 
-                for (int i = 0; i < asciiNeedsEscaping.Length; i++)
+                for (int i = 0; i < 0x80; i++)
                 {
                     bool willEncode = WillEncode(i);
-                    asciiNeedsEscaping[i] = willEncode;
+                    _asciiNeedsEscaping.Data[i] = willEncode;
 
                     if (willEncode)
                     {
@@ -985,22 +979,29 @@ namespace System.Text.Encodings.Web
                     }
                 }
 
-                _bitMaskLookupAsciiNeedsEscaping = Sse2.LoadVector128(tmp);
+                _bitMaskLookupAsciiNeedsEscaping = vector;
                 return;
             }
 #endif
-            for (int i = 0; i < asciiNeedsEscaping.Length; i++)
+            for (int i = 0; i < 0x80; i++)
             {
-                asciiNeedsEscaping[i] = WillEncode(i);
+                _asciiNeedsEscaping.Data[i] = WillEncode(i);
             }
+
+            _isAsciiCacheInitialized = true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool DoesAsciiNeedEncoding(uint value)
+        private unsafe bool DoesAsciiNeedEncoding(uint value)
         {
             Debug.Assert(value <= 0x7F);
 
-            return _asciiNeedsEscaping[value];
+            return _asciiNeedsEscaping.Data[value];
+        }
+
+        private unsafe struct AsciiNeedsEscapingData
+        {
+            public fixed bool Data[0x80];
         }
 
         private static void ThrowArgumentException_MaxOutputCharsPerInputChar()

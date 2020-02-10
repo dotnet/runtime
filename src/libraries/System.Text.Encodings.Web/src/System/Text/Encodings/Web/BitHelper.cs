@@ -17,7 +17,7 @@ namespace System.Text.Encodings.Web
             // the first one found that needed to be escaped within the 16 bytes.
             Debug.Assert(index > 0 && index <= 65_535);
             int tzc = BitOperations.TrailingZeroCount(index);
-            Debug.Assert(tzc >= 0 && tzc <= 16);
+            Debug.Assert(tzc >= 0 && tzc < 16);
 
             return tzc;
         }
