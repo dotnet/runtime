@@ -32,7 +32,6 @@ namespace System.Configuration
             _includesUserConfig = includeUserConfig;
 
             Assembly exeAssembly = null;
-            string applicationFilename = null;
 
             if (exePath != null)
             {
@@ -42,8 +41,6 @@ namespace System.Configuration
                 {
                     throw ExceptionUtil.ParameterInvalid(nameof(exePath));
                 }
-
-                applicationFilename = ApplicationUri;
             }
             else
             {
@@ -66,7 +63,6 @@ namespace System.Configuration
                 if (uri.IsFile)
                 {
                     ApplicationUri = uri.LocalPath;
-                    applicationFilename = uri.LocalPath;
                 }
                 else
                 {
@@ -84,7 +80,7 @@ namespace System.Configuration
             if (!_includesUserConfig) return;
 
             bool isHttp = StringUtil.StartsWithOrdinalIgnoreCase(ApplicationConfigUri, HttpUri);
-            SetNamesAndVersion(applicationFilename, exeAssembly, isHttp);
+            SetNamesAndVersion(exeAssembly, isHttp);
             if (isHttp) return;
 
             // Create a directory suffix for local and roaming config of three parts:
@@ -227,7 +223,7 @@ namespace System.Configuration
             return suffix;
         }
 
-        private void SetNamesAndVersion(string applicationFilename, Assembly exeAssembly, bool isHttp)
+        private void SetNamesAndVersion(Assembly exeAssembly, bool isHttp)
         {
             Type mainType = null;
 
