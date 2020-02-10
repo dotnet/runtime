@@ -11,7 +11,6 @@ namespace System.Diagnostics.Eventing.Reader
     /// The metadata for a specific Opcode defined by a Provider.
     /// An instance of this class is obtained from a ProviderMetadata object.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcode", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
     public sealed class EventOpcode
     {
         private readonly int _value;

@@ -281,7 +281,6 @@ namespace System.Threading.Tasks.Dataflow
 
 
         /// <summary>Task body used to consume postponed messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ConsumeMessagesLoopCore()
         {
             Debug.Assert(_boundingState != null && _boundingState.TaskForInputProcessing != null,
@@ -427,7 +426,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

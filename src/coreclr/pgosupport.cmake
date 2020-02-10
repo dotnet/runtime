@@ -3,17 +3,6 @@ check_ipo_supported(RESULT HAVE_LTO)
 
 # Adds Profile Guided Optimization (PGO) flags to the current target
 function(add_pgo TargetName)
-    if(CLR_CMAKE_HOST_WIN32)
-        set(ProfileFileName "${TargetName}.pgd")
-    else(CLR_CMAKE_HOST_WIN32)
-        set(ProfileFileName "${TargetName}.profdata")
-    endif(CLR_CMAKE_HOST_WIN32)
-
-    file(TO_NATIVE_PATH
-        "${CLR_CMAKE_OPTDATA_PATH}/data/${ProfileFileName}"
-        ProfilePath
-    )
-
     if(CLR_CMAKE_PGO_INSTRUMENT)
         if(CLR_CMAKE_HOST_WIN32)
             set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE        " /LTCG /GENPROFILE")
@@ -25,6 +14,17 @@ function(add_pgo TargetName)
             endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
         endif(CLR_CMAKE_HOST_WIN32)
     elseif(CLR_CMAKE_PGO_OPTIMIZE)
+        if(CLR_CMAKE_HOST_WIN32)
+            set(ProfileFileName "${TargetName}.pgd")
+        else(CLR_CMAKE_HOST_WIN32)
+            set(ProfileFileName "${TargetName}.profdata")
+        endif(CLR_CMAKE_HOST_WIN32)
+
+        file(TO_NATIVE_PATH
+            "${CLR_CMAKE_OPTDATA_PATH}/data/${ProfileFileName}"
+            ProfilePath
+        )
+
         # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(NOT EXISTS ${ProfilePath})
             message("PGO data file NOT found: ${ProfilePath}")
