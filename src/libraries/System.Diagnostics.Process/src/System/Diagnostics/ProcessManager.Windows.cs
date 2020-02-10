@@ -426,11 +426,17 @@ namespace System.Diagnostics
                                 if (instanceName.Length == 15)
                                 {
                                     if (instanceName.EndsWith(".", StringComparison.Ordinal))
+                                    {
                                         instanceName = instanceName.Slice(0, 14);
+                                    }
                                     else if (instanceName.EndsWith(".e", StringComparison.Ordinal))
+                                    {
                                         instanceName = instanceName.Slice(0, 13);
+                                    }
                                     else if (instanceName.EndsWith(".ex", StringComparison.Ordinal))
+                                    {
                                         instanceName = instanceName.Slice(0, 12);
+                                    }
                                 }
                                 processInfo.ProcessName = instanceName.ToString();
                                 processInfos.Add(processInfo.ProcessId, processInfo);
@@ -441,7 +447,9 @@ namespace System.Diagnostics
                     {
                         ThreadInfo threadInfo = GetThreadInfo(data.Slice(instancePos + instance.ByteLength), counters);
                         if (threadInfo._threadId != 0)
+                        {
                             threadInfos.Add(threadInfo);
+                        }
                     }
 
                     instancePos += instance.ByteLength;
