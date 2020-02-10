@@ -189,7 +189,7 @@ namespace System.Text.Json
             return GetConverter(typeToConvert) != null;
         }
 
-        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
+        private JsonConverter? GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
         {
             JsonConverter? converter;
 
@@ -217,6 +217,8 @@ namespace System.Text.Json
             Debug.Assert(converter != null);
             if (!converter.CanConvert(typeToConvert))
             {
+                if (Nullable.GetUnderlyingType(typeToConvert) != null)
+                    return null;
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
             }
 
