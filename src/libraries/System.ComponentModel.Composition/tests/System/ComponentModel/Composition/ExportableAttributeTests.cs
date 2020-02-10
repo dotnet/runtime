@@ -56,6 +56,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32030", TargetFrameworkMonikers.Mono)]
         [Trait("Type", "Integration")]
         public void StronglyTypedStructureTestWithTransparentViews()
         {
