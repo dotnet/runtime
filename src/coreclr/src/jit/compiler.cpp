@@ -8775,7 +8775,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 
                     if (call->IsGuarded())
                     {
-                        chars += printf("[CALL_GURDED]");
+                        chars += printf("[CALL_GUARDED]");
                     }
 
                     if (call->IsExpRuntimeLookup())

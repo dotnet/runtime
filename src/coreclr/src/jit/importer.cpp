@@ -2158,9 +2158,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     GenTreeCall*      helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 
     // Check for null and possibly call helper
-    GenTree*      nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
-    GenTree*      handleForResult = gtCloneExpr(handleForNullCheck);
-    GenTreeColon* colonNullCheck  = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
+    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
 
     GenTree* result = nullptr;
 
@@ -2181,8 +2180,6 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         // revert null check condition.
         nullCheck->ChangeOperUnchecked(GT_EQ);
 
-        DEBUG_DESTROY_NODE(colonNullCheck);
-
         // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
         // Add checks and the handle as call arguments, indirect call transformer will handle this.
         helperCall->gtCallArgs = gtPrependNewCallArg(handleForResult, helperCall->gtCallArgs);
@@ -2194,7 +2191,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     else
 #endif // 0
     {
-        result = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
+        GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
+        result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
     }
 
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));

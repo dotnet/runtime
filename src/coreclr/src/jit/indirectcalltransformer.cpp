@@ -8,7 +8,7 @@
 #endif
 
 // The IndirectCallTransformer transforms indirect calls that involve fat function
-// pointers, guarded devirtualization candidates, or runtime lookup with dynamic dictionary expansion feature.
+// pointers, guarded devirtualization candidates, or runtime lookup with dynamic dictionary expansion.
 // These transformations introduce control flow and so can't easily be done in the importer.
 //
 // A fat function pointer is a pointer with the second least significant bit
@@ -109,15 +109,13 @@ private:
                 transformer.Run();
                 count++;
             }
-
-            if (ContainsGuardedDevirtualizationCandidate(stmt))
+            else if (ContainsGuardedDevirtualizationCandidate(stmt))
             {
                 GuardedDevirtualizationTransformer transformer(compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-
-            if (ContainsExpRuntimeLookup(stmt))
+            else if (ContainsExpRuntimeLookup(stmt))
             {
                 ExpRuntimeLookupTransformer transformer(compiler, block, stmt);
                 transformer.Run();
@@ -163,7 +161,7 @@ private:
 
     //------------------------------------------------------------------------
     // ContainsExpRuntimeLookup: check if this statement contains a dictionary
-    // with dynamic expansion feature that we want to transform in CFG.
+    // with dynamic dictionary expansion that we want to transform in CFG.
     //
     // Return Value:
     //    true if contains, false otherwise.
@@ -789,7 +787,7 @@ private:
         unsigned returnTemp;
     };
 
-    // Runtime lookup with dynamic dictionary expansion feature transformer,
+    // Runtime lookup with dynamic dictionary expansion transformer,
     // it expects helper runtime lookup call with additional arguments that are:
     // result handle, nullCheck tree, sizeCheck tree.
     // before:
@@ -814,7 +812,7 @@ private:
     //   } BBJ_COND check block2, else block
     //   check block2
     //   {
-    //     jump to else if the handle null check
+    //     jump to else if the handle fails null check
     //   } BBJ_COND then block, else block
     //   then block
     //   {
@@ -940,7 +938,6 @@ private:
         {
             remainderBlock->inheritWeight(currBlock);
             checkBlock->inheritWeight(currBlock);
-            // TODO: fix weights here based on real values, ask Fadi.
             checkBlock2->inheritWeightPercentage(checkBlock, HIGH_PROBABILITY);
             thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
             elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
