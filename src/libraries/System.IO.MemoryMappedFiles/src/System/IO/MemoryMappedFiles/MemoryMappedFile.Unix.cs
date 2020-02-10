@@ -19,22 +19,23 @@ namespace System.IO.MemoryMappedFiles
             MemoryMappedFileOptions options, long capacity)
         {
             bool isSpecial = false;
+            Interop.Sys.FileStatus status = default;
+
             if (fileStream != null)
             {
-                if (fileStream.Length == 0)
+                int result = Interop.Sys.FStat(fileStream.SafeFileHandle, out status);
+                if (result != 0)
                 {
-                    // If the file does not have length, it may be special unix device.
-                    Interop.Sys.FileStatus status;
-                    if (Interop.Sys.FStat(fileStream.SafeFileHandle, out status) == 0)
-                    {
-                        isSpecial = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0;
-                    }
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
+
+                isSpecial = (status.Mode & Interop.Sys.FileTypes.S_IFCHR) != 0;
 
                 // perform deferred argument check.
                 if (!isSpecial)
                 {
-                    if (access == MemoryMappedFileAccess.Read && capacity > fileStream.Length)
+                    if (access == MemoryMappedFileAccess.Read && capacity > status.Size)
                     {
                         throw new ArgumentException(SR.Argument_ReadAccessWithLargeCapacity);
                     }
@@ -65,7 +66,7 @@ namespace System.IO.MemoryMappedFiles
             {
 
 
-                if (capacity > fileStream.Length && !isSpecial)
+                if (capacity > status.Size && !isSpecial)
                 {
                     // This map is backed by a file.  Make sure the file's size is increased to be
                     // at least as big as the requested capacity of the map for Write* access.
