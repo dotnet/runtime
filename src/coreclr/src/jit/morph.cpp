@@ -3857,7 +3857,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 copyBlkClass = objClass;
                             }
                         }
-                        else if (genActualType(varDsc->TypeGet()) != structBaseType)
+                        else if (genTypeSize(varDsc->TypeGet()) != genTypeSize(structBaseType))
                         {
                             // Not a promoted struct, so just swizzle the type by using GT_LCL_FLD
                             argObj->ChangeOper(GT_LCL_FLD);
@@ -16831,64 +16831,64 @@ void Compiler::fgMorphLocalField(GenTree* tree, GenTree* parent)
     unsigned   lclNum = tree->AsLclFld()->GetLclNum();
     LclVarDsc* varDsc = &lvaTable[lclNum];
 
-    if (varTypeIsStruct(varDsc) && (varDsc->lvPromoted))
+    if (varTypeIsStruct(varDsc))
     {
-        // Promoted struct
-        unsigned   fldOffset     = tree->AsLclFld()->GetLclOffs();
-        unsigned   fieldLclIndex = 0;
-        LclVarDsc* fldVarDsc     = nullptr;
-
-        if (fldOffset != BAD_VAR_NUM)
+        if (varDsc->lvPromoted)
         {
-            fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
-            noway_assert(fieldLclIndex != BAD_VAR_NUM);
-            fldVarDsc = &lvaTable[fieldLclIndex];
-        }
+            // Promoted struct
+            unsigned   fldOffset     = tree->AsLclFld()->GetLclOffs();
+            unsigned   fieldLclIndex = 0;
+            LclVarDsc* fldVarDsc     = nullptr;
 
-        if (fldOffset != BAD_VAR_NUM && genTypeSize(fldVarDsc->TypeGet()) == genTypeSize(tree->gtType)
-#ifdef TARGET_X86
-            && varTypeIsFloating(fldVarDsc->TypeGet()) == varTypeIsFloating(tree->gtType)
-#endif
-                )
-        {
-            // There is an existing sub-field we can use.
-            tree->AsLclFld()->SetLclNum(fieldLclIndex);
+            if (fldOffset != BAD_VAR_NUM)
+            {
+                fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
+                noway_assert(fieldLclIndex != BAD_VAR_NUM);
+                fldVarDsc = &lvaTable[fieldLclIndex];
+            }
 
-            // The field must be an enregisterable type; otherwise it would not be a promoted field.
-            // The tree type may not match, e.g. for return types that have been morphed, but both
-            // must be enregisterable types.
             var_types treeType  = tree->TypeGet();
             var_types fieldType = fldVarDsc->TypeGet();
-            assert((varTypeIsEnregisterable(treeType) || varTypeIsSIMD(treeType)) &&
-                   (varTypeIsEnregisterable(fieldType) || varTypeIsSIMD(fieldType)));
-
-            tree->ChangeOper(GT_LCL_VAR);
-            assert(tree->AsLclVarCommon()->GetLclNum() == fieldLclIndex);
-            tree->gtType = fldVarDsc->TypeGet();
-#ifdef DEBUG
-            if (verbose)
+            if (fldOffset != BAD_VAR_NUM && (genTypeSize(fieldType) == genTypeSize(treeType)))
             {
-                printf("Replacing the GT_LCL_FLD in promoted struct with local var V%02u\n", fieldLclIndex);
+                // There is an existing sub-field we can use.
+                tree->AsLclFld()->SetLclNum(fieldLclIndex);
+
+                // The field must be an enregisterable type; otherwise it would not be a promoted field.
+                // The tree type may not match, e.g. for return types that have been morphed, but both
+                // must be enregisterable types.
+                assert(varTypeIsEnregisterable(treeType) && varTypeIsEnregisterable(fieldType));
+
+                tree->ChangeOper(GT_LCL_VAR);
+                assert(tree->AsLclVarCommon()->GetLclNum() == fieldLclIndex);
+                tree->gtType = fldVarDsc->TypeGet();
+
+                if ((parent->gtOper == GT_ASG) && (parent->AsOp()->gtOp1 == tree))
+                {
+                    tree->gtFlags |= GTF_VAR_DEF;
+                    tree->gtFlags |= GTF_DONT_CSE;
+                }
+                JITDUMP("Replacing the GT_LCL_FLD in promoted struct with local var V%02u\n", fieldLclIndex);
             }
-#endif // DEBUG
-
-            if ((parent->gtOper == GT_ASG) && (parent->AsOp()->gtOp1 == tree))
+            else
             {
-                tree->gtFlags |= GTF_VAR_DEF;
-                tree->gtFlags |= GTF_DONT_CSE;
+                // There is no existing field that has all the parts that we need
+                // So we must ensure that the struct lives in memory.
+                lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+
+#ifdef DEBUG
+                // We can't convert this guy to a float because he really does have his
+                // address taken..
+                varDsc->lvKeepType = 1;
+#endif // DEBUG
             }
         }
-        else
+        else if (varTypeIsSIMD(varDsc) && (genTypeSize(tree->TypeGet()) == genTypeSize(varDsc)))
         {
-            // There is no existing field that has all the parts that we need
-            // So we must ensure that the struct lives in memory.
-            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
-
-#ifdef DEBUG
-            // We can't convert this guy to a float because he really does have his
-            // address taken..
-            varDsc->lvKeepType = 1;
-#endif // DEBUG
+            assert(tree->AsLclFld()->GetLclOffs() == 0);
+            tree->gtType = varDsc->TypeGet();
+            tree->ChangeOper(GT_LCL_VAR);
+            JITDUMP("Replacing GT_LCL_FLD of struct with local var V%02u\n", lclNum);
         }
     }
 }
