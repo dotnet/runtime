@@ -78,12 +78,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 var sectionType = (ReadyToRunSectionType)type;
                 if (!Enum.IsDefined(typeof(ReadyToRunSectionType), type))
                 {
-                    // TODO (refactoring) - what should we do?
-                    // R2RDump.WriteWarning("Invalid ReadyToRun section type");
+                    Console.WriteLine("Warning: Invalid ReadyToRun section type");
                 }
-                Sections[sectionType] = new ReadyToRunSection(sectionType,
-                    NativeReader.ReadInt32(image, ref curOffset),
-                    NativeReader.ReadInt32(image, ref curOffset));
+                int sectionStartRva = NativeReader.ReadInt32(image, ref curOffset);
+                int sectionLength = NativeReader.ReadInt32(image, ref curOffset);
+                Sections[sectionType] = new ReadyToRunSection(sectionType, sectionStartRva, sectionLength);
             }
         }
     }
