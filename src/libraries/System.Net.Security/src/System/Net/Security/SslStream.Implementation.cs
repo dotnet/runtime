@@ -593,13 +593,15 @@ namespace System.Net.Security
             }
             // Need to exit from lock before waiting.
             lazyResult.InternalWaitForCompletion();
+            ThrowIfExceptionalOrNotAuthenticated();
             return -1;
         }
 
         private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer)
         {
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
+            ThrowIfExceptionalOrNotAuthenticated();
 
+            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
             if (lockState != LockHandshake)
             {
                 // Proceed, no concurrent handshake is ongoing so no need for a lock.
@@ -624,6 +626,8 @@ namespace System.Net.Security
 
         private Task CheckEnqueueWriteAsync()
         {
+            ThrowIfExceptionalOrNotAuthenticated();
+
             // Clear previous request.
             int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
             if (lockState != LockHandshake)
