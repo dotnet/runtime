@@ -833,6 +833,10 @@ protected:
     void genLongToIntCast(GenTree* treeNode);
 #endif
 
+    // Generate code for a GT_BITCAST that is not contained.
+    void genCodeForBitCast(GenTreeOp* treeNode);
+
+    // Generate the instruction to move a value between register files
     void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
 
     struct GenIntCastDesc
