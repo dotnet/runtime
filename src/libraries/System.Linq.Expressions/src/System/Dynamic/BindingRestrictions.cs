@@ -21,7 +21,6 @@ namespace System.Dynamic
         /// <summary>
         /// Represents an empty set of binding restrictions. This field is read-only.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly BindingRestrictions Empty = new CustomRestriction(AstUtils.Constant(true));
 
         private const int TypeRestrictionHash =                    0b_0100_1001_0010_0100_1001_0010_0100_1001;

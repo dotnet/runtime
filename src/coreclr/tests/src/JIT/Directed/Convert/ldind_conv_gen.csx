@@ -285,12 +285,12 @@ class Test
     public void WriteCheckMethod(TextWriter writer)
     {
         writer.WriteLine();
-        writer.WriteLine($"  .method private hidebysig static int32 Check_{Name}({Load.Type.ActualType.Name} input, {Store.Type.Name} expected, class [System.Private.CoreLib]System.String desc) cil managed noinlining");
+        writer.WriteLine($"  .method private hidebysig static int32 Check_{Name}({Load.Type.ActualType.Name} input, {Store.Type.Name} expected, class [System.Runtime]System.String desc) cil managed noinlining");
         writer.WriteLine($"  {{");
         writer.WriteLine($"    .maxstack 4");
         writer.WriteLine($"    .locals init({Load.Type.Name} src, {Store.Type.Name} dst)");
         writer.WriteLine($"    ldarg.2");
-        writer.WriteLine($"    call void Program::print(class [System.Private.CoreLib]System.String)");
+        writer.WriteLine($"    call void Program::print(class [System.Runtime]System.String)");
         writer.WriteLine($"    ldarg.0");
         writer.WriteLine($"    stloc 0");
         writer.WriteLine($"    ldloca 0");
@@ -306,12 +306,12 @@ class Test
     public void WriteCheckOverflowMethod(TextWriter writer)
     {
         writer.WriteLine();
-        writer.WriteLine($"  .method private hidebysig static int32 CheckOvf_{Name}({Load.Type.ActualType.Name} input, class [System.Private.CoreLib]System.String desc) cil managed noinlining");
+        writer.WriteLine($"  .method private hidebysig static int32 CheckOvf_{Name}({Load.Type.ActualType.Name} input, class [System.Runtime]System.String desc) cil managed noinlining");
         writer.WriteLine($"  {{");
         writer.WriteLine($"    .maxstack 4");
         writer.WriteLine($"    .locals init({Load.Type.Name} src, {Store.Type.Name} dst, int32 ovf)");
         writer.WriteLine($"    ldarg.1");
-        writer.WriteLine($"    call void Program::print(class [System.Private.CoreLib]System.String)");
+        writer.WriteLine($"    call void Program::print(class [System.Runtime]System.String)");
         writer.WriteLine($"    ldarg.0");
         writer.WriteLine($"    stloc 0");
         writer.WriteLine($"    .try {{");
@@ -319,7 +319,7 @@ class Test
         writer.WriteLine($"    ldloca 1");
         writer.WriteLine($"    call void Program::Test_{Name}({Load.Type.Name}&, {Store.Type.Name}&)");
         writer.WriteLine($"    leave END");
-        writer.WriteLine($"    }} catch [System.Private.CoreLib]System.OverflowException {{");
+        writer.WriteLine($"    }} catch [System.Runtime]System.OverflowException {{");
         writer.WriteLine($"    ldc.i4 1");
         writer.WriteLine($"    stloc 2");
         writer.WriteLine($"    leave END");
@@ -348,16 +348,17 @@ const string FileBeginIL = @"// Licensed to the .NET Foundation under one or mor
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-.assembly extern System.Private.CoreLib { auto }
+.assembly extern System.Console { auto }
+.assembly extern System.Runtime { auto }
 .assembly test { }
 
-.class auto Program extends [System.Private.CoreLib]System.Object
+.class auto Program extends [System.Runtime]System.Object
 {
-  .method private static void print(class [System.Private.CoreLib]System.String) cil managed
+  .method private static void print(class [System.Runtime]System.String) cil managed
   {
     .maxstack 1
     ldarg 0
-    call void [System.Private.CoreLib]Internal.Console::WriteLine(class [System.Private.CoreLib]System.String)
+    call void [System.Console]System.Console::WriteLine(class [System.Runtime]System.String)
     ret
   }";
 
@@ -373,7 +374,7 @@ const string MainMethodEndIL = @"
 
 FAIL:
     ldstr ""FAILED""
-    call void Program::print(class [System.Private.CoreLib]System.String)    
+    call void Program::print(class [System.Runtime]System.String)    
     ldc.i4 1
     ret
   }";
@@ -433,13 +434,13 @@ void WriteMainMethod(TextWriter write, IEnumerable<Test> tests)
             if (i.Expected == null)
             {
                 writer.WriteLine($"    ldstr \"Checking {t.Name}({t.Load.Type.Hex(i.Input)}) == OverflowException\"");
-                writer.WriteLine($"    call int32 Program::CheckOvf_{t.Name}({t.Load.Type.ActualType.Name}, class [System.Private.CoreLib]System.String)");
+                writer.WriteLine($"    call int32 Program::CheckOvf_{t.Name}({t.Load.Type.ActualType.Name}, class [System.Runtime]System.String)");
             }
             else
             {
                 writer.WriteLine($"    {t.Store.Type.ILConst(i.Expected.Value)}");
                 writer.WriteLine($"    ldstr \"Checking {t.Name}({t.Load.Type.Hex(i.Input)}) == {t.Store.Type.Hex(i.Expected.Value)}\"");
-                writer.WriteLine($"    call int32 Program::Check_{t.Name}({t.Load.Type.ActualType.Name}, {t.Store.Type.Name}, class [System.Private.CoreLib]System.String)");
+                writer.WriteLine($"    call int32 Program::Check_{t.Name}({t.Load.Type.ActualType.Name}, {t.Store.Type.Name}, class [System.Runtime]System.String)");
             }
 
             writer.WriteLine($"    brfalse FAIL");

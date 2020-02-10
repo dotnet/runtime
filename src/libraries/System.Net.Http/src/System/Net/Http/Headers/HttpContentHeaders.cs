@@ -8,8 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpContentHeaders : HttpHeaders
     {
         private readonly HttpContent _parent;
@@ -111,8 +109,6 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(KnownHeaders.ContentLocation.Descriptor, value); }
         }
 
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
-            Justification = "In this case the 'value' is the byte array. I.e. the array is treated as a value.")]
         public byte[] ContentMD5
         {
             get { return (byte[])GetParsedValues(KnownHeaders.ContentMD5.Descriptor); }

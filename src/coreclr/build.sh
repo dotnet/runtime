@@ -62,7 +62,7 @@ restore_optdata()
         fi
     fi
 
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
+    if [[ "$__PgoOptimize" == 1 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
