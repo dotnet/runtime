@@ -232,11 +232,11 @@ namespace System.Net.Security
 
             if (isAsync)
             {
-                result = ForceAuthenticationAsync(new SslAsyncIO(this, cancellationToken), _context.IsServer, null, isApm);
+                result = ForceAuthenticationAsync(new AsyncSslIOAdapter(this, cancellationToken), _context.IsServer, null, isApm);
             }
             else
             {
-                ForceAuthenticationAsync(new SslSyncIO(this), _context.IsServer, null).GetAwaiter().GetResult();
+                ForceAuthenticationAsync(new SyncSslIOAdapter(this), _context.IsServer, null).GetAwaiter().GetResult();
             }
 
             return result;

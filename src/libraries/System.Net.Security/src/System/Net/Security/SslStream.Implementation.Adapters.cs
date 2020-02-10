@@ -18,12 +18,12 @@ namespace System.Net.Security
             CancellationToken CancellationToken { get; }
         }
 
-        private readonly struct SslAsyncIO : ISslIOAdapter
+        private readonly struct AsyncSslIOAdapter : ISslIOAdapter
         {
             private readonly SslStream _sslStream;
             private readonly CancellationToken _cancellationToken;
 
-            public SslAsyncIO(SslStream sslStream, CancellationToken cancellationToken)
+            public AsyncSslIOAdapter(SslStream sslStream, CancellationToken cancellationToken)
             {
                 _cancellationToken = cancellationToken;
                 _sslStream = sslStream;
@@ -40,11 +40,11 @@ namespace System.Net.Security
             public CancellationToken CancellationToken => _cancellationToken;
         }
 
-        private readonly struct SslSyncIO : ISslIOAdapter
+        private readonly struct SyncSslIOAdapter : ISslIOAdapter
         {
             private readonly SslStream _sslStream;
 
-            public SslSyncIO(SslStream sslStream) => _sslStream = sslStream;
+            public SyncSslIOAdapter(SslStream sslStream) => _sslStream = sslStream;
 
             public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => new ValueTask<int>(_sslStream.InnerStream.Read(buffer, offset, count));
 
