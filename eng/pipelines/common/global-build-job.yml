@@ -23,8 +23,7 @@ jobs:
       clean: all
 
     variables:
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
+    - ${{ insert }}: ${{ parameters.variables }}
     - name: noWarnAsErrorArg
       value: ''
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:

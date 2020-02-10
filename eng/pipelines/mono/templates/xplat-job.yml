@@ -100,8 +100,7 @@ jobs:
       - name: _HelixSource
         value: ci/dotnet/runtime/$(Build.SourceBranch)
 
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
+    - ${{ insert }}: ${{ parameters.variables }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml

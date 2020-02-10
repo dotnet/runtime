@@ -113,7 +113,6 @@ jobs:
       - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
       - librariesOverrideArg: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
+    - ${{ insert }}: ${{ parameters.variables }}
 
     steps: ${{ parameters.steps }}

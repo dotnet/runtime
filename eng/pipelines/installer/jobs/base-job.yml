@@ -53,8 +53,7 @@ jobs:
       clean: all
 
   variables:
-  - ${{ each variable in parameters.variables }}:
-    - ${{ variable }}
+  - ${{ insert }}: ${{ parameters.variables }}
 
   - name: OfficialBuildArg
     value: ''

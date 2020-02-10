@@ -113,8 +113,7 @@ jobs:
       - name: crossArg
         value: ''
 
-    - ${{ each variable in parameters.variables }}:
-      - ${{insert}}: ${{ variable }}
+    - ${{ insert }}: ${{ parameters.variables }}
 
     steps:
     - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
