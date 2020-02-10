@@ -194,9 +194,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool SetRsaParameters(
             SafeRsaHandle key,
-            byte[] n,
+            byte[]? n,
             int nLength,
-            byte[] e,
+            byte[]? e,
             int eLength,
             byte[]? d,
             int dLength,

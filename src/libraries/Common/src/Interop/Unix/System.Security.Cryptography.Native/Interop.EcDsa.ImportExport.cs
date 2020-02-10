@@ -59,11 +59,11 @@ internal static partial class Interop
             byte[] p;
             if (curve.IsPrime)
             {
-                p = curve.Prime;
+                p = curve.Prime!;
             }
             else if (curve.IsCharacteristic2)
             {
-                p = curve.Polynomial;
+                p = curve.Polynomial!;
             }
             else
             {
@@ -76,11 +76,11 @@ internal static partial class Interop
                 null, 0,
                 null, 0,
                 p, p.Length,
-                curve.A, curve.A.Length,
-                curve.B, curve.B.Length,
+                curve.A!, curve.A!.Length,
+                curve.B!, curve.B!.Length,
                 curve.G.X!, curve.G.X!.Length,
                 curve.G.Y!, curve.G.Y!.Length,
-                curve.Order, curve.Order.Length,
+                curve.Order!, curve.Order!.Length,
                 curve.Cofactor, curve.Cofactor!.Length,
                 curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
 
