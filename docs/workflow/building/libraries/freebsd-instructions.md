@@ -66,7 +66,7 @@ index 768b6fb..c02f76f 100644
 +++ b/repos/core-setup.proj
 @@ -4,6 +4,7 @@
    <PropertyGroup>
-     <BuildArguments>-ConfigurationGroup=$(Configuration) -PortableBuild=$(PortableBuild) -SkipTests=true </BuildArguments>
+     <BuildArguments>-Configuration=$(Configuration) -PortableBuild=$(PortableBuild) -SkipTests=true </BuildArguments>
      <BuildArguments Condition="$(Platform.Contains('arm'))">$(BuildArguments) -TargetArchitecture=$(Platform) -DisableCrossgen=true -CrossBuild=true</BuildArguments>
 +    <BuildArguments Condition="'$(TargetOS)' == 'FreeBSD'">$(BuildArguments) -DisableCrossgen=true</BuildArguments>
      <BuildCommand>$(ProjectDirectory)/build$(ShellExtension) $(BuildArguments) -- /p:BuildDebPackage=false /p:BuildAllPackages=true /p:PreReleaseLabel="preview"</BuildCommand>

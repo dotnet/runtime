@@ -29,7 +29,7 @@ the implementation without compat concerns in future releases.
 - If the library is [part of netstandard2.1](#faq)
   - Your target framework should be `netstandard2.1`
   - If it is a new API only available on .NET Core then it will be added to `netcoreapp5.0`
-- If the library is not part of netstandard
+- If the library is not part of netstandard2.1
   - If package dependencies are changed then your target framework should be the minimum target framework that supports all your package dependencies.
   - If your package depends directly on runtime changes or library changes that ship with the runtime (i.e. System.Private.CoreLib) then your target framework should be `netstandard2.1`.
   - When targeting `netstandardX` your new API must be supported by all target frameworks that map to that netstandard version (see [mapping table][net-standard table]). If not bump the version to the minimum netstandard version that supports this API on all frameworks that map to that netstandard version.
@@ -56,7 +56,7 @@ the implementation without compat concerns in future releases.
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
-  - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:BuildTargetFramework=<BuildTargetFramework>`
+  - To run just the new test targetFramework run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:BuildTargetFramework=<TargetFramework>`
 
 ## Documentation
 
