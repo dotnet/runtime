@@ -126,7 +126,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28805")]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
@@ -135,6 +134,9 @@ namespace System.Net.Http.Functional.Tests
                 // There is no chunked encoding or connection header in HTTP/2
                 return;
             }
+
+            var timeoutSource = new CancellationTokenSource();
+            timeoutSource.CancelAfter(TimeSpan.FromMinutes(2));
 
             using (HttpClient client = CreateHttpClient())
             {
@@ -178,7 +180,7 @@ namespace System.Net.Http.Functional.Tests
                         clientFinished.SetResult(true);
                         await serverTask;
                     } catch { }
-                });
+                }).WithCancellation(timeoutSource.Token);
             }
         }
 
