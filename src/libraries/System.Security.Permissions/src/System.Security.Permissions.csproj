@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netcoreapp3.0;netstandard2.0;net461;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\ApplicationIdentity.cs" />

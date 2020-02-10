@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace System.Text.RegularExpressions
 {
@@ -21,8 +22,8 @@ namespace System.Text.RegularExpressions
         public const int LastGroup = -3;
         public const int WholeString = -4;
 
-        private readonly List<string> _strings; // table of string constants
-        private readonly int[] _rules;          // negative -> group #, positive -> string #
+        private readonly string[] _strings; // table of string constants
+        private readonly int[] _rules;      // negative -> group #, positive -> string #
 
         /// <summary>
         /// Since RegexReplacement shares the same parser as Regex,
@@ -38,7 +39,8 @@ namespace System.Text.RegularExpressions
 
             Span<char> vsbStack = stackalloc char[256];
             var vsb = new ValueStringBuilder(vsbStack);
-            var strings = new List<string>();
+            FourStackStrings stackStrings = default;
+            var strings = new ValueListBuilder<string>(MemoryMarshal.CreateSpan(ref stackStrings.Item1!, 4));
             var rules = new ValueListBuilder<int>(stackalloc int[64]);
 
             int childCount = concat.ChildCount();
@@ -59,8 +61,8 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Ref:
                         if (vsb.Length > 0)
                         {
-                            rules.Append(strings.Count);
-                            strings.Add(vsb.ToString());
+                            rules.Append(strings.Length);
+                            strings.Append(vsb.ToString());
                             vsb = new ValueStringBuilder(vsbStack);
                         }
                         int slot = child.M;
@@ -80,15 +82,25 @@ namespace System.Text.RegularExpressions
 
             if (vsb.Length > 0)
             {
-                rules.Append(strings.Count);
-                strings.Add(vsb.ToString());
+                rules.Append(strings.Length);
+                strings.Append(vsb.ToString());
             }
 
             Pattern = rep;
-            _strings = strings;
+            _strings = strings.AsSpan().ToArray();
             _rules = rules.AsSpan().ToArray();
 
             rules.Dispose();
+        }
+
+        /// <summary>Simple struct of four strings.</summary>
+        [StructLayout(LayoutKind.Sequential)]
+        private struct FourStackStrings // used to do the equivalent of: Span<string> strings = stackalloc string[4];
+        {
+            public string Item1;
+            public string Item2;
+            public string Item3;
+            public string Item4;
         }
 
         /// <summary>
@@ -118,36 +130,27 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void ReplacementImpl(ref SegmentStringBuilder segments, Match match)
         {
-            foreach (int r in _rules)
+            foreach (int rule in _rules)
             {
-                if (r >= 0)
-                {
-                    // string lookup
-                    segments.Add(_strings[r].AsMemory());
-                }
-                else if (r < -Specials)
-                {
-                    // group lookup
-                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
-                }
-                else
-                {
-                    // special insertion patterns
-                    switch (-Specials - 1 - r)
+                // Get the segment to add.
+                ReadOnlyMemory<char> segment =
+                    rule >= 0 ? _strings[rule].AsMemory() : // string lookup
+                    rule < -Specials ? match.GroupToStringImpl(-Specials - 1 - rule) : // group lookup
+                    (-Specials - 1 - rule) switch // special insertion patterns
                     {
-                        case LeftPortion:
-                            segments.Add(match.GetLeftSubstring());
-                            break;
-                        case RightPortion:
-                            segments.Add(match.GetRightSubstring());
-                            break;
-                        case LastGroup:
-                            segments.Add(match.LastGroupToStringImpl());
-                            break;
-                        case WholeString:
-                            segments.Add(match.Text.AsMemory());
-                            break;
-                    }
+                        LeftPortion => match.GetLeftSubstring(),
+                        RightPortion => match.GetRightSubstring(),
+                        LastGroup => match.LastGroupToStringImpl(),
+                        WholeString => match.Text.AsMemory(),
+                        _ => default
+                    };
+
+                // Add the segment if it's not empty.  A common case for it being empty
+                // is if the developer is using Regex.Replace as a way to implement
+                // Regex.Remove, where the replacement string is empty.
+                if (segment.Length != 0)
+                {
+                    segments.Add(segment);
                 }
             }
         }
@@ -160,35 +163,26 @@ namespace System.Text.RegularExpressions
         {
             for (int i = _rules.Length - 1; i >= 0; i--)
             {
-                int r = _rules[i];
-                if (r >= 0)
-                {
-                    // string lookup
-                    segments.Add(_strings[r].AsMemory());
-                }
-                else if (r < -Specials)
-                {
-                    // group lookup
-                    segments.Add(match.GroupToStringImpl(-Specials - 1 - r));
-                }
-                else
-                {
-                    // special insertion patterns
-                    switch (-Specials - 1 - r)
+                int rule = _rules[i];
+
+                ReadOnlyMemory<char> segment =
+                    rule >= 0 ? _strings[rule].AsMemory() : // string lookup
+                    rule < -Specials ? match.GroupToStringImpl(-Specials - 1 - rule) : // group lookup
+                    (-Specials - 1 - rule) switch // special insertion patterns
                     {
-                        case LeftPortion:
-                            segments.Add(match.GetLeftSubstring());
-                            break;
-                        case RightPortion:
-                            segments.Add(match.GetRightSubstring());
-                            break;
-                        case LastGroup:
-                            segments.Add(match.LastGroupToStringImpl());
-                            break;
-                        case WholeString:
-                            segments.Add(match.Text.AsMemory());
-                            break;
-                    }
+                        LeftPortion => match.GetLeftSubstring(),
+                        RightPortion => match.GetRightSubstring(),
+                        LastGroup => match.LastGroupToStringImpl(),
+                        WholeString => match.Text.AsMemory(),
+                        _ => default
+                    };
+
+                // Add the segment to the list if it's not empty.  A common case for it being
+                // empty is if the developer is using Regex.Replace as a way to implement
+                // Regex.Remove, where the replacement string is empty.
+                if (segment.Length != 0)
+                {
+                    segments.Add(segment);
                 }
             }
         }

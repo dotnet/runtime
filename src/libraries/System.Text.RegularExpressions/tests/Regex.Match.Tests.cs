@@ -919,7 +919,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(RegexOptions.None)]
         [InlineData(RegexOptions.Compiled)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not have fix for https://github.com/dotnet/corefx/issues/26484")]
-        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeStressTestModes.JitMinOpts)]
+        [SkipOnCoreClr("Long running tests: https://github.com/dotnet/coreclr/issues/18912", RuntimeConfiguration.Checked, RuntimeTestModes.JitMinOpts)]
         public void Match_ExcessPrefix(RegexOptions options)
         {
             RemoteExecutor.Invoke(optionsString =>
@@ -995,6 +995,17 @@ namespace System.Text.RegularExpressions.Tests
             // Start is invalid
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => r.IsMatch("input", 6));
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // take too long due to backtracking
+        [Theory]
+        [InlineData(@"(\w*)+\.", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(a+)+b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", false)]
+        [InlineData(@"(x+x+)+y", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", false)]
+        public void IsMatch_SucceedQuicklyDueToAutoAtomicity(string regex, string input, bool expected)
+        {
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.None));
+            Assert.Equal(expected, Regex.IsMatch(input, regex, RegexOptions.Compiled));
         }
 
         [Fact]

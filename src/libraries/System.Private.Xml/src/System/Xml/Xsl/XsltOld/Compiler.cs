@@ -43,9 +43,7 @@ namespace System.Xml.Xsl.XsltOld
     internal enum ScriptingLanguage
     {
         JScript,
-#if !FEATURE_PAL // visualbasic
         VisualBasic,
-#endif // !FEATURE_PAL
         CSharp
     }
 

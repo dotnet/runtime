@@ -70,10 +70,10 @@ endif()
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})
 convert_to_absolute_path(CORDBEE_SOURCES_WKS ${CORDBEE_SOURCES_WKS})
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   convert_to_absolute_path(CORDBEE_HEADERS_DAC ${CORDBEE_HEADERS_DAC})
   convert_to_absolute_path(CORDBEE_HEADERS_WKS ${CORDBEE_HEADERS_WKS})
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 set(CORDBEE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 

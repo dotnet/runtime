@@ -538,13 +538,6 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
             fpCallback(&frameData, pUserData);
         }
 
-        // update the current appdomain if necessary
-        AppDomain * pRetDomain = pFrame->GetReturnDomain();
-        if (pRetDomain != NULL)
-        {
-            pAppDomain = pRetDomain;
-        }
-
         // move on to the next internal frame
         pFrame = pFrame->Next();
     }
@@ -695,8 +688,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     // Since we don't have chains anymore, this can always be false.
     pFrameData->quicklyUnwound = false;
 
-    AppDomain * pAppDomain = pCF->GetAppDomain();
-    pFrameData->vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
+    pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 
     if (ft == kNativeRuntimeUnwindableStackFrame)
     {

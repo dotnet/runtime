@@ -19,7 +19,7 @@ if(CLR_CMAKE_HOST_LINUX)
     list(APPEND MSCORDBI_SOURCES ${PAL_REDEFINES_FILE})
 endif(CLR_CMAKE_HOST_LINUX)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=mscordbi.dll)
 
     list(APPEND MSCORDBI_SOURCES
@@ -35,11 +35,11 @@ if(WIN32)
     preprocess_file(${DEF_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
 
     list(APPEND MSCORDBI_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.def)
-else(WIN32)
+else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mscordbi_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/mscordbi.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded new/delete operators defined inside
@@ -78,7 +78,7 @@ set(COREDBI_LIBRARIES
     corguids
 )
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND COREDBI_LIBRARIES
         mdhotdata-staticcrt
         mdwinmd_dbi
@@ -115,7 +115,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
         add_dependencies(mscordbi pal_redefines_file)
     endif(CLR_CMAKE_HOST_LINUX)
 
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 # add the install targets
 install_clr(TARGETS mscordbi)

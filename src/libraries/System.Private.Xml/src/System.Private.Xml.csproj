@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Private.Xml</AssemblyName>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573;649;169;414</NoWarn>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED_XSL</DefineConstants>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
@@ -163,7 +163,6 @@
     <Compile Include="System\Xml\Core\ReadContentAsBinaryHelperAsync.cs" />
     <Compile Include="System\Xml\Core\ReadOnlyTernaryTree.cs" />
     <Compile Include="System\Xml\Core\ReadState.cs" />
-    <Compile Include="System\Xml\Core\SecureStringHasher.cs" />
     <Compile Include="System\Xml\Core\ValidatingReaderNodeData.cs" />
     <Compile Include="System\Xml\Core\ValidationType.cs" />
     <Compile Include="System\Xml\Core\WhitespaceHandling.cs" />

@@ -12,6 +12,27 @@
 #define CROSSBITNESS_COMPILE
 #endif
 
+// Target platform-specific library naming
+//
+#ifdef TARGET_WINDOWS
+#define MAKE_TARGET_DLLNAME_W(name) name W(".dll")
+#define MAKE_TARGET_DLLNAME_A(name) name ".dll"
+#else // TARGET_WINDOWS
+#ifdef TARGET_OSX
+#define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".dylib")
+#define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".dylib"
+#else
+#define MAKE_TARGET_DLLNAME_W(name) W("lib") name W(".so")
+#define MAKE_TARGET_DLLNAME_A(name)  "lib" name  ".so"
+#endif
+#endif // TARGET_WINDOWS
+
+#ifdef UNICODE
+#define MAKE_TARGET_DLLNAME(name) MAKE_TARGET_DLLNAME_W(name)
+#else
+#define MAKE_TARGET_DLLNAME(name) MAKE_TARGET_DLLNAME_A(name)
+#endif
+
 #if !defined(HOST_ARM) && defined(TARGET_ARM) // Non-ARM Host managing ARM related code
 
 #ifndef CROSS_COMPILE
@@ -372,6 +393,62 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 
 #endif
 
+#if defined(DAC_COMPILE) && defined(TARGET_UNIX)
+// This is a TARGET oriented copy of CRITICAL_SECTION and PAL_CS_NATIVE_DATA_SIZE
+// It is configured based on TARGET configuration rather than HOST configuration
+// There is validation code in src/coreclr/src/vm/crst.cpp to keep these from
+// getting out of sync
+
+#define T_CRITICAL_SECTION_VALIDATION_MESSAGE "T_CRITICAL_SECTION validation failed. It is not in sync with CRITICAL_SECTION"
+
+#if defined(TARGET_DARWIN) && defined(TARGET_X86)
+#define DAC_CS_NATIVE_DATA_SIZE 76
+#elif defined(TARGET_DARWIN) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 120
+#elif defined(TARGET_FREEBSD) && defined(TARGET_X86)
+#define DAC_CS_NATIVE_DATA_SIZE 12
+#elif defined(TARGET_FREEBSD) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 24
+#elif defined(TARGET_LINUX) && defined(TARGET_ARM)
+#define DAC_CS_NATIVE_DATA_SIZE 80
+#elif defined(TARGET_LINUX) && defined(TARGET_ARM64)
+#define DAC_CS_NATIVE_DATA_SIZE 116
+#elif defined(TARGET_LINUX) && defined(TARGET_X86)
+#define DAC_CS_NATIVE_DATA_SIZE 76
+#elif defined(TARGET_LINUX) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 96
+#elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
+#define DAC_CS_NATIVE_DATA_SIZE 96
+#elif defined(TARGET_NETBSD) && defined(TARGET_ARM)
+#define DAC_CS_NATIVE_DATA_SIZE 56
+#elif defined(TARGET_NETBSD) && defined(TARGET_X86)
+#define DAC_CS_NATIVE_DATA_SIZE 56
+#else
+#warning
+#error  DAC_CS_NATIVE_DATA_SIZE is not defined for this architecture
+#endif
+
+struct T_CRITICAL_SECTION {
+    PVOID DebugInfo;
+    LONG LockCount;
+    LONG RecursionCount;
+    HANDLE OwningThread;
+    ULONG_PTR SpinCount;
+
+#ifdef PAL_TRACK_CRITICAL_SECTIONS_DATA
+    BOOL bInternal;
+#endif // PAL_TRACK_CRITICAL_SECTIONS_DATA
+    volatile DWORD dwInitState;
+
+    union CSNativeDataStorage
+    {
+        BYTE rgNativeDataStorage[DAC_CS_NATIVE_DATA_SIZE];
+        PVOID pvAlign; // make sure the storage is machine-pointer-size aligned
+    } csnds;
+};
+#else
+#define T_CRITICAL_SECTION CRITICAL_SECTION
+#endif
 
 #ifdef CROSSGEN_COMPILE
 void CrossGenNotSupported(const char * message);

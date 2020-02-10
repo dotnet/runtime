@@ -4,6 +4,8 @@
 
 using System.IO;
 
+#nullable enable
+
 namespace System.Text
 {
     /// <summary>Provides a reusable reader for reading all of the text from streams.</summary>
@@ -21,7 +23,7 @@ namespace System.Text
         /// <summary>Initializes a new reusable reader.</summary>
         /// <param name="encoding">The Encoding to use.  Defaults to UTF8.</param>
         /// <param name="bufferSize">The size of the buffer to use when reading from the stream.</param>
-        public ReusableTextReader(Encoding encoding = null, int bufferSize = 1024)
+        public ReusableTextReader(Encoding? encoding = null, int bufferSize = 1024)
         {
             if (encoding == null)
             {

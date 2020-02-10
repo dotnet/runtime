@@ -3,7 +3,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <NoWarn>$(NoWarn);CA5384;CA5385</NoWarn>
-    <Configurations>net461-Debug;net461-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Security\Cryptography\Xml\AncestralNamespaceContextManager.cs" />

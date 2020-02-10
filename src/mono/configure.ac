@@ -4,7 +4,7 @@
 # This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
 # It should remain in the format they expect.
 #
-AC_INIT(mono, [6.11.0],
+AC_INIT(mono, [6.13.0],
         [https://github.com/mono/mono/issues/new])
 
 AC_CONFIG_SRCDIR([Makefile.am])
@@ -2935,6 +2935,23 @@ if test x$host_win32 = xno; then
 				AC_MSG_RESULT(no)
 		])
 	fi
+
+	dnl ********************************
+	dnl *** Checks for sys_signame ***
+	dnl ********************************
+	AC_MSG_CHECKING(for sys_signame)
+		AC_TRY_LINK([
+		#include <signal.h>
+	], [
+		const char *signame = sys_signame[0];
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SYSSIGNAME, 1, [Have sys_signame])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
 
 	dnl ********************************
 	dnl *** Checks for semaphore lib ***

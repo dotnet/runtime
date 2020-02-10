@@ -1021,7 +1021,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1029,7 +1029,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1251,7 +1251,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1259,7 +1259,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1460,7 +1460,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1469,7 +1469,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif

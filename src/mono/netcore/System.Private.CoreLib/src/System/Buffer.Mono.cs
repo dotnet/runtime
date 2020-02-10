@@ -4,7 +4,7 @@
 
 using System.Runtime.CompilerServices;
 
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -14,8 +14,6 @@ namespace System
 {
 	partial class Buffer
 	{
-		static bool IsPrimitiveTypeArray (Array array) => array.IsPrimitive ();
-
 		internal static unsafe void Memcpy (byte* dest, byte* src, int len) => Memmove (dest, src, (nuint) len);
 
 		[MethodImpl (MethodImplOptions.InternalCall)]

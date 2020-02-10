@@ -4,13 +4,13 @@
 
 set (CMAKE_CXX_STANDARD 11)
 
-if (NOT WIN32)
+if (NOT CLR_CMAKE_HOST_WIN32)
     # Try to locate the paxctl tool. Failure to find it is not fatal,
     # but the generated executables won't work on a system where PAX is set
     # to prevent applications to create executable memory mappings.
     find_program(PAXCTL paxctl)
 
-    if (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    if (CLR_CMAKE_HOST_DARWIN)
         # Ensure that dsymutil and strip are present
         find_program(DSYMUTIL dsymutil)
         if (DSYMUTIL STREQUAL "DSYMUTIL-NOTFOUND")
@@ -21,10 +21,10 @@ if (NOT WIN32)
         if (STRIP STREQUAL "STRIP-NOTFOUND")
             message(FATAL_ERROR "strip not found")
         endif()
-    else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    else (CLR_CMAKE_HOST_DARWIN)
         # Ensure that objcopy is present
         if(DEFINED ENV{ROOTFS_DIR})
-            if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+            if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_I386)
                 find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
             else()
                 message(FATAL_ERROR "Only AMD64, X86, ARM64 and ARM are supported")
@@ -32,14 +32,14 @@ if (NOT WIN32)
         else()
             find_program(OBJCOPY objcopy)
         endif()
-        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
+        if (OBJCOPY STREQUAL "OBJCOPY-NOTFOUND" AND NOT CLR_CMAKE_TARGET_ARCH_I386)
             message(FATAL_ERROR "objcopy not found")
         endif()
-    endif (CMAKE_SYSTEM_NAME STREQUAL Darwin)
+    endif (CLR_CMAKE_HOST_DARWIN)
 endif ()
 
 function(strip_symbols targetName outputFilename)
-    if(CLR_CMAKE_HOST_UNIX)
+    if(CLR_CMAKE_TARGET_UNIX)
         if(STRIP_SYMBOLS)
 
             # On the older version of cmake (2.8.12) used on Ubuntu 14.04 the TARGET_FILE
@@ -51,38 +51,38 @@ function(strip_symbols targetName outputFilename)
                 get_property(strip_source_file TARGET ${targetName} PROPERTY LOCATION)
             endif()
 
-            if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            if(CLR_CMAKE_TARGET_DARWIN)
                 set(strip_destination_file ${strip_source_file}.dwarf)
 
                 add_custom_command(
                     TARGET ${targetName}
                     POST_BUILD
-                    VERBATIM 
+                    VERBATIM
                     COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
                     COMMAND ${STRIP} -u -r ${strip_source_file}
                     COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
                 )
-            else(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            else(CLR_CMAKE_TARGET_DARWIN)
                 set(strip_destination_file ${strip_source_file}.dbg)
 
                 add_custom_command(
                     TARGET ${targetName}
                     POST_BUILD
-                    VERBATIM 
+                    VERBATIM
                     COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
                     COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
                     COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
                     COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
                 )
-            endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            endif(CLR_CMAKE_TARGET_DARWIN)
 
             set(${outputFilename} ${strip_destination_file} PARENT_SCOPE)
         endif(STRIP_SYMBOLS)
-    endif(CLR_CMAKE_HOST_UNIX)
+    endif(CLR_CMAKE_TARGET_UNIX)
 endfunction()
 
 function(install_symbols targetName destination_path)
-    if(WIN32)
+    if(CLR_CMAKE_TARGET_WIN32)
         install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/${targetName}.pdb DESTINATION ${destination_path})
     else()
         strip_symbols(${targetName} strip_destination_file)
@@ -108,7 +108,7 @@ function(disable_pax_mprotect targetName)
     endif()
 endfunction()
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_WIN32=1)
     if(IS_64BIT_BUILD)
@@ -118,7 +118,7 @@ if(WIN32)
     add_compile_options($<$<CONFIG:Release>:-DNDEBUG>)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:-DNDEBUG>)
     add_compile_options($<$<CONFIG:Debug>:/Od>)
-    add_compile_options(/guard:cf) 
+    add_compile_options(/guard:cf)
     add_compile_options(/d2Zi+) # make optimized builds debugging easier
     add_compile_options(/Oi) # enable intrinsics
     add_compile_options(/Oy-) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
@@ -183,33 +183,33 @@ endif()
 
 # This is required to map a symbol reference to a matching definition local to the module (.so)
 # containing the reference instead of using definitions from other modules.
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(CLR_CMAKE_TARGET_LINUX)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
     add_link_options(-Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
     add_compile_options(-fstack-protector-strong)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+elseif(CLR_CMAKE_TARGET_DARWIN)
     add_compile_options(-fstack-protector)
-elseif(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_link_options(-fuse-ld=lld -Wl,--build-id=sha1 -Wl,-z,relro,-z,now)
     add_compile_options(-fstack-protector)
 endif()
 
 add_definitions(-D_NO_ASYNCRTIMP)
 add_definitions(-D_NO_PPLXIMP)
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+if(CLR_CMAKE_TARGET_LINUX)
     add_definitions(-D__LINUX__)
 endif()
 
-if(CLR_CMAKE_HOST_ARCH_I386)
+if(CLR_CMAKE_TARGET_ARCH_I386)
     add_definitions(-D_TARGET_X86_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "i386")
-elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+elseif(CLR_CMAKE_TARGET_ARCH_AMD64)
     add_definitions(-D_TARGET_AMD64_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "AMD64")
-elseif(CLR_CMAKE_HOST_ARCH_ARM)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
     add_definitions(-D_TARGET_ARM_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "arm")
-elseif(CLR_CMAKE_HOST_ARCH_ARM64)
+elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
     add_definitions(-D_TARGET_ARM64_=1)
     set(ARCH_SPECIFIC_FOLDER_NAME "arm64")
 else()
@@ -217,7 +217,7 @@ else()
 endif()
 
 # Specify the Windows SDK to be used for Arm builds
-if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
+if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
     if(NOT DEFINED CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION OR CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION STREQUAL "" )
 	      message(FATAL_ERROR "Windows SDK is required for the Arm32 or Arm64 build.")
       else()
@@ -225,7 +225,7 @@ if (WIN32 AND (CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64))
       endif()
 endif ()
 
-if (WIN32)
+if (CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_ARCH_ARM)
       # Explicitly specify the assembler to be used for Arm32 compile
       file(TO_CMAKE_PATH "$ENV{VCToolsInstallDir}\\bin\\HostX86\\arm\\armasm.exe" CMAKE_ASM_COMPILER)

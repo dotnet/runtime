@@ -4075,20 +4075,6 @@ inline bool Compiler::lvaIsGCTracked(const LclVarDsc* varDsc)
     }
 }
 
-inline void Compiler::EndPhase(Phases phase)
-{
-#if defined(FEATURE_JIT_METHOD_PERF)
-    if (pCompJitTimer != nullptr)
-    {
-        pCompJitTimer->EndPhase(this, phase);
-    }
-#endif
-#if DUMP_FLOWGRAPHS
-    fgDumpFlowGraph(phase);
-#endif // DUMP_FLOWGRAPHS
-    previousCompletedPhase = phase;
-}
-
 /*****************************************************************************/
 #if MEASURE_CLRAPI_CALLS
 

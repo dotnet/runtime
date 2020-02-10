@@ -34,7 +34,7 @@ if (CLR_CMAKE_HOST_ARCH_I386)
     add_subdirectory(gcinfo_arm)
 endif ()
 
-if (CLR_CMAKE_HOST_ARCH_I386 AND WIN32)
+if (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_WIN32)
     # On x86, build Linux x86 cross-compiling altjit.
     add_subdirectory(gcinfo_linuxx86)
 endif ()

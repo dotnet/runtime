@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -362,7 +364,7 @@ internal static partial class Interop
 
             int result = 0;
             int size = 20; // start assuming 20 threads is enough
-            ulong[] threadIds = null;
+            ulong[]? threadIds = null;
             var threads = new List<KeyValuePair<ulong, proc_threadinfo?>>();
 
             // We have no way of knowing how many threads the process has (and therefore how big our buffer should be)

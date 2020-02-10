@@ -2175,7 +2175,7 @@ direct_icalls_enabled (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
 		return FALSE;
 
-	if (method && mono_aot_direct_icalls_enabled_for_method (cfg, method))
+	if (method && cfg->compile_aot && mono_aot_direct_icalls_enabled_for_method (cfg, method))
 		return TRUE;
 
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */

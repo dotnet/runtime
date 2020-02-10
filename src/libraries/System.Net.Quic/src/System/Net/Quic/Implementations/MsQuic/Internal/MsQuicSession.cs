@@ -12,6 +12,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal MsQuicSession()
         {
+            if (!MsQuicApi.IsQuicSupported)
+            {
+                throw new NotSupportedException(SR.net_quic_notsupported);
+            }
         }
 
         public IntPtr ConnectionOpen(QuicClientConnectionOptions options)

@@ -5,8 +5,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-[assembly: SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods", Scope = "member", Target = "System.ComponentModel.PropertyTabAttribute.get_TabClasses():System.Type[]")]
-
 namespace System.ComponentModel
 {
     /// <summary>

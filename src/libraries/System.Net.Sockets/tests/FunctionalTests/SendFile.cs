@@ -189,7 +189,7 @@ namespace System.Net.Sockets.Tests
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
                 {
                     Task socketOperation = Task.Run(() =>
@@ -314,21 +314,6 @@ namespace System.Net.Sockets.Tests
 
             // Clean up the file we created
             File.Delete(filename);
-        }
-
-        protected static (Socket, Socket) CreateConnectedSocketPair()
-        {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                client.Connect(listener.LocalEndPoint);
-                Socket server = listener.Accept();
-
-                return (client, server);
-            }
         }
     }
 }

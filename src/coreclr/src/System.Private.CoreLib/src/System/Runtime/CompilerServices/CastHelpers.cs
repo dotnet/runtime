@@ -10,7 +10,7 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -53,7 +53,7 @@ namespace System.Runtime.CompilerServices
             // then we use fibonacci hashing to reduce the value to desired size.
 
             int hashShift = HashShift(table);
-#if BIT64
+#if TARGET_64BIT
             ulong hash = (((ulong)source << 32) | ((ulong)source >> 32)) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else

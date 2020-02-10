@@ -402,7 +402,6 @@ namespace System
         // ISerializable method
         //
         /// <internalonly/>
-        [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             GetObjectData(serializationInfo, streamingContext);
@@ -3977,11 +3976,14 @@ namespace System
             }
 
             // Then look up the syntax in a string-based table.
-            string str = new string('\0', span.Length);
-            fixed (char* ptr = str)
+            string str;
+            fixed (char* pSpan = span)
             {
-                int charsWritten = span.ToLowerInvariant(new Span<char>(ptr, str.Length));
-                Debug.Assert(charsWritten == str.Length);
+                str = string.Create(span.Length, (ip: (IntPtr)pSpan, length: span.Length), (buffer, state) =>
+                {
+                    int charsWritten = new ReadOnlySpan<char>((char*)state.ip, state.length).ToLowerInvariant(buffer);
+                    Debug.Assert(charsWritten == buffer.Length);
+                });
             }
             syntax = UriParser.FindOrFetchAsUnknownV1Syntax(str);
             return ParsingError.None;

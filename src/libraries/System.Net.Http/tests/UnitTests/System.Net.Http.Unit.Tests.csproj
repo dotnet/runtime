@@ -1,9 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -25,6 +25,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+      <Link>Common\System\Net\ArrayBuffer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
@@ -310,9 +313,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>

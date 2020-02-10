@@ -1,7 +1,7 @@
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+if(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
   # On OSX and *BSD, we use the libunwind that's part of the OS
   set(CLR_CMAKE_USE_SYSTEM_LIBUNWIND 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+endif(CLR_CMAKE_TARGET_DARWIN OR CLR_CMAKE_TARGET_FREEBSD)
 
 if(NOT DEFINED ENV{ROOTFS_DIR})
   include_directories(SYSTEM /usr/local/include)
@@ -14,7 +14,7 @@ if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep)
 
   add_subdirectory(libunwind)
-elseif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+elseif(NOT CLR_CMAKE_TARGET_DARWIN)
     if(CLR_CMAKE_HOST_ARCH_ARM)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
@@ -64,7 +64,7 @@ include_directories(include)
 
 # Compile options
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_DARWIN)
   add_definitions(-DTARGET_OSX)
   add_definitions(-DXSTATE_SUPPORTED)
   set(PLATFORM_SOURCES
@@ -74,7 +74,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     exception/machexception.cpp
     exception/machmessage.cpp
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(CLR_CMAKE_TARGET_DARWIN)
 
 if (FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
   add_definitions(-DFEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION)
@@ -93,10 +93,10 @@ elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 endif()
 
-if(CLR_CMAKE_HOST_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
+if(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
   # Currently the _xstate is not available on Alpine Linux
   add_definitions(-DXSTATE_SUPPORTED)
-endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
+endif(CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_HOST_ALPINE_LINUX)
 
 if(CLR_CMAKE_HOST_ALPINE_LINUX)
   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
@@ -116,12 +116,12 @@ set(ARCH_SOURCES
   arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(NOT CLR_CMAKE_TARGET_DARWIN)
   list(APPEND PLATFORM_SOURCES
     arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
     arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
-endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(NOT CLR_CMAKE_TARGET_DARWIN)
 
 if(CLR_CMAKE_HOST_ARCH_ARM)
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -250,14 +250,14 @@ add_library(coreclrpal
 # > warning: /Applications/Xcode-9.4.1.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib:
 # > warning for library: libtracepointprovider.a the table of contents is empty (no object file members in the library define global symbols)
 #
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_TARGET_LINUX)
   add_library(tracepointprovider
     STATIC
     misc/tracepointprovider.cpp
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+if(CLR_CMAKE_TARGET_DARWIN)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
   find_library(SECURITY Security)
@@ -268,19 +268,19 @@ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     ${SECURITY}
     ${SYSTEM}
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+endif(CLR_CMAKE_TARGET_DARWIN)
 
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
     pthread
     rt
     ${UNWIND_LIBS}
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+endif(CLR_CMAKE_TARGET_FREEBSD)
 
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
+if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
-  if(NOT CLR_CMAKE_HOST_ANDROID)
+  if(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
       gcc_s
       pthread
@@ -288,7 +288,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     )
   endif()
 
-  if(CLR_CMAKE_HOST_ANDROID)
+  if(CLR_CMAKE_TARGET_ANDROID)
     find_library(LZMA NAMES lzma)
 
     if(LZMA STREQUAL LZMA-NOTFOUND)
@@ -302,7 +302,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
       ${LZMA})
   endif()
 
-  if(CLR_MAKE_PLATFORM_ANDROID)
+  if(CLR_MAKE_TARGET_ANDROID)
     find_library(ANDROID_SUPPORT NAMES android-support)
     find_library(ANDROID_GLOB NAMES android-glob)
 
@@ -323,9 +323,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     target_link_libraries(coreclrpal ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+endif(CLR_CMAKE_TARGET_LINUX)
 
-if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+if(CLR_CMAKE_TARGET_NETBSD)
   if (CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
     find_library(UNWIND unwind)
   endif()
@@ -337,7 +337,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     ${UNWIND}
     ${KVM}
   )
-endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+endif(CLR_CMAKE_TARGET_NETBSD)
 
 if(FEATURE_EVENT_TRACE)
   add_subdirectory(eventprovider)

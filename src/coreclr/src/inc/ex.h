@@ -6,15 +6,15 @@
 #if !defined(_EX_H_)
 #define _EX_H_
 
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #define EX_TRY_HOLDER                                   \
     HardwareExceptionHolder                             \
     NativeExceptionHolderCatchAll __exceptionHolder;    \
     __exceptionHolder.Push();                           \
 
-#else // TARGET_UNIX
+#else // HOST_UNIX
 #define EX_TRY_HOLDER
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 
 #include "sstring.h"
 #include "crtwrap.h"

@@ -312,13 +312,6 @@ public:
         return flags;
     }
 
-    AppDomain *GetAppDomain()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return pAppDomain;
-    }
-
     /* Is this frame at a safe spot for GC?
      */
     bool IsGcSafe();
@@ -410,6 +403,12 @@ public:
 
     void CheckGSCookies();
 
+    inline Thread* GetThread()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return pThread;
+    }
+
 #if defined(FEATURE_EH_FUNCLETS)
     bool IsFunclet()
     {
@@ -488,7 +487,6 @@ private:
     MethodDesc       *pFunc;
 
     // the rest is only used for "frameless methods"
-    AppDomain        *pAppDomain;
     PREGDISPLAY       pRD; // "thread context"/"virtual register set"
 
     EECodeInfo        codeInfo;

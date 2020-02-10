@@ -934,22 +934,22 @@ namespace System
                 case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref pThisValue).CompareTo(Unsafe.As<byte, ushort>(ref pTargetValue));
                 case CorElementType.ELEMENT_TYPE_I4:
-#if !BIT64
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return Unsafe.As<byte, int>(ref pThisValue).CompareTo(Unsafe.As<byte, int>(ref pTargetValue));
                 case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                     return Unsafe.As<byte, uint>(ref pThisValue).CompareTo(Unsafe.As<byte, uint>(ref pTargetValue));
                 case CorElementType.ELEMENT_TYPE_I8:
-#if BIT64
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
 #endif
                     return Unsafe.As<byte, long>(ref pThisValue).CompareTo(Unsafe.As<byte, long>(ref pTargetValue));
                 case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
                     return Unsafe.As<byte, ulong>(ref pThisValue).CompareTo(Unsafe.As<byte, ulong>(ref pTargetValue));

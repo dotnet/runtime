@@ -4,7 +4,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netcoreapp2.1-Unix-Debug;netcoreapp2.1-Unix-Release;netcoreapp2.1-Windows_NT-Debug;netcoreapp2.1-Windows_NT-Release;$(NetFrameworkCurrent)-Windows_NT-Debug;$(NetFrameworkCurrent)-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;netcoreapp2.0-Unix;netcoreapp2.1-Windows_NT;netcoreapp2.1-Unix;net461-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 

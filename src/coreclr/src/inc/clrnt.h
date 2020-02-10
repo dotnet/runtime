@@ -811,9 +811,9 @@ PEXCEPTION_ROUTINE
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 extern RtlVirtualUnwindFn* RtlVirtualUnwind_Unsafe;
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
 PEXCEPTION_ROUTINE
 RtlVirtualUnwind_Unsafe(
     IN ULONG HandlerType,
@@ -825,7 +825,7 @@ RtlVirtualUnwind_Unsafe(
     OUT PULONG64 EstablisherFrame,
     IN OUT PKNONVOLATILE_CONTEXT_POINTERS ContextPointers OPTIONAL
     );
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #endif // TARGET_AMD64
 

@@ -40,6 +40,7 @@
 #include <mono/utils/json.h>
 #include <mono/utils/mono-state.h>
 #include <utils/mono-threads-debug.h>
+#include <utils/mono-signal-handler.h>
 
 static const char *
 kernel_version_string (void)
@@ -144,7 +145,8 @@ typedef enum
 	MERP_EXC_SIGFPE = 7 ,
 	MERP_EXC_SIGTRAP = 8,
 	MERP_EXC_SIGKILL = 9,
-	MERP_EXC_HANG  = 10
+	MERP_EXC_HANG  = 10,
+	MERP_EXC_MANAGED_EXCEPTION = 11
 } MERPExcType;
 
 typedef struct {
@@ -261,6 +263,8 @@ get_merp_exctype (MERPExcType exc)
 			return "0x04000000";
 		case MERP_EXC_HANG: 
 			return "0x02000000";
+		case MERP_EXC_MANAGED_EXCEPTION:
+			return "0x05000000";
 		case MERP_EXC_NONE:
 			// Exception type documented as optional, not optional
 			g_assert_not_reached ();
@@ -272,22 +276,31 @@ get_merp_exctype (MERPExcType exc)
 static MERPExcType
 parse_exception_type (const char *signal)
 {
-	if (!strcmp (signal, "SIGSEGV"))
+	if (!strcmp (signal, mono_get_signame (SIGSEGV)))
 		return MERP_EXC_SIGSEGV;
 
-	if (!strcmp (signal, "SIGFPE"))
+	if (!strcmp (signal, mono_get_signame (SIGFPE)))
 		return MERP_EXC_SIGFPE;
 
-	if (!strcmp (signal, "SIGILL"))
+	if (!strcmp (signal, mono_get_signame (SIGILL)))
 		return MERP_EXC_SIGILL;
 
-	if (!strcmp (signal, "SIGABRT"))
+	if (!strcmp (signal, mono_get_signame (SIGABRT)))
 		return MERP_EXC_SIGABRT;
+
+	if (!strcmp (signal, mono_get_signame (SIGTRAP)))
+		return MERP_EXC_SIGTRAP;
+
+	if (!strcmp (signal, mono_get_signame (SIGSYS)))
+		return MERP_EXC_SIGSYS;
 
 	// Force quit == hang?
 	// We need a default for this
-	if (!strcmp (signal, "SIGTERM"))
+	if (!strcmp (signal, mono_get_signame (SIGTERM)))
 		return MERP_EXC_HANG;
+
+	if (!strcmp (signal, "MANAGED_EXCEPTION"))
+		return MERP_EXC_MANAGED_EXCEPTION;
 
 	// FIXME: There are no other such signal
 	// strings passed to mono_handle_native_crash at the
