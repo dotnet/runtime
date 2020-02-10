@@ -51,7 +51,7 @@ namespace Internal.Cryptography
 
             int numBytesWritten;
             ErrorCode errorCode;
-            using (SafeNCryptKeyHandle keyHandle = _cngKey.Handle)
+            using (SafeNCryptKeyHandle keyHandle = _cngKey!.Handle)
             {
                 var inputSpan = new ReadOnlySpan<byte>(input, inputOffset, count);
                 var outputSpan = new Span<byte>(output, outputOffset, count);
@@ -116,11 +116,11 @@ namespace Internal.Cryptography
             if (IV != null)
             {
                 CngProperty prop = new CngProperty(Interop.NCrypt.NCRYPT_INITIALIZATION_VECTOR, IV, CngPropertyOptions.None);
-                _cngKey.SetProperty(prop);
+                _cngKey!.SetProperty(prop);
             }
         }
 
-        private CngKey _cngKey;
+        private CngKey? _cngKey;
         private readonly bool _encrypting;
 
         private static readonly CngProperty s_ECBMode =

@@ -24,12 +24,12 @@ namespace System.Security.Cryptography
             return Create(algorithm, keyName: null);
         }
 
-        public static CngKey Create(CngAlgorithm algorithm, string keyName)
+        public static CngKey Create(CngAlgorithm algorithm, string? keyName)
         {
             return Create(algorithm, keyName, creationParameters: null);
         }
 
-        public static CngKey Create(CngAlgorithm algorithm, string keyName, CngKeyCreationParameters creationParameters)
+        public static CngKey Create(CngAlgorithm algorithm, string? keyName, CngKeyCreationParameters? creationParameters)
         {
             if (algorithm == null)
                 throw new ArgumentNullException(nameof(algorithm));
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             if (creationParameters == null)
                 creationParameters = new CngKeyCreationParameters();
 
-            SafeNCryptProviderHandle providerHandle = creationParameters.Provider.OpenStorageProvider();
+            SafeNCryptProviderHandle providerHandle = creationParameters.Provider!.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle;
             ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(providerHandle, out keyHandle, algorithm.Algorithm, keyName, 0, creationParameters.KeyCreationOptions);
             if (errorCode != ErrorCode.ERROR_SUCCESS)
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                         throw errorCode.ToCryptographicException();
                 }
 
-                CngUIPolicy uiPolicy = creationParameters.UIPolicy;
+                CngUIPolicy? uiPolicy = creationParameters.UIPolicy;
                 if (uiPolicy != null)
                 {
                     InitializeKeyUiPolicyProperties(keyHandle, uiPolicy);
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                 // Iterate over the custom properties, setting those as well.
                 foreach (CngProperty property in creationParameters.Parameters)
                 {
-                    byte[] value = property.GetValueWithoutCopying();
+                    byte[]? value = property.GetValueWithoutCopying();
                     int valueLength = (value == null) ? 0 : value.Length;
                     fixed (byte* pValue = value.MapZeroLengthArrayToNonNullPointer())
                     {
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography
                         throw errorCode.ToCryptographicException();
                 }
 
-                string useContext = uiPolicy.UseContext;
+                string? useContext = uiPolicy.UseContext;
                 if (useContext != null)
                 {
                     int useContextByteLength = checked((useContext.Length + 1) * sizeof(char));

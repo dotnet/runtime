@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
 
         private CngKey GetKey()
         {
-            CngKey key = null;
+            CngKey? key = null;
 
             if (_core.IsKeyGeneratedNamedCurve())
             {
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                CngAlgorithm algorithm = null;
+                CngAlgorithm? algorithm = null;
                 int keySize = 0;
 
                 // Map the current key size to a CNG algorithm name

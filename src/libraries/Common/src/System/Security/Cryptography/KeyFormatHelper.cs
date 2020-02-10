@@ -5,6 +5,7 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
@@ -203,7 +204,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             KeyReader<TRet> keyReader,
             out int bytesRead,
-            out TRet ret)
+            [MaybeNull] out TRet ret)
         {
             AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;

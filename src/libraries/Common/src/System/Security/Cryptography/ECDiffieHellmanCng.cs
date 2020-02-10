@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
                     return Interop.NCrypt.DeriveKeyMaterialHmac(
                         secretAgreement,
                         hashAlgorithm.Name,
-                        hmacKey,
+                        hmacKey!,
                         secretPrepend,
                         secretAppend,
                         flags);
