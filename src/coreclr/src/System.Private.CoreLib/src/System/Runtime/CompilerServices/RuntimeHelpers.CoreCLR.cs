@@ -107,7 +107,7 @@ namespace System.Runtime.CompilerServices
         public static extern void PrepareDelegate(Delegate d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object o);
+        public static extern int GetHashCode(object? o);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);

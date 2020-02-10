@@ -119,7 +119,7 @@ while [[ $# > 0 ]]; do
       ;;
      -framework|-f)
       val="$(echo "$2" | awk '{print tolower($0)}')"
-      arguments="$arguments /p:TargetGroup=$val"
+      arguments="$arguments /p:BuildTargetFramework=$val"
       shift 2
       ;;
      -os)

@@ -645,6 +645,12 @@ primitive_type_to_llvm_type (MonoTypeEnum type)
 	}
 }
 
+static MonoTypeEnum
+inst_c1_type (const MonoInst *ins)
+{
+	return (MonoTypeEnum)ins->inst_c1;
+}
+
 /*
  * type_to_llvm_type:
  *
@@ -7588,7 +7594,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE_LOADU: {
-			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (ins->inst_c1), 0));
+			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
 			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_simd_type (ins->inst_c1), 0), "");
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
@@ -7707,7 +7713,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CREATE_SCALAR_UNSAFE: {
 			values [ins->dreg] = LLVMBuildInsertElement (builder, 
 				LLVMGetUndef (simd_class_to_llvm_type (ctx, ins->klass)), 
-				convert (ctx, lhs, primitive_type_to_llvm_type (ins->inst_c1)),
+				convert (ctx, lhs, primitive_type_to_llvm_type (inst_c1_type (ins))),
 				LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
@@ -7745,7 +7751,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				// other overloads are implemented with `insertelement`
 				values [ins->dreg] = LLVMBuildInsertElement (builder, 
 					values [ins->sreg1], 
-					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (ins->inst_c1)), 
+					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (inst_c1_type (ins))),
 					convert (ctx, values [ins->sreg3], LLVMInt8Type ()), dname);
 			}
 			break;

@@ -153,6 +153,12 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+          
+          - task: CopyFiles@2
+            displayName: Prepare tmp assets to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/tmp
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/tmp
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:

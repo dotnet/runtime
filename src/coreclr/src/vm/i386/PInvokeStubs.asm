@@ -32,9 +32,9 @@ extern @JIT_PInvokeEndRarePath@0:proc
 
 ;
 ; in:
-; InlinedCallFrame (ecx)   = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
-;                            before actual InlinedCallFrame data)
-; StackArgumentsSize (edx) = Number of argument bytes pushed on the stack, which will be popped by the callee
+; InlinedCallFrame (ecx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right
+;                          before actual InlinedCallFrame data)
+;
 ;
 _JIT_PInvokeBegin@4 PROC public
 
@@ -46,7 +46,7 @@ _JIT_PInvokeBegin@4 PROC public
         lea             eax,[??_7InlinedCallFrame@@6B@]
         mov             dword ptr [ecx], eax
 
-        mov             dword ptr [ecx + InlinedCallFrame__m_Datum], edx
+        mov             dword ptr [ecx + InlinedCallFrame__m_Datum], 0
 
 
         mov             eax, esp

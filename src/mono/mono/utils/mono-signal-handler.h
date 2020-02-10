@@ -10,6 +10,7 @@
 #define __MONO_SIGNAL_HANDLER_H__
 
 #include "config.h"
+#include <glib.h>
 
 /*
  * When a signal is delivered to a thread on a Krait Android device
@@ -78,6 +79,7 @@
  */
 
 #ifdef HOST_WIN32
+#include <windows.h>
 #define MONO_SIG_HANDLER_INFO_TYPE MonoWindowsSigHandlerInfo
 typedef struct {
 	/* Set to FALSE to indicate chained signal handler needs run.
@@ -98,5 +100,8 @@ typedef struct {
 #define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
 #define MONO_SIG_HANDLER_GET_INFO() (_info)
 #define MONO_SIG_HANDLER_GET_CONTEXT void *ctx = context;
+
+void mono_load_signames (void);
+const char * mono_get_signame (int signo);
 
 #endif // __MONO_SIGNAL_HANDLER_H__

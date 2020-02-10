@@ -12,8 +12,6 @@ namespace System.Collections.Immutable
     /// An immutable stack.
     /// </summary>
     /// <typeparam name="T">The type of elements stored in the stack.</typeparam>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public interface IImmutableStack<T> : IEnumerable<T>
     {
         /// <summary>

@@ -43,9 +43,9 @@ set(ILDASM_HEADERS
     ../util.hpp
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILDASM_SOURCES ${ILDASM_HEADERS})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
@@ -75,7 +75,7 @@ set(ILDASM_LINK_LIBRARIES
     corguids
 )
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND ILDASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -97,7 +97,7 @@ else()
         mscorrc_debug
         palrt
     )
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(ildasm
@@ -108,11 +108,11 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 
     # FreeBSD and NetBSD implement dlopen(3) in libc
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
         target_link_libraries(ildasm
             dl
         )
-    endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+    endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
     target_link_libraries(ildasm
         ${ILDASM_LINK_LIBRARIES}

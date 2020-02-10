@@ -193,7 +193,7 @@ mono_runtime_install_handlers (void)
 #ifndef MONO_CROSS_COMPILE
 	win32_seh_init();
 	win32_seh_set_handler(SIGFPE, mono_sigfpe_signal_handler);
-	win32_seh_set_handler(SIGILL, mono_sigill_signal_handler);
+	win32_seh_set_handler(SIGILL, mono_crashing_signal_handler);
 	win32_seh_set_handler(SIGSEGV, mono_sigsegv_signal_handler);
 	if (mini_debug_options.handle_sigint)
 		win32_seh_set_handler(SIGINT, mono_sigint_signal_handler);

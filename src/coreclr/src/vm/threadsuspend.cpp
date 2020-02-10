@@ -23,6 +23,8 @@
 
 bool ThreadSuspend::s_fSuspendRuntimeInProgress = false;
 
+bool ThreadSuspend::s_fSuspended = false;
+
 CLREvent* ThreadSuspend::g_pGCSuspendEvent = NULL;
 
 ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
@@ -6227,6 +6229,7 @@ void Thread::UnmarkForSuspension(ULONG mask)
 
 void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
 {
+    ThreadSuspend::s_fSuspended = false;
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.StartRestart();
 #endif //TIME_SUSPEND
@@ -6589,6 +6592,7 @@ retry_for_debugger:
 #ifdef TIME_SUSPEND
     g_SuspendStatistics.EndSuspend(reason == SUSPEND_FOR_GC || reason == SUSPEND_FOR_GC_PREP);
 #endif //TIME_SUSPEND
+    ThreadSuspend::s_fSuspended = true;
 }
 
 #if defined(FEATURE_HIJACK) && defined(TARGET_UNIX)

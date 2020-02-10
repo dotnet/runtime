@@ -2,7 +2,7 @@ Param(
     [string] $SourceDirectory=$env:BUILD_SOURCESDIRECTORY,
     [string] $CoreRootDirectory,
     [string] $BaselineCoreRootDirectory,
-    [string] $Architecture=$env:archType,
+    [string] $Architecture="x64",
     [string] $Framework="netcoreapp5.0",
     [string] $CompilationMode="Tiered",
     [string] $Repository=$env:BUILD_REPOSITORY_NAME,

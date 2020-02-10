@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property)]
     public class AttributeProviderAttribute : Attribute
     {
