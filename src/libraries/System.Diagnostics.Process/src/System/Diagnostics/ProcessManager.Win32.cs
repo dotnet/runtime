@@ -368,20 +368,22 @@ namespace System.Diagnostics
                 if (processIdFilter == null || processIdFilter(processInfoProcessId))
                 {
                     // get information for a process
-                    ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads);
-                    processInfo.ProcessId = processInfoProcessId;
-                    processInfo.SessionId = (int)pi.SessionId;
-                    processInfo.PoolPagedBytes = (long)pi.QuotaPagedPoolUsage;
-                    processInfo.PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage;
-                    processInfo.VirtualBytes = (long)pi.VirtualSize;
-                    processInfo.VirtualBytesPeak = (long)pi.PeakVirtualSize;
-                    processInfo.WorkingSetPeak = (long)pi.PeakWorkingSetSize;
-                    processInfo.WorkingSet = (long)pi.WorkingSetSize;
-                    processInfo.PageFileBytesPeak = (long)pi.PeakPagefileUsage;
-                    processInfo.PageFileBytes = (long)pi.PagefileUsage;
-                    processInfo.PrivateBytes = (long)pi.PrivatePageCount;
-                    processInfo.BasePriority = pi.BasePriority;
-                    processInfo.HandleCount = (int)pi.HandleCount;
+                    ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)
+                    {
+                        ProcessId = processInfoProcessId,
+                        SessionId = (int)pi.SessionId,
+                        PoolPagedBytes = (long)pi.QuotaPagedPoolUsage,
+                        PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage,
+                        VirtualBytes = (long)pi.VirtualSize,
+                        VirtualBytesPeak = (long)pi.PeakVirtualSize,
+                        WorkingSetPeak = (long)pi.PeakWorkingSetSize,
+                        WorkingSet = (long)pi.WorkingSetSize,
+                        PageFileBytesPeak = (long)pi.PeakPagefileUsage,
+                        PageFileBytes = (long)pi.PagefileUsage,
+                        PrivateBytes = (long)pi.PrivatePageCount,
+                        BasePriority = pi.BasePriority,
+                        HandleCount = (int)pi.HandleCount,
+                    };
 
                     if (pi.ImageName.Buffer == IntPtr.Zero)
                     {
@@ -413,15 +415,16 @@ namespace System.Diagnostics
                     {
                         ref readonly SYSTEM_THREAD_INFORMATION ti = ref MemoryMarshal.AsRef<SYSTEM_THREAD_INFORMATION>(data.Slice(threadInformationOffset));
 
-                        ThreadInfo threadInfo = new ThreadInfo();
-
-                        threadInfo._processId = (int)ti.ClientId.UniqueProcess;
-                        threadInfo._threadId = (ulong)ti.ClientId.UniqueThread;
-                        threadInfo._basePriority = ti.BasePriority;
-                        threadInfo._currentPriority = ti.Priority;
-                        threadInfo._startAddress = ti.StartAddress;
-                        threadInfo._threadState = (ThreadState)ti.ThreadState;
-                        threadInfo._threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason);
+                        ThreadInfo threadInfo = new ThreadInfo
+                        {
+                            _processId = (int)ti.ClientId.UniqueProcess,
+                            _threadId = (ulong)ti.ClientId.UniqueThread,
+                            _basePriority = ti.BasePriority,
+                            _currentPriority = ti.Priority,
+                            _startAddress = ti.StartAddress,
+                            _threadState = (ThreadState)ti.ThreadState,
+                            _threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason),
+                        };
 
                         processInfo._threadInfoList.Add(threadInfo);
 
