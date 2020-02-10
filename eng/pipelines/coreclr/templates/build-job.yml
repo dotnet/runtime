@@ -129,10 +129,10 @@ jobs:
 
     # Build CoreCLR
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
+      - script: $(coreClrRepoRootDir)build-native$(scriptExt) $(buildConfig) $(archType) $(crossArg) -ci $(clangArg) $(stripSymbolsArg) $(officialBuildIdArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
+      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build CoreCLR Runtime
 
     # Crossgen System.Private.CoreLib
