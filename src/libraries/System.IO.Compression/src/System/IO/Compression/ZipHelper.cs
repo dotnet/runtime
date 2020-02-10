@@ -193,7 +193,7 @@ namespace System.IO.Compression
 
         internal static bool GetSuppressValidation()
         {
-            if (AppContext.TryGetSwitch("System.Compression.SuppressValidation", out bool suppressValidation))
+            if (AppContext.TryGetSwitch("System.Compression.ZipArchiveEntry.SuppressValidation", out bool suppressValidation))
             {
                 return suppressValidation;
             }

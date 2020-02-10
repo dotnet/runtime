@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.IO.Compression.Tests
 {
@@ -130,26 +131,26 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
-        public static async Task ZipArchiveEntry_BypassValidation()
+        public static void ZipArchiveEntry_BypassValidation()
         {
-            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
-            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
-
-            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            RemoteExecutor.Invoke(() =>
             {
-                // Disable the flag variable using reflection as corresponding AppContext value is cached
-                archive.GetType().Assembly.GetType("System.IO.Compression.ZipHelper").GetField("s_validateHeader",
-                    Reflection.BindingFlags.NonPublic | Reflection.BindingFlags.Static).SetValue(null, false);
+                MemoryStream stream = populateStream().Result;
+                PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+                 {
+                    // Set the AppContext Switch to suppress validation
+                    AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressValidation", true);
+                    ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
 
-                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
-                
-                using (MemoryStream ms = new MemoryStream())
-                using (Stream source = e.Open())
-                {
-                    source.CopyTo(ms);
-                    Assert.Equal(ms.Position, ms.Length);  // Just making sure it was readable
+                    using (MemoryStream ms = new MemoryStream())
+                    using (Stream source = e.Open())
+                    {
+                        source.CopyTo(ms);
+                        Assert.Equal(ms.Position, ms.Length);  // Just making sure it was readable
+                    }
                 }
-            }
+            }).Dispose();
         }
 
         [Fact]
