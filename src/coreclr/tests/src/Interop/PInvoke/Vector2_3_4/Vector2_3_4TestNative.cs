@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 #pragma warning disable 0618
@@ -57,17 +58,17 @@ static class Vector2_3_4TestNative
     [DllImport(nameof(Vector2_3_4TestNative))]
     public static extern void GetVector4ForFloats(float x, float y, float z, float w, out Vector4 dec);
 
-    [DllImport(nameof(Vector2_3_4TestNative, EntryPoint = "Vector2EqualToFloats"))]
+    [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "Vector2EqualToFloats")]
     public static extern bool WrappedVector2EqualToFloats(Vector2Wrapper vec, float x, float y);
-    [DllImport(nameof(Vector2_3_4TestNative, EntryPoint = "Vector3EqualToFloats"))]
+    [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "Vector3EqualToFloats")]
     public static extern bool WrappedVector3EqualToFloats(Vector3Wrapper vec, float x, float y, float z);
-    [DllImport(nameof(Vector2_3_4TestNative, EntryPoint = "Vector4EqualToFloats"))]
+    [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "Vector4EqualToFloats")]
     public static extern bool WrappedVector4EqualToFloats(Vector4Wrapper vec, float x, float y, float z, float w);
 
     [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "ValidateAndChangeVector2")]
-    public static extern bool ValidateAndChangeWrappedVector2(ref Vector2Wrapper dec, float expectedX, float expectedY, float expectedZ, float expectedW, float newX, float newY, float newZ, float newW);
+    public static extern bool ValidateAndChangeWrappedVector2(ref Vector2Wrapper dec, float expectedX, float expectedY, float newX, float newY);
     [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "ValidateAndChangeVector3")]
-    public static extern bool ValidateAndChangeWrappedVector3(ref Vector3Wrapper dec, float expectedX, float expectedY, float expectedZ, float expectedW, float newX, float newY, float newZ, float newW);
+    public static extern bool ValidateAndChangeWrappedVector3(ref Vector3Wrapper dec, float expectedX, float expectedY, float expectedZ, float newX, float newY, float newZ);
     [DllImport(nameof(Vector2_3_4TestNative), EntryPoint = "ValidateAndChangeVector4")]
     public static extern bool ValidateAndChangeWrappedVector4(ref Vector4Wrapper dec, float expectedX, float expectedY, float expectedZ, float expectedW, float newX, float newY, float newZ, float newW);
 

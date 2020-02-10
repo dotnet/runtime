@@ -42,7 +42,7 @@ namespace
     }
 }
 
-extern "C" DLL_EXPORT Vector4 STDMETHODCALLTYPE CreateVector4FromFloatsCreateVector4FromFloats(float x, float y, float z, float w)
+extern "C" DLL_EXPORT Vector4 STDMETHODCALLTYPE CreateVector4FromFloats(float x, float y, float z, float w)
 {
     Vector4 result;
     result.x = x;
@@ -52,7 +52,7 @@ extern "C" DLL_EXPORT Vector4 STDMETHODCALLTYPE CreateVector4FromFloatsCreateVec
     return result;
 }
 
-extern "C" DLL_EXPORT Vector3 STDMETHODCALLTYPE CreateVector3FromFloatsCreateVector4FromFloats(float x, float y, float z)
+extern "C" DLL_EXPORT Vector3 STDMETHODCALLTYPE CreateVector3FromFloats(float x, float y, float z)
 {
     Vector3 result;
     result.x = x;
@@ -61,7 +61,7 @@ extern "C" DLL_EXPORT Vector3 STDMETHODCALLTYPE CreateVector3FromFloatsCreateVec
     return result;
 }
 
-extern "C" DLL_EXPORT Vector2 STDMETHODCALLTYPE CreateVector2FromFloatsCreateVector4FromFloats(float x, float y)
+extern "C" DLL_EXPORT Vector2 STDMETHODCALLTYPE CreateVector2FromFloats(float x, float y)
 {
     Vector2 result;
     result.x = x;
@@ -146,14 +146,14 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector4ForFloats(float x, float 
     vec->w = w;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector3ForFloats(float x, float y, float z, float w, Vector3* vec)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector3ForFloats(float x, float y, float z, Vector3* vec)
 {
     vec->x = x;
     vec->y = y;
     vec->z = z;
 }
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector2ForFloats(float x, float y, float z, float w, Vector2* vec)
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector2ForFloats(float x, float y, Vector2* vec)
 {
     vec->x = x;
     vec->y = y;
@@ -162,21 +162,21 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE GetVector2ForFloats(float x, float 
 
 using Vector4Callback = Vector4(STDMETHODCALLTYPE*)(Vector4);
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE PassThroughVector4ToCallback(Vector4 vec, Vector4Callback cb)
+extern "C" DLL_EXPORT Vector4 STDMETHODCALLTYPE PassThroughVector4ToCallback(Vector4 vec, Vector4Callback cb)
 {
     return cb(vec);
 }
 
 using Vector3Callback = Vector3(STDMETHODCALLTYPE*)(Vector3);
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE PassThroughVector3ToCallback(Vector3 vec, Vector3Callback cb)
+extern "C" DLL_EXPORT Vector3 STDMETHODCALLTYPE PassThroughVector3ToCallback(Vector3 vec, Vector3Callback cb)
 {
     return cb(vec);
 }
 
 using Vector2Callback = Vector2(STDMETHODCALLTYPE*)(Vector2);
 
-extern "C" DLL_EXPORT void STDMETHODCALLTYPE PassThroughVector2ToCallback(Vector2 vec, Vector2Callback cb)
+extern "C" DLL_EXPORT Vector2 STDMETHODCALLTYPE PassThroughVector2ToCallback(Vector2 vec, Vector2Callback cb)
 {
     return cb(vec);
 }

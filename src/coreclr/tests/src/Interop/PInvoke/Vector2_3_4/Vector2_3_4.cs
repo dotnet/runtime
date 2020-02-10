@@ -47,16 +47,16 @@ public class Vector2_3_4Test
 
         Assert.IsTrue(Vector2_3_4TestNative.Vector2EqualToFloats(startingVector, X, Y));
 
-        Vecto2 localVector = startingVector;
+        Vector2 localVector = startingVector;
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeVector2(ref localVector, X, Y, XNew, YNew));
-        Assert.AreEqual(newVector, localDecimal);
+        Assert.AreEqual(newVector, localVector);
 
         Vector2_3_4TestNative.GetVector2ForFloats(X, Y, out var vec);
         Assert.AreEqual(startingVector, vec);
         
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector2FromFloats(X, Y).vec);
 
-        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector2EqualToInt(new Vector2_3_4TestNative.Vector2Wrapper { vec = startingVector }, X, Y));
+        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector2EqualToFloats(new Vector2_3_4TestNative.Vector2Wrapper { vec = startingVector }, X, Y));
 
         var localVectorWrapper = new Vector2_3_4TestNative.Vector2Wrapper { vec = startingVector };
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector2(ref localVectorWrapper, X, Y, XNew, YNew));
@@ -64,7 +64,7 @@ public class Vector2_3_4Test
 
         Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector2ToCallback(startingVector, vectorParam => 
         {
-            Assert.AreEqual(startingVector, vectorParam)
+            Assert.AreEqual(startingVector, vectorParam);
             return newVector;
         }));
     }
@@ -88,16 +88,16 @@ public class Vector2_3_4Test
 
         Assert.IsTrue(Vector2_3_4TestNative.Vector3EqualToFloats(startingVector, X, Y, Z));
 
-        Vecto2 localVector = startingVector;
+        Vector3 localVector = startingVector;
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeVector3(ref localVector, X, Y, Z, XNew, YNew, ZNew));
-        Assert.AreEqual(newVector, localDecimal);
+        Assert.AreEqual(newVector, localVector);
 
         Vector2_3_4TestNative.GetVector3ForFloats(X, Y, Z, out var vec);
         Assert.AreEqual(startingVector, vec);
         
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector3FromFloats(X, Y, Z).vec);
 
-        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector3EqualToInt(new Vector2_3_4TestNative.Vector3Wrapper { vec = startingVector }, X, Y, Z));
+        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector3EqualToFloats(new Vector2_3_4TestNative.Vector3Wrapper { vec = startingVector }, X, Y, Z));
 
         var localVectorWrapper = new Vector2_3_4TestNative.Vector3Wrapper { vec = startingVector };
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector3(ref localVectorWrapper, X, Y, Z, XNew, YNew, ZNew));
@@ -105,7 +105,7 @@ public class Vector2_3_4Test
 
         Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector3ToCallback(startingVector, vectorParam => 
         {
-            Assert.AreEqual(startingVector, vectorParam)
+            Assert.AreEqual(startingVector, vectorParam);
             return newVector;
         }));
     }
@@ -129,16 +129,16 @@ public class Vector2_3_4Test
 
         Assert.IsTrue(Vector2_3_4TestNative.Vector4EqualToFloats(startingVector, X, Y, Z, W));
 
-        Vecto2 localVector = startingVector;
+        Vector4 localVector = startingVector;
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeVector4(ref localVector, X, Y, Z, W, XNew, YNew, ZNew, WNew));
-        Assert.AreEqual(newVector, localDecimal);
+        Assert.AreEqual(newVector, localVector);
 
         Vector2_3_4TestNative.GetVector4ForFloats(X, Y, Z, W, out var vec);
         Assert.AreEqual(startingVector, vec);
         
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector4FromFloats(X, Y, Z, W).vec);
 
-        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector4EqualToInt(new Vector2_3_4TestNative.Vector4Wrapper { vec = startingVector }, X, Y, Z, W));
+        Assert.IsTrue(Vector2_3_4TestNative.WrappedVector4EqualToFloats(new Vector2_3_4TestNative.Vector4Wrapper { vec = startingVector }, X, Y, Z, W));
 
         var localVectorWrapper = new Vector2_3_4TestNative.Vector4Wrapper { vec = startingVector };
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector4(ref localVectorWrapper, X, Y, Z, W, XNew, YNew, ZNew, WNew));
@@ -146,7 +146,7 @@ public class Vector2_3_4Test
 
         Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector4ToCallback(startingVector, vectorParam => 
         {
-            Assert.AreEqual(startingVector, vectorParam)
+            Assert.AreEqual(startingVector, vectorParam);
             return newVector;
         }));
     }
