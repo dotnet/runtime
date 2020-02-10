@@ -69,6 +69,16 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
+                int? myInt = JsonSerializer.Deserialize<int?>("null", options);
+                Assert.False(myInt.HasValue);
+            }
+
+            {
+                int? myInt = JsonSerializer.Deserialize<int?>("1", options);
+                Assert.Equal(1, myInt.Value);
+            }
+
+            {
                 Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":null}");
                 Assert.False(myIntClass.MyInt.HasValue);
             }
