@@ -9,6 +9,7 @@ parameters:
   variables: {}
   pool: ''
   condition: true
+  llvm: false
 
 ### Product build
 jobs:
@@ -21,11 +22,19 @@ jobs:
     helixType: 'build/product/'
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
+    llvm: ${{ parameters.llvm }}
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters
-    name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if ne(parameters.llvm, true) }}:
+      name: ${{ format('mono_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Mono Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    # if LLVM enabled, set a variable we can consume
+    ${{ if eq(parameters.llvm, true) }}:
+      name: ${{ format('mono_llvm_product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Mono LLVM Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
 
     # Run all steps in the container.
     # Note that the containers are defined in platform-matrix.yml
@@ -58,10 +67,10 @@ jobs:
 
     # Build
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+      - script: ./mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci
+      - script: mono$(scriptExt) -configuration $(buildConfig) -arch $(archType) -ci /p:MonoEnableLLVM=${{ parameters.llvm }}
         displayName: Build product
 
     # Publish product output directory for consumption by tests.
@@ -80,6 +89,9 @@ jobs:
       displayName: Publish Logs
       inputs:
         pathtoPublish: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if ne(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        ${{ if eq(parameters.llvm, true) }}:
+          artifactName: 'BuildLogs_Mono_LLVM_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
