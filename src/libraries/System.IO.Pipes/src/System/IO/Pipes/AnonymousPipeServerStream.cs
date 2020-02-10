@@ -12,7 +12,7 @@ namespace System.IO.Pipes
     /// </summary>
     public sealed partial class AnonymousPipeServerStream : PipeStream
     {
-        private SafePipeHandle _clientHandle;
+        private SafePipeHandle _clientHandle = null!;
         private bool _clientHandleExposed;
 
         public AnonymousPipeServerStream()
