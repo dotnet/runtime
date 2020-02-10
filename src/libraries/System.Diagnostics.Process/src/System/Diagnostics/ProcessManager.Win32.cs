@@ -225,6 +225,8 @@ namespace System.Diagnostics
                 {
                     return;
                 }
+
+                Thread.Sleep(1);
             }
 
             throw new Win32Exception();
