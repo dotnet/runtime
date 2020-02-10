@@ -142,9 +142,7 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                const int MaxShortPath = 260;
-                int minimumLength = MaxShortPath;
-                char[] chars = ArrayPool<char>.Shared.Rent(minimumLength);
+                char[] chars = ArrayPool<char>.Shared.Rent(1024);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -184,27 +182,16 @@ namespace System.Diagnostics
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        for (; ; )
-                        {
-                            length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
-                            if (length == chars.Length)
-                            {
-                                ArrayPool<char>.Shared.Return(chars);
-                                minimumLength *= 2;
-                                chars = ArrayPool<char>.Shared.Rent(minimumLength);
-                                continue;
-                            }
-
-                            break;
-                        }
-
+                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
                         if (length == 0)
                         {
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.FileName = new string(chars, 0, length);
+                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
+                            new string(chars, 4, length - 4) :
+                            new string(chars, 0, length);
 
                         modules.Add(module);
                     }
