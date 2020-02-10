@@ -133,7 +133,7 @@ namespace System.Threading
         {
             get
             {
-                if (s_asyncLocalPrincipal is null)
+                if (s_asyncLocalPrincipal is null || s_asyncLocalPrincipal.Value is null)
                 {
                     CurrentPrincipal = AppDomain.CurrentDomain.GetThreadPrincipal();
                 }
