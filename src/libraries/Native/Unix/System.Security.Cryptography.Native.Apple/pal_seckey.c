@@ -182,10 +182,18 @@ OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
                 CFRetain(outItem);
                 *key = (SecKeyRef)CONST_CAST(void *, outItem);
 
-                return noErr;
+                goto cleanup;
             }
         }
     }
 
-    return errSecBadReq;
+    status = errSecBadReq;
+
+cleanup:
+    if (outItems != NULL)
+    {
+        CFRelease(outItems);
+    }
+
+    return status;
 }

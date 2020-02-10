@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Component/Contracts/EnumTesting.g.h"
 

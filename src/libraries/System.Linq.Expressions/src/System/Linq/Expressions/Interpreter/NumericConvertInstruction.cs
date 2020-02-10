@@ -52,7 +52,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => InstructionName + "(" + _from + "->" + _to + ")";
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Unchecked : NumericConvertInstruction
         {
             public override string InstructionName => "UncheckedConvert";
@@ -176,7 +175,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Checked : NumericConvertInstruction
         {
             public override string InstructionName => "CheckedConvert";

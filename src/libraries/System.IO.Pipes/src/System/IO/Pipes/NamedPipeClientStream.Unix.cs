@@ -25,7 +25,7 @@ namespace System.IO.Pipes
             // immediately if it isn't.  The only delay will be between the time the server
             // has called Bind and Listen, with the latter immediately following the former.
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            SafePipeHandle clientHandle = null;
+            SafePipeHandle? clientHandle = null;
             try
             {
                 socket.Connect(new UnixDomainSocketEndPoint(_normalizedPipePath));
@@ -69,7 +69,6 @@ namespace System.IO.Pipes
 
         public int NumberOfServerInstances
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();

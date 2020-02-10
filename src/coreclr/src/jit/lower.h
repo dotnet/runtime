@@ -86,6 +86,7 @@ private:
     void ContainCheckRet(GenTreeOp* node);
     void ContainCheckJTrue(GenTreeOp* node);
 
+    void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
     void ContainCheckStoreIndir(GenTreeIndir* indirNode);

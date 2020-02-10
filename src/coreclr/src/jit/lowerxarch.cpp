@@ -1925,6 +1925,18 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
     assert(storeLoc->OperIsLocalStore());
     GenTree* op1 = storeLoc->gtGetOp1();
 
+    if (op1->OperIs(GT_BITCAST))
+    {
+        // If we know that the source of the bitcast will be in a register, then we can make
+        // the bitcast itself contained. This will allow us to store directly from the other
+        // type if this node doesn't get a register.
+        GenTree* bitCastSrc = op1->gtGetOp1();
+        if (!bitCastSrc->isContained() && !bitCastSrc->IsRegOptional())
+        {
+            op1->SetContained();
+            return;
+        }
+    }
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(storeLoc))
     {
