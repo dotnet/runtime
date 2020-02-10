@@ -20,9 +20,9 @@ namespace System.Runtime.CompilerServices
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		static extern int InternalGetHashCode (object o);
+		static extern int InternalGetHashCode (object? o);
 
-		public static int GetHashCode (object o)
+		public static int GetHashCode (object? o)
 		{
 			return InternalGetHashCode (o);
 		}

@@ -7,22 +7,24 @@ set(DBGSHIM_SOURCES
     dbgshim.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     # Use static crt
     add_definitions(-MT)
     add_definitions(-DFX_VER_INTERNALNAME_STR=dbgshim.dll)
+endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND DBGSHIM_SOURCES
         dbgshim.rc
     )
 
     preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/dbgshim.ntdef ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
     list(APPEND DBGSHIM_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.def)
-else(WIN32)
+else(CLR_CMAKE_TARGET_WIN32)
     set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dbgshim_unixexports.src)
     set(EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/dbgshim.exports)
     generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
@@ -56,7 +58,7 @@ set(DBGSHIM_LIBRARIES
     utilcodestaticnohost
 )
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     list(APPEND DBGSHIM_LIBRARIES
         kernel32.lib
         ${STATIC_MT_CRT_LIB}
@@ -76,7 +78,7 @@ else()
         mscorrc_debug
         palrt
     )
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 target_link_libraries(dbgshim ${DBGSHIM_LIBRARIES})
 

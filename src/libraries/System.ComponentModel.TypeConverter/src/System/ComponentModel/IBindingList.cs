@@ -5,8 +5,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Scope = "type", Target = "System.ComponentModel.IBindingList")]
-
 namespace System.ComponentModel
 {
     public interface IBindingList : IList

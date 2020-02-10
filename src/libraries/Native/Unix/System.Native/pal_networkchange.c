@@ -162,10 +162,8 @@ void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange)
             case RTM_ADD:
             case RTM_DELETE:
             case RTM_REDIRECT:
-            {
                 onNetworkChange(sock, AvailabilityChanged);
                 return;
-            }
             default:
                 break;
         }

@@ -5728,7 +5728,7 @@ void Compiler::verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsig
     {
 #ifdef TARGET_64BIT
         Verify(tiCompatibleWith(tiOp1, tiOp2, true), "Cond type mismatch");
-#else  // _TARGET_64BIT
+#else  // TARGET_64BIT
         // [10/17/2013] Consider changing this: to put on my verification lawyer hat,
         // this is non-conforming to the ECMA Spec: types don't have to be equivalent,
         // but compatible, since we can coalesce native int with int32 (see section III.1.5).
@@ -14119,10 +14119,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 clsHnd             = fieldInfo.structType;
 
                 lclTyp = JITtype2varType(ciType);
-
-#ifdef _TARGET_AMD64
-                noway_assert(varTypeIsIntegralOrI(lclTyp) || varTypeIsFloating(lclTyp) || lclTyp == TYP_STRUCT);
-#endif // _TARGET_AMD64
 
                 if (compIsForInlining())
                 {

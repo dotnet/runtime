@@ -1022,49 +1022,43 @@ respin:
 
         if (Interlocked::CompareExchange(&join_struct.r_join_lock, 0, join_struct.n_threads) == 0)
         {
+            fire_event (gch->heap_number, time_start, type_join, join_id);
+
+            dprintf (JOIN_LOG, ("r_join() Waiting..."));
+
+            //busy wait around the color
+        respin:
+            int spin_count = 256 * yp_spin_count_unit;
+            for (int j = 0; j < spin_count; j++)
+            {
+                if (join_struct.wait_done)
+                {
+                    break;
+                }
+                YieldProcessor();           // indicate to the processor that we are spinning
+            }
+
+            // we've spun, and if color still hasn't changed, fall into hard wait
             if (!join_struct.wait_done)
             {
-                dprintf (JOIN_LOG, ("r_join() Waiting..."));
-
-                fire_event (gch->heap_number, time_start, type_join, join_id);
-
-                //busy wait around the color
-                if (!join_struct.wait_done)
+                dprintf (JOIN_LOG, ("Join() hard wait on reset event %d", first_thread_arrived));
+                uint32_t dwJoinWait = join_struct.joined_event[first_thread_arrived].Wait(INFINITE, FALSE);
+                if (dwJoinWait != WAIT_OBJECT_0)
                 {
-        respin:
-                    int spin_count = 256 * yp_spin_count_unit;
-                    for (int j = 0; j < spin_count; j++)
-                    {
-                        if (join_struct.wait_done)
-                        {
-                            break;
-                        }
-                        YieldProcessor();           // indicate to the processor that we are spinning
-                    }
-
-                    // we've spun, and if color still hasn't changed, fall into hard wait
-                    if (!join_struct.wait_done)
-                    {
-                        dprintf (JOIN_LOG, ("Join() hard wait on reset event %d", first_thread_arrived));
-                        uint32_t dwJoinWait = join_struct.joined_event[first_thread_arrived].Wait(INFINITE, FALSE);
-                        if (dwJoinWait != WAIT_OBJECT_0)
-                        {
-                            STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %Ix", dwJoinWait);
-                            FATAL_GC_ERROR ();
-                        }
-                    }
-
-                    // avoid race due to the thread about to reset the event (occasionally) being preempted before ResetEvent()
-                    if (!join_struct.wait_done)
-                    {
-                        goto respin;
-                    }
-
-                    dprintf (JOIN_LOG, ("r_join() done"));
+                    STRESS_LOG1 (LF_GC, LL_FATALERROR, "joined event wait failed with code: %Ix", dwJoinWait);
+                    FATAL_GC_ERROR ();
                 }
-
-                fire_event (gch->heap_number, time_end, type_join, join_id);
             }
+
+            // avoid race due to the thread about to reset the event (occasionally) being preempted before ResetEvent()
+            if (!join_struct.wait_done)
+            {
+                goto respin;
+            }
+
+            dprintf (JOIN_LOG, ("r_join() done"));
+
+            fire_event (gch->heap_number, time_end, type_join, join_id);
 
             return FALSE;
         }
@@ -15560,7 +15554,7 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
         else
         {
             dprintf (GTC_LOG, ("reducing gen in PM: %d->%d->%d", initial_gen, n, (max_generation - 1)));
-            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_last_gen2_fragmented);
+            gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_gen1_in_pm);
             n = max_generation - 1;
         }
     }
@@ -15601,8 +15595,11 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
                 // If there's not much fragmentation but it looks like it'll be productive to
                 // collect LOH, do that.
                 size_t est_loh_reclaim = get_total_gen_estimated_reclaim (loh_generation);
-                gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
-                full_compact_gc_p = ((est_loh_reclaim * 8) >= heap_hard_limit);
+                if ((est_loh_reclaim * 8) >= heap_hard_limit)
+                {
+                    gc_data_global.gen_to_condemn_reasons.set_condition(gen_joined_limit_loh_reclaim);
+                    full_compact_gc_p = true;
+                }
                 dprintf (GTC_LOG, ("loh est reclaim: %Id, 1/8 of limit %Id", est_loh_reclaim, (heap_hard_limit / 8)));
             }
         }

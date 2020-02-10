@@ -1,0 +1,19 @@
+<Project>
+  <Target Name="Test">
+    <ChooseBestTargetFrameworksTask BuildTargetFrameworks="$(BuildTargetFramework)-$(OSGroup)"
+                                    SupportedTargetFrameworks="$(TargetFrameworks)"
+                                    RuntimeGraph="$(RuntimeGraph)" >
+      <Output TaskParameter="BestTargetFrameworks" ItemName="_BestTargetFramework" />
+    </ChooseBestTargetFrameworksTask>
+
+    <AddTargetFrameworksToProjectTask ProjectName="$(MSBuildProjectFile)"
+                                      BestTargetFrameworks="@(_BestTargetFramework)" >
+      <Output TaskParameter="InnerBuildProjects" ItemName="TestProject" />
+    </AddTargetFrameworksToProjectTask>
+    
+    <MSBuild Projects="@(TestProject)"
+             Targets="Test"
+             BuildInParallel="$(BuildInParallel)">
+    </MSBuild>
+  </Target>
+</Project>

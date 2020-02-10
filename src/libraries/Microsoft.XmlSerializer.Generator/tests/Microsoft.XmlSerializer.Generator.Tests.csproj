@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CoverageSupported>false</CoverageSupported>
     <SkipTestsOnPlatform Condition="'$(ArchGroup)' == 'arm' or '$(ArchGroup)' == 'arm64' or '$(ArchGroup)' == 'armel' or '$(ArchGroup)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>

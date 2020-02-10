@@ -280,7 +280,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>Task body used to consume postponed messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ConsumeMessagesLoopCore()
         {
             Debug.Assert(_boundingState != null && _boundingState.TaskForInputProcessing != null,
@@ -445,7 +444,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get
@@ -503,7 +501,6 @@ namespace System.Threading.Tasks.Dataflow
 
         /// <summary>Provides a core implementation for blocks that implement <see cref="ISourceBlock{TOutput}"/>.</summary>
         /// <typeparam name="TOutput">Specifies the type of data supplied by the <see cref="SourceCore{TOutput}"/>.</typeparam>
-        [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
         [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
         private sealed class BroadcastingSourceCore<TOutput>
         {
@@ -886,7 +883,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <summary>Task body used to process messages.</summary>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
             private void OfferMessagesLoopCore()
             {
                 try
@@ -1022,7 +1018,6 @@ namespace System.Threading.Tasks.Dataflow
             }
 
             /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-            [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
             internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
             {
                 // Validate arguments
@@ -1201,7 +1196,6 @@ namespace System.Threading.Tasks.Dataflow
             internal DataflowBlockOptions DataflowBlockOptions { get { return _dataflowBlockOptions; } }
 
             /// <summary>Gets the object to display in the debugger display attribute.</summary>
-            [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
             private object DebuggerDisplayContent
             {
                 get

@@ -97,9 +97,8 @@ while :; do
             __Id=$(echo $1| cut -d'=' -f 2)
             buildArgs="$buildArgs /p:OfficialBuildId=$__Id"
             ;;
-        -__DoCrossArchBuild=*)
-            __CrossBuild=$(echo $1| cut -d'=' -f 2)
-            buildArgs="$buildArgs /p:__DoCrossArchBuild=$__CrossBuild"
+        cross)
+            __CrossBuild=1
             ;;
         -portablebuild=false)
             buildArgs="$buildArgs /p:PortableBuild=false"

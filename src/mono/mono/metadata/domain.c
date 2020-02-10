@@ -1023,7 +1023,32 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	MONO_EXIT_GC_UNSAFE;
 }
 
-/* FIXME: maybe we should integrate this with mono_assembly_open? */
+void
+mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly)
+{
+	if (!domain->entry_assembly && assembly) {
+		gchar *str;
+		ERROR_DECL (error);
+
+		domain->entry_assembly = assembly;
+		/* Domains created from another domain already have application_base and configuration_file set */
+		if (domain->setup->application_base == NULL) {
+			MonoString *basedir = mono_string_new_checked (domain, assembly->basedir, error);
+			mono_error_assert_ok (error);
+			MONO_OBJECT_SETREF_INTERNAL (domain->setup, application_base, basedir);
+		}
+
+		if (domain->setup->configuration_file == NULL) {
+			str = g_strconcat (assembly->image->name, ".config", (const char*)NULL);
+			MonoString *config_file = mono_string_new_checked (domain, str, error);
+			mono_error_assert_ok (error);
+			MONO_OBJECT_SETREF_INTERNAL (domain->setup, configuration_file, config_file);
+			g_free (str);
+			mono_domain_set_options_from_config (domain);
+		}
+	}
+}
+
 /**
  * mono_domain_assembly_open:
  * \param domain the application domain
@@ -1040,36 +1065,14 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 }
 
 // Uses the domain on legacy mono and the ALC on current
+// Intended only for loading the main assembly
 MonoAssembly *
 mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext *alc, const char *name)
 {
 	MonoDomain *current;
 	MonoAssembly *ass;
-	GSList *tmp;
 
 	MONO_REQ_GC_UNSAFE_MODE;
-
-#ifdef ENABLE_NETCORE
-	mono_alc_assemblies_lock (alc);
-	for (tmp = alc->loaded_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
-		if (strcmp (name, ass->aname.name) == 0) {
-			mono_alc_assemblies_unlock (alc);
-			return ass;
-		}
-	}
-	mono_alc_assemblies_unlock (alc);
-#else
-	mono_domain_assemblies_lock (domain);
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		ass = (MonoAssembly *)tmp->data;
-		if (strcmp (name, ass->aname.name) == 0) {
-			mono_domain_assemblies_unlock (domain);
-			return ass;
-		}
-	}
-	mono_domain_assemblies_unlock (domain);
-#endif
 
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
@@ -1082,6 +1085,12 @@ mono_domain_assembly_open_internal (MonoDomain *domain, MonoAssemblyLoadContext 
 	} else {
 		ass = mono_assembly_request_open (name, &req, NULL);
 	}
+
+	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm
+	// AppContext.BaseDirectory can sometimes fall back to checking the location of the entry_assembly, which should be non-null
+#ifdef ENABLE_NETCORE
+	mono_domain_ensure_entry_assembly (domain, ass);
+#endif
 
 	return ass;
 }

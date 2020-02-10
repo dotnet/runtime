@@ -23,7 +23,7 @@ namespace System.Diagnostics
                     if (key == null)
                         return Array.Empty<string>();
 
-                    string value = key.GetValue(string.Empty) as string;
+                    string? value = key.GetValue(string.Empty) as string;
                     if (string.IsNullOrEmpty(value))
                         return Array.Empty<string>();
 

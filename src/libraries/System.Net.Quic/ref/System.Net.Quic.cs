@@ -27,6 +27,7 @@ namespace System.Net.Quic
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
         public ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
+        public static bool IsQuicSupported => throw null;
     }
     public sealed partial class QuicListener : IDisposable
     {

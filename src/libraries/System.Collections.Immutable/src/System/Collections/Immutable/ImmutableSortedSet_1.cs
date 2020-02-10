@@ -33,7 +33,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty sorted set with the default sort comparer.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableSortedSet<T> Empty = new ImmutableSortedSet<T>();
 
         /// <summary>

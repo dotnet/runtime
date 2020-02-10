@@ -1664,7 +1664,7 @@ public:
                 largeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
             }
-#elif _TARGET_ARM32
+#elif defined(TARGET_ARM)
             if (frameSize > 0x0400)
             {
                 // We likely have a large stack frame.
@@ -1679,7 +1679,7 @@ public:
                 hugeFrame = true;
                 break; // early out,  we don't need to keep increasing frameSize
             }
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64)
             if (frameSize > 0x1000)
             {
                 // We likely have a large stack frame.

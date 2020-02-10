@@ -77,7 +77,7 @@ jobs:
                     $(_runtimeOSArg)
                     /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
                     /p:ArchGroup=${{ parameters.archType }}
-                    /p:ConfigurationGroup=${{ parameters.buildConfig }}
+                    /p:Configuration=${{ parameters.buildConfig }}
             displayName: Override $(runtimeFlavorName) from live drop
 
         - template: /eng/pipelines/libraries/helix.yml
