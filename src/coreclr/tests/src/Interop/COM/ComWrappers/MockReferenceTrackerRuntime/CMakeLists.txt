@@ -1,6 +1,6 @@
 project (MockReferenceTrackerRuntime)
 include_directories( ${INC_PLATFORM_DIR} )
-set(SOURCES ReferenceTrackerRuntime.cpp Exports.def)
+set(SOURCES ReferenceTrackerRuntime.cpp)
 
 # add the shared library
 add_library (MockReferenceTrackerRuntime SHARED ${SOURCES})

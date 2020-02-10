@@ -13,6 +13,9 @@ namespace ComWrappersTests
 
     class Program
     {
+        //
+        // Managed object with native wrapper definition.
+        //
         [Guid("447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09")]
         interface ITest
         {
@@ -58,6 +61,83 @@ namespace ComWrappersTests
             }
         }
 
+        //
+        // Native interface defintion with managed wrapper for tracker object
+        //
+        struct MockReferenceTrackerRuntime
+        {
+            [DllImport(nameof(MockReferenceTrackerRuntime))]
+            extern public static IntPtr CreateTrackerObject();
+        }
+
+        [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
+        public interface ITrackerObject
+        {
+            int AddObjectRef(IntPtr obj);
+            void DropObjectRef(int id);
+        };
+
+        public struct VtblPtr
+        {
+            public IntPtr Vtbl;
+        }
+
+        public class ITrackerObjectWrapper : ITrackerObject
+        {
+            private struct ITrackerObjectWrapperVtbl
+            {
+                public IntPtr QueryInterface;
+                public _AddRef AddRef;
+                public _Release Release;
+                public _AddObjectRef AddObjectRef;
+                public _DropObjectRef DropObjectRef;
+            }
+
+            private delegate int _AddRef(IntPtr This);
+            private delegate int _Release(IntPtr This);
+            private delegate int _AddObjectRef(IntPtr This, IntPtr obj, out int id);
+            private delegate int _DropObjectRef(IntPtr This, int id);
+
+            private readonly IntPtr instance;
+            private readonly ITrackerObjectWrapperVtbl vtable;
+
+            public ITrackerObjectWrapper(IntPtr instance)
+            {
+                var inst = Marshal.PtrToStructure<VtblPtr>(instance);
+                this.vtable = Marshal.PtrToStructure<ITrackerObjectWrapperVtbl>(inst.Vtbl);
+                this.instance = instance;
+            }
+
+            ~ITrackerObjectWrapper()
+            {
+                if (this.instance != IntPtr.Zero)
+                {
+                    this.vtable.Release(this.instance);
+                }
+            }
+
+            public int AddObjectRef(IntPtr obj)
+            {
+                int id;
+                int hr = this.vtable.AddObjectRef(this.instance, obj, out id);
+                if (hr != 0)
+                {
+                    throw new COMException($"{nameof(AddObjectRef)}", hr);
+                }
+
+                return id;
+            }
+
+            public void DropObjectRef(int id)
+            {
+                int hr = this.vtable.DropObjectRef(this.instance, id);
+                if (hr != 0)
+                {
+                    throw new COMException($"{nameof(DropObjectRef)}", hr);
+                }
+            }
+        }
+
         class MyComWrappers : ComWrappers
         {
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
@@ -90,13 +170,22 @@ namespace ComWrappersTests
                 return entryRaw;
             }
 
-            protected override object CreateObject(IntPtr externalComObject, CreateObjectFlags flags)
+            protected override object CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags)
             {
-                throw new NotImplementedException();
+                Assert.AreNotEqual(agileObj, IntPtr.Zero);
+
+                var iid = typeof(ITrackerObject).GUID;
+                IntPtr iTestComObject;
+                int hr = Marshal.QueryInterface(externalComObject, ref iid, out iTestComObject);
+                Assert.AreEqual(hr, 0);
+
+                return new ITrackerObjectWrapper(iTestComObject);
             }
 
             public static void ValidateIUnknownImpls()
             {
+                Console.WriteLine($"Running {nameof(ValidateIUnknownImpls)}...");
+
                 ComWrappers.GetIUnknownImpl(out IntPtr fpQueryInteface, out IntPtr fpAddRef, out IntPtr fpRelease);
 
                 Assert.AreNotEqual(fpQueryInteface, IntPtr.Zero);
@@ -107,6 +196,8 @@ namespace ComWrappersTests
 
         static void ValidateComInterfaceCreation()
         {
+            Console.WriteLine($"Running {nameof(ValidateComInterfaceCreation)}...");
+
             var testObj = new Test();
 
             var wrappers = new MyComWrappers();
@@ -127,8 +218,9 @@ namespace ComWrappersTests
 
             // Create a new wrapper
             IntPtr comWrapperNew = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
-            Assert.AreNotEqual(comWrapper, IntPtr.Zero);
-            Assert.AreNotEqual(comWrapperNew, comWrapper);
+
+            // Once a wrapper is created for a managed object it is always present
+            Assert.AreEqual(comWrapperNew, comWrapper);
 
             // Release the new wrapper
             count = Marshal.Release(comWrapperNew);
@@ -140,6 +232,8 @@ namespace ComWrappersTests
 
         static void ValidateRegisterForReferenceTrackerHost()
         {
+            Console.WriteLine($"Running {nameof(ValidateRegisterForReferenceTrackerHost)}...");
+
             var wrappers1 = new MyComWrappers();
             wrappers1.RegisterForReferenceTrackerHost();
 
