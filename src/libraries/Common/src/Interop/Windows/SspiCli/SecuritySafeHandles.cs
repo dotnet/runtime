@@ -433,38 +433,39 @@ namespace System.Net.Security
             try
             {
                 Span<Interop.SspiCli.SecBuffer> inUnmanagedBuffer = stackalloc Interop.SspiCli.SecBuffer[3];
-                for (int index = 0; index < inSecBuffers.Count; ++index)
-                {
-                    inUnmanagedBuffer[index].BufferType = inSecBuffers.GetBuffer(index).Type;
-                    inUnmanagedBuffer[index].cbBuffer = inSecBuffers.GetBuffer(index).Token.Length;
-                }
 
                 fixed (void* inUnmanagedBufferPtr = inUnmanagedBuffer)
-                fixed (void* pinnedToken0 = inSecBuffers.GetBuffer(0).Token)
-                fixed (void* pinnedToken1 = inSecBuffers.GetBuffer(1).Token)
-                fixed (void* pinnedToken2 = inSecBuffers.GetBuffer(2).Token)
+                fixed (void* pinnedToken0 = inSecBuffers._item0.Token)
+                fixed (void* pinnedToken1 = inSecBuffers._item1.Token)
+                fixed (void* pinnedToken2 = inSecBuffers._item2.Token)
                 {
                     // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                     inSecurityBufferDescriptor.pBuffers = inUnmanagedBufferPtr;
                     // Updated pvBuffer with pinned address. UnmanagedToken takes precedence.
                     if (inSecBuffers.Count > 2)
                     {
-                        inUnmanagedBuffer[2].pvBuffer = inSecBuffers.GetBuffer(2).UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers.GetBuffer(2).UnmanagedToken.DangerousGetHandle() :
+                        inUnmanagedBuffer[2].BufferType = inSecBuffers._item2.Type;
+                        inUnmanagedBuffer[2].cbBuffer = inSecBuffers._item2.Token.Length;
+                        inUnmanagedBuffer[2].pvBuffer = inSecBuffers._item2.UnmanagedToken != null ?
+                            (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle() :
                             (IntPtr)pinnedToken2;
                     }
 
                     if (inSecBuffers.Count > 1)
                     {
-                        inUnmanagedBuffer[1].pvBuffer = inSecBuffers.GetBuffer(1).UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers.GetBuffer(1).UnmanagedToken.DangerousGetHandle() :
+                        inUnmanagedBuffer[1].BufferType = inSecBuffers._item1.Type;
+                        inUnmanagedBuffer[1].cbBuffer = inSecBuffers._item1.Token.Length;
+                        inUnmanagedBuffer[1].pvBuffer = inSecBuffers._item1.UnmanagedToken != null ?
+                            (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle() :
                             (IntPtr)pinnedToken1;
                     }
 
                     if (inSecBuffers.Count > 0)
                     {
-                        inUnmanagedBuffer[0].pvBuffer = inSecBuffers.GetBuffer(0).UnmanagedToken != null ?
-                            (IntPtr)inSecBuffers.GetBuffer(0).UnmanagedToken.DangerousGetHandle() :
+                        inUnmanagedBuffer[0].BufferType = inSecBuffers._item0.Type;
+                        inUnmanagedBuffer[0].cbBuffer = inSecBuffers._item0.Token.Length;
+                        inUnmanagedBuffer[0].pvBuffer = inSecBuffers._item0.UnmanagedToken != null ?
+                            (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle() :
                             (IntPtr)pinnedToken0;
                     }
 

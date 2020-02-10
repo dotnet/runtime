@@ -33,15 +33,9 @@ namespace System.Net.Security
     internal ref struct InputSecurityBuffers
     {
         internal int Count;
-        private InputSecurityBuffer _item0;
-        private InputSecurityBuffer _item1;
-        private InputSecurityBuffer _item2;
-
-        internal InputSecurityBuffer GetBuffer(int index)
-        {
-            Debug.Assert(index < 3);
-            return index == 0 ? _item0 : index == 1 ? _item1 : _item2;
-        }
+        internal InputSecurityBuffer _item0;
+        internal InputSecurityBuffer _item1;
+        internal InputSecurityBuffer _item2;
 
         internal void SetNextBuffer(InputSecurityBuffer buffer)
         {
@@ -64,11 +58,11 @@ namespace System.Net.Security
     }
 
     [StructLayout(LayoutKind.Auto)]
-    internal ref struct InputSecurityBuffer
+    internal readonly ref struct InputSecurityBuffer
     {
-        public SecurityBufferType Type;
-        public ReadOnlySpan<byte> Token;
-        public SafeHandle UnmanagedToken;
+        public readonly SecurityBufferType Type;
+        public readonly ReadOnlySpan<byte> Token;
+        public readonly SafeHandle UnmanagedToken;
 
         public InputSecurityBuffer(ReadOnlySpan<byte> data, SecurityBufferType tokentype)
         {
