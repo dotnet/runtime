@@ -151,6 +151,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32020", TargetFrameworkMonikers.Mono)]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             int minw, minc, maxw, maxc;
