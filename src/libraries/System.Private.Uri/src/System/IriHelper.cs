@@ -109,9 +109,6 @@ namespace System
             ValueStringBuilder dest = new ValueStringBuilder(size);
             byte[]? bytes = null;
 
-            const int percentEncodingLen = 3; // Escaped UTF-8 will take 3 chars: %AB.
-            int bufferRemaining = 0;
-
             int next = start;
             char ch;
             bool escape = false;
@@ -269,8 +266,6 @@ namespace System
 
                     int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
                     Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
-
-                    bufferRemaining -= encodedBytesCount * percentEncodingLen;
 
                     for (int count = 0; count < encodedBytesCount; ++count)
                     {
