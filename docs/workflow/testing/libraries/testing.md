@@ -50,9 +50,9 @@ dotnet msbuild /t:RebuildAndTest /p:XunitMethodName={FullyQualifiedNamespace}.{C
 
 #### Running tests in a different target framework
 
-Each test project can potentially have multiple build configurations. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `BuildConfigurations` property specifies the valid configurations. By default we will build and run only the default build configuration which is `netcoreapp`. The rest of the configurations will need to be built and ran by specifying the configuration options.
+Each test project can potentially have multiple target frameworks. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `TargetFrameworks` property specifies the valid target frameworks. By default we will build and run only the default build target framework which is `netcoreapp5.0`. The rest of the targetframeworks will need to be built and ran by specifying the BuildTargetFramework options.
 
 ```cmd
 cd src\libraries\System.Runtime\tests
-dotnet msbuild System.Runtime.Tests.csproj /p:TargetGroup=net472
+dotnet msbuild System.Runtime.Tests.csproj /p:BuildTargetFramework=net472
 ```
