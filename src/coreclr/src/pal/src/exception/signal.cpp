@@ -180,7 +180,9 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
         }
 
         // Allocate the minimal stack necessary for handling stack overflow
-        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), GetVirtualPageSize()) + 6 * GetVirtualPageSize();
+        int stackOverflowStackSize = ALIGN_UP(sizeof(SignalHandlerWorkerReturnPoint), 16) + 7 * 4096;
+        // Align the size to virtual page size and add one virtual page as a stack guard
+        stackOverflowStackSize = ALIGN_UP(stackOverflowStackSize, GetVirtualPageSize()) + GetVirtualPageSize();
         g_stackOverflowHandlerStack = mmap(NULL, stackOverflowStackSize, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_STACK | MAP_PRIVATE, -1, 0);
         if (g_stackOverflowHandlerStack == MAP_FAILED)
         {

@@ -6727,7 +6727,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
 // Returns TRUE if caller should resume execution.
 BOOL
-AdjustContextForWriteBarrier(
+AdjustContextForJITHelpers(
         EXCEPTION_RECORD *pExceptionRecord,
         CONTEXT *pContext)
 {
@@ -6746,7 +6746,7 @@ AdjustContextForWriteBarrier(
 
 #ifdef FEATURE_DATABREAKPOINT
 
-    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
+    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger()
     // This is called only when a data breakpoint is hitm which could be inside a JIT write barrier helper and required
     // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we
     // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true
@@ -6880,7 +6880,7 @@ AdjustContextForWriteBarrier(
 
     return FALSE;
 #else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("AdjustContextForWriteBarrier");
+    PORTABILITY_ASSERT("AdjustContextForJITHelpers");
     return FALSE;
 #endif // ELSE
 }
@@ -7487,9 +7487,9 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     {
         if (IsWellFormedAV(pExceptionRecord))
         {
-            if (AdjustContextForWriteBarrier(pExceptionRecord, pContext))
+            if (AdjustContextForJITHelpers(pExceptionRecord, pContext))
             {
-                // On x86, AdjustContextForWriteBarrier simply backs up AV's
+                // On x86, AdjustContextForJITHelpers simply backs up AV's
                 // in write barrier helpers into the calling frame, so that
                 // the subsequent logic here sees a managed fault.
                 //

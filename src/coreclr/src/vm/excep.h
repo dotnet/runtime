@@ -32,7 +32,7 @@ BOOL IsIPinVirtualStub(PCODE f_IP);
 #endif // VSD_STUB_CAN_THROW_AV
 bool IsIPInMarkedJitHelper(UINT_PTR uControlPc);
 
-BOOL AdjustContextForWriteBarrier(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
+BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
 
 #if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
 

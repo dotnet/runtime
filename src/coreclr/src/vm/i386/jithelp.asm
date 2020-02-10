@@ -124,8 +124,8 @@ ENDM
 ;
 ;*******************************************************************************
 
-; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-; anything here, you might need to change AdjustContextForWriteBarrier as well
+; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+; anything here, you might need to change AdjustContextForJITHelpers as well
 ; Note that beside the AV case, we might be unwinding inside the region where we have
 ; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT
 WriteBarrierHelper MACRO rg
@@ -176,7 +176,7 @@ endif
 
 ifdef WRITE_BARRIER_CHECK
         ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForWriteBarrier easier.
+        ; status. This makes job of AdjustContextForJITHelpers easier.
         cmp     [edx], 0
         ;; ALSO update the shadow GC heap if that is enabled
         ; Make ebp into the temporary src register. We need to do this so that we can use ecx
@@ -293,8 +293,8 @@ ENDM
 ;
 ;*******************************************************************************
 
-; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-; anything here, you might need to change AdjustContextForWriteBarrier as well
+; The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+; anything here, you might need to change AdjustContextForJITHelpers as well
 
 ByRefWriteBarrierHelper MACRO
         ALIGN 4
@@ -314,7 +314,7 @@ endif
 
 ifdef WRITE_BARRIER_CHECK
         ; Test dest here so if it is bad AV would happen before we change register/stack
-        ; status. This makes job of AdjustContextForWriteBarrier easier.
+        ; status. This makes job of AdjustContextForJITHelpers easier.
         cmp     [edi], 0
 
         ;; ALSO update the shadow GC heap if that is enabled
