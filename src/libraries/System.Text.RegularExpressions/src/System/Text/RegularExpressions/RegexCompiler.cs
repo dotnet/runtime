@@ -2831,6 +2831,7 @@ namespace System.Text.RegularExpressions
                 }
                 else if (node.Type == RegexNode.Setloopatomic &&
                     maxIterations == int.MaxValue &&
+                    !IsCaseInsensitive(node) &&
                     (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) > 1 &&
                     RegexCharClass.IsNegated(node.Str!))
                 {
@@ -2857,6 +2858,7 @@ namespace System.Text.RegularExpressions
                     }
                     else
                     {
+                        Debug.Assert(numSetChars == 3);
                         Ldc(setChars[2]);
                         Call(s_spanIndexOfAnyCharCharChar);
                     }
@@ -4547,6 +4549,7 @@ namespace System.Text.RegularExpressions
                             }
                             else
                             {
+                                Debug.Assert(numSetChars == 3);
                                 Ldc(setChars[2]);
                                 Call(s_spanIndexOfAnyCharCharChar);
                             }
