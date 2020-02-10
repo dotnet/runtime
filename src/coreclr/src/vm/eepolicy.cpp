@@ -1160,25 +1160,23 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         fef.InitAndLink(pExceptionInfo->ContextRecord);
     }
 
-    static CLREvent* g_stackOverflowCallStackLoggedEvent = NULL;
+    static volatile LONG g_stackOverflowCallStackLogged = 0;
 
     // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
     // multiple stack traces together.
-    CLREvent* event = new CLREvent();
-    event->CreateManualEvent(FALSE);
-
-    CLREvent* existingEvent = InterlockedCompareExchangeT<CLREvent*>(&g_stackOverflowCallStackLoggedEvent, event, NULL);
-    if (existingEvent == NULL)
+    if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
     {
         DisplayStackOverflowException();
         LogCallstackForLogWorker(true /* isStackOverflow */);
-        event->Set();
+        g_stackOverflowCallStackLogged = 2;
     }
     else
     {
-        event->CloseEvent();
-        delete event;
-        existingEvent->Wait(INFINITE, FALSE);
+        // Wait for the thread that is logging the stack trace to complete
+        while (g_stackOverflowCallStackLogged != 2)
+        {
+            Sleep(50);
+        }
     }
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
