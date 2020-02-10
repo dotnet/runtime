@@ -225,7 +225,6 @@ namespace System.ComponentModel.Design
             /// </summary>
             public DesignerOptionCollection this[int index]
             {
-                [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
                 get
                 {
                     EnsurePopulated();

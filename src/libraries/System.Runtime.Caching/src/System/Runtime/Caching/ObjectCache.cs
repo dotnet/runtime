@@ -14,7 +14,6 @@ using System.Threading;
 
 namespace System.Runtime.Caching
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "The class represents a type of cache")]
     public abstract class ObjectCache : IEnumerable<KeyValuePair<string, object>>
     {
         private static IServiceProvider s_host;
@@ -87,18 +86,14 @@ namespace System.Runtime.Caching
 
         public abstract object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null);
 
-        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", Justification = "The name best represents an operation on a cache")]
         public abstract object Get(string key, string regionName = null);
 
         public abstract CacheItem GetCacheItem(string key, string regionName = null);
 
-        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", Justification = "The name best represents an operation on a cache")]
         public abstract void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null);
 
-        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", Justification = "The name best represents an operation on a cache")]
         public abstract void Set(CacheItem item, CacheItemPolicy policy);
 
-        [SuppressMessage("Microsoft.Naming", "CA1716:IdentifiersShouldNotMatchKeywords", Justification = "The name best represents an operation on a cache")]
         public abstract void Set(string key, object value, CacheItemPolicy policy, string regionName = null);
 
         //Get multiple items by keys

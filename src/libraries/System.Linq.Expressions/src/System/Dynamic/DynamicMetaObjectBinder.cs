@@ -176,7 +176,6 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="type">The <see cref="Expression.Type">Type</see> property of the resulting expression; any type is allowed.</param>
         /// <returns>The update expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public Expression GetUpdateExpression(Type type)
         {
             return Expression.Goto(CallSiteBinder.UpdateLabel, type);

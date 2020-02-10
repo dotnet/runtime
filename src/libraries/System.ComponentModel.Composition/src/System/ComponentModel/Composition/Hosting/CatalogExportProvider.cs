@@ -149,7 +149,6 @@ namespace System.ComponentModel.Composition.Hosting
         ///     This property must be set before accessing any methods on the
         ///     <see cref="CatalogExportProvider"/>.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "EnsureCanSet ensures that the property is set only once, Dispose is not required")]
         [DisallowNull]
         public ExportProvider? SourceProvider
         {
@@ -397,7 +396,6 @@ namespace System.ComponentModel.Composition.Hosting
             return exports.ToArray();
         }
 
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void OnCatalogChanging(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             using (var atomicComposition = new AtomicComposition(e.AtomicComposition))

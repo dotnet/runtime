@@ -7,7 +7,6 @@ using System.IO;
 
 namespace System.Net.Http
 {
-    [SuppressMessage("Microsoft.Serialization", "CA2229")]
     public class HttpRequestException : Exception
     {
         internal RequestRetryType AllowRetry { get; } = RequestRetryType.NoRetry;

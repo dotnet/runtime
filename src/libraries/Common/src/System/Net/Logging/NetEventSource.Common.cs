@@ -100,7 +100,7 @@ namespace System.Net
         /// <param name="formattableString">A description of the entrance, including any arguments to the call.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
@@ -112,7 +112,7 @@ namespace System.Net
         /// <param name="arg0">The object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -125,7 +125,7 @@ namespace System.Net
         /// <param name="arg1">The second object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -140,7 +140,7 @@ namespace System.Net
         /// <param name="arg2">The third object to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Enter(object thisOrContextObject, object arg0, object arg1, object arg2, [CallerMemberName] string? memberName = null)
+        public static void Enter(object? thisOrContextObject, object arg0, object arg1, object arg2, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -160,7 +160,7 @@ namespace System.Net
         /// <param name="formattableString">A description of the exit operation, including any return values.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
@@ -172,7 +172,7 @@ namespace System.Net
         /// <param name="arg0">A return value from the member.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, object arg0, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -185,7 +185,7 @@ namespace System.Net
         /// <param name="arg1">A second return value from the member.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Exit(object thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
+        public static void Exit(object? thisOrContextObject, object arg0, object arg1, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(arg0);
@@ -204,7 +204,7 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Info(object thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
+        public static void Info(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
@@ -216,7 +216,7 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Info(object thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        public static void Info(object? thisOrContextObject, object? message, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(message);
@@ -234,7 +234,7 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Error(object thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
+        public static void Error(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
@@ -246,7 +246,7 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Error(object thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        public static void Error(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(message);
@@ -264,7 +264,7 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Fail(object thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
+        public static void Fail(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
             // that should never happen in production, and thus we don't care about extra costs.
@@ -278,7 +278,7 @@ namespace System.Net
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Fail(object thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
+        public static void Fail(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
         {
             // Don't call DebugValidateArg on args, as we expect Fail to be used in assert/failure situations
             // that should never happen in production, and thus we don't care about extra costs.
@@ -298,7 +298,7 @@ namespace System.Net
         /// <param name="buffer">The buffer to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, byte[] buffer, [CallerMemberName] string? memberName = null)
+        public static void DumpBuffer(object? thisOrContextObject, byte[] buffer, [CallerMemberName] string? memberName = null)
         {
             DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
@@ -310,7 +310,7 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string? memberName = null)
+        public static void DumpBuffer(object? thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string? memberName = null)
         {
             if (IsEnabled)
             {
@@ -339,7 +339,7 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static unsafe void DumpBuffer(object thisOrContextObject, IntPtr bufferPtr, int count, [CallerMemberName] string? memberName = null)
+        public static unsafe void DumpBuffer(object? thisOrContextObject, IntPtr bufferPtr, int count, [CallerMemberName] string? memberName = null)
         {
             Debug.Assert(bufferPtr != IntPtr.Zero);
             Debug.Assert(count >= 0);
@@ -379,7 +379,7 @@ namespace System.Net
         /// <param name="second">The second object.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Associate(object thisOrContextObject, object first, object second, [CallerMemberName] string? memberName = null)
+        public static void Associate(object? thisOrContextObject, object first, object second, [CallerMemberName] string? memberName = null)
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(first);
@@ -395,7 +395,7 @@ namespace System.Net
 
         #region Helpers
         [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
-        private static void DebugValidateArg(object arg)
+        private static void DebugValidateArg(object? arg)
         {
             if (!IsEnabled)
             {
@@ -414,7 +414,7 @@ namespace System.Net
             Log.IsEnabled();
 
         [NonEvent]
-        public static string IdOf(object value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
+        public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
         [NonEvent]
         public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
@@ -498,7 +498,7 @@ namespace System.Net
         #region Custom WriteEvent overloads
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, string arg2, string arg3, string arg4)
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, string? arg4)
         {
             if (IsEnabled())
             {
@@ -542,7 +542,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, string arg2, byte[] arg3)
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, byte[]? arg3)
         {
             if (IsEnabled())
             {
@@ -585,7 +585,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4)
+        private unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3, int arg4)
         {
             if (IsEnabled())
             {
@@ -623,7 +623,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, int arg2, string arg3)
+        private unsafe void WriteEvent(int eventId, string? arg1, int arg2, string? arg3)
         {
             if (IsEnabled())
             {
@@ -658,7 +658,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, string arg2, int arg3)
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3)
         {
             if (IsEnabled())
             {
@@ -693,7 +693,7 @@ namespace System.Net
         }
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, string arg2, string arg3, int arg4)
+        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, int arg4)
         {
             if (IsEnabled())
             {

@@ -21,29 +21,7 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../)
-include_directories(${CMAKE_CURRENT_LIST_DIR}/../common)
-
-list(APPEND SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.cpp)
-
-list(APPEND HEADERS
-    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.h
-    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.h
-    ${CMAKE_CURRENT_LIST_DIR}/../common/pal.h
-    ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h)
-
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/../common/pal.windows.cpp
-        ${CMAKE_CURRENT_LIST_DIR}/../common/longfile.windows.cpp)
-    list(APPEND HEADERS
-        ${CMAKE_CURRENT_LIST_DIR}/../common/longfile.h)
-else()
-    list(APPEND SOURCES
-        ${CMAKE_CURRENT_LIST_DIR}/../common/pal.unix.cpp
-        ${VERSION_FILE_PATH})
-endif()
+include_directories(${CMAKE_CURRENT_LIST_DIR}/hostmisc)
 
 set(RESOURCES)
 if(CLR_CMAKE_TARGET_WIN32 AND NOT SKIP_VERSIONING)
@@ -67,12 +45,14 @@ function(set_common_libs TargetType)
         endif()
     endif()
 
-    # Specify the import library to link against for Arm32 build since the default set is minimal
-    if (CLR_CMAKE_TARGET_ARCH_ARM)
-        if (CLR_CMAKE_TARGET_WIN32)
-            target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
-        else()
-            target_link_libraries(${DOTNET_PROJECT_NAME} atomic.a)
+    if (NOT ${TargetType} STREQUAL "lib-static")
+        # Specify the import library to link against for Arm32 build since the default set is minimal
+        if (CLR_CMAKE_TARGET_ARCH_ARM)
+            if (CLR_CMAKE_TARGET_WIN32)
+                target_link_libraries(${DOTNET_PROJECT_NAME} shell32.lib)
+            else()
+                target_link_libraries(${DOTNET_PROJECT_NAME} atomic.a)
+            endif()
         endif()
     endif()
 endfunction()

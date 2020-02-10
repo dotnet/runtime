@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpRequestHeaders : HttpHeaders
     {
         private const int AcceptSlot = 0;
@@ -40,7 +38,6 @@ namespace System.Net.Http.Headers
         public HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> Accept =>
             GetSpecializedCollection(AcceptSlot, thisRef => new HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue>(KnownHeaders.Accept.Descriptor, thisRef));
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Charset", Justification = "The HTTP header name is 'Accept-Charset'.")]
         public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptCharset =>
             GetSpecializedCollection(AcceptCharsetSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(KnownHeaders.AcceptCharset.Descriptor, thisRef));
 

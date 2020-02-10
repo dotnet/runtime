@@ -3,29 +3,31 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections.Generic
 {
 	partial class Comparer<T>
 	{
-        static volatile Comparer<T> defaultComparer;
+		static volatile Comparer<T> defaultComparer;
 
 		public static Comparer<T> Default {
 			get {
-                Comparer<T> comparer = defaultComparer;
-                if (comparer == null) {
-                    comparer = CreateComparer();
-                    defaultComparer = comparer;
-                }
-                return comparer;
+				Comparer<T> comparer = defaultComparer;
+				if (comparer == null) {
+					// Do not use static constructor. Generic static constructors are problematic for Mono AOT.
+					Interlocked.CompareExchange(ref defaultComparer, CreateComparer(), null);
+					comparer = defaultComparer;
+				}
+				return comparer;
 			}
 		}
 
-        static Comparer<T> CreateComparer() {
-            RuntimeType t = (RuntimeType)typeof(T);
+		static Comparer<T> CreateComparer() {
+			RuntimeType t = (RuntimeType)typeof(T);
 
-                if (typeof(IComparable<T>).IsAssignableFrom(t))
-                    return (Comparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter (typeof(GenericComparer<>), t);
+				if (typeof(IComparable<T>).IsAssignableFrom(t))
+					return (Comparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter (typeof(GenericComparer<>), t);
 
 				// If T is a Nullable<U> where U implements IComparable<U> return a NullableComparer<U>
 				if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>)) {

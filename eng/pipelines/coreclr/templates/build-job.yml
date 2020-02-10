@@ -135,6 +135,10 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build$(scriptExt) $(buildConfig) $(archType) -ci $(officialBuildIdArg) $(enforcePgoArg)
         displayName: Build CoreCLR Runtime
 
+    # Crossgen System.Private.CoreLib
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset nativecorelib $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
+      displayName: Crossgen System.Private.CoreLib
+
     # Build managed tools
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subsetCategory coreclr -subset tools $(crossArg) -arch $(archType) -c $(buildConfig) $(officialBuildIdArcadeArg) -ci
       displayName: Build managed tools

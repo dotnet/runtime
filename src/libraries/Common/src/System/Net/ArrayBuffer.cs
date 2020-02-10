@@ -6,7 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace System.Net.Http
+namespace System.Net
 {
     // Warning: Mutable struct!
     // The purpose of this struct is to simplify buffer management.
@@ -56,6 +56,7 @@ namespace System.Net.Http
 
         public int ActiveLength => _availableStart - _activeStart;
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
+        public ReadOnlySpan<byte> ActiveReadOnlySpan => new ReadOnlySpan<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public int AvailableLength => _bytes.Length - _availableStart;
         public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
         public Memory<byte> ActiveMemory => new Memory<byte>(_bytes, _activeStart, _availableStart - _activeStart);

@@ -253,6 +253,62 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
+# Build Mono LLVM debug
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: debug
+    platforms:
+    # - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    # - Linux_musl_x64
+    # - Linux_musl_arm64
+    # - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      llvm: true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono LLVM release
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    # - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    # - Linux_musl_x64
+    # - Linux_musl_arm64
+    # - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      llvm: true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
 # Build libraries using live CoreLib
 # These set of libraries are built always no matter what changed
 # The reason for that is because Corelib and Installer needs it and

@@ -468,7 +468,6 @@ namespace System.ComponentModel
         /// Derived classes can override this method and call base.Clone to get proper cloning semantics but must
         /// implement the full-parameter constructor (passing parameters to the base constructor as well).
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
         public object Clone()
         {
             MaskedTextProvider clonedProvider;
@@ -1177,7 +1176,6 @@ namespace System.ComponentModel
         /// from the specified position included.
         /// Returns InvalidIndex if it doesn't find one.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow")]
         public int FindUnassignedEditPositionInRange(int startPosition, int endPosition, bool direction)
         {
             int position;
