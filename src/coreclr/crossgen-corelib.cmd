@@ -133,6 +133,30 @@ if not exist "%__BinDir%"              md "%__BinDir%"
 if not exist "%__IntermediatesDir%"    md "%__IntermediatesDir%"
 if not exist "%__LogsDir%"             md "%__LogsDir%"
 
+
+call "%__ThisScriptDir%"\setup_vs_tools.cmd
+if NOT '%ERRORLEVEL%' == '0' goto ExitWithError
+
+if defined VS160COMNTOOLS (
+    set "__VSToolsRoot=%VS160COMNTOOLS%"
+    set "__VCToolsRoot=%VS160COMNTOOLS%\..\..\VC\Auxiliary\Build"
+    set __VSVersion=vs2019
+) else if defined VS150COMNTOOLS (
+    set "__VSToolsRoot=%VS150COMNTOOLS%"
+    set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
+    set __VSVersion=vs2017
+)
+
+REM Need VC native tools environment for the host arch to find Microsoft.DiaSymReader.Native in the Visual Studio install.
+set __VCBuildArch=x86_amd64
+if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
+if /i "%__BuildArch%" == "arm" (
+    set __VCBuildArch=x86_arm
+)
+if /i "%__BuildArch%" == "arm64" (
+    set __VCBuildArch=x86_arm64
+)
+
 echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
 call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
 @if defined _echo @echo on
@@ -185,6 +209,10 @@ if defined __CrossgenAltJit (
 
 REM Need diasymreader.dll on your path for /CreatePdb
 set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft.Net\Framework\V4.0.30319
+
+    for /f "tokens=*" %%f in ('where Microsoft.DiaSymReader.Native.amd64.dll') do (
+        echo "%%~f"
+    )
 
 set NEXTCMD="%__CrossgenExe%" /nologo %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%\IL" /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
 echo %__MsgPrefix%!NEXTCMD!
