@@ -258,9 +258,8 @@ namespace System
 
                 if (escape)
                 {
-                    const int MaxNumberOfBytesEncoded = 4;
+                    const int MaxNumberOfBytesEncoded = sizeof(int);
 
-                    Debug.Assert(sizeof(int) == MaxNumberOfBytesEncoded);
                     int encodedBytesBuffer;
                     byte* pEncodedBytes = (byte*)&encodedBytesBuffer;
 
