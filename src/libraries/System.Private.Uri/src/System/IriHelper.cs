@@ -263,18 +263,18 @@ namespace System
                 {
                     const int MaxNumberOfBytesEncoded = 4;
 
-                    byte[] encodedBytes = new byte[MaxNumberOfBytesEncoded];
-                    fixed (byte* pEncodedBytes = &encodedBytes[0])
+                    Debug.Assert(sizeof(IntPtr) >= MaxNumberOfBytesEncoded);
+                    IntPtr encodedBytesBuffer;
+                    byte* pEncodedBytes = (byte*)&encodedBytesBuffer;
+
+                    int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
+                    Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
+
+                    bufferRemaining -= encodedBytesCount * percentEncodingLen;
+
+                    for (int count = 0; count < encodedBytesCount; ++count)
                     {
-                        int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
-                        Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
-
-                        bufferRemaining -= encodedBytesCount * percentEncodingLen;
-
-                        for (int count = 0; count < encodedBytesCount; ++count)
-                        {
-                            UriHelper.EscapeAsciiChar((char)encodedBytes[count], ref dest);
-                        }
+                        UriHelper.EscapeAsciiChar((char)*(pEncodedBytes + count), ref dest);
                     }
                 }
             }
