@@ -5,16 +5,13 @@
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' or '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
     <NoWarn>$(NoWarn);0649</NoWarn>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />

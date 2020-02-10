@@ -233,7 +233,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         <see langword="null"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual object? GetExportedValueCore()
         {
             if (_exportedValueGetter != null)

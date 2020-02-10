@@ -16,44 +16,24 @@ set(SOURCES
     ./breadcrumbs.cpp
     ./coreclr.cpp
     ./deps_resolver.cpp
-    ./hostpolicy.cpp
     ./hostpolicy_context.cpp
+    ./hostpolicy.cpp
     ./hostpolicy_init.cpp
-    ../roll_forward_option.cpp
-    ../runtime_config.cpp
-    ../fxr/fx_ver.cpp
-    ../host_startup_info.cpp
-    ../deps_format.cpp
-    ../deps_entry.cpp
-    ../fx_definition.cpp
-    ../fx_reference.cpp
-    ../version.cpp
-    ../version_compatibility_range.cpp
-    ../json_parser.cpp
 )
 
 set(HEADERS
     ./args.h
     ./breadcrumbs.h
     ./coreclr.h
+    ../corehost_context_contract.h
     ./deps_resolver.h
     ./hostpolicy_context.h
-    ./hostpolicy_init.h
-    ../corehost_context_contract.h
     ../hostpolicy.h
-    ../runtime_config.h
-    ../fxr/fx_ver.h
-    ../host_startup_info.h
-    ../deps_format.h
-    ../deps_entry.h
-    ../fx_definition.h
-    ../fx_reference.h
-    ../version.h
-    ../version_compatibility_range.h
-    ../json_parser.h
+    ./hostpolicy_init.h
 )
 
 include(../lib.cmake)
 
 install(TARGETS hostpolicy DESTINATION corehost)
 install_symbols(hostpolicy corehost)
+target_link_libraries(hostpolicy libhostcommon)

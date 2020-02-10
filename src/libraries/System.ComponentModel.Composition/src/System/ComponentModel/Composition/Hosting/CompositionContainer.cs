@@ -413,7 +413,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="export"/> is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Performance", "CA1822")]
         public void ReleaseExport(Export export)
         {
             Requires.NotNull(export, nameof(export));
@@ -443,7 +442,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentNullException">
         ///     <paramref name="export"/> is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Performance", "CA1822")]
         public void ReleaseExport<T>(Lazy<T> export)
         {
             Requires.NotNull(export, nameof(export));
@@ -486,7 +484,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="exports"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T>(IEnumerable<Lazy<T>> exports)
         {
             Requires.NotNullOrNullElements(exports, nameof(exports));
@@ -508,7 +505,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ArgumentException">
         ///     <paramref name="exports"/> contains an element that is <see langword="null"/>.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public void ReleaseExports<T, TMetadataView>(IEnumerable<Lazy<T, TMetadataView>> exports)
         {
             Requires.NotNullOrNullElements(exports, nameof(exports));

@@ -404,7 +404,6 @@ namespace System.Net
 
         #region UrlEncode public methods
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         [return: NotNullIfNotNull("value")]
         public static string? UrlEncode(string? value)
         {
@@ -608,7 +607,6 @@ namespace System.Net
         #region UrlDecode public methods
 
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         [return: NotNullIfNotNull("encodedValue")]
         public static string? UrlDecode(string? encodedValue)
         {

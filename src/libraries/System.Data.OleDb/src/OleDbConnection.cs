@@ -366,7 +366,6 @@ namespace System.Data.OleDb
         }
 
         // suppress this message - we cannot use SafeHandle here.
-        [SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
         protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
