@@ -181,7 +181,7 @@ dotnet msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
 
 - Build release version of library
 ```
-dotnet msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
+dotnet msbuild System.Net.NetworkInformation.csproj /p:Configuration=Release
 ```
 
 To build for all supported configurations you can use the `BuildAll` and `RebuildAll` targets:
@@ -200,7 +200,7 @@ Note that you cannot generally build native components for another OS but you ca
 ### Building in Release or Debug
 
 By default, building from the root or within a project will build the libraries in Debug mode.
-One can build in Debug or Release mode from the root by doing `./build.sh -subsetCategory libraries  -c Release` or `./build.sh -subsetCategory libraries -c Debug` or when building a project by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `dotnet msbuild` command.
+One can build in Debug or Release mode from the root by doing `./build.sh -subsetCategory libraries  -c Release` or `./build.sh -subsetCategory libraries -c Debug` or when building a project by specifying `/p:Configuration=[Debug|Release]` after the `dotnet msbuild` command.
 
 ### Building other Architectures
 

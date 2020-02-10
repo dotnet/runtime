@@ -38,7 +38,6 @@ Below is a list of all the various options we pivot the project builds on:
 The following are the properties associated with each build pivot
 
 - `$(BuildTargetFramework) -> netstandard2.1 | netcoreapp5.0 | net472`
-//**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(Configuration) -> Release | [defaults to Debug when empty]`
 - `$(ArchGroup) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
@@ -57,7 +56,7 @@ Each project will define a set of supported TargetFrameworks
 
 - `$(BuildSettings) -> $(BuildTargetFramework)[-$(OSGroup)][-$(Configuration)][-$(ArchGroup)]`
  - Note this property should be file path safe and thus can be used in file names or directories that need to a unique path for a project configuration.
- - The only required target framework value is the `$(BuildTargetFramework)` the others are optional.
+ - The only required Build Settings value is the `$(BuildTargetFramework)` the others are optional.
 
 Example:
 Pure netstandard configuration:
@@ -89,7 +88,7 @@ When we have a project that has a `netstandard2.0` target framework that means t
 
 ## Options for building
 
-A full or individual project build is centered around BuildTargetFramework, OSGroup, Configuration and ArchGroup and will be setup in one of the following ways:
+A full or individual project build is centered around BuildTargetFramework, OSGroup, Configuration and ArchGroup.
 
 1. `$(BuildTargetFramework), $(OSGroup), $(Configuration), $(ArchGroup)` can individually be passed in to change the default values.
 2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `netcoreapp5.0-[OSGroup Running On]-Debug-x64`.
@@ -99,7 +98,7 @@ we also have `RuntimeOS` which can be passed to customize the specific OS and ve
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
-## Selecting the correct BuildSettingss
+## Selecting the correct BuildSettings
 When building an individual project the `BuildTargetFramework` and `OSGroup` will be used to select the closest matching TargetFramework listed in the projects `TargetFrameworks` property. The rules used to select the targetFramework will consider compatible target frameworks and OS fallbacks.
 
 ## Supported full build settings
@@ -123,10 +122,9 @@ In the ref directory for the library there should be at most **one** `.csproj` t
 
 There are two types of reference assembly projects:
 
-1. Libraries that are contain APIs in netstandard2.0
+1. Libraries that contain APIs in netstandard2.0
  - `TargetFrameworks` should contain non-netstandard2.0 TargetFrameworks for the platforms they support.
- - Should use a relative path `<ProjectReference>` to the dependencies it has. Those dependencies should only be libraries with similar Target Frameworks and be part of netstandard2.0.
-<BR/>//**CONSIDER**: just using Reference with a custom task to pull from TP or turn to ProjectReference
+ - Should use a relative path `<ProjectReference>` to the dependencies it has. Those dependencies should only be libraries with similar target frameworks and be part of netstandard2.0.
 2. Libraries that are built on top of netstandard2.0
  - `TargetFrameworks` should contain only netstandard2.0 configurations.
  - Should contain `<Reference Include='netstandard'>`
@@ -162,7 +160,7 @@ Similar to the src projects tests projects will define a `TargetFrameworks` prop
 
 Tests should not have any `<Reference>` or `<ProjectReference>` items in their project because they will automatically reference everything in the targeting pack based on the TargetFramework they are building in. The only exception to this is a `<ProjectReference>` can be used to reference other test helper libraries or assets.
 
-In order to build and run a test project in a given configuration a root level build.cmd/sh must have been completed for that configuration first. Tests will run on the live built runtime at `bin\runtime\$(BuildSettings)`.
+In order to build and run a test project in a given build target framework a root level build.cmd/sh must have been completed for that build target framework first. Tests will run on the live built runtime at `bin\runtime\$(BuildSettings)`.
 TODO: We need update our test host so that it can run from the shared runtime directory as well as resolve assemblies from the test output directory.
 
 ### tests output

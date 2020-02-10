@@ -10,9 +10,9 @@ To build the tests and run them you can call the libraries build script.
 libraries -buildtests
 ```
 
-- The following builds and runs all tests for netcoreapp in release configuration.
+- The following builds and runs all tests for netcoreapp5.0 in release configuration.
 ```
-libraries -buildtests -test -c Release -f netcoreapp
+libraries -buildtests -test -c Release -f netcoreapp5.0
 ```
 
 - The following example shows how to pass extra msbuild properties to ignore tests ignored in CI.
