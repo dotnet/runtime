@@ -111,8 +111,8 @@ namespace System.IO.Pipes
         public virtual System.IO.Pipes.PipeTransmissionMode ReadMode { get { throw null; } set { } }
         public Microsoft.Win32.SafeHandles.SafePipeHandle SafePipeHandle { get { throw null; } }
         public virtual System.IO.Pipes.PipeTransmissionMode TransmissionMode { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         protected internal virtual void CheckPipePropertyOperations() { }
         protected internal void CheckReadOperations() { }
         protected internal void CheckWriteOperations() { }

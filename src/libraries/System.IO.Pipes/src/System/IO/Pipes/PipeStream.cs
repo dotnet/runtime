@@ -199,7 +199,7 @@ namespace System.IO.Pipes
             return ReadAsyncCore(buffer, cancellationToken);
         }
 
-        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
@@ -305,7 +305,7 @@ namespace System.IO.Pipes
             return new ValueTask(WriteAsyncCore(buffer, cancellationToken));
         }
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             if (_isAsync)
                 return TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
