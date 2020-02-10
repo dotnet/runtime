@@ -260,8 +260,8 @@ namespace System
                 {
                     const int MaxNumberOfBytesEncoded = 4;
 
-                    Debug.Assert(sizeof(IntPtr) >= MaxNumberOfBytesEncoded);
-                    IntPtr encodedBytesBuffer;
+                    Debug.Assert(sizeof(int) == MaxNumberOfBytesEncoded);
+                    int encodedBytesBuffer;
                     byte* pEncodedBytes = (byte*)&encodedBytesBuffer;
 
                     int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
