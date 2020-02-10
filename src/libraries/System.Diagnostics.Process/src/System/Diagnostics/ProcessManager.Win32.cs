@@ -219,14 +219,18 @@ namespace System.Diagnostics
             // This is no easy solution to this problem. The only reliable way to fix this is to
             // suspend all the threads in target process. Of course we don't want to do this in Process class.
             // So we just to try avoid the race by calling the same method 50 (an arbitrary number) times.
+            if (Interop.Kernel32.EnumProcessModules(processHandle, modules, size, out needed))
+            {
+                return;
+            }
+
             for (int i = 0; i < 50; i++)
             {
+                Thread.Sleep(1);
                 if (Interop.Kernel32.EnumProcessModules(processHandle, modules, size, out needed))
                 {
                     return;
                 }
-
-                Thread.Sleep(1);
             }
 
             throw new Win32Exception();
