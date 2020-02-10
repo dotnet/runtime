@@ -11,38 +11,29 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// Allow both string and number values on deserialize.
         /// </summary>
-        private class Int32Converter : JsonConverterFactory
+        private class Int32Converter : JsonConverter<int>
         {
-            public override bool CanConvert(Type typeToConvert)
-                => typeToConvert == typeof(int);
-
-            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
-                => new InternalInt32Converter();
-
-            private class InternalInt32Converter : JsonConverter<int>
+            public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                if (reader.TokenType == JsonTokenType.String)
                 {
-                    if (reader.TokenType == JsonTokenType.String)
+                    string stringValue = reader.GetString();
+                    if (int.TryParse(stringValue, out int value))
                     {
-                        string stringValue = reader.GetString();
-                        if (int.TryParse(stringValue, out int value))
-                        {
-                            return value;
-                        }
+                        return value;
                     }
-                    else if (reader.TokenType == JsonTokenType.Number)
-                    {
-                        return reader.GetInt32();
-                    }
-
-                    throw new JsonException();
+                }
+                else if (reader.TokenType == JsonTokenType.Number)
+                {
+                    return reader.GetInt32();
                 }
 
-                public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
-                {
-                    writer.WriteNumberValue(value);
-                }
+                throw new JsonException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(value);
             }
         }
 
