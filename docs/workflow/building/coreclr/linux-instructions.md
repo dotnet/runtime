@@ -124,10 +124,10 @@ To ensure that your system can allocate enough file-handles for the libraries bu
 Build the Runtime and System.Private.CoreLib
 =============================================
 
-To build the runtime on Linux, run build.sh from the root of the runtime repository:
+To build the runtime on Linux, run build.sh to build the CoreCLR subset category of the runtime:
 
 ```
-./src/coreclr/build.sh
+./build.sh -subsetCategory coreclr
 ```
 
 After the build is completed, there should some files placed in `runtime/artifacts/bin/coreclr/Linux.x64.Debug`.  The ones we are most interested in are:
