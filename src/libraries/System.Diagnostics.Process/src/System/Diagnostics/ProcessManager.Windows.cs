@@ -278,19 +278,23 @@ namespace System.Diagnostics
         public static int[] GetProcessIds()
         {
             int[] processIds = new int[256];
-            int size;
+            int needed;
             while (true)
             {
-                if (!Interop.Kernel32.EnumProcesses(processIds, processIds.Length * 4, out size))
+                int size = processIds.Length * sizeof(int);
+                if (!Interop.Kernel32.EnumProcesses(processIds, size, out needed))
                     throw new Win32Exception();
-                if (size == processIds.Length * sizeof(int))
+
+                if (needed == size)
                 {
                     processIds = new int[processIds.Length * 2];
                     continue;
                 }
+
                 break;
             }
-            int[] ids = new int[size / sizeof(int)];
+
+            int[] ids = new int[needed / sizeof(int)];
             Array.Copy(processIds, ids, ids.Length);
             return ids;
         }
