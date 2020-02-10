@@ -378,16 +378,15 @@ namespace System.Net.Http.Headers
 
         internal static bool IsValidEmailAddress(string value)
         {
-            try
+            if (MailAddressParser.TryParseAddress(value, out ParseAddressInfo _, throwExceptionIfFail: false))
             {
-                MailAddressParser.ParseAddress(value);
                 return true;
             }
-            catch (FormatException e)
+            else
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value, e.Message));
+                if (NetEventSource.IsEnabled) NetEventSource.Error(null, SR.Format(SR.net_http_log_headers_wrong_email_format, value));
+                return false;
             }
-            return false;
         }
 
         private static void ValidateToken(HttpHeaderValueCollection<string> collection, string value)

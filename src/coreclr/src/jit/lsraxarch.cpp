@@ -372,13 +372,18 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_BITCAST:
-        {
             assert(dstCount == 1);
-            tgtPrefUse = BuildUse(tree->gtGetOp1());
+            if (!tree->gtGetOp1()->isContained())
+            {
+                BuildUse(tree->gtGetOp1());
+                srcCount = 1;
+            }
+            else
+            {
+                srcCount = 0;
+            }
             BuildDef(tree);
-            srcCount = 1;
-        }
-        break;
+            break;
 
         case GT_NEG:
             // TODO-XArch-CQ:

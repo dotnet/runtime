@@ -51,7 +51,13 @@ case "$CPUName" in
         ;;
 
     armv7l)
-        arch=arm
+        if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+            __BuildArch=armel
+            __HostArch=armel
+        else
+            __BuildArch=arm
+            __HostArch=arm
+        fi
         ;;
 
     i686)

@@ -537,15 +537,13 @@ if %__BuildNative% EQU 1 (
         goto ExitWithCode
     )
 
-    if /i "%__BuildType%" == "Release" (
-        if not "%__BuildArch%" == "arm64" (
-            mkdir "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-            copy /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
-            if not !errorlevel! == 0 (
-                echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
-                set __exitCode=!errorlevel!
-                goto ExitWithCode
-            )
+    if not "%__BuildArch%" == "arm64" (
+        mkdir "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+        copy /Y "%UniversalCRTSDKDIR%Redist\ucrt\DLLs\%__BuildArch%\*.dll" "%__BinDir%\Redist\ucrt\DLLs\%__BuildArch%"
+        if not !errorlevel! == 0 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: Failed to copy the CRT to the output.
+            set __exitCode=!errorlevel!
+            goto ExitWithCode
         )
     )
 

@@ -1507,15 +1507,11 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
             break;
 
 #ifdef FEATURE_SIMD
+        case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
         case TYP_SIMD32:
             return !varDsc->lvPromoted;
-
-        // TODO-1stClassStructs: Move TYP_SIMD8 up with the other SIMD types, after handling the param issue
-        // (passing & returning as TYP_LONG).
-        case TYP_SIMD8:
-            return false;
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
@@ -5453,6 +5449,15 @@ void LinearScan::allocateRegisters()
                         // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
                         // inserting a store.
                         allocate = false;
+                    }
+                    else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
+                    {
+                        // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
+                        // it to a different register file.
+                        allocate = false;
+                    }
+                    if (!allocate)
+                    {
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
                         didDump = true;
                         setIntervalAsSpilled(currentInterval);
