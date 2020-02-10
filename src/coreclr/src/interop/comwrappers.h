@@ -27,16 +27,12 @@ enum class CreateObjectFlags
 
 DEFINE_ENUM_FLAG_OPERATORS(CreateObjectFlags);
 
-struct ComInterfaceEntry
-{
-    GUID IID;
-    const void* Vtable;
-};
 
-// Forward declaration
+// Forward declarations
 namespace ABI
 {
     struct ComInterfaceDispatch;
+    struct ComInterfaceEntry;
 }
 
 // Class for wrapping a managed object and projecting it in a non-managed environment
@@ -48,11 +44,11 @@ public:
 private:
     const int32_t _runtimeDefinedCount;
     const int32_t _userDefinedCount;
-    const ComInterfaceEntry* _runtimeDefined;
-    const ComInterfaceEntry* _userDefined;
+    const ABI::ComInterfaceEntry* _runtimeDefined;
+    const ABI::ComInterfaceEntry* _userDefined;
     ABI::ComInterfaceDispatch* _dispatches;
 
-    LONGLONG _refCount = 1;
+    LONGLONG _refCount;
     const CreateComInterfaceFlags _flags;
 
 public: // static
@@ -71,7 +67,7 @@ public: // static
         _In_ CreateComInterfaceFlags flags,
         _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t userDefinedCount,
-        _In_ ComInterfaceEntry* userDefined,
+        _In_ ABI::ComInterfaceEntry* userDefined,
         _Outptr_ ManagedObjectWrapper** mow);
 
     // Destroy the instance
@@ -82,9 +78,9 @@ private:
         _In_ CreateComInterfaceFlags flags,
         _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t runtimeDefinedCount,
-        _In_ const ComInterfaceEntry* runtimeDefined,
+        _In_ const ABI::ComInterfaceEntry* runtimeDefined,
         _In_ int32_t userDefinedCount,
-        _In_ const ComInterfaceEntry* userDefined,
+        _In_ const ABI::ComInterfaceEntry* userDefined,
         _In_ ABI::ComInterfaceDispatch* dispatches);
 
     ~ManagedObjectWrapper();
@@ -122,7 +118,7 @@ class NativeObjectWrapperContext
 
     IReferenceTracker* _trackerObject;
     void* _runtimeContext;
-    int32_t _isValidTracker;
+    Volatile<BOOL> _isValidTracker;
 
 public: // static
     // Convert a context pointer into a NativeObjectWrapperContext.

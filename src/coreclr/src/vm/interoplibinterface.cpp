@@ -64,7 +64,7 @@ namespace
 
         bool IsActive() const
         {
-            return IsSet(Flags_Collected)
+            return !IsSet(Flags_Collected)
                 && (SyncBlockIndex != InvalidSyncBlockIndex);
         }
 
@@ -97,7 +97,7 @@ namespace
     // Holder for a External Wrapper Result
     struct ExternalWrapperResultHolder
     {
-        ExternalWrapperResult Result;
+        InteropLib::Com::ExternalWrapperResult Result;
         ExternalWrapperResultHolder()
             : Result{}
         { }
@@ -108,7 +108,7 @@ namespace
             if (Result.AgileRef != nullptr)
                 (void)Result.AgileRef->Release();
         }
-        ExternalWrapperResult* operator&()
+        InteropLib::Com::ExternalWrapperResult* operator&()
         {
             return &Result;
         }
@@ -129,8 +129,29 @@ namespace
         static Volatile<ExtObjCxtCache*> g_Instance;
 
     public: // static
+        static ExtObjCxtCache* GetInstanceNoThrow() noexcept
+        {
+            CONTRACT(ExtObjCxtCache*)
+            {
+                NOTHROW;
+                GC_NOTRIGGER;
+                POSTCONDITION(RETVAL != NULL);
+            }
+            CONTRACT_END;
+
+            RETURN g_Instance;
+        }
+
         static ExtObjCxtCache* GetInstance()
         {
+            CONTRACT(ExtObjCxtCache*)
+            {
+                THROWS;
+                GC_NOTRIGGER;
+                POSTCONDITION(RETVAL != NULL);
+            }
+            CONTRACT_END;
+
             if (g_Instance.Load() == NULL)
             {
                 ExtObjCxtCache* instMaybe = new ExtObjCxtCache();
@@ -140,7 +161,7 @@ namespace
                     delete instMaybe;
             }
 
-            return g_Instance;
+            RETURN g_Instance;
         }
 
     public: // Inner class definitions
@@ -377,7 +398,6 @@ namespace
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(implPROTECTED != NULL);
             PRECONDITION(instancePROTECTED != NULL);
@@ -407,7 +427,6 @@ namespace
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(implPROTECTED != NULL);
             PRECONDITION(externalComObject != NULL);
@@ -434,7 +453,6 @@ namespace
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(implPROTECTED != NULL);
             PRECONDITION(objsEnumPROTECTED != NULL);
@@ -456,7 +474,6 @@ namespace
         CONTRACT(void*)
         {
             THROWS;
-            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(impl != NULL);
             PRECONDITION(instance != NULL);
@@ -561,7 +578,6 @@ namespace
         CONTRACT(OBJECTREF)
         {
             THROWS;
-            GC_TRIGGERS;
             MODE_COOPERATIVE;
             PRECONDITION(impl != NULL);
             PRECONDITION(identity != NULL);
@@ -658,6 +674,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(sizeInBytes != 0);
         }
@@ -671,6 +688,8 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
             PRECONDITION(mem != NULL);
         }
         CONTRACTL_END;
@@ -789,7 +808,7 @@ namespace InteropLibImports
             gc.implRef = ObjectFromHandle(static_cast<::OBJECTHANDLE>(handle));
 
             // Pass the objects along to get released.
-            ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+            ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
             gc.objsEnumRef = cache->CreateManagedEnumerable(
                 ExternalObjectContext::Flags_ReferenceTracker,
                 GetCurrentCtxCookie());
@@ -808,6 +827,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(handle != NULL);
         }
@@ -821,6 +841,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -833,6 +854,7 @@ namespace InteropLibImports
         CONTRACTL
         {
             NOTHROW;
+            GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END;
@@ -966,7 +988,7 @@ namespace InteropLibImports
         OBJECTREF target = ObjectFromHandle(objectHandle);
 
         // If these point at the same object don't create a reference.
-        if (source->GetSyncBlock() == target->GetSyncBlock())
+        if (source->PassiveGetSyncBlock() == target->PassiveGetSyncBlock())
             return S_FALSE;
 
         return runtimeContext->RefCache->AddReferenceFromObjectToObject(source, target);
@@ -1137,7 +1159,7 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     _ASSERTE(context->IsActive());
     context->MarkCollected();
 
-    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
     cache->Remove(context);
 }
 
@@ -1178,18 +1200,25 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     // See Interop::OnGCFinished()
     if (nCondemnedGeneration >= 2)
     {
-        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
-        RCWRefCache *refCache = GetAppDomain()->GetRCWRefCache();
+        EX_TRY
+        {
+            ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
+            RCWRefCache *refCache = GetAppDomain()->GetRCWRefCache();
 
-        // Reset the ref cache
-        refCache->ResetDependentHandles();
+            // Reset the ref cache
+            refCache->ResetDependentHandles();
 
-        // Create a call context for the InteropLib.
-        InteropLibImports::RuntimeCallContext cxt(cache, refCache);
-        (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
+            // Create a call context for the InteropLib.
+            InteropLibImports::RuntimeCallContext cxt(cache, refCache);
+            (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
 
-        // Shrink cache and clear unused handles.
-        refCache->ShrinkDependentHandles();
+            // Shrink cache and clear unused handles.
+            refCache->ShrinkDependentHandles();
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(RethrowCorruptingExceptions)
     }
 
 #endif // FEATURE_COMINTEROP

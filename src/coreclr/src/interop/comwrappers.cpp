@@ -90,6 +90,12 @@ namespace ABI
         return section;
     }
 
+    struct ComInterfaceEntry
+    {
+        GUID IID;
+        const void* Vtable;
+    };
+
     struct EntrySet
     {
         const ComInterfaceEntry* start;
@@ -309,19 +315,19 @@ HRESULT ManagedObjectWrapper::Create(
     _In_ CreateComInterfaceFlags flags,
     _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t userDefinedCount,
-    _In_ ComInterfaceEntry* userDefined,
+    _In_ ABI::ComInterfaceEntry* userDefined,
     _Outptr_ ManagedObjectWrapper** mow)
 {
     _ASSERTE(objectHandle != nullptr && mow != nullptr);
 
     // Maximum number of runtime supplied vtables.
-    ComInterfaceEntry runtimeDefinedLocal[4];
+    ABI::ComInterfaceEntry runtimeDefinedLocal[4];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table.
     if ((flags & CreateComInterfaceFlags::CallerDefinedIUnknown) == CreateComInterfaceFlags::None)
     {
-        ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
+        ABI::ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IUnknown);
         curr.Vtable = &ManagedObjectWrapper_IUnknownImpl;
     }
@@ -329,7 +335,7 @@ HRESULT ManagedObjectWrapper::Create(
     // Check if the caller wants tracker support.
     if ((flags & CreateComInterfaceFlags::TrackerSupport) == CreateComInterfaceFlags::TrackerSupport)
     {
-        ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
+        ABI::ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IReferenceTrackerTarget);
         curr.Vtable = &ManagedObjectWrapper_IReferenceTrackerTargetImpl;
     }
@@ -337,7 +343,7 @@ HRESULT ManagedObjectWrapper::Create(
     _ASSERTE(runtimeDefinedCount <= ARRAYSIZE(runtimeDefinedLocal));
 
     // Compute size for ManagedObjectWrapper instance.
-    const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ComInterfaceEntry);
+    const size_t totalRuntimeDefinedSize = runtimeDefinedCount * sizeof(ABI::ComInterfaceEntry);
     const size_t totalDefinedCount = static_cast<size_t>(runtimeDefinedCount) + userDefinedCount;
 
     // Compute the total entry size of dispatch section.
@@ -353,11 +359,11 @@ HRESULT ManagedObjectWrapper::Create(
     char* runtimeDefinedOffset = wrapperMem + sizeof(ManagedObjectWrapper);
 
     // Copy in runtime supplied COM interface entries.
-    ComInterfaceEntry* runtimeDefined = nullptr;
+    ABI::ComInterfaceEntry* runtimeDefined = nullptr;
     if (0 < runtimeDefinedCount)
     {
         std::memcpy(runtimeDefinedOffset, runtimeDefinedLocal, totalRuntimeDefinedSize);
-        runtimeDefined = reinterpret_cast<ComInterfaceEntry*>(runtimeDefinedOffset);
+        runtimeDefined = reinterpret_cast<ABI::ComInterfaceEntry*>(runtimeDefinedOffset);
     }
 
     // Compute the dispatch section offset and ensure it is aligned.
@@ -404,22 +410,22 @@ ManagedObjectWrapper::ManagedObjectWrapper(
     _In_ CreateComInterfaceFlags flags,
     _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t runtimeDefinedCount,
-    _In_ const ComInterfaceEntry* runtimeDefined,
+    _In_ const ABI::ComInterfaceEntry* runtimeDefined,
     _In_ int32_t userDefinedCount,
-    _In_ const ComInterfaceEntry* userDefined,
+    _In_ const ABI::ComInterfaceEntry* userDefined,
     _In_ ABI::ComInterfaceDispatch* dispatches)
     : Target{ nullptr }
     , _runtimeDefinedCount{ runtimeDefinedCount }
     , _userDefinedCount{ userDefinedCount }
     , _runtimeDefined{ runtimeDefined }
     , _userDefined{ userDefined }
-    , _flags{ flags }
     , _dispatches{ dispatches }
+    , _refCount{ 1 }
+    , _flags{ flags }
 {
     bool wasSet = TrySetObjectHandle(objectHandle);
     _ASSERTE(wasSet);
 }
-
 
 ManagedObjectWrapper::~ManagedObjectWrapper()
 {
@@ -488,11 +494,13 @@ ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
 
 HRESULT ManagedObjectWrapper::Peg()
 {
+    // [TODO]
     return E_NOTIMPL;
 }
 
 HRESULT ManagedObjectWrapper::Unpeg()
 {
+    // [TODO]
     return E_NOTIMPL;
 }
 
@@ -649,6 +657,6 @@ IReferenceTracker* NativeObjectWrapperContext::GetReferenceTracker() const noexc
 void NativeObjectWrapperContext::DisconnectTracker() noexcept
 {
     // Attempt to disconnect from the tracker.
-    if (TRUE == ::InterlockedCompareExchange(&_isValidTracker, FALSE, TRUE))
+    if (TRUE == ::InterlockedCompareExchange((LONG*)&_isValidTracker, FALSE, TRUE))
         (void)_trackerObject->Release();
 }

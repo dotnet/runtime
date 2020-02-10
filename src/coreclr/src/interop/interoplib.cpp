@@ -38,7 +38,7 @@ namespace InteropLib
 
             // Convert inputs to appropriate types.
             auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
-            auto vtables = static_cast<ComInterfaceEntry*>(vtablesRaw);
+            auto vtables = static_cast<ABI::ComInterfaceEntry*>(vtablesRaw);
 
             ManagedObjectWrapper* mow;
             RETURN_IF_FAILED(ManagedObjectWrapper::Create(flags, instance, vtableCount, vtables, &mow));
@@ -78,7 +78,7 @@ namespace InteropLib
             RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
 
             result->Context = wrapperContext->GetRuntimeContext();
-            result->AgileReference = reference.Detach();
+            result->AgileRef = reference.Detach();
             result->FromTrackerRuntime = (wrapperContext->GetReferenceTracker() != nullptr);
             return S_OK;
         }

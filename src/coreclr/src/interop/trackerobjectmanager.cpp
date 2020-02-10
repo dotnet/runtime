@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// Runtime headers
-#include <volatile.h>
-
 #include "comwrappers.h"
 #include <interoplibimports.h>
 
@@ -190,7 +187,7 @@ namespace
         {
             HRESULT hr;
 
-            if (target != nullptr)
+            if (target == nullptr)
                 return E_POINTER;
 
             ManagedObjectWrapper* mow = ManagedObjectWrapper::MapFromIUnknown(target);
