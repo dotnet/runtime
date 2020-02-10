@@ -17,7 +17,6 @@ namespace System.Dynamic
         /// <summary>
         /// Represents an empty array of type <see cref="DynamicMetaObject"/>. This field is read-only.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
         public static readonly DynamicMetaObject[] EmptyMetaObjects = Array.Empty<DynamicMetaObject>();
 
         /// <summary>
@@ -246,7 +245,6 @@ namespace System.Dynamic
         /// Returns the enumeration of all dynamic member names.
         /// </summary>
         /// <returns>The list of dynamic member names.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public virtual IEnumerable<string> GetDynamicMemberNames() => Array.Empty<string>();
 
         /// <summary>

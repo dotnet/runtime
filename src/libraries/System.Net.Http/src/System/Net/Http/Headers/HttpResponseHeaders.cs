@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public sealed class HttpResponseHeaders : HttpHeaders
     {
         private const int AcceptRangesSlot = 0;
