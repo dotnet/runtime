@@ -227,34 +227,16 @@ namespace System.Net.Security
         private Task ProcessAuthentication(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
         {
             Task result = null;
-            if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
-            }
 
-            try
-            {
-                ThrowIfExceptional();
+            ThrowIfExceptional();
 
-                if (isAsync)
-                {
-                    result = ForceAuthenticationAsync(new SslAsyncIO(this, cancellationToken), _context.IsServer, null);
-                    result.ContinueWith(t => { _nestedAuth = 0; }, cancellationToken,
-                                         TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.ExecuteSynchronously,
-                                         TaskScheduler.Default);
-                }
-                else
-                {
-                    ForceAuthenticationAsync(new SslSyncIO(this), _context.IsServer, null).GetAwaiter().GetResult();
-                }
-            }
-            finally
+            if (isAsync)
             {
-                if (!isAsync || result.IsCompleted)
-                {
-                    // Operation has completed. (successfully or failed)
-                    _nestedAuth = 0;
-                }
+                result = ForceAuthenticationAsync(new SslAsyncIO(this, cancellationToken), _context.IsServer, null, isApm);
+            }
+            else
+            {
+                ForceAuthenticationAsync(new SslSyncIO(this), _context.IsServer, null).GetAwaiter().GetResult();
             }
 
             return result;
@@ -277,46 +259,66 @@ namespace System.Net.Security
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, bool receiveFirst, byte[] reAuthenticationData)
+        private async Task ForceAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, bool receiveFirst, byte[] reAuthenticationData, bool isApm = false)
              where TReadAdapter : ISslIOAdapter
         {
             _framing = Framing.Unknown;
             ProtocolToken message;
 
-            if (!receiveFirst)
+            if (reAuthenticationData == null)
             {
-                message = _context.NextMessage(reAuthenticationData, 0, (reAuthenticationData == null ? 0 : reAuthenticationData.Length));
-                if (message.Size > 0)
+                // prevent nesting ionly when authentication functions are called explicitly. e.g. handle renegotiation tansparently.
+                if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
                 {
-                    await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
-                }
-
-                if (message.Failed)
-                {
-                    // tracing done in NextMessage()
-                    throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
                 }
             }
 
-            do
+            try
             {
-                message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
-                if (message.Size > 0)
+
+                if (!receiveFirst)
                 {
-                    // If there is message send it out even if call failed. It may contain TLS Alert.
-                    await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                    message = _context.NextMessage(reAuthenticationData, 0, (reAuthenticationData == null ? 0 : reAuthenticationData.Length));
+                    if (message.Size > 0)
+                    {
+                        await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                    }
+
+                    if (message.Failed)
+                    {
+                        // tracing done in NextMessage()
+                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                    }
                 }
 
-                if (message.Failed)
+                do
                 {
-                    throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
-                }
-            } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
+                    message = await ReceiveBlobAsync(adapter).ConfigureAwait(false);
+                    if (message.Size > 0)
+                    {
+                        // If there is message send it out even if call failed. It may contain TLS Alert.
+                        await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
+                    }
 
-            ProtocolToken alertToken = null;
-            if (!CompleteHandshake(ref alertToken))
+                    if (message.Failed)
+                    {
+                        throw new AuthenticationException(SR.net_auth_SSPI, message.GetException());
+                    }
+                } while (message.Status.ErrorCode != SecurityStatusPalErrorCode.OK);
+
+                ProtocolToken alertToken = null;
+                if (!CompleteHandshake(ref alertToken))
+                {
+                    SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                }
+            }
+            finally
             {
-                SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_validation, null)));
+                if (reAuthenticationData == null)
+                {
+                    _nestedAuth = 0;
+                }
             }
 
             if (NetEventSource.IsEnabled)
