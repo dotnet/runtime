@@ -3972,7 +3972,7 @@ main_loop:
 			frame->ip = ip;
 
 			// Retval must be set unconditionally due to MINT_ARGLIST.
-			// is_void further guides exit_frame.
+			// is_void guides exit_frame instead of retval nullness.
 			retval = sp;
 			is_void = csig->ret->type == MONO_TYPE_VOID;
 
@@ -7170,7 +7170,7 @@ exit_frame:
 
 		CHECK_RESUME_STATE (context);
 
-		if (retval && !is_void) {
+		if (!is_void) {
 			*sp = *retval;
 			sp ++;
 		}
