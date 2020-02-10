@@ -196,7 +196,7 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PUCHAR NonVolatileRegisters;
 } T_DISPATCHER_CONTEXT, *PT_DISPATCHER_CONTEXT;
 
-#if defined(HOST_WINDOWS) && defined(HOST_X86)
+#if defined(HOST_WINDOWS) && !defined(HOST_X86)
 typedef struct _T_RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
