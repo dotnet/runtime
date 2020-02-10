@@ -24,20 +24,20 @@ the implementation without compat concerns in future releases.
 
 ### Determine target framework
 
-`netstandard` or `netcoreapp` is the target framework version currently under development.
+`netstandard2.1` or `netcoreapp5.0` is the target framework version currently under development.
 
-- If the library is [part of netstandard](#faq)
-  - Your target framework should be `netstandard`
-  - If it is a new API only available on .NET Core then it will be added to `netcoreapp`
+- If the library is [part of netstandard2.1](#faq)
+  - Your target framework should be `netstandard2.1`
+  - If it is a new API only available on .NET Core then it will be added to `netcoreapp5.0`
 - If the library is not part of netstandard
   - If package dependencies are changed then your target framework should be the minimum target framework that supports all your package dependencies.
-  - If your package depends directly on runtime changes or library changes that ship with the runtime (i.e. System.Private.CoreLib) then your target framework should be `netstandard`.
+  - If your package depends directly on runtime changes or library changes that ship with the runtime (i.e. System.Private.CoreLib) then your target framework should be `netstandard2.1`.
   - When targeting `netstandardX` your new API must be supported by all target frameworks that map to that netstandard version (see [mapping table][net-standard table]). If not bump the version to the minimum netstandard version that supports this API on all frameworks that map to that netstandard version.
 
 ### Determine library version
-- If targeting netstandard
+- If targeting netstandard2.1
   - Ensure minor version of the assembly is bumped since last stable package release
-- If targeting netcoreapp
+- If targeting netcoreapp5.0
   - No assembly version bump necessary
 
 ## Making the changes in repo
@@ -47,9 +47,6 @@ the implementation without compat concerns in future releases.
 - If the `AssemblyVersion` property exists (for example, [Microsoft.CSharp\Directory.Build.props](https://github.com/dotnet/runtime/blob/master/src/libraries/Microsoft.CSharp/Directory.Build.props#L4)), you can change it.
 - If the `AssemblyVersion` property doesn't exist (for example, [System.Runtime\Directory.Build.props](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Runtime/Directory.Build.props)), you can add it.
 
-**If changing the target group**
-- Update both the `Configurations` property in the library's csproj file and the `BuildConfigurations` property in the library's Configurations.props file.
-
 **Update pkg**
  - If changing the target framework
     - Update `SupportedFramework` metadata on the ref ProjectReference to declare the set of concrete platforms you expect your library to support. (see [Specific platform mappings][net-standard table]). Generally will be a combination of netcoreapp2.x, netfx46x, and/or `$(AllXamarinFrameworks)`.
@@ -57,9 +54,9 @@ the implementation without compat concerns in future releases.
     `dotnet msbuild <Library>/pkg/<Library>.pkgproj /t:UpdatePackageIndex`
 
 **Update tests**
-  - Set `TargetGroup` which will generally match the `TargetGroup` in the src library build configuration. (ex: [System.Runtime\tests\Configurations.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/tests/Configurations.props#L3))
+  - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
-  - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
+  - To run just the new test configuration run `dotnet msbuild <Library>.csproj /t:RebuildAndTest /p:BuildTargetFramework=<BuildTargetFramework>`
 
 ## Documentation
 
