@@ -2178,7 +2178,7 @@ ProbeLoop
     EPILOG_STACK_RESTORE r7
     EPILOG_POP {r7}
     EPILOG_BRANCH_REG lr
-    LEAF_END_MARKED
+    LEAF_END_MARKED JIT_StackProbe
 
 ; Must be at very end of file
     END
