@@ -3801,27 +3801,18 @@ main_loop:
 			/* Non-recursive call */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+			frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 
-			if (G_UNLIKELY (!imethod->transformed)) {
-				MonoException *ex;
-				gboolean tracing;
+			MonoException *ex;
+			gboolean tracing;
 
-				method_entry (context, child_frame, &tracing, &ex);
-				if (G_UNLIKELY (ex)) {
-					frame = child_frame;
-					frame->ip = NULL;
-					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-			} else {
-				alloc_stack_data (context, child_frame, imethod->alloca_size);
-#if DEBUG_INTERP
-				debug_enter (child_frame, &tracing);
-#endif
+			method_entry (context, frame, &tracing, &ex);
+
+			if (G_UNLIKELY (ex)) {
+				THROW_EX (ex, NULL);
+				EXCEPTION_CHECKPOINT;
 			}
 
-			frame = child_frame;
 			clause_args = NULL;
 			INIT_INTERP_STATE (frame, clause_args);
 
@@ -3925,24 +3916,17 @@ main_loop:
 				SAVE_INTERP_STATE (frame);
 
 				// FIXME &retval looks wrong
-				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+				frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
 
-				if (G_UNLIKELY (!imethod->transformed)) {
-					MonoException *ex;
-					gboolean tracing;
+				MonoException *ex;
+				gboolean tracing;
 
-					method_entry (context, child_frame, &tracing, &ex);
-					if (G_UNLIKELY (ex)) {
-						frame = child_frame;
-						frame->ip = NULL;
-						THROW_EX (ex, NULL);
-						EXCEPTION_CHECKPOINT;
-					}
-				} else {
-					alloc_stack_data (context, child_frame, imethod->alloca_size);
+				method_entry (context, frame, &tracing, &ex);
+				if (G_UNLIKELY (ex)) {
+					THROW_EX (ex, NULL);
+					EXCEPTION_CHECKPOINT;
 				}
 
-				frame = child_frame;
 				clause_args = NULL;
 				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
@@ -4032,28 +4016,18 @@ call:;
 			 */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
+			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
-			if (G_UNLIKELY (!cmethod->transformed)) {
-				MonoException *ex;
-				gboolean tracing;
+			MonoException *ex;
+			gboolean tracing;
 
-				method_entry (context, child_frame, &tracing, &ex);
+			method_entry (context, frame, &tracing, &ex);
 
-				if (G_UNLIKELY (ex)) {
-					frame = child_frame;
-					frame->ip = NULL;
-					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-			} else {
-				alloc_stack_data (context, child_frame, cmethod->alloca_size);
-#if DEBUG_INTERP
-				debug_enter (child_frame, &tracing);
-#endif
+			if (G_UNLIKELY (ex)) {
+				THROW_EX (ex, NULL);
+				EXCEPTION_CHECKPOINT;
 			}
 
-			frame = child_frame;
 			clause_args = NULL;
 			INIT_INTERP_STATE (frame, clause_args);
 
