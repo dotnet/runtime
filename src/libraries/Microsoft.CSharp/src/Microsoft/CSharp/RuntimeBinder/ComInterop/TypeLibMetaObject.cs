@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                         BindingRestrictions.GetExpressionRestriction(
                             Expression.Equal(
                                 Expression.Property(
-                                    AstUtils.Convert(
+                                    Helpers.Convert(
                                         Expression, typeof(ComTypeLibDesc)
                                     ),
                                     typeof(ComTypeLibDesc).GetProperty("Guid")

@@ -35,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return new DynamicMetaObject(
                 Expression.Convert(
                     Expression.Property(
-                        AstUtils.Convert(Expression, typeof(ComTypeLibInfo)),
+                        Helpers.Convert(Expression, typeof(ComTypeLibInfo)),
                         typeof(ComTypeLibInfo).GetProperty(name)
                     ),
                     typeof(object)

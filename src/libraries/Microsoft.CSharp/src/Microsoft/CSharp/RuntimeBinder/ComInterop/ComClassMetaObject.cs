@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         public override DynamicMetaObject BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args) {
             return new DynamicMetaObject(
                 Expression.Call(
-                    AstUtils.Convert(Expression, typeof(ComTypeClassDesc)),
+                    Helpers.Convert(Expression, typeof(ComTypeClassDesc)),
                     typeof(ComTypeClassDesc).GetMethod("CreateInstance")
                 ),
                 BindingRestrictions.Combine(args).Merge(

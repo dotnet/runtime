@@ -16,6 +16,15 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             if (expression.Type == type) {
                 return expression;
             }
+
+            if (expression.Type == typeof(void)) {
+                return Expression.Block(expression, Expression.Default(type));
+            }
+
+            if (type == typeof(void)) {
+                return Expression.Block(expression, Expression.Empty());
+            }
+
             return Expression.Convert(expression, type);
         }
     }

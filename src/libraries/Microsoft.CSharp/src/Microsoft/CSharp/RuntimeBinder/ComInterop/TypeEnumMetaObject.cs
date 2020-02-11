@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             if (_desc.HasMember(binder.Name)) {
                 return new DynamicMetaObject(
                     // return (.bound $arg0).GetValue("<name>")
-                    AstUtils.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name), typeof(object)),
+                    Expression.Constant(((ComTypeEnumDesc)Value).GetValue(binder.Name), typeof(object)),
                     EnumRestrictions()
                 );
             }
@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                     Expression.Equal(
                         Expression.Property(
                             Expression.Property(
-                                AstUtils.Convert(Expression, typeof(ComTypeEnumDesc)),
+                                Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
                                 typeof(ComTypeDesc).GetProperty("TypeLib")),
                             typeof(ComTypeLibDesc).GetProperty("Guid")),
                         AstUtils.Constant(_desc.TypeLib.Guid)
@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 BindingRestrictions.GetExpressionRestriction(
                     Expression.Equal(
                         Expression.Property(
-                            AstUtils.Convert(Expression, typeof(ComTypeEnumDesc)),
+                            Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
                             typeof(ComTypeEnumDesc).GetProperty("TypeName")
                         ),
                         AstUtils.Constant(_desc.TypeName)
