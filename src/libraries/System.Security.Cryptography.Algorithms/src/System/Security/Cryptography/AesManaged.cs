@@ -61,9 +61,9 @@ namespace System.Security.Cryptography
         public override KeySizes[] LegalBlockSizes => _impl.LegalBlockSizes;
         public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
         public override ICryptoTransform CreateEncryptor() => _impl.CreateEncryptor();
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateEncryptor(rgbKey, rgbIV);
         public override ICryptoTransform CreateDecryptor() => _impl.CreateDecryptor();
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV) => _impl.CreateDecryptor(rgbKey, rgbIV);
         public override void GenerateIV() => _impl.GenerateIV();
         public override void GenerateKey() => _impl.GenerateKey();
 

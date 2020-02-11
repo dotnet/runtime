@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Private Key. Not always present.
         /// </summary>
-        public byte[] D;
+        public byte[]? D;
 
         /// <summary>
         /// The Curve.
@@ -50,12 +50,12 @@ namespace System.Security.Cryptography
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
-                    hasErrors = (D != null && (D.Length != Curve.Order.Length));
+                    hasErrors = (D != null && (D.Length != Curve.Order!.Length));
                 }
                 else if (Curve.IsNamed)
                 {
                     // Named curves require D length to match Q.X and Q.Y
-                    hasErrors = (D != null && (D.Length != Q.X.Length));
+                    hasErrors = (D != null && (D.Length != Q.X!.Length));
                 }
             }
 
