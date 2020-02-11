@@ -34,7 +34,7 @@ namespace System.IO.Pipes
             Create(direction, inheritability, bufferSize, null);
         }
 
-        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity pipeSecurity)
+        private void Create(PipeDirection direction, HandleInheritability inheritability, int bufferSize, PipeSecurity? pipeSecurity)
         {
             Debug.Assert(direction != PipeDirection.InOut, "Anonymous pipe direction shouldn't be InOut");
             Debug.Assert(bufferSize >= 0, "bufferSize is negative");

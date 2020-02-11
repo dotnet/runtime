@@ -12,7 +12,6 @@ using System.Text;
 
 namespace System.Linq.Expressions
 {
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class ExpressionStringBuilder : ExpressionVisitor
     {
         private readonly StringBuilder _out;
@@ -143,7 +142,6 @@ namespace System.Linq.Expressions
             Out(close);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitBinary(BinaryExpression node)
         {
             if (node.NodeType == ExpressionType.ArrayIndex)
@@ -611,7 +609,6 @@ namespace System.Linq.Expressions
             return node;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected internal override Expression VisitUnary(UnaryExpression node)
         {
             switch (node.NodeType)

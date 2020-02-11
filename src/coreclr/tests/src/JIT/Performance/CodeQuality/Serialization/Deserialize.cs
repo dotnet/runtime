@@ -156,12 +156,11 @@ public class JsonBenchmarks
     private void DeserializeJsonNetBinaryBenchInner()
     {
         Newtonsoft.Json.JsonSerializer ds = new Newtonsoft.Json.JsonSerializer();
-        TestObject t;
         Type ty = typeof(TestObject);
         for (int i = 0; i < JsonNetIterations; i++)
         {
-            BsonReader br = new BsonReader(new MemoryStream(JsonNetBinary));
-            t = (TestObject) ds.Deserialize(br, ty);
+            BsonDataReader br = new BsonDataReader(new MemoryStream(JsonNetBinary));
+            TestObject t = (TestObject)ds.Deserialize(br, ty);
             Escape(t.Name);
         }
     }

@@ -17,7 +17,6 @@ namespace System.ComponentModel.Composition
 {
     public static class AttributedModelServices
     {
-        [SuppressMessage("Microsoft.Design", "CA1004")]
         public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
             Requires.NotNull(metadata, nameof(metadata));

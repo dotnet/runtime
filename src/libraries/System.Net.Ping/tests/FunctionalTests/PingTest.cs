@@ -773,8 +773,7 @@ namespace System.Net.NetworkInformation.Tests
             pingResultValidator(pingResult);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingPing.CreateAndRelease();

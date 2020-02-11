@@ -522,7 +522,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return false;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void NotifyImportSatisfied()
         {
             if (_invokeImportsSatisfied)

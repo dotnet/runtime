@@ -17,15 +17,11 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Represents the non-trivial constants and locally executable expressions that are referenced by a dynamically generated method.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         public readonly object[] Constants;
 
         /// <summary>
         /// Represents the hoisted local variables from the parent context.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
         public readonly object[]? Locals;
 
         /// <summary>

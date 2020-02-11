@@ -43,7 +43,6 @@ namespace System.Linq.Expressions.Compiler
             {
                 return object.ReferenceEquals(Value, other.Value) && Type.Equals(other.Type);
             }
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2231:OverloadOperatorEqualsOnOverridingValueTypeEquals")]
             public override bool Equals(object? obj)
             {
                 return obj is TypedConstant typedConstant && Equals(typedConstant);

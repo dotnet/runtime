@@ -13,7 +13,6 @@ include_directories(../fxr)
 set(SOURCES
     nethost.cpp
     ../fxr_resolver.cpp
-    ../fxr/fx_ver.cpp
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
