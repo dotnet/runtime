@@ -20,7 +20,7 @@
 
 using namespace NativeFormat;
 
-IMAGE_DATA_DIRECTORY * ReadyToRunInfo::FindSection(DWORD type)
+IMAGE_DATA_DIRECTORY * ReadyToRunInfo::FindSection(ReadyToRunSectionType type)
 {
     CONTRACTL
     {
@@ -313,7 +313,7 @@ PTR_BYTE ReadyToRunInfo::GetDebugInfo(PTR_RUNTIME_FUNCTION pRuntimeFunction)
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY * pDebugInfoDir = FindSection(READYTORUN_SECTION_DEBUG_INFO);
+    IMAGE_DATA_DIRECTORY * pDebugInfoDir = FindSection(ReadyToRunSectionType::DebugInfo);
     if (pDebugInfoDir == NULL)
         return NULL;
 
@@ -410,7 +410,7 @@ static bool AcquireImage(Module * pModule, PEImageLayout * pLayout, READYTORUN_H
     READYTORUN_SECTION * pSections = (READYTORUN_SECTION*)(pHeader + 1);
     for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
     {
-        if (pSections[i].Type == READYTORUN_SECTION_IMPORT_SECTIONS)
+        if (pSections[i].Type == ReadyToRunSectionType::ImportSections)
         {
             pImportSections = (READYTORUN_IMPORT_SECTION*)((PBYTE)pLayout->GetBase() + pSections[i].Section.VirtualAddress);
             pImportSectionsEnd = (READYTORUN_IMPORT_SECTION*)((PBYTE)pImportSections + pSections[i].Section.Size);
@@ -541,7 +541,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
 {
     STANDARD_VM_CONTRACT;
 
-    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindSection(READYTORUN_SECTION_RUNTIME_FUNCTIONS);
+    IMAGE_DATA_DIRECTORY * pRuntimeFunctionsDir = FindSection(ReadyToRunSectionType::RuntimeFunctions);
     if (pRuntimeFunctionsDir != NULL)
     {
         m_pRuntimeFunctions = (T_RUNTIME_FUNCTION *)pLayout->GetDirectoryData(pRuntimeFunctionsDir);
@@ -552,7 +552,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_nRuntimeFunctions = 0;
     }
 
-    IMAGE_DATA_DIRECTORY * pImportSectionsDir = FindSection(READYTORUN_SECTION_IMPORT_SECTIONS);
+    IMAGE_DATA_DIRECTORY * pImportSectionsDir = FindSection(ReadyToRunSectionType::ImportSections);
     if (pImportSectionsDir != NULL)
     {
         m_pImportSections = (CORCOMPILE_IMPORT_SECTION*)pLayout->GetDirectoryData(pImportSectionsDir);
@@ -565,20 +565,20 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
 
     m_nativeReader = NativeReader((byte *)pLayout->GetBase(), pLayout->GetVirtualSize());
 
-    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindSection(READYTORUN_SECTION_METHODDEF_ENTRYPOINTS);
+    IMAGE_DATA_DIRECTORY * pEntryPointsDir = FindSection(ReadyToRunSectionType::MethodDefEntryPoints);
     if (pEntryPointsDir != NULL)
     {
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
-    IMAGE_DATA_DIRECTORY * pinstMethodsDir = FindSection(READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS);
+    IMAGE_DATA_DIRECTORY * pinstMethodsDir = FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
     {
         NativeParser parser = NativeParser(&m_nativeReader, pinstMethodsDir->VirtualAddress);
         m_instMethodEntryPoints = NativeHashtable(parser);
     }
 
-    IMAGE_DATA_DIRECTORY * pAvailableTypesDir = FindSection(READYTORUN_SECTION_AVAILABLE_TYPES);
+    IMAGE_DATA_DIRECTORY * pAvailableTypesDir = FindSection(ReadyToRunSectionType::AvailableTypes);
     if (pAvailableTypesDir != NULL)
     {
         NativeParser parser = NativeParser(&m_nativeReader, pAvailableTypesDir->VirtualAddress);
@@ -593,7 +593,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 4.1 and later, there is an optional inlining table
     if (IsImageVersionAtLeast(4, 1))
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = FindSection(READYTORUN_SECTION_INLINING_INFO2);
+        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = FindSection(ReadyToRunSectionType::InliningInfo2);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -605,7 +605,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.1 and later, there is an optional inlining table
     if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
     {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = FindSection(READYTORUN_SECTION_INLINING_INFO);
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = FindSection(ReadyToRunSectionType::InliningInfo);
         if (pInlineTrackingInfoDir != NULL)
         {
             const BYTE* pInlineTrackingMapData = (const BYTE*)GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
@@ -617,7 +617,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     // For format version 2.2 and later, there is an optional profile-data section
     if (IsImageVersionAtLeast(2, 2))
     {
-        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = FindSection(READYTORUN_SECTION_PROFILEDATA_INFO);
+        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = FindSection(ReadyToRunSectionType::ProfileDataInfo);
         if (pProfileDataInfoDir != NULL)
         {
             CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
@@ -628,7 +628,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 3.1 and later, there is an optional attributes section
-    IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = FindSection(READYTORUN_SECTION_ATTRIBUTEPRESENCE);
+    IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = FindSection(ReadyToRunSectionType::AttributePresence);
     if (attributesPresenceDataInfoDir != NULL)
     {
         NativeCuckooFilter newFilter(

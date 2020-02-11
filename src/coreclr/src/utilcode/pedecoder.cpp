@@ -2863,7 +2863,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
 
             READYTORUN_SECTION * pSection = pSections + i;
-            if (pSection->Type == READYTORUN_SECTION_MANIFEST_METADATA)
+            if (pSection->Type == ReadyToRunSectionType::ManifestMetadata)
             {
                 // Set pDir to the address of the manifest metadata section
                 pDir = &pSection->Section;
@@ -2871,7 +2871,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
             }
         }
 
-        // ReadyToRun file without large version bubble support doesn't have the READYTORUN_SECTION_MANIFEST_METADATA
+        // ReadyToRun file without large version bubble support doesn't have the ManifestMetadata
         if (pDir == NULL)
         {
             if (pSize != NULL)
