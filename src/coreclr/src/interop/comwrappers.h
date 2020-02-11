@@ -113,7 +113,7 @@ ABI_ASSERT(offsetof(ManagedObjectWrapper, Target) == 0);
 class NativeObjectWrapperContext
 {
 #ifdef _DEBUG
-    size_t _sentinal;
+    size_t _sentinel;
 #endif
 
     IReferenceTracker* _trackerObject;

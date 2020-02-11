@@ -547,8 +547,8 @@ ULONG ManagedObjectWrapper::Release(void)
 
 namespace
 {
-    const size_t LiveContextSentinal = 0x0a110ced;
-    const size_t DeadContextSentinal = 0xdeaddead;
+    const size_t LiveContextSentinel = 0x0a110ced;
+    const size_t DeadContextSentinel = 0xdeaddead;
 }
 
 NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_In_ void* cxtMaybe)
@@ -561,7 +561,7 @@ NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_I
     NativeObjectWrapperContext* cxt = reinterpret_cast<NativeObjectWrapperContext*>(cxtRaw);
 
 #ifdef _DEBUG
-    _ASSERTE(cxt->_sentinal == LiveContextSentinal);
+    _ASSERTE(cxt->_sentinel == LiveContextSentinel);
 #endif
 
     return cxt;
@@ -628,7 +628,7 @@ NativeObjectWrapperContext::NativeObjectWrapperContext(_In_ void* runtimeContext
     , _runtimeContext{ runtimeContext }
     , _isValidTracker{ (trackerObject != nullptr ? TRUE : FALSE) }
 #ifdef _DEBUG
-    , _sentinal{ LiveContextSentinal }
+    , _sentinel{ LiveContextSentinel }
 #endif
 {
     if (_isValidTracker == TRUE)
@@ -640,7 +640,7 @@ NativeObjectWrapperContext::~NativeObjectWrapperContext()
     DisconnectTracker();
 
 #ifdef _DEBUG
-    _sentinal = DeadContextSentinal;
+    _sentinel = DeadContextSentinel;
 #endif
 }
 
