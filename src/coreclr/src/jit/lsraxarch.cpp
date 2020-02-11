@@ -2751,7 +2751,9 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
-    assert(indirTree->TypeGet() != TYP_STRUCT); // Don't expect a struct type here.
+    // struct typed indirs are expected only on rhs of a block copy,
+    // but in this case they must be contained.
+    assert(indirTree->TypeGet() != TYP_STRUCT);
 
 #ifdef FEATURE_SIMD
     RefPosition* internalFloatDef = nullptr;
