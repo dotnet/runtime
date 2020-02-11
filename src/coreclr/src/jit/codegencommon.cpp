@@ -3923,7 +3923,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             regArgMaskLive &= ~genRegMask(srcRegNum);
         }
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         if ((storeType == TYP_DOUBLE) && !regArgTab[argNum].writeThru)
         {
             regArgTab[argNum + 1].processed = true;

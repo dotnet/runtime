@@ -858,13 +858,19 @@ void LinearScan::setBlockSequence()
                     assert(!"Switch with single successor");
                 }
             }
-            if (block->isBBCallAlwaysPairTail() || (hasUniquePred && predBlock->hasEHBoundaryOut()))
+
+            // We treat BBCallAlwaysPairTail blocks as having EH flow, since we can't
+            // insert resolution moves into those blocks.
+            if (block->isBBCallAlwaysPairTail())
             {
-                if (((predBlock->bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0) || hasUniquePred)
+                blockInfo[block->bbNum].hasEHBoundaryIn  = true;
+                blockInfo[block->bbNum].hasEHBoundaryOut = true;
+            }
+            else if (predBlock->hasEHBoundaryOut() || predBlock->isBBCallAlwaysPairTail())
+            {
+                if (hasUniquePred)
                 {
-                    // Treat this as having incoming EH flow, since we can't insert resolution moves into
-                    // the ALWAYS block of a BBCallAlwaysPair, and a unique pred with an EH out edge won't
-                    // allow us to keep any variables enregistered.
+                    // A unique pred with an EH out edge won't allow us to keep any variables enregistered.
                     blockInfo[block->bbNum].hasEHBoundaryIn = true;
                 }
                 else
@@ -991,6 +997,10 @@ void LinearScan::setBlockSequence()
         if (blockInfo[block->bbNum].hasEHBoundaryOut)
         {
             JITDUMP(" EH-out");
+        }
+        if (blockInfo[block->bbNum].hasEHPred)
+        {
+            JITDUMP(" has EH pred");
         }
         JITDUMP("\n");
     }
@@ -1369,9 +1379,6 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 //
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-#ifdef DEBUG
-    VARSET_TP finallyVars(VarSetOps::MakeEmpty(compiler));
-#endif
     BasicBlock* block;
 
     foreach_block(compiler, block)
@@ -1385,15 +1392,13 @@ void LinearScan::identifyCandidatesExceptionDataflow()
         if (block->hasEHBoundaryOut())
         {
             VarSetOps::UnionD(compiler, exceptVars, block->bbLiveOut);
-#ifdef DEBUG
             if (block->bbJumpKind == BBJ_EHFINALLYRET)
             {
-                // live on exit from finally.
+                // Live on exit from finally.
                 // We track these separately because, in addition to having EH live-out semantics,
-                // we want to verify that they are must-init.
+                // we need to mark them must-init.
                 VarSetOps::UnionD(compiler, finallyVars, block->bbLiveOut);
             }
-#endif
         }
     }
 
@@ -1577,6 +1582,7 @@ void LinearScan::identifyCandidates()
     }
 
     VarSetOps::AssignNoCopy(compiler, exceptVars, VarSetOps::MakeEmpty(compiler));
+    VarSetOps::AssignNoCopy(compiler, finallyVars, VarSetOps::MakeEmpty(compiler));
     if (compiler->compHndBBtabCount > 0)
     {
         identifyCandidatesExceptionDataflow();
@@ -2830,7 +2836,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     bool preferCalleeSave = currentInterval->preferCalleeSave;
 
     bool avoidByteRegs = false;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if ((relatedPreferences & ~RBM_BYTE_REGS) != RBM_NONE)
     {
         avoidByteRegs = true;
@@ -5287,7 +5293,6 @@ void LinearScan::allocateRegisters()
         }
     }
 
-    bool firstBBExceptionEdge = enregisterLocalVars && blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn;
     if (enregisterLocalVars)
     {
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -5530,92 +5535,90 @@ void LinearScan::allocateRegisters()
         bool allocate = true;
         bool didDump  = false;
 
-            if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
+        if (refType == RefTypeParamDef || refType == RefTypeZeroInit)
+        {
+            if (nextRefPosition == nullptr)
             {
-                if (nextRefPosition == nullptr)
+                // If it has no actual references, mark it as "lastUse"; since they're not actually part
+                // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
+                // register we won't unassign it.
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
+                currentRefPosition->lastUse = true;
+            }
+            LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
+            assert(varDsc != nullptr);
+            assert(!blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn || currentInterval->isWriteThru);
+            if (blockInfo[compiler->fgFirstBB->bbNum].hasEHBoundaryIn ||
+                blockInfo[compiler->fgFirstBB->bbNum].hasEHPred)
+            {
+                allocate = false;
+            }
+            else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+            {
+                allocate = false;
+            }
+            else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
+            {
+                // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
+                // it to a different register file.
+                allocate = false;
+            }
+            if (!allocate)
+            {
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
+                didDump = true;
+                setIntervalAsSpilled(currentInterval);
+            }
+        }
+#ifdef FEATURE_SIMD
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        else if (currentInterval->isUpperVector)
+        {
+            // This is a save or restore of the upper half of a large vector lclVar.
+            Interval* lclVarInterval = currentInterval->relatedInterval;
+            assert(lclVarInterval->isLocalVar);
+            if (refType == RefTypeUpperVectorSave)
+            {
+                if ((lclVarInterval->physReg == REG_NA) ||
+                    (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
                 {
-                    // If it has no actual references, mark it as "lastUse"; since they're not actually part
-                    // of any flow they won't have been marked during dataflow.  Otherwise, if we allocate a
-                    // register we won't unassign it.
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_ZERO_REF, currentInterval));
-                    currentRefPosition->lastUse = true;
-                }
-                LclVarDsc* varDsc = currentInterval->getLocalVar(compiler);
-                assert(varDsc != nullptr);
-                if (firstBBExceptionEdge)
-                {
-                    assert(currentInterval->isWriteThru);
                     allocate = false;
                 }
-                else if (refType == RefTypeParamDef && varDsc->lvRefCntWtd() <= BB_UNITY_WEIGHT)
+                else
                 {
-                    // For a ParamDef with a weighted refCount less than unity, don't enregister it at entry.
-                    // TODO-CQ: Consider doing this only for stack parameters, since otherwise we may be needlessly
-                    // inserting a store.
+                    lclVarInterval->isPartiallySpilled = true;
+                }
+            }
+            else if (refType == RefTypeUpperVectorRestore)
+            {
+                assert(currentInterval->isUpperVector);
+                if (lclVarInterval->isPartiallySpilled)
+                {
+                    lclVarInterval->isPartiallySpilled = false;
+                }
+                else
+                {
                     allocate = false;
                 }
-                else if ((currentInterval->physReg == REG_STK) && nextRefPosition->treeNode->OperIs(GT_BITCAST))
-                {
-                    // In the case of ABI mismatches, avoid allocating a register only to have to immediately move
-                    // it to a different register file.
-                    allocate = false;
-                }
-                if (!allocate)
-                {
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_ENTRY_REG_ALLOCATED, currentInterval));
-                    didDump = true;
-                    setIntervalAsSpilled(currentInterval);
-                }
             }
-    #ifdef FEATURE_SIMD
-    #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-            else if (currentInterval->isUpperVector)
+        }
+        else if (refType == RefTypeUpperVectorSave)
+        {
+            assert(!currentInterval->isLocalVar);
+            // Note that this case looks a lot like the case below, but in this case we need to spill
+            // at the previous RefPosition.
+            // We may want to consider allocating two callee-save registers for this case, but it happens rarely
+            // enough that it may not warrant the additional complexity.
+            if (assignedRegister != REG_NA)
             {
-                // This is a save or restore of the upper half of a large vector lclVar.
-                Interval* lclVarInterval = currentInterval->relatedInterval;
-                assert(lclVarInterval->isLocalVar);
-                if (refType == RefTypeUpperVectorSave)
-                {
-                    if ((lclVarInterval->physReg == REG_NA) ||
-                        (lclVarInterval->isPartiallySpilled && (currentInterval->physReg == REG_STK)))
-                    {
-                        allocate = false;
-                    }
-                    else
-                    {
-                        lclVarInterval->isPartiallySpilled = true;
-                    }
-                }
-                else if (refType == RefTypeUpperVectorRestore)
-                {
-                    assert(currentInterval->isUpperVector);
-                    if (lclVarInterval->isPartiallySpilled)
-                    {
-                        lclVarInterval->isPartiallySpilled = false;
-                    }
-                    else
-                    {
-                        allocate = false;
-                    }
-                }
+                unassignPhysReg(getRegisterRecord(assignedRegister), currentInterval->firstRefPosition);
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
             }
-            else if (refType == RefTypeUpperVectorSave)
-            {
-                assert(!currentInterval->isLocalVar);
-                // Note that this case looks a lot like the case below, but in this case we need to spill
-                // at the previous RefPosition.
-                // We may want to consider allocating two callee-save registers for this case, but it happens rarely
-                // enough that it may not warrant the additional complexity.
-                if (assignedRegister != REG_NA)
-                {
-                    unassignPhysReg(getRegisterRecord(assignedRegister), currentInterval->firstRefPosition);
-                    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
-                }
-                currentRefPosition->registerAssignment = RBM_NONE;
-                continue;
-            }
-    #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    #endif // FEATURE_SIMD
+            currentRefPosition->registerAssignment = RBM_NONE;
+            continue;
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+#endif // FEATURE_SIMD
 
         if (allocate == false)
         {
@@ -6344,7 +6347,8 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTree* treeNode, RefPositi
         }
 
         if ((currentRefPosition->registerAssignment != RBM_NONE) && (interval->physReg == REG_NA) &&
-            currentRefPosition->RegOptional() && currentRefPosition->lastUse)
+            currentRefPosition->RegOptional() && currentRefPosition->lastUse &&
+            (currentRefPosition->refType == RefTypeUse))
         {
             // This can happen if the incoming location for the block was changed from a register to the stack
             // during resolution. In this case we're better off making it contained.

@@ -1455,6 +1455,8 @@ private:
     VARSET_TP fpCalleeSaveCandidateVars;
     // Set of variables exposed on EH flow edges.
     VARSET_TP exceptVars;
+    // Set of variables exposed on finally edges. These must be zero-init if they are refs or if compInitMem is true.
+    VARSET_TP finallyVars;
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 #if defined(TARGET_AMD64)

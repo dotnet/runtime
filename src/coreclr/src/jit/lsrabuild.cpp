@@ -1799,6 +1799,31 @@ void LinearScan::insertZeroInitRefPositions()
             }
         }
     }
+
+    // We must also insert zero-inits for any finallyVars if they are refs or if compInitMem is true.
+    if (compiler->lvaEnregEHVars)
+    {
+        VarSetOps::Iter iter(compiler, finallyVars);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
+        {
+            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            {
+                JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
+                Interval* interval = getIntervalForLocalVar(varIndex);
+                if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
+                {
+                    JITDUMP(" creating ZeroInit\n");
+                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                      allRegs(interval->registerType));
+                    pos->setRegOptional(true);
+                    varDsc->lvMustInit = true;
+                }
+            }
+        }
+    }
 }
 
 #if defined(UNIX_AMD64_ABI)
