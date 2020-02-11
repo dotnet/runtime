@@ -1145,8 +1145,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public static void NoPrincipalPolicyTest_Windows_NewThreads()
+        public static void NoPrincipalPolicyTest_NewThreads()
         {
             RemoteExecutor.Invoke(() =>
             {
