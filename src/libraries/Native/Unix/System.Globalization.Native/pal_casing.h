@@ -5,21 +5,22 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_common_types.h"
 
-EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCase(const uint16_t* lpSrc,
-                                              int32_t cwSrcLength,
-                                              uint16_t* lpDst,
-                                              int32_t cwDstLength,
-                                              int32_t bToUpper);
-
-EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseInvariant(const uint16_t* lpSrc,
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                                        int32_t cwSrcLength,
-                                                       uint16_t* lpDst,
+                                                       UChar* lpDst,
                                                        int32_t cwDstLength,
                                                        int32_t bToUpper);
 
-EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseTurkish(const uint16_t* lpSrc,
-                                                     int32_t cwSrcLength,
-                                                     uint16_t* lpDst,
-                                                     int32_t cwDstLength,
-                                                     int32_t bToUpper);
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseInvariant(const UChar* lpSrc,
+                                                                int32_t cwSrcLength,
+                                                                UChar* lpDst,
+                                                                int32_t cwDstLength,
+                                                                int32_t bToUpper);
+
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
+                                                              int32_t cwSrcLength,
+                                                              UChar* lpDst,
+                                                              int32_t cwDstLength,
+                                                              int32_t bToUpper);

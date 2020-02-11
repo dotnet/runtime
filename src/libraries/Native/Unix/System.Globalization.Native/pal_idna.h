@@ -6,15 +6,16 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_common_types.h"
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_ToAscii(uint32_t flags,
-                                              const uint16_t* lpSrc,
-                                              int32_t cwSrcLength,
-                                              uint16_t* lpDst,
-                                              int32_t cwDstLength);
+																											 const UChar* lpSrc,
+																											 int32_t cwSrcLength,
+																											 UChar* lpDst,
+																											 int32_t cwDstLength);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_ToUnicode(uint32_t flags,
-                                                const uint16_t* lpSrc,
-                                                int32_t cwSrcLength,
-                                                uint16_t* lpDst,
-                                                int32_t cwDstLength);
+																												 const UChar* lpSrc,
+																												 int32_t cwSrcLength,
+																												 UChar* lpDst,
+																												 int32_t cwDstLength);

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "pal_compiler.h"
-#include "pal_errors.h"
+#include "pal_common_types.h"
 
 typedef struct SortHandle SortHandle;
 
@@ -16,55 +16,55 @@ EXTERN_C DLLEXPORT void GlobalizationNative_CloseSortHandle(SortHandle* pSortHan
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_CompareString(SortHandle* pSortHandle,
-                                                    const uint16_t* lpStr1,
-                                                    int32_t cwStr1Length,
-                                                    const uint16_t* lpStr2,
-                                                    int32_t cwStr2Length,
-                                                    int32_t options);
+                                                             const UChar* lpStr1,
+                                                             int32_t cwStr1Length,
+                                                             const UChar* lpStr2,
+                                                             int32_t cwStr2Length,
+                                                             int32_t options);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_IndexOf(SortHandle* pSortHandle,
-                                              const uint16_t* lpTarget,
-                                              int32_t cwTargetLength,
-                                              const uint16_t* lpSource,
-                                              int32_t cwSourceLength,
-                                              int32_t options,
-                                              int32_t* pMatchedLength);
+                                                       const UChar* lpTarget,
+                                                       int32_t cwTargetLength,
+                                                       const UChar* lpSource,
+                                                       int32_t cwSourceLength,
+                                                       int32_t options,
+                                                       int32_t* pMatchedLength);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_LastIndexOf(SortHandle* pSortHandle,
-                                                  const uint16_t* lpTarget,
-                                                  int32_t cwTargetLength,
-                                                  const uint16_t* lpSource,
-                                                  int32_t cwSourceLength,
-                                                  int32_t options);
+                                                           const UChar* lpTarget,
+                                                           int32_t cwTargetLength,
+                                                           const UChar* lpSource,
+                                                           int32_t cwSourceLength,
+                                                           int32_t options);
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(const uint16_t* lpTarget,
-                                                               int32_t cwTargetLength,
-                                                               const uint16_t* lpSource,
-                                                               int32_t cwSourceLength,
-                                                               int32_t findLast);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(const UChar* lpTarget,
+                                                                        int32_t cwTargetLength,
+                                                                        const UChar* lpSource,
+                                                                        int32_t cwSourceLength,
+                                                                        int32_t findLast);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_StartsWith(SortHandle* pSortHandle,
-                                                 const uint16_t* lpTarget,
-                                                 int32_t cwTargetLength,
-                                                 const uint16_t* lpSource,
-                                                 int32_t cwSourceLength,
-                                                 int32_t options);
+                                                          const UChar* lpTarget,
+                                                          int32_t cwTargetLength,
+                                                          const UChar* lpSource,
+                                                          int32_t cwSourceLength,
+                                                          int32_t options);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_EndsWith(SortHandle* pSortHandle,
-                                               const uint16_t* lpTarget,
-                                               int32_t cwTargetLength,
-                                               const uint16_t* lpSource,
-                                               int32_t cwSourceLength,
-                                               int32_t options);
+                                                        const UChar* lpTarget,
+                                                        int32_t cwTargetLength,
+                                                        const UChar* lpSource,
+                                                        int32_t cwSourceLength,
+                                                        int32_t options);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
-                                                 const uint16_t* lpStr,
-                                                 int32_t cwStrLength,
-                                                 uint8_t* sortKey,
-                                                 int32_t cbSortKeyLength,
-                                                 int32_t options);
+                                                          const UChar* lpStr,
+                                                          int32_t cwStrLength,
+                                                          uint8_t* sortKey,
+                                                          int32_t cbSortKeyLength,
+                                                          int32_t options);
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(const uint16_t* lpStr1,
-                                                                     int32_t cwStr1Length,
-                                                                     const uint16_t* lpStr2,
-                                                                     int32_t cwStr2Length);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(const UChar* lpStr1,
+                                                                              int32_t cwStr1Length,
+                                                                              const UChar* lpStr2,
+                                                                              int32_t cwStr2Length);

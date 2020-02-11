@@ -113,11 +113,11 @@ GetCalendars
 Returns the list of CalendarIds that are available for the specified locale.
 */
 int32_t GlobalizationNative_GetCalendars(
-    const uint16_t* localeName, CalendarId* calendars, int32_t calendarsCapacity)
+    const UChar* localeName, CalendarId* calendars, int32_t calendarsCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
     int stringEnumeratorCount = uenum_count(pEnum, &err);
     int calendarsReturned = 0;
@@ -184,28 +184,25 @@ Gets a single string of calendar information by filling the result parameter
 with the requested value.
 */
 ResultCode GlobalizationNative_GetCalendarInfo(
-    const uint16_t* localeName, CalendarId calendarId, CalendarDataType dataType, uint16_t* result, int32_t resultCapacity)
+    const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
         return UnknownError;
 
-    UChar *resultTmp = (UChar*)result;
     switch (dataType)
     {
         case CalendarData_NativeName:
-            return GetNativeCalendarName(locale, calendarId, resultTmp, resultCapacity);
+            return GetNativeCalendarName(locale, calendarId, result, resultCapacity);
         case CalendarData_MonthDay:
-            return GetMonthDayPattern(locale, resultTmp, resultCapacity);
+            return GetMonthDayPattern(locale, result, resultCapacity);
         default:
             assert(FALSE);
             return UnknownError;
     }
-    
-    result = (uint16_t*)resultTmp;
 }
 
 /*
@@ -241,7 +238,7 @@ static int InvokeCallbackForDatePattern(const char* locale,
 
     if (U_SUCCESS(err))
     {
-        callback((uint16_t*)pattern, context);
+        callback(pattern, context);
     }
 
     free(pattern);
@@ -281,7 +278,7 @@ static int InvokeCallbackForDateTimePattern(const char* locale,
 
     if (U_SUCCESS(err))
     {
-        callback((uint16_t*)bestPattern, context);
+        callback(bestPattern, context);
     }
 
     free(bestPattern);
@@ -351,7 +348,7 @@ static int32_t EnumSymbols(const char* locale,
 
         if (U_SUCCESS(err))
         {
-            callback((uint16_t*)symbolBuf, context);
+            callback(symbolBuf, context);
         }
 
         if (symbolBuf != stackSymbolBuf)
@@ -379,7 +376,7 @@ static void EnumUResourceBundle(const UResourceBundle* bundle,
 
         if (U_SUCCESS(status))
         {
-            callback((uint16_t*)eraName, context);
+            callback(eraName, context);
         }
     }
 }
@@ -482,14 +479,14 @@ the callback for each value in the collection.
 The context parameter is passed through to the callback along with each string.
 */
 int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
-                                             const uint16_t* localeName,
+                                             const UChar* localeName,
                                              CalendarId calendarId,
                                              CalendarDataType dataType,
                                              const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
         return FALSE;

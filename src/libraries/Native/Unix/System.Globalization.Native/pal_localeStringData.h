@@ -6,6 +6,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_common_types.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -44,12 +45,13 @@ typedef enum
     LocaleString_PerMilleSymbol = 0x00000077
 } LocaleStringData;
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const uint16_t* localeName,
-                                                          LocaleStringData localeStringData,
-                                                          uint16_t* value,
-                                                          int32_t valueLength);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
+																																	 LocaleStringData localeStringData,
+																																	 UChar* value,
+																																	 int32_t valueLength);
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const uint16_t* localeName,
-                                                          int shortFormat, uint16_t* value,
-                                                          int32_t valueLength);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+																																	 int shortFormat,
+																																	 UChar* value,
+																																	 int32_t valueLength);
 

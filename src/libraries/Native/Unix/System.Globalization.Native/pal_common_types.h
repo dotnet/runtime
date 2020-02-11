@@ -15,3 +15,7 @@ typedef enum
     InsufficentBuffer = 2,
     IcuOutOfMemory = 3
 } ResultCode;
+
+#ifndef UChar
+typedef uint16_t UChar;
+#endif

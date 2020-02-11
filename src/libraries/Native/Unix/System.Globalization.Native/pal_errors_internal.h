@@ -5,7 +5,7 @@
 #pragma once
 
 #include "pal_icushim.h"
-#include "pal_errors.h"
+#include "pal_common_types.h"
 
 /*
 Converts a UErrorCode to a ResultCode.

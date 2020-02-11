@@ -40,11 +40,11 @@ Return values:
 -1: internal error during normalization.
 */
 int32_t GlobalizationNative_IsNormalized(
-    NormalizationForm normalizationForm, const uint16_t* lpStr, int32_t cwStrLength)
+    NormalizationForm normalizationForm, const UChar* lpStr, int32_t cwStrLength)
 {
     UErrorCode err = U_ZERO_ERROR;
     const UNormalizer2* pNormalizer = GetNormalizerForForm(normalizationForm, &err);
-    UBool isNormalized = unorm2_isNormalized(pNormalizer, (UChar*)lpStr, cwStrLength, &err);
+    UBool isNormalized = unorm2_isNormalized(pNormalizer, lpStr, cwStrLength, &err);
 
     if (U_SUCCESS(err))
     {
@@ -69,13 +69,11 @@ Return values:
 >0: the length of the normalized string (not counting the null terminator).
 */
 int32_t GlobalizationNative_NormalizeString(
-    NormalizationForm normalizationForm, const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength)
+    NormalizationForm normalizationForm, const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength)
 {
     UErrorCode err = U_ZERO_ERROR;
-    UChar* destTmp = (UChar*)lpDst;
     const UNormalizer2* pNormalizer = GetNormalizerForForm(normalizationForm, &err);
-    int32_t normalizedLen = unorm2_normalize(pNormalizer, (UChar*)lpSrc, cwSrcLength, lpDst, cwDstLength, &err);
+    int32_t normalizedLen = unorm2_normalize(pNormalizer, lpSrc, cwSrcLength, lpDst, cwDstLength, &err);
 
-    lpDst = (uint16_t*)destTmp;
     return (U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) ? normalizedLen : 0;
 }

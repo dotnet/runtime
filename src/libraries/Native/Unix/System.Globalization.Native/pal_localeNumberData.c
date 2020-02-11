@@ -406,11 +406,11 @@ Obtains integer locale information
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleInfoInt(
-    const uint16_t* localeName, LocaleNumberData localeNumberData, int32_t* value)
+    const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
     {
@@ -532,11 +532,11 @@ Obtains grouping sizes for decimal and currency
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(
-    const uint16_t* localeName, LocaleNumberData localeGroupingData, int32_t* primaryGroupSize, int32_t* secondaryGroupSize)
+    const UChar* localeName, LocaleNumberData localeGroupingData, int32_t* primaryGroupSize, int32_t* secondaryGroupSize)
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
     {

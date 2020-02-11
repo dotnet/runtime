@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #include "pal_compiler.h"
-#include "pal_errors.h"
+#include "pal_common_types.h"
 
 /*
 * These values should be kept in sync with System.Globalization.CalendarId
@@ -67,27 +67,27 @@ typedef enum
 } CalendarDataType;
 
 // the function pointer definition for the callback used in EnumCalendarInfo
-typedef void (*EnumCalendarInfoCallback)(const uint16_t*, const void*);
+typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetCalendars(const uint16_t* localeName,
-                                                   CalendarId* calendars,
-                                                   int32_t calendarsCapacity);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
+                                                            CalendarId* calendars,
+                                                            int32_t calendarsCapacity);
 
-EXTERN_C DLLEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const uint16_t* localeName,
-                                                         CalendarId calendarId,
-                                                         CalendarDataType dataType,
-                                                         uint16_t* result,
-                                                         int32_t resultCapacity);
+EXTERN_C DLLEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
+                                                                  CalendarId calendarId,
+                                                                  CalendarDataType dataType,
+                                                                  UChar* result,
+                                                                  int32_t resultCapacity);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
-                                                       const uint16_t* localeName,
-                                                       CalendarId calendarId,
-                                                       CalendarDataType dataType,
-                                                       const void* context);
+                                                                const UChar* localeName,
+                                                                CalendarId calendarId,
+                                                                CalendarDataType dataType,
+                                                                const void* context);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
-                                                              int32_t* startYear,
-                                                              int32_t* startMonth,
-                                                              int32_t* startDay);
+                                                                       int32_t* startYear,
+                                                                       int32_t* startMonth,
+                                                                       int32_t* startDay);

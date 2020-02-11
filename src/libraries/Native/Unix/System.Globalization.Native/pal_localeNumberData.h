@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#pragma once
+
 #include "pal_compiler.h"
+#include "pal_common_types.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleNumberData.
 // The numeric values of the enum members match their Win32 counterparts.
@@ -33,11 +36,11 @@ typedef enum
     WeekRule_FirstFourDayWeek = 2
 } CalendarWeekRule;
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const uint16_t* localeName,
-                                                       LocaleNumberData localeNumberData,
-                                                       int32_t* value);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
+                                                                LocaleNumberData localeNumberData,
+                                                                int32_t* value);
 
-EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const uint16_t* localeName,
-                                                                 LocaleNumberData localeGroupingData,
-                                                                 int32_t* primaryGroupSize,
-                                                                 int32_t* secondaryGroupSize);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* localeName,
+                                                                          LocaleNumberData localeGroupingData,
+                                                                          int32_t* primaryGroupSize,
+                                                                          int32_t* secondaryGroupSize);

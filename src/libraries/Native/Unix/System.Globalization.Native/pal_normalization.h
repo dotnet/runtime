@@ -6,6 +6,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_common_types.h"
 
 /*
  * These values should be kept in sync with System.Text.NormalizationForm
@@ -19,11 +20,11 @@ typedef enum
 } NormalizationForm;
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
-                                                   const uint16_t* lpStr,
-                                                   int32_t cwStrLength);
+																														const UChar* lpStr,
+																														int32_t cwStrLength);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
-                                                      const uint16_t* lpSrc,
-                                                      int32_t cwSrcLength,
-                                                      uint16_t* lpDst,
-                                                      int32_t cwDstLength);
+																															 const UChar* lpSrc,
+																															 int32_t cwSrcLength,
+																															 UChar* lpDst,
+																															 int32_t cwDstLength);

@@ -12,7 +12,7 @@ internal static partial class Interop
             Success = 0,
             UnknownError = 1,
             InsufficentBuffer = 2,
-            IcuOutOfMemory = 3
+            OutOfMemory = 3
         }
     }
 }
