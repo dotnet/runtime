@@ -28,9 +28,6 @@ public: // Native QCalls for the abstract ComWrappers managed type.
         _In_ INT32 flags,
         _Inout_ QCall::ObjectHandleOnStack retValue);
 
-    static void QCALLTYPE RegisterForReferenceTrackerHost(
-        _In_ QCall::ObjectHandleOnStack comWrappersImpl);
-
 public: // Lifetime management for COM Wrappers
     static void DestroyManagedObjectComWrapper(_In_ void* wrapper);
     static void DestroyExternalComObjectContext(_In_ void* context);

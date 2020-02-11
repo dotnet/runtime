@@ -387,7 +387,6 @@ namespace
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
-    const HandleType ComWrappersImplHandleType{ HNDTYPE_STRONG };
 
     void* CallComputeVTables(
         _In_ OBJECTREF* implPROTECTED,
@@ -467,7 +466,7 @@ namespace
     }
 
     void* GetOrCreateComInterfaceForObjectInternal(
-        _In_ OBJECTREF impl,
+        _In_opt_ OBJECTREF impl,
         _In_ OBJECTREF instance,
         _In_ INT32 flags)
     {
@@ -475,7 +474,6 @@ namespace
         {
             THROWS;
             MODE_COOPERATIVE;
-            PRECONDITION(impl != NULL);
             PRECONDITION(instance != NULL);
             POSTCONDITION(CheckPointer(RETVAL));
         }
@@ -571,7 +569,7 @@ namespace
     }
 
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
-        _In_ OBJECTREF impl,
+        _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
         _In_ INT32 flags)
     {
@@ -579,7 +577,6 @@ namespace
         {
             THROWS;
             MODE_COOPERATIVE;
-            PRECONDITION(impl != NULL);
             PRECONDITION(identity != NULL);
             POSTCONDITION(RETVAL != NULL);
         }
@@ -782,7 +779,7 @@ namespace InteropLibImports
         return hr;
     }
 
-    HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept
+    HRESULT ReleaseExternalObjectsFromCurrentThread() noexcept
     {
         CONTRACTL
         {
@@ -805,7 +802,7 @@ namespace InteropLibImports
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
-            gc.implRef = ObjectFromHandle(static_cast<::OBJECTHANDLE>(handle));
+            gc.implRef = NULL; // Use the globally registered implementation.
 
             // Pass the objects along to get released.
             ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
@@ -864,7 +861,6 @@ namespace InteropLibImports
     }
 
     HRESULT GetOrCreateTrackerTargetForExternal(
-        _In_ InteropLib::OBJECTHANDLE impl,
         _In_ IUnknown* externalComObject,
         _In_ INT32 externalObjectFlags,
         _In_ INT32 trackerTargetFlags,
@@ -874,7 +870,6 @@ namespace InteropLibImports
         {
             NOTHROW;
             MODE_PREEMPTIVE;
-            PRECONDITION(impl != NULL);
             PRECONDITION(externalComObject != NULL);
             PRECONDITION(trackerTarget != NULL);
         }
@@ -895,7 +890,7 @@ namespace InteropLibImports
             ::ZeroMemory(&gc, sizeof(gc));
             GCPROTECT_BEGIN(gc);
 
-            gc.implRef = ObjectFromHandle(static_cast<::OBJECTHANDLE>(impl));
+            gc.implRef = NULL; // Use the globally registered implementation.
 
             // Get wrapper for external object
             gc.objRef = GetOrCreateObjectForComInstanceInternal(
@@ -1055,40 +1050,6 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
 
         // Set the return value
         retValue.Set(newObj);
-    }
-
-    END_QCALL;
-}
-
-void QCALLTYPE ComWrappersNative::RegisterForReferenceTrackerHost(
-    _In_ QCall::ObjectHandleOnStack comWrappersImpl)
-{
-    QCALL_CONTRACT;
-
-    OBJECTHANDLE implHandle;
-
-    BEGIN_QCALL;
-
-    // Enter cooperative mode to create the handle and store it
-    // for future use in the reference tracker host scenario.
-    {
-        GCX_COOP();
-
-        OBJECTREF implRef = NULL;
-        GCPROTECT_BEGIN(implRef);
-
-        implRef = ObjectToOBJECTREF(*comWrappersImpl.m_ppObject);
-        _ASSERTE(implRef != NULL);
-
-        implHandle = GetAppDomain()->CreateTypedHandle(implRef, ComWrappersImplHandleType);
-
-        if (!InteropLib::Com::RegisterReferenceTrackerHostRuntimeImpl(implHandle))
-        {
-            DestroyHandleCommon(implHandle, ComWrappersImplHandleType);
-            COMPlusThrow(kInvalidOperationException, IDS_EE_RESET_REFERENCETRACKERHOST_CALLBACKS);
-        }
-
-        GCPROTECT_END();
     }
 
     END_QCALL;

@@ -162,11 +162,6 @@ HRESULT CreateAgileReference(
 class TrackerObjectManager
 {
 public:
-    // Attempt to set a runtime implementation for use by the IReferenceTrackerHost implementation.
-    static bool TrySetReferenceTrackerHostRuntimeImpl(
-        _In_ InteropLib::OBJECTHANDLE objectHandle,
-        _In_ InteropLib::OBJECTHANDLE current = nullptr);
-
     // Called when an IReferenceTracker instance is found.
     static HRESULT OnIReferenceTrackerFound(_In_ IReferenceTracker* obj);
 

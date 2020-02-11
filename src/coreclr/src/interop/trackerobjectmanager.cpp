@@ -20,9 +20,6 @@ namespace
     // the HostServices class should have no instance fields.
     class HostServices : public IReferenceTrackerHost
     {
-    public: // static
-        static Volatile<OBJECTHANDLE> RuntimeImpl;
-
     public: // IReferenceTrackerHost
         STDMETHOD(DisconnectUnusedReferenceSources)(_In_ DWORD dwFlags);
         STDMETHOD(ReleaseDisconnectedReferenceSources)();
@@ -62,9 +59,6 @@ namespace
         }
     };
 
-    // Runtime implementation for some host services.
-    Volatile<OBJECTHANDLE> HostServices::RuntimeImpl;
-
     // Global instance of host services.
     HostServices g_HostServicesInstance;
 
@@ -93,11 +87,7 @@ namespace
 
     STDMETHODIMP HostServices::NotifyEndOfReferenceTrackingOnThread()
     {
-        OBJECTHANDLE impl = HostServices::RuntimeImpl;
-        if (impl == nullptr)
-            return E_NOT_SET;
-
-        return InteropLibImports::ReleaseExternalObjectsFromCurrentThread(impl);
+        return InteropLibImports::ReleaseExternalObjectsFromCurrentThread();
     }
 
     // Creates a proxy object (managed object wrapper) that points to the given IUnknown.
@@ -129,10 +119,6 @@ namespace
 
         HRESULT hr;
 
-        OBJECTHANDLE impl = HostServices::RuntimeImpl;
-        if (impl == nullptr)
-            return E_NOT_SET;
-
         // QI for IUnknown to get the identity unknown
         ComHolder<IUnknown> identity;
         RETURN_IF_FAILED(obj->QueryInterface(&identity));
@@ -140,7 +126,6 @@ namespace
         // Get or create an existing implementation for this external.
         ComHolder<IUnknown> target;
         RETURN_IF_FAILED(InteropLibImports::GetOrCreateTrackerTargetForExternal(
-            impl,
             identity,
             (INT32)CreateObjectFlags::TrackerObject,
             (INT32)CreateComInterfaceFlags::TrackerSupport,
@@ -273,14 +258,6 @@ namespace
 
         return hr;
     }
-}
-
-bool TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle, _In_ OBJECTHANDLE current)
-{
-    // Attempt to set the runtime implementation for providing hosting services to the tracker runtime. 
-    return (::InterlockedCompareExchangePointer(
-        &HostServices::RuntimeImpl,
-        objectHandle, current) == current);
 }
 
 HRESULT TrackerObjectManager::OnIReferenceTrackerFound(_In_ IReferenceTracker* obj)

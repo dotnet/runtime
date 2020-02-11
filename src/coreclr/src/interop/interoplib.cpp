@@ -114,11 +114,6 @@ namespace InteropLib
             context->DisconnectTracker();
         }
 
-        bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept
-        {
-            return TrackerObjectManager::TrySetReferenceTrackerHostRuntimeImpl(objectHandle);
-        }
-
         void GetIUnknownImpl(
             _Out_ void** fpQueryInterface,
             _Out_ void** fpAddRef,

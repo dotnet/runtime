@@ -64,10 +64,6 @@ namespace InteropLib
         // Separate the supplied wrapper from the tracker runtime.
         void SeparateWrapperFromTrackerRuntime(_In_ void* context) noexcept;
 
-        // Register a runtime implementation callback in the Reference Tracker Host scenario.
-        // Returns true if registration succeeded, otherwise false.
-        bool RegisterReferenceTrackerHostRuntimeImpl(_In_ OBJECTHANDLE objectHandle) noexcept;
-
         // Get internal interop IUnknown dispatch pointers.
         void GetIUnknownImpl(
             _Out_ void** fpQueryInterface,

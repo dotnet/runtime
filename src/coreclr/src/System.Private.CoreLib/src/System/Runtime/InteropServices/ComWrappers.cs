@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections;
+using System.Threading;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
@@ -100,6 +102,11 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
+        /// Globally registered instance of the ComWrappers class.
+        /// </summary>
+        private static ComWrappers? s_GlobalInstance;
+
+        /// <summary>
         /// Create an COM representation of the supplied object that can be passed to an non-managed environment.
         /// </summary>
         /// <param name="instance">A GC Handle to the managed object to expose outside the .NET runtime.</param>
@@ -131,8 +138,8 @@ namespace System.Runtime.InteropServices
         protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
 
         // Call to execute the abstract instance function
-        internal static unsafe void* CallComputeVtables(ComWrappers comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
-            => comWrappersImpl.ComputeVtables(obj, flags, out count);
+        internal static unsafe void* CallComputeVtables(ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
+            => (comWrappersImpl ?? s_GlobalInstance!).ComputeVtables(obj, flags, out count);
 
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
@@ -168,8 +175,8 @@ namespace System.Runtime.InteropServices
         protected abstract object CreateObject(IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags);
 
         // Call to execute the abstract instance function
-        internal static object CallCreateObject(ComWrappers comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
-            => comWrappersImpl.CreateObject(externalComObject, agileObjectRef, flags);
+        internal static object CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
+            => (comWrappersImpl ?? s_GlobalInstance!).CreateObject(externalComObject, agileObjectRef, flags);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released.
@@ -184,8 +191,8 @@ namespace System.Runtime.InteropServices
         }
 
         // Call to execute the virtual instance function
-        internal static void CallReleaseObjects(ComWrappers comWrappersImpl, IEnumerable objects)
-            => comWrappersImpl.ReleaseObjects(objects);
+        internal static void CallReleaseObjects(ComWrappers? comWrappersImpl, IEnumerable objects)
+            => (comWrappersImpl ?? s_GlobalInstance!).ReleaseObjects(objects);
 
         /// <summary>
         /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
@@ -196,12 +203,11 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void RegisterForReferenceTrackerHost()
         {
-            ComWrappers impl = this;
-            RegisterForReferenceTrackerHostInternal(ObjectHandleOnStack.Create(ref impl));
+            if (null != Interlocked.CompareExchange(ref s_GlobalInstance, this, null))
+            {
+                throw new InvalidOperationException();
+            }
         }
-
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern void RegisterForReferenceTrackerHostInternal(ObjectHandleOnStack comWrappersImpl);
 
         /// <summary>
         /// Get the runtime provided IUnknown implementation.

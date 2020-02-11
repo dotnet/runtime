@@ -40,7 +40,7 @@ namespace InteropLibImports
     HRESULT WaitForRuntimeFinalizerForExternal() noexcept;
 
     // Release objects associated with the current thread.
-    HRESULT ReleaseExternalObjectsFromCurrentThread(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
+    HRESULT ReleaseExternalObjectsFromCurrentThread() noexcept;
 
     // Delete Object instance handle
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
@@ -65,11 +65,9 @@ namespace InteropLibImports
         _In_ void* extObjContext,
         _In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
-    // Given a runtime implementation, get or create
-    // an IReferenceTrackerTarget instance for the supplied
+    // Get or create an IReferenceTrackerTarget instance for the supplied
     // external object.
     HRESULT GetOrCreateTrackerTargetForExternal(
-        _In_ InteropLib::OBJECTHANDLE impl,
         _In_ IUnknown* externalComObject,
         _In_ INT32 externalObjectFlags,
         _In_ INT32 trackerTargetFlags,
