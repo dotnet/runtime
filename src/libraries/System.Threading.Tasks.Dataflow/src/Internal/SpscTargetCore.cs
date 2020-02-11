@@ -157,7 +157,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
         /// <summary>Schedules a consumer task if there's none currently running.</summary>
         /// <param name="isReplica">Whether the new consumer is being scheduled to replace a currently running consumer.</param>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void ScheduleConsumerIfNecessary(bool isReplica)
         {
             // If there's currently no active task...
@@ -191,7 +190,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Task body used to process messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessagesLoopCore()
         {
             Debug.Assert(
@@ -375,7 +373,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal DebuggingInformation GetDebuggingInformation() { return new DebuggingInformation(this); }
 
         /// <summary>Gets the object to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

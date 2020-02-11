@@ -64,7 +64,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Initializes the <see cref="TransformBlock{TInput,TOutput}"/> with the specified <see cref="System.Func{TInput,TOutput}"/>.</summary>
         /// <param name="transform">The function to invoke with each data element received.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformBlock(Func<TInput, Task<TOutput>> transform) :
             this(null, transform, ExecutionDataflowBlockOptions.Default)
         { }
@@ -77,7 +76,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="TransformBlock{TInput,TOutput}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="transform"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public TransformBlock(Func<TInput, Task<TOutput>> transform, ExecutionDataflowBlockOptions dataflowBlockOptions) :
             this(null, transform, dataflowBlockOptions)
         { }
@@ -223,7 +221,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <summary>Processes the message with a user-provided transform function that returns a task of TOutput.</summary>
         /// <param name="transform">The transform function to use to process the message.</param>
         /// <param name="messageWithId">The message to be processed.</param>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessageWithTask(Func<TInput, Task<TOutput>> transform, KeyValuePair<TInput, long> messageWithId)
         {
             Debug.Assert(transform != null, "Function to invoke is required.");
@@ -398,7 +395,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _source.DataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

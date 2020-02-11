@@ -42,7 +42,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <summary>
     /// Provides a core implementation of <see cref="ITargetBlock{TInput}"/>.</summary>
     /// <typeparam name="TInput">Specifies the type of data accepted by the <see cref="TargetCore{TInput}"/>.</typeparam>
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     internal sealed class TargetCore<TInput>
     {
@@ -350,7 +349,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// Slow path for ProcessAsyncIfNecessary.
         /// Separating out the slow path into its own method makes it more likely that the fast path method will get inlined.
         /// </summary>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void ProcessAsyncIfNecessary_Slow(bool repeat)
         {
             Debug.Assert(HasRoomForMoreServiceTasks, "There must be room to process asynchronously.");
@@ -397,7 +395,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Task body used to process messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void ProcessMessagesLoopCore()
         {
             Common.ContractAssertMonitorStatus(IncomingLock, held: false);
@@ -523,7 +520,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <summary>Retrieves the next message from the input queue for the useAsyncCompletion mode.</summary>
         /// <param name="messageWithId">The next message retrieved.</param>
         /// <returns>true if a message was found and removed; otherwise, false.</returns>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private bool TryGetNextMessageForNewAsyncOperation(out KeyValuePair<TInput, long> messageWithId)
         {
             Debug.Assert(UsesAsyncCompletion, "Only valid to use when in async mode.");
@@ -822,7 +818,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Gets the object to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

@@ -375,7 +375,7 @@ public:
 #endif
 
 #ifndef DACCESS_COMPILE
-    virtual BOOL AdjustContextForWriteBarrierForDebugger(CONTEXT* context) = 0;
+    virtual BOOL AdjustContextForJITHelpersForDebugger(CONTEXT* context) = 0;
 #endif
 };
 

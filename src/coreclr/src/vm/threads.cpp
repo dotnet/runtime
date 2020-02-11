@@ -184,8 +184,8 @@ void  Thread::SetFrame(Frame *pFrame)
         if (pFrame == stopFrame)
             _ASSERTE(!"SetFrame frame == stopFrame");
 
-        _ASSERTE(espVal < pFrame);
-        _ASSERTE(pFrame < m_CacheStackBase);
+        _ASSERTE(IsExecutingOnAltStack() || espVal < pFrame);
+        _ASSERTE(IsExecutingOnAltStack() || pFrame < m_CacheStackBase);
         _ASSERTE(pFrame->GetFrameType() < Frame::TYPE_COUNT);
 
         pFrame = pFrame->m_Next;
@@ -6481,7 +6481,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
         // -additionally, we need to provide some region to hosts to allow for lock acquisition in a hosted scenario
         //
         EXTRA_PAGES = 3;
-        INDEBUG(EXTRA_PAGES += 1);
+        INDEBUG(EXTRA_PAGES += 3);
 
         int ThreadGuardPages = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ThreadGuardPages);
         if (ThreadGuardPages == 0)
@@ -6495,7 +6495,7 @@ HRESULT Thread::CLRSetThreadStackGuarantee(SetThreadStackGuaranteeScope fScope)
 
 #else // HOST_64BIT
 #ifdef _DEBUG
-        uGuardSize += (1 * GetOsPageSize());    // one extra page for debug infrastructure
+        uGuardSize += (3 * GetOsPageSize());    // three extra pages for debug infrastructure
 #endif // _DEBUG
 #endif // HOST_64BIT
 
@@ -7106,9 +7106,9 @@ void CheckRegDisplaySP (REGDISPLAY *pRD)
     if (pRD->SP && pRD->_pThread)
     {
 #ifndef NO_FIXED_STACK_LIMIT
-        _ASSERTE(PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
+        _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) >= pRD->_pThread->GetCachedStackLimit());
 #endif // NO_FIXED_STACK_LIMIT
-        _ASSERTE(PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
+        _ASSERTE(pRD->_pThread->IsExecutingOnAltStack() || PTR_VOID(pRD->SP) <  pRD->_pThread->GetCachedStackBase());
     }
 }
 

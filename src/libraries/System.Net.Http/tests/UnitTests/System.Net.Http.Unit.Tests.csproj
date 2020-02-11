@@ -26,6 +26,9 @@
     <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs">
       <Link>ProductionCode\Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+      <Link>Common\System\Net\ArrayBuffer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\InternalException.cs">
       <Link>ProductionCode\Common\System\Net\InternalException.cs</Link>
     </Compile>
@@ -310,9 +313,6 @@
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\StringContent.cs">
       <Link>ProductionCode\System\Net\Http\StringContent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs">
-      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\ArrayBuffer.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs</Link>

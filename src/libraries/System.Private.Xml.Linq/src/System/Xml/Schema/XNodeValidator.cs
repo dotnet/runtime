@@ -433,7 +433,6 @@ namespace System.Xml.Schema
         /// Gets the schema information that has been assigned to the <see cref="XElement"/> as a result of schema validation.
         /// </summary>
         /// <param name="source">Extension point</param>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static IXmlSchemaInfo GetSchemaInfo(this XElement source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -444,7 +443,6 @@ namespace System.Xml.Schema
         /// Gets the schema information that has been assigned to the <see cref="XAttribute"/> as a result of schema validation.
         /// </summary>
         /// <param name="source">Extension point</param>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static IXmlSchemaInfo GetSchemaInfo(this XAttribute source)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -475,7 +473,6 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XDocument"/> and the corresponding
         /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XDocument source, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -513,7 +510,6 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XElement"/> and the corresponding
         /// subtree is augmented with PSVI in the form of <see cref="IXmlSchemaInfo"/> annotations,
         /// default attributes and default element values</param>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XElement source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
@@ -552,7 +548,6 @@ namespace System.Xml.Schema
         /// <param name="addSchemaInfo">If enabled the <see cref="XAttribute"/> is augmented with PSVI
         /// in the form of <see cref="IXmlSchemaInfo"/> annotations, default attributes and
         /// default element values</param>
-        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters", Justification = "Reviewed by the design group.")]
         public static void Validate(this XAttribute source, XmlSchemaObject partialValidationType, XmlSchemaSet schemas, ValidationEventHandler validationEventHandler, bool addSchemaInfo)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));

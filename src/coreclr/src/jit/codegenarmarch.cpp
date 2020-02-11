@@ -239,43 +239,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_BITCAST:
-        {
-            GenTree* op1 = treeNode->AsOp()->gtOp1;
-            if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
-            {
-#ifdef TARGET_ARM64
-                inst_RV_RV(INS_fmov, targetReg, genConsumeReg(op1), targetType);
-#else  // !TARGET_ARM64
-                if (varTypeIsFloating(treeNode))
-                {
-                    // GT_BITCAST on ARM is only used to cast floating-point arguments to integer
-                    // registers. Nobody generates GT_BITCAST from int to float currently.
-                    NYI_ARM("GT_BITCAST from 'int' to 'float'");
-                }
-                else
-                {
-                    assert(varTypeIsFloating(op1));
-
-                    if (op1->TypeGet() == TYP_FLOAT)
-                    {
-                        inst_RV_RV(INS_vmov_f2i, targetReg, genConsumeReg(op1), targetType);
-                    }
-                    else
-                    {
-                        assert(op1->TypeGet() == TYP_DOUBLE);
-                        regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
-                        assert(otherReg != REG_NA);
-                        inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
-                    }
-                }
-#endif // !TARGET_ARM64
-            }
-            else
-            {
-                inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
-            }
-        }
-        break;
+            genCodeForBitCast(treeNode->AsOp());
+            break;
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
@@ -1103,6 +1068,59 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     }
 
     genProduceReg(tree);
+}
+
+//----------------------------------------------------------------------
+// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
+//
+// Arguments
+//    treeNode - the GT_BITCAST for which we're generating code
+//
+void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
+{
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    GenTree*  op1        = treeNode->gtGetOp1();
+    genConsumeRegs(op1);
+    if (op1->isContained())
+    {
+        assert(op1->IsLocal() || op1->isIndir());
+        op1->gtType = treeNode->TypeGet();
+        op1->SetRegNum(targetReg);
+        op1->ClearContained();
+        JITDUMP("Changing type of BITCAST source to load directly.");
+        genCodeForTreeNode(op1);
+    }
+    else if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
+    {
+        regNumber srcReg = op1->GetRegNum();
+        assert(genTypeSize(op1->TypeGet()) == genTypeSize(targetType));
+#ifdef TARGET_ARM
+        if (genTypeSize(targetType) == 8)
+        {
+            // Converting between long and double on ARM is a special case.
+            if (targetType == TYP_LONG)
+            {
+                regNumber otherReg = treeNode->AsMultiRegOp()->gtOtherReg;
+                assert(otherReg != REG_NA);
+                inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, srcReg, EA_8BYTE);
+            }
+            else
+            {
+                NYI_ARM("Converting from long to double");
+            }
+        }
+        else
+#endif // TARGET_ARM
+        {
+            instruction ins = ins_Copy(srcReg, targetType);
+            inst_RV_RV(ins, targetReg, srcReg, targetType);
+        }
+    }
+    else
+    {
+        inst_RV_RV(ins_Copy(targetType), targetReg, genConsumeReg(op1), targetType);
+    }
 }
 
 #if FEATURE_ARG_SPLIT

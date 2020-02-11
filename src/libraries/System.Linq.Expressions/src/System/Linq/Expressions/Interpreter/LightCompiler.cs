@@ -260,12 +260,10 @@ namespace System.Linq.Expressions.Interpreter
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
     internal readonly struct InterpretedFrameInfo
     {
         private readonly string? _methodName;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         private readonly DebugInfo? _debugInfo;
 
         public InterpretedFrameInfo(string? methodName, DebugInfo? info)
@@ -277,7 +275,6 @@ namespace System.Linq.Expressions.Interpreter
         public override string? ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
     internal sealed class LightCompiler
     {
         private readonly InstructionList _instructions;
@@ -1787,7 +1784,6 @@ namespace System.Linq.Expressions.Interpreter
             _labelBlock = new LabelScopeInfo(_labelBlock, type);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "kind")]
         private void PopLabelBlock(LabelScopeKind kind)
         {
             Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
@@ -3021,7 +3017,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         private void CompileNoLabelPush(Expression expr)
         {
             // When compiling deep trees, we run the risk of triggering a terminating StackOverflowException,

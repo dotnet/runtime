@@ -286,16 +286,25 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_STORE_LCL_FLD:
         {
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
-            if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
+            GenTree*                   op1   = store->gtGetOp1();
+            if ((varTypeUsesFloatReg(store) != varTypeUsesFloatReg(op1)) && !store->IsPhiDefn() &&
+                (op1->TypeGet() != TYP_STRUCT))
             {
-                GenTreeUnOp* bitcast =
-                    new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
-                store->gtOp1 = bitcast;
-                BlockRange().InsertBefore(store, bitcast);
+                if (m_lsra->isRegCandidate(comp->lvaGetDesc(store->GetLclNum())))
+                {
+                    GenTreeUnOp* bitcast =
+                        new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
+                    store->gtOp1 = bitcast;
+                    BlockRange().InsertBefore(store, bitcast);
+                    ContainCheckBitCast(bitcast);
+                }
+                else
+                {
+                    // This is an actual store, we'll just retype it.
+                    store->gtType = op1->TypeGet();
+                }
             }
-#endif // TARGET_AMD64
             // TODO-1stClassStructs: Once we remove the requirement that all struct stores
             // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
             // store under a block store if codegen will require it.
@@ -3083,15 +3092,15 @@ void Lowering::LowerRet(GenTree* ret)
     DISPNODE(ret);
     JITDUMP("============");
 
-#if defined(TARGET_AMD64) && defined(FEATURE_SIMD)
-    GenTreeUnOp* const unOp = ret->AsUnOp();
-    if ((unOp->TypeGet() == TYP_LONG) && (unOp->gtOp1->TypeGet() == TYP_SIMD8))
+    GenTree* op1 = ret->gtGetOp1();
+    if ((ret->TypeGet() != TYP_VOID) && (ret->TypeGet() != TYP_STRUCT) &&
+        (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1())))
     {
-        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, unOp->gtOp1, nullptr);
-        unOp->gtOp1          = bitcast;
-        BlockRange().InsertBefore(unOp, bitcast);
+        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), ret->gtGetOp1(), nullptr);
+        ret->AsOp()->gtOp1   = bitcast;
+        BlockRange().InsertBefore(ret, bitcast);
+        ContainCheckBitCast(bitcast);
     }
-#endif // TARGET_AMD64
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->compMethodRequiresPInvokeFrame() && (comp->compCurBB == comp->genReturnBB))
@@ -5801,4 +5810,39 @@ void Lowering::ContainCheckJTrue(GenTreeOp* node)
     GenTree* cmp = node->gtGetOp1();
     cmp->gtType  = TYP_VOID;
     cmp->gtFlags |= GTF_SET_FLAGS;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBitCast: determine whether the source of a BITCAST should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckBitCast(GenTree* node)
+{
+    GenTree* const op1 = node->AsOp()->gtOp1;
+    if (op1->isMemoryOp())
+    {
+        op1->SetContained();
+    }
+    else if (op1->OperIs(GT_LCL_VAR))
+    {
+        if (!m_lsra->willEnregisterLocalVars())
+        {
+            op1->SetContained();
+        }
+        LclVarDsc* varDsc = &comp->lvaTable[op1->AsLclVar()->GetLclNum()];
+        if (!m_lsra->isRegCandidate(varDsc))
+        {
+            op1->SetContained();
+        }
+        else
+        {
+            op1->SetRegOptional();
+        }
+    }
+    else if (op1->IsLocal())
+    {
+        op1->SetContained();
+    }
 }
