@@ -135,9 +135,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            var timeoutSource = new CancellationTokenSource();
-            timeoutSource.CancelAfter(TimeSpan.FromMinutes(2));
-
             using (HttpClient client = CreateHttpClient())
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
@@ -180,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
                         clientFinished.SetResult(true);
                         await serverTask;
                     } catch { }
-                }).WithCancellation(timeoutSource.Token);
+                });
             }
         }
 

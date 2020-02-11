@@ -884,7 +884,7 @@ namespace System.Net.Test.Common
 
         public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
         {
-            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
+            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri).TimeoutAfter(millisecondsTimeout), options: CreateOptions(options));
         }
 
         private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
