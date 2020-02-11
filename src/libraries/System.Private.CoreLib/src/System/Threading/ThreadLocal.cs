@@ -178,7 +178,7 @@ namespace System.Threading
             {
                 id = ~_idComplement;
                 int withinSlotId;
-                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+                int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
                 _idComplement = 0;
 
                 if (id < 0 || !_initialized)
@@ -215,7 +215,7 @@ namespace System.Threading
 
                         // And clear the references from the slot table to the linked slot and the value so that
                         // both can get garbage collected.
-                        for (int i = 0; i < valuePerSlot; i++)
+                        for (int i = 0; i < ValuePerSlot; i++)
                         {
                             slotArray[slotId].Value!._value![i] = default!;
                         }
@@ -275,7 +275,7 @@ namespace System.Threading
                 LinkedSlot? slot;
                 int id = ~_idComplement;
                 int withinSlotId;
-                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+                int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
                 //
                 // Attempt to get the value using the fast path
@@ -304,7 +304,7 @@ namespace System.Threading
                 LinkedSlot? slot;
                 int id = ~_idComplement;
                 int withinSlotId;
-                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+                int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
                 // Attempt to set the value using the fast path
                 if (slotArray != null   // Has the slot array been initialized?
@@ -366,7 +366,7 @@ namespace System.Threading
         {
             int id = ~_idComplement;
             int withinSlotId;
-            int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+            int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
             // If the object has been disposed, id will be -1.
             if (id < 0)
@@ -425,7 +425,7 @@ namespace System.Threading
         private void CreateLinkedSlot(LinkedSlotVolatile[] slotArray, int id, T value)
         {
             int withinSlotId;
-            int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+            int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
             // Create a LinkedSlot
             var linkedSlot = new LinkedSlot(slotArray);
@@ -489,7 +489,7 @@ namespace System.Threading
         {
             LinkedSlot? linkedSlot = _linkedSlot;
             int id = ~_idComplement;
-            int withinSlotId = id % valuePerSlot;
+            int withinSlotId = id % ValuePerSlot;
             if (id == -1 || linkedSlot == null)
             {
                 return null;
@@ -522,7 +522,7 @@ namespace System.Threading
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId = id % ValuePerSlot;
 
                 // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
                 for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
@@ -564,7 +564,7 @@ namespace System.Threading
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
                 int withinSlotId;
-                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+                int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 return slotArray != null && slotId < slotArray.Length && slotArray[slotId].Value != null && (slotArray[slotId].Value!._created & (1L << withinSlotId)) != 0;
@@ -583,7 +583,7 @@ namespace System.Threading
                 int id = ~_idComplement;
                 // This is potentially already wrong? What if the instance is disposed?
                 int withinSlotId;
-                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
+                int slotId = Math.DivRem(id, ValuePerSlot, out withinSlotId);
 
                 LinkedSlot? slot;
                 if (slotArray == null || slotId >= slotArray.Length || (slot = slotArray[slotId].Value) == null || (slotArray[slotId].Value!._created & (1L << withinSlotId)) == 0 || !_initialized)
@@ -701,7 +701,7 @@ namespace System.Threading
                 _slotArray = slotArray;
                 if (slotArray != null)
                 {
-                    _value = new T[valuePerSlot];
+                    _value = new T[ValuePerSlot];
                 }
             }
 
