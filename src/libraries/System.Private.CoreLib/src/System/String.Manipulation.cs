@@ -1021,7 +1021,11 @@ namespace System
             do
             {
                 index = ci.IndexOf(this, oldValue, startIndex, this.Length - startIndex, options, &matchLength);
-                if (index >= 0)
+
+                // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
+                // If this is the case, we behave as if there are no more substitutions to be made.
+
+                if (index >= 0 && matchLength > 0)
                 {
                     // append the unmodified portion of string
                     result.Append(this.AsSpan(startIndex, index - startIndex));

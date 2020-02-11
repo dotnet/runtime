@@ -399,7 +399,6 @@ namespace System.Text.RegularExpressions
         private List<SingleRange>? _rangelist;
         private StringBuilder? _categories;
         private RegexCharClass? _subtractor;
-        private bool _canonical = true;
         private bool _negate;
 
 #if DEBUG
@@ -450,15 +449,6 @@ namespace System.Text.RegularExpressions
 
             int ccRangeCount = cc._rangelist?.Count ?? 0;
 
-            if (!cc._canonical || // if the new char class to add isn't canonical, we're not either.
-                (_canonical &&
-                 ccRangeCount > 0 &&
-                 _rangelist != null && _rangelist.Count > 0 &&
-                 cc._rangelist![0].First <= _rangelist[^1].Last))
-            {
-                _canonical = false;
-            }
-
             if (ccRangeCount != 0)
             {
                 EnsureRangeList().AddRange(cc._rangelist!);
@@ -488,11 +478,6 @@ namespace System.Text.RegularExpressions
 
             List<SingleRange> rangeList = EnsureRangeList();
 
-            if (_canonical && rangeList.Count > 0 && set[0] <= rangeList[^1].Last)
-            {
-                _canonical = false;
-            }
-
             int i;
             for (i = 0; i < set.Length - 1; i += 2)
             {
@@ -514,14 +499,8 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds a single range of characters to the class.
         /// </summary>
-        public void AddRange(char first, char last)
-        {
+        public void AddRange(char first, char last) =>
             EnsureRangeList().Add(new SingleRange(first, last));
-            if (_canonical && first <= last)
-            {
-                _canonical = false;
-            }
-        }
 
         public void AddCategoryFromName(string categoryName, bool invert, bool caseInsensitive, string pattern, int currentPos)
         {
@@ -563,8 +542,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public void AddLowercase(CultureInfo culture)
         {
-            _canonical = false;
-
             List<SingleRange>? rangeList = _rangelist;
             if (rangeList != null)
             {
@@ -766,6 +743,44 @@ namespace System.Text.RegularExpressions
             IsNegated(set) &&
             !IsSubtraction(set) &&
             (set[SetStartIndex] == LastChar || set[SetStartIndex] + 1 == set[SetStartIndex + 1]);
+
+        /// <summary>Gets whether the set contains nothing other than a single UnicodeCategory (it may be negated).</summary>
+        /// <param name="set">The set to examine.</param>
+        /// <param name="category">The single category if there was one.</param>
+        /// <param name="negated">true if the single category is a not match.</param>
+        /// <returns>true if a single category could be obtained; otherwise, false.</returns>
+        public static bool TryGetSingleUnicodeCategory(string set, out UnicodeCategory category, out bool negated)
+        {
+            if (set[CategoryLengthIndex] == 1 &&
+                set[SetLengthIndex] == 0 &&
+                !IsSubtraction(set))
+            {
+                short c = (short)set[SetStartIndex];
+
+                if (c > 0)
+                {
+                    if (c != SpaceConst)
+                    {
+                        category = (UnicodeCategory)(c - 1);
+                        negated = IsNegated(set);
+                        return true;
+                    }
+                }
+                else if (c < 0)
+                {
+                    if (c != NotSpaceConst)
+                    {
+                        category = (UnicodeCategory)(-1 - c);
+                        negated = !IsNegated(set);
+                        return true;
+                    }
+                }
+            }
+
+            category = default;
+            negated = false;
+            return false;
+        }
 
         /// <summary>Attempts to get a single range stored in the set.</summary>
         /// <param name="set">The set.</param>
@@ -1341,10 +1356,7 @@ namespace System.Text.RegularExpressions
 
         private void ToStringClass(ref ValueStringBuilder vsb)
         {
-            if (!_canonical)
-            {
-                Canonicalize();
-            }
+            Canonicalize();
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1390,8 +1402,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void Canonicalize()
         {
-            _canonical = true;
-
             List<SingleRange>? rangelist = _rangelist;
             if (rangelist != null)
             {

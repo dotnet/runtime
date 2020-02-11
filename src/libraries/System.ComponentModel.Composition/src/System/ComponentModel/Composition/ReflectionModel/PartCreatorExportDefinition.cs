@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     internal class PartCreatorExportDefinition : ExportDefinition
     {
         private readonly ExportDefinition _productDefinition;
-        private IDictionary<string, object> _metadata;
+        private IDictionary<string, object?>? _metadata;
 
         public PartCreatorExportDefinition(ExportDefinition productDefinition)
             : base()
@@ -27,13 +27,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        public override IDictionary<string, object> Metadata
+        public override IDictionary<string, object?> Metadata
         {
             get
             {
                 if (_metadata == null)
                 {
-                    var metadata = new Dictionary<string, object>(_productDefinition.Metadata);
+                    var metadata = new Dictionary<string, object?>(_productDefinition.Metadata);
                     metadata[CompositionConstants.ExportTypeIdentityMetadataName] = CompositionConstants.PartCreatorTypeIdentity;
                     metadata[CompositionConstants.ProductDefinitionMetadataName] = _productDefinition;
 
@@ -45,12 +45,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         internal static bool IsProductConstraintSatisfiedBy(ImportDefinition productImportDefinition, ExportDefinition exportDefinition)
         {
-            object productValue = null;
-            if (exportDefinition.Metadata.TryGetValue(CompositionConstants.ProductDefinitionMetadataName, out productValue))
+            if (exportDefinition.Metadata.TryGetValue(CompositionConstants.ProductDefinitionMetadataName, out object? productValue))
             {
-                ExportDefinition productDefinition = productValue as ExportDefinition;
-
-                if (productDefinition != null)
+                if (productValue is ExportDefinition productDefinition)
                 {
                     return productImportDefinition.IsConstraintSatisfiedBy(productDefinition);
                 }

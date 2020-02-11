@@ -3,15 +3,20 @@
 
 namespace
 {
-    thread_local static pal::stringstream_t g_error_output;
     thread_local static const pal::char_t* g_prefix = nullptr;
+
+    pal::stringstream_t& get_redirected_error_stream()
+    {
+        thread_local static pal::stringstream_t error_output;
+        return error_output;
+    }
 
     void HOSTPOLICY_CALLTYPE error_writer(const pal::char_t* message)
     {
         if (g_prefix != nullptr)
-            g_error_output << g_prefix;
+            get_redirected_error_stream() << g_prefix;
 
-        g_error_output << message;
+        get_redirected_error_stream() << message;
     }
 }
 
@@ -19,7 +24,7 @@ error_writer_redirector::error_writer_redirector(set_error_writer_fn set_error_w
     : _set_error_writer(set_error_writer)
 {
     g_prefix = prefix;
-    g_error_output.clear();
+    get_redirected_error_stream().clear();
     _previous_writer = _set_error_writer(error_writer);
 }
 
@@ -30,10 +35,10 @@ error_writer_redirector::~error_writer_redirector()
 
 bool error_writer_redirector::has_errors()
 {
-    return g_error_output.tellp() != std::streampos(0);
+    return get_redirected_error_stream().tellp() != std::streampos(0);
 }
 
 const pal::string_t error_writer_redirector::get_errors()
 {
-    return g_error_output.str();
+    return get_redirected_error_stream().str();
 }

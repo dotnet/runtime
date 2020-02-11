@@ -17,7 +17,7 @@ namespace System.Collections.Immutable
     {
         internal static bool IsValueType<T>()
         {
-            if (default(T)! != null)
+            if (default(T) != null)
             {
                 return true;
             }

@@ -29,9 +29,9 @@
 #include "virtualcallstub.h"
 #include "typestring.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "dwreport.h"
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #include "eventreporter.h"
 
@@ -43,10 +43,10 @@
 #endif
 
 #include <errorrep.h>
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Include definition of GenericModeBlock
 #include <msodw.h>
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 
 // Support for extracting MethodDesc of a delegate.
@@ -56,12 +56,12 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #define NULL_AREA_SIZE   GetOsPageSize()
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #ifndef CROSSGEN_COMPILE
 
@@ -2367,7 +2367,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
                             // "numCurrentFrames" can be zero if the user created an EDI using
                             // an unthrown exception.
                             StackTraceElement & refLastElementFromForeignStackTrace = gc.stackTrace[numCurrentFrames - 1];
-                            refLastElementFromForeignStackTrace.fIsLastFrameFromForeignStackTrace = TRUE;
+                            refLastElementFromForeignStackTrace.flags |= STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE;
                         }
                     }
 
@@ -2597,14 +2597,14 @@ ReplaceExceptionContextRecord(CONTEXT *pTarget, CONTEXT *pSource)
     _ASSERTE(pTarget);
     _ASSERTE(pSource);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     //<TODO>
     // @TODO IA64: CONTEXT_DEBUG_REGISTERS not defined on IA64, may need updated SDK
     //</TODO>
 
     // Want CONTROL, INTEGER, SEGMENTS.  If we have Floating Point, fine.
     _ASSERTE((pSource->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifdef CONTEXT_EXTENDED_REGISTERS
 
@@ -2872,7 +2872,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                  ||
                  GetFirstCOMPlusSEHRecord(this) == EXCEPTION_CHAIN_END
 #endif
@@ -3277,7 +3277,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
                 // NullReferenceException instead of doing the new AV translation logic.
                 if ((g_pConfig != NULL) && !g_pConfig->LegacyNullReferenceExceptionPolicy())
                 {
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
                     // If we got the exception on a redirect function it means the original exception happened in managed code:
                     if (Thread::IsAddrOfRedirectFunc(pExceptionRecord->ExceptionAddress))
                         return (DWORD) kNullReferenceException;
@@ -3286,7 +3286,7 @@ DWORD MapWin32FaultToCOMPlusException(EXCEPTION_RECORD *pExceptionRecord)
                     {
                         return (DWORD) kNullReferenceException;
                     }
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
                     // If the IP of the AV is not in managed code, then its an AccessViolationException.
                     if (!ExecutionManager::IsManagedCode((PCODE)pExceptionRecord->ExceptionAddress))
@@ -3555,7 +3555,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         // When we are building stack trace as we encounter managed frames during exception dispatch,
         // then none of those frames represent a stack trace from a foreign exception (as they represent
         // the current exception). Hence, set the corresponding flag to FALSE.
-        pStackTraceElem->fIsLastFrameFromForeignStackTrace = FALSE;
+        pStackTraceElem->flags = 0;
 
         // This is a workaround to fix the generation of stack traces from exception objects so that
         // they point to the line that actually generated the exception instead of the line
@@ -3563,13 +3563,14 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && pStackTraceElem->ip != 0)
         {
             pStackTraceElem->ip -= 1;
+            pStackTraceElem->flags |= STEF_IP_ADJUSTED;
         }
 
         ++m_dFrameCount;
         bRetVal = TRUE;
     }
 
-#ifndef FEATURE_PAL // Watson is supported on Windows only
+#ifndef TARGET_UNIX // Watson is supported on Windows only
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 
@@ -3592,7 +3593,7 @@ BOOL StackTraceInfo::AppendElement(BOOL bAllowAllocMem, UINT_PTR currentIP, UINT
             SetupInitialThrowBucketDetails(adjustedIp);
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return bRetVal;
 }
@@ -3832,7 +3833,7 @@ LONG NotifyDebuggerLastChance(Thread *pThread,
     return retval;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 //----------------------------------------------------------------------------
 //
 // DoReportFault - wrapper for ReportFault in FaultRep.dll, which also handles
@@ -3904,7 +3905,7 @@ void DisableOSWatson(void)
     LOG((LF_EH, LL_INFO100, "DisableOSWatson: SetErrorMode = 0x%x\n", lastErrorMode | SEM_NOGPFAULTERRORBOX));
 
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 //------------------------------------------------------------------------------
 // This function is called on an unhandled exception, via the runtime's
@@ -3933,7 +3934,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
     CONTRACT_VIOLATION(AllViolation);
     LOG((LF_EH, LL_INFO10, "D::WLC: Enter WatsonLastChance\n"));
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     static DWORD fDisableWatson = -1;
     if (fDisableWatson == -1)
     {
@@ -3946,7 +3947,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         LOG((LF_EH, LL_INFO10, "D::WLC: OS Watson is disabled for an managed unhandled exception\n"));
         return EXCEPTION_CONTINUE_SEARCH;
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // We don't want to launch Watson if a debugger is already attached to
     // the process.
@@ -3973,7 +3974,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
     {
         LOG((LF_EH, LL_INFO10, "WatsonLastChance: Debugger not attached at sp %p ...\n", GetCurrentSP()));
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         FaultReportResult result = FaultReportResultQuit;
 
         BOOL fSOException = FALSE;
@@ -4128,7 +4129,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 #else
     }
     else if (CORDebuggerAttached())
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     {
         // Already debugging with a managed debugger.  Should let that debugger know.
         LOG((LF_EH, LL_INFO100, "WatsonLastChance: Managed debugger already attached at sp %p ...\n", GetCurrentSP()));
@@ -4142,9 +4143,9 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
         }
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     DisableOSWatson();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     if (!shouldNotifyDebugger)
     {
@@ -4314,7 +4315,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     // @todo: The InternalUnhandledExceptionFilter can trigger.
     CONTRACT_VIOLATION(GCViolation | ThrowsViolation | ModeViolation | FaultViolation | FaultNotFatal);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     int result = COMUnhandledExceptionFilter(pEP);
 #else
     int result = UnhandledExceptionFilter(pEP);
@@ -4485,7 +4486,7 @@ BOOL InstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_FORBID_FAULT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // We will be here only for CoreCLR on WLC since we dont
     // register UEF for SL.
     if (g_pOriginalUnhandledExceptionFilter == FILTER_NOT_INSTALLED) {
@@ -4499,7 +4500,7 @@ BOOL InstallUnhandledExceptionFilter() {
         LOG((LF_EH, LL_INFO10, "InstallUnhandledExceptionFilter registered UEF with OS for CoreCLR!\n"));
     }
     _ASSERTE(g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // All done - successfully!
     return TRUE;
@@ -4511,7 +4512,7 @@ void UninstallUnhandledExceptionFilter() {
     STATIC_CONTRACT_MODE_ANY;
     STATIC_CONTRACT_FORBID_FAULT;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // We will be here only for CoreCLR on WLC or on Mac SL.
     if (g_pOriginalUnhandledExceptionFilter != FILTER_NOT_INSTALLED) {
 
@@ -4523,7 +4524,7 @@ void UninstallUnhandledExceptionFilter() {
         g_pOriginalUnhandledExceptionFilter = FILTER_NOT_INSTALLED;
         LOG((LF_EH, LL_INFO10, "UninstallUnhandledExceptionFilter unregistered UEF from OS for CoreCLR!\n"));
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 //
@@ -4817,12 +4818,12 @@ LONG InternalUnhandledExceptionFilter_Worker(
             else
                 fIsProcessTerminating = !(pParam->pThread->HasThreadStateNC(Thread::TSNC_IgnoreUnhandledExceptions));
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             // Setup the watson bucketing details for UE processing.
             // do this before notifying appdomains of the UE so if an AD attempts to
             // retrieve the bucket params in the UE event handler it gets the correct data.
             SetupWatsonBucketsForUEF(useLastThrownObject);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
             // Send notifications to the AppDomains.
             NotifyAppDomainsOfUnhandledException(pParam->pExceptionInfo, NULL, useLastThrownObject, fIsProcessTerminating /*isTerminating*/);
@@ -4882,7 +4883,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         if (tore.GetType() == TypeOfReportedError::NativeThreadUnhandledException)
         {
             pParam->retval = EXCEPTION_CONTINUE_SEARCH;
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
             DoReportForUnhandledNativeException(pParam->pExceptionInfo);
 #endif
             goto lDone;
@@ -4892,7 +4893,7 @@ LONG InternalUnhandledExceptionFilter_Worker(
         {
             LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker, ignoring the exception\n"));
             pParam->retval = EXCEPTION_CONTINUE_SEARCH;
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
             DoReportForUnhandledNativeException(pParam->pExceptionInfo);
 #endif
             goto lDone;
@@ -5044,7 +5045,7 @@ void ParseUseEntryPointFilter(LPCWSTR value)
 
 bool GetUseEntryPointFilter()
 {
-#ifdef PLATFORM_WINDOWS // This feature has only been tested on Windows, keep it disabled on other platforms
+#ifdef TARGET_WINDOWS // This feature has only been tested on Windows, keep it disabled on other platforms
     static bool s_useEntryPointFilterEnv = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseEntryPointFilter) != 0;
 
     return s_useEntryPointFilterCorhostProperty || s_useEntryPointFilterEnv;
@@ -5117,9 +5118,9 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
 // Returns
 //   the result of calling InternalUnhandledExceptionFilter
 //------------------------------------------------------------------------------
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 #pragma code_seg(push, uef, CLR_UEF_SECTION_NAME)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or EXCEPTION_CONTINUE_EXECUTION
     EXCEPTION_POINTERS *pExceptionInfo)         // Information about the exception.
 {
@@ -5156,9 +5157,9 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
     return retVal;
 } // LONG __stdcall COMUnhandledExceptionFilter()
-#if !defined(FEATURE_PAL)
+#if !defined(TARGET_UNIX)
 #pragma code_seg(pop, uef)
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 void PrintStackTraceToStdout();
 
@@ -5204,7 +5205,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
 
         PrintToStdErrA("\n");
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
+#if defined(FEATURE_EVENT_TRACE) && !defined(TARGET_UNIX)
         // Send the log to Windows Event Log
         if (sendWindowsEventLog && ShouldLogInEventLog())
         {
@@ -6193,7 +6194,7 @@ LPVOID COMPlusCheckForAbort(UINT_PTR uTryCatchResumeAddress)
 
 exit:
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     // Only proceed if Watson is enabled - CoreCLR may have it disabled.
     if (IsWatsonEnabled())
@@ -6244,7 +6245,7 @@ exit:
         }
     }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return pRetAddress;
 }
@@ -6318,7 +6319,7 @@ void AdjustContextForThreadStop(Thread* pThread,
     // doesn't trap.  We're not going to use these objects after the exception.
     //
     // Only callee saved registers are going to be reported by the faulting excepiton frame.
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // Ebx,esi,edi are important.  Eax,ecx,edx are not.
     pContext->Ebx = 0;
     pContext->Edi = 0;
@@ -6329,11 +6330,11 @@ void AdjustContextForThreadStop(Thread* pThread,
 
 #else // !FEATURE_EH_FUNCLETS
     CopyOSContext(pContext, pThread->m_OSContext);
-#if defined(_TARGET_ARM_) && defined(_DEBUG)
+#if defined(TARGET_ARM) && defined(_DEBUG)
     // Make sure that the thumb bit is set on the IP of the original abort context we just restored.
     PCODE controlPC = GetIP(pContext);
     _ASSERTE(controlPC & THUMB_CODE);
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 #endif // !FEATURE_EH_FUNCLETS
 
     pThread->ResetThrowControlForThread();
@@ -6563,7 +6564,7 @@ bool IsGcMarker(CONTEXT* pContext, EXCEPTION_RECORD *pExceptionRecord)
     return false;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 // Return true if the access violation is well formed (has two info parameters
 // at the end)
@@ -6635,20 +6636,24 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
     return false;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
+
+#ifndef TARGET_ARM64
+EXTERN_C void JIT_StackProbe_End();
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_EH_FUNCLETS
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 EXTERN_C void JIT_MemSet_End();
 EXTERN_C void JIT_MemCpy_End();
 
 EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_CheckedWriteBarrier_End();
 EXTERN_C void JIT_ByRefWriteBarrier_End();
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#if defined(_TARGET_AMD64_) && defined(_DEBUG)
+#if defined(TARGET_AMD64) && defined(_DEBUG)
 EXTERN_C void JIT_WriteBarrier_Debug();
 EXTERN_C void JIT_WriteBarrier_Debug_End();
 #endif
@@ -6695,21 +6700,24 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 #define CHECK_RANGE(name) \
     if (GetEEFuncEntryPoint(name) <= uControlPc && uControlPc < GetEEFuncEntryPoint(name##_End)) return true;
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     CHECK_RANGE(JIT_MemSet)
     CHECK_RANGE(JIT_MemCpy)
 
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
+#if !defined(TARGET_ARM64)
+    CHECK_RANGE(JIT_StackProbe)
+#endif // !TARGET_ARM64
 #else
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
     CHECK_RANGE(JIT_PatchedWriteBarrierGroup)
-#endif // FEATURE_PAL
-#endif // _TARGET_X86_
+#endif // TARGET_UNIX
+#endif // TARGET_X86
 
-#if defined(_TARGET_AMD64_) && defined(_DEBUG)
+#if defined(TARGET_AMD64) && defined(_DEBUG)
     CHECK_RANGE(JIT_WriteBarrier_Debug)
 #endif
 
@@ -6719,7 +6727,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
 // Returns TRUE if caller should resume execution.
 BOOL
-AdjustContextForWriteBarrier(
+AdjustContextForJITHelpers(
         EXCEPTION_RECORD *pExceptionRecord,
         CONTEXT *pContext)
 {
@@ -6738,7 +6746,7 @@ AdjustContextForWriteBarrier(
 
 #ifdef FEATURE_DATABREAKPOINT
 
-    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
+    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger()
     // This is called only when a data breakpoint is hitm which could be inside a JIT write barrier helper and required
     // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we
     // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true
@@ -6746,7 +6754,7 @@ AdjustContextForWriteBarrier(
 
     if (pExceptionRecord == nullptr)
     {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
         bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
         if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
@@ -6763,7 +6771,7 @@ AdjustContextForWriteBarrier(
             pContext->Esp = (DWORD)esp;
             return TRUE;
         }
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
         if (IsIPInMarkedJitHelper((UINT_PTR)ip))
         {
             Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
@@ -6777,7 +6785,7 @@ AdjustContextForWriteBarrier(
 
 #endif // FEATURE_DATABREAKPOINT
 
-#if defined(_TARGET_X86_) && !defined(PLATFORM_UNIX)
+#if defined(TARGET_X86) && !defined(TARGET_UNIX)
     void* f_IP = (void *)GetIP(pContext);
 
     if (((f_IP >= (void *) JIT_WriteBarrierGroup) && (f_IP <= (void *) JIT_WriteBarrierGroup_End)) ||
@@ -6791,8 +6799,21 @@ AdjustContextForWriteBarrier(
         // put ESP back to what it was before the call.
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
+
+    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End)) 
+    {
+        TADDR ebp = GetFP(pContext);
+        void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
+        pExceptionRecord->ExceptionAddress = callsite;
+        SetIP(pContext, (PCODE)callsite);
+
+        // Restore EBP / ESP back to what it was before the call.
+        SetFP(pContext, *dac_cast<PTR_PCODE>(ebp));
+        SetSP(pContext, ebp + 8);
+    }
+
     return FALSE;
-#elif defined(FEATURE_EH_FUNCLETS) // _TARGET_X86_ && !PLATFORM_UNIX
+#elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
     void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
 
     CONTEXT             tempContext;
@@ -6812,7 +6833,7 @@ AdjustContextForWriteBarrier(
 
         Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
         // We had an AV in the writebarrier that needs to be treated
         // as originating in managed code. At this point, the stack (growing
         // from left->right) looks like this:
@@ -6836,7 +6857,7 @@ AdjustContextForWriteBarrier(
        // Now we save the address back into the context so that it gets used
        // as the faulting address.
        SetIP(pContext, ControlPCPostAdjustment);
-#endif // _TARGET_ARM_ || _TARGET_ARM64_
+#endif // TARGET_ARM || TARGET_ARM64
 
         // Unwind the frame chain - On Win64, this is required since we may handle the managed fault and to do so,
         // we will replace the exception context with the managed context and "continue execution" there. Thus, we do not
@@ -6859,12 +6880,12 @@ AdjustContextForWriteBarrier(
 
     return FALSE;
 #else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("AdjustContextForWriteBarrier");
+    PORTABILITY_ASSERT("AdjustContextForJITHelpers");
     return FALSE;
 #endif // ELSE
 }
 
-#if defined(USE_FEF) && !defined(FEATURE_PAL)
+#if defined(USE_FEF) && !defined(TARGET_UNIX)
 
 struct SavedExceptionInfo
 {
@@ -6968,9 +6989,9 @@ LinkFrameAndThrow(FaultingExceptionFrame* pFrame)
 
 void SetNakedThrowHelperArgRegistersInContext(CONTEXT* pContext)
 {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     pContext->Rcx = (UINT_PTR)GetIP(pContext);
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Save the original IP in LR
     pContext->Lr = (DWORD)GetIP(pContext);
 #else
@@ -6997,13 +7018,13 @@ void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
     SetIP(pContext, GetEEFuncEntryPoint(NakedThrowHelper));
 }
 
-#else // USE_FEF && !FEATURE_PAL
+#else // USE_FEF && !TARGET_UNIX
 
 void InitSavedExceptionInfo()
 {
 }
 
-#endif // USE_FEF && !FEATURE_PAL
+#endif // USE_FEF && !TARGET_UNIX
 
 //
 // Init a new frame
@@ -7012,14 +7033,14 @@ void FaultingExceptionFrame::Init(CONTEXT *pContext)
 {
     WRAPPER_NO_CONTRACT;
 #ifndef FEATURE_EH_FUNCLETS
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     CalleeSavedRegisters *pRegs = GetCalleeSavedRegisters();
 #define CALLEE_SAVED_REGISTER(regname) pRegs->regname = pContext->regname;
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
     m_ReturnAddress = ::GetIP(pContext);
     m_Esp = (DWORD)GetSP(pContext);
-#else // _TARGET_X86_
+#else // TARGET_X86
     PORTABILITY_ASSERT("FaultingExceptionFrame::Init");
 #endif // _TARGET_???_ (ELSE)
 #else // !FEATURE_EH_FUNCLETS
@@ -7116,7 +7137,7 @@ bool ShouldHandleManagedFault(
     return true;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo);
 
@@ -7445,7 +7466,7 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     GCX_NOTRIGGER();
 
 #ifdef USE_REDIRECT_FOR_GCSTRESS
-    // NOTE: this is effectively ifdef (_TARGET_AMD64_ || _TARGET_ARM_), and does not actually trigger
+    // NOTE: this is effectively ifdef (TARGET_AMD64 || TARGET_ARM), and does not actually trigger
     // a GC.  This will redirect the exception context to a stub which will
     // push a frame and cause GC.
     if (IsGcMarker(pContext, pExceptionRecord))
@@ -7454,11 +7475,11 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     }
 #endif // USE_REDIRECT_FOR_GCSTRESS
 
-#if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
-#ifdef _TARGET_X86_
+#if defined(FEATURE_HIJACK) && !defined(TARGET_UNIX)
+#ifdef TARGET_X86
     CPFH_AdjustContextForThreadSuspensionRace(pContext, GetThread());
-#endif // _TARGET_X86_
-#endif // FEATURE_HIJACK && !PLATFORM_UNIX
+#endif // TARGET_X86
+#endif // FEATURE_HIJACK && !TARGET_UNIX
 
     // Some other parts of the EE use exceptions in their own nefarious ways.  We do some up-front processing
     // here to fix up the exception if needed.
@@ -7466,9 +7487,9 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     {
         if (IsWellFormedAV(pExceptionRecord))
         {
-            if (AdjustContextForWriteBarrier(pExceptionRecord, pContext))
+            if (AdjustContextForJITHelpers(pExceptionRecord, pContext))
             {
-                // On x86, AdjustContextForWriteBarrier simply backs up AV's
+                // On x86, AdjustContextForJITHelpers simply backs up AV's
                 // in write barrier helpers into the calling frame, so that
                 // the subsequent logic here sees a managed fault.
                 //
@@ -7562,26 +7583,26 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     return VEH_NO_ACTION;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 BOOL IsIPInEE(void *ip)
 {
     WRAPPER_NO_CONTRACT;
 
-#if defined(FEATURE_PREJIT) && !defined(FEATURE_PAL)
+#if defined(FEATURE_PREJIT) && !defined(TARGET_UNIX)
     if ((TADDR)ip > g_runtimeLoadedBaseAddress &&
         (TADDR)ip < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
     {
         return TRUE;
     }
     else
-#endif // FEATURE_PREJIT && !FEATURE_PAL
+#endif // FEATURE_PREJIT && !TARGET_UNIX
     {
         return FALSE;
     }
 }
 
-#if defined(FEATURE_HIJACK) && (!defined(_TARGET_X86_) || defined(FEATURE_PAL))
+#if defined(FEATURE_HIJACK) && (!defined(TARGET_X86) || defined(TARGET_UNIX))
 
 // This function is used to check if the specified IP is in the prolog or not.
 bool IsIPInProlog(EECodeInfo *pCodeInfo)
@@ -7598,7 +7619,7 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
 
     _ASSERTE(pCodeInfo->IsValid());
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
     // Optimized version for AMD64 that doesn't need to go through the GC info decoding
     PTR_RUNTIME_FUNCTION funcEntry = pCodeInfo->GetFunctionEntry();
@@ -7612,7 +7633,7 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
     // Check if the specified IP is beyond the prolog or not.
     DWORD prologLen = pUnwindInfo->SizeOfProlog;
 
-#else // _TARGET_AMD64_
+#else // TARGET_AMD64
 
     GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
 
@@ -7632,7 +7653,7 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
 
 #endif // USE_GC_INFO_DECODER
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
     if (pCodeInfo->GetRelOffset() >= prologLen)
     {
@@ -7723,7 +7744,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
         // We are in epilog.
         fIsInEpilog = true;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // Check if context pointers has returned the address of the stack location in the hijacked function
         // from where RBP was restored. If the address is NULL, then it implies that RBP has been popped off.
         // Since JIT64 ensures that pop of RBP is the last instruction before ret/jmp, it implies its not safe
@@ -7740,11 +7761,11 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
-#endif // FEATURE_HIJACK && (!_TARGET_X86_ || FEATURE_PAL)
+#endif // FEATURE_HIJACK && (!TARGET_X86 || TARGET_UNIX)
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 // This holder is used to capture the FPU state, reset it to what the CLR expects
 // and then restore the original state that was captured.
@@ -7796,9 +7817,9 @@ public:
     }
 };
 
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 {
@@ -7852,10 +7873,10 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // WARNING
     DWORD dwLastError = GetLastError();
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // Capture the FPU state before we do anything involving floating point instructions
     FPUStateHolder captureFPUState;
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // For interop debugging we have a fancy exception queueing stunt. When the debugger
@@ -7885,7 +7906,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     if (dwCode == EXCEPTION_BREAKPOINT || dwCode == EXCEPTION_SINGLE_STEP)
     {
         // For interop debugging, debugger bashes our managed exception handler.
@@ -7905,7 +7926,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
 #ifdef USE_REDIRECT_FOR_GCSTRESS
     // This is AMD64 & ARM specific as the macro above is defined for AMD64 & ARM only
     bIsGCMarker = IsGcMarker(pExceptionInfo->ContextRecord, pExceptionInfo->ExceptionRecord);
-#elif defined(_TARGET_X86_) && defined(HAVE_GCCOVER)
+#elif defined(TARGET_X86) && defined(HAVE_GCCOVER)
     // This is the equivalent of the check done in COMPlusFrameHandler, incase the exception is
     // seen by VEH first on x86.
     bIsGCMarker = IsGcMarker(pExceptionInfo->ContextRecord, pExceptionInfo->ExceptionRecord);
@@ -8051,14 +8072,14 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     return result;
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 // Contains the handle to the registered VEH
 static PVOID g_hVectoredExceptionHandler = NULL;
 
 void CLRAddVectoredHandlers(void)
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     // We now install a vectored exception handler on all supporting Windows architectures.
     g_hVectoredExceptionHandler = AddVectoredExceptionHandler(TRUE, (PVECTORED_EXCEPTION_HANDLER)CLRVectoredExceptionHandlerShim);
@@ -8069,7 +8090,7 @@ void CLRAddVectoredHandlers(void)
     }
 
     LOG((LF_EH, LL_INFO100, "CLRAddVectoredHandlers: AddVectoredExceptionHandler() succeeded\n"));
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 // This function removes the vectored exception and continue handler registration
@@ -8083,7 +8104,7 @@ void CLRRemoveVectoredHandlers(void)
         MODE_ANY;
     }
     CONTRACTL_END;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     // Unregister the vectored exception handler if one is registered (and we can).
     if (g_hVectoredExceptionHandler != NULL)
@@ -8098,7 +8119,7 @@ void CLRRemoveVectoredHandlers(void)
             LOG((LF_EH, LL_INFO100, "CLRRemoveVectoredHandlers: RemoveVectoredExceptionHandler() succeeded.\n"));
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 //
@@ -8312,7 +8333,7 @@ LONG AppDomainTransitionExceptionFilter(
     // First, call into NotifyOfCHFFilterWrapper
     ret = NotifyOfCHFFilterWrapper(pExceptionInfo, pParam);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Setup the watson bucketing details if the escaping
     // exception is preallocated.
     if (SetupWatsonBucketsForEscapingPreallocatedExceptions())
@@ -8330,7 +8351,7 @@ LONG AppDomainTransitionExceptionFilter(
             SetupWatsonBucketsForNonPreallocatedExceptions();
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     return ret;
 } // LONG AppDomainTransitionExceptionFilter()
@@ -8360,7 +8381,7 @@ LONG ReflectionInvocationExceptionFilter(
     // First, call into NotifyOfCHFFilterWrapper
     ret = NotifyOfCHFFilterWrapper(pExceptionInfo, pParam);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Setup the watson bucketing details if the escaping
     // exception is preallocated.
     if (SetupWatsonBucketsForEscapingPreallocatedExceptions())
@@ -8378,7 +8399,7 @@ LONG ReflectionInvocationExceptionFilter(
             SetupWatsonBucketsForNonPreallocatedExceptions();
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     // If the application has opted into triggering a failfast when a CorruptedStateException enters the Reflection system,
     // then do the needful.
@@ -8395,11 +8416,11 @@ LONG ReflectionInvocationExceptionFilter(
         // Get the exception tracker for the current exception
 #ifdef FEATURE_EH_FUNCLETS
         PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif _TARGET_X86_
+#elif TARGET_X86
         PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#else // !(BIT64 || _TARGET_X86_)
+#else // !(HOST_64BIT || TARGET_X86)
 #error Unsupported platform
-#endif // BIT64
+#endif // HOST_64BIT
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
         if (pEHTracker->GetCorruptionSeverity() == ProcessCorrupting)
@@ -8524,7 +8545,7 @@ bool DebugIsEECxxException(EXCEPTION_RECORD* pExceptionRecord)
 //     [1] pExceptionObject : void*
 //     [2] pThrowInfo       : ThrowInfo*
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define NUM_CXX_EXCEPTION_PARAMS 4
 #else
 #define NUM_CXX_EXCEPTION_PARAMS 3
@@ -8683,7 +8704,7 @@ void StripFileInfoFromStackTrace(SString &ssStackTrace)
 // EXCEPTION_CONTINUE_SEARCH.
 //==============================================================================
 void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
                                                        EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
 #elif defined(FEATURE_EH_FUNCLETS)
                                                        ULONG64 pEstablisherFrame
@@ -8743,7 +8764,7 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 
 #endif // _DEBUG
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 // This function will capture the watson buckets for the current exception object that is:
 //
@@ -9230,7 +9251,7 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
 #if defined(FEATURE_EH_FUNCLETS)
 PTR_ExceptionTracker GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                           PTR_ExceptionTracker pStartingEHTracker)
-#elif _TARGET_X86_
+#elif TARGET_X86
 PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
                                                 PTR_ExInfo pStartingEHTracker)
 #else
@@ -9252,11 +9273,11 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     // Get the reference to the current exception tracker
 #if defined(FEATURE_EH_FUNCLETS)
     PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#else // !(BIT64 || _TARGET_X86_)
+#else // !(HOST_64BIT || TARGET_X86)
 #error Unsupported platform
-#endif // BIT64
+#endif // HOST_64BIT
 
     BOOL fFoundTracker = FALSE;
 
@@ -9336,12 +9357,12 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
         PTR_ExceptionTracker pEHTracker = NULL;
         PTR_ExceptionTracker pPreviousEHTracker = NULL;
 
-#elif _TARGET_X86_
+#elif TARGET_X86
         PTR_ExInfo pEHTracker = NULL;
         PTR_ExInfo pPreviousEHTracker = NULL;
-#else // !(BIT64 || _TARGET_X86_)
+#else // !(HOST_64BIT || TARGET_X86)
 #error Unsupported platform
-#endif // BIT64
+#endif // HOST_64BIT
 
         if (fStartSearchFromPreviousTracker)
         {
@@ -10871,13 +10892,13 @@ void EHWatsonBucketTracker::CaptureUnhandledInfoForWatson(TypeOfReportedError to
     }
 #endif // !DACCESS_COMPILE
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 // Given a throwable, this function will attempt to find an active EH tracker corresponding to it.
 // If none found, it will return NULL
 #ifdef FEATURE_EH_FUNCLETS
 PTR_ExceptionTracker GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExceptionTracker pStartingEHTracker)
-#elif _TARGET_X86_
+#elif TARGET_X86
 PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEHTracker)
 #else
 #error Unsupported platform
@@ -10897,7 +10918,7 @@ PTR_ExInfo GetEHTrackerForException(OBJECTREF oThrowable, PTR_ExInfo pStartingEH
     // then use it. Otherwise, start from the current one.
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pEHTracker = (pStartingEHTracker != NULL) ? pStartingEHTracker : GetThread()->GetExceptionState()->GetCurrentExceptionTracker();
 #else
 #error Unsupported platform
@@ -11207,7 +11228,7 @@ BOOL CEHelper::IsProcessCorruptedStateException(OBJECTREF oThrowable)
     // Get the exception tracker for the current exception
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker pEHTracker = GetEHTrackerForException(oThrowable, NULL);
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pEHTracker = GetEHTrackerForException(oThrowable, NULL);
 #else
 #error Unsupported platform
@@ -11327,11 +11348,11 @@ void CEHelper::SetupCorruptionSeverityForActiveException(BOOL fIsRethrownExcepti
     // Get the exception tracker for the current exception
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#else // !(BIT64 || _TARGET_X86_)
+#else // !(HOST_64BIT || TARGET_X86)
 #error Unsupported platform
-#endif // BIT64
+#endif // HOST_64BIT
 
     _ASSERTE(pEHTracker != NULL);
 
@@ -11416,7 +11437,7 @@ void CEHelper::SetupCorruptionSeverityForActiveException(BOOL fIsRethrownExcepti
 
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker pOrigEHTracker = NULL;
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pOrigEHTracker = NULL;
 #else
 #error Unsupported platform
@@ -11658,7 +11679,7 @@ void CEHelper::ResetLastActiveCorruptionSeverityPostCatchHandler(Thread *pThread
     // set it to "NotSet".
 #ifdef FEATURE_EH_FUNCLETS
     PTR_ExceptionTracker pEHTracker = pCurTES->GetCurrentExceptionTracker();
-#elif _TARGET_X86_
+#elif TARGET_X86
     PTR_ExInfo pEHTracker = pCurTES->GetCurrentExceptionTracker();
 #else
 #error Unsupported platform

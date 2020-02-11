@@ -1,5 +1,0 @@
-<Project>
-  <ItemGroup>
-    <PackageIndex Include="$(MSBuildThisFileDirectory)packageIndex.json" />
-  </ItemGroup>
-</Project>

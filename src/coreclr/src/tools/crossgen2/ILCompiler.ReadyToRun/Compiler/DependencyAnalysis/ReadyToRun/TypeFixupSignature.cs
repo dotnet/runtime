@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -33,7 +33,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
@@ -41,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 dataBuilder.AddSymbol(this);
 
                 EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, _fixupKind, targetModule, _signatureContext);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, _signatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 

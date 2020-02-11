@@ -1632,7 +1632,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     // System primitive types (System.Int32, et.al.) will be marshaled as expected
     // because the mtype CorElementType is normalized (e.g. ELEMENT_TYPE_I4).
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // We however need to detect if such a normalization occurred for non-system
     // trivial value types, because we hold CorNativeType belonging to the original
     // "un-normalized" signature type. It has to be verified that all the value types
@@ -1659,7 +1659,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
         }
 
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 
     if (nativeType == NATIVE_TYPE_CUSTOMMARSHALER)
@@ -1904,7 +1904,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1918,7 +1918,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_I;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1954,7 +1954,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_PTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -1975,7 +1975,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 m_resID = IDS_EE_BADMARSHAL_FNPTR;
                 IfFailGoto(E_FAIL, lFail);
             }
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             m_type = MARSHAL_TYPE_GENERIC_8;
 #else
             m_type = MARSHAL_TYPE_GENERIC_4;
@@ -2784,19 +2784,22 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
-
-                if (m_pMT->HasInstantiation() && (!m_pMT->IsBlittable()
-                    || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
-                    || m_pMT->HasSameTypeDefAs(g_pNullableClass)
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+                // We can't block these types for field scenarios for back-compat reasons.
+                if (m_pMT->HasInstantiation() && !IsFieldScenario()
+                    && (!m_pMT->IsBlittable()
+                        || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
+                        || m_pMT->HasSameTypeDefAs(g_pByReferenceClass)
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__READONLY_SPAN))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T))
+                        || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T))
 #ifndef CROSSGEN_COMPILE
-                    // Crossgen scenarios block Vector<T> from even being loaded
-                    || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
+                            // Crossgen scenarios block Vector<T> from even being loaded
+                            || m_pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT))
 #endif // !CROSSGEN_COMPILE
-                    ))
+                    )))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
@@ -2851,7 +2854,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
                         }
                         else
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                         // JIT64 is not aware of normalized value types and this optimization
                         // (returning small value types by value in registers) is already done in JIT64.
                         if (        !m_byref   // Permit register-sized structs as return values
@@ -2867,7 +2870,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             m_args.m_pMT = m_pMT;
                         }
                         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                         {
                             m_args.m_pMT = m_pMT;
                             m_type = MARSHAL_TYPE_BLITTABLEVALUECLASS;

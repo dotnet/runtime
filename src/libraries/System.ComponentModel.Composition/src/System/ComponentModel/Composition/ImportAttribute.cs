@@ -10,7 +10,6 @@ namespace System.ComponentModel.Composition
     /// <summary>
     ///     Specifies that a property, field, or parameter imports a particular export.
     /// </summary>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter,
                     AllowMultiple = false, Inherited = false)]
     public class ImportAttribute : Attribute, IAttributedImport
@@ -31,7 +30,7 @@ namespace System.ComponentModel.Composition
         ///     </para>
         /// </remarks>
         public ImportAttribute()
-            : this((string)null)
+            : this((string?)null)
         {
         }
 
@@ -59,8 +58,8 @@ namespace System.ComponentModel.Composition
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
-        public ImportAttribute(Type contractType)
-            : this((string)null, contractType)
+        public ImportAttribute(Type? contractType)
+            : this((string?)null, contractType)
         {
         }
 
@@ -83,12 +82,12 @@ namespace System.ComponentModel.Composition
         ///         using <see cref="StringComparer.Ordinal"/>.
         ///     </para>
         /// </remarks>
-        public ImportAttribute(string contractName)
-            : this(contractName, (Type)null)
+        public ImportAttribute(string? contractName)
+            : this(contractName, (Type?)null)
         {
         }
 
-        public ImportAttribute(string contractName, Type contractType)
+        public ImportAttribute(string? contractName, Type? contractType)
         {
             ContractName = contractName;
             ContractType = contractType;
@@ -101,7 +100,7 @@ namespace System.ComponentModel.Composition
         ///      A <see cref="string"/> containing the contract name of the export to import. The
         ///      default value is an empty string ("").
         /// </value>
-        public string ContractName { get; private set; }
+        public string? ContractName { get; private set; }
 
         /// <summary>
         ///     Get the contract type of the export to import.
@@ -112,7 +111,7 @@ namespace System.ComponentModel.Composition
         ///     the member that this import is attached to. If the type is <see cref="object"/> then the
         ///     importer is delaring they can accept any exported type.
         /// </value>
-        public Type ContractType { get; private set; }
+        public Type? ContractType { get; private set; }
 
         /// <summary>
         ///     Gets or sets a value indicating whether the property, field or parameter will be set

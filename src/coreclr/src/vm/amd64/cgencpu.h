@@ -10,7 +10,7 @@
 
 
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds
 #endif
 
@@ -82,9 +82,9 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define INSTRFMT_K64SMALL
 #define INSTRFMT_K64
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //
 // REX prefix byte
@@ -488,7 +488,7 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
     CalleeSavedRegisters Regs;
     union
     {

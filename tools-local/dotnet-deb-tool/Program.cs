@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.Deb.Tool
             {
                 return;
             }
-            // Executable files are don't get the 'x' permission when restored from
+            // Executable files don't get the 'x' permission when restored from
             // NuGet packages.
             // See (https://github.com/NuGet/Home/issues/4424)
             // On .NET Core 1.x, all extracted files had default permissions of 766.

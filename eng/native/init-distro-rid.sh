@@ -74,10 +74,12 @@ initNonPortableDistroRid()
     fi
 
     if [ -n "${nonPortableBuildID}" ]; then
-        export __DistroRid="${nonPortableBuildID}"
+        __DistroRid="${nonPortableBuildID}"
 
         # We are using a non-portable build rid. Force __PortableBuild to false.
-        export __PortableBuild=0
+        __PortableBuild=0
+
+        export __DistroRid __PortableBuild
     fi
 }
 
@@ -125,7 +127,8 @@ initDistroRidGlobal()
 
     if [ "$buildArch" = "armel" ]; then
         # Armel cross build is Tizen specific and does not support Portable RID build
-        export __PortableBuild=0
+        __PortableBuild=0
+        export __PortableBuild
         isPortable=0
     fi
 
@@ -134,11 +137,13 @@ initDistroRidGlobal()
     if [ -z "${__DistroRid}" ]; then
         # The non-portable build rid was not set. Set the portable rid.
 
-        export __PortableBuild=1
+        __PortableBuild=1
+        export __PortableBuild
         local distroRid=""
 
         # Check for musl-based distros (e.g Alpine Linux, Void Linux).
-        if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl; then
+        if "${rootfsDir}/usr/bin/ldd" --version 2>&1 | grep -q musl ||
+                strings "${rootfsDir}/usr/bin/ldd" 2>&1 | grep -q musl; then
             distroRid="linux-musl-${buildArch}"
         fi
 
@@ -152,7 +157,8 @@ initDistroRidGlobal()
             fi
         fi
 
-        export __DistroRid="${distroRid}"
+        __DistroRid="${distroRid}"
+        export __DistroRid
     fi
 
     if [ -z "$__DistroRid" ]; then
@@ -163,6 +169,7 @@ initDistroRidGlobal()
         echo "__DistroRid: ${__DistroRid}"
         echo "__RuntimeId: ${__DistroRid}"
 
-        export __RuntimeId="${__DistroRid}"
+        __RuntimeId="${__DistroRid}"
+        export __RuntimeId
     fi
 }

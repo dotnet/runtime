@@ -3,7 +3,7 @@
     <AssemblyName>System.Security.Cryptography.Primitives</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -44,12 +44,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>

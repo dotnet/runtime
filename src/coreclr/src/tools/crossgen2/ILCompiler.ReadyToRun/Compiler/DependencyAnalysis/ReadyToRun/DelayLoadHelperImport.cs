@@ -1,10 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -21,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly ImportThunk _delayLoadHelper;
 
         public DelayLoadHelperImport(
-            ReadyToRunCodegenNodeFactory factory, 
+            NodeFactory factory, 
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             Signature instanceSignature, 
@@ -57,8 +58,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             // This needs to be an empty target pointer since it will be filled in with Module*
             // when loaded by CoreCLR
+            int codeDelta = 0;
+            if (factory.Target.Architecture == TargetArchitecture.ARM)
+            {
+                // THUMB_CODE
+                codeDelta = 1;
+            }
             dataBuilder.EmitReloc(_delayLoadHelper,
-                factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64);
+                factory.Target.PointerSize == 4 ? RelocType.IMAGE_REL_BASED_HIGHLOW : RelocType.IMAGE_REL_BASED_DIR64, codeDelta);
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)

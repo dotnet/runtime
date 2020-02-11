@@ -24,9 +24,9 @@ namespace System.Security.Cryptography
             return new DesImplementation();
         }
 
-        public static new DES Create(string algName)
+        public static new DES? Create(string algName)
         {
-            return (DES)CryptoConfig.CreateFromName(algName);
+            return (DES?)CryptoConfig.CreateFromName(algName);
         }
 
         public override byte[] Key
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        private static bool IsLegalKeySize(byte[] rgbKey)
+        private static bool IsLegalKeySize(byte[]? rgbKey)
         {
             if (rgbKey != null && rgbKey.Length == 8)
                 return true;

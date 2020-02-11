@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner <see cref="ImmutableDictionary{TKey, TValue}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableDictionary<TKey, TValue>
     {
         /// <summary>
@@ -29,8 +28,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableDictionaryBuilderDebuggerProxy<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
@@ -435,7 +432,6 @@ namespace System.Collections.Immutable
             /// Adds a sequence of values to this collection.
             /// </summary>
             /// <param name="items">The items.</param>
-            [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
             public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
             {
                 var result = ImmutableDictionary<TKey, TValue>.AddRange(items, this.Origin);

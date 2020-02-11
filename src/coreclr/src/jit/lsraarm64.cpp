@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 
 #include "jit.h"
 #include "sideeffects.h"
@@ -1079,7 +1079,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         {
             case NI_Aes_Decrypt:
             case NI_Aes_Encrypt:
-            {
                 assert((numArgs == 2) && (op1 != nullptr) && (op2 != nullptr));
 
                 buildUses = false;
@@ -1087,14 +1086,11 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 tgtPrefUse = BuildUse(op1);
                 srcCount += 1;
                 srcCount += BuildDelayFreeUses(op2);
-
                 break;
-            }
 
             case NI_Sha1_HashUpdateChoose:
             case NI_Sha1_HashUpdateMajority:
             case NI_Sha1_HashUpdateParity:
-            {
                 assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
 
                 if (!op2->isContained())
@@ -1112,19 +1108,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 buildInternalFloatRegisterDefForNode(intrinsicTree);
                 break;
-            }
 
             case NI_Sha1_FixedRotate:
-            {
                 buildInternalFloatRegisterDefForNode(intrinsicTree);
                 break;
-            }
 
             case NI_Sha1_ScheduleUpdate0:
             case NI_Sha256_HashUpdate1:
             case NI_Sha256_HashUpdate2:
             case NI_Sha256_ScheduleUpdate1:
-            {
                 assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
 
                 if (!op2->isContained())
@@ -1138,13 +1130,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     srcCount += BuildDelayFreeUses(op3);
                 }
                 break;
-            }
+
+            case NI_AdvSimd_FusedMultiplyAdd:
+            case NI_AdvSimd_FusedMultiplySubtract:
+            case NI_AdvSimd_Arm64_FusedMultiplyAdd:
+            case NI_AdvSimd_Arm64_FusedMultiplySubtract:
+            case NI_AdvSimd_MultiplyAdd:
+            case NI_AdvSimd_MultiplySubtract:
+                assert((numArgs == 3) && (op2 != nullptr) && (op3 != nullptr));
+
+                buildUses = false;
+
+                tgtPrefUse = BuildUse(op1);
+                srcCount += 1;
+                srcCount += BuildDelayFreeUses(op2);
+                srcCount += BuildDelayFreeUses(op3);
+                break;
 
             default:
-            {
                 assert((intrinsicId > NI_HW_INTRINSIC_START) && (intrinsicId < NI_HW_INTRINSIC_END));
                 break;
-            }
         }
 
         if (buildUses)
@@ -1198,4 +1203,4 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 }
 #endif
 
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64

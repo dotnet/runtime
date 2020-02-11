@@ -340,10 +340,13 @@ namespace Internal.TypeSystem.Interop
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
                 // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for inteorp scenarios
+                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+                // We can't block these types for field scenarios for back-compat reasons.
 
-                if (type.HasInstantiation && (!isBlittable
+                if (type.HasInstantiation && !isField && (!isBlittable
                     || InteropTypes.IsSystemByReference(context, type)
+                    || InteropTypes.IsSystemSpan(context, type)
+                    || InteropTypes.IsSystemReadOnlySpan(context, type)
                     || InteropTypes.IsSystemNullable(context, type)
                     || InteropTypes.IsSystemRuntimeIntrinsicsVector64T(context, type)
                     || InteropTypes.IsSystemRuntimeIntrinsicsVector128T(context, type)

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -58,7 +58,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return new ObjectData(data: Array.Empty<byte>(), relocs: null, alignment: 0, definedSymbols: null);
             }
 
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
             dataBuilder.AddSymbol(this);
 
@@ -100,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, fixupKind, method.Token.Module, _signatureContext);
+            SignatureContext innerContext = dataBuilder.EmitFixup(factory, fixupKind, method.Token.Module, _signatureContext);
 
             if (optimized && method.Token.TokenType == CorTokenType.mdtMethodDef)
             {

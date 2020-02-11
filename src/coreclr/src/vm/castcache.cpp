@@ -66,7 +66,7 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
 
     // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
     DWORD bitCnt;
-#if BIT64
+#if HOST_64BIT
     BitScanReverse64(&bitCnt, size - 1);
     HashShift(table) = (BYTE)(63 - bitCnt);
 #else

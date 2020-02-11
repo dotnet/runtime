@@ -5,6 +5,7 @@
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
     <BinPlaceRef>true</BinPlaceRef>
+    <TargetFrameworks>netcoreapp2.0;netcoreapp2.1;netcoreapp3.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('netcoreapp2.'))">
@@ -13,7 +14,7 @@
 
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
-    <BinPlaceConfiguration Include="$(Configuration)" RefPath="$(RefPath)" />
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)" RefPath="$(RefPath)" />
     <FileToExclude Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

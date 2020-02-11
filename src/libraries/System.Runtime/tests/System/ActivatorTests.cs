@@ -124,7 +124,6 @@ namespace System.Tests
             Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));
         }
 
-#if NETCOREAPP
         [Fact]
         public void CreateInstance_NotRuntimeType_ThrowsArgumentException()
         {
@@ -135,7 +134,6 @@ namespace System.Tests
                 AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(nonRuntimeType, new object[0]));
             }
         }
-#endif
 
         public static IEnumerable<object[]> CreateInstance_ContainsGenericParameters_TestData()
         {
@@ -155,13 +153,7 @@ namespace System.Tests
         {
             yield return new object[] { typeof(void) };
             yield return new object[] { typeof(void).MakeArrayType() };
-            yield return new object[] { Type.GetType("System.ArgIterator") };
-            // Fails with TypeLoadException in .NET Core as array types of ref structs
-            // are not supported.
-            if (!PlatformDetection.IsNetCore)
-            {
-                yield return new object[] { Type.GetType("System.ArgIterator").MakeArrayType() };
-            }
+            yield return new object[] { typeof(ArgIterator) };
         }
 
         [Theory]
@@ -262,11 +254,11 @@ namespace System.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "Activation Attributes are not supported in .NET Core.")]
         [InlineData(typeof(MarshalByRefObject))]
         [InlineData(typeof(SubMarshalByRefObject))]
         public void CreateInstance_MarshalByRefObjectNetCore_ThrowsPlatformNotSupportedException(Type type)
         {
+            // Activation Attributes are not supported in .NET Core.
             Assert.Throws<PlatformNotSupportedException>(() => Activator.CreateInstance(type, null, new object[] { 1 } ));
             Assert.Throws<PlatformNotSupportedException>(() => Activator.CreateInstance(type, null, new object[] { 1, 2 } ));
         }

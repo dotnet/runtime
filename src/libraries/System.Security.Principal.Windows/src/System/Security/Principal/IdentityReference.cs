@@ -17,16 +17,16 @@ namespace System.Security.Principal
 
         public abstract IdentityReference Translate(Type targetType);
 
-        public abstract override bool Equals(object o);
+        public abstract override bool Equals(object? o);
 
         public abstract override int GetHashCode();
 
         public abstract override string ToString();
 
-        public static bool operator ==(IdentityReference left, IdentityReference right)
+        public static bool operator ==(IdentityReference? left, IdentityReference? right)
         {
-            object l = left;
-            object r = right;
+            object? l = left;
+            object? r = right;
 
             if (l == r)
             {
@@ -38,11 +38,11 @@ namespace System.Security.Principal
             }
             else
             {
-                return left.Equals(right);
+                return left!.Equals(right);
             }
         }
 
-        public static bool operator !=(IdentityReference left, IdentityReference right)
+        public static bool operator !=(IdentityReference? left, IdentityReference? right)
         {
             return !(left == right);
         }

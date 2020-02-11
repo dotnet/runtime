@@ -118,7 +118,7 @@ bool json_parser_t::parse_stream(pal::istream_t& stream,
 {
     if (!stream.good())
     {
-        trace::error(_X("Cannot use stream for resource [%s]"), context.c_str());
+        trace::error(_X("Cannot use stream for resource [%s]: %s"), context.c_str(), pal::strerror(errno));
         return false;
     }
 

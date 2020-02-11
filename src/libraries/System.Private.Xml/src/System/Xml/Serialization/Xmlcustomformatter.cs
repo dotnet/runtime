@@ -24,7 +24,6 @@ namespace System.Xml.Serialization
 
         private static DateTimeSerializationSection.DateTimeSerializationMode Mode
         {
-            [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread-safety")]
             get
             {
                 if (s_mode == DateTimeSerializationSection.DateTimeSerializationMode.Default)

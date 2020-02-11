@@ -4,7 +4,7 @@
     <AssemblyName>System.Runtime.Numerics</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
@@ -28,11 +28,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>

@@ -85,13 +85,13 @@ jobs:
               ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
             displayName: Install Emscripten
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
-          displayName: Restore
-
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
             parameters:
-              installDotnet: false
+              installDotnet: true
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
+          displayName: Restore
 
         - script: $(_buildScript)
                 $(_buildAction)
@@ -153,6 +153,13 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+            condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
+
+          - task: CopyFiles@2
+            displayName: Prepare tmp assets to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/tmp
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/tmp
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
@@ -184,4 +191,5 @@ jobs:
               testScope: ${{ parameters.testScope }}
               creator: dotnet-bot
               helixToken: ''
+              testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
               extraHelixArguments: $(_extraHelixArguments)

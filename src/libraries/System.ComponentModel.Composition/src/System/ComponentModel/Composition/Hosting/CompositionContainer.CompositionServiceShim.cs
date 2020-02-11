@@ -10,7 +10,7 @@ namespace System.ComponentModel.Composition.Hosting
     {
         private class CompositionServiceShim : ICompositionService
         {
-            private readonly CompositionContainer _innerContainer = null;
+            private readonly CompositionContainer _innerContainer;
 
             public CompositionServiceShim(CompositionContainer innerContainer)
             {

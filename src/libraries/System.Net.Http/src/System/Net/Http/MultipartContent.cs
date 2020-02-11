@@ -13,9 +13,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "Represents a multipart/* content. Even if a collection of HttpContent is stored, " +
-        "suffix Collection is not appropriate.")]
     public class MultipartContent : HttpContent, IEnumerable<HttpContent>
     {
         #region Fields

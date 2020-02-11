@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Net.Quic</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Linux-Debug;$(NetCoreAppCurrent)-Linux-Release;$(NetCoreAppCurrent)-OSX-Debug;$(NetCoreAppCurrent)-OSX-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <ItemGroup>
@@ -55,7 +55,7 @@
     <Compile Include="Interop\Windows\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
-  <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
+  <ItemGroup Condition="'$(TargetsLinux)' == 'true' ">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs">
       <Link>Common\Interop\Linux\Interop.Libraries.cs</Link>
     </Compile>
@@ -71,10 +71,8 @@
     <Compile Include="Interop\Linux\MsQuicStatusHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Console" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
@@ -82,7 +80,6 @@
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Net" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -90,11 +87,8 @@
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

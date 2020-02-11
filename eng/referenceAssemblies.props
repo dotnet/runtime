@@ -7,10 +7,11 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <AdditionalBuildTargetFrameworks Condition="'$(BuildAllProjects)' == 'true'">$(AdditionalBuildTargetFrameworks);netstandard2.0;netstandard2.1</AdditionalBuildTargetFrameworks>    
     <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(AssemblyBinDirOutputPath)', 'ref'))</BaseOutputPath>
-    <OutputPath>$(BaseOutputPath)$(Configuration)</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(TargetFramework)-$(Configuration)</OutputPath>
     <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(MSBuildProjectName)', 'ref'))</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>

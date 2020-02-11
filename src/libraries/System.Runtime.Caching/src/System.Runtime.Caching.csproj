@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Runtime.Caching</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release;netstandard2.0-Windows_NT-Debug;netstandard2.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;netstandard2.0-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\Caching\_shims.cs" />

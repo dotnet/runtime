@@ -11,11 +11,11 @@ _add_executable(corerun
 )
 
 # FreeBSD and NetBSD implement dlopen(3) in libc
-if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
     target_link_libraries(corerun
         dl
     )
-endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 
 # Libc turns locks into no-ops if pthread was not loaded into process yet. Loading
 # pthread by the process executable ensures that all locks are initialized properly.
@@ -24,7 +24,7 @@ target_link_libraries(corerun
 )
 
 # Android implements pthread natively
-if(NOT CLR_CMAKE_HOST_ANDROID)
+if(NOT CLR_CMAKE_TARGET_ANDROID)
   target_link_libraries(corerun
     pthread
   )

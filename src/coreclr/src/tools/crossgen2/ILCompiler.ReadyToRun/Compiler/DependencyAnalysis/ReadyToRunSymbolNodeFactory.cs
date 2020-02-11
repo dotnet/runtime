@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -37,9 +37,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class ReadyToRunSymbolNodeFactory
     {
-        private readonly ReadyToRunCodegenNodeFactory _codegenNodeFactory;
+        private readonly NodeFactory _codegenNodeFactory;
 
-        public ReadyToRunSymbolNodeFactory(ReadyToRunCodegenNodeFactory codegenNodeFactory)
+        public ReadyToRunSymbolNodeFactory(NodeFactory codegenNodeFactory)
         {
             _codegenNodeFactory = codegenNodeFactory;
             CreateNodeCaches();

@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
         public readonly bool CaseInsensitive;
         private readonly CultureInfo _culture;
 
-        /// <summary>The maximum pattern length for which we'll attempt to create a Boyer-Moore table.</summary>
+        /// <summary>The maximum prefix string length for which we'll attempt to create a Boyer-Moore table.</summary>
         /// <remarks>This is limited in order to minimize the overhead of constructing a Regex.</remarks>
         public const int MaxLimit = 50_000; // must be <= char.MaxValue for RegexCompiler to compile Boyer-Moore correctly
 
@@ -341,7 +341,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
         /// <summary>Used when dumping for debugging.</summary>
         [ExcludeFromCodeCoverage]
-        public override string ToString() => Pattern;
+        public override string ToString() => Dump(string.Empty);
 
         [ExcludeFromCodeCoverage]
         public string Dump(string indent)

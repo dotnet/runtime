@@ -345,8 +345,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350",
-            Justification = "SHA1 is required for Compat")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
         public byte[] Thumbprint
         {
             get

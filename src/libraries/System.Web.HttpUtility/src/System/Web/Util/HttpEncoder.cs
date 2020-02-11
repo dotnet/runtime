@@ -607,8 +607,6 @@ namespace System.Web.Util
             return sb.ToString();
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings",
-            Justification = "Does not represent an entire URL, just a portion.")]
         [return: NotNullIfNotNull("value")]
         internal static string? UrlPathEncode(string? value)
         {
@@ -635,8 +633,6 @@ namespace System.Web.Util
         }
 
         // This is the original UrlPathEncode(string)
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings",
-            Justification = "Does not represent an entire URL, just a portion.")]
         private static string UrlPathEncodeImpl(string value)
         {
             if (string.IsNullOrEmpty(value))
