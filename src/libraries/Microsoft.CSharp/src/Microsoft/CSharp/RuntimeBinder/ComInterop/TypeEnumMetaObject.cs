@@ -36,7 +36,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         private BindingRestrictions EnumRestrictions() {
-            return BindingRestrictionsHelpers.GetRuntimeTypeRestriction(
+            return BindingRestrictions.GetTypeRestriction(
                 Expression, typeof(ComTypeEnumDesc)
             ).Merge(
                 // ((ComTypeEnumDesc)<arg>).TypeLib.Guid == <guid>
@@ -47,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                                 Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
                                 typeof(ComTypeDesc).GetProperty("TypeLib")),
                             typeof(ComTypeLibDesc).GetProperty("Guid")),
-                        AstUtils.Constant(_desc.TypeLib.Guid)
+                        Expression.Constant(_desc.TypeLib.Guid)
                     )
                 )
             ).Merge(
@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                             Helpers.Convert(Expression, typeof(ComTypeEnumDesc)),
                             typeof(ComTypeEnumDesc).GetProperty("TypeName")
                         ),
-                        AstUtils.Constant(_desc.TypeName)
+                        Expression.Constant(_desc.TypeName)
                     )
                 )
             );

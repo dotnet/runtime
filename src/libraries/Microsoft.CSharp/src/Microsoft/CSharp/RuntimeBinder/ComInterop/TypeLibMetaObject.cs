@@ -32,13 +32,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                                     ),
                                     typeof(ComTypeLibDesc).GetProperty("Guid")
                                 ),
-                                AstUtils.Constant(_lib.Guid)
+                                Expression.Constant(_lib.Guid)
                             )
                         )
                     );
 
                 return new DynamicMetaObject(
-                    AstUtils.Constant(
+                    Expression.Constant(
                         ((ComTypeLibDesc)Value).GetTypeLibObjectDesc(name)
                     ),
                     restrictions
