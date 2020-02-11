@@ -95,7 +95,15 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK) == CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE)
             {
-                ClassName = MetadataNameFormatter.FormatHandle(reader.MetadataReader, MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
+                if (reader.Composite)
+                {
+                    // TODO: EH clauses in composite mode
+                    ClassName = "TODO-composite module in EH clause";
+                }
+                else
+                {
+                    ClassName = MetadataNameFormatter.FormatHandle(reader.GetGlobalMetadataReader(), MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
+                }
             }
         }
 

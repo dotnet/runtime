@@ -12,9 +12,10 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
+
+using Internal.Runtime;
 
 namespace R2RDump
 {
@@ -55,16 +56,29 @@ namespace R2RDump
         private readonly static string[] ProbeExtensions = new string[] { ".ni.exe", ".ni.dll", ".exe", ".dll" };
 
         /// <summary>
-        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// Try to locate a (reference) assembly based on an AssemblyRef handle using the list of explicit reference assemblies
         /// and the list of reference paths passed to R2RDump.
         /// </summary>
-        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="metadataReader">Containing metadata reader for the assembly reference handle</param>
+        /// <param name="assemblyReferenceHandle">Handle representing the assembly reference</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
         public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
+            return FindAssembly(simpleName, parentFile);
+        }
+
+        /// <summary>
+        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// and the list of reference paths passed to R2RDump.
+        /// </summary>
+        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
+        /// <returns></returns>
+        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
                 if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
@@ -80,10 +94,16 @@ namespace R2RDump
             {
                 foreach (string extension in ProbeExtensions)
                 {
-                    string probeFile = Path.Combine(refPath, simpleName + extension);
-                    if (File.Exists(probeFile))
+                    try
                     {
-                        return Open(probeFile);
+                        string probeFile = Path.Combine(refPath, simpleName + extension);
+                        if (File.Exists(probeFile))
+                        {
+                            return Open(probeFile);
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    {
                     }
                 }
             }
@@ -99,7 +119,7 @@ namespace R2RDump
 
             if (!peReader.HasMetadata)
             {
-                throw new Exception($"ECMA metadata not found in file '{filename}'");
+                throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
             return peReader.GetMetadataReader();
@@ -176,7 +196,7 @@ namespace R2RDump
     class R2RDump
     {
         private readonly DumpOptions _options;
-        private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
+        private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
         private readonly TextWriter _writer;
         private Dumper _dumper;
 
@@ -404,7 +424,7 @@ namespace R2RDump
         {
             int queryInt;
             bool isNum = ArgStringToInt(query, out queryInt);
-            string typeName = Enum.GetName(typeof(ReadyToRunSection.SectionType), section.Type);
+            string typeName = Enum.GetName(typeof(ReadyToRunSectionType), section.Type);
 
             return (isNum && (int)section.Type == queryInt) || typeName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
