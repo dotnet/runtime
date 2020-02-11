@@ -1012,7 +1012,9 @@ namespace System.Text
 
             if (Sse2.X64.IsSupported)
             {
-                Debug.Assert(BitConverter.IsLittleEndian, "SSE2 narrowing assumes little-endian.");
+                // Narrows a vector of words [ w0 w1 w2 w3 ] to a vector of bytes
+                // [ b0 b1 b2 b3 b0 b1 b2 b3 ], then writes 4 bytes (32 bits) to the destination.
+
                 Vector128<short> vecWide = Sse2.X64.ConvertScalarToVector128UInt64(value).AsInt16();
                 Vector128<uint> vecNarrow = Sse2.PackUnsignedSaturate(vecWide, vecWide).AsUInt32();
                 Unsafe.WriteUnaligned<uint>(ref outputBuffer, Sse2.ConvertToUInt32(vecNarrow));
