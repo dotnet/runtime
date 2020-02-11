@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="GenerateRuntimeOSPropsFile">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly. -->
