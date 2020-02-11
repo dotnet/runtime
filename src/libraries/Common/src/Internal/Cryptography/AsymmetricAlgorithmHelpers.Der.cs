@@ -4,8 +4,6 @@
 
 using System;
 using System.Diagnostics;
-using System.IO;
-using System.Numerics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
@@ -25,7 +23,7 @@ namespace Internal.Cryptography
             Debug.Assert(input.Length > 1);
 
             // Input is (r, s), each of them exactly half of the array.
-            // Output is the DER encoded value of CONSTRUCTEDSEQUENCE(INTEGER(r), INTEGER(s)).
+            // Output is the DER encoded value of SEQUENCE(INTEGER(r), INTEGER(s)).
             int halfLength = input.Length / 2;
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
@@ -41,15 +39,15 @@ namespace Internal.Cryptography
         /// <summary>
         /// Convert Der format of (r, s) to Ieee1363 format
         /// </summary>
-        public static byte[] ConvertDerToIeee1363(byte[] input, int inputOffset, int inputCount, int fieldSizeBits)
+        public static byte[] ConvertDerToIeee1363(ReadOnlySpan<byte> input, int fieldSizeBits)
         {
             int size = BitsToBytes(fieldSizeBits);
 
-            AsnReader reader = new AsnReader(input.AsMemory(inputOffset, inputCount), AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
+            AsnValueReader reader = new AsnValueReader(input, AsnEncodingRules.DER);
+            AsnValueReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
-            ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes().Span;
-            ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes().Span;
+            ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes();
+            ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes();
             sequenceReader.ThrowIfNotEmpty();
 
             byte[] response = new byte[2 * size];
@@ -63,32 +61,39 @@ namespace Internal.Cryptography
         /// <summary>
         /// Converts IeeeP1363 format to the specified signature format
         /// </summary>
-        public static byte[] ConvertIeeeP1363Signature(byte[] signature, DSASignatureFormat signatureFormat)
+        internal static byte[] ConvertFromIeeeP1363Signature(byte[] signature, DSASignatureFormat targetFormat)
         {
-            switch (signatureFormat)
+            switch (targetFormat)
             {
                 case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
                     return signature;
                 case DSASignatureFormat.Rfc3279DerSequence:
                     return ConvertIeee1363ToDer(signature);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        targetFormat.ToString());
             }
         }
 
         /// <summary>
         /// Converts signature in the specified signature format to IeeeP1363
         /// </summary>
-        public static byte[] ConvertSignatureToIeeeP1363(DSASignatureFormat signatureFormat, byte[] signature, int offset, int count, int fieldSizeBits)
+        internal static byte[] ConvertSignatureToIeeeP1363(
+            DSASignatureFormat currentFormat,
+            ReadOnlySpan<byte> signature,
+            int fieldSizeBits)
         {
-            switch (signatureFormat)
+            switch (currentFormat)
             {
                 case DSASignatureFormat.IeeeP1363FixedFieldConcatenation:
-                    return signature;
+                    return signature.ToArray();
                 case DSASignatureFormat.Rfc3279DerSequence:
-                    return ConvertDerToIeee1363(signature, offset, count, fieldSizeBits);
+                    return ConvertDerToIeee1363(signature, fieldSizeBits);
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    throw new CryptographicException(
+                        SR.Cryptography_UnknownSignatureFormat,
+                        currentFormat.ToString());
             }
         }
 #endif
@@ -122,30 +127,45 @@ namespace Internal.Cryptography
         }
 
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-        internal static byte[] ConvertSignatureToIeeeP1363(this DSA dsa, DSASignatureFormat signatureFormat, ReadOnlySpan<byte> signature)
+        internal static byte[] ConvertSignatureToIeeeP1363(
+            this DSA dsa,
+            DSASignatureFormat currentFormat,
+            ReadOnlySpan<byte> signature)
         {
             try
             {
                 DSAParameters pars = dsa.ExportParameters(false);
-                return AsymmetricAlgorithmHelpers.ConvertSignatureToIeeeP1363(signatureFormat, signature.ToArray(), 0, signature.Length, pars.Q.Length * 8);
+
+                return ConvertSignatureToIeeeP1363(
+                    currentFormat,
+                    signature,
+                    pars.Q.Length * 8);
             }
             catch (CryptographicException)
             {
-                // This method is used only for verification where we want to return false when signature is incorrectly formatted
+                // This method is used only for verification where we want to return false when signature is
+                // incorrectly formatted.
                 // We do not want to bubble up the exception anywhere.
                 return null;
             }
         }
 
-        internal static byte[] ConvertSignatureToIeeeP1363(this ECDsa ecdsa, DSASignatureFormat signatureFormat, ReadOnlySpan<byte> signature)
+        internal static byte[] ConvertSignatureToIeeeP1363(
+            this ECDsa ecdsa,
+            DSASignatureFormat currentFormat,
+            ReadOnlySpan<byte> signature)
         {
             try
             {
-                return AsymmetricAlgorithmHelpers.ConvertSignatureToIeeeP1363(signatureFormat, signature.ToArray(), 0, signature.Length, ecdsa.KeySize);
+                return ConvertSignatureToIeeeP1363(
+                    currentFormat,
+                    signature,
+                    ecdsa.KeySize);
             }
             catch (CryptographicException)
             {
-                // This method is used only for verification where we want to return false when signature is incorrectly formatted
+                // This method is used only for verification where we want to return false when signature is
+                // incorrectly formatted.
                 // We do not want to bubble up the exception anywhere.
                 return null;
             }

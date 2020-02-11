@@ -109,9 +109,7 @@ namespace System.Security.Cryptography
 
                     byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, hash);
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
-                        derFormatSignature,
-                        0,
-                        derFormatSignature.Length,
+                        derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
 
                     return ieeeFormatSignature;
@@ -127,9 +125,7 @@ namespace System.Security.Cryptography
 
                     byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, source);
                     byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
-                        derFormatSignature,
-                        0,
-                        derFormatSignature.Length,
+                        derFormatSignature.AsSpan(0, derFormatSignature.Length),
                         KeySize);
 
                     if (ieeeFormatSignature.Length <= destination.Length)

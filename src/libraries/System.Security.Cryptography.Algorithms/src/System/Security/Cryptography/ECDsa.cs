@@ -389,7 +389,7 @@ namespace System.Security.Cryptography
 
             // The only available implementation here is abstract method, use it
             byte[] result = SignHash(hash.ToArray());
-            byte[] converted = AsymmetricAlgorithmHelpers.ConvertIeeeP1363Signature(result, signatureFormat);
+            byte[] converted = AsymmetricAlgorithmHelpers.ConvertFromIeeeP1363Signature(result, signatureFormat);
             return Helpers.TryCopyToDestination(converted, destination, out bytesWritten);
         }
 

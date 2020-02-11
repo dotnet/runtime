@@ -306,6 +306,9 @@
   <data name="Cryptography_UnknownPaddingMode" xml:space="preserve">
     <value>Unknown padding mode used.</value>
   </data>
+  <data name="Cryptography_UnknownSignatureFormat" xml:space="preserve">
+    <value>The signature format '{0}' is unknown.</value>
+  </data>
   <data name="Cryptography_UnexpectedTransformTruncation" xml:space="preserve">
     <value>CNG provider unexpectedly terminated encryption or decryption prematurely.</value>
   </data>

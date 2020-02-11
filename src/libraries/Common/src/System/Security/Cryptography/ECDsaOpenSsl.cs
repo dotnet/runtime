@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.EcDsaSign(hash, signature, out signatureLength, key))
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
 
-                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
+                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureLength), KeySize);
 
                 return converted;
             }
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
 
-                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
+                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureLength), KeySize);
                     }
                     finally
                     {

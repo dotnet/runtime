@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
                         signature.Length);
 
                     int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                    return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
+                    return AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureSize), signatureFieldSize);
                 }
                 finally
                 {
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography
                                          signature.Length);
 
                         int signatureFieldSize = Interop.Crypto.DsaSignatureFieldSize(key) * BitsPerByte;
-                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureSize, signatureFieldSize);
+                        converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature.AsSpan(0, signatureSize), signatureFieldSize);
                     }
                     finally
                     {

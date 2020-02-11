@@ -91,13 +91,9 @@ namespace System.Security.Cryptography
 
         protected override bool VerifyHashCore(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, DSASignatureFormat signatureFormat)
         {
-            if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
+            if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
                 signature = this.ConvertSignatureToIeeeP1363(signatureFormat, signature);
-            }
-            else if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
-            {
-                throw new ArgumentOutOfRangeException(nameof(signatureFormat));
             }
 #endif
             using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())

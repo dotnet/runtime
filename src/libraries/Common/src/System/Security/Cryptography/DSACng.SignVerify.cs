@@ -98,7 +98,8 @@ namespace System.Security.Cryptography
                 }
                 else if (signatureFormat != DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(signatureFormat));
+                    Debug.Fail($"DSASignatureFormat '{signatureFormat}' was not handled.");
+                    return base.VerifySignatureCore(hash, signature, signatureFormat);
                 }
 
                 Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
