@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         public override string ToString() {
-            return String.Format(CultureInfo.CurrentCulture, "<bound dispmethod {0}>", _memberName);
+            return string.Format(CultureInfo.CurrentCulture, "<bound dispmethod {0}>", _memberName);
         }
 
         public IDispatchComObject DispatchComObject {

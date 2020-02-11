@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         private readonly object[] _memberValues;
 
         public override string ToString() {
-            return String.Format(CultureInfo.CurrentCulture, "<enum '{0}'>", TypeName);
+            return string.Format(CultureInfo.CurrentCulture, "<enum '{0}'>", TypeName);
         }
 
         internal ComTypeEnumDesc(ComTypes.ITypeInfo typeInfo, ComTypeLibDesc typeLibDesc) :

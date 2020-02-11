@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// The parameter description of a method defined in a type library
     /// </summary>
     public class ComParamDesc {
-        # region private fields
+        #region private fields
 
         private readonly bool _isOut; // is an output parameter?
         private readonly bool _isOpt; // is an optional parameter?
@@ -27,9 +27,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         private readonly Type _type;
         private readonly object _defaultValue;
 
-        # endregion
+        #endregion
 
-        # region ctor
+        #region ctor
 
         /// <summary>
         /// Creates a representation for the paramter of a COM method
@@ -40,7 +40,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // yields a runtime exception in the ToString() function.
             _defaultValue = DBNull.Value;
 
-            if (!String.IsNullOrEmpty(name)) {
+            if (!string.IsNullOrEmpty(name)) {
                 // This is a parameter, not a return value
                 _isOut = (elemDesc.desc.paramdesc.wParamFlags & PARAMFLAG.PARAMFLAG_FOUT) != 0;
                 _isOpt = (elemDesc.desc.paramdesc.wParamFlags & PARAMFLAG.PARAMFLAG_FOPT) != 0;
@@ -79,7 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// TODO: Return values should be represented by a different type
         /// </summary>
         internal ComParamDesc(ref ELEMDESC elemDesc)
-            : this(ref elemDesc, String.Empty) {
+            : this(ref elemDesc, string.Empty) {
         }
 
         //internal struct PARAMDESCEX {
@@ -191,9 +191,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return result.ToString();
         }
 
-        # endregion
+        #endregion
 
-        # region properties
+        #region properties
 
         public bool IsOut {
             get { return _isOut; }
@@ -226,7 +226,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             }
         }
 
-        # endregion
+        #endregion
     }
 }
 

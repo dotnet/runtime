@@ -75,7 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 case VarEnum.VT_UNKNOWN:
                 case VarEnum.VT_DISPATCH:
                 case VarEnum.VT_VARIANT:
-                    return typeof(Object);
+                    return typeof(object);
 
                 case VarEnum.VT_ERROR:
                     return typeof(ErrorWrapper);
@@ -88,6 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         private static Dictionary<VarEnum, Type> CreateComToManagedPrimitiveTypes() {
             Dictionary<VarEnum, Type> dict = new Dictionary<VarEnum, Type>();
 
+#pragma warning disable SA1121 // Use built-in type alias
             #region Generated Outer ComToManagedPrimitiveTypes
 
             // *** BEGIN GENERATED CODE ***
@@ -111,6 +112,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             dict[VarEnum.VT_BSTR] = typeof(String);
 
             // *** END GENERATED CODE ***
+
+#pragma warning disable SA1121 // Use built-in type alias
 
             #endregion
 

@@ -270,6 +270,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return type.CreateType().GetMethod("ConvertByrefToPtr");
         }
 
+#pragma warning disable SA1121 // Use built-in type alias
 
         #region Generated Convert ByRef Delegates
 
@@ -327,6 +328,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         public static IntPtr ConvertDecimalByrefToPtr(ref Decimal value) { return _ConvertDecimalByrefToPtr(ref value); }
 
         // *** END GENERATED CODE ***
+
+#pragma warning restore SA1121 // Use built-in type alias
 
         #endregion
 
@@ -458,7 +461,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                     il.Emit(OpCodes.Ldarg_3);
                     break;
                 default:
-                    if (index <= Byte.MaxValue) {
+                    if (index <= byte.MaxValue) {
                         il.Emit(OpCodes.Ldarg_S, (byte)index);
                     } else {
                         il.Emit(OpCodes.Ldarg, index);

@@ -105,11 +105,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 typeName = ctd.TypeName;
             }
 
-            if (String.IsNullOrEmpty(typeName)) {
+            if (string.IsNullOrEmpty(typeName)) {
                 typeName = "IDispatch";
             }
 
-            return String.Format(CultureInfo.CurrentCulture, "{0} ({1})", RuntimeCallableWrapper.ToString(), typeName);
+            return string.Format(CultureInfo.CurrentCulture, "{0} ({1})", RuntimeCallableWrapper.ToString(), typeName);
         }
 
         public ComTypeDesc ComTypeDesc {
@@ -239,7 +239,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, String.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
         }
 
         internal bool TryGetPropertySetterExplicit(string name, out ComMethodDesc method, Type limitType, bool holdsNull) {
@@ -269,7 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, String.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
         }
 
         internal override IList<string> GetMemberNames(bool dataOnly) {

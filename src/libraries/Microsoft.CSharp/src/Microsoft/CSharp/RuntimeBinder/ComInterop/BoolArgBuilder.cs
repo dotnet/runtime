@@ -23,8 +23,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // parameter  ? -1 : 0
             return Expression.Condition(
                 Marshal(parameter),
-                Expression.Constant((Int16)(-1)),
-                Expression.Constant((Int16)0)
+                Expression.Constant((short)(-1)),
+                Expression.Constant((short)0)
             );
         }
 
@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return base.UnmarshalFromRef(
                 Expression.NotEqual(
                      value,
-                     Expression.Constant((Int16)0)
+                     Expression.Constant((short)0)
                 )
             );
         }

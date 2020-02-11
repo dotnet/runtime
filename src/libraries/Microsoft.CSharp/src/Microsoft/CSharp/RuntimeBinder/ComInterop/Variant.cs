@@ -49,7 +49,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         // Hence, it is declared to completely overlap with TypeUnion. A Decimal does not use the first two bytes, and so
         // TypeUnion._vt can still be used to encode the type.
         [FieldOffset(0)]
-        private Decimal _decimal;
+        private decimal _decimal;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct TypeUnion {
@@ -70,6 +70,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
         [StructLayout(LayoutKind.Explicit)]
         private struct UnionTypes {
+
+#pragma warning disable SA1121 // Use built-in type alias
+
             #region Generated Outer Variant union types
 
             // *** BEGIN GENERATED CODE ***
@@ -103,6 +106,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // *** END GENERATED CODE ***
 
             #endregion
+
+#pragma warning disable SA1121 // Use built-in type alias
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
             [FieldOffset(0)]
@@ -284,6 +289,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                     throw Assert.Unreachable;
             }
         }
+
+#pragma warning disable SA1121 // Use built-in type alias
 
         #region Generated Outer Variant accessors
 
@@ -694,6 +701,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         // *** END GENERATED CODE ***
 
         #endregion
+
+#pragma warning disable SA1121 // Use built-in type alias
 
         /// <summary>
         /// Helper method for generated code

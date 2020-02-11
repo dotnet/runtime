@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         internal override Expression MarshalToRef(Expression parameter) {
             // Decimal.ToOACurrency(parameter.WrappedObject)
             return Expression.Call(
-                typeof(Decimal).GetMethod("ToOACurrency"),
+                typeof(decimal).GetMethod("ToOACurrency"),
                 Marshal(parameter)
             );
         }
@@ -38,9 +38,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // Decimal.FromOACurrency(value)
             return base.UnmarshalFromRef(
                 Expression.New(
-                    typeof(CurrencyWrapper).GetConstructor(new Type[] { typeof(Decimal) }),
+                    typeof(CurrencyWrapper).GetConstructor(new Type[] { typeof(decimal) }),
                     Expression.Call(
-                        typeof(Decimal).GetMethod("FromOACurrency"),
+                        typeof(decimal).GetMethod("FromOACurrency"),
                         value
                     )
                 )
