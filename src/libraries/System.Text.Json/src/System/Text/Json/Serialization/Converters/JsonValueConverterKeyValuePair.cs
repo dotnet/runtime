@@ -3,22 +3,26 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonKeyValuePairConverter<TKey, TValue> : JsonConverter<KeyValuePair<TKey, TValue>>
+    internal sealed class JsonKeyValuePairConverter<TKey, TValue> : JsonValueConverter<KeyValuePair<TKey, TValue>>
     {
         private const string KeyName = "Key";
         private const string ValueName = "Value";
 
-        // "encoder: null" is used since the literal values of "Key" and "Value" should not normally be escaped
-        // unless a custom encoder is used that escapes these ASCII characters (rare).
-        // Also by not specifying an encoder allows the values to be cached statically here.
+        // todo: move these to JsonSerializerOptions and use the proper encoding.
         private static readonly JsonEncodedText _keyName = JsonEncodedText.Encode(KeyName, encoder: null);
         private static readonly JsonEncodedText _valueName = JsonEncodedText.Encode(ValueName, encoder: null);
 
-        public override KeyValuePair<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        // todo: it is possible to cache the underlying converters since this is an internal converter and
+        // an instance is created only once for each JsonSerializerOptions instance.
+
+        internal override bool OnTryRead(
+            ref Utf8JsonReader reader,
+            Type typeToConvert, JsonSerializerOptions options,
+            ref ReadStack state,
+            out KeyValuePair<TKey, TValue> value)
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
@@ -32,7 +36,7 @@ namespace System.Text.Json.Serialization.Converters
             bool valueSet = false;
 
             // Get the first property.
-            reader.Read();
+            reader.ReadWithVerify();
             if (reader.TokenType != JsonTokenType.PropertyName)
             {
                 ThrowHelper.ThrowJsonException();
@@ -41,12 +45,14 @@ namespace System.Text.Json.Serialization.Converters
             string propertyName = reader.GetString()!;
             if (propertyName == KeyName)
             {
-                k = ReadProperty<TKey>(ref reader, typeToConvert, options);
+                reader.ReadWithVerify();
+                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
                 keySet = true;
             }
             else if (propertyName == ValueName)
             {
-                v = ReadProperty<TValue>(ref reader, typeToConvert, options);
+                reader.ReadWithVerify();
+                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
                 valueSet = true;
             }
             else
@@ -55,22 +61,24 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             // Get the second property.
-            reader.Read();
+            reader.ReadWithVerify();
             if (reader.TokenType != JsonTokenType.PropertyName)
             {
                 ThrowHelper.ThrowJsonException();
             }
 
             propertyName = reader.GetString()!;
-            if (propertyName == ValueName)
+            if (propertyName == KeyName)
             {
-                v = ReadProperty<TValue>(ref reader, typeToConvert, options);
-                valueSet = true;
-            }
-            else if (propertyName == KeyName)
-            {
-                k = ReadProperty<TKey>(ref reader, typeToConvert, options);
+                reader.ReadWithVerify();
+                k = JsonSerializer.Deserialize<TKey>(ref reader, options, ref state, KeyName);
                 keySet = true;
+            }
+            else if (propertyName == ValueName)
+            {
+                reader.ReadWithVerify();
+                v = JsonSerializer.Deserialize<TValue>(ref reader, options, ref state, ValueName);
+                valueSet = true;
             }
             else
             {
@@ -82,59 +90,29 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowJsonException();
             }
 
-            reader.Read();
+            reader.ReadWithVerify();
 
             if (reader.TokenType != JsonTokenType.EndObject)
             {
                 ThrowHelper.ThrowJsonException();
             }
 
-            return new KeyValuePair<TKey, TValue>(k, v);
+            value = new KeyValuePair<TKey, TValue>(k, v);
+            return true;
         }
 
-        private T ReadProperty<T>(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            T k;
-
-            // Attempt to use existing converter first before re-entering through JsonSerializer.Deserialize().
-            // The default converter for objects does not parse null objects as null, so it is not used here.
-            if (typeToConvert != typeof(object) && (options?.GetConverter(typeToConvert) is JsonConverter<T> keyConverter))
-            {
-                reader.Read();
-                k = keyConverter.Read(ref reader, typeToConvert, options);
-            }
-            else
-            {
-                k = JsonSerializer.Deserialize<T>(ref reader, options);
-            }
-
-            return k!;
-        }
-
-        private void WriteProperty<T>(Utf8JsonWriter writer, T value, JsonEncodedText name, JsonSerializerOptions? options)
-        {
-            Type typeToConvert = typeof(T);
-
-            writer.WritePropertyName(name);
-
-            // Attempt to use existing converter first before re-entering through JsonSerializer.Serialize().
-            // The default converter for object does not support writing.
-            if (typeToConvert != typeof(object) && (options?.GetConverter(typeToConvert) is JsonConverter<T> keyConverter))
-            {
-                keyConverter.Write(writer, value, options);
-            }
-            else
-            {
-                JsonSerializer.Serialize<T>(writer, value, options);
-            }
-        }
-
-        public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions? options)
+        internal override bool OnTryWrite(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WriteStartObject();
-            WriteProperty(writer, value.Key, _keyName, options);
-            WriteProperty(writer, value.Value, _valueName, options);
+
+            writer.WritePropertyName(_keyName);
+            JsonSerializer.Serialize(writer, value.Key, options, ref state, KeyName);
+
+            writer.WritePropertyName(_valueName);
+            JsonSerializer.Serialize(writer, value.Value, options, ref state, ValueName);
+
             writer.WriteEndObject();
+            return true;
         }
     }
 }
