@@ -11,9 +11,7 @@
 class AssemblyLoadContext : public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
 {
 public:
-    AssemblyLoadContext()
-    {
-    }
+    AssemblyLoadContext();
 
     STDMETHOD(GetBinderID)(
         /* [retval][out] */ UINT_PTR* pBinderId);

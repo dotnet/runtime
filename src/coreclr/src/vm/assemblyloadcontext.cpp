@@ -4,6 +4,10 @@
 
 #include "common.h"
 
+AssemblyLoadContext::AssemblyLoadContext()
+{
+}
+
 HRESULT AssemblyLoadContext::GetBinderID(
     UINT_PTR* pBinderId)
 {
