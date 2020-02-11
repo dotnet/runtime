@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
     /// </summary>
     internal sealed class SafeProvHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private string _containerName;
-        private string _providerName;
+        private string? _containerName;
+        private string? _providerName;
         private int _type;
         private uint _flags;
         private bool _fPersistKeyInCsp;
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             _fPersistKeyInCsp = true;
         }
 
-        internal string ContainerName
+        internal string? ContainerName
         {
             get
             {
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal string ProviderName
+        internal string? ProviderName
         {
             get
             {

@@ -16,8 +16,8 @@ namespace System.Security.Cryptography
         private int _keySize;
         private readonly CspParameters _parameters;
         private readonly bool _randomKeyContainer;
-        private SafeKeyHandle _safeKeyHandle;
-        private SafeProvHandle _safeProvHandle;
+        private SafeKeyHandle? _safeKeyHandle;
+        private SafeProvHandle? _safeProvHandle;
         private static volatile CspProviderFlags s_useMachineKeyStore = 0;
         private bool _disposed;
 
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeProvHandle current = _safeProvHandle;
+                    SafeProvHandle? current = _safeProvHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -112,7 +112,7 @@ namespace System.Security.Cryptography
 
                     if (current != null)
                     {
-                        SafeKeyHandle keyHandle = _safeKeyHandle;
+                        SafeKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
                         keyHandle?.Dispose();
                         current.Dispose();
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
             {
                 lock (_parameters)
                 {
-                    SafeKeyHandle current = _safeKeyHandle;
+                    SafeKeyHandle? current = _safeKeyHandle;
 
                     if (ReferenceEquals(value, current))
                     {
@@ -336,7 +336,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            byte[] encryptedKey = null;
+            byte[] encryptedKey = null!;
             CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
             return encryptedKey;
         }

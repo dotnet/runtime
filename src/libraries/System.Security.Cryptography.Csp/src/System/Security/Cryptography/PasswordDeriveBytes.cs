@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -14,12 +16,12 @@ namespace System.Security.Cryptography
         private int _extraCount;
         private int _prefix;
         private int _iterations;
-        private byte[] _baseValue;
-        private byte[] _extra;
-        private byte[] _salt;
+        private byte[]? _baseValue;
+        private byte[]? _extra;
+        private byte[]? _salt;
         private readonly byte[] _password;
-        private string _hashName;
-        private HashAlgorithm _hash;
+        private string? _hashName;
+        private HashAlgorithm? _hash;
         private readonly CspParameters _cspParams;
 
         public PasswordDeriveBytes(string strPassword, byte[] rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
@@ -50,7 +52,8 @@ namespace System.Security.Cryptography
             _cspParams = cspParams;
         }
 
-        public string HashName
+        [DisallowNull]
+        public string? HashName
         {
             get { return _hashName; }
             set
@@ -59,7 +62,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(HashName));
 
                 _hashName = value;
-                _hash = (HashAlgorithm)CryptoConfig.CreateFromName(_hashName);
+                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName);
             }
         }
 
@@ -77,18 +80,18 @@ namespace System.Security.Cryptography
             }
         }
 
-        public byte[] Salt
+        public byte[]? Salt
         {
             get
             {
-                return (byte[])_salt?.Clone();
+                return (byte[]?)_salt?.Clone();
             }
             set
             {
                 if (_baseValue != null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(Salt));
 
-                _salt = (byte[])value?.Clone();
+                _salt = (byte[]?)value?.Clone();
             }
         }
 
@@ -181,6 +184,7 @@ namespace System.Security.Cryptography
 
         private byte[] ComputeBaseValue()
         {
+            Debug.Assert(_hash != null);
             _hash.Initialize();
             _hash.TransformBlock(_password, 0, _password.Length, _password, 0);
 
@@ -195,11 +199,11 @@ namespace System.Security.Cryptography
 
             for (int i = 1; i < (_iterations - 1); i++)
             {
-                _hash.ComputeHash(_baseValue);
+                _hash.ComputeHash(_baseValue!);
                 _baseValue = _hash.Hash;
             }
 
-            return _baseValue;
+            return _baseValue!;
         }
 
         private byte[] ComputeBytes(int cb)
@@ -208,18 +212,18 @@ namespace System.Security.Cryptography
             int ib = 0;
             byte[] rgb;
 
-            _hash.Initialize();
+            _hash!.Initialize();
             cbHash = _hash.HashSize / 8;
             rgb = new byte[((cb + cbHash - 1) / cbHash) * cbHash];
 
             using (CryptoStream cs = new CryptoStream(Stream.Null, _hash, CryptoStreamMode.Write))
             {
                 HashPrefix(cs);
-                cs.Write(_baseValue, 0, _baseValue.Length);
+                cs.Write(_baseValue!, 0, _baseValue!.Length);
                 cs.Close();
             }
 
-            Buffer.BlockCopy(_hash.Hash, 0, rgb, ib, cbHash);
+            Buffer.BlockCopy(_hash.Hash!, 0, rgb, ib, cbHash);
             ib += cbHash;
 
             while (cb > ib)
@@ -232,7 +236,7 @@ namespace System.Security.Cryptography
                     cs.Close();
                 }
 
-                Buffer.BlockCopy(_hash.Hash, 0, rgb, ib, cbHash);
+                Buffer.BlockCopy(_hash.Hash!, 0, rgb, ib, cbHash);
                 ib += cbHash;
             }
 
