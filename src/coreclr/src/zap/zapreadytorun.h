@@ -27,7 +27,7 @@ class ZapReadyToRunHeader : public ZapNode
 
     static int __cdecl SectionCmp(const void* a_, const void* b_)
     {
-        return (DWORD)((Section*)a_)->type - (DWORD)((Section*)b_)->type;
+        return (uint32_t)((Section*)a_)->type - (uint32_t)((Section*)b_)->type;
     }
 
 public:

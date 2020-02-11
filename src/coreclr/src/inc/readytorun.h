@@ -45,7 +45,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS     = 0x00000008    // PInvoke stubs compiled into image are non-shareable (no secret parameter)
 };
 
-enum class ReadyToRunSectionType : DWORD
+enum class ReadyToRunSectionType : uint32_t
 {
     CompilerIdentifier          = 100,
     ImportSections              = 101,
