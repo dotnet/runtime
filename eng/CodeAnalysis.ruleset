@@ -50,7 +50,6 @@
     <Rule Id="CA1819" Action="None" /> <!-- Properties should not return arrays -->
     <Rule Id="CA1820" Action="None" /> <!-- Test for empty strings using string length -->
     <Rule Id="CA1822" Action="None" /> <!-- Mark members as static -->
-    <Rule Id="CA1827" Action="None" /> <!-- Do not use Count() when Any() can be used -->
     <Rule Id="CA2000" Action="None" /> <!-- Dispose objects before losing scope -->
     <Rule Id="CA2002" Action="None" /> <!-- Do not lock on objects with weak identity -->
     <Rule Id="CA2010" Action="None" /> <!-- Always consume the value returned by methods marked with PreserveSigAttribute -->

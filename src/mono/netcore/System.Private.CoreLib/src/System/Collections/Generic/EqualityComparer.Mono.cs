@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections.Generic
 {
@@ -15,8 +16,9 @@ namespace System.Collections.Generic
 			get {
 				EqualityComparer<T> comparer = defaultComparer;
 				if (comparer == null) {
-					comparer = CreateComparer();
-					defaultComparer = comparer;
+					// Do not use static constructor. Generic static constructors are problematic for Mono AOT.
+					Interlocked.CompareExchange(ref defaultComparer, CreateComparer(), null);
+					comparer = defaultComparer;
 				}
 				return comparer;
 			}

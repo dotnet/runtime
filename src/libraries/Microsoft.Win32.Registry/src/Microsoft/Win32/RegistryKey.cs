@@ -126,7 +126,6 @@ namespace Microsoft.Win32
         /// <summary>Creates a new subkey, or opens an existing one.</summary>
         /// <param name="subkey">Name or path to subkey to create or open.</param>
         /// <returns>The subkey, or <b>null</b> if the operation failed.</returns>
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
         public RegistryKey CreateSubKey(string subkey)
         {
             return CreateSubKey(subkey, _checkMode);

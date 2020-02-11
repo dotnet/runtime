@@ -16,8 +16,6 @@ namespace System.Linq.Expressions.Interpreter
     {
         private const int MaximumArity = 17;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1506:AvoidExcessiveClassCoupling")]
         internal static Type MakeDelegate(Type[] types)
         {
             Debug.Assert(types != null && types.Length > 0);

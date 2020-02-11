@@ -10,7 +10,6 @@ namespace System.Net.Tests
     public class LoggingTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "NetEventSource is only part of .NET Core.")]
         [SkipOnCoreClr("System.Net.Tests are flaky", RuntimeConfiguration.Checked)]
         public void EventSource_ExistsWithCorrectId()
         {

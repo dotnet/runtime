@@ -4363,8 +4363,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                     size = EA_8BYTE;
                 }
 #endif
-
-                GetEmitter()->emitIns_R_R(ins_Copy(destMemType), size, destRegNum, regNum);
+                instruction copyIns = ins_Copy(regNum, destMemType);
+#if defined(TARGET_XARCH)
+                // For INS_mov_xmm2i, the source xmm reg comes first.
+                if (copyIns == INS_mov_xmm2i)
+                {
+                    GetEmitter()->emitIns_R_R(copyIns, size, regNum, destRegNum);
+                }
+                else
+#endif // TARGET_XARCH
+                {
+                    GetEmitter()->emitIns_R_R(copyIns, size, destRegNum, regNum);
+                }
 #ifdef USING_SCOPE_INFO
                 psiMoveToReg(varNum);
 #endif // USING_SCOPE_INFO

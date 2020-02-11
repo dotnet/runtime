@@ -2,19 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-
-namespace System.Text.Json.Serialization.Converters
+namespace System.Text.Json.Serialization
 {
-    // Helper to deserialize data into collections that store key-value pairs (not including KeyValuePair<,>)
-    // e.g. IDictionary, Hashtable, Dictionary<,> IDictionary<,>, SortedList etc.
-    // We'll call these collections "dictionaries".
-    // Note: the KeyValuePair<,> type has a value converter, so its deserialization flow will not reach here.
-    // Also, KeyValuePair<,> is sealed, so deserialization will flow here to support custom types that
-    // implement KeyValuePair<,>.
-    internal abstract class JsonDictionaryConverter
+    /// <summary>
+    /// Base class for dictionary converters such as IDictionary, Hashtable, Dictionary{,} IDictionary{,} and SortedList.
+    /// </summary>
+    internal abstract class JsonDictionaryConverter<T> : JsonResumableConverter<T>
     {
-        // Return type is object, not IDictionary as not all "dictionaries" implement IDictionary e.g. IDictionary<TKey, TValue>.
-        public abstract object CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options);
+        internal override ClassType ClassType => ClassType.Dictionary;
+        protected internal abstract bool OnWriteResume(Utf8JsonWriter writer, T dictionary, JsonSerializerOptions options, ref WriteStack state);
     }
 }

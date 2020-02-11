@@ -312,10 +312,11 @@ basic encoding, with extended encoding for large values).
 
 ## READYTORUN_SECTION_RUNTIME_FUNCTIONS
 
-This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all functions in the
-image with pointers to their unwind info. The standard Windows xdata/pdata format is used.
-ARM format is used for x86 to compensate for lack of x86 unwind info standard.
-The unwind info blob is immediately followed by GC info blob. The encoding slightly differs for amd64
+This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info. 
+Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data. 
+The standard Windows xdata/pdata format is used.
+ARM format is used for x86 to compensate for the lack of x86 unwind info standard.
+The unwind info blob is immediately followed by the GC info blob. The encoding slightly differs for amd64
 which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 
 ### RUNTIME_FUNCTION (x86, arm, arm64, size = 8 bytes)

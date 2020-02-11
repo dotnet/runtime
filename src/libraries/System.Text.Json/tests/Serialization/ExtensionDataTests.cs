@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
@@ -653,8 +655,9 @@ namespace System.Text.Json.Serialization.Tests
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
+            // This fails with NotSupportedException since all Dictionaries currently need to have a string TKey.
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj2));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
         }
 
         private class ClassWithExtensionPropertyAlreadyInstantiated
@@ -686,6 +689,71 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
 
             public Dictionary<string, object> ActualDictionary { get; set; }
+        }
+
+        [Fact]
+        public static void CustomObjectConverterInExtensionProperty()
+        {
+            const string Json = "{\"hello\": \"world\"}";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonObjectConverter());
+
+            ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(Json, options);
+            object overflowProp = obj.MyOverflow["hello"];
+            Assert.IsType<string>(overflowProp);
+            Assert.Equal("world!!!", ((string)overflowProp));
+
+            string newJson = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"hello\":\"world!!!\"}", newJson);
+        }
+
+        private class JsonObjectConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return reader.GetString() + "!!!";
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                // Since we are converter for object, the string converter will be called instead of this.
+                throw new InvalidOperationException();
+            }
+        }
+
+        [Fact]
+        public static void CustomJsonElementConverterInExtensionProperty()
+        {
+            const string Json = "{\"hello\": \"world\"}";
+
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonElementConverter());
+
+            ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(Json, options);
+            JsonElement overflowProp = obj.MyOverflow["hello"];
+            Assert.Equal(JsonValueKind.Undefined, overflowProp.ValueKind);
+
+            string newJson = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"hello\":{\"Hi\":\"There\"}}", newJson);
+        }
+
+        private class JsonElementConverter : JsonConverter<JsonElement>
+        {
+            public override JsonElement Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                // Just return an empty JsonElement.
+                reader.Skip();
+                return new JsonElement();
+            }
+
+            public override void Write(Utf8JsonWriter writer, JsonElement value, JsonSerializerOptions options)
+            {
+                // Write a string we can test against easily.
+                writer.WriteStartObject();
+                writer.WriteString("Hi", "There");
+                writer.WriteEndObject();
+            }
         }
     }
 }

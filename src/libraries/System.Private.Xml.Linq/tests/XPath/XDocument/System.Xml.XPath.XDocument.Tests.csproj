@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.Xml.XPath.XDocument.Tests</RootNamespace>
-    <CommonPathXPath>$(CommonPath)System\Xml\XPath</CommonPathXPath>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <CommonPathXPath>$(CommonTestPath)System\Xml\XPath</CommonPathXPath>
   </PropertyGroup>
@@ -193,5 +191,5 @@
     <EmbeddedResource Include="$(CommonPathXPath)\TestData\xpC001.xml">
       <Link>TestData\xpC001.xml</Link>
     </EmbeddedResource>
-   </ItemGroup>
+  </ItemGroup>
 </Project>
