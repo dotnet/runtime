@@ -22,28 +22,28 @@ namespace System.Security.Cryptography
         private readonly byte[] _password;
         private string? _hashName;
         private HashAlgorithm? _hash;
-        private readonly CspParameters _cspParams;
+        private readonly CspParameters? _cspParams;
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt) : this(password, salt, new CspParameters()) { }
+        public PasswordDeriveBytes(byte[] password, byte[]? salt) : this(password, salt, new CspParameters()) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) :
             this(strPassword, rgbSalt, strHashName, iterations, new CspParameters()) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations) :
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) :
             this(password, salt, hashName, iterations, new CspParameters()) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, CspParameters cspParams) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, CspParameters? cspParams) :
             this(strPassword, rgbSalt, "SHA1", 100, cspParams) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, CspParameters cspParams) :
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, CspParameters? cspParams) :
             this(password, salt, "SHA1", 100, cspParams) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations, CspParameters cspParams) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, CspParameters? cspParams) :
             this((new UTF8Encoding(false)).GetBytes(strPassword), rgbSalt, strHashName, iterations, cspParams) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations, CspParameters cspParams)
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations, CspParameters? cspParams)
         {
             IterationCount = iterations;
             Salt = salt;
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(HashName));
 
                 _hashName = value;
-                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName);
+                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName!);
             }
         }
 

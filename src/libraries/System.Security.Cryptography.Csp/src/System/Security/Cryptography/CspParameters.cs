@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }
 
         public CspParameters(int dwTypeIn) : this(dwTypeIn, null, null) { }
-        public CspParameters(int dwTypeIn, string strProviderNameIn) : this(dwTypeIn, strProviderNameIn, null) { }
+        public CspParameters(int dwTypeIn, string? strProviderNameIn) : this(dwTypeIn, strProviderNameIn, null) { }
         public CspParameters(int dwTypeIn, string? strProviderNameIn, string? strContainerNameIn) :
             this(dwTypeIn, strProviderNameIn, strContainerNameIn, CspProviderFlags.NoFlags)
         {

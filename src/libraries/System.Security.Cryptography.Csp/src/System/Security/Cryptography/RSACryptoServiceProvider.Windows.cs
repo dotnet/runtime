@@ -39,17 +39,17 @@ namespace System.Security.Cryptography
         {
         }
 
-        public RSACryptoServiceProvider(int dwKeySize, CspParameters parameters)
+        public RSACryptoServiceProvider(int dwKeySize, CspParameters? parameters)
             : this(dwKeySize, parameters, false)
         {
         }
 
-        public RSACryptoServiceProvider(CspParameters parameters)
+        public RSACryptoServiceProvider(CspParameters? parameters)
             : this(0, parameters, true)
         {
         }
 
-        private RSACryptoServiceProvider(int keySize, CspParameters parameters, bool useDefaultKeySize)
+        private RSACryptoServiceProvider(int keySize, CspParameters? parameters, bool useDefaultKeySize)
         {
             if (keySize < 0)
             {
@@ -481,7 +481,7 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The input data for which to compute the hash</param>
         /// <param name="str">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignHash(byte[] rgbHash, string str)
+        public byte[] SignHash(byte[] rgbHash, string? str)
         {
             if (rgbHash == null)
                 throw new ArgumentNullException(nameof(rgbHash));
@@ -706,7 +706,7 @@ namespace System.Security.Cryptography
             return VerifyHash(hash, GetAlgorithmId(hashAlgorithm), signature);
         }
 
-        public override string KeyExchangeAlgorithm
+        public override string? KeyExchangeAlgorithm
         {
             get
             {

@@ -29,7 +29,7 @@ namespace Internal.Cryptography
             return null;
         }
 
-        public static byte[] TrimLargeIV(byte[] currentIV, int blockSizeInBits)
+        public static byte[]? TrimLargeIV(byte[]? currentIV, int blockSizeInBits)
         {
             int blockSizeBytes = checked((blockSizeInBits + 7) / 8);
 
