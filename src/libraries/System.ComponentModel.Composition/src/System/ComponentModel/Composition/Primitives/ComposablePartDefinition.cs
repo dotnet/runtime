@@ -140,7 +140,6 @@ namespace System.ComponentModel.Composition.Primitives
             if (multipleExports != null)
             {
                 multipleMatches = multipleExports;
-                singleMatch = null;
             }
             else
             {
