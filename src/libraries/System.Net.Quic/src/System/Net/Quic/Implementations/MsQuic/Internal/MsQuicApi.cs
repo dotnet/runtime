@@ -234,13 +234,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
             IntPtr unmanagedAddr = IntPtr.Zero;
-            CertFileParams fileParams = default;
+            MsQuicNativeMethods.CertFileParams fileParams = default;
 
             try
             {
                 if (certFilePath != null && privateKeyFilePath != null)
                 {
-                    fileParams = new CertFileParams
+                    fileParams = new MsQuicNativeMethods.CertFileParams
                     {
                         CertificateFilePath = Marshal.StringToHGlobalAnsi(certFilePath),
                         PrivateKeyFilePath = Marshal.StringToHGlobalAnsi(privateKeyFilePath)
