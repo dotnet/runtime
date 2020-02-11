@@ -75,49 +75,49 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// A string like  "Unexpected VarEnum {0}."
         /// </summary>
         internal static string UnexpectedVarEnum(object p0) {
-            return FormatString("Unexpected VarEnum {0}.", p0);
+            return SR.Format("Unexpected VarEnum {0}.", p0);
         }
 
         /// <summary>
         /// A string like  "Error while invoking {0}."
         /// </summary>
         internal static string DispBadParamCount(object p0) {
-            return FormatString("Error while invoking {0}.", p0);
+            return SR.Format("Error while invoking {0}.", p0);
         }
 
         /// <summary>
         /// A string like  "Error while invoking {0}."
         /// </summary>
         internal static string DispMemberNotFound(object p0) {
-            return FormatString("Error while invoking {0}.", p0);
+            return SR.Format("Error while invoking {0}.", p0);
         }
 
         /// <summary>
         /// A string like  "Error while invoking {0}. Named arguments are not supported."
         /// </summary>
         internal static string DispNoNamedArgs(object p0) {
-            return FormatString("Error while invoking {0}. Named arguments are not supported.", p0);
+            return SR.Format("Error while invoking {0}. Named arguments are not supported.", p0);
         }
 
         /// <summary>
         /// A string like  "Error while invoking {0}."
         /// </summary>
         internal static string DispOverflow(object p0) {
-            return FormatString("Error while invoking {0}.", p0);
+            return SR.Format("Error while invoking {0}.", p0);
         }
 
         /// <summary>
         /// A string like  "Could not convert argument {0} for call to {1}."
         /// </summary>
         internal static string DispTypeMismatch(object p0, object p1) {
-            return FormatString("Could not convert argument {0} for call to {1}.", p0, p1);
+            return SR.Format("Could not convert argument {0} for call to {1}.", p0, p1);
         }
 
         /// <summary>
         /// A string like  "Error while invoking {0}. A required parameter was omitted."
         /// </summary>
         internal static string DispParamNotOptional(object p0) {
-            return FormatString("Error while invoking {0}. A required parameter was omitted.", p0);
+            return SR.Format("Error while invoking {0}. A required parameter was omitted.", p0);
         }
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// A string like  "IDispatch::GetIDsOfNames behaved unexpectedly for {0}."
         /// </summary>
         internal static string GetIDsOfNamesInvalid(object p0) {
-            return FormatString("IDispatch::GetIDsOfNames behaved unexpectedly for {0}.", p0);
+            return SR.Format("IDispatch::GetIDsOfNames behaved unexpectedly for {0}.", p0);
         }
 
         /// <summary>
@@ -158,21 +158,21 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// A string like  "Could not get dispatch ID for {0} (error: {1})."
         /// </summary>
         internal static string CouldNotGetDispId(object p0, object p1) {
-            return FormatString("Could not get dispatch ID for {0} (error: {1}).", p0, p1);
+            return SR.Format("Could not get dispatch ID for {0} (error: {1}).", p0, p1);
         }
 
         /// <summary>
         /// A string like  "There are valid conversions from {0} to {1}."
         /// </summary>
         internal static string AmbiguousConversion(object p0, object p1) {
-            return FormatString("There are valid conversions from {0} to {1}.", p0, p1);
+            return SR.Format("There are valid conversions from {0} to {1}.", p0, p1);
         }
 
         /// <summary>
         /// A string like  "Variant.GetAccessor cannot handle {0}."
         /// </summary>
         internal static string VariantGetAccessorNYI(object p0) {
-            return FormatString("Variant.GetAccessor cannot handle {0}.", p0);
+            return SR.Format("Variant.GetAccessor cannot handle {0}.", p0);
         }
 
     }
