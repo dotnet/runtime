@@ -75,6 +75,8 @@ namespace System.Net.Sockets
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
+        private readonly Interop.Sys.AioContext* _aioContext;
+        private readonly GCHandle[] _pinnedHandles;
 
         //
         // The read and write ends of a native pipe, used to signal that this instance's event loop should stop
@@ -277,6 +279,11 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
+                if (Interop.Sys.IoSetup(EventBufferCount, out _aioContext) == 0)
+                {
+                    _pinnedHandles = new GCHandle[EventBufferCount];
+                }
+
                 //
                 // Start the event loop on its own thread.
                 //
@@ -378,6 +385,10 @@ namespace System.Net.Sockets
             if (_port != (IntPtr)(-1))
             {
                 Interop.Sys.CloseSocketEventPort(_port);
+            }
+            if (_aioContext != null)
+            {
+                Interop.Sys.IoDestroy(*_aioContext);
             }
         }
 
