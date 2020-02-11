@@ -173,11 +173,9 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComClassMetaObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComDispIds.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventDesc.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSink.netcoreapp.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSink.netfx.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSinkProxy.netfx.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSink.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventSinksContainer.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventsMethod.netcoreapp.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComEventsMethod.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComFallbackMetaObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComHresults.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\ComInterop.cs" />
