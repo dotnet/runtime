@@ -177,8 +177,8 @@ namespace System.Threading
             lock (s_idManager)
             {
                 id = ~_idComplement;
-                int slotId = id / valuePerSlot;
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId;
+                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
                 _idComplement = 0;
 
                 if (id < 0 || !_initialized)
@@ -198,7 +198,6 @@ namespace System.Threading
                     created |= linkedSlot._created;
                 }
 
-                // Experiment show that if I return the id, whether or not I free the array, the test case still repros.
                 if (created == 0)
                 {
                     for (LinkedSlot? linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
@@ -225,7 +224,6 @@ namespace System.Threading
                 }
             }
             _linkedSlot = null;
-            // Experiment show that if I never return the id, the test case failure will not repro.
             s_idManager.ReturnId(id);
         }
 
@@ -276,8 +274,8 @@ namespace System.Threading
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 LinkedSlot? slot;
                 int id = ~_idComplement;
-                int slotId = id / valuePerSlot;
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId;
+                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
                 //
                 // Attempt to get the value using the fast path
@@ -305,8 +303,8 @@ namespace System.Threading
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 LinkedSlot? slot;
                 int id = ~_idComplement;
-                int slotId = id / valuePerSlot;
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId;
+                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
                 // Attempt to set the value using the fast path
                 if (slotArray != null   // Has the slot array been initialized?
@@ -367,8 +365,8 @@ namespace System.Threading
         private void SetValueSlow(T value, LinkedSlotVolatile[]? slotArray)
         {
             int id = ~_idComplement;
-            int slotId = id / valuePerSlot;
-            int withinSlotId = id % valuePerSlot;
+            int withinSlotId;
+            int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
             // If the object has been disposed, id will be -1.
             if (id < 0)
@@ -426,8 +424,8 @@ namespace System.Threading
         /// </summary>
         private void CreateLinkedSlot(LinkedSlotVolatile[] slotArray, int id, T value)
         {
-            int slotId = id / valuePerSlot;
-            int withinSlotId = id % valuePerSlot;
+            int withinSlotId;
+            int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
             // Create a LinkedSlot
             var linkedSlot = new LinkedSlot(slotArray);
@@ -565,8 +563,8 @@ namespace System.Threading
                 {
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
-                int slotId = id / valuePerSlot;
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId;
+                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 return slotArray != null && slotId < slotArray.Length && slotArray[slotId].Value != null && (slotArray[slotId].Value!._created & (1L << withinSlotId)) != 0;
@@ -584,8 +582,8 @@ namespace System.Threading
                 LinkedSlotVolatile[]? slotArray = ts_slotArray;
                 int id = ~_idComplement;
                 // This is potentially already wrong? What if the instance is disposed?
-                int slotId = id / valuePerSlot;
-                int withinSlotId = id % valuePerSlot;
+                int withinSlotId;
+                int slotId = Math.DivRem(id, valuePerSlot, out withinSlotId);
 
                 LinkedSlot? slot;
                 if (slotArray == null || slotId >= slotArray.Length || (slot = slotArray[slotId].Value) == null || (slotArray[slotId].Value!._created & (1L << withinSlotId)) == 0 || !_initialized)
