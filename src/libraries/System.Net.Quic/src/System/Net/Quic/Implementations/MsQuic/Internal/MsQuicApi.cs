@@ -227,15 +227,34 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 buf);
         }
 
-        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate)
+        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate, string certFilePath, string privateKeyFilePath)
         {
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
+            IntPtr unmanagedAddr = IntPtr.Zero;
 
-            // If no certificate is provided, provide a null one.
-            if (certificate != null)
+            if (certFilePath != null && privateKeyFilePath != null)
+            {
+                CertFileParams param = new CertFileParams
+                {
+                    CertificateFile = Marshal.StringToHGlobalAnsi(certFilePath),
+                    PrivateKeyFile = Marshal.StringToHGlobalAnsi(privateKeyFilePath)
+                };
+
+                unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(param));
+                Marshal.StructureToPtr(param, unmanagedAddr, fDeleteOld: false);
+
+                createConfigStatus = SecConfigCreateDelegate(
+                    _registrationContext,
+                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
+                    certificate.Handle,
+                    null,
+                    IntPtr.Zero,
+                    SecCfgCreateCallbackHandler);
+            }
+            else if (certificate != null)
             {
                 createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
@@ -247,6 +266,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             else
             {
+                // If no certificate is provided, provide a null one.
                 createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
                     (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
@@ -271,6 +291,11 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
 
             await tcs.Task.ConfigureAwait(false);
+
+            if (unmanagedAddr != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(unmanagedAddr);
+            }
 
             QuicExceptionHelpers.ThrowIfFailed(
                 secConfigCreateStatus,
