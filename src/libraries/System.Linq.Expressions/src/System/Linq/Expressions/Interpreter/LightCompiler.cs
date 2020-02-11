@@ -215,7 +215,7 @@ namespace System.Linq.Expressions.Interpreter
         private class DebugInfoComparer : IComparer<DebugInfo>
         {
             //We allow comparison between int and DebugInfo here
-            int IComparer<DebugInfo>.Compare([AllowNull] DebugInfo d1, [AllowNull] DebugInfo d2)
+            int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
             {
                 if (d1!.Index > d2!.Index) return 1; // TODO2
                 else if (d1.Index == d2.Index) return 0;

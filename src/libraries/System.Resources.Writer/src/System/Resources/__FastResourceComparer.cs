@@ -34,12 +34,12 @@ namespace System.Resources
             return (int)hash;
         }
 
-        public int Compare([AllowNull] string a, [AllowNull] string b)
+        public int Compare(string? a, string? b)
         {
             return string.CompareOrdinal(a, b);
         }
 
-        public bool Equals([AllowNull] string a, [AllowNull] string b)
+        public bool Equals(string? a, string? b)
         {
             return string.Equals(a, b);
         }
