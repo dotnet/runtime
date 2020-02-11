@@ -675,7 +675,9 @@ set (mini_common_sources
 	mini-runtime.h
 	llvmonly-runtime.h
 	llvmonly-runtime.c
-	simd-intrinsics-netcore.c)
+	simd-intrinsics-netcore.c
+	monovm.h
+	monovm.c)
 
 set (debugger_sources
   debugger-engine.h

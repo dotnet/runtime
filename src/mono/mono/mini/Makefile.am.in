@@ -554,7 +554,9 @@ common_sources = \
 	ee.h \
 	tiered.h \
 	tiered.c \
-	mini-runtime.h
+	mini-runtime.h \
+	monovm.h \
+	monovm.c
 
 endif # !ENABLE_MSVC_ONLY
 
