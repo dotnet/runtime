@@ -9698,16 +9698,16 @@ add_intrinsic (LLVMModuleRef module, int id)
 		break;
 	case INTRINS_SSE_SADD_SATI8:
 	case INTRINS_SSE_UADD_SATI8:
-		ret_type = type_to_simd_type (MONO_TYPE_I2);
-		arg_types [0] = type_to_simd_type (MONO_TYPE_I2);
-		arg_types [1] = type_to_simd_type (MONO_TYPE_I2);
+		ret_type = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I1);
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 	case INTRINS_SSE_SADD_SATI16:
 	case INTRINS_SSE_UADD_SATI16:
-		ret_type = type_to_simd_type (MONO_TYPE_I1);
-		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
-		arg_types [1] = type_to_simd_type (MONO_TYPE_I1);
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I2);
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 		/* SSE Binary ops */
