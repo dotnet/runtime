@@ -239,8 +239,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 CertFileParams param = new CertFileParams
                 {
-                    CertificateFile = Marshal.StringToHGlobalAnsi(certFilePath),
-                    PrivateKeyFile = Marshal.StringToHGlobalAnsi(privateKeyFilePath)
+                    CertificateFilePath = Marshal.StringToHGlobalAnsi(certFilePath),
+                    PrivateKeyFilePath = Marshal.StringToHGlobalAnsi(privateKeyFilePath)
                 };
 
                 unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(param));
