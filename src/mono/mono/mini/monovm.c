@@ -103,13 +103,17 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	/* TODO: check that CoreCLR wants the strong name semantics here */
 	MonoAssemblyCandidatePredicate predicate = &mono_assembly_candidate_predicate_sn_same_name;
 	void* predicate_ud = aname;
+	char *basename = NULL;
+
+	if (a == NULL) // no TPA paths set
+		goto leave;
 
 	g_assert (aname);
 	g_assert (aname->name);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
 	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
-	char *basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
+	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
 
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (!strcmp (basename, a->basenames[i])) {
@@ -132,6 +136,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 		}
 	}
 
+leave:
 	g_free (basename);
 
 	if (!result) {
