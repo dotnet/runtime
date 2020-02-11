@@ -7683,7 +7683,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
-		case OP_SSE_ADDS: {
+		case OP_SSE2_ADDS: {
 			gint32 intrinsicId = 0;
 			if (ins->inst_c1 == MONO_TYPE_I1)
 				intrinsicId = INTRINS_SSE_SADD_SATI8;
