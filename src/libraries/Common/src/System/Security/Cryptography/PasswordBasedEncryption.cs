@@ -326,8 +326,6 @@ namespace System.Security.Cryptography
                 }
             }
 
-            Debug.Assert(pwdTmpBytes != null);
-
             fixed (byte* pkcs8RentPin = sourceRent)
             fixed (byte* pwdTmpBytesPtr = pwdTmpBytes)
             {
