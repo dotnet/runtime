@@ -7,6 +7,10 @@ using System.Diagnostics;
 using System.Net.Http.HPack;
 using System.Numerics;
 
+#if KESTREL
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
+#endif
+
 namespace System.Net.Http.QPack
 {
     internal class QPackDecoder : IDisposable
@@ -220,7 +224,7 @@ namespace System.Net.Http.QPack
                     }
                     break;
                 case State.CompressedHeaders:
-                    switch (BitOperations.LeadingZeroCount(b))
+                    switch (BitOperations.LeadingZeroCount(b) - 24)
                     {
                         case 0: // Indexed Header Field
                             prefixInt = IndexedHeaderFieldPrefixMask & b;
@@ -402,6 +406,8 @@ namespace System.Net.Http.QPack
             {
                 Debug.Assert(index >= 0 && index <= H3StaticTable.Instance.Count, $"The index should be a valid static index here. {nameof(QPackDecoder)} should have previously thrown if it read a dynamic index.");
                 handler.OnStaticIndexedHeader(index, headerValueSpan);
+                _index = null;
+
                 return;
             }
             else
