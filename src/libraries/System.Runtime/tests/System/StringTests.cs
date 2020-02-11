@@ -739,10 +739,10 @@ namespace System.Tests
         }
 
         [Fact]
-        public void Replace_StringComparison_WeightlessOldValue_WithLinguisticComparison_ThrowsArgumentException()
+        public void Replace_StringComparison_WeightlessOldValue_WithLinguisticComparison_TerminatesReplacement()
         {
-            AssertExtensions.Throws<ArgumentException>("oldValue", () => ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def", StringComparison.CurrentCulture));
-            AssertExtensions.Throws<ArgumentException>("oldValue", () => ("abc" + ZeroWidthJoiner).Replace(ZeroWidthJoiner, "def", true, CultureInfo.CurrentCulture));
+            Assert.Equal("abc" + ZeroWidthJoiner + "def", ("abc" + ZeroWidthJoiner + "def").Replace(ZeroWidthJoiner, "xyz", StringComparison.CurrentCulture));
+            Assert.Equal("abc" + ZeroWidthJoiner + "def", ("abc" + ZeroWidthJoiner + "def").Replace(ZeroWidthJoiner, "xyz", true, CultureInfo.CurrentCulture));
         }
 
         [Theory]
