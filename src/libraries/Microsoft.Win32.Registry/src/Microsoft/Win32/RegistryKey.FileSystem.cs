@@ -97,7 +97,7 @@ namespace Microsoft.Win32
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
 
-        private RegistryValueKind GetValueKindCore(string name)
+        private RegistryValueKind GetValueKindCore(string? name)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_Registry);
         }
