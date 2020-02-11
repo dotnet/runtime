@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MsQuicPackage.win-x64" Version="1.0.9">
+    <PackageReference Include="MsQuicPackage.win-x64" Version="1.0.10">
     </PackageReference>
   </ItemGroup>
 
