@@ -17,8 +17,11 @@ endif
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
 
 # run sample using local .dotnet-mono
+# build it with .dotnet first in order to be able to use LLVM only for the actual sample
 run-sample: patch-mono-dotnet
-	COMPlus_DebugWriteToStdErr=1 $(DOTNET_MONO) run -c Debug -p sample/HelloWorld
+	$(DOTNET) build -c Release sample/HelloWorld
+	MONO_VERBOSE_METHOD=TestAddSaturate2 MONO_ENV_OPTIONS="--llvm" COMPlus_DebugWriteToStdErr=1 \
+	$(DOTNET_MONO) sample/HelloWorld/bin/HelloWorld.dll
 
 run-sample-coreclr:
 	$(DOTNET) run -c Debug -p sample/HelloWorld

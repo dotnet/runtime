@@ -1021,6 +1021,7 @@ MINI_OP(OP_SSE_AND, "sse_and", XREG, XREG, XREG)
 MINI_OP(OP_SSE_OR, "sse_or", XREG, XREG, XREG)
 MINI_OP(OP_SSE_XOR, "sse_xor", XREG, XREG, XREG)
 MINI_OP(OP_SSE_ANDN, "sse_andn", XREG, XREG, XREG)
+MINI_OP(OP_SSE_ADDS, "sse_adds", XREG, XREG, XREG)
 
 /* sse 2 */
 MINI_OP(OP_SSE2_PACKUS, "sse2_packus", XREG, XREG, XREG)
