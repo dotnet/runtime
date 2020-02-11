@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Net.Http.HPack;
 using System.Numerics;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace System.Net.Http.QPack
 {
@@ -222,7 +223,7 @@ namespace System.Net.Http.QPack
                 case State.CompressedHeaders:
                     switch (BitOperations.LeadingZeroCount(b))
                     {
-                        case 0: // Indexed Header Field
+                        case 24: // Indexed Header Field
                             prefixInt = IndexedHeaderFieldPrefixMask & b;
 
                             bool useStaticTable = (b & IndexedHeaderStaticMask) == IndexedHeaderStaticRepresentation;
@@ -241,7 +242,7 @@ namespace System.Net.Http.QPack
                                 _state = State.HeaderFieldIndex;
                             }
                             break;
-                        case 1: // Literal Header Field With Name Reference
+                        case 25: // Literal Header Field With Name Reference
                             useStaticTable = (LiteralHeaderFieldStaticMask & b) == LiteralHeaderFieldStaticMask;
 
                             if (!useStaticTable)
@@ -259,7 +260,7 @@ namespace System.Net.Http.QPack
                                 _state = State.HeaderNameIndex;
                             }
                             break;
-                        case 2: // Literal Header Field Without Name Reference
+                        case 26: // Literal Header Field Without Name Reference
                             _huffman = (b & LiteralHeaderFieldWithoutNameReferenceHuffmanMask) != 0;
                             prefixInt = b & LiteralHeaderFieldWithoutNameReferencePrefixMask;
 
@@ -272,7 +273,7 @@ namespace System.Net.Http.QPack
                                 _state = State.HeaderNameLength;
                             }
                             break;
-                        case 3: // Indexed Header Field With Post-Base Index
+                        case 27: // Indexed Header Field With Post-Base Index
                             prefixInt = ~PostBaseIndexMask & b;
                             if (_integerDecoder.BeginTryDecode((byte)prefixInt, PostBaseIndexPrefix, out intResult))
                             {
@@ -402,6 +403,8 @@ namespace System.Net.Http.QPack
             {
                 Debug.Assert(index >= 0 && index <= H3StaticTable.Instance.Count, $"The index should be a valid static index here. {nameof(QPackDecoder)} should have previously thrown if it read a dynamic index.");
                 handler.OnStaticIndexedHeader(index, headerValueSpan);
+                _index = null;
+
                 return;
             }
             else
@@ -500,7 +503,7 @@ namespace System.Net.Http.QPack
 
         private static void ThrowDynamicTableNotSupported()
         {
-            throw new QPackDecodingException(SR.net_http_qpack_no_dynamic_table);
+            throw new QPackDecodingException("No dynamic table support");
         }
     }
 }
