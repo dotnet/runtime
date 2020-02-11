@@ -435,7 +435,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamCallbackDelegate(
             IntPtr stream,
             IntPtr context,
-            StreamEvent streamEvent);
+            ref StreamEvent streamEvent);
 
         internal delegate uint StreamOpenDelegate(
             IntPtr connection,
