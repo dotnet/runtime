@@ -19,7 +19,7 @@ internal partial class Interop
             /// <summary>
             ///     Return a SafeBCryptAlgorithmHandle of the desired algorithm and flags. This is a shared handle so do not dispose it!
             /// </summary>
-            public static SafeBCryptAlgorithmHandle GetCachedBCryptAlgorithmHandle(string? hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags)
+            public static SafeBCryptAlgorithmHandle GetCachedBCryptAlgorithmHandle(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags)
             {
                 // There aren't that many hash algorithms around so rather than use a LowLevelDictionary and guard it with a lock,
                 // we'll use a simple list. To avoid locking, we'll recreate the entire list each time an entry is added and replace it atomically.
@@ -54,7 +54,7 @@ internal partial class Interop
 
             private struct Entry
             {
-                public Entry(string? hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags, SafeBCryptAlgorithmHandle handle)
+                public Entry(string hashAlgorithmId, BCryptOpenAlgorithmProviderFlags flags, SafeBCryptAlgorithmHandle handle)
                     : this()
                 {
                     HashAlgorithmId = hashAlgorithmId;
@@ -62,7 +62,7 @@ internal partial class Interop
                     Handle = handle;
                 }
 
-                public string? HashAlgorithmId { get; private set; }
+                public string HashAlgorithmId { get; private set; }
                 public BCryptOpenAlgorithmProviderFlags Flags { get; private set; }
                 public SafeBCryptAlgorithmHandle Handle { get; private set; }
             }

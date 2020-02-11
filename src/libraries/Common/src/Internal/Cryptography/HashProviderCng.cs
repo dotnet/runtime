@@ -27,7 +27,7 @@ namespace Internal.Cryptography
         {
         }
 
-        internal HashProviderCng(string? hashAlgId, ReadOnlySpan<byte> key, bool isHmac)
+        internal HashProviderCng(string hashAlgId, ReadOnlySpan<byte> key, bool isHmac)
         {
             BCryptOpenAlgorithmProviderFlags dwFlags = BCryptOpenAlgorithmProviderFlags.None;
             if (isHmac)

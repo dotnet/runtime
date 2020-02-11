@@ -14,7 +14,7 @@ internal partial class Interop
     internal partial class BCrypt
     {
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        internal static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeBCryptAlgorithmHandle phAlgorithm, string? pszAlgId, string? pszImplementation, BCryptOpenAlgorithmProviderFlags dwFlags);
+        internal static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeBCryptAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, BCryptOpenAlgorithmProviderFlags dwFlags);
 
         [Flags]
         internal enum BCryptOpenAlgorithmProviderFlags : int

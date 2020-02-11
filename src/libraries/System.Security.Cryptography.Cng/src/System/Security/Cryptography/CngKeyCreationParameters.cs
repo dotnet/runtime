@@ -47,7 +47,6 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     KSP to create the key in
         /// </summary>
-        [MaybeNull]
         public CngProvider Provider
         {
             get
@@ -69,6 +68,6 @@ namespace System.Security.Cryptography
         /// </summary>
         public CngUIPolicy? UIPolicy { get; set; }
 
-        private CngProvider? _provider;
+        private CngProvider _provider = null!; // will be initialized via property setter called by ctor
     }
 }
