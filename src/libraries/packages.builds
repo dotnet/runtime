@@ -72,7 +72,7 @@
   <Import Project="$(MSBuildThisFileDirectory)dir.traversal.targets" />
 
   <Target Name="SetAzureDevOpsVariableForBuiltPackages"
-          Condition="'$(OfficialBuildId)' != ''"
+          Condition="'$(ContinuousIntegrationBuild)' == 'true'"
           AfterTargets="BuildAllProjects">
     <ItemGroup>
       <_PackageReports Include="$(PackageReportDir)*.json" />
