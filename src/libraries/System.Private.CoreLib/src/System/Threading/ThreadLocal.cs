@@ -27,7 +27,7 @@ namespace System.Threading
     [DebuggerDisplay("IsValueCreated={IsValueCreated}, Value={ValueForDebugDisplay}, Count={ValuesCountForDebugDisplay}")]
     public class ThreadLocal<T> : IDisposable
     {
-        private const int valuePerSlot = 64;
+        private const int ValuePerSlot = 64;
 
         // a delegate that returns the created value, if null the created value will be default(T)
         private Func<T>? _valueFactory;
