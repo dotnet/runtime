@@ -400,7 +400,14 @@ namespace System.Data.OleDb
 
             bindings.AllocateForAccessor(null, 0, 0);
 
-            ApplyParameterBindings(commandWithParameters, bindings.BindInfo);
+            if (bindings.BindInfo_x86 != null)
+            {
+                ApplyParameterBindings(commandWithParameters, bindings.BindInfo_x86);
+            }
+            else
+            {
+                ApplyParameterBindings(commandWithParameters, bindings.BindInfo);
+            }
 
             UnsafeNativeMethods.IAccessor iaccessor = IAccessor();
             OleDbHResult hr = bindings.CreateAccessor(iaccessor, ODB.DBACCESSOR_PARAMETERDATA);
@@ -411,14 +418,37 @@ namespace System.Data.OleDb
             _dbBindings = bindings;
         }
 
-        private void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];
             for (int i = 0; i < ordinals.Length; ++i)
             {
                 ordinals[i] = (IntPtr)(i + 1);
             }
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, bindInfo);
+            OleDbHResult hr;
+            fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
+            {
+                hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+            }
+
+            if (hr < 0)
+            {
+                ProcessResults(hr);
+            }
+        }
+
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO_x86[] bindInfo_x86)
+        {
+            IntPtr[] ordinals = new IntPtr[bindInfo_x86.Length];
+            for (int i = 0; i < ordinals.Length; ++i)
+            {
+                ordinals[i] = (IntPtr)(i + 1);
+            }
+            OleDbHResult hr;
+            fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
+            {
+                hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo_x86.Length, ordinals, (IntPtr)p);
+            }
 
             if (hr < 0)
             {

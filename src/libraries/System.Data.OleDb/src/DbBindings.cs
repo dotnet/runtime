@@ -4,13 +4,16 @@
 
 using System.Data.Common;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Data.OleDb
 {
     internal sealed class Bindings
     {
+        private static readonly bool s_runningOnX86 = Marshal.SizeOf<IntPtr>() == 4;
         private readonly tagDBPARAMBINDINFO[] _bindInfo;
+        private readonly tagDBPARAMBINDINFO_x86[] _bindInfo_x86;
         private readonly tagDBBINDING[] _dbbindings;
         private readonly tagDBCOLUMNACCESS[] _dbcolumns;
 
@@ -42,7 +45,10 @@ namespace System.Data.OleDb
 
         internal Bindings(OleDbParameter[] parameters, int collectionChangeID) : this(parameters.Length)
         {
-            _bindInfo = new tagDBPARAMBINDINFO[parameters.Length];
+            if (s_runningOnX86)
+                _bindInfo_x86 = new tagDBPARAMBINDINFO_x86[parameters.Length];
+            else
+                _bindInfo = new tagDBPARAMBINDINFO[parameters.Length];
             _parameters = parameters;
             _collectionChangeID = collectionChangeID;
             _ifIRowsetElseIRow = true;
@@ -52,6 +58,11 @@ namespace System.Data.OleDb
         {
             _dataReader = dataReader;
             _ifIRowsetElseIRow = ifIRowsetElseIRow;
+        }
+
+        internal tagDBPARAMBINDINFO_x86[] BindInfo_x86
+        {
+            get { return _bindInfo_x86; }
         }
 
         internal tagDBPARAMBINDINFO[] BindInfo
@@ -100,40 +111,60 @@ namespace System.Data.OleDb
         // tagDBPARAMBINDINFO member access
         internal IntPtr DataSourceType
         {
-            //get { return _bindInfo[_index].pwszDataSourceType; }
             set
             {
-                _bindInfo[_index].pwszDataSourceType = value;
+                if (s_runningOnX86)
+                    _bindInfo_x86[_index].pwszDataSourceType = value;
+                else
+                    _bindInfo[_index].pwszDataSourceType = value;
             }
         }
         internal IntPtr Name
         {
-            //get { return _bindInfo[_index].pwszName; }
             set
             {
-                _bindInfo[_index].pwszName = value;
+                if (s_runningOnX86)
+                    _bindInfo_x86[_index].pwszName = value;
+                else
+                    _bindInfo[_index].pwszName = value;
             }
         }
         internal IntPtr ParamSize
         {
             get
             {
-                if (null != _bindInfo)
+                if (s_runningOnX86)
                 {
-                    return _bindInfo[_index].ulParamSize;
+                    if (null != _bindInfo_x86)
+                    {
+                        return _bindInfo_x86[_index].ulParamSize;
+                    }
+                    return IntPtr.Zero;
                 }
-                return IntPtr.Zero;
+                else
+                {
+                    if (null != _bindInfo)
+                    {
+                        return _bindInfo[_index].ulParamSize;
+                    }
+                    return IntPtr.Zero;
+                }
             }
             set
             {
-                _bindInfo[_index].ulParamSize = value;
+                if (s_runningOnX86)
+                    _bindInfo_x86[_index].ulParamSize = value;
+                else
+                    _bindInfo[_index].ulParamSize = value;
             }
         }
         internal int Flags
         {
-            //get { return _bindInfo[_index].dwFlag; }
             set
             {
+                if (s_runningOnX86)
+                    _bindInfo_x86[_index].dwFlags = value;
+                else
                 _bindInfo[_index].dwFlags = value;
             }
         }
@@ -223,9 +254,19 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
+                if (s_runningOnX86)
                 {
-                    _bindInfo[_index].bPrecision = value;
+                    if (null != _bindInfo_x86)
+                    {
+                        _bindInfo_x86[_index].bPrecision = value;
+                    }
+                }
+                else
+                {
+                    if (null != _bindInfo)
+                    {
+                        _bindInfo[_index].bPrecision = value;
+                    }
                 }
                 _dbbindings[_index].bPrecision = value;
                 _dbcolumns[_index].bPrecision = value;
@@ -238,9 +279,19 @@ namespace System.Data.OleDb
 #endif
             set
             {
-                if (null != _bindInfo)
+                if (s_runningOnX86)
                 {
-                    _bindInfo[_index].bScale = value;
+                    if (null != _bindInfo_x86)
+                    {
+                        _bindInfo_x86[_index].bScale = value;
+                    }
+                }
+                else
+                {
+                    if (null != _bindInfo)
+                    {
+                        _bindInfo[_index].bScale = value;
+                    }
                 }
                 _dbbindings[_index].bScale = value;
                 _dbcolumns[_index].bScale = value;
