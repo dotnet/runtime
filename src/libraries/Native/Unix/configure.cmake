@@ -828,6 +828,17 @@ check_c_source_compiles(
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
 
+check_c_source_compiles(
+    "
+    #include <linux/aio_abi.h>
+    int main(void)
+    {
+        int x = IOCB_CMD_PREAD;
+        return x;
+    }
+    "
+    HAVE_LINUX_AIO)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

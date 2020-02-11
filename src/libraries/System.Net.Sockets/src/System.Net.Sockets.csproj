@@ -287,6 +287,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Accept.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Accept.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Aio.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Aio.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Bind.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Bind.cs</Link>
     </Compile>

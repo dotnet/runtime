@@ -56,6 +56,10 @@
 #if HAVE_LINUX_CAN_H
 #include <linux/can.h>
 #endif
+#if HAVE_LINUX_AIO
+#include <linux/aio_abi.h>
+#include <sys/syscall.h>
+#endif
 #if HAVE_KQUEUE
 #if KEVENT_HAS_VOID_UDATA
 static void* GetKeventUdata(uintptr_t udata)
@@ -2882,4 +2886,44 @@ uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
     if (interfaceName[0] == '%')
         interfaceName++;
     return if_nametoindex(interfaceName);
+}
+
+int32_t SystemNative_IoSetup(uint32_t eventsCount, AioContext* context)
+{
+#if HAVE_LINUX_AIO
+    return syscall(__NR_io_setup, eventsCount, context);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_IoDestroy(AioContext context)
+{
+#if HAVE_LINUX_AIO
+    return syscall(__NR_io_destroy, context);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_IoSubmit(AioContext context, int64_t count, IoControlBlock** ioControlBlocks)
+{
+#if HAVE_LINUX_AIO
+    return syscall(__NR_io_submit, context, count, ioControlBlocks);
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_IoGetEvents(AioContext context, int64_t minNr, int64_t nr, IoEvent* ioEvents)
+{
+#if HAVE_LINUX_AIO
+    return syscall(__NR_io_getevents, context, minNr, nr, NULL); // NULL is the timeout
+#else
+    errno = ENOTSUP;
+    return -1;
+#endif
 }

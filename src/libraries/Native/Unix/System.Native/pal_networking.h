@@ -310,6 +310,47 @@ typedef struct
     uint32_t Padding;    // Pad out to 8-byte alignment
 } SocketEvent;
 
+typedef struct
+{
+    uint64_t Data;
+    uint64_t Obj;
+    int64_t Res;
+    int64_t Res2;
+} IoEvent;
+
+typedef struct
+{
+    uint64_t AioData;
+    uint32_t AioKey;
+    int32_t AioRwFlags;
+    uint16_t AioLioOpcode;
+    int16_t AioReqprio;
+    uint32_t AioFildes;
+    uint64_t AioBuf;
+    uint64_t AioNbytes;
+    int64_t AioOffset;
+    uint64_t AioReserved2;
+    uint32_t AioFlags;
+    uint32_t AioResfd;
+} IoControlBlock;
+
+typedef struct
+{
+    uint32_t32_t Id;
+    uint32_t32_t Nr;
+    uint32_t32_t Head;
+    uint32_t32_t Tail;
+    uint32_t32_t Magic;
+    uint32_t32_t CompatFeatures;
+    uint32_t32_t IncompatFeatures;
+    uint32_t32_t HeaderLength;
+} AioRing;
+
+typedef struct
+{
+    AioRing* Ring;
+} AioContext;
+
 DLLEXPORT int32_t SystemNative_GetHostEntryForName(const uint8_t* address, HostEntry* entry);
 
 DLLEXPORT void SystemNative_FreeHostEntry(HostEntry* entry);
@@ -424,3 +465,11 @@ DLLEXPORT int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t
 DLLEXPORT int32_t SystemNative_Disconnect(intptr_t socket);
 
 DLLEXPORT uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName);
+
+DLLEXPORT int32_t SystemNative_IoSetup(uint32_t eventsCount, AioContext* context);
+
+DLLEXPORT int32_t SystemNative_IoDestroy(AioContext context);
+
+DLLEXPORT int32_t SystemNative_IoSubmit(AioContext context, int64_t count, IoControlBlock** ioControlBlocks);
+
+DLLEXPORT int32_t SystemNative_IoGetEvents(AioContext context, int64_t minNr, int64_t nr, IoEvent* ioEvents);
