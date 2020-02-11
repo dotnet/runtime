@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -486,6 +487,39 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
 
             return ReadLinesIterator.CreateIterator(path, encoding);
+        }
+
+        public static IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken cancellationToken = default)
+        {
+            return ReadLinesAsync(path, Encoding.UTF8, cancellationToken);
+        }
+
+        public static IAsyncEnumerable<string> ReadLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
+        {
+            if (path == null)
+                throw new ArgumentNullException(nameof(path));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (path.Length == 0)
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
+
+            return InternalReadLinesAsync(path, encoding, cancellationToken);
+        }
+
+        private static async IAsyncEnumerable<string> InternalReadLinesAsync(string path, Encoding encoding, [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(path));
+            Debug.Assert(encoding != null);
+
+            using StreamReader sr = AsyncStreamReader(path, encoding);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            string? line;
+            while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+            {
+                yield return line;
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
 
         public static void WriteAllLines(string path, string[] contents)
