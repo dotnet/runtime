@@ -37,7 +37,10 @@ namespace System.Collections.Generic
             {
                 foreach (T t in obj)
                 {
-                    hashCode = hashCode ^ (_memberEqualityComparer.GetHashCode(t!) & 0x7FFFFFFF); // TODO2
+                    if (t is object)
+                    {
+                        hashCode = hashCode ^ (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
+                    }
                 }
             }
             // Returns 0 for null sets.

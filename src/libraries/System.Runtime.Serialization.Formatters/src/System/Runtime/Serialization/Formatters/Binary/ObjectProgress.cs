@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void ArrayCountIncrement(int value) => _count += value;
 
         // Specifies what is to parsed next from the wire.
-        internal bool GetNext(out BinaryTypeEnum outBinaryTypeEnum, [NotNullWhen(true)] out object? outTypeInformation)
+        internal bool GetNext(out BinaryTypeEnum outBinaryTypeEnum, out object? outTypeInformation)
         {
             //Initialize the out params up here.
             outBinaryTypeEnum = BinaryTypeEnum.Primitive;
@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 else
                 {
                     outBinaryTypeEnum = _binaryTypeEnum;
-                    outTypeInformation = _typeInformation!; // TODO2
+                    outTypeInformation = _typeInformation;
                     if (_count == 0)
                         _isInitial = false;
                     _count++;
@@ -110,7 +110,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     Debug.Assert(_binaryTypeEnumA != null && _typeInformationA != null && _memberNames != null && _memberTypes != null);
                     outBinaryTypeEnum = _binaryTypeEnumA[_count];
-                    outTypeInformation = _typeInformationA[_count]!; // TODO2
+                    outTypeInformation = _typeInformationA[_count];
                     if (_count == 0)
                     {
                         _isInitial = false;

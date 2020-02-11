@@ -103,7 +103,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// </remarks>
         public abstract ComposablePart CreatePart();
 
-        internal virtual bool TryGetExports(ImportDefinition definition, [NotNullWhen(true)] out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
+        internal virtual bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
         {
             singleMatch = null;
             multipleMatches = null;
@@ -140,12 +140,11 @@ namespace System.ComponentModel.Composition.Primitives
             if (multipleExports != null)
             {
                 multipleMatches = multipleExports;
-                // TODO2 singleMatch dould be null when returning true
-                singleMatch = null!;
+                singleMatch = null;
             }
             else
             {
-                singleMatch = singleExport!;
+                singleMatch = singleExport;
             }
             return true;
         }

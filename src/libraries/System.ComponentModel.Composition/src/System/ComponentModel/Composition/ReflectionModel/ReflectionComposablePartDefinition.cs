@@ -154,11 +154,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return null;
         }
 
-        internal override bool TryGetExports(ImportDefinition definition, [NotNullWhen(true)] out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
+        internal override bool TryGetExports(ImportDefinition definition, out Tuple<ComposablePartDefinition, ExportDefinition>? singleMatch, out IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>>? multipleMatches)
         {
             if (this.IsGeneric())
             {
-                singleMatch = null!; // TODO2
+                singleMatch = null;
                 multipleMatches = null;
 
                 List<Tuple<ComposablePartDefinition, ExportDefinition>>? exports = null;

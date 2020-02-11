@@ -217,7 +217,8 @@ namespace System.Linq.Expressions.Interpreter
             //We allow comparison between int and DebugInfo here
             int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
             {
-                if (d1!.Index > d2!.Index) return 1; // TODO2
+                Debug.Assert(d1 is object && d2 is object);
+                if (d1.Index > d2.Index) return 1;
                 else if (d1.Index == d2.Index) return 0;
                 else return -1;
             }

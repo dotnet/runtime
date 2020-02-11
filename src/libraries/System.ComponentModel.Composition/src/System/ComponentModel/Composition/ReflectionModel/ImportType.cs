@@ -170,9 +170,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             return (genericType == LazyOfTType) || (genericType == LazyOfTMType);
         }
 
-        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, [NotNullWhen(true)] out Func<Export, object>? castFunction)
+        private static bool TryGetCastFunction(Type genericType, bool isOpenGeneric, Type[] arguments, out Func<Export, object>? castFunction)
         {
-            castFunction = null!; // TODO2
+            castFunction = null;
 
             if (genericType == LazyOfTType)
             {
@@ -180,7 +180,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     castFunction = ExportServices.CreateStronglyTypedLazyFactory(arguments[0].UnderlyingSystemType, null);
                 }
-                // castFunction
                 return true;
             }
 
@@ -190,7 +189,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     castFunction = ExportServices.CreateStronglyTypedLazyFactory(arguments[0].UnderlyingSystemType, arguments[1].UnderlyingSystemType);
                 }
-                // castFunction
                 return true;
             }
 
@@ -202,7 +200,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         castFunction = new ExportFactoryCreator(genericType).CreateStronglyTypedExportFactoryFactory(arguments[0].UnderlyingSystemType, null);
                     }
-                    // castFunction
                     return true;
                 }
                 else if (arguments.Length == 2)
@@ -211,7 +208,6 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     {
                         castFunction = new ExportFactoryCreator(genericType).CreateStronglyTypedExportFactoryFactory(arguments[0].UnderlyingSystemType, arguments[1].UnderlyingSystemType);
                     }
-                    // castFunction
                     return true;
                 }
                 else

@@ -28,9 +28,9 @@ namespace System.Diagnostics
             }
             WriteAssert(stackTrace, message, detailMessage);
             FailCore(stackTrace, message, detailMessage, "Assertion failed.");
-#nullable disable
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
-#nullable restore
+#pragma warning restore 8763
 
         internal void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
