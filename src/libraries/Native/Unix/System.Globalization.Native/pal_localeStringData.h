@@ -51,7 +51,6 @@ EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* 
 																																	 int32_t valueLength);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
-																																	 int shortFormat,
-																																	 UChar* value,
-																																	 int32_t valueLength);
-
+																																   int shortFormat,
+																																   UChar* value,
+																																   int32_t valueLength);

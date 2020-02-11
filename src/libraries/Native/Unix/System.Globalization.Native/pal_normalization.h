@@ -20,11 +20,11 @@ typedef enum
 } NormalizationForm;
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
-																														const UChar* lpStr,
-																														int32_t cwStrLength);
+                                                            const UChar* lpStr,
+                                                            int32_t cwStrLength);
 
 EXTERN_C DLLEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
-																															 const UChar* lpSrc,
-																															 int32_t cwSrcLength,
-																															 UChar* lpDst,
-																															 int32_t cwDstLength);
+                                                               const UChar* lpSrc,
+                                                               int32_t cwSrcLength,
+                                                               UChar* lpDst,
+                                                               int32_t cwDstLength);
