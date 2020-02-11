@@ -198,7 +198,6 @@ namespace System.IO.Pipes
         // override this in cases where only one mode is legal (such as anonymous pipes)
         public unsafe virtual PipeTransmissionMode TransmissionMode
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -230,7 +229,6 @@ namespace System.IO.Pipes
         // access. If that passes, call to GetNamedPipeInfo will succeed.
         public unsafe virtual int InBufferSize
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -255,7 +253,6 @@ namespace System.IO.Pipes
         // the ctor.
         public unsafe virtual int OutBufferSize
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();
@@ -293,7 +290,6 @@ namespace System.IO.Pipes
                 }
                 return _readMode;
             }
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             set
             {
                 // Nothing fancy here.  This is just a wrapper around the Win32 API.  Note, that NamedPipeServerStream

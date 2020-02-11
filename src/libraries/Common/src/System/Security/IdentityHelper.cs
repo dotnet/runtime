@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -38,9 +39,9 @@ namespace System.Security
         /// Uses the AssemblyName's public key to generate a hash equivalent to what
         /// StrongName.Normalize() gives.
         /// </summary>
-        internal static string GetNormalizedStrongNameHash(AssemblyName name)
+        internal static string? GetNormalizedStrongNameHash(AssemblyName name)
         {
-            byte[] publicKey = name.GetPublicKey();
+            byte[]? publicKey = name.GetPublicKey();
 
             // If we don't have a key, we're not strong named
             if (publicKey == null || publicKey.Length == 0)
@@ -51,8 +52,8 @@ namespace System.Security
             using (BinaryWriter bw = new BinaryWriter(ms))
             {
                 bw.Write(publicKey);
-                bw.Write(name.Version.Major);
-                bw.Write(name.Name);
+                bw.Write(name.Version!.Major);
+                bw.Write(name.Name!);
 
                 ms.Position = 0;
                 return GetStrongHashSuitableForObjectName(ms);

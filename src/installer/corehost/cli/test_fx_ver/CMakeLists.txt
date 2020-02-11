@@ -6,22 +6,11 @@ project(test_fx_ver)
 set(EXE_NAME "test_fx_ver")
 
 include_directories(../fxr)
-include_directories(../../common)
+include_directories(../hostmisc)
 
 set(SOURCES
     test_fx_ver.cpp
-    ../fxr/fx_ver.cpp
-    ../../common/trace.cpp
-    ../../common/utils.cpp)
-
-if(CLR_CMAKE_TARGET_WIN32)
-    list(APPEND SOURCES
-        ../../common/pal.windows.cpp
-        ../../common/longfile.windows.cpp)
-else()
-    list(APPEND SOURCES
-        ../../common/pal.unix.cpp)
-endif()
+)
 
 if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<CONFIG:RelWithDebInfo>:/MT>)
@@ -32,6 +21,7 @@ else()
 endif()
 
 add_executable(${EXE_NAME} ${SOURCES})
+target_link_libraries(${EXE_NAME} libhostmisc libhostcommon)
 
 install(TARGETS ${EXE_NAME} DESTINATION corehost_test)
 

@@ -15,9 +15,6 @@ set(SOURCES
     ijwthunk.cpp
     ijwhost.cpp
     ../fxr_resolver.cpp
-    ../../common/trace.cpp
-    ../../common/utils.cpp
-    ../fxr/fx_ver.cpp
     pedecoder.cpp
     bootstrap_thunk_chunk.cpp
     ${ARCH_SPECIFIC_FOLDER_NAME}/bootstrap_thunk.cpp

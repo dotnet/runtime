@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner Builder class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableList<T>
     {
         /// <summary>
@@ -29,8 +28,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
@@ -130,7 +127,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="index">The index of the desired element.</param>
             /// <returns>The value at the specified index.</returns>
-            [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "index+1", Justification = "There is no chance of this overflowing")]
             public T this[int index]
             {
                 get

@@ -300,7 +300,6 @@ namespace System.Security.Principal
             _safeTokenHandle = DuplicateAccessToken(userToken);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2229", Justification = "Public API has already shipped.")]
         public WindowsIdentity(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

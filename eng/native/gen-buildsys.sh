@@ -32,9 +32,8 @@ source "$scriptroot/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" 
 
 CCC_CC="$CC"
 CCC_CXX="$CXX"
-SCAN_BUILD_COMMAND="$(command -v "scan-build$desired_version")"
 
-export CCC_CC CCC_CXX SCAN_BUILD_COMMAND
+export CCC_CC CCC_CXX
 
 buildtype=DEBUG
 code_coverage=OFF
