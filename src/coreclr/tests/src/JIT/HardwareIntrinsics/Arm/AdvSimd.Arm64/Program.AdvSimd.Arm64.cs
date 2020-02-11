@@ -85,6 +85,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 ["Divide.Vector64.Single"] = Divide_Vector64_Single,
                 ["Divide.Vector128.Double"] = Divide_Vector128_Double,
                 ["Divide.Vector128.Single"] = Divide_Vector128_Single,
+                ["FusedMultiplyAdd.Vector128.Double"] = FusedMultiplyAdd_Vector128_Double,
+                ["FusedMultiplySubtract.Vector128.Double"] = FusedMultiplySubtract_Vector128_Double,
                 ["Max.Vector128.Double"] = Max_Vector128_Double,
                 ["MaxScalar.Vector64.Double"] = MaxScalar_Vector64_Double,
                 ["MaxScalar.Vector64.Single"] = MaxScalar_Vector64_Single,
