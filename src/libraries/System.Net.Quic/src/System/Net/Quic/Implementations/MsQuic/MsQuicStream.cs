@@ -487,14 +487,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         internal static uint NativeCallbackHandler(
-           IntPtr stream,
-           IntPtr context,
-           StreamEvent connectionEventStruct)
+            IntPtr stream,
+            IntPtr context,
+            ref StreamEvent streamEvent)
         {
             var handle = GCHandle.FromIntPtr(context);
             var quicStream = (MsQuicStream)handle.Target;
 
-            return quicStream.HandleEvent(ref connectionEventStruct);
+            return quicStream.HandleEvent(ref streamEvent);
         }
 
         private uint HandleEvent(ref StreamEvent evt)
