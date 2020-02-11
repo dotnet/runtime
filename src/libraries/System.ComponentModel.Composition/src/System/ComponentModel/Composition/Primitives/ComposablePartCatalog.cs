@@ -96,7 +96,7 @@ namespace System.ComponentModel.Composition.Primitives
         ///     </note>
         /// </remarks>
         [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public virtual IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>?> GetExports(ImportDefinition definition)
+        public virtual IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExports(ImportDefinition definition)
         {
             ThrowIfDisposed();
 
