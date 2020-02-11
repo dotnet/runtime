@@ -191,12 +191,15 @@ namespace System.Threading
                 _initialized = false;
 
                 Debug.Assert(_linkedSlot != null, "Should be non-null if not yet disposed");
+                long created = 0;
                 for (LinkedSlot? linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                 {
                     linkedSlot.created &= ~(1L << within_slot_id);
+                    created |= linkedSlot.created;
                 }
 
-                if (_linkedSlot._next != null && _linkedSlot._next!.created == 0)
+                // Experiment show that if I return the id, whether or not I free the array, the test case still repros.
+                if (created == 0)
                 {
                     for (LinkedSlot? linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
                     {
@@ -213,12 +216,16 @@ namespace System.Threading
 
                         // And clear the references from the slot table to the linked slot and the value so that
                         // both can get garbage collected.
-                        slotArray[id].Value!._value = default;
-                        slotArray[id].Value = null;
+                        for (int i = 0; i < valuePerSlot; i++)
+                        {
+                            slotArray[slot_id].Value!._value![i] = default;
+                        }
+                        slotArray[slot_id].Value = null;
                     }
                 }
             }
             _linkedSlot = null;
+            // Experiment show that if I never return the id, the test case failure will not repro.
             s_idManager.ReturnId(id);
         }
 
@@ -278,8 +285,8 @@ namespace System.Threading
                 if (slotArray != null   // Has the slot array been initialized?
                     && slot_id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
                     && slot_id < slotArray.Length   // Is the table large enough?
-                    && (slot = slotArray[slot_id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
-                    && (slotArray[slot_id].Value!.created & (1L << within_slot_id)) != 0 // TODO Comment
+                    && (slot = slotArray[slot_id].Value) != null   // Has a LinkedSlot object been allocated for this ID?
+                    && (slotArray[slot_id].Value!.created & (1L << within_slot_id)) != 0 // Has the slot been created?
                     && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                 )
                 {
@@ -306,6 +313,7 @@ namespace System.Threading
                     && slot_id >= 0   // Is the ID non-negative (i.e., instance is not disposed)?
                     && slot_id < slotArray.Length   // Is the table large enough?
                     && (slot = slotArray[slot_id].Value) != null   // Has a LinkedSlot object has been allocated for this ID?
+                    && _linkedSlot!._next != null // We already linked the instance with the slot array
                     && _initialized // Has the instance *still* not been disposed (important for a race condition with Dispose)?
                     )
                 {
@@ -315,7 +323,6 @@ namespace System.Threading
                     // Volatile read of the LinkedSlotVolatile.Value property ensures that the m_initialized read
                     // will not be reordered before the read of slotArray[id].
                     slot._value![within_slot_id] = value;
-                    slot.created |= (1L << within_slot_id);
                 }
                 else
                 {
@@ -408,6 +415,7 @@ namespace System.Threading
                     throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
                 }
 
+                _linkedSlot!._next = slot;
                 slot!._value![within_slot_id] = value;
                 slot!.created |= (1L << within_slot_id);
             }
@@ -580,7 +588,7 @@ namespace System.Threading
                 int within_slot_id = id % valuePerSlot;
 
                 LinkedSlot? slot;
-                if (slotArray == null || id >= slotArray.Length || (slot = slotArray[slot_id].Value) == null || !_initialized)
+                if (slotArray == null || slot_id >= slotArray.Length || (slot = slotArray[slot_id].Value) == null || (slotArray[slot_id].Value!.created & (1L << within_slot_id)) == 0 || !_initialized)
                     return default!;
                 return slot._value![within_slot_id];
             }
