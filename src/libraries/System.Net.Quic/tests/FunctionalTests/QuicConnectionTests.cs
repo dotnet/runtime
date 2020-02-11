@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Quic.Tests
 {
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public class QuicConnectionTests : MsQuicTestBase
     {
         [Fact]
