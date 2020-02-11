@@ -6099,8 +6099,35 @@ fi
 AC_SUBST(mono_runtime)
 AC_SUBST(mono_runtime_wrapper)
 
-CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/csc.exe
-VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/VBCSCompiler.exe
+if test "x$with_core" != "xonly"; then
+	# Fetch roslyn binaries from nuget
+	roslyn_package_name="Microsoft.Net.Compilers.Toolset"
+	if test -f "$srcdir/eng/Versions.props"; then
+		roslyn_package_ver=`grep MicrosoftNetCompilersVersion "$srcdir/eng/Versions.props" | sed -e 's,.*>\(.*\)<.*$,\1,'`
+	fi
+
+	if test -z "$roslyn_package_ver"; then
+		echo "Error: couldn't parse the roslyn version from $srcdir/eng/Versions.props"
+		exit 1
+	fi
+
+	roslyn_dir="$srcdir/external/roslyn-binaries-from-nuget/$roslyn_package_name/"
+	if test -f "$roslyn_dir/version.txt"; then
+		roslyn_install_ver=`cat $roslyn_dir/version.txt`
+	fi
+
+	if test x$roslyn_install_ver != x$roslyn_package_ver; then
+		rm -Rf $roslyn_package_ver
+		(cd $srcdir; ./install-roslyn.sh $roslyn_dir $roslyn_package_ver) || exit 1
+	fi
+
+	CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries-from-nuget/Microsoft.Net.Compilers.Toolset/csc.exe
+	VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries-from-nuget/Microsoft.Net.Compilers.Toolset/VBCSCompiler.exe
+	csc_version_str="($roslyn_package_ver)"
+else
+	CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/csc.exe
+	VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.5.0/VBCSCompiler.exe
+fi
 
 if test $csc_compiler = mcs; then
   CSC=$mcs_topdir/class/lib/build/mcs.exe
@@ -7005,7 +7032,7 @@ fi
 	
 echo "
 	mcs source:    $mcsdir
-	C# Compiler:   $csc_compiler
+	C# Compiler:   $csc_compiler $csc_version_str
 	CompilerServer:$enable_compiler_server
 
    Engine:

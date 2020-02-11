@@ -25,7 +25,8 @@ EXTRA_DIST= \
 	code_of_conduct.md 	\
 	external		\
 	netcore/Makefile	\
-	mcs/class/referencesource
+	mcs/class/referencesource \
+	external/roslyn-binaries-from-nuget/Microsoft.Net.Compilers.Toolset/*
 
 DISTCHECK_CONFIGURE_FLAGS = EXTERNAL_RUNTIME=false
 
