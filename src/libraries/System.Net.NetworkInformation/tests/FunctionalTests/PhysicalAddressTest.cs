@@ -256,7 +256,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public void ToString_NullAddress_NullReferenceException()
+        public void ToString_NullAddress_EmptyString()
         {
             var pa = new PhysicalAddress(null);
             Assert.Equal("", pa.ToString());
