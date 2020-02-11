@@ -1310,7 +1310,7 @@ namespace System.Text
 
             Vector128<short> asciiMaskForPTEST = Vector128.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
             Vector128<ushort> asciiMaskForPADDUSW = Vector128.Create((ushort)0x7F80); // used for PADDUSW
-            const uint NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
+            const int NonAsciiDataSeenMask = 0b_1010_1010_1010_1010; // used for determining whether the pmovmskb operation saw non-ASCII chars
 
             // First, perform an unaligned read of the first part of the input buffer.
 
