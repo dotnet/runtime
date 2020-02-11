@@ -4,3 +4,9 @@
 
 #include "common.h"
 
+HRESULT AssemblyLoadContext::GetBinderID(
+    UINT_PTR* pBinderId)
+{
+    *pBinderId = reinterpret_cast<UINT_PTR>(this);
+    return S_OK;
+}

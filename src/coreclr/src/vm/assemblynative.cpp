@@ -1327,7 +1327,7 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     // Get the PEAssembly for the RuntimeAssembly
     PEFile *pPEFile = pAssembly->GetFile();
-    PTR_PEAssembly pPEAssembly = pPEFile ? pPEFile->AsAssembly() : NULL;
+    PTR_PEAssembly pPEAssembly = pPEFile->AsAssembly();
 
     // Platform assemblies are semantically bound against the "Default" binder.
     // The reference to the same will be returned when this QCall returns.
