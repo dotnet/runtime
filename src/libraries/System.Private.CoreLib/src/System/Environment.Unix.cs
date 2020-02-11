@@ -255,7 +255,7 @@ namespace System
                             }
 
                             // Find end of path
-                            int endPos = line.IndexOf('\"', pos);
+                            int endPos = line.IndexOf('"', pos);
                             if (endPos <= pos) continue;
 
                             // Got we need.  Now extract it.

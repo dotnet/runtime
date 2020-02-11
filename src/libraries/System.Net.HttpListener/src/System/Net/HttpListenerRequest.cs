@@ -343,7 +343,7 @@ namespace System.Net
                 {
                     if (i == l - 1)
                         return null;
-                    j = headerValue.IndexOf('\"', i + 1);
+                    j = headerValue.IndexOf('"', i + 1);
                     if (j < 0 || j == i + 1)
                         return null;
 

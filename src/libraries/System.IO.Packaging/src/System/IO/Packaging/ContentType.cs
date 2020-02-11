@@ -403,7 +403,7 @@ namespace System.IO.Packaging
 
                 while (!found)
                 {
-                    length = s.IndexOf('\"', ++length);
+                    length = s.IndexOf('"', ++length);
 
                     if (length == -1)
                         throw new ArgumentException(SR.InvalidParameterValue);
