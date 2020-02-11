@@ -486,7 +486,7 @@ namespace System.Drawing.Printing
                         int pvImageLen = (int)inStream.Length;
                         byte[] pvImage = new byte[pvImageLen];
 
-                        int nRead = inStream.Read(pvImage, 0, (int)pvImageLen);
+                        inStream.Read(pvImage, 0, (int)pvImageLen);
 
                         int nEscape = image.RawFormat.Equals(ImageFormat.Jpeg) ? SafeNativeMethods.CHECKJPEGFORMAT : SafeNativeMethods.CHECKPNGFORMAT;
                         int outData = 0;
