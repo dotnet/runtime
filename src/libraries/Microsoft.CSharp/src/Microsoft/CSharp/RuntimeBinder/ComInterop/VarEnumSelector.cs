@@ -15,14 +15,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// If a managed user type (as opposed to a primitive type or a COM object) is passed as an argument to a COM call, we need
     /// to determine the VarEnum type we will marshal it as. We have the following options:
-    /// 1.	Raise an exception. Languages with their own version of primitive types would not be able to call
-    ///     COM methods using the language's types (for eg. strings in IronRuby are not System.String). An explicit
-    ///     cast would be needed.
-    /// 2.	We could marshal it as VT_DISPATCH. Then COM code will be able to access all the APIs in a late-bound manner,
-    ///     but old COM components will probably malfunction if they expect a primitive type.
-    /// 3.	We could guess which primitive type is the closest match. This will make COM components be as easily
-    ///     accessible as .NET methods.
-    /// 4.	We could use the type library to check what the expected type is. However, the type library may not be available.
+    /// 1. Raise an exception. Languages with their own version of primitive types would not be able to call
+    ///    COM methods using the language's types (for eg. strings in IronRuby are not System.String). An explicit
+    ///    cast would be needed.
+    /// 2. We could marshal it as VT_DISPATCH. Then COM code will be able to access all the APIs in a late-bound manner,
+    ///    but old COM components will probably malfunction if they expect a primitive type.
+    /// 3. We could guess which primitive type is the closest match. This will make COM components be as easily
+    ///    accessible as .NET methods.
+    /// 4. We could use the type library to check what the expected type is. However, the type library may not be available.
     ///
     /// VarEnumSelector implements option # 3
     /// </summary>
@@ -296,7 +296,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         // Type.InvokeMember tries to marshal objects as VT_DISPATCH, and falls back to VT_UNKNOWN
         // VT_RECORD here just indicates that we have user defined type.
         // We will try VT_DISPATCH and then call GetNativeVariantForObject.
-        const VarEnum VT_DEFAULT = VarEnum.VT_RECORD;
+        private const VarEnum VT_DEFAULT = VarEnum.VT_RECORD;
 
         private VarEnum GetComType(ref Type argumentType) {
             if (argumentType == typeof(Missing)) {

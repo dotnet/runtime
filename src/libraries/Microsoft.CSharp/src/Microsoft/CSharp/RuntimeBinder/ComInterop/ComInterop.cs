@@ -64,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         IUnknown_AddRef,
         IUnknown_Release,
 
-        IDispatch_GetTypeInfoCount ,
+        IDispatch_GetTypeInfoCount,
         IDispatch_GetTypeInfo,
         IDispatch_GetIDsOfNames,
         IDispatch_Invoke

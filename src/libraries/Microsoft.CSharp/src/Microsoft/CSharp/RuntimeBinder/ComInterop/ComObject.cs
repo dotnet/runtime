@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         internal object RuntimeCallableWrapper { get; }
 
-        private readonly static object _ComObjectInfoKey = new object();
+        private static readonly object _ComObjectInfoKey = new object();
 
         /// <summary>
         /// Gets a <see cref="ComObject"/> that wraps the runtime-callable-wrapper, or creates one if none currently exists.

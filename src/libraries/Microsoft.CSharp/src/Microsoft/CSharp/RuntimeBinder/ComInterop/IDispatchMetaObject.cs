@@ -125,7 +125,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
             if (_self.TryGetGetItem(out ComMethodDesc getItem)) {
                 bool[] isByRef = ComBinderHelpers.ProcessArgumentsForCom(ref indexes);
-                return BindComInvoke(indexes, getItem, binder.CallInfo , isByRef);
+                return BindComInvoke(indexes, getItem, binder.CallInfo, isByRef);
             }
 
             return base.BindGetIndex(binder, indexes);

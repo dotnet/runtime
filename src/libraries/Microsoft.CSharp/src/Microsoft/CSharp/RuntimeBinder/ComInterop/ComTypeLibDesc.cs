@@ -23,10 +23,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         // typically typelibs contain very small number of coclasses
         // so we will just use the linked list as it performs better
         // on small number of entities
-        LinkedList<ComTypeClassDesc> _classes;
-        Dictionary<string, ComTypeEnumDesc> _enums;
-        string _typeLibName;
-        ComTypes.TYPELIBATTR _typeLibAttributes;
+        private LinkedList<ComTypeClassDesc> _classes;
+        private Dictionary<string, ComTypeEnumDesc> _enums;
+        private string _typeLibName;
+        private ComTypes.TYPELIBATTR _typeLibAttributes;
 
         private static Dictionary<Guid, ComTypeLibDesc> _CachedTypeLibDesc = new Dictionary<Guid, ComTypeLibDesc>();
 

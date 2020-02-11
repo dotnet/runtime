@@ -213,7 +213,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <summary>
         /// Release any unmanaged memory associated with the Variant
         /// </summary>
-        /// <returns></returns>
         public void Clear() {
             // We do not need to call OLE32's VariantClear for primitive types or ByRefs
             // to safe ourselves the cost of interop transition.
@@ -851,7 +850,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             }
         }
 
-        unsafe internal void CopyFromIndirect(object value) {
+        internal unsafe void CopyFromIndirect(object value) {
             VarEnum vt = (VarEnum)(((int)VariantType) & ~((int)VarEnum.VT_BYREF));
 
             if (value == null) {

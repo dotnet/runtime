@@ -51,7 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// real invocation of the IDynamicMetaObjectProvider.
     /// </summary>
     internal sealed class SplatInvokeBinder : CallSiteBinder {
-        internal readonly static SplatInvokeBinder Instance = new SplatInvokeBinder();
+        internal static readonly SplatInvokeBinder Instance = new SplatInvokeBinder();
 
         // Just splat the args and dispatch through a nested site
         public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {

@@ -141,7 +141,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         private static unsafe int Invoke(IDispatch dispatch, int memberDispId, out object result) {
             Guid emtpyRiid = Guid.Empty;
-            ComTypes.DISPPARAMS dispParams = new ComTypes.DISPPARAMS();
+            ComTypes.DISPPARAMS dispParams = default(ComTypes.DISPPARAMS);
             Variant res = default;
             int hresult = dispatch.TryInvoke(
                 memberDispId,
