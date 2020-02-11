@@ -820,17 +820,21 @@ namespace System.Text.RegularExpressions
         /// <param name="chars">The span into which the chars should be stored.</param>
         /// <returns>
         /// The number of stored chars.  If they won't all fit, 0 is returned.
+        /// If 0 is returned, no assumptions can be made about the characters.
         /// </returns>
         /// <remarks>
-        /// Only considers character classes that only contain sets (no categories), no negation,
+        /// Only considers character classes that only contain sets (no categories)
         /// and no subtraction... just simple sets containing starting/ending pairs.
+        /// The returned characters may be negated: if IsNegated(set) is false, then
+        /// the returned characters are the only ones that match; if it returns true,
+        /// then the returned characters are the only ones that don't match.
         /// </remarks>
         public static int GetSetChars(string set, Span<char> chars)
         {
             // If the set is negated, it's likely to contain a large number of characters,
             // so we don't even try.  We also get the characters by enumerating the set
             // portion, so we validate that it's set up to enable that, e.g. no categories.
-            if (IsNegated(set) || !CanEasilyEnumerateSetContents(set))
+            if (!CanEasilyEnumerateSetContents(set))
             {
                 return 0;
             }
