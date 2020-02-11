@@ -8828,7 +8828,7 @@ StandardEntryDisplay:
 }
 
 #ifdef FEATURE_READYTORUN
-IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(DWORD type)
+IMAGE_DATA_DIRECTORY * NativeImageDumper::FindReadyToRunSection(ReadyToRunSectionType type)
 {
     PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(m_pReadyToRunHeader) + sizeof(READYTORUN_HEADER));
     for (DWORD i = 0; i < m_pReadyToRunHeader->NumberOfSections; i++)
