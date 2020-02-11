@@ -68,6 +68,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         // TODO consider using Interlocked.Exchange instead of a sync if we can avoid it.
         private object _sync = new object();
 
+        private Task _startTask;
+
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
@@ -93,6 +95,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
 
             SetCallbackHandler();
+
+            _startTask = StartWritesAsync();
         }
 
         internal override bool CanRead => _canRead;
@@ -178,14 +182,20 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
-
+            bool shouldAwaitStart = false;
             lock (_sync)
             {
                 if (_sendState == SendState.Aborted)
                 {
                     throw new OperationCanceledException("Sending has already been aborted on the stream");
                 }
+
+                if (_started != StartState.Finished)
+                {
+                    shouldAwaitStart = true;
+                }
             }
+
             CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
@@ -204,13 +214,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
-            // Implicit start on first write.
-            if (_started == StartState.None)
+            // Make sure start has completed
+            if (shouldAwaitStart)
             {
-                _started = StartState.Started;
-
-                // TODO can optimize this by not having this method be async.
-                await StartWritesAsync();
+                await _startTask;
             }
 
             return registration;
@@ -1021,7 +1028,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private enum StartState
         {
             None,
-            Started,
             Finished
         }
 
