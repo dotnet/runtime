@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <locale.h>
 
+#include "pal_locale_internal.h"
 #include "pal_locale.h"
 
 int32_t UErrorCodeToBool(UErrorCode status)
@@ -145,11 +146,12 @@ const char* DetectDefaultLocaleName()
 // locale names list.
 // if the value is not null, it fills the value with locale names separated by the length
 // of each name.
-int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocales(uint16_t *value, int32_t valueLength)
 {
     int32_t totalLength = 0;
     int32_t index = 0;
     int32_t localeCount = uloc_countAvailable();
+    UChar* tmpValue = (UChar*)value;
 
     if (localeCount <=  0)
         return -1; // failed
@@ -164,59 +166,61 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
 
         totalLength += localeNameLength + 1; // add 1 for the name length
 
-        if (value != NULL)
+        if (tmpValue != NULL)
         {
             if (totalLength > valueLength)
                 return -3;
 
-            value[index++] = (UChar) localeNameLength;
+            tmpValue[index++] = (UChar) localeNameLength;
 
             for (int j=0; j<localeNameLength; j++)
             {
                 if (pLocaleName[j] == '_') // fix the locale name
                 {
-                    value[index++] = (UChar) '-';
+                    tmpValue[index++] = (UChar) '-';
                 }
                 else
                 {
-                    value[index++] = (UChar) pLocaleName[j];
+                    tmpValue[index++] = (UChar) pLocaleName[j];
                 }
             }
         }
     }
 
+    value = (uint16_t*)tmpValue;
     return totalLength;
 }
 
-int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetLocaleName(const uint16_t* localeName, uint16_t* value, int32_t valueLength)
 {
     UErrorCode status = U_ZERO_ERROR;
 
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
-    u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
+    GetLocale((UChar*)localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
+    u_charsToUChars_safe(localeNameBuffer, (UChar*)value, valueLength, &status);
 
     if (U_SUCCESS(status))
     {
-        FixupLocaleName(value, valueLength);
+        FixupLocaleName((UChar*)value, valueLength);
     }
 
     return UErrorCodeToBool(status);
 }
 
-int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLength)
+int32_t GlobalizationNative_GetDefaultLocaleName(uint16_t* value, int32_t valueLength)
 {
     char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
     UErrorCode status = U_ZERO_ERROR;
 
     const char* defaultLocale = DetectDefaultLocaleName();
+    UChar* tmpValue = (UChar*)value;
 
     uloc_getBaseName(defaultLocale, localeNameBuffer, ULOC_FULLNAME_CAPACITY, &status);
-    u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
+    u_charsToUChars_safe(localeNameBuffer, tmpValue, valueLength, &status);
 
     if (U_SUCCESS(status))
     {
-        int localeNameLen = FixupLocaleName(value, valueLength);
+        int localeNameLen = FixupLocaleName(tmpValue, valueLength);
 
         char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
         int32_t collationLen =
@@ -226,22 +230,23 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
         {
             // copy the collation; managed uses a "_" to represent collation (not
             // "@collation=")
-            u_charsToUChars_safe("_", &value[localeNameLen], valueLength - localeNameLen, &status);
+            u_charsToUChars_safe("_", &tmpValue[localeNameLen], valueLength - localeNameLen, &status);
             u_charsToUChars_safe(collationValueTemp, &value[localeNameLen + 1], valueLength - localeNameLen - 1, &status);
         }
     }
 
+    value = (uint16_t*)tmpValue;
     return UErrorCodeToBool(status);
 }
 
 // GlobalizationNative_IsPredefinedLocale returns TRUE if ICU has a real data for the locale.
 // Otherwise it returns FALSE;
 
-int32_t GlobalizationNative_IsPredefinedLocale(const UChar* localeName)
+int32_t GlobalizationNative_IsPredefinedLocale(const uint16_t* localeName)
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
         return FALSE;

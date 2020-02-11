@@ -21,7 +21,7 @@ Performs upper or lower casing of a string into a new buffer.
 No special casing is performed beyond that provided by ICU.
 */
 void GlobalizationNative_ChangeCase(
-    const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
+    const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // Iterate through the string, decoding the next one or two UTF-16 code units
     // into a codepoint and updating srcIdx to point to the next UTF-16 code unit
@@ -36,14 +36,16 @@ void GlobalizationNative_ChangeCase(
     UBool isError = FALSE;
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
+    const UChar* tmpSrc = (UChar*)lpSrc;
+    UChar *tmpDst = (UChar*)lpDst;
 
     if (bToUpper)
     {
         while (srcIdx < cwSrcLength)
         {
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = u_toupper(srcCodepoint);
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
@@ -51,12 +53,14 @@ void GlobalizationNative_ChangeCase(
     {
         while (srcIdx < cwSrcLength)
         {
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = u_tolower(srcCodepoint);
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
+
+    lpDst = (uint16_t*)tmpDst;
 }
 
 /*
@@ -68,13 +72,15 @@ Special casing is performed to ensure that invariant casing
 matches that of Windows in certain situations, e.g. Turkish i's.
 */
 void GlobalizationNative_ChangeCaseInvariant(
-    const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
+    const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
+    const UChar *tmpSrc = (UChar*)lpSrc;
+    UChar *tmpDst = (UChar*)lpDst;
 
     if (bToUpper)
     {
@@ -83,9 +89,9 @@ void GlobalizationNative_ChangeCaseInvariant(
             // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
             // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
             // We special case it to match the Windows invariant behavior.
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0131) ? (UChar32)0x0131 : u_toupper(srcCodepoint));
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
@@ -96,12 +102,14 @@ void GlobalizationNative_ChangeCaseInvariant(
             // On Windows with InvariantCulture, the LATIN CAPITAL LETTER I WITH DOT ABOVE (U+0130)
             // lower cases to itself, whereas with ICU it lower cases to LATIN SMALL LETTER I (U+0069).
             // We special case it to match the Windows invariant behavior.
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0130) ? (UChar32)0x0130 : u_tolower(srcCodepoint));
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
+
+    lpDst = (uint16_t*)tmpDst;
 }
 
 /*
@@ -112,13 +120,15 @@ Performs upper or lower casing of a string into a new buffer, performing special
 casing for Turkish.
 */
 void GlobalizationNative_ChangeCaseTurkish(
-    const UChar* lpSrc, int32_t cwSrcLength, UChar* lpDst, int32_t cwDstLength, int32_t bToUpper)
+    const uint16_t* lpSrc, int32_t cwSrcLength, uint16_t* lpDst, int32_t cwDstLength, int32_t bToUpper)
 {
     // See algorithmic comment in ChangeCase.
 
     UBool isError = FALSE;
     int32_t srcIdx = 0, dstIdx = 0;
     UChar32 srcCodepoint, dstCodepoint;
+    const UChar *tmpSrc = (UChar*)lpSrc;
+    UChar *tmpDst = (UChar*)lpDst;
 
     if (bToUpper)
     {
@@ -126,9 +136,9 @@ void GlobalizationNative_ChangeCaseTurkish(
         {
             // In turkish casing, LATIN SMALL LETTER I (U+0069) upper cases to LATIN
             // CAPITAL LETTER I WITH DOT ABOVE (U+0130).
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0069) ? (UChar32)0x0130 : u_toupper(srcCodepoint));
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
@@ -138,12 +148,14 @@ void GlobalizationNative_ChangeCaseTurkish(
         {
             // In turkish casing, LATIN CAPITAL LETTER I (U+0049) lower cases to
             // LATIN SMALL LETTER DOTLESS I (U+0131).
-            U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint);
+            U16_NEXT(tmpSrc, srcIdx, cwSrcLength, srcCodepoint);
             dstCodepoint = ((srcCodepoint == (UChar32)0x0049) ? (UChar32)0x0131 : u_tolower(srcCodepoint));
-            U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError);
+            U16_APPEND(tmpDst, dstIdx, cwDstLength, dstCodepoint, isError);
             assert(isError == FALSE && srcIdx == dstIdx);
         }
     }
+
+    lpDst = (uint16_t*)tmpDst;
 }
 
 #pragma clang diagnostic pop

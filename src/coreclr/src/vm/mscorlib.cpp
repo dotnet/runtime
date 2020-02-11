@@ -87,6 +87,19 @@
 #include "eventpipeinternal.h"
 #endif //FEATURE_PERFTRACING
 
+#ifdef TARGET_UNIX // Globalization headers
+#include "pal_calendarData.h"
+#include "pal_casing.h"
+#include "pal_collation.h"
+#include "pal_locale.h"
+#include "pal_localeNumberData.h"
+#include "pal_localeStringData.h"
+#include "pal_icuload.h"
+#include "pal_idna.h"
+#include "pal_normalization.h"
+#include "pal_timeZoneInfo.h"
+#endif // TARGET_UNIX
+
 #endif // CROSSGEN_MSCORLIB
 
 

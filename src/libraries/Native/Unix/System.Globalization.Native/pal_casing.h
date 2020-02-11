@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_compiler.h"
-#include "pal_locale.h"
+#pragma once
 
-DLLEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
+#include "pal_compiler.h"
+
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCase(const uint16_t* lpSrc,
                                               int32_t cwSrcLength,
-                                              UChar* lpDst,
+                                              uint16_t* lpDst,
                                               int32_t cwDstLength,
                                               int32_t bToUpper);
 
-DLLEXPORT void GlobalizationNative_ChangeCaseInvariant(const UChar* lpSrc,
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseInvariant(const uint16_t* lpSrc,
                                                        int32_t cwSrcLength,
-                                                       UChar* lpDst,
+                                                       uint16_t* lpDst,
                                                        int32_t cwDstLength,
                                                        int32_t bToUpper);
 
-DLLEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
+EXTERN_C DLLEXPORT void GlobalizationNative_ChangeCaseTurkish(const uint16_t* lpSrc,
                                                      int32_t cwSrcLength,
-                                                     UChar* lpDst,
+                                                     uint16_t* lpDst,
                                                      int32_t cwDstLength,
                                                      int32_t bToUpper);

@@ -3,17 +3,18 @@
 // See the LICENSE file in the project root for more information.
 //
 
-#include "pal_compiler.h"
-#include "pal_locale.h"
+#pragma once
 
-DLLEXPORT int32_t GlobalizationNative_ToAscii(uint32_t flags,
-                                              const UChar* lpSrc,
+#include "pal_compiler.h"
+
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_ToAscii(uint32_t flags,
+                                              const uint16_t* lpSrc,
                                               int32_t cwSrcLength,
-                                              UChar* lpDst,
+                                              uint16_t* lpDst,
                                               int32_t cwDstLength);
 
-DLLEXPORT int32_t GlobalizationNative_ToUnicode(uint32_t flags,
-                                                const UChar* lpSrc,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_ToUnicode(uint32_t flags,
+                                                const uint16_t* lpSrc,
                                                 int32_t cwSrcLength,
-                                                UChar* lpDst,
+                                                uint16_t* lpDst,
                                                 int32_t cwDstLength);

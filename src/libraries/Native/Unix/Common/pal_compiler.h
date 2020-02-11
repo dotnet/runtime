@@ -19,4 +19,14 @@
 #define c_static_assert(e) c_static_assert_msg(e, "")
 #endif
 
+#ifndef DLLEXPORT
 #define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#endif
+
+#ifndef EXTERN_C
+#if defined(__cplusplus)
+#define EXTERN_C extern "C"
+#else
+#define EXTERN_C
+#endif // defined(__cplusplus)
+#endif // EXTERN_C

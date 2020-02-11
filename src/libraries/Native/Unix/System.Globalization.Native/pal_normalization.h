@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#pragma once
+
 #include "pal_compiler.h"
-#include "pal_locale.h"
 
 /*
  * These values should be kept in sync with System.Text.NormalizationForm
@@ -17,12 +18,12 @@ typedef enum
     FormKD = 0x6
 } NormalizationForm;
 
-DLLEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
-                                                   const UChar* lpStr,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_IsNormalized(NormalizationForm normalizationForm,
+                                                   const uint16_t* lpStr,
                                                    int32_t cwStrLength);
 
-DLLEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
-                                                      const UChar* lpSrc,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_NormalizeString(NormalizationForm normalizationForm,
+                                                      const uint16_t* lpSrc,
                                                       int32_t cwSrcLength,
-                                                      UChar* lpDst,
+                                                      uint16_t* lpDst,
                                                       int32_t cwDstLength);

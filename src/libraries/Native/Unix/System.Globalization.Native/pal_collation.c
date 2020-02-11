@@ -10,6 +10,8 @@
 #include <search.h>
 #include <string.h>
 
+#include "pal_icushim.h"
+#include "pal_errors_internal.h"
 #include "pal_collation.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
@@ -439,7 +441,7 @@ Function:
 CompareString
 */
 int32_t GlobalizationNative_CompareString(
-    SortHandle* pSortHandle, const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length, int32_t options)
+    SortHandle* pSortHandle, const uint16_t* lpStr1, int32_t cwStr1Length, const uint16_t* lpStr2, int32_t cwStr2Length, int32_t options)
 {
     UCollationResult result = UCOL_EQUAL;
     UErrorCode err = U_ZERO_ERROR;
@@ -447,7 +449,7 @@ int32_t GlobalizationNative_CompareString(
 
     if (U_SUCCESS(err))
     {
-        result = ucol_strcoll(pColl, lpStr1, cwStr1Length, lpStr2, cwStr2Length);
+        result = ucol_strcoll(pColl, (UChar*)lpStr1, cwStr1Length, (UChar*)lpStr2, cwStr2Length);
     }
 
     return result;
@@ -459,9 +461,9 @@ IndexOf
 */
 int32_t GlobalizationNative_IndexOf(
                         SortHandle* pSortHandle,
-                        const UChar* lpTarget,
+                        const uint16_t* lpTarget,
                         int32_t cwTargetLength,
-                        const UChar* lpSource,
+                        const uint16_t* lpSource,
                         int32_t cwSourceLength,
                         int32_t options,
                         int32_t* pMatchedLength)
@@ -472,7 +474,7 @@ int32_t GlobalizationNative_IndexOf(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UStringSearch* pSearch = usearch_openFromCollator((UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength, pColl, NULL, &err);
 
         if (U_SUCCESS(err))
         {
@@ -497,9 +499,9 @@ LastIndexOf
 */
 int32_t GlobalizationNative_LastIndexOf(
                         SortHandle* pSortHandle,
-                        const UChar* lpTarget,
+                        const uint16_t* lpTarget,
                         int32_t cwTargetLength,
-                        const UChar* lpSource,
+                        const uint16_t* lpSource,
                         int32_t cwSourceLength,
                         int32_t options)
 {
@@ -509,7 +511,7 @@ int32_t GlobalizationNative_LastIndexOf(
 
     if (U_SUCCESS(err))
     {
-        UStringSearch* pSearch = usearch_openFromCollator(lpTarget, cwTargetLength, lpSource, cwSourceLength, pColl, NULL, &err);
+        UStringSearch* pSearch = usearch_openFromCollator((UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength, pColl, NULL, &err);
 
         if (U_SUCCESS(err))
         {
@@ -550,18 +552,19 @@ Function:
 IndexOfOrdinalIgnoreCase
 */
 int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
-    const UChar* lpTarget, int32_t cwTargetLength, const UChar* lpSource, int32_t cwSourceLength, int32_t findLast)
+    const uint16_t* lpTarget, int32_t cwTargetLength, const uint16_t* lpSource, int32_t cwSourceLength, int32_t findLast)
 {
     int32_t result = -1;
 
     int32_t endIndex = cwSourceLength - cwTargetLength;
     assert(endIndex >= 0);
+    const UChar* _tmpSrc = (UChar*)lpSource, *_tmpTrg = (UChar*)lpTarget;
 
     int32_t i = 0;
     while (i <= endIndex)
     {
         int32_t srcIdx = i, trgIdx = 0;
-        const UChar *src = lpSource, *trg = lpTarget;
+        const UChar *src = _tmpSrc, *trg = _tmpTrg;
 
         int32_t match = TRUE;
         while (trgIdx < cwTargetLength)
@@ -590,7 +593,7 @@ int32_t GlobalizationNative_IndexOfOrdinalIgnoreCase(
             }
         }
 
-        U16_FWD_1(lpSource, i, cwSourceLength);
+        U16_FWD_1(_tmpSrc, i, cwSourceLength);
     }
 
     return result;
@@ -735,9 +738,9 @@ static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorC
  */
 int32_t GlobalizationNative_StartsWith(
                         SortHandle* pSortHandle,
-                        const UChar* lpTarget,
+                        const uint16_t* lpTarget,
                         int32_t cwTargetLength,
-                        const UChar* lpSource,
+                        const uint16_t* lpSource,
                         int32_t cwSourceLength,
                         int32_t options)
 {
@@ -751,11 +754,11 @@ int32_t GlobalizationNative_StartsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexStartsWith(pCollator, &err, (UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE);
+        return SimpleAffix(pCollator, &err, (UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength, TRUE);
     }
 }
 
@@ -793,9 +796,9 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
  */
 int32_t GlobalizationNative_EndsWith(
                         SortHandle* pSortHandle,
-                        const UChar* lpTarget,
+                        const uint16_t* lpTarget,
                         int32_t cwTargetLength,
-                        const UChar* lpSource,
+                        const uint16_t* lpSource,
                         int32_t cwSourceLength,
                         int32_t options)
 {
@@ -808,17 +811,17 @@ int32_t GlobalizationNative_EndsWith(
     }
     else if (options > CompareOptionsIgnoreCase)
     {
-        return ComplexEndsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength);
+        return ComplexEndsWith(pCollator, &err, (UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength);
     }
     else
     {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, FALSE);
+        return SimpleAffix(pCollator, &err, (UChar*)lpTarget, cwTargetLength, (UChar*)lpSource, cwSourceLength, FALSE);
     }
 }
 
 int32_t GlobalizationNative_GetSortKey(
                         SortHandle* pSortHandle,
-                        const UChar* lpStr,
+                        const uint16_t* lpStr,
                         int32_t cwStrLength,
                         uint8_t* sortKey,
                         int32_t cbSortKeyLength,
@@ -830,14 +833,14 @@ int32_t GlobalizationNative_GetSortKey(
 
     if (U_SUCCESS(err))
     {
-        result = ucol_getSortKey(pColl, lpStr, cwStrLength, sortKey, cbSortKeyLength);
+        result = ucol_getSortKey(pColl, (UChar*)lpStr, cwStrLength, sortKey, cbSortKeyLength);
     }
 
     return result;
 }
 
 int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
-    const UChar* lpStr1, int32_t cwStr1Length, const UChar* lpStr2, int32_t cwStr2Length)
+    const uint16_t* lpStr1, int32_t cwStr1Length, const uint16_t* lpStr2, int32_t cwStr2Length)
 {
     assert(lpStr1 != NULL);
     assert(cwStr1Length >= 0);
@@ -846,6 +849,7 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
 
     int32_t str1Idx = 0;
     int32_t str2Idx = 0;
+    const UChar *_tmpStr1 = (UChar*)lpStr1, *_tmpStr2 = (UChar*)lpStr2;
 
     while (str1Idx < cwStr1Length && str2Idx < cwStr2Length)
     {
@@ -853,8 +857,8 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
-        U16_NEXT(lpStr1, str1Idx, cwStr1Length, str1Codepoint);
-        U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
+        U16_NEXT(_tmpStr1, str1Idx, cwStr1Length, str1Codepoint);
+        U16_NEXT(_tmpStr2, str2Idx, cwStr2Length, str2Codepoint);
 #pragma clang diagnostic pop
 
         if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))

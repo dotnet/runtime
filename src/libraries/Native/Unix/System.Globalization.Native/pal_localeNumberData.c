@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "pal_locale_internal.h"
 #include "pal_localeNumberData.h"
 
 // invariant character definitions used by ICU
@@ -405,11 +406,11 @@ Obtains integer locale information
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleInfoInt(
-    const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
+    const uint16_t* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
     {
@@ -531,11 +532,11 @@ Obtains grouping sizes for decimal and currency
 Returns 1 for success, 0 otherwise
 */
 int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(
-    const UChar* localeName, LocaleNumberData localeGroupingData, int32_t* primaryGroupSize, int32_t* secondaryGroupSize)
+    const uint16_t* localeName, LocaleNumberData localeGroupingData, int32_t* primaryGroupSize, int32_t* secondaryGroupSize)
 {
     UErrorCode status = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    GetLocale((UChar*)localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
     {

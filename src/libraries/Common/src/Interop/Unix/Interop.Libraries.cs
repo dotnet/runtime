@@ -2,17 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
+
 internal static partial class Interop
 {
     internal static partial class Libraries
     {
         // Shims
         internal const string SystemNative = "System.Native";
-        internal const string GlobalizationNative = "System.Globalization.Native";
         internal const string NetSecurityNative = "System.Net.Security.Native";
         internal const string CryptoNative = "System.Security.Cryptography.Native.OpenSsl";
         internal const string CompressionNative = "System.IO.Compression.Native";
         internal const string IOPortsNative = "System.IO.Ports.Native";
         internal const string Libdl = "libdl";
+#if CORECLR
+        internal const string GlobalizationNative = RuntimeHelpers.QCall;
+#else
+        internal const string GlobalizationNative = "System.Globalization.Native";
+#endif
     }
 }

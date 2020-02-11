@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#pragma once
+
 #include "pal_compiler.h"
-#include "pal_locale.h"
 #include "pal_errors.h"
 
 /*
@@ -17,8 +18,8 @@ typedef enum
     TimeZoneDisplayName_DaylightSavings = 2,
 } TimeZoneDisplayNameType;
 
-DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
-                                                                const UChar* timeZoneId,
+EXTERN_C DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const uint16_t* localeName,
+                                                                const uint16_t* timeZoneId,
                                                                 TimeZoneDisplayNameType type,
-                                                                UChar* result,
+                                                                uint16_t* result,
                                                                 int32_t resultLength);

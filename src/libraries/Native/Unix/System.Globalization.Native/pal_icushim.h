@@ -240,6 +240,3 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
 
-DLLEXPORT int32_t GlobalizationNative_LoadICU(void);
-
-DLLEXPORT int32_t GlobalizationNative_GetICUVersion(void);

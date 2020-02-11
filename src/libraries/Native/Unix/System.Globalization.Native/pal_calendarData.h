@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#pragma once
+
 #include <stdlib.h>
 
 #include "pal_compiler.h"
-#include "pal_locale.h"
 #include "pal_errors.h"
 
 /*
@@ -66,27 +67,27 @@ typedef enum
 } CalendarDataType;
 
 // the function pointer definition for the callback used in EnumCalendarInfo
-typedef void (*EnumCalendarInfoCallback)(const UChar*, const void*);
+typedef void (*EnumCalendarInfoCallback)(const uint16_t*, const void*);
 
-DLLEXPORT int32_t GlobalizationNative_GetCalendars(const UChar* localeName,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetCalendars(const uint16_t* localeName,
                                                    CalendarId* calendars,
                                                    int32_t calendarsCapacity);
 
-DLLEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const UChar* localeName,
+EXTERN_C DLLEXPORT ResultCode GlobalizationNative_GetCalendarInfo(const uint16_t* localeName,
                                                          CalendarId calendarId,
                                                          CalendarDataType dataType,
-                                                         UChar* result,
+                                                         uint16_t* result,
                                                          int32_t resultCapacity);
 
-DLLEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
-                                                       const UChar* localeName,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
+                                                       const uint16_t* localeName,
                                                        CalendarId calendarId,
                                                        CalendarDataType dataType,
                                                        const void* context);
 
-DLLEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetLatestJapaneseEra(void);
 
-DLLEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
+EXTERN_C DLLEXPORT int32_t GlobalizationNative_GetJapaneseEraStartDate(int32_t era,
                                                               int32_t* startYear,
                                                               int32_t* startMonth,
                                                               int32_t* startDay);
