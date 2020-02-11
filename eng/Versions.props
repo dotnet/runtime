@@ -57,7 +57,6 @@
   </ItemGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftNetCompilersToolsetVersion>3.6.0-dev-20110-01</MicrosoftNetCompilersToolsetVersion>
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20105.2</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>5.0.0-beta.20105.2</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20105.2</MicrosoftDotNetCodeAnalysisVersion>
