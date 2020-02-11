@@ -7,25 +7,19 @@
 
 #include "comwrappers.h"
 
-#if (NTDDI_VERSION >= NTDDI_WINBLUE)
-#include <combaseapi.h>
-
-#else
-// Forward declare if OS verion is not set high enough.
+// Forward declare the Win32 API.
 enum AgileReferenceOptions
 {
     AGILEREFERENCE_DEFAULT        = 0,
     AGILEREFERENCE_DELAYEDMARSHAL = 1,
 };
 
-WINOLEAPI RoGetAgileReference(
+EXTERN_C HRESULT STDAPICALLTYPE RoGetAgileReference(
     _In_ enum AgileReferenceOptions options,
     _In_ REFIID riid,
     _In_ IUnknown* pUnk,
     _COM_Outptr_ IAgileReference** ppAgileReference
     );
-
-#endif
 
 namespace
 {
