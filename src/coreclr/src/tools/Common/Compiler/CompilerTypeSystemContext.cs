@@ -118,7 +118,7 @@ namespace ILCompiler
                 if (!ReferenceFilePaths.TryGetValue(simpleName, out filePath))
                 {
                     // We allow the CanonTypesModule to not be an EcmaModule.
-                    if (CanonTypesModule != null && ((IAssemblyDesc)CanonTypesModule).GetName().Name == simpleName)
+                    if (((IAssemblyDesc)CanonTypesModule).GetName().Name == simpleName)
                         return CanonTypesModule;
 
                     // TODO: the exception is wrong for two reasons: for one, this should be assembly full name, not simple name.
