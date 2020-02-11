@@ -336,14 +336,14 @@ typedef struct
 
 typedef struct
 {
-    uint32_t32_t Id;
-    uint32_t32_t Nr;
-    uint32_t32_t Head;
-    uint32_t32_t Tail;
-    uint32_t32_t Magic;
-    uint32_t32_t CompatFeatures;
-    uint32_t32_t IncompatFeatures;
-    uint32_t32_t HeaderLength;
+    uint32_t Id;
+    uint32_t Nr;
+    uint32_t Head;
+    uint32_t Tail;
+    uint32_t Magic;
+    uint32_t CompatFeatures;
+    uint32_t IncompatFeatures;
+    uint32_t HeaderLength;
 } AioRing;
 
 typedef struct

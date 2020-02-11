@@ -2891,7 +2891,7 @@ uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
 int32_t SystemNative_IoSetup(uint32_t eventsCount, AioContext* context)
 {
 #if HAVE_LINUX_AIO
-    return syscall(__NR_io_setup, eventsCount, context);
+    return (int32_t)syscall(__NR_io_setup, eventsCount, context);
 #else
     errno = ENOTSUP;
     return -1;
@@ -2901,7 +2901,7 @@ int32_t SystemNative_IoSetup(uint32_t eventsCount, AioContext* context)
 int32_t SystemNative_IoDestroy(AioContext context)
 {
 #if HAVE_LINUX_AIO
-    return syscall(__NR_io_destroy, context);
+    return (int32_t)syscall(__NR_io_destroy, context.Ring);
 #else
     errno = ENOTSUP;
     return -1;
@@ -2911,7 +2911,7 @@ int32_t SystemNative_IoDestroy(AioContext context)
 int32_t SystemNative_IoSubmit(AioContext context, int64_t count, IoControlBlock** ioControlBlocks)
 {
 #if HAVE_LINUX_AIO
-    return syscall(__NR_io_submit, context, count, ioControlBlocks);
+    return (int32_t)syscall(__NR_io_submit, context.Ring, count, ioControlBlocks);
 #else
     errno = ENOTSUP;
     return -1;
@@ -2921,7 +2921,7 @@ int32_t SystemNative_IoSubmit(AioContext context, int64_t count, IoControlBlock*
 int32_t SystemNative_IoGetEvents(AioContext context, int64_t minNr, int64_t nr, IoEvent* ioEvents)
 {
 #if HAVE_LINUX_AIO
-    return syscall(__NR_io_getevents, context, minNr, nr, NULL); // NULL is the timeout
+    return (int32_t)syscall(__NR_io_getevents, context.Ring, minNr, nr, ioEvents, NULL); // NULL is the timeout
 #else
     errno = ENOTSUP;
     return -1;
