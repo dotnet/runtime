@@ -32,6 +32,7 @@
       <DebPackageVersion>$(HostPackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <DebFile>$(SharedHostInstallerFile)</DebFile>
+      <DebFile Condition="!$(DebFile.EndsWith('.deb'))">$(DebFile).deb</DebFile>
       <ConfigJsonName>dotnet-sharedhost-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
@@ -105,6 +106,7 @@
       <DebPackageVersion>$(HostResolverPackageVersion)</DebPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <DebFile>$(HostFxrInstallerFile)</DebFile>
+      <DebFile Condition="!$(DebFile.EndsWith('.deb'))">$(DebFile).deb</DebFile>
       <ConfigJsonName>dotnet-hostfxr-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
@@ -186,6 +188,7 @@
       <DebPackageVersion>$(RuntimePackageVersion)</DebPackageVersion>
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <DebFile>$(SharedFrameworkInstallerFile)</DebFile>
+      <DebFile Condition="!$(DebFile.EndsWith('.deb'))">$(DebFile).deb</DebFile>
       <ConfigJsonName>dotnet-sharedframework-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
@@ -278,6 +281,7 @@
       <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
       <DebPackageVersion>$(RuntimeDepsDebPackageVersion)</DebPackageVersion>
       <DebFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</DebFile>
+      <DebFile Condition="!$(DebFile.EndsWith('.deb'))">$(DebFile).deb</DebFile>
       <ConfigJsonName>dotnet-runtime-deps-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
