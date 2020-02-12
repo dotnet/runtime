@@ -642,7 +642,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (shouldComplete)
             {
-                _sendResettableCompletionSource.Complete(0);
+                _sendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
