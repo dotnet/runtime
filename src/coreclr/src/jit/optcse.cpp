@@ -502,6 +502,8 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 hashDsc->csdTreeLast  = newElem;
                 hashDsc->csdStructHnd = NO_CLASS_HANDLE;
 
+                hashDsc->csdStructHndMismatch = false;
+
                 // When we have a GT_IND node we don't have a reliable struct handle
                 // and gtGetStructHandleIfPresent will return a guess that can be wrong
                 //
@@ -540,8 +542,14 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                 }
                 else
                 {
-                    // Otherwise we should have a matching struct handle
-                    assert(hashDsc->csdStructHnd == newElemStructHnd);
+                    hashDsc->csdStructHndMismatch = true;
+#ifdef DEBUG
+                    if (verbose)
+                    {
+                        printf("Abandoned - CSE candidate has mismatching struct handles!\n");
+                        printTreeID(newElem->tslTree);
+                    }
+#endif // DEBUG
                 }
             }
 
@@ -3007,6 +3015,12 @@ public:
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
                 JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n");
+                continue;
+            }
+
+            if (dsc->csdStructHndMismatch)
+            {
+                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n");
                 continue;
             }
 
