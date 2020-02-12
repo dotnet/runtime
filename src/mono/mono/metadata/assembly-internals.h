@@ -140,9 +140,6 @@ mono_assembly_check_name_match (MonoAssemblyName *wanted_name, MonoAssemblyName 
 MonoAssembly*
 mono_assembly_binding_applies_to_image (MonoAssemblyLoadContext *alc, MonoImage* image, MonoImageOpenStatus *status);
 
-MonoAssembly*
-mono_assembly_load_from_assemblies_path (gchar **assemblies_path, MonoAssemblyName *aname, MonoAssemblyContextKind asmctx);
-
 MonoAssembly *
 mono_assembly_loaded_internal (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, gboolean refonly);
 
