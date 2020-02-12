@@ -11,5 +11,6 @@
     <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />
     <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
     <ProjectReference Include="..\..\System.Text.Encoding\ref\System.Text.Encoding.csproj" />
+    <ProjectReference Include="..\..\System.Text.Json\ref\System.Text.Json.csproj" />
   </ItemGroup>
 </Project>

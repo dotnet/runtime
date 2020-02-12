@@ -219,6 +219,30 @@ namespace System.Net.Http
         public System.Net.Http.HttpResponseMessage EnsureSuccessStatusCode() { throw null; }
         public override string ToString() { throw null; }
     }
+    public partial class JsonContent : ByteArrayContent
+    {
+        public JsonContent(object content)
+            : base(default(byte[]))
+        {
+        }
+
+        public JsonContent(object content, string mediaType)
+            : base(default(byte[]))
+        {
+        }
+
+        public JsonContent(object content, System.Text.Json.JsonSerializerOptions options)
+            : base(default(byte[]))
+        {
+        }
+
+        public JsonContent(object content, string mediaType, System.Text.Json.JsonSerializerOptions options)
+            : base(default(byte[]))
+        {
+        }
+
+        protected override System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, TransportContext context, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
     public abstract partial class MessageProcessingHandler : System.Net.Http.DelegatingHandler
     {
         protected MessageProcessingHandler() { }

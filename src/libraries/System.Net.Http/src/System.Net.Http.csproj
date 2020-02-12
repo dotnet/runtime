@@ -51,6 +51,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpAuthority.cs" />
     <Compile Include="System\Net\Http\StreamContent.cs" />
     <Compile Include="System\Net\Http\StreamToStreamCopy.cs" />
+    <Compile Include="System\Net\Http\JsonContent.cs" />
     <Compile Include="System\Net\Http\StringContent.cs" />
     <Compile Include="System\Net\Http\Headers\AuthenticationHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\BaseHeaderParser.cs" />
@@ -737,6 +738,7 @@
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal" Condition="'$(TargetsWindows)' == 'true'" />
     <Reference Include="System.Security.Principal.Windows" />
+    <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
