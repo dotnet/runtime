@@ -8,8 +8,9 @@
 
 #pragma once
 
+// if defined we're building the qcalls entrypoints and we don't need to include icu or config headers
+#ifndef __LIB_NATIVE_ENTRYPOINTS
 #include "config.h"
-#include "pal_compiler.h"
 
 #define U_DISABLE_RENAMING 1
 
@@ -240,3 +241,16 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
 
+#endif // ifndef __LIB_NATIVE_ENTRYPOINTS
+
+#ifdef __LIB_NATIVE_ENTRYPOINTS
+#ifndef UChar
+typedef uint16_t UChar;
+#endif // ifndef UChar
+#endif // ifdef __LIB_NATIVE_ENTRYPOINTS
+
+#include "pal_compiler.h"
+
+DLLEXPORT int32_t GlobalizationNative_LoadICU(void);
+
+DLLEXPORT int32_t GlobalizationNative_GetICUVersion(void);

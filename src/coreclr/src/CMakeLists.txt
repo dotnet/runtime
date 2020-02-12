@@ -8,8 +8,6 @@ include_directories("classlibnative/bcltype")
 include_directories("classlibnative/cryptography")
 include_directories("classlibnative/inc")
 include_directories("${GENERATED_INCLUDE_DIR}")
-include_directories("${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/Common")
-include_directories("${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Globalization.Native")
 
 if(CLR_CMAKE_TARGET_WIN32 AND FEATURE_EVENT_TRACE)
     include_directories("${GENERATED_INCLUDE_DIR}/etw")

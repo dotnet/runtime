@@ -4,8 +4,22 @@
 
 #pragma once
 
-#include "pal_icushim.h"
-#include "pal_common_types.h"
+#include "pal_compiler.h"
+
+/*
+* These values should be kept in sync with
+* Interop.GlobalizationInterop.ResultCode
+*/
+typedef enum
+{
+    Success = 0,
+    UnknownError = 1,
+    InsufficentBuffer = 2,
+    OutOfMemory = 3
+} ResultCode;
+
+// if defined we're building the qcalls entrypoints which don't include ICU headers
+#ifndef __LIB_NATIVE_ENTRYPOINTS
 
 /*
 Converts a UErrorCode to a ResultCode.
@@ -19,7 +33,7 @@ static ResultCode GetResultCode(UErrorCode err)
 
     if (err == U_MEMORY_ALLOCATION_ERROR)
     {
-        return IcuOutOfMemory;
+        return OutOfMemory;
     }
 
     if (U_SUCCESS(err))
@@ -29,3 +43,5 @@ static ResultCode GetResultCode(UErrorCode err)
 
     return UnknownError;
 }
+
+#endif // ifndef __LIB_NATIVE_ENTRYPOINTS

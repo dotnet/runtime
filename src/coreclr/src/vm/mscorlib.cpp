@@ -87,19 +87,6 @@
 #include "eventpipeinternal.h"
 #endif //FEATURE_PERFTRACING
 
-#ifdef TARGET_UNIX // Globalization headers
-#include "pal_calendarData.h"
-#include "pal_casing.h"
-#include "pal_collation.h"
-#include "pal_locale.h"
-#include "pal_localeNumberData.h"
-#include "pal_localeStringData.h"
-#include "pal_icuload.h"
-#include "pal_idna.h"
-#include "pal_normalization.h"
-#include "pal_timeZoneInfo.h"
-#endif // TARGET_UNIX
-
 #endif // CROSSGEN_MSCORLIB
 
 
@@ -380,14 +367,13 @@ const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[] =
 };
 const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptions) + 1;
 
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // ECalls
 //
+
+// ECalls defined by libraries-native shims
+EXTERN_C const LPVOID gPalGlobalizationNative[];
 
 // When compiling crossgen, we only need the target version of the ecall tables
 #if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_MSCORLIB)

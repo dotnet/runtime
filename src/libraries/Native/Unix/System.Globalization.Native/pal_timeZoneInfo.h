@@ -3,10 +3,9 @@
 // See the LICENSE file in the project root for more information.
 //
 
-#pragma once
-
 #include "pal_compiler.h"
-#include "pal_common_types.h"
+#include "pal_locale.h"
+#include "pal_errors.h"
 
 /*
 These values should be kept in sync with the managed Interop.GlobalizationInterop.TimeZoneDisplayNameType enum.
@@ -18,8 +17,8 @@ typedef enum
     TimeZoneDisplayName_DaylightSavings = 2,
 } TimeZoneDisplayNameType;
 
-EXTERN_C DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
-                                                                         const UChar* timeZoneId,
-                                                                         TimeZoneDisplayNameType type,
-                                                                         UChar* result,
-                                                                         int32_t resultLength);
+DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
+                                                                const UChar* timeZoneId,
+                                                                TimeZoneDisplayNameType type,
+                                                                UChar* result,
+                                                                int32_t resultLength);

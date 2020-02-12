@@ -10,7 +10,6 @@
 #include <assert.h>
 
 #include "pal_icushim.h"
-#include "pal_icuload.h"
 
 // Define pointers to all the used ICU functions
 #define PER_FUNCTION_BLOCK(fn, lib) __typeof(fn)* fn##_ptr;
