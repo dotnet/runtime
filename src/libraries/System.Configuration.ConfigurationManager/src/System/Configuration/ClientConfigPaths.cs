@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security;
 
 namespace System.Configuration
@@ -47,30 +48,46 @@ namespace System.Configuration
                 // Exe path wasn't specified, get it from the entry assembly
                 exeAssembly = Assembly.GetEntryAssembly();
 
-                if (exeAssembly == null)
-                    throw new PlatformNotSupportedException();
-
-                HasEntryAssembly = true;
-
-                // The original .NET Framework code tried to get the local path without using Uri.
-                // If we ever find a need to do this again be careful with the logic. "file:///" is
-                // used for local paths and "file://" for UNCs. Simply removing the prefix will make
-                // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
-                // "/home").
-                string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
-                Uri uri = new Uri(configBasePath);
-
-                if (uri.IsFile)
+                if (exeAssembly != null)
                 {
-                    ApplicationUri = uri.LocalPath;
+                    HasEntryAssembly = true;
+
+                    // The original .NET Framework code tried to get the local path without using Uri.
+                    // If we ever find a need to do this again be careful with the logic. "file:///" is
+                    // used for local paths and "file://" for UNCs. Simply removing the prefix will make
+                    // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
+                    // "/home").
+                    string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
+                    Uri uri = new Uri(configBasePath);
+
+                    if (uri.IsFile)
+                    {
+                        ApplicationUri = uri.LocalPath;
+                    }
+                    else
+                    {
+                        ApplicationUri = Uri.EscapeDataString(configBasePath);
+                    }
                 }
                 else
                 {
-                    ApplicationUri = Uri.EscapeDataString(configBasePath);
+                    // An EntryAssembly may not be found when running from a custom host.
+                    // Try to find the native entry point.
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        string moduleFileName = Interop.Kernel32.GetModuleFileName(new HandleRef(null, IntPtr.Zero));
+                        if (!string.IsNullOrEmpty(moduleFileName))
+                        {
+                            ApplicationUri = Path.GetFullPath(moduleFileName);
+                        }
+                    }
                 }
             }
 
-            ApplicationConfigUri = ApplicationUri + ConfigExtension;
+            if (!string.IsNullOrEmpty(ApplicationUri))
+            {
+                ApplicationConfigUri = ApplicationUri + ConfigExtension;
+            }
 
             // In the case when exePath was explicitly supplied, we will not be able to
             // construct user.config paths, so quit here.

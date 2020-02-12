@@ -3,6 +3,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>netstandard2.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <AllowUnsafeBlocks Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
@@ -245,11 +246,28 @@
     <Compile Include="System\Configuration\SettingsSerializeAs.cs" />
     <Compile Include="System\Configuration\NoSettingsVersionUpgradeAttribute.cs" />
     <Compile Include="System\UriIdnScope.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.MAX_PATH.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetModuleFileName.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetModuleFileName.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\IO\TempFileCollection.cs">
       <Link>Common\System\IO\TempFileCollection.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Reference Include="System.Buffers" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Security.Cryptography.ProtectedData" />
     <Reference Include="System.Security.Permissions" />
   </ItemGroup>
