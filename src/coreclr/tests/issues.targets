@@ -2,13 +2,9 @@
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch common excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-	<ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/nested/*">
-            <!-- Data refered from static field is dropped -->
-            <Issue>More mono tests</Issue>
+	<ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/*">
+            <Issue>Mono Issue 1</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
-		<Issue>235564756476</Issue>
-	</ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/GThread23/*">
             <Issue>19339</Issue>
         </ExcludeList>
@@ -964,18 +960,4 @@
             <Issue>Do not run these scripts separately from superpmicollect test</Issue>
         </ExcludeList>
     </ItemGroup>
-
-
-    <!-- Failures related to Mono Runtime -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/superpmi/superpmicollect/*">
-		<Issue> Just testing the issues.targets file</Issue>
-	</ExcludeList>
-	<ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/RVAInit/nested/*">
-            <!-- Data refered from static field is dropped -->
-            <Issue>More mono tests</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
-
 </Project>
