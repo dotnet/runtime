@@ -110,6 +110,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 
 	g_assert (aname);
 	g_assert (aname->name);
+	g_assert (!refonly);
 	/* alc might be a user ALC - we get here from alc.LoadFromAssemblyName(), but we should load TPA assemblies into the default alc */
 	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
