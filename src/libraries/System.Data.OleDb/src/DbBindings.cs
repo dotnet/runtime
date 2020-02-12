@@ -165,7 +165,7 @@ namespace System.Data.OleDb
                 if (s_runningOnX86)
                     _bindInfo_x86[_index].dwFlags = value;
                 else
-                _bindInfo[_index].dwFlags = value;
+                    _bindInfo[_index].dwFlags = value;
             }
         }
 
