@@ -3012,19 +3012,19 @@ public:
         for (; (cnt > 0); cnt--, ptr++)
         {
             Compiler::CSEdsc* dsc = *ptr;
+            CSE_Candidate candidate(this, dsc);
+
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
-                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n");
+                JITDUMP("Abandoned CSE #%02u because we had defs with different Exc sets\n", candidate.CseIndex());
                 continue;
             }
 
             if (dsc->csdStructHndMismatch)
             {
-                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n");
+                JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
                 continue;
             }
-
-            CSE_Candidate candidate(this, dsc);
 
             candidate.InitializeCounts();
 
