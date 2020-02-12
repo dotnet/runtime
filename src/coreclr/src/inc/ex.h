@@ -112,7 +112,7 @@ void GenerateTopLevelHRExceptionMessage(HRESULT hresult, SString &result);
 //   We save current ExceptionPointers using VectoredExceptionHandler.  The save data is only valid
 //   duing exception handling.  GetCurrentExceptionPointers returns the saved data.
 // ---------------------------------------------------------------------------
-void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo DEBUG_ARG(bool checkExceptionRecordLocation));
+void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo);
 
 // ---------------------------------------------------------------------------
 //   We save current ExceptionPointers using VectoredExceptionHandler.  The save data is only valid

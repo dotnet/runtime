@@ -85,6 +85,7 @@
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
           SkipUnchangedFiles="true" />
 
+    <Exec Condition="'$(TargetsOSX)' == 'true'" Command="install_name_tool -id @rpath/$(_CoreClrFileName) %(_MonoRuntimeArtifacts.Destination)" />
   </Target>
 
   <Target Name="Restore">

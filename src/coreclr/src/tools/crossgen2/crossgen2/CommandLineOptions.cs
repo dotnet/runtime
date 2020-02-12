@@ -52,110 +52,110 @@ namespace ILCompiler
                 new Argument<FileInfo[]>() 
                 { 
                     Name = "input-file-paths", 
-                    Description = "Input file(s) to compile",
+                    Description = SR.InputFilesToCompile,
                     Arity = arbitraryArity,
                 },
-                new Option(new[] { "--reference", "-r" }, "Reference file(s) for compilation")
+                new Option(new[] { "--reference", "-r" }, SR.ReferenceFiles)
                 { 
                     Argument = new Argument<string[]>() 
                     { 
                         Arity = arbitraryArity
                     } 
                 },
-                new Option(new[] { "--mibc", "-m" }, "Mibc file(s) for profile guided optimization")
+                new Option(new[] { "--mibc", "-m" }, SR.MibcFiles)
                 {
                     Argument = new Argument<string[]>()
                     {
                         Arity = arbitraryArity
                     }
                 },
-                new Option(new[] { "--outputfilepath", "--out", "-o" }, "Output file path")
+                new Option(new[] { "--outputfilepath", "--out", "-o" }, SR.OutputFilePath)
                 {
                     Argument = new Argument<FileInfo>()
                 },
-                new Option(new[] { "--optimize", "-O" }, "Enable optimizations") 
+                new Option(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--optimize-space", "--Os" }, "Enable optimizations, favor code space") 
+                new Option(new[] { "--optimize-space", "--Os" }, SR.OptimizeSpaceOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--optimize-time", "--Ot" }, "Enable optimizations, favor code speed"),
-                new Option(new[] { "--inputbubble" }, "True when the entire input forms a version bubble (default = per-assembly bubble)"),
-                new Option(new[] { "--tuning" }, "Generate IBC tuning image") 
+                new Option(new[] { "--optimize-time", "--Ot" }, SR.OptimizeSpeedOption),
+                new Option(new[] { "--inputbubble" }, SR.InputBubbleOption),
+                new Option(new[] { "--tuning" }, SR.TuningImageOption) 
                 {
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--partial" }, "Generate partial image driven by profile") 
+                new Option(new[] { "--partial" }, SR.PartialImageOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--compilebubblegenerics" }, "Compile instantiations from reference modules used in the current module") 
+                new Option(new[] { "--compilebubblegenerics" }, SR.BubbleGenericsOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--dgml-log-file-name", "--dmgllog" }, "Save result of dependency analysis as DGML") 
+                new Option(new[] { "--dgml-log-file-name", "--dmgllog" }, SR.SaveDependencyLogOption) 
                 { 
                     Argument = new Argument<FileInfo>() 
                 },
-                new Option(new[] { "--generate-full-dmgl-log", "--fulllog" }, "Save detailed log of dependency analysis") 
+                new Option(new[] { "--generate-full-dmgl-log", "--fulllog" }, SR.SaveDetailedLogOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--verbose" }, "Enable verbose logging") 
+                new Option(new[] { "--verbose" }, SR.VerboseLoggingOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--systemmodule" }, "System module name (default: System.Private.CoreLib)") 
+                new Option(new[] { "--systemmodule" }, SR.SystemModuleOverrideOption) 
                 { 
                     Argument = new Argument<string>() 
                 },
-                new Option(new[] { "--waitfordebugger" }, "Pause to give opportunity to attach debugger") 
+                new Option(new[] { "--waitfordebugger" }, SR.WaitForDebuggerOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--codegen-options", "--codegenopt" }, "Define a codegen option") 
+                new Option(new[] { "--codegen-options", "--codegenopt" }, SR.CodeGenOptions) 
                 { 
                     Argument = new Argument<string[]>()
                     {
                         Arity = arbitraryArity
                     }
                 },
-                new Option(new[] { "--resilient" }, "Disable behavior where unexpected compilation failures cause overall compilation failure") 
+                new Option(new[] { "--resilient" }, SR.ResilientOption) 
                 { 
                     Argument = new Argument<bool>() 
                 },
-                new Option(new[] { "--targetarch" }, "Target architecture for cross compilation") 
+                new Option(new[] { "--targetarch" }, SR.TargetArchOption) 
                 { 
                     Argument = new Argument<string>() 
                 },
-                new Option(new[] { "--targetos" }, "Target OS for cross compilation") 
+                new Option(new[] { "--targetos" }, SR.TargetOSOption) 
                 { 
                     Argument = new Argument<string>() 
                 },
-                new Option(new[] { "--jitpath" }, "Path to JIT compiler library") 
+                new Option(new[] { "--jitpath" }, SR.JitPathOption) 
                 { 
                     Argument =  new Argument<FileInfo>() 
                 },
-                new Option(new[] { "--singlemethodtypename" }, "Single method compilation: name of the owning type") 
+                new Option(new[] { "--singlemethodtypename" }, SR.SingleMethodTypeName) 
                 { 
                     Argument = new Argument<string>() 
                 },
-                new Option(new[] { "--singlemethodname" }, "Single method compilation: generic arguments to the method") 
+                new Option(new[] { "--singlemethodname" }, SR.SingleMethodMethodName) 
                 { 
                     Argument = new Argument<string>() 
                 },
-                new Option(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method") 
+                new Option(new[] { "--singlemethodgenericarg" }, SR.SingleMethodGenericArgs) 
                 { 
                     // We don't need to override arity here as 255 is the maximum number of generic arguments
                     Argument = new Argument<string[]>()
                 },
-                new Option(new[] { "--parallelism" }, "Maximum number of threads to use during compilation")
+                new Option(new[] { "--parallelism" }, SR.ParalellismOption)
                 { 
                     Argument = new Argument<int>(() => Environment.ProcessorCount)
                 },
-                new Option(new[] { "--map" }, "Generate the map file")
+                new Option(new[] { "--map" }, SR.MapFileOption)
                 {
                     Argument = new Argument<bool>()
                 },

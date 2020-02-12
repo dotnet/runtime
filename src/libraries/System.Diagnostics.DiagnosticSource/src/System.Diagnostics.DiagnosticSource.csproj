@@ -28,6 +28,9 @@
     <None Include="DiagnosticSourceUsersGuide.md" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard1.1'">
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
     <Compile Include="System\Diagnostics\Activity.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <Reference Include="System.Memory" />

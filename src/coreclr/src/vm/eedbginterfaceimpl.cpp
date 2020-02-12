@@ -1584,11 +1584,11 @@ void EEDbgInterfaceImpl::ObjectRefFlush(Thread *pThread)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AdjustContextForJITHelpers(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
-BOOL EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger(CONTEXT* context)
+BOOL AdjustContextForWriteBarrier(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
+BOOL EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger(CONTEXT* context)
 {
     WRAPPER_NO_CONTRACT;
-    return AdjustContextForJITHelpers(nullptr, context);
+    return AdjustContextForWriteBarrier(nullptr, context);
 }
 #endif
 
