@@ -19,7 +19,7 @@
 /src/mono/mono/dis @lambdageek @vargaz
 /src/mono/mono/eglib @vargaz @lambdageek @CoffeeFlux @lewurm
 
-/src/mono/mono/metadata @vargaz @lambdageek @thaystg @CoffeeFlux @lewurm
+/src/mono/mono/metadata @vargaz @lambdageek @thaystg @CoffeeFlux @lewurm @alexischr
 /src/mono/mono/metadata/*-win* @lateralusX @lambdageek @CoffeeFlux
 /src/mono/mono/metadata/handle* @lambdageek @vargaz
 /src/mono/mono/metadata/monitor* @brzvlad @vargaz
@@ -27,7 +27,7 @@
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek @CoffeeFlux
 
-/src/mono/mono/mini @vargaz @lewurm @lambdageek @SamMonoRT @CoffeeFlux
+/src/mono/mono/mini @vargaz @lewurm @lambdageek @SamMonoRT @CoffeeFlux @alexischr
 /src/mono/mono/mini/*cfgdump* @lewurm @vargaz
 /src/mono/mono/mini/*exceptions* @lewurm @vargaz @BrzVlad
 /src/mono/mono/mini/*llvm* @vargaz @imhameed
@@ -42,7 +42,7 @@
 /src/mono/mono/profiler @BrzVlad @lambdageek
 /src/mono/mono/sgen @BrzVlad @lambdageek
 
-/src/mono/mono/utils @vargaz @lewurm @lambdageek @CoffeeFlux
+/src/mono/mono/utils @vargaz @lewurm @lambdageek @CoffeeFlux @alexischr
 /src/mono/mono/utils/*-win* @lateralusX @lambdageek @CoffeeFlux
 /src/mono/mono/utils/atomic* @lewurm @vargaz
 /src/mono/mono/utils/mono-hwcap* @lewurm @vargaz
