@@ -227,12 +227,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private SignatureContext GetSignatureContext()
-        {
-            // TODO: this will need changing when compiling multiple input MSIL modules into a single PE executable
-            return _compilation.NodeFactory.InputModuleContext;
-        }
-
         private bool getReadyToRunHelper(ref CORINFO_RESOLVED_TOKEN pResolvedToken, ref CORINFO_LOOKUP_KIND pGenericLookupKind, CorInfoHelpFunc id, ref CORINFO_CONST_LOOKUP pLookup)
         {
             switch (id)
@@ -244,7 +238,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewHelper, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_NEWARR_1:
@@ -254,7 +248,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.NewArr1, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_ISINSTANCEOF:
@@ -267,7 +261,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.IsInstanceOf, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_CHKCAST:
@@ -280,7 +274,7 @@ namespace Internal.JitInterface
                         if (type.IsNullable)
                             type = type.Instantiation[0];
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CastClass, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE:
@@ -289,7 +283,7 @@ namespace Internal.JitInterface
                         if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                             return false;
 
-                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type, GetSignatureContext()));
+                        pLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.CctorTrigger, type));
                     }
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
@@ -313,8 +307,7 @@ namespace Internal.JitInterface
                             pGenericLookupKind.runtimeLookupKind,
                             helperId,
                             helperArg,
-                            methodContext,
-                            GetSignatureContext());
+                            methodContext);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
@@ -337,8 +330,7 @@ namespace Internal.JitInterface
             MethodWithToken targetMethod = new MethodWithToken(HandleToObject(pTargetMethod.hMethod), HandleToModuleToken(ref pTargetMethod), constrainedType: null);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
-            pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(
-                    delegateTypeDesc, targetMethod, GetSignatureContext()));
+            pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
@@ -749,7 +741,7 @@ namespace Internal.JitInterface
 
             EcmaMethod method = (EcmaMethod)methodIL.OwningMethod.GetTypicalMethodDefinition();
             ISymbolNode stringObject = _compilation.SymbolNodeFactory.StringLiteral(
-                new ModuleToken(method.Module, metaTok), GetSignatureContext());
+                new ModuleToken(method.Module, metaTok));
             ppValue = (void*)ObjectToHandle(stringObject);
             return InfoAccessType.IAT_PPVALUE;
         }
@@ -1422,7 +1414,7 @@ namespace Internal.JitInterface
 
         private void classMustBeLoadedBeforeCodeIsRun(TypeDesc type)
         {
-            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type, GetSignatureContext());
+            ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
             ((MethodWithGCInfo)_methodCodeNode).Fixups.Add(node);
         }
 
@@ -1481,7 +1473,6 @@ namespace Internal.JitInterface
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
-                                GetSignatureContext(),
                                 isUnboxingStub: false,
                                 _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()));
                         }
@@ -1519,8 +1510,7 @@ namespace Internal.JitInterface
                                 new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType),
                                 isUnboxingStub,
                                 isInstantiatingStub: useInstantiatingStub,
-                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
-                                GetSignatureContext()));
+                                isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
                     }
                     break;
 
@@ -1536,8 +1526,7 @@ namespace Internal.JitInterface
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
                                 new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
-                                useInstantiatingStub,
-                                GetSignatureContext()));
+                                useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
                     }
@@ -1564,15 +1553,13 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType),
-                            signatureContext: GetSignatureContext()));
+                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType)));
                     }
                     else
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeDictionary,
-                            exactType,
-                            signatureContext: GetSignatureContext()));
+                            exactType));
                     }
                 }
             }
@@ -1794,8 +1781,7 @@ namespace Internal.JitInterface
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
                         symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.TypeHandle,
-                            HandleToObject(pResolvedToken.hClass),
-                            GetSignatureContext());
+                            HandleToObject(pResolvedToken.hClass));
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
@@ -1810,16 +1796,14 @@ namespace Internal.JitInterface
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null),
-                                GetSignatureContext());
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null));
                         }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_FIELD:
                         symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.FieldHandle,
-                            HandleToObject(pResolvedToken.hField),
-                            GetSignatureContext());
+                            HandleToObject(pResolvedToken.hField));
                         break;
 
                     default:
@@ -1928,7 +1912,7 @@ namespace Internal.JitInterface
                     // ENCODE_FIELD_OFFSET
                     pResult->offset = 0;
                     pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field, GetSignatureContext()));
+                    pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field));
                 }
             }
             else if (pMT.IsValueType)
@@ -1948,7 +1932,7 @@ namespace Internal.JitInterface
                 // ENCODE_FIELD_OFFSET
                 pResult->offset = 0;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field, GetSignatureContext()));
+                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldOffset(field));
             }
             else
             {
@@ -1957,7 +1941,7 @@ namespace Internal.JitInterface
                 // ENCODE_FIELD_BASE_OFFSET
                 pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
                 pResult->fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE_WITH_BASE;
-                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType, GetSignatureContext()));
+                pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldBaseOffset(field.OwningType));
             }
         }
 
@@ -2054,12 +2038,12 @@ namespace Internal.JitInterface
 
             if (ecmaMethod.IsSuppressGCTransition())
             {
-                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PVALUE;
             }
             else
             {
-                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken, GetSignatureContext()));
+                pLookup.addr = (void*)ObjectToHandle(_compilation.SymbolNodeFactory.GetIndirectPInvokeTargetNode(methodWithToken));
                 pLookup.accessType = InfoAccessType.IAT_PPVALUE;
             }
         }
