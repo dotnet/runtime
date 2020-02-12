@@ -143,7 +143,7 @@ namespace Mono.Linker {
 
 		public bool LogMessages { get; set; }
 
-		public ILogger Logger { get; set; } = new ConsoleLogger ();
+		public ILogger Logger { private get; set; } = new ConsoleLogger ();
 
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
@@ -418,15 +418,15 @@ namespace Mono.Linker {
 			return (DisabledOptimizations & optimization) == 0;
 		}
 
-		public void LogMessage (string message, params object[] values)
+		public void LogMessage (string message)
 		{
-			LogMessage (MessageImportance.Normal, message, values);
+			LogMessage (MessageImportance.Normal, message);
 		}
 
-		public void LogMessage (MessageImportance importance, string message, params object [] values)
+		public void LogMessage (MessageImportance importance, string message)
 		{
 			if (LogMessages && Logger != null)
-				Logger.LogMessage (importance, message, values);
+				Logger.LogMessage (importance, "{0}", message);
 		}
 	}
 
