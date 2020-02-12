@@ -57,18 +57,16 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value of the CLR reference type object to get or add an id for.</param>
         /// <param name="referenceId">The id realated to the object.</param>
         /// <returns></returns>
-        public bool TryGetOrAddReferenceOnSerialize(object value, [NotNullWhen(true)] out string? referenceId)
+        public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
         {
-            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId))
+            bool result = _objectToReferenceIdMap!.TryGetValue(value, out referenceId!);
+            if (!result)
             {
                 _referenceCount++;
                 referenceId = _referenceCount.ToString();
                 _objectToReferenceIdMap.Add(value, referenceId);
-
-                return false;
             }
-
-            return true;
+            return result;
         }
 
         /// <summary>
