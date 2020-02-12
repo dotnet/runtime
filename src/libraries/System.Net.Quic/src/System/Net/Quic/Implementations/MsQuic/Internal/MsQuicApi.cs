@@ -26,12 +26,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
                 if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
                 {
-                    throw new NotSupportedException(SR.net_quic_notsupported);
+                    throw new NotSupportedException($"status:{status}{SR.net_quic_notsupported}");
                 }
             }
-            catch (DllNotFoundException)
+            catch (DllNotFoundException ex)
             {
-                throw new NotSupportedException(SR.net_quic_notsupported);
+                throw new NotSupportedException($"{ex.Message}{SR.net_quic_notsupported}");
             }
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
