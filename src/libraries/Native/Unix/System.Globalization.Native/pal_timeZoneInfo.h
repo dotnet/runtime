@@ -17,7 +17,7 @@ typedef enum
     TimeZoneDisplayName_DaylightSavings = 2,
 } TimeZoneDisplayNameType;
 
-DLLEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
+PALEXPORT ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
                                                                 const UChar* timeZoneId,
                                                                 TimeZoneDisplayNameType type,
                                                                 UChar* result,

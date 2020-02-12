@@ -19,4 +19,8 @@
 #define c_static_assert(e) c_static_assert_msg(e, "")
 #endif
 
-#define DLLEXPORT __attribute__ ((__visibility__ ("default")))
+#ifdef __LIB_NATIVE_ENTRYPOINTS
+#define PALEXPORT __attribute__ ((__visibility__ ("hidden")))
+#else
+#define PALEXPORT __attribute__ ((__visibility__ ("default")))
+#endif // __LIB_NATIVE_ENTRYPOINTS

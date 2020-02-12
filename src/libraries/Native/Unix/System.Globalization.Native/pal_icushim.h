@@ -251,6 +251,6 @@ typedef uint16_t UChar;
 
 #include "pal_compiler.h"
 
-DLLEXPORT int32_t GlobalizationNative_LoadICU(void);
+PALEXPORT int32_t GlobalizationNative_LoadICU(void);
 
-DLLEXPORT int32_t GlobalizationNative_GetICUVersion(void);
+PALEXPORT int32_t GlobalizationNative_GetICUVersion(void);

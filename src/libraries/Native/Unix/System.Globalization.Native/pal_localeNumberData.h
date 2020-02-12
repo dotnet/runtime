@@ -34,11 +34,11 @@ typedef enum
     WeekRule_FirstFourDayWeek = 2
 } CalendarWeekRule;
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoInt(const UChar* localeName,
                                                        LocaleNumberData localeNumberData,
                                                        int32_t* value);
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoGroupingSizes(const UChar* localeName,
                                                                  LocaleNumberData localeGroupingData,
                                                                  int32_t* primaryGroupSize,
                                                                  int32_t* secondaryGroupSize);

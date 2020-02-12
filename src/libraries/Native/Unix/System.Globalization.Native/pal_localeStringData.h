@@ -43,12 +43,12 @@ typedef enum
     LocaleString_PerMilleSymbol = 0x00000077
 } LocaleStringData;
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
                                                           int32_t valueLength);
 
-DLLEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
+PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,
                                                           int32_t valueLength);
 
