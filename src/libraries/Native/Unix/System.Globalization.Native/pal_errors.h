@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "pal_icushim.h"
 #include "pal_compiler.h"
 
 /*

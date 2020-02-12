@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 //
 
-#include "pal_compiler.h"
 #include "pal_locale.h"
+#include "pal_compiler.h"
 
 // Enum that corresponds to managed enum CultureData.LocaleStringData.
 // The numeric values of the enum members match their Win32 counterparts.

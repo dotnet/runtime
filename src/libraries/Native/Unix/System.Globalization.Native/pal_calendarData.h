@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 
-#include "pal_compiler.h"
 #include "pal_locale.h"
+#include "pal_compiler.h"
 #include "pal_errors.h"
 
 /*

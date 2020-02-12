@@ -243,13 +243,18 @@ FOR_ALL_ICU_FUNCTIONS
 
 #endif // ifndef __LIB_NATIVE_ENTRYPOINTS
 
+#define PALEXPORT __attribute__ ((__visibility__ ("hidden")))
+
+#include "pal_compiler.h"
+
 #ifdef __LIB_NATIVE_ENTRYPOINTS
+
+#include "pal_types.h"
+
 #ifndef UChar
 typedef uint16_t UChar;
 #endif // ifndef UChar
 #endif // ifdef __LIB_NATIVE_ENTRYPOINTS
-
-#include "pal_compiler.h"
 
 PALEXPORT int32_t GlobalizationNative_LoadICU(void);
 
