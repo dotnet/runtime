@@ -657,9 +657,10 @@ namespace System.Tests
             Span<int> bits;
             int valuesWritten;
 
-            bits = new int[3];
+            bits = new int[3] { 42, 43, 44 };
             Assert.False(decimal.TryGetBits(input, bits, out valuesWritten));
             Assert.Equal(0, valuesWritten);
+            Assert.Equal(new int[3] { 42, 43, 44 }, bits.ToArray());
 
             bits = new int[4];
             Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
@@ -667,10 +668,11 @@ namespace System.Tests
             Assert.Equal(expected, bits.ToArray());
 
             bits = new int[5];
+            bits[4] = 42;
             Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
             Assert.Equal(4, valuesWritten);
             Assert.Equal(expected, bits.Slice(0, 4).ToArray());
-            Assert.Equal(0, bits[4]);
+            Assert.Equal(42, bits[4]);
         }
 
         [Fact]

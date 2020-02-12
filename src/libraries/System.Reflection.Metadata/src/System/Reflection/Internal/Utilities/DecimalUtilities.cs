@@ -8,7 +8,13 @@ namespace System.Reflection.Internal
     {
         public static int GetScale(this decimal value)
         {
+#if NETCOREAPP
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
+            return unchecked((byte)(bits[3] >> 16));
+#else
             return unchecked((byte)(decimal.GetBits(value)[3] >> 16));
+#endif
         }
 
         public static void GetBits(this decimal value, out bool isNegative, out byte scale, out uint low, out uint mid, out uint high)

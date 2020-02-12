@@ -244,7 +244,7 @@ namespace System
         // equally valid, and all are numerically equivalent.
         //
         public Decimal(int[] bits) :
-            this(bits != null ? bits.AsSpan() : throw new ArgumentNullException(nameof(bits)))
+            this((ReadOnlySpan<int>)(bits ?? throw new ArgumentNullException(nameof(bits))))
         {
         }
 
@@ -252,6 +252,7 @@ namespace System
         /// Initializes a new instance of <see cref="decimal"/> to a decimal value represented in binary and contained in the specified span.
         /// </summary>
         /// <param name="bits">A span of four <see cref="int"/>s containing a binary representation of a decimal value.</param>
+        /// <exception cref="ArgumentException">The length of <paramref name="bits"/> is not 4, or the representation of the decimal value in <paramref name="bits"/> is not valid.</exception>
         public Decimal(ReadOnlySpan<int> bits)
         {
             if (bits.Length == 4)
