@@ -114,13 +114,6 @@
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />
   <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
-  <Target Name="ReportConfigurationErrorMessage"
-          BeforeTargets="AssignProjectConfiguration"
-          Condition="'$(TargetFrameworks)' != ''" >
-    <Message Importance="Low" Text="$(MSBuildProjectFullPath), T: $(TargetFrameowork) BS: $(BuildSettings) Tfms: $(TargetFrameworks)" />
-    <Message Importance="High" Condition="'$(ConfigurationErrorMsg)' != ''" Text="$(MSBuildProjectFullPath) ConfigurationErrorMessage: $(ConfigurationErrorMsg)" />
-  </Target>
-
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
       <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>

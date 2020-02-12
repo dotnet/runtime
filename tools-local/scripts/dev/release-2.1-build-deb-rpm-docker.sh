@@ -57,7 +57,7 @@ package() {
         Tools/msbuild.sh \
         build.proj \
         /t:BuildTraversalBuildDependencies \
-        /p:Configuration=Release \
+        /p:ConfigurationGroup=Release \
         /p:OSGroup=Linux \
         /p:PortableBuild=false \
         /p:TargetArchitecture=x64 \
@@ -70,7 +70,7 @@ package() {
         /p:SharedFrameworkPublishDir=/work/bin/obj/linux-x64.Release/sharedFrameworkPublish/ \
         /p:InstallerSourceOSPlatformConfig=linux-x64.Release \
         /p:GenerateProjectInstallers=true \
-        /p:Configuration=Release \
+        /p:ConfigurationGroup=Release \
         /p:OSGroup=Linux \
         /p:PortableBuild=false \
         /p:TargetArchitecture=x64 \
@@ -87,7 +87,7 @@ package() {
 [ "$skipPortable" ] || containerized microsoft/dotnet-buildtools-prereqs:centos-7-b46d863-20180719033416 \
     ./build.sh \
     -skiptests=true \
-    -Configuration=Release \
+    -ConfigurationGroup=Release \
     -PortableBuild=true \
     -strip-symbols \
     -TargetArchitecture=x64 \

@@ -6,7 +6,7 @@ once before you can iterate and work on a given library project.
 
 - Setup tools (currently done in restore in build.cmd/sh)
 - Restore external dependencies
- - CoreCLR - Copy to `bin\runtime\$(BuildSettings)`
+ - CoreCLR - Copy to `bin\runtime\$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)`
  - Netstandard Library - Copy to `bin\ref\netstandard2.0`
  - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
@@ -15,15 +15,6 @@ once before you can iterate and work on a given library project.
  - Build src\src.builds which builds all the source library projects. For source library project information see [src](#src).
 - Sign product
  - Build src\sign.proj
-
-## Behind the scenes with build-test.cmd/sh
-- build-test.cmd cannot be ran successfully until build.cmd has been ran at least once for a `BuildTargetFramework`.
-- Build src\tests.builds which builds all applicable test projects. For test project information see [tests](#tests).
-- The build pass will happen twice. Once for the specific `$(BuildTargetFramework)` and once for netstandard2.0. That way we run both sets of applicable tests against for the given `$(BuildTargetFramework)`.
-
-## Behind the scenes with build-packages.cmd/sh
-- build-packages.cmd cannot be run successfully until build.cmd has been ran at least once for a BuildTargetFramework.
-- Build src\packages.builds which will build only the packages it has the context to build which will generally be only the ones for the given `BuildTargetFramework`. If a package requires assets from multiple `TargetFrameworks` it will require that all `TargetFrameworks` are built first.
 
 # Build Pivots
 Below is a list of all the various options we pivot the project builds on:
@@ -94,7 +85,7 @@ A full or individual project build is centered around BuildTargetFramework, OSGr
 2. If nothing is passed to the build then we will default value of these properties from the environment. Example: `netcoreapp5.0-[OSGroup Running On]-Debug-x64`.
 3. While Building an individual project from the VS, we build the project for all latest netcoreapp target frameworks.
 
-we also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
+We also have `RuntimeOS` which can be passed to customize the specific OS and version needed for native package builds as well as package restoration. If not passed it will default based on the OS you are running on.
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
@@ -118,17 +109,7 @@ src\<Library Name>\tests - Contains the test code for a library
 ## ref
 Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md).
 
-In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property.
-
-There are two types of reference assembly projects:
-
-1. Libraries that contain APIs in netstandard2.0
- - `TargetFrameworks` should contain non-netstandard2.0 TargetFrameworks for the platforms they support.
- - Should use a relative path `<ProjectReference>` to the dependencies it has. Those dependencies should only be libraries with similar target frameworks and be part of netstandard2.0.
-2. Libraries that are built on top of netstandard2.0
- - `TargetFrameworks` should contain only netstandard2.0 configurations.
- - Should contain `<Reference Include='netstandard'>`
- - Anything outside of netstandard2.0 should use a relative path `<ProjectReference>` to its dependencies it has. Those dependencies should only be libraries that are built against netstandard as well.
+In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `TargetFrameworks` property. Ref projects should use `<ProjectReference>` for its dependencies.
 
 ### ref output
 The output for the ref project build will be a flat targeting pack folder in the following directory:
@@ -148,7 +129,8 @@ The output for the src product build will be a flat runtime folder into the foll
 
 `bin\runtime\$(BuildSettings)`
 
-Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible configuration we select and build the project with. ```<BuildSettings>$(BuildTargetFramework)-$(OSGroup)-(Configuration)-(ArchGroup)</BuildSettings>``` 
+Note: The `BuildSettings` is a global property and not the project setting because we need all projects to output to the same runtime directory no matter which compatible target framework we select and build the project with. 
+```<BuildSettings>$(BuildTargetFramework)-$(OSGroup)-(Configuration)-(ArchGroup)</BuildSettings>``` 
 
 ## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))

@@ -92,7 +92,7 @@ while [[ $# > 0 ]]; do
       ;;
      -configuration|-c)
       val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
-      arguments="$arguments /p:Configuration=$val -configuration $val"
+      arguments="$arguments -configuration $val"
       shift 2
       ;;
      -framework|-f)
