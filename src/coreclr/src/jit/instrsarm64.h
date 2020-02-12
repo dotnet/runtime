@@ -1245,6 +1245,18 @@ INST1(umaxv,   "umaxv",  0, 0, IF_DV_2M,  0x2E30A800)
 INST1(uminv,   "uminv",  0, 0, IF_DV_2M,  0x2E31A800)
                                    //  uminv   Vd,Vn                DV_2M  0Q101110XX110001 101010nnnnnddddd   2E31 A800   Vd,Vn      (vector)
 
+INST1(fmaxnmv, "fmaxnmv",0, 0, IF_DV_2R,  0x2E30C800)
+                                   //  fmaxnmv Vd,Vn                DV_2R  0Q1011100X110000 110010nnnnnddddd   2E30 C800   Vd,Vn      (vector)
+
+INST1(fmaxv,   "fmaxv",  0, 0, IF_DV_2R,  0x2E30F800)
+                                   //  fmaxv   Vd,Vn                DV_2R  0Q1011100X110000 111110nnnnnddddd   2E30 F800   Vd,Vn      (vector)
+
+INST1(fminnmv, "fminnmv",0, 0, IF_DV_2R,  0x2EB0C800)
+                                   //  fminnmv Vd,Vn                DV_2R  0Q1011101X110000 110010nnnnnddddd   2EB0 C800   Vd,Vn      (vector)
+
+INST1(fminv,   "fminv",  0, 0, IF_DV_2R,  0x2EB0F800)
+                                   //  fminv   Vd,Vn                DV_2R  0Q1011101X110000 111110nnnnnddddd   2EB0 F800   Vd,Vn      (vector)
+
 INST1(uzp1,    "uzp1",   0, 0, IF_DV_3A,  0x0E001800)
                                    //  uzp1    Vd,Vn,Vm             DV_3A  0Q001110XX0mmmmm 000110nnnnnddddd   0E00 1800   Vd,Vn,Vm  (vector)
 

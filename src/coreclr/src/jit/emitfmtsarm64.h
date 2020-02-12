@@ -181,8 +181,7 @@ IF_DEF(DV_1C, IS_NONE, NONE) // DV_1C   .........X...... ......nnnnn.....      V
 
 IF_DEF(DV_2A, IS_NONE, NONE) // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn      (fabs, fcvtXX - vector)
 IF_DEF(DV_2B, IS_NONE, NONE) // DV_2B   .Q.........iiiii ......nnnnnddddd      Rd Vn[]    (umov/smov    - to general)
-IF_DEF(DV_2C, IS_NONE, NONE) // DV_2C   .Q.........iiiii ......nnnnnddddd      Vd Rn      (dup/ins - vector from
-                             // general)
+IF_DEF(DV_2C, IS_NONE, NONE) // DV_2C   .Q.........iiiii ......nnnnnddddd      Vd Rn      (dup/ins - vector from general)
 IF_DEF(DV_2D, IS_NONE, NONE) // DV_2D   .Q.........iiiii ......nnnnnddddd      Vd Vn[]    (dup - vector)
 IF_DEF(DV_2E, IS_NONE, NONE) // DV_2E   ...........iiiii ......nnnnnddddd      Vd Vn[]    (dup - scalar)
 IF_DEF(DV_2F, IS_NONE, NONE) // DV_2F   ...........iiiii .jjjj.nnnnnddddd      Vd[] Vn[]  (ins - element)
@@ -197,6 +196,7 @@ IF_DEF(DV_2N, IS_NONE, NONE) // DV_2N   .........iiiiiii ......nnnnnddddd      V
 IF_DEF(DV_2O, IS_NONE, NONE) // DV_2O   .Q.......iiiiiii ......nnnnnddddd      Vd Vn imm  (shift - vector)
 IF_DEF(DV_2P, IS_NONE, NONE) // DV_2P   ................ ......nnnnnddddd      Vd Vn      (Vd used as both source and destination)
 IF_DEF(DV_2Q, IS_NONE, NONE) // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp, fminp - scalar)
+IF_DEF(DV_2R, IS_NONE, NONE) // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)
