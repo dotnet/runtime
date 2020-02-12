@@ -42,6 +42,10 @@ In case CI indicates failures which are **highly unlikely** to be caused by chan
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
+## AZP commands priviliges
+
+Send [Jared Parsons](https://github.com/jaredpar) your manager's GitHub team.
+
 ## Blocking Pull Request Merging
 
 If for whatever reason you would like to move your pull request back to an in-progress status to avoid merging it in the current form, you can do that by adding [WIP] prefix to the pull request title.
