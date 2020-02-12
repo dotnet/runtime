@@ -118,13 +118,13 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (!strcmp (basename, a->basenames[i])) {
+		if (!strcmp (basename, a->basenames [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
-			const char *fullpath = a->assembly_filepaths[i];
+			const char *fullpath = a->assembly_filepaths [i];
 
 			gboolean found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 
