@@ -477,7 +477,7 @@ namespace Mono.Linker.Steps {
 			var args = ca.ConstructorArguments;
 			if (args.Count >= 3 && args [2].Value is string assemblyName) {
 				if (!_context.Resolver.AssemblyCache.TryGetValue (assemblyName, out assembly)) {
-					_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{assemblyName}' assembly dependency");
+					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{assemblyName}' assembly dependency");
 					return;
 				}
 			} else {
@@ -489,7 +489,7 @@ namespace Mono.Linker.Steps {
 				td = FindType (assembly ?? context.Module.Assembly, typeName);
 
 				if (td == null) {
-					_context.Logger.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' type dependency");
+					_context.LogMessage (MessageImportance.Low, $"Could not resolve '{typeName}' type dependency");
 					return;
 				}
 			} else {
@@ -522,7 +522,7 @@ namespace Mono.Linker.Steps {
 			if (MarkDependencyField (td, member))
 				return;
 
-			_context.Logger.LogMessage (MessageImportance.High, $"Could not resolve dependency member '{member}' declared in type '{td.FullName}'");
+			_context.LogMessage (MessageImportance.High, $"Could not resolve dependency member '{member}' declared in type '{td.FullName}'");
 		}
 
 		static TypeDefinition FindType (AssemblyDefinition assembly, string fullName)
