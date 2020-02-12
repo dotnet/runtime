@@ -52,17 +52,16 @@ namespace System.Security.Cryptography
             _cspParams = cspParams;
         }
 
-        [DisallowNull]
-        public string? HashName
+        public string HashName
         {
-            get { return _hashName; }
+            get { return _hashName!; }
             set
             {
                 if (_baseValue != null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(HashName));
 
                 _hashName = value;
-                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName!);
+                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName);
             }
         }
 
