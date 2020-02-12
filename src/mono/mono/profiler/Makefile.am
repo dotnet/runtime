@@ -8,6 +8,8 @@ AM_CPPFLAGS = \
 
 glib_libs = $(top_builddir)/mono/eglib/libeglib.la
 
+prof_ldflags = $(CCLDFLAGS)
+
 if !HOST_WIN32
 if !DISABLE_LIBRARIES
 if !DISABLE_PROFILER
@@ -154,9 +156,9 @@ if HOST_WIN32
 # (borrowed from mono/tests/Makefile.am libtest_la_LDFLAGS)
 # the exported names created by gcc for stdcall functions are missing the leading _, so MS.NET
 # can't find them. So we use --kill-at to remove the @ suffix as well.
-libproftest_pinvokes_la_LDFLAGS = -no-undefined -rpath `pwd` -Wl,--kill-at
+libproftest_pinvokes_la_LDFLAGS = -no-undefined -rpath `pwd` $(CCLDFLAGS) -Wl,--kill-at
 else
-libproftest_pinvokes_la_LDFLAGS = -no-undefined -rpath `pwd`
+libproftest_pinvokes_la_LDFLAGS = -no-undefined -rpath `pwd` $(CCLDFLAGS)
 endif
 
 
