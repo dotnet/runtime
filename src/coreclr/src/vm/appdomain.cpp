@@ -670,11 +670,6 @@ BaseDomain::BaseDomain()
     m_ClassInitLock.PreInit();
     m_ILStubGenLock.PreInit();
     m_NativeTypeLoadLock.PreInit();
-
-#ifdef FEATURE_CODE_VERSIONING
-    m_codeVersionManager.PreInit();
-#endif
-
 } //BaseDomain::BaseDomain
 
 //*****************************************************************************
@@ -1569,10 +1564,11 @@ void SystemDomain::Attach()
     ILStubManager::Init();
     InteropDispatchStubManager::Init();
     StubLinkStubManager::Init();
-
     ThunkHeapStubManager::Init();
-
     TailCallStubManager::Init();
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCountingStubManager::Init();
+#endif
 
     PerAppDomainTPCountList::InitAppDomainIndexList();
 #endif // CROSSGEN_COMPILE
