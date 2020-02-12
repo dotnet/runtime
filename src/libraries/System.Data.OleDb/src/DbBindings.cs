@@ -11,7 +11,7 @@ namespace System.Data.OleDb
 {
     internal sealed class Bindings
     {
-        private static readonly bool s_runningOnX86 = Marshal.SizeOf<IntPtr>() == 4;
+        private static readonly bool s_runningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
         private readonly tagDBPARAMBINDINFO[] _bindInfo;
         private readonly tagDBPARAMBINDINFO_x86[] _bindInfo_x86;
         private readonly tagDBBINDING[] _dbbindings;
