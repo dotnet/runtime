@@ -131,16 +131,16 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
-        public static void ZipArchiveEntry_BypassValidation()
+        public static void ZipArchiveEntry_BypassValidationWhenSwitchOn()
         {
             RemoteExecutor.Invoke(() =>
             {
                 MemoryStream stream = populateStream().Result;
                 PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
                 using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
-                 {
+                {
                     // Set the AppContext Switch
-                    AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressValidation", true);
+                    AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressHeaderValidation", true);
                     ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
 
                     using (MemoryStream ms = new MemoryStream())
@@ -149,6 +149,24 @@ namespace System.IO.Compression.Tests
                         source.CopyTo(ms);
                         Assert.Equal(ms.Position, ms.Length);  // Just making sure it was readable
                     }
+                }
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
+        public static void ZipArchiveEntry_ValidationThrowsWhenSwitchOff()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                MemoryStream stream = populateStream().Result;
+                PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+                using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+                {
+                    // Set the AppContext Switch
+                    AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressHeaderValidation", false);
+                    ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                    Assert.Throws<InvalidDataException>(() => e.Open());
                 }
             }).Dispose();
         }

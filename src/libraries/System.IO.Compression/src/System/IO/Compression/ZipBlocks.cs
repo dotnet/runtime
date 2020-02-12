@@ -482,7 +482,23 @@ namespace System.IO.Compression
             }
             else
             {
-                if (reader.BaseStream.Length < reader.BaseStream.Position + extraFieldLength + entry.CompressedLength + 12)
+                // There are 4 distinct scenario we would like to support
+                //   1.based on the appnote it seems that the structure of this record is following:
+                //                  crc-32                          4 bytes
+                //                  compressed size                 4 bytes (scenario 1.a has 8 bytes)
+                //                  uncompressed size               4 bytes (scenario 1.a has 8 bytes)
+                //
+                //   2.based on files that we have been able to examine
+                //                  data descriptor signature        4 bytes  (0x08074b50)
+                //                  crc-32                                  4 bytes
+                //                  compressed size                   4 bytes (scenario 2.a has 8 bytes)
+                //                  uncompressed size               4 bytes (scenario 2.a has 8 bytes)
+                //
+                // we can safely assume that this record is not the last one in the file, so let's just
+                // read the max Bytes required to store the largest structure , and compare results
+
+                int minDataDescriptorSize = 12;
+                if (reader.BaseStream.Length < reader.BaseStream.Position + extraFieldLength + entry.CompressedLength + minDataDescriptorSize)
                 {
                     return false;
                 }
@@ -500,7 +516,11 @@ namespace System.IO.Compression
                     return true;
                 }
 
-                // let's try to match the next record size (4 x 4) 32 bit with signature
+                // let's try to match the next record size (4 x 4) 32 bit with signature if another 4 byte is available
+                if (reader.BaseStream.Length < reader.BaseStream.Position + 4)
+                {
+                    return false;
+                }
                 buffer[3] = reader.ReadUInt32();
                 if (TestMatch(entry, buffer[0], buffer[1], buffer[2], buffer[3]))
                 {
@@ -513,14 +533,22 @@ namespace System.IO.Compression
                     return false;
                 }
 
-                //let's try to match the 64 bit structures 64 bit without signature
+                //let's try to match the 64 bit structures 64 bit without signature if another 4 byte is available
+                if (reader.BaseStream.Length < reader.BaseStream.Position + 4)
+                {
+                    return false;
+                }
                 buffer[4] = reader.ReadUInt32();
                 if (TestMatch(entry, DataDescriptorSignature, buffer[0], ConvertToUlong(buffer[1], buffer[2]), ConvertToUlong(buffer[3], buffer[4])))
                 {
                     return true;
                 }
 
-                //let's try to match the 64 bit structures 64 bit with signature
+                //let's try to match the 64 bit structures 64 bit with signature if another 4 byte is available
+                if (reader.BaseStream.Length < reader.BaseStream.Position + 4)
+                {
+                    return false;
+                }
                 buffer[5] = reader.ReadUInt32();
                 if (TestMatch(entry, buffer[0], buffer[1], ConvertToUlong(buffer[2], buffer[3]), ConvertToUlong(buffer[4], buffer[5])))
                 {
