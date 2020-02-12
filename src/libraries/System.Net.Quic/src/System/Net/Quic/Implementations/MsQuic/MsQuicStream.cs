@@ -207,7 +207,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Make sure start has completed
             if (!_started)
             {
-                await _sendResettableCompletionSource.GetTypelessValueTask().ConfigureAwait(false);
+                await _sendResettableCompletionSource.GetTypelessValueTask();
                 _started = true;
             }
 
