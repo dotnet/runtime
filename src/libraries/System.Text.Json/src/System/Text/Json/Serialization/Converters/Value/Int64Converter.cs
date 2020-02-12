@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterInt64 : JsonConverter<long>
+    internal sealed class Int64Converter : JsonConverter<long>
     {
         public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

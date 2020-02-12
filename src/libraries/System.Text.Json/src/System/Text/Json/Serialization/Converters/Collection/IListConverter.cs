@@ -9,7 +9,8 @@ using System.Diagnostics;
 namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.IList</cref>.
-    internal sealed class JsonIListConverter<TCollection> : JsonIEnumerableDefaultConverter<TCollection, object>
+    internal sealed class IListConverter<TCollection>
+        : IEnumerableDefaultConverter<TCollection, object>
         where TCollection : IList
     {
         protected override void Add(object? value, ref ReadStack state)

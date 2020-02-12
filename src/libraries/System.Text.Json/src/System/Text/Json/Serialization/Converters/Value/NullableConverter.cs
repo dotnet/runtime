@@ -4,13 +4,13 @@
 
 namespace System.Text.Json.Serialization
 {
-    internal class JsonValueConverterNullable<T> : JsonConverter<T?> where T : struct
+    internal class NullableConverter<T> : JsonConverter<T?> where T : struct
     {
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
         private readonly JsonConverter<T> _converter;
 
-        public JsonValueConverterNullable(JsonConverter<T> converter)
+        public NullableConverter(JsonConverter<T> converter)
         {
             _converter = converter;
         }

@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterUInt16 : JsonConverter<ushort>
+    internal sealed class UInt16Converter : JsonConverter<ushort>
     {
         public override ushort Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

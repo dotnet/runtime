@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterDateTimeOffset : JsonConverter<DateTimeOffset>
+    internal sealed class DateTimeOffsetConverter : JsonConverter<DateTimeOffset>
     {
         public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

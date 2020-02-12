@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterDecimal : JsonConverter<decimal>
+    internal sealed class DecimalConverter : JsonConverter<decimal>
     {
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

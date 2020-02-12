@@ -9,7 +9,8 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonIEnumerableConverter{TCollection, TElement}</cref>.
     /// </summary>
-    internal abstract class JsonIEnumerableDefaultConverter<TCollection, TElement> : JsonCollectionConverter<TCollection, TElement>
+    internal abstract class IEnumerableDefaultConverter<TCollection, TElement>
+        : JsonCollectionConverter<TCollection, TElement>
     {
         protected abstract void Add(TElement value, ref ReadStack state);
         protected abstract void CreateCollection(ref ReadStack state, JsonSerializerOptions options);

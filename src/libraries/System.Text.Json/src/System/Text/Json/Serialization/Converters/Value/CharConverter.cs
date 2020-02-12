@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterChar : JsonConverter<char>
+    internal sealed class CharConverter : JsonConverter<char>
     {
         public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

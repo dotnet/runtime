@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterDouble : JsonConverter<double>
+    internal sealed class DoubleConverter : JsonConverter<double>
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

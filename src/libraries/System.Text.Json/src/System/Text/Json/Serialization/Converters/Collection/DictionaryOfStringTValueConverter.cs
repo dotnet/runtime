@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for Dictionary{string, TValue} that (de)serializes as a JSON object with properties
     /// representing the dictionary element key and value.
     /// </summary>
-    internal sealed class JsonDictionaryOfStringTValueConverter<TCollection, TValue>
+    internal sealed class DictionaryOfStringTValueConverter<TCollection, TValue>
         : JsonDictionaryDefaultConverter<TCollection, TValue>
         where TCollection : Dictionary<string, TValue>
     {

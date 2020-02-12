@@ -7,8 +7,8 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonIEnumerableWithAddMethodConverter<TCollection> :
-        JsonIEnumerableDefaultConverter<TCollection, object?>
+    internal sealed class IEnumerableWithAddMethodConverter<TCollection>
+        : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
         protected override void Add(object? value, ref ReadStack state)

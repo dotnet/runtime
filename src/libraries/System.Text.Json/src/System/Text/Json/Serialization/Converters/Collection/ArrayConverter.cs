@@ -11,8 +11,8 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter for <cref>System.Array</cref>.
     /// </summary>
-    internal sealed class JsonArrayConverter<TCollection, TElement>
-        : JsonIEnumerableDefaultConverter<TCollection, TElement>
+    internal sealed class ArrayConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection: IEnumerable
     {
         internal override bool CanHaveIdMetadata => false;

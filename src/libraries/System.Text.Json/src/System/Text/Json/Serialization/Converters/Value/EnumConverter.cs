@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal class JsonConverterEnum<T> : JsonConverter<T>
+    internal class EnumConverter<T> : JsonConverter<T>
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
@@ -25,12 +25,12 @@ namespace System.Text.Json.Serialization.Converters
             return type.IsEnum;
         }
 
-        public JsonConverterEnum(EnumConverterOptions options)
+        public EnumConverter(EnumConverterOptions options)
             : this(options, namingPolicy: null)
         {
         }
 
-        public JsonConverterEnum(EnumConverterOptions options, JsonNamingPolicy? namingPolicy)
+        public EnumConverter(EnumConverterOptions options, JsonNamingPolicy? namingPolicy)
         {
             _converterOptions = options;
             if (namingPolicy != null)

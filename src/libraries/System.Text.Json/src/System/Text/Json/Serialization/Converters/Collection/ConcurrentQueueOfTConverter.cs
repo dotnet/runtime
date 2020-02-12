@@ -8,7 +8,8 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConcurrentQueueOfTConverter<TCollection, TElement> : JsonIEnumerableDefaultConverter<TCollection, TElement>
+    internal sealed class ConcurrentQueueOfTConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : ConcurrentQueue<TElement>
     {
         protected override void Add(TElement value, ref ReadStack state)

@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonObjectConverter{T}</cref>.
     /// </summary>
-    internal sealed class JsonObjectDefaultConverter<T> : JsonObjectConverter<T>
+    internal sealed class ObjectDefaultConverter<T> : JsonObjectConverter<T>
     {
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T value)
         {

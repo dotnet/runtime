@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonKeyValuePairConverter : JsonConverterFactory
+    internal sealed class KeyValuePairConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
@@ -19,14 +19,14 @@ namespace System.Text.Json.Serialization.Converters
             return (generic == typeof(KeyValuePair<,>));
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.JsonKeyValuePairConverter`2")]
+        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.Converters.KeyValuePairConverter`2")]
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
 
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(JsonKeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
+                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,

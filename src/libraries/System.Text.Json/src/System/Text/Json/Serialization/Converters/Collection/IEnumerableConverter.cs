@@ -12,8 +12,8 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for <cref>System.Collections.IEnumerable</cref>.
     /// </summary>
     /// <typeparam name="TCollection"></typeparam>
-    internal sealed class JsonIEnumerableConverter<TCollection>
-        : JsonIEnumerableDefaultConverter<TCollection, object?>
+    internal sealed class IEnumerableConverter<TCollection>
+        : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
         protected override void Add(object? value, ref ReadStack state)

@@ -7,7 +7,8 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonIReadOnlyDictionaryOfStringTValueConverter<TCollection, TValue> : JsonDictionaryDefaultConverter<TCollection, TValue>
+    internal sealed class IReadOnlyDictionaryOfStringTValueConverter<TCollection, TValue>
+        : JsonDictionaryDefaultConverter<TCollection, TValue>
         where TCollection : IReadOnlyDictionary<string, TValue>
     {
         protected override void Add(TValue value, JsonSerializerOptions options, ref ReadStack state)

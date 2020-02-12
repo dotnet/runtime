@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Converters
     /// Converter for <cref>System.Collections.IDictionary</cref> that (de)serializes as a JSON object with properties
     /// representing the dictionary element key and value.
     /// </summary>
-    internal sealed class JsonIDictionaryConverter<TCollection>
+    internal sealed class IDictionaryConverter<TCollection>
         : JsonDictionaryDefaultConverter<TCollection, object?>
         where TCollection : IDictionary
     {

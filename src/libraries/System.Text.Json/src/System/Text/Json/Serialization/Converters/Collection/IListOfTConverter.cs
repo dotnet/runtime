@@ -10,7 +10,8 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter for <cref>System.Collections.Generic.IList{TElement}</cref>.
     /// </summary>
-    internal sealed class JsonIListOfTConverter<TCollection, TElement> : JsonIEnumerableDefaultConverter<TCollection, TElement>
+    internal sealed class IListOfTConverter<TCollection, TElement>
+        : IEnumerableDefaultConverter<TCollection, TElement>
         where TCollection : IList<TElement>
     {
         protected override void Add(TElement value, ref ReadStack state)

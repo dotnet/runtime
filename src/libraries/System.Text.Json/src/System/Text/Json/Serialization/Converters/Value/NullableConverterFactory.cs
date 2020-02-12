@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization
 {
-    internal class JsonValueConverterNullableFactory : JsonConverterFactory
+    internal class NullableConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization
             }
 
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(JsonValueConverterNullable<>).MakeGenericType(valueTypeToConvert),
+                typeof(NullableConverter<>).MakeGenericType(valueTypeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: new object[] { valueConverter },

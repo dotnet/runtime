@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Converter factory for all object-based types (non-enumerable and non-primitive).
     /// </summary>
-    internal class JsonObjectConverterFactory : JsonConverterFactory
+    internal class ObjectConverterFactory : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {
@@ -24,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(JsonObjectDefaultConverter<>).MakeGenericType(typeToConvert),
+                typeof(ObjectDefaultConverter<>).MakeGenericType(typeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 args: null,

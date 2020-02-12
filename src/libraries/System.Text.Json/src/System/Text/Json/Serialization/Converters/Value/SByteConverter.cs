@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterSByte : JsonConverter<sbyte>
+    internal sealed class SByteConverter : JsonConverter<sbyte>
     {
         public override sbyte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

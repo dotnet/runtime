@@ -4,7 +4,7 @@
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonConverterUri : JsonConverter<Uri>
+    internal sealed class UriConverter : JsonConverter<Uri>
     {
         public override Uri Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
