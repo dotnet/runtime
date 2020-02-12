@@ -940,7 +940,10 @@ void Rationalizer::DoPhase()
 
             BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 #ifdef DEBUG
-            comp->gtDispStmt(statement, nullptr); // Brian
+            if (comp->verbose)
+            {
+                comp->gtDispStmt(statement, nullptr); // Brian
+            }
 #endif
 
             // If this statement has correct offset information, change it into an IL offset
