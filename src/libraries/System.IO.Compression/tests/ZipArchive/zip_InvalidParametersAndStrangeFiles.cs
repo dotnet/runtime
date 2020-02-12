@@ -139,7 +139,7 @@ namespace System.IO.Compression.Tests
                 PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
                 using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
                  {
-                    // Set the AppContext Switch to suppress validation
+                    // Set the AppContext Switch
                     AppContext.SetSwitch("System.Compression.ZipArchiveEntry.SuppressValidation", true);
                     ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
 
@@ -151,6 +151,32 @@ namespace System.IO.Compression.Tests
                     }
                 }
             }).Dispose();
+        }
+
+        [Fact]
+        public static async Task LargeArchive_DataDescriptor_Read_NonZip64_FileLengthGreaterThanIntMax()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(strange("fileLengthGreaterIntLessUInt.zip"));
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry("large.bin");
+
+                Assert.Equal(3_600_000_000, e.Length);
+                Assert.Equal(3_499_028, e.CompressedLength);
+
+                using (Stream source = e.Open())
+                {
+                    byte[] buffer = new byte[s_bufferSize];
+                    int read = source.Read(buffer, 0, buffer.Length);   // We don't want to inflate this large archive entirely 
+                                                                        // just making sure it read successfully 
+                    Assert.Equal(s_bufferSize, read);
+                    foreach (byte b in buffer)
+                    {
+                        Assert.Equal((byte)'0', b); // the file should be all "0"s 
+                    }
+                }
+            }
         }
 
         [Fact]
