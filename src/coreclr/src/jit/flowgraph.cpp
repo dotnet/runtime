@@ -9263,9 +9263,11 @@ void Compiler::fgAddInternal()
  *
  *  Create a new statement from tree and wire the links up.
  */
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs, InlineContext* inlineContext)
 {
+    // Brian : decide if we should change / add a new constructor and who is creating Stmts
     Statement* stmt = gtNewStmt(tree, offs);
+    stmt->SetInlineContext(inlineContext);
 
     if (fgStmtListThreaded)
     {
@@ -9285,17 +9287,22 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFS
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
-    return fgNewStmtFromTree(tree, nullptr, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, nullptr, BAD_IL_OFFSET, nullptr);
 }
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
-    return fgNewStmtFromTree(tree, block, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, block, BAD_IL_OFFSET, nullptr);
 }
-
+// Brian: Maybe we should remove the following overload to ensure an inlineContext is always set
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs)
 {
-    return fgNewStmtFromTree(tree, nullptr, offs);
+    return fgNewStmtFromTree(tree, nullptr, offs, nullptr);
+}
+
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs, InlineContext* inlineContext)
+{
+    return fgNewStmtFromTree(tree, nullptr, offs, inlineContext);
 }
 
 //------------------------------------------------------------------------
@@ -21927,16 +21934,19 @@ void Compiler::fgInline()
         {
             stmt->SetInlineContext(rootContext);
 #ifdef DEBUG
-            if (stmt->GetInlineContext() != nullptr)
+            if (verbose)
             {
-                JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
-                        eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+                if (stmt->GetInlineContext() != nullptr)
+                {
+                    JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
+                            eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+                }
+                else
+                {
+                    JITDUMP("\ninlined %d from root\n", stmt->GetILOffsetX());
+                }
+                gtDispStmt(stmt, nullptr);
             }
-            else
-            {
-                JITDUMP("\ninlined %d from root\n", stmt->GetILOffsetX());
-            }
-            gtDispStmt(stmt, nullptr);
 #endif
         }
     }
@@ -22968,9 +22978,12 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         {
             stmt->SetInlineContext(calleeContext);
 #ifdef DEBUG
-            gtDispStmt(stmt, nullptr);
-            JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
-                    eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+            if(verbose)
+            {
+                gtDispStmt(stmt, nullptr);
+                JITDUMP("\ninlined %d from %s\n", stmt->GetILOffsetX(),
+                        eeGetMethodFullName(stmt->GetInlineContext()->GetCallee()));
+            }
 #endif
         }
     }
@@ -23662,15 +23675,18 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         assert(addedStmt->GetInlineContext() == nullptr);
         addedStmt->SetInlineContext(context);
 #ifdef DEBUG
-        gtDispStmt(addedStmt, nullptr);
-        if (addedStmt->GetInlineContext() != nullptr)
+        if(verbose)
         {
-            JITDUMP("\ninlined %d from %s\n", addedStmt->GetILOffsetX(),
-                    eeGetMethodFullName(addedStmt->GetInlineContext()->GetCallee()));
-        }
-        else
-        {
-            JITDUMP("\ninlined %d from root\n", addedStmt->GetILOffsetX());
+            gtDispStmt(addedStmt, nullptr);
+            if (addedStmt->GetInlineContext() != nullptr)
+            {
+                JITDUMP("\ninlined %d from %s\n", addedStmt->GetILOffsetX(),
+                        eeGetMethodFullName(addedStmt->GetInlineContext()->GetCallee()));
+            }
+            else
+            {
+                JITDUMP("\ninlined %d from root\n", addedStmt->GetILOffsetX());
+            }
         }
 #endif
     }

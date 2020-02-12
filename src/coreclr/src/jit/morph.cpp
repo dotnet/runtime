@@ -16211,23 +16211,23 @@ void Compiler::fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt)
 
     // Append cond1 as JTRUE to cond1Block
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, condExpr);
-    Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
+    Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
     fgInsertStmtAtEnd(cond1Block, jmpStmt);
 
     // Append cond2 as JTRUE to cond2Block
     jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, cond2Expr);
-    jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
+    jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
     fgInsertStmtAtEnd(cond2Block, jmpStmt);
 
     // AsgBlock should get tmp = op1 assignment.
     trueExpr            = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), trueExpr);
-    Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetILOffsetX());
+    Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetILOffsetX(), stmt->GetInlineContext());
     fgInsertStmtAtEnd(asgBlock, trueStmt);
 
     // Since we are adding helper in the JTRUE false path, reverse the cond2 and add the helper.
     gtReverseCond(cond2Expr);
     GenTree*   helperExpr = gtNewTempAssign(dst->AsLclVarCommon()->GetLclNum(), true2Expr);
-    Statement* helperStmt = fgNewStmtFromTree(helperExpr, stmt->GetILOffsetX());
+    Statement* helperStmt = fgNewStmtFromTree(helperExpr, stmt->GetILOffsetX(), stmt->GetInlineContext());
     fgInsertStmtAtEnd(helperBlock, helperStmt);
 
     // Finally remove the nested qmark stmt.
@@ -16426,7 +16426,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     }
 
     GenTree*   jmpTree = gtNewOperNode(GT_JTRUE, TYP_VOID, qmark->gtGetOp1());
-    Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX());
+    Statement* jmpStmt = fgNewStmtFromTree(jmpTree, stmt->GetILOffsetX(), stmt->GetInlineContext());
     fgInsertStmtAtEnd(condBlock, jmpStmt);
 
     // Remove the original qmark statement.
@@ -16452,7 +16452,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         {
             trueExpr = gtNewTempAssign(lclNum, trueExpr);
         }
-        Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetILOffsetX());
+        Statement* trueStmt = fgNewStmtFromTree(trueExpr, stmt->GetILOffsetX(), stmt->GetInlineContext());
         fgInsertStmtAtEnd(thenBlock, trueStmt);
     }
 
@@ -16463,7 +16463,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         {
             falseExpr = gtNewTempAssign(lclNum, falseExpr);
         }
-        Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetILOffsetX());
+        Statement* falseStmt = fgNewStmtFromTree(falseExpr, stmt->GetILOffsetX(), stmt->GetInlineContext());
         fgInsertStmtAtEnd(elseBlock, falseStmt);
     }
 
