@@ -177,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
                         clientFinished.SetResult(true);
                         await serverTask;
                     } catch { }
-                });
+                }, 120_000);
             }
         }
 
