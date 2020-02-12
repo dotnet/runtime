@@ -16,7 +16,7 @@ namespace System.Collections.Generic
         {
         }
 
-        public bool Equals(T? x, T? y)
+        public bool Equals([AllowNull] T x, [AllowNull] T y)
         {
             return ReferenceEquals(x, y);
         }
