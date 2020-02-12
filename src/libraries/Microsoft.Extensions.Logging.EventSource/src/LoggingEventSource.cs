@@ -125,6 +125,10 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (IsEnabled())
             {
+                LoggerName ??= "";
+                EventName ??= "";
+                FormattedMessage ??= "";
+
                 fixed (char* loggerName = LoggerName)
                 fixed (char* eventName = EventName)
                 fixed (char* formattedMessage = FormattedMessage)
@@ -174,6 +178,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (IsEnabled())
             {
+                LoggerName ??= "";
+
                 fixed (char* loggerName = LoggerName)
                 {
                     const int eventDataCount = 3;
@@ -193,6 +199,11 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (IsEnabled())
             {
+                LoggerName ??= "";
+                EventName ??= "";
+                ExceptionJson ??= "";
+                ArgumentsJson ??= "";
+
                 fixed (char* loggerName = LoggerName)
                 fixed (char* eventName = EventName)
                 fixed (char* exceptionJson = ExceptionJson)
@@ -219,6 +230,9 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (IsEnabled())
             {
+                LoggerName ??= "";
+                ArgumentsJson ??= "";
+
                 fixed (char* loggerName = LoggerName)
                 fixed (char* argumentsJson = ArgumentsJson)
                 {
@@ -240,6 +254,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (IsEnabled())
             {
+                LoggerName ??= "";
+
                 fixed (char* loggerName = LoggerName)
                 {
                     const int eventDataCount = 3;
@@ -457,16 +473,9 @@ namespace Microsoft.Extensions.Logging.EventSource
                 }
 #endif
 
-                if (pinnedString != null)
-                {
-                    eventData.DataPointer = (IntPtr)pinnedString;
-                    eventData.Size = checked((str.Length + 1) * sizeof(char)); // size is specified in bytes, including null wide char
-                }
-                else
-                {
-                    eventData.DataPointer = IntPtr.Zero;
-                    eventData.Size = 0;
-                }
+                eventData.DataPointer = (IntPtr)pinnedString;
+                eventData.Size = checked((str.Length + 1) * sizeof(char)); // size is specified in bytes, including null wide char
+
             }
             else
             {
