@@ -176,7 +176,6 @@ namespace System.Memory.Tests
             BufferSegment<T> bufferSegment4 = bufferSegment3.Append(new T[50]);
             var sequence = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 50);
 
-
             // Non empty adjacent segment
             Assert.Equal(50, sequence.GetOffset(new SequencePosition(bufferSegment1, 50)));
             Assert.Equal(50, sequence.GetOffset(new SequencePosition(bufferSegment2, 0)));

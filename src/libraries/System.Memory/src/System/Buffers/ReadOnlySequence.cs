@@ -533,7 +533,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="position">The <see cref="System.SequencePosition"/> of which to get the offset.</param>
         /// <returns>The offset from the start of the sequence.</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">The provided <see cref="System.SequencePosition"/> is invalid</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException">The provided <see cref="System.SequencePosition"/> is invalid.</exception>
         public long GetOffset(SequencePosition position)
         {
             object? positionSequenceObject = position.GetObject();
