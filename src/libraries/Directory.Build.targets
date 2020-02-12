@@ -144,6 +144,8 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+
   <!-- Import Packaging targets -->
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" />
 
