@@ -18,6 +18,8 @@
     <Compile Include="System\Security\Cryptography\OidCollection.cs" />
     <Compile Include="System\Security\Cryptography\OidEnumerator.cs" />
     <Compile Include="System\Security\Cryptography\OidGroup.cs" />
+    <Compile Include="System\Security\Cryptography\PemFields.cs" />
+    <Compile Include="System\Security\Cryptography\PemEncoding.cs" />
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs">
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
