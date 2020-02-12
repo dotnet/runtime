@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -68,7 +67,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // TODO consider using Interlocked.Exchange instead of a sync if we can avoid it.
         private object _sync = new object();
 
-        private Task _startTask;
+        private ValueTask<uint> _startTask;
 
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
@@ -182,6 +181,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
+
             bool shouldAwaitStart = false;
             lock (_sync)
             {
@@ -217,7 +217,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Make sure start has completed
             if (shouldAwaitStart)
             {
-                await _startTask;
+                await _startTask.ConfigureAwait(false);
             }
 
             return registration;
