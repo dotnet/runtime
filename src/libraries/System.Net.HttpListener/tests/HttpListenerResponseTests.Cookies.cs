@@ -10,7 +10,7 @@ using Xunit;
 namespace System.Net.Tests
 {
     [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseCookiesTests : HttpListenerResponseTestBase
     {

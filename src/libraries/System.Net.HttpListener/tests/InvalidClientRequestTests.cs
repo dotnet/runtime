@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class InvalidClientRequestTests : IDisposable
     {
@@ -97,7 +97,7 @@ namespace System.Net.Tests
             yield return new object[] { "PUT {path} HTTP/1.1", null, null, null, "Length Required" };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2284", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2284", TestRuntimes.Mono)]
         [Fact]
         public async Task GetContext_InvalidRequest_DoesNotGetContext()
         {
