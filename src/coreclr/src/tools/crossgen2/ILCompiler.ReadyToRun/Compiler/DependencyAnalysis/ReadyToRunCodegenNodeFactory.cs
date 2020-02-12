@@ -187,8 +187,6 @@ namespace ILCompiler.DependencyAnalysis
             Target = context.Target;
             NameMangler = nameMangler;
             MetadataManager = new ReadyToRunTableManager(context);
-            Resolver = moduleTokenResolver;
-            SignatureContext = signatureContext;
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
             AttributePresenceFilter = attributePresenceFilterNode;
@@ -257,7 +255,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _localMethodCache = new NodeCache<MethodDesc, MethodWithGCInfo>(key =>
             {
-                return new MethodWithGCInfo(key.Method.Method);
+                return new MethodWithGCInfo(key);
             });
 
             _methodSignatures = new NodeCache<MethodFixupKey, MethodFixupSignature>(key =>

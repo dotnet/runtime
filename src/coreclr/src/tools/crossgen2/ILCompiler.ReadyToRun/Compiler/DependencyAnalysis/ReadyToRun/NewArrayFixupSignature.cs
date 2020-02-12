@@ -44,8 +44,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"NewArraySignature: ");
             sb.Append(nameMangler.GetMangledTypeName(_arrayType));
-            sb.Append(" << ");
-            sb.Append(_signatureContext.ToString());
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
