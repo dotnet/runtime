@@ -15,6 +15,7 @@ using ILCompiler.PEWriter;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using System.Security.Cryptography;
 
 namespace ILCompiler.DependencyAnalysis
@@ -27,6 +28,7 @@ namespace ILCompiler.DependencyAnalysis
         // Nodefactory for which ObjectWriter is instantiated for.
         private readonly NodeFactory _nodeFactory;
         private readonly string _objectFilePath;
+        private readonly EcmaModule _componentModule;
         private readonly IEnumerable<DependencyNode> _nodes;
         private readonly bool _generateMapFile;
 
@@ -48,9 +50,10 @@ namespace ILCompiler.DependencyAnalysis
         Dictionary<string, NodeInfo> _previouslyWrittenNodeNames = new Dictionary<string, NodeInfo>();
 #endif
 
-        public ReadyToRunObjectWriter(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
+        public ReadyToRunObjectWriter(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             _objectFilePath = objectFilePath;
+            _componentModule = componentModule;
             _nodes = nodes;
             _nodeFactory = factory;
             _generateMapFile = generateMapFile;
@@ -82,7 +85,7 @@ namespace ILCompiler.DependencyAnalysis
                 int timeDateStamp;
                 ISymbolNode r2rHeaderExportSymbol;
 
-                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+                if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
                     headerBuilder = PEHeaderProvider.Create(relocsStripped: false, dllCharacteristics: default(DllCharacteristics), Subsystem.Unknown, _nodeFactory.Target);
                     timeDateStamp = 0;
@@ -90,18 +93,23 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else
                 {
-                    PEReader inputPeReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader;
+                    PEReader inputPeReader = (_componentModule != null ? _componentModule.PEReader : _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().PEReader);
                     headerBuilder = PEHeaderProvider.Copy(inputPeReader.PEHeaders, _nodeFactory.Target);
                     timeDateStamp = inputPeReader.PEHeaders.CoffHeader.TimeDateStamp;
                     r2rHeaderExportSymbol = null;
                 }
 
+                Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable = null;
+                if (_componentModule == null)
+                {
+                    getRuntimeFunctionsTable = GetRuntimeFunctionsTable;
+                }
                 R2RPEBuilder r2rPeBuilder = new R2RPEBuilder(
                     _nodeFactory.Target,
                     headerBuilder,
                     r2rHeaderExportSymbol,
                     Path.GetFileName(_objectFilePath),
-                    GetRuntimeFunctionsTable);
+                    getRuntimeFunctionsTable);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
 
@@ -150,11 +158,11 @@ namespace ILCompiler.DependencyAnalysis
                     EmitObjectData(r2rPeBuilder, nodeContents, nodeIndex, name, node.Section, mapFile);
                 }
 
-                if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
+                if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode || _componentModule != null)
                 {
                     r2rPeBuilder.SetCorHeader(_nodeFactory.CopiedCorHeaderNode, _nodeFactory.CopiedCorHeaderNode.Size);
+                    r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
                 }
-                r2rPeBuilder.SetDebugDirectory(_nodeFactory.DebugDirectoryNode, _nodeFactory.DebugDirectoryNode.Size);
 
                 if (_nodeFactory.Win32ResourcesNode != null)
                 {
@@ -237,10 +245,6 @@ namespace ILCompiler.DependencyAnalysis
                 ISymbolNode definedSymbol = data.DefinedSymbols[symbolIndex];
                 NodeInfo alreadyWrittenSymbol;
                 string symbolName = definedSymbol.GetMangledName(_nodeFactory.NameMangler);
-                if (symbolName.Contains("ToString"))
-                {
-                    Console.WriteLine(symbolName);
-                }
                 if (_previouslyWrittenNodeNames.TryGetValue(symbolName, out alreadyWrittenSymbol))
                 {
                     Console.WriteLine($@"Duplicate symbol - 1st occurrence: [{alreadyWrittenSymbol.NodeIndex}:{alreadyWrittenSymbol.SymbolIndex}], {alreadyWrittenSymbol.Node.GetMangledName(_nodeFactory.NameMangler)}");
@@ -255,10 +259,10 @@ namespace ILCompiler.DependencyAnalysis
             r2rPeBuilder.AddObjectData(data, section, name, mapFile);
         }
 
-        public static void EmitObject(string objectFilePath, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
+        public static void EmitObject(string objectFilePath, EcmaModule componentModule, IEnumerable<DependencyNode> nodes, NodeFactory factory, bool generateMapFile)
         {
             Console.WriteLine($@"Emitting R2R PE file: {objectFilePath}");
-            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, nodes, factory, generateMapFile);
+            ReadyToRunObjectWriter objectWriter = new ReadyToRunObjectWriter(objectFilePath, componentModule, nodes, factory, generateMapFile);
             objectWriter.EmitPortableExecutable();
         }
     }

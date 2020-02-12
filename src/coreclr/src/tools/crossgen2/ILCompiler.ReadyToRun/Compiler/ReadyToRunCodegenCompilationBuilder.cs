@@ -20,11 +20,10 @@ namespace ILCompiler
 {
     public sealed class ReadyToRunCodegenCompilationBuilder : CompilationBuilder
     {
-        private readonly List<EcmaModule> _inputModules;
+        private readonly IEnumerable<string> _inputFiles;
         private bool _ibcTuning;
         private bool _resilient;
         private bool _generateMapFile;
-        private bool _composite;
         private int _parallelism;
 
         private string _jitPath;
@@ -34,11 +33,10 @@ namespace ILCompiler
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
         private ILProvider _ilProvider = new ReadyToRunILProvider();
 
-        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, bool composite, List<EcmaModule> inputModules)
+        public ReadyToRunCodegenCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group, IEnumerable<string> inputFiles)
             : base(context, group, new CoreRTNameMangler())
         {
-            _composite = composite;
-            _inputModules = inputModules;
+            _inputFiles = inputFiles;
 
             // R2R field layout needs compilation group information
             ((ReadyToRunCompilerContext)context).SetCompilationGroup(group);
@@ -113,23 +111,24 @@ namespace ILCompiler
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
-            CopiedCorHeaderNode corHeaderNode = (_composite ? null : new CopiedCorHeaderNode(_inputModules.First()));
+            IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;
+            CopiedCorHeaderNode corHeaderNode = (_compilationGroup.IsCompositeBuildMode ? null : new CopiedCorHeaderNode(inputModules.First()));
             AttributePresenceFilterNode attributePresenceFilterNode = null;
             // TODO: proper support for multiple input files
-            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(_inputModules.First());
+            DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(inputModules.First());
 
             // Core library attributes are checked FAR more often than other dlls
             // attributes, so produce a highly efficient table for determining if they are
             // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
             // as useful at this time.
-            if (_inputModules.Contains(_context.SystemModule))
+            if (inputModules.Contains(_context.SystemModule))
             {
                  attributePresenceFilterNode = new AttributePresenceFilterNode((EcmaModule)_context.SystemModule);
             }
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
-            ResourceData win32Resources = new ResourceData(_inputModules.First(), (object type, object name, ushort language) =>
+            ResourceData win32Resources = new ResourceData(inputModules.First(), (object type, object name, ushort language) =>
             {
                 if (!(type is string) || !(name is string))
                     return true;
@@ -146,7 +145,7 @@ namespace ILCompiler
             });
 
             ReadyToRunFlags flags = ReadyToRunFlags.READYTORUN_FLAG_NonSharedPInvokeStubs;
-            if (_inputModules.All(module => module.IsPlatformNeutral))
+            if (inputModules.All(module => module.IsPlatformNeutral))
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNeutralSource;
             }
@@ -156,8 +155,6 @@ namespace ILCompiler
                 _context,
                 _compilationGroup,
                 _nameMangler,
-                _composite,
-                _inputModules,
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
@@ -201,7 +198,7 @@ namespace ILCompiler
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),
-                _inputModules,
+                _inputFiles,
                 _resilient,
                 _generateMapFile,
                 _parallelism);

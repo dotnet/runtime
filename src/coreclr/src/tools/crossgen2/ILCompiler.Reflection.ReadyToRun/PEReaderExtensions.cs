@@ -96,10 +96,6 @@ namespace ILCompiler.Reflection.ReadyToRun
         public bool TryGetValue(int ordinal, out int rva) => _ordinalRva.TryGetValue(ordinal, out rva);
     }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> Previously missed newly added R2RDump source file PEReaderExtensions
     public static class PEReaderExtensions
     {
         /// <summary>

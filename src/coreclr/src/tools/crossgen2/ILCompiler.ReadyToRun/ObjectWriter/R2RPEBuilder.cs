@@ -415,10 +415,13 @@ namespace ILCompiler.PEWriter
 
             _sectionBuilder.UpdateDirectories(builder);
 
-            RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
-            builder.ExceptionTable = new DirectoryEntry(
-                relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
-                size: runtimeFunctionsTable.TableSize);
+            if (_getRuntimeFunctionsTable != null)
+            {
+                RuntimeFunctionsTableNode runtimeFunctionsTable = _getRuntimeFunctionsTable();
+                builder.ExceptionTable = new DirectoryEntry(
+                    relativeVirtualAddress: _sectionBuilder.GetSymbolRVA(runtimeFunctionsTable),
+                    size: runtimeFunctionsTable.TableSize);
+            }
     
             return builder;
         }

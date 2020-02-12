@@ -178,8 +178,6 @@ namespace ILCompiler.DependencyAnalysis
             CompilerTypeSystemContext context,
             CompilationModuleGroup compilationModuleGroup,
             NameMangler nameMangler,
-            bool composite,
-            IEnumerable<EcmaModule> inputModules,
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
@@ -204,7 +202,7 @@ namespace ILCompiler.DependencyAnalysis
             if (CompilationModuleGroup.IsCompositeBuildMode)
             {
                 // Create a null top-level signature context to force producing module overrides for all signaturess
-                Context = new SignatureContext(null, Resolver);
+                SignatureContext = new SignatureContext(null, Resolver);
             }
             else
             {
@@ -212,7 +210,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     throw new InternalCompilerErrorException($"Multiple input modules ({CompilationModuleGroup.CompilationModuleSet.Count()}) are only supported in composite R2R build mode");
                 }
-                Context = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.First(), Resolver);
+                SignatureContext = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.First(), Resolver);
             }
 
             CreateNodeCaches();
@@ -339,7 +337,7 @@ namespace ILCompiler.DependencyAnalysis
             });
         }
 
-        public SignatureContext Context;
+        public SignatureContext SignatureContext;
 
         public ModuleTokenResolver Resolver;
 

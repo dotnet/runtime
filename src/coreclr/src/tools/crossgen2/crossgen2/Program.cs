@@ -341,7 +341,8 @@ namespace ILCompiler
                     // Compile
                     //
 
-                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(typeSystemContext, compilationGroup, _commandLineOptions.Composite, inputModules);
+                    ReadyToRunCodegenCompilationBuilder builder = new ReadyToRunCodegenCompilationBuilder(
+                        typeSystemContext, compilationGroup, allInputFilePaths.Values);
                     string compilationUnitPrefix = "";
                     builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
