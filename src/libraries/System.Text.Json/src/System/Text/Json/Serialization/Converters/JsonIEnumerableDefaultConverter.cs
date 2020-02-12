@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -36,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
             Type typeToConvert,
             JsonSerializerOptions options,
             ref ReadStack state,
-            out TCollection value)
+            [MaybeNullWhen(false)] out TCollection value)
         {
             bool shouldReadPreservedReferences = options.ReferenceHandling.ShouldReadPreservedReferences();
 
