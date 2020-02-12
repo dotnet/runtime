@@ -244,15 +244,6 @@ monovm_execute_assembly (int argc, const char **argv, const char *managedAssembl
 int
 monovm_shutdown (int *latchedExitCode)
 {
-	mono_set_pinvoke_search_directories (0, NULL);
-	MonoCoreNativeLibPaths *dl = native_lib_paths;
-	native_lib_paths = NULL;
-	mono_core_native_lib_paths_free (dl);
-
-	MonoCoreTrustedPlatformAssemblies *a = trusted_platform_assemblies;
-	trusted_platform_assemblies = NULL;
-	mono_core_trusted_platform_assemblies_free (a);
-
 	*latchedExitCode = mono_environment_exitcode_get ();
 
 	return 0;
