@@ -149,4 +149,7 @@ mono_assembly_get_name_internal (MonoAssembly *assembly);
 MONO_PROFILER_API MonoImage*
 mono_assembly_get_image_internal (MonoAssembly *assembly);
 
+void
+mono_set_assemblies_path_direct (char **path);
+
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

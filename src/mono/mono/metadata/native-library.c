@@ -451,6 +451,8 @@ void
 mono_set_pinvoke_search_directories (int dir_count, char **dirs)
 {
 	pinvoke_search_directories_count = dir_count;
+	if (pinvoke_search_directories)
+		g_strfreev (pinvoke_search_directories);
 	pinvoke_search_directories = dirs;
 }
 

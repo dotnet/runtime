@@ -195,7 +195,11 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 
 	install_assembly_loader_hooks ();
 	if (native_lib_paths != NULL)
-		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, native_lib_paths->dirs);
+		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, g_strdupv (native_lib_paths->dirs));
+	// Our load hooks don't distinguish between normal, AOT'd, and satellite lookups the way CoreCLR's does.
+	// For now, just set assemblies_path with APP_PATHS and leave the rest.
+	if (app_paths != NULL)
+		mono_set_assemblies_path_direct (g_strdupv (app_paths->dirs));
 
 	/*
 	 * Don't use Mono's legacy assembly name matching behavior - respect
