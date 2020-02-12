@@ -34,7 +34,7 @@ by the well-known export symbol `RTR_HEADER` and has the `READYTORUN_FLAG_COMPOS
 
 Input MSIL metadata and IL streams can be either embedded in the composite R2R file or left
 as separate files on disk. In case of embedded MSIL, the "actual" metadata for the individual
-component assemblies is accessed via the R2R section `READYTORUN_SECTION_ASSEMBLIES`.
+component assemblies is accessed via the R2R section `ComponentAssemblies`.
 
 **Standalone MSIL files** used as the source of IL and metadata for composite R2R executables
 without MSIL embedding are copied to the output folder next to the composite R2R executable
@@ -64,7 +64,7 @@ envelope.
 
 For single-file R2R executables, there's just one header representing all image sections.
 For composite and single exe, the global `READYTORUN_HEADER` includes a section of the type
-`READYTORUN_SECTION_ASSEMBLIES` representing the component assemblies comprising the composite
+`ComponentAssemblies` representing the component assemblies comprising the composite
 R2R image. This table is parallel to (it used the same indexing as) the table
 `READYTORUN_MANIFEST_METADATA`. Each `READYTORUN_SECTION_ASSEMBLIES_ENTRY` record points
 to a `READYTORUN_CORE_HEADER` variable-length structure representing sections specific to the
@@ -161,14 +161,14 @@ The following section types are defined and described later in this document:
 | ComponentAssemblies       |   115 | Image (added in V4.1)
 | OwnerCompositeExecutable  |   116 | Image (added in V4.1)
 
-## CompilerIdentifier
+## ReadyToRunSectionType.CompilerIdentifier
 
 This section contains zero terminated ASCII string that identifies the compiler used to produce the
 image.
 
 **Example**: `CoreCLR 4.6.22727.0 PROJECTK`
 
-## ImportSections
+## ReadyToRunSectionType.ImportSections
 
 This section contains array of READYTORUN_IMPORT_SECTION structures. Each entry describes range of
 slots that had to be filled with the value from outside the module (typically lazily). The initial values of
@@ -316,7 +316,7 @@ The position values are calculated in `size_t` aka `IntPtr` units (4 bytes for 3
 * For x86, the encoding starts with size of the callee popped stack. The size is encoded using the same mechanism as above (two bit
 basic encoding, with extended encoding for large values).
 
-## RuntimeFunctions
+## ReadyToRunSectionType.RuntimeFunctions
 
 This section contains sorted array of `RUNTIME_FUNCTION` entries that describe all code blocks in the image with pointers to their unwind info. 
 Despite the name, these code block might represent a method body, or it could be just a part of it (e.g. a funclet) that requires its own unwind data. 
@@ -340,7 +340,7 @@ which encodes an extra 4-byte representing the end RVA of the unwind info blob.
 |      4 |    4 | Unwind info end RVA (1 plus RVA of last byte)
 |      8 |    4 | GC info start RVA
 
-## MethodDefEntryPoints
+## ReadyToRunSectionType.MethodDefEntryPoints
 
 This section contains a native format sparse array (see 4 Native Format) that maps methoddef rows to
 method entrypoints. Methoddef is used as index into the array. The element of the array is index of the
@@ -385,7 +385,7 @@ The list is terminated by a 0 (0 is not meaningful as valid delta).
 main R2R header; in composite R2R files, each component module has its own entrypoint section pointed to
 by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
-## ExceptionInfo
+## ReadyToRunSectionType.ExceptionInfo
 
 Exception handling information. This section contains array of
 `READYTORUN_EXCEPTION_LOOKUP_TABLE_ENTRY` sorted by `MethodStart` RVA. `ExceptionInfo` is RVA of
@@ -415,20 +415,20 @@ struct READYTORUN_EXCEPTION_CLAUSE
 
 Same encoding is as used by NGen.
 
-## DebugInfo
+## ReadyToRunSectionType.DebugInfo
 
 This section contains information to support debugging: native offset and local variable maps.
 
 **TODO**: Document the debug info encoding. It is the same encoding as used by NGen. It should not be
 required when debuggers are able to handle debug info stored separately.
 
-## DelayLoadMethodCallThunks
+## ReadyToRunSectionType.DelayLoadMethodCallThunks
 
 This section marks region that contains thunks for `READYTORUN_HELPER_DelayLoad_MethodCall`
 helper. It is used by debugger for step-in into lazily resolved calls. It should not be required when
 debuggers are able to handle debug info stored separately.
 
-## AvailableTypes
+## ReadyToRunSectionType.AvailableTypes
 
 This section contains a native hashtable of all defined & export types within the compilation module. The key is the full type name, the value is the exported type or defined type token row ID left-shifted by one and or-ed with bit 0 defining the token type:
 
@@ -444,7 +444,7 @@ The version-resilient hashing algorithm used for hashing the type names is imple
 main R2R header; in composite R2R files, each component module has its own available type section pointed to
 by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
-## InstanceMethodEntryPoints
+## ReadyToRunSectionType.InstanceMethodEntryPoints
 
 This section contains a native hashtable of all generic method instantiations compiled into
 the R2R executable. The key is the method instance signature; the appropriate version-resilient
@@ -458,15 +458,15 @@ composite R2R images. It represents all generics needed by all assemblies within
 executable. As mentioned elsewhere in this document, CoreCLR runtime requires changes to
 properly look up methods stored in this section in the composite R2R case.
 
-## InliningInfo
+## ReadyToRunSectionType.InliningInfo (v2.1+)
 
 **TODO**: document inlining info encoding
 
-## ProfileDataInfo
+## ReadyToRunSectionType.ProfileDataInfo (v2.2+)
 
 **TODO**: document profile data encoding
 
-## ManifestMetadata
+## ReadyToRunSectionType.ManifestMetadata (v2.3+)
 
 Manifest metadata is an [ECMA-335] metadata blob containing extra reference assemblies within
 the version bubble introduced by inlining on top of assembly references stored in the input MSIL.
@@ -489,7 +489,7 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 
 **Note:** This means that the entry corresponding to *i* = **ILAR** + 1 is actually undefined as it corresponds to the `NULL` entry (ROWID #0) in the manifest metadata AssemblyRef table. The first meaningful index into the manifest metadata, *i* = **ILAR** + 2, corresponding to ROWID #1, is historically filled in by Crossgen with the input assembly info but this shouldn't be depended upon, in fact the input assembly is useless in the manifest metadata as the module override to it can be encoded by using the special index 0.
 
-## AttributePresence
+## ReadyToRunSectionType.AttributePresence (v3.1+)
 
 **TODO**: document attribute presence encoding
 
@@ -497,7 +497,7 @@ The module override index translation algorithm is as follows (**ILAR** = *the n
 main R2R header; in composite R2R files, each component module has its own attribute presence
 section pointed to by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header structure.
 
-## InliningInfo2
+## ReadyToRunSectionType.InliningInfo2 (v4.1+)
 
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
 
@@ -510,10 +510,10 @@ The entry of the hashtable is a counted sequence of compressed unsigned integers
 
 Foreign RIDs are only present if a fragile inlining was allowed at compile time.
 
-**TODO:** It remains to be seen whether `READYTORUN_SECTION_METHODCALL_THUNKS` and / or
-`READYTORUN_SECTION_INLINING_INFO` also require changes specific to the composite R2R file format.
+**TODO:** It remains to be seen whether `DelayLoadMethodCallThunks` and / or
+`InliningInfo` also require changes specific to the composite R2R file format.
 
-## ComponentAssemblies (v4.1+)
+## ReadyToRunSectionType.ComponentAssemblies (v4.1+)
 
 This image-wide section is only present in the main R2R header of composite R2R files. It is an
 array of the entries `READYTORUN_SECTION_ASSEMBLIES_ENTRY` parallel to the indices in the manifest metadata
@@ -529,15 +529,14 @@ struct READYTORUN_SECTION_ASSEMBLIES_ENTRY
 };
 ```
 
-## OwnerCompositeExecutable
+## ReadyToRunSectionType.OwnerCompositeExecutable (v4.1+)
 
 For composite R2R executables with standalone MSIL, the MSIL files are rewritten during compilation
 by receiving a formal ReadyToRun header with the appropriate signature and major / minor version
 pair; in `Flags`, it has the `READYTORUN_FLAG_COMPONENT` bit set and its section list only contains
-the `OwnerCompositeExecutable` section that contains a zero-terminated UTF-8 string encoding
-the file name of the composite R2R executable this MSIL belongs to with extension (without path).
-Runtime uses this information to locate the composite R2R executable with the compiled native code
-when loading the MSIL.
+the `OwnerCompositeExecutable` section that contains a UTF-8 string encoding the file name of the
+composite R2R executable this MSIL belongs to with extension (without path). Runtime uses this
+information to locate the composite R2R executable with the compiled native code when loading the MSIL.
 
 # Native Format
 
