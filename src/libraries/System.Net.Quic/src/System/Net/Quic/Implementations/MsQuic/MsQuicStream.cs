@@ -74,7 +74,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = nativeObjPtr;
 
-
             _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
             _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
             _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
