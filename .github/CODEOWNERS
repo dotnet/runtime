@@ -11,7 +11,7 @@
 
 /src/mono @marek-safar
 
-/src/mono/llvm @vargaz @SamMonoRT @imhameed
+/src/mono/llvm @vargaz @SamMonoRT @imhameed @EgorBo
 
 /src/mono/mono/arch @vargaz @lewurm
 /src/mono/mono/benchmark @SamMonoRT @lewurm
@@ -30,7 +30,7 @@
 /src/mono/mono/mini @vargaz @lewurm @lambdageek @SamMonoRT @CoffeeFlux @alexischr
 /src/mono/mono/mini/*cfgdump* @lewurm @vargaz
 /src/mono/mono/mini/*exceptions* @lewurm @vargaz @BrzVlad
-/src/mono/mono/mini/*llvm* @vargaz @imhameed
+/src/mono/mono/mini/*llvm* @vargaz @imhameed @EgorBo
 /src/mono/mono/mini/*ppc* @lewurm @vargaz
 /src/mono/mono/mini/*profiler* @BrzVlad @lambdageek
 /src/mono/mono/mini/*riscv* @alexrp @lewurm
