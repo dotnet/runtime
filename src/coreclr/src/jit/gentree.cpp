@@ -12574,13 +12574,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
     return result;
 }
 
-/*****************************************************************************
- *
- *  Some binary operators can be folded even if they have only one
- *  operand constant - e.g. boolean operators, add with 0
- *  multiply with 1, etc
- */
-
+//------------------------------------------------------------------------
+// gtFoldExprSpecial -- optimize binary ops with one constant operand
+//
+// Arguments:
+//   tree - tree to optimize
+//
+// Return value:
+//   Tree (possibly modified at root or below), or a new tree
+//   Any new tree is fully morphed, if necessary.
+//
 GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 {
     GenTree*   op1  = tree->AsOp()->gtOp1;
@@ -12683,7 +12686,7 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
             // Optimize boxed value classes; these are always false.  This IL is
             // generated when a generic value is tested against null:
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
-            if (val == 0 && op->IsBoxedValue())
+            if ((val == 0) && op->IsBoxedValue())
             {
                 JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
                         dspTreeID(tree));
@@ -12735,6 +12738,46 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
 
                         return NewMorphedIntConNode(compareResult);
                     }
+                }
+            }
+            // Optimize boxed nullables feeding compares; these can be simplfied
+            // to instead test the "hasValue" field of the struct being boxed.
+            else if ((val == 0) && op->IsCall() && op->AsCall()->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+            {
+                JITDUMP("\nAttempting to optimize BOX_NULLABLE(&x) %s null [%06u]\n", GenTree::OpName(oper),
+                        dspTreeID(tree));
+
+                // We don't expect GT_GT with signed compares, and we
+                // can't predict the result if we do see it, since the
+                // boxed object addr could have its high bit set.
+                if ((oper == GT_GT) && !tree->IsUnsigned())
+                {
+                    JITDUMP(" bailing; unexpected signed compare via GT_GT\n");
+                }
+
+                // Get the address of the struct being boxed
+                GenTree* arg = op->AsCall()->gtCallArgs->GetNext()->GetNode();
+
+                if (arg->OperIs(GT_ADDR) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
+                {
+                    CORINFO_CLASS_HANDLE nullableHnd = gtGetStructHandle(arg->AsOp()->gtOp1);
+                    CORINFO_FIELD_HANDLE fieldHnd    = info.compCompHnd->getFieldInClass(nullableHnd, 0);
+
+                    // Replace the box with an access of the nullable 'hasValue' field.
+                    JITDUMP("\nSuccess: replacing BOX_NULLABLE(&x) [%06u] with x.hasValue\n", GenTree::OpName(oper),
+                            dspTreeID(op));
+                    GenTree* newOp = gtNewFieldRef(TYP_BOOL, fieldHnd, arg, 0);
+
+                    if (op == op1)
+                    {
+                        tree->AsOp()->gtOp1 = newOp;
+                    }
+                    else
+                    {
+                        tree->AsOp()->gtOp2 = newOp;
+                    }
+
+                    cons->gtType = TYP_INT;
                 }
             }
 
