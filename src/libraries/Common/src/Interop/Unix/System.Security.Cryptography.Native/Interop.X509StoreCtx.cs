@@ -40,7 +40,7 @@ internal static partial class Interop
 
         internal static void X509StoreCtxResetForSignatureError(
             SafeX509StoreCtxHandle ctx,
-            out SafeX509StoreHandle newStore)
+            out SafeX509StoreHandle? newStore)
         {
             if (CryptoNative_X509StoreCtxResetForSignatureError(ctx, out newStore) != 1)
             {

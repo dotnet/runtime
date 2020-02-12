@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="ECDsa" /> public key from the certificate or null if the certificate does not have an ECDsa public key.
         /// </summary>
-        public static ECDsa GetECDsaPublicKey(this X509Certificate2 certificate)
+        public static ECDsa? GetECDsaPublicKey(this X509Certificate2 certificate)
         {
             return certificate.GetPublicKey<ECDsa>(cert => HasECDsaKeyUsage(cert));
         }
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <summary>
         /// Gets the <see cref="ECDsa" /> private key from the certificate or null if the certificate does not have an ECDsa private key.
         /// </summary>
-        public static ECDsa GetECDsaPrivateKey(this X509Certificate2 certificate)
+        public static ECDsa? GetECDsaPrivateKey(this X509Certificate2 certificate)
         {
             return certificate.GetPrivateKey<ECDsa>(cert => HasECDsaKeyUsage(cert));
         }
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
-            using (ECDsa publicKey = GetECDsaPublicKey(certificate))
+            using (ECDsa? publicKey = GetECDsaPublicKey(certificate))
             {
                 if (publicKey == null)
                     throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             foreach (X509Extension extension in certificate.Extensions)
             {
-                if (extension.Oid.Value == Oids.KeyUsage)
+                if (extension.Oid!.Value == Oids.KeyUsage)
                 {
                     X509KeyUsageExtension ext = (X509KeyUsageExtension)extension;
 
@@ -97,8 +97,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (aParameters.Curve.CurveType != bParameters.Curve.CurveType)
                 return false;
 
-            if (!aParameters.Q.X.ContentsEqual(bParameters.Q.X) ||
-                !aParameters.Q.Y.ContentsEqual(bParameters.Q.Y))
+            if (!aParameters.Q.X!.ContentsEqual(bParameters.Q.X!) ||
+                !aParameters.Q.Y!.ContentsEqual(bParameters.Q.Y!))
             {
                 return false;
             }
@@ -120,8 +120,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             // Ignore Cofactor (which is derivable from the prime or polynomial and Order)
             // Ignore Seed and Hash (which are entirely optional, and about how A and B were built)
-            if (!aCurve.G.X.ContentsEqual(bCurve.G.X) ||
-                !aCurve.G.Y.ContentsEqual(bCurve.G.Y) ||
+            if (!aCurve.G.X!.ContentsEqual(bCurve.G.X!) ||
+                !aCurve.G.Y!.ContentsEqual(bCurve.G.Y!) ||
                 !aCurve.Order.ContentsEqual(bCurve.Order) ||
                 !aCurve.A.ContentsEqual(bCurve.A) ||
                 !aCurve.B.ContentsEqual(bCurve.B))

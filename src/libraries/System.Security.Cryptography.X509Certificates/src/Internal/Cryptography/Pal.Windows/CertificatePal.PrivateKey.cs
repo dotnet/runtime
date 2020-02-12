@@ -24,7 +24,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public RSA GetRSAPrivateKey()
+        public RSA? GetRSAPrivateKey()
         {
             return GetPrivateKey<RSA>(
                 delegate (CspParameters csp)
@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal
             );
         }
 
-        public DSA GetDSAPrivateKey()
+        public DSA? GetDSAPrivateKey()
         {
             return GetPrivateKey<DSA>(
                 delegate (CspParameters csp)
@@ -52,7 +52,7 @@ namespace Internal.Cryptography.Pal
             );
         }
 
-        public ECDsa GetECDsaPrivateKey()
+        public ECDsa? GetECDsaPrivateKey()
         {
             return GetPrivateKey<ECDsa>(
                 delegate (CspParameters csp)
@@ -68,8 +68,8 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
-            DSACng dsaCng = dsa as DSACng;
-            ICertificatePal clone = null;
+            DSACng? dsaCng = dsa as DSACng;
+            ICertificatePal? clone = null;
 
             if (dsaCng != null)
             {
@@ -81,7 +81,7 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            DSACryptoServiceProvider dsaCsp = dsa as DSACryptoServiceProvider;
+            DSACryptoServiceProvider? dsaCsp = dsa as DSACryptoServiceProvider;
 
             if (dsaCsp != null)
             {
@@ -95,7 +95,7 @@ namespace Internal.Cryptography.Pal
 
             DSAParameters privateParameters = dsa.ExportParameters(true);
 
-            using (PinAndClear.Track(privateParameters.X))
+            using (PinAndClear.Track(privateParameters.X!))
             using (DSACng clonedKey = new DSACng())
             {
                 clonedKey.ImportParameters(privateParameters);
@@ -106,11 +106,11 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(ECDsa ecdsa)
         {
-            ECDsaCng ecdsaCng = ecdsa as ECDsaCng;
+            ECDsaCng? ecdsaCng = ecdsa as ECDsaCng;
 
             if (ecdsaCng != null)
             {
-                ICertificatePal clone = CopyWithPersistedCngKey(ecdsaCng.Key);
+                ICertificatePal? clone = CopyWithPersistedCngKey(ecdsaCng.Key);
 
                 if (clone != null)
                 {
@@ -120,7 +120,7 @@ namespace Internal.Cryptography.Pal
 
             ECParameters privateParameters = ecdsa.ExportParameters(true);
 
-            using (PinAndClear.Track(privateParameters.D))
+            using (PinAndClear.Track(privateParameters.D!))
             using (ECDsaCng clonedKey = new ECDsaCng())
             {
                 clonedKey.ImportParameters(privateParameters);
@@ -131,8 +131,8 @@ namespace Internal.Cryptography.Pal
 
         public ICertificatePal CopyWithPrivateKey(RSA rsa)
         {
-            RSACng rsaCng = rsa as RSACng;
-            ICertificatePal clone = null;
+            RSACng? rsaCng = rsa as RSACng;
+            ICertificatePal? clone = null;
 
             if (rsaCng != null)
             {
@@ -144,7 +144,7 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            RSACryptoServiceProvider rsaCsp = rsa as RSACryptoServiceProvider;
+            RSACryptoServiceProvider? rsaCsp = rsa as RSACryptoServiceProvider;
 
             if (rsaCsp != null)
             {
@@ -158,12 +158,12 @@ namespace Internal.Cryptography.Pal
 
             RSAParameters privateParameters = rsa.ExportParameters(true);
 
-            using (PinAndClear.Track(privateParameters.D))
-            using (PinAndClear.Track(privateParameters.P))
-            using (PinAndClear.Track(privateParameters.Q))
-            using (PinAndClear.Track(privateParameters.DP))
-            using (PinAndClear.Track(privateParameters.DQ))
-            using (PinAndClear.Track(privateParameters.InverseQ))
+            using (PinAndClear.Track(privateParameters.D!))
+            using (PinAndClear.Track(privateParameters.P!))
+            using (PinAndClear.Track(privateParameters.Q!))
+            using (PinAndClear.Track(privateParameters.DP!))
+            using (PinAndClear.Track(privateParameters.DQ!))
+            using (PinAndClear.Track(privateParameters.InverseQ!))
             using (RSACng clonedKey = new RSACng())
             {
                 clonedKey.ImportParameters(privateParameters);
@@ -172,17 +172,17 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private T GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
             CngKeyHandleOpenOptions cngHandleOptions;
-            SafeNCryptKeyHandle ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
+            SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
             if (ncryptKey != null)
             {
                 CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
                 return createCng(cngKey);
             }
 
-            CspParameters cspParameters = GetPrivateKeyCsp();
+            CspParameters? cspParameters = GetPrivateKeyCsp();
             if (cspParameters == null)
                 return null;
 
@@ -205,7 +205,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeNCryptKeyHandle TryAcquireCngPrivateKey(
+        private static SafeNCryptKeyHandle? TryAcquireCngPrivateKey(
             SafeCertContextHandle certificateContext,
             out CngKeyHandleOpenOptions handleOptions)
         {
@@ -232,7 +232,7 @@ namespace Internal.Cryptography.Pal
             }
 
             bool freeKey = true;
-            SafeNCryptKeyHandle privateKey = null;
+            SafeNCryptKeyHandle? privateKey = null;
             handleOptions = CngKeyHandleOpenOptions.None;
             try
             {
@@ -293,7 +293,7 @@ namespace Internal.Cryptography.Pal
         // It would have been nice not to let this ugliness escape out of this helper method. But X509Certificate2.ToString() calls this
         // method too so we cannot just change it without breaking its output.
         //
-        private CspParameters GetPrivateKeyCsp()
+        private CspParameters? GetPrivateKeyCsp()
         {
             int cbData = 0;
             if (!Interop.crypt32.CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))
@@ -324,7 +324,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private unsafe ICertificatePal CopyWithPersistedCngKey(CngKey cngKey)
+        private unsafe ICertificatePal? CopyWithPersistedCngKey(CngKey cngKey)
         {
             if (string.IsNullOrEmpty(cngKey.KeyName))
             {
@@ -520,7 +520,7 @@ namespace Internal.Cryptography.Pal
             return false;
         }
 
-        private unsafe ICertificatePal CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
+        private unsafe ICertificatePal? CopyWithPersistedCapiKey(CspKeyContainerInfo keyContainerInfo)
         {
             if (string.IsNullOrEmpty(keyContainerInfo.KeyContainerName))
             {
