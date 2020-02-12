@@ -90,6 +90,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
+    v3binder
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
@@ -103,7 +104,6 @@ set(CORECLR_LIBRARIES
     gcinfo # Condition="'$(TargetCpu)'=='amd64' or '$(TargetCpu)' == 'arm' or '$(TargetCpu)' == 'arm64'"
     ildbsymlib
     utilcode
-    v3binder
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
