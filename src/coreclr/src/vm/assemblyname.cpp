@@ -24,10 +24,6 @@
 #include "strongnameinternal.h"
 #include "eeconfig.h"
 
-#ifndef URL_ESCAPE_AS_UTF8
-#define URL_ESCAPE_AS_UTF8              0x00040000  // Percent-encode all non-ASCII characters as their UTF-8 equivalents.
-#endif
-
 FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameUNSAFE)
 {
     FCALL_CONTRACT;

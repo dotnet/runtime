@@ -53,8 +53,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
                     bool enforceOwningType = false;
-                    ModuleToken moduleToken = method.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
-                    if (moduleToken.Module != factory.InputModuleContext.GlobalContext)
+                    ModuleToken moduleToken = factory.SignatureContext.GetModuleTokenForMethod(method.Method.GetTypicalMethodDefinition());
+                    if (moduleToken.Module != factory.SignatureContext.GlobalContext)
                     {
                         enforceOwningType = true;
                     }
@@ -64,7 +64,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         new MethodWithToken(method.Method, moduleToken, constrainedType: null),
                         enforceDefEncoding: true,
                         enforceOwningType,
-                        method.SignatureContext,
+                        factory.SignatureContext,
                         isUnboxingStub: false, 
                         isInstantiatingStub: false);
                     byte[] signature = signatureBuilder.ToArray();

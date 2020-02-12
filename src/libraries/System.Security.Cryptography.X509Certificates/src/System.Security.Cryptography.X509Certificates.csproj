@@ -110,6 +110,9 @@
     <Compile Include="$(CommonPath)Internal\Cryptography\Helpers.cs">
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
     <Compile Include="Internal\Cryptography\CertificateExtensionsCommon.cs" />
     <Compile Include="Internal\Cryptography\ErrorCode.cs" />
     <Compile Include="Internal\Cryptography\FindPal.cs" />

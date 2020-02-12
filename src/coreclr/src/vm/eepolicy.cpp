@@ -700,7 +700,7 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
     }
 
     EXCEPTION_POINTERS exceptionInfo;
-    GetCurrentExceptionPointers(&exceptionInfo DEBUG_ARG(!pThread->IsExecutingOnAltStack()));
+    GetCurrentExceptionPointers(&exceptionInfo);
 
     _ASSERTE(exceptionInfo.ExceptionRecord);
 
@@ -739,119 +739,33 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
     HandleExitProcessHelper(action, 0, sca);
 }
 
-
-//---------------------------------------------------------------------------------------
-// This class is responsible for displaying a stack trace. It uses a condensed way for
-// stack overflow stack traces where there are possibly many repeated frames.
-// It displays a count and a repeated sequence of frames at the top of the stack in 
-// such a case, instead of displaying possibly thousands of lines with the same 
-// method.
-//---------------------------------------------------------------------------------------
-class CallStackLogger
+StackWalkAction LogCallstackForLogCallback(
+    CrawlFrame       *pCF,      //
+    VOID*             pData     // Caller's private data
+)
 {
-    // MethodDescs of the stack frames, the TOS is at index 0
-    CDynArray<MethodDesc*> m_frames;
-
-    // Index of a stack frame where a possible repetition of frames starts
-    int m_commonStartIndex = -1;
-    // Length of the largest found repeated sequence of frames
-    int m_largestCommonStartLength = 0;
-    // Number of repetitions of the largest repeated sequence of frames
-    int m_largestCommonStartRepeat = 0;
-
-    StackWalkAction LogCallstackForLogCallbackWorker(CrawlFrame *pCF)
+    CONTRACTL
     {
-        WRAPPER_NO_CONTRACT;
-
-        MethodDesc *pMD = pCF->GetFunction();
-
-        if (m_commonStartIndex != -1)
-        {
-            // Some common frames were already found
-
-            if (m_frames[m_frames.Count() - m_commonStartIndex] != pMD)
-            {
-                // The frame being added is not part of the repeated sequence
-                if (m_frames.Count() / m_commonStartIndex >= 2)
-                {
-                    // A sequence repeated at least twice was found. It is the largest one that was found so far
-                    m_largestCommonStartLength = m_commonStartIndex;
-                    m_largestCommonStartRepeat = m_frames.Count() / m_commonStartIndex;
-                }
-
-                m_commonStartIndex = -1;
-            }
-        }
-
-        if (m_commonStartIndex == -1)
-        {
-            if ((m_frames.Count() != 0) && (pMD == m_frames[0]))
-            {
-                // We have found a frame with the same MethodDesc as the frame at the top of the stack,
-                // possibly a new repeated sequence is starting.
-                m_commonStartIndex = m_frames.Count();
-            }
-        }
-
-        MethodDesc** itemPtr = m_frames.Append();
-        if (itemPtr == nullptr)
-        {
-            // Memory allocation failure
-            return SWA_ABORT;
-        }
-
-        *itemPtr = pMD;
-
-        return SWA_CONTINUE;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
+    CONTRACTL_END;
 
-    void PrintFrame(int index, const WCHAR* pWordAt)
-    {
-        WRAPPER_NO_CONTRACT;
+    SmallStackSString *pWordAt = ((SmallStackSString*)pData);
 
-        SString str(pWordAt);
+    MethodDesc *pMD = pCF->GetFunction();
+    _ASSERTE(pMD != NULL);
 
-        MethodDesc* pMD = m_frames[index];
-        TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
-        PrintToStdErrW(str.GetUnicode());
-        PrintToStdErrA("\n");
-    }
+    StackSString str;
+    str = *pWordAt;
 
-public:
+    TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
+    PrintToStdErrW(str.GetUnicode());
+    PrintToStdErrA("\n");
 
-    // Callback called by the stack walker for each frame on the stack
-    static StackWalkAction LogCallstackForLogCallback(CrawlFrame *pCF, VOID* pData)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        CallStackLogger* logger = (CallStackLogger*)pData;
-        return logger->LogCallstackForLogCallbackWorker(pCF);
-    }
-
-    void PrintStackTrace(const WCHAR* pWordAt)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (m_largestCommonStartLength != 0)
-        {
-            SmallStackSString repeatStr;
-            repeatStr.AppendPrintf("Repeat %d times:\n", m_largestCommonStartRepeat);
-
-            PrintToStdErrW(repeatStr.GetUnicode());
-            PrintToStdErrA("--------------------------------\n");
-            for (int i = 0; i < m_largestCommonStartLength; i++)
-            {
-                PrintFrame(i, pWordAt);
-            }
-            PrintToStdErrA("--------------------------------\n");
-        }
-
-        for (int i = m_largestCommonStartLength * m_largestCommonStartRepeat; i < m_frames.Count(); i++)
-        {
-            PrintFrame(i, pWordAt);
-        }    
-    }
-};
+    return SWA_CONTINUE;
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -863,16 +777,14 @@ public:
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker(bool isStackOverflow = false)
+inline void LogCallstackForLogWorker()
 {
-    WRAPPER_NO_CONTRACT;
-
     Thread* pThread = GetThread();
     _ASSERTE (pThread);
 
     SmallStackSString WordAt;
 
-    if (isStackOverflow || !WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }
@@ -882,12 +794,7 @@ inline void LogCallstackForLogWorker(bool isStackOverflow = false)
     }
     WordAt += W(" ");
 
-    CallStackLogger logger;
-
-    pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY);
-
-    logger.PrintStackTrace(WordAt.GetUnicode());
-
+    pThread->StackWalkFrames(&LogCallstackForLogCallback, &WordAt, QUICKUNWIND | FUNCTIONSONLY);
 }
 
 //---------------------------------------------------------------------------------------
@@ -1149,35 +1056,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
-    FrameWithCookie<FaultingExceptionFrame> fef;
-#if defined(FEATURE_EH_FUNCLETS)
-    *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
-#endif // FEATURE_EH_FUNCLETS
-    if (pExceptionInfo && pExceptionInfo->ContextRecord)
-    {
-        GCX_COOP();
-        AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
-        fef.InitAndLink(pExceptionInfo->ContextRecord);
-    }
-
-    static volatile LONG g_stackOverflowCallStackLogged = 0;
-
-    // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
-    // multiple stack traces together.
-    if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
-    {
-        DisplayStackOverflowException();
-        LogCallstackForLogWorker(true /* isStackOverflow */);
-        g_stackOverflowCallStackLogged = 2;
-    }
-    else
-    {
-        // Wait for the thread that is logging the stack trace to complete
-        while (g_stackOverflowCallStackLogged != 2)
-        {
-            Sleep(50);
-        }
-    }
+    DisplayStackOverflowException();
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
@@ -1217,6 +1096,15 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
                 // We dont have a throwable - treat this as native unhandled exception
                 fTreatAsNativeUnhandledException = TRUE;
             }
+        }
+        FrameWithCookie<FaultingExceptionFrame> fef;
+#if defined(FEATURE_EH_FUNCLETS)
+        *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
+#endif // FEATURE_EH_FUNCLETS
+        if (pExceptionInfo && pExceptionInfo->ContextRecord)
+        {
+            GCX_COOP();
+            fef.InitAndLink(pExceptionInfo->ContextRecord);
         }
 
 #ifndef TARGET_UNIX

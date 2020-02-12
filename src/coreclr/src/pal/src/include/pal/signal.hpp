@@ -78,11 +78,10 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
 
 /*++
 Function :
-    ExecuteHandlerOnCustomStack
+    ExecuteHandlerOnOriginalStack
 
-    Execute signal handler on a custom stack, the current stack pointer is specified by the customSp
-    If the customSp is 0, then the handler is executed on the original stack where the signal was fired.
-    It installs a fake stack frame to enable stack unwinding to the signal source location.
+    Executes signal_handler_worker on the original stack where the signal occured.
+    It installs fake stack frame to enable stack unwinding to the signal source location.
 
 Parameters :
     POSIX signal handler parameter list ("man sigaction" for details)
@@ -90,7 +89,7 @@ Parameters :
 
     (no return value)
 --*/
-void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, size_t sp, SignalHandlerWorkerReturnPoint* returnPoint);
+void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, SignalHandlerWorkerReturnPoint* returnPoint);
 
 #endif // !HAVE_MACH_EXCEPTIONS
 

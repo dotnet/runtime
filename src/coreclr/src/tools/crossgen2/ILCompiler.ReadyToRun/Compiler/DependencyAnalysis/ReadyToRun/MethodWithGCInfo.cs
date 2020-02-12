@@ -17,7 +17,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
-        public SignatureContext SignatureContext { get; }
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -29,12 +28,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
+        public MethodWithGCInfo(MethodDesc methodDesc)
         {
             GCInfoNode = new MethodGCInfoNode(this);
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
-            SignatureContext = signatureContext;
         }
 
         public void SetCode(ObjectData data)
@@ -294,11 +292,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
-            int result = comparer.Compare(_method, otherNode._method);
-            if (result != 0)
-                return result;
-
-            return SignatureContext.CompareTo(otherNode.SignatureContext, comparer);
+            return comparer.Compare(_method, otherNode._method);
         }
 
         public void InitializeInliningInfo(MethodDesc[] inlinedMethods)
