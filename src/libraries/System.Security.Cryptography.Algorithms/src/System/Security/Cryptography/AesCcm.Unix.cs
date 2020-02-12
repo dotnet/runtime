@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class AesCcm
     {
-        private byte[] _key;
+        private byte[] _key = null!;
 
         private void ImportKey(ReadOnlySpan<byte> key)
         {

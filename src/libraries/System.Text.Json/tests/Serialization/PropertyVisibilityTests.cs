@@ -159,26 +159,17 @@ namespace System.Text.Json.Serialization.Tests
             
             // Using new options instance to prevent using previously cached metadata.
             JsonSerializerOptions options = new JsonSerializerOptions();
-            string serialized = JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options);
-            
-            // Object keys are fine on serialization if the keys are strings.
-            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
-            Assert.Contains(@"""MyIDict"":null", serialized);
-            Assert.Contains(@"""MyDict"":null", serialized);
+
+            // Unsupported collections will throw on serialize by default.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new ClassWithUnsupportedDictionary(), options));
 
             // Unsupported collections will throw on deserialize by default.
             options = new JsonSerializerOptions();
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<WrapperForClassWithUnsupportedDictionary>(wrapperJson, options));
             
             options = new JsonSerializerOptions();
-            serialized = JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options);
-
-            // Object keys are fine on serialization if the keys are strings.
-            Assert.Contains(@"{""MyClass"":{", serialized);
-            Assert.Contains(@"""MyConcurrentDict"":null", serialized);
-            Assert.Contains(@"""MyIDict"":null", serialized);
-            Assert.Contains(@"""MyDict"":null", serialized);
-            Assert.Contains("}}", serialized);
+            // Unsupported collections will throw on serialize by default.
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(new WrapperForClassWithUnsupportedDictionary(), options));
 
             // When ignored, we can serialize and deserialize without exceptions.
             options = new JsonSerializerOptions();

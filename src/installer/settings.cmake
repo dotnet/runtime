@@ -174,6 +174,18 @@ else()
     add_compile_options(-Wno-unused-local-typedef)
     add_compile_options(-Wno-unused-macros)
     add_compile_options(-Wno-unused-parameter)
+
+    if(CLR_CMAKE_TARGET_ARCH_ARM)
+        if (NOT DEFINED CLR_ARM_FPU_TYPE)
+            set(CLR_ARM_FPU_TYPE vfpv3)
+        endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+
+        if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+            set(CLR_ARM_FPU_CAPABILITY 0x7)
+        endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+
+        add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+    endif()
 endif()
 
 # Older CMake doesn't support CMAKE_CXX_STANDARD and GCC/Clang need a switch to enable C++ 11

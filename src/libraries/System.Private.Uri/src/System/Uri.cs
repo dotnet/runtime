@@ -402,7 +402,6 @@ namespace System
         // ISerializable method
         //
         /// <internalonly/>
-        [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             GetObjectData(serializationInfo, streamingContext);
@@ -1370,11 +1369,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(character));
             }
 
-            return string.Create(3, character, (Span<char> chars, char c) =>
+            return string.Create(3, (byte)character, (Span<char> chars, byte b) =>
             {
                 chars[0] = '%';
-                chars[1] = (char)UriHelper.HexUpperChars[(c & 0xf0) >> 4];
-                chars[2] = (char)UriHelper.HexUpperChars[c & 0xf];
+                HexConverter.ToCharsBuffer(b, chars, 1, HexConverter.Casing.Upper);
             });
         }
 

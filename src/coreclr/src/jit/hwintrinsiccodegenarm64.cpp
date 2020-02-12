@@ -293,6 +293,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op1Reg, opt);
                 break;
 
+            case NI_AdvSimd_FusedMultiplyAddScalar:
+            case NI_AdvSimd_FusedMultiplyAddNegatedScalar:
+            case NI_AdvSimd_FusedMultiplySubtractNegatedScalar:
+            case NI_AdvSimd_FusedMultiplySubtractScalar:
+                assert(opt == INS_OPTS_NONE);
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, op1Reg);
+                break;
+
             default:
                 unreached();
         }

@@ -388,24 +388,26 @@ if %__RestoreOptData% EQU 1 (
         goto ExitWithCode
     )
 )
+set __PgoOptDataPath=
+if %__PgoOptimize% EQU 1 (
+    set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
 
-set PgoDataPackagePathOutputFile="%__IntermediatesDir%\optdatapath.txt"
+    REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
+        "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
 
-REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    "%OptDataProjectFilePath%" /t:DumpPgoDataPackagePath %__CommonMSBuildArgs% /p:PgoDataPackagePathOutputFile="!PgoDataPackagePathOutputFile!"
+    if not !errorlevel! == 0 (
+        echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        set __exitCode=!errorlevel!
+        goto ExitWithCode
+    )
+    if not exist "!PgoDataPackagePathOutputFile!" (
+        echo %__ErrMsgPrefix%Failed to get PGO data package path.
+        goto ExitWithError
+    )
 
- if not !errorlevel! == 0 (
-    echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    set __exitCode=!errorlevel!
-    goto ExitWithCode
+    set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 )
-if not exist "!PgoDataPackagePathOutputFile!" (
-    echo %__ErrMsgPrefix%Failed to get PGO data package path.
-    goto ExitWithError
-)
-
-set /p __PgoOptDataPath=<"!PgoDataPackagePathOutputFile!"
 
 REM =========================================================================================
 REM ===

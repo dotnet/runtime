@@ -21,7 +21,6 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "2#", Justification = "The Uri represents a unique category and not a network location")]
         public SyndicationPerson(string email, string name, string uri)
         {
             Name = name;
@@ -50,7 +49,6 @@ namespace System.ServiceModel.Syndication
 
         public string Name { get; set; }
 
-        [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Scope = "property", Justification = "The Uri represents a unique category and not a network location")]
         public string Uri { get; set; }
 
         public virtual SyndicationPerson Clone() => new SyndicationPerson(this);

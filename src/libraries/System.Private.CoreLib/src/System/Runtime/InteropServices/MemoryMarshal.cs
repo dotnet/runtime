@@ -522,7 +522,7 @@ namespace System.Runtime.InteropServices
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();

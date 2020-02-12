@@ -121,7 +121,7 @@ frame_stack_init (FrameStack *stack, int size)
 	StackFragment *frag;
 
 	frag = stack_frag_new (size);
-	stack->first = stack->last = stack->current = frag;
+	stack->first = stack->current = frag;
 	mono_compiler_barrier ();
 	stack->inited = 1;
 }
@@ -137,10 +137,19 @@ add_frag (FrameStack *stack, int size)
 		frag_size = size + sizeof (StackFragment);
 	new_frag = stack_frag_new (frag_size);
 	mono_compiler_barrier ();
-	stack->last->next = new_frag;
-	stack->last = new_frag;
+	stack->current->next = new_frag;
 	stack->current = new_frag;
 	return new_frag;
+}
+
+static void
+free_frag (StackFragment *frag)
+{
+	while (frag) {
+		StackFragment *next = frag->next;
+		g_free (frag);
+		frag = next;
+	}
 }
 
 static MONO_ALWAYS_INLINE gpointer
@@ -153,6 +162,12 @@ frame_stack_alloc_ovf (FrameStack *stack, int size, StackFragment **out_frag)
 		current = stack->current = current->next;
 		current->pos = (guint8*)&current->data;
 	} else {
+		StackFragment *tmp = current->next;
+		/* avoid linking to be freed fragments, so the GC can't trip over it */
+		current->next = NULL;
+		mono_compiler_barrier ();
+		free_frag (tmp);
+
 		current = add_frag (stack, size);
 	}
 	g_assert (current->pos + size <= current->end);
@@ -201,12 +216,7 @@ frame_stack_free (FrameStack *stack)
 {
 	stack->inited = 0;
 	mono_compiler_barrier ();
-	StackFragment *frag = stack->first;
-	while (frag) {
-		StackFragment *next = frag->next;
-		g_free (frag);
-		frag = next;
-	}
+	free_frag (stack->first);
 }
 
 /*

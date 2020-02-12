@@ -395,6 +395,10 @@ typedef enum {
 	INTRINS_SSE_PTESTZ,
 	INTRINS_SSE_INSERTPS,
 	INTRINS_SSE_PSHUFB,
+	INTRINS_SSE_SADD_SATI8,
+	INTRINS_SSE_UADD_SATI8,
+	INTRINS_SSE_SADD_SATI16,
+	INTRINS_SSE_UADD_SATI16,
 #endif
 #ifdef TARGET_WASM
 	INTRINS_WASM_ANYTRUE_V16,
@@ -643,6 +647,12 @@ primitive_type_to_llvm_type (MonoTypeEnum type)
 	default:
 		return NULL;
 	}
+}
+
+static MonoTypeEnum
+inst_c1_type (const MonoInst *ins)
+{
+	return (MonoTypeEnum)ins->inst_c1;
 }
 
 /*
@@ -7588,7 +7598,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE_LOADU: {
-			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (ins->inst_c1), 0));
+			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
 			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_simd_type (ins->inst_c1), 0), "");
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
@@ -7673,6 +7683,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE2_ADDS: {
+			gint32 intrinsicId = 0;
+			if (ins->inst_c1 == MONO_TYPE_I1)
+				intrinsicId = INTRINS_SSE_SADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_U1)
+				intrinsicId = INTRINS_SSE_UADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_I2)
+				intrinsicId = INTRINS_SSE_SADD_SATI16;
+			else if (ins->inst_c1 == MONO_TYPE_U2)
+				intrinsicId = INTRINS_SSE_UADD_SATI16;
+			else
+				g_assert_not_reached ();
+
+			LLVMValueRef args [2];
+			args [0] = convert (ctx, lhs, type_to_simd_type (ins->inst_c1));
+			args [1] = convert (ctx, rhs, type_to_simd_type (ins->inst_c1));
+			values [ins->dreg] = convert (ctx, 
+				LLVMBuildCall (builder, get_intrins (ctx, intrinsicId), args, 2, dname),
+				type_to_simd_type (ins->inst_c1));
+			break;
+		}
+
 		case OP_SSE2_PACKUS: {
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, type_to_simd_type (MONO_TYPE_I2));
@@ -7707,7 +7739,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CREATE_SCALAR_UNSAFE: {
 			values [ins->dreg] = LLVMBuildInsertElement (builder, 
 				LLVMGetUndef (simd_class_to_llvm_type (ctx, ins->klass)), 
-				convert (ctx, lhs, primitive_type_to_llvm_type (ins->inst_c1)),
+				convert (ctx, lhs, primitive_type_to_llvm_type (inst_c1_type (ins))),
 				LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
@@ -7745,7 +7777,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				// other overloads are implemented with `insertelement`
 				values [ins->dreg] = LLVMBuildInsertElement (builder, 
 					values [ins->sreg1], 
-					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (ins->inst_c1)), 
+					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (inst_c1_type (ins))),
 					convert (ctx, values [ins->sreg3], LLVMInt8Type ()), dname);
 			}
 			break;
@@ -9353,6 +9385,18 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_ROUNDPD, "llvm.x86.sse41.round.pd"},
 	{INTRINS_SSE_PTESTZ, "llvm.x86.sse41.ptestz"},
 	{INTRINS_SSE_INSERTPS, "llvm.x86.sse41.insertps"},
+#if LLVM_API_VERSION >= 800
+	// these intrinsics were renamed in LLVM 8
+	{INTRINS_SSE_SADD_SATI8, "llvm.sadd.sat.v16i8"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.uadd.sat.v16i8"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.sadd.sat.v8i16"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.uadd.sat.v8i16"},
+#else
+	{INTRINS_SSE_SADD_SATI8, "llvm.x86.sse2.padds.b"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.x86.sse2.paddus.b"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.x86.sse2.padds.w"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.x86.sse2.paddus.w"},
+#endif
 #endif
 #ifdef TARGET_WASM
 	{INTRINS_WASM_ANYTRUE_V16, "llvm.wasm.anytrue.v16i8"},
@@ -9650,6 +9694,20 @@ add_intrinsic (LLVMModuleRef module, int id)
 		ret_type = type_to_simd_type (MONO_TYPE_I2);
 		arg_types [0] = type_to_simd_type (MONO_TYPE_I4);
 		arg_types [1] = type_to_simd_type (MONO_TYPE_I4);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI8:
+	case INTRINS_SSE_UADD_SATI8:
+		ret_type = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I1);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI16:
+	case INTRINS_SSE_UADD_SATI16:
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I2);
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 		/* SSE Binary ops */
