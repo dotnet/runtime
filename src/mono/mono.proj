@@ -47,8 +47,6 @@
         <_MonoConfigureParams>$(_MonoConfigureParams) --host=$(_MonoTuple) --target=$(_MonoTuple)</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) RANLIB=$(_MonoTuple)-ranlib</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) LD=$(_MonoTuple)-ld</_MonoConfigureParams>
-        <_MonoConfigureParams>$(_MonoConfigureParams) CCLD=$(_MonoTuple)-ld</_MonoConfigureParams>
-        <_MonoConfigureParams>$(_MonoConfigureParams) CXXLD=$(_MonoTuple)-ld</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) AS=$(_MonoTuple)-as</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) AR=$(_MonoTuple)-ar</_MonoConfigureParams>
         <_MonoConfigureParams>$(_MonoConfigureParams) STRIP=$(_MonoTuple)-strip</_MonoConfigureParams>
