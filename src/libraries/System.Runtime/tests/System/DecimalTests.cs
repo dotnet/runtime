@@ -645,6 +645,35 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetBitsSpan_TooShort_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => decimal.GetBits(123, new int[3]));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void TryGetBits(decimal input, int[] expected)
+        {
+            Span<int> bits;
+            int valuesWritten;
+
+            bits = new int[3];
+            Assert.False(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(0, valuesWritten);
+
+            bits = new int[4];
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.ToArray());
+
+            bits = new int[5];
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.Slice(0, 4).ToArray());
+            Assert.Equal(0, bits[4]);
+        }
+
+        [Fact]
         public void GetTypeCode_Invoke_ReturnsDecimal()
         {
             Assert.Equal(TypeCode.Decimal, decimal.MaxValue.GetTypeCode());
