@@ -538,11 +538,11 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
                     if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
                     {
                         // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                        // The current node does hanve the struct handle info, so record it now
+                        // The current node does have the struct handle info, so record it now
                         //
                         hashDsc->csdStructHnd = newElemStructHnd;
                     }
-                    else
+                    else if (newElemStructHnd != hashDsc->csdStructHnd)
                     {
                         hashDsc->csdStructHndMismatch = true;
 #ifdef DEBUG
