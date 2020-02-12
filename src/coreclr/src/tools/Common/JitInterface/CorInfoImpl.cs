@@ -2232,7 +2232,7 @@ namespace Internal.JitInterface
                         
                         // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
                         // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, GetSignatureContext()));
+                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field));
 
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
 
@@ -2246,7 +2246,7 @@ namespace Internal.JitInterface
                     {
                         pResult->fieldLookup = CreateConstLookupToSymbol(
 #if READYTORUN
-                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
+                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
 #else
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
 #endif

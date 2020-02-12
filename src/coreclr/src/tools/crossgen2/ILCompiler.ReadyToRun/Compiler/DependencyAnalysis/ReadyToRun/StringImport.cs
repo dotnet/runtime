@@ -10,8 +10,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly ModuleToken _token;
 
-        public StringImport(ImportSectionNode table, ModuleToken token, SignatureContext signatureContext)
-            : base(table, new StringImportSignature(token, signatureContext))
+        public StringImport(ImportSectionNode table, ModuleToken token)
+            : base(table, new StringImportSignature(token))
         {
             _token = token;
         }
