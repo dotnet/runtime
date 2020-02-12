@@ -8,9 +8,9 @@
     <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
-    <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
+    <LocalDotnetDir>$(RepoRoot).dotnet</LocalDotnetDir>
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
-    <LocalMonoDotnetDir>..\..\.dotnet-mono</LocalMonoDotnetDir>
+    <LocalMonoDotnetDir>$(RepoRoot).dotnet-mono</LocalMonoDotnetDir>
     <LocalMonoDotnet>$(LocalMonoDotnetDir)\$(DotNetExec)</LocalMonoDotnet>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
@@ -105,8 +105,10 @@
     </ItemGroup>
     <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
-    <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'" Importance="High" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" DestinationFolder="$(Destination)" />
+    <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
+          DestinationFolder="$(Destination)"
+          OverwriteReadOnlyFiles="true" />
   </Target>
 
   <Target Name="CloneLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
@@ -122,7 +124,7 @@
   <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
   <Target Name="PatchLocalMonoDotnet" DependsOnTargets="CloneLocalDotnet">
       <MSBuild Projects ="$(MSBuildProjectFullPath)"
-               Properties="Destination='$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])''"
+               Properties="Destination=$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])"
                Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
