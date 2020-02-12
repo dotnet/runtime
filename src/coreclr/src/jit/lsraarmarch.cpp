@@ -38,13 +38,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
-    int srcCount = 0;
-    // If this is the rhs of a block copy (i.e. non-enregisterable struct),
-    // it has no register requirements.
-    if (indirTree->TypeGet() == TYP_STRUCT)
-    {
-        return srcCount;
-    }
+    // struct typed indirs are expected only on rhs of a block copy,
+    // but in this case they must be contained.
+    assert(indirTree->TypeGet() != TYP_STRUCT);
 
     GenTree* addr  = indirTree->Addr();
     GenTree* index = nullptr;
@@ -109,7 +105,7 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 #endif // FEATURE_SIMD
 
-    srcCount = BuildIndirUses(indirTree);
+    int srcCount = BuildIndirUses(indirTree);
     buildInternalRegisterUses();
 
     if (indirTree->gtOper != GT_STOREIND)

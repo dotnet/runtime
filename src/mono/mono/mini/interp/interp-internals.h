@@ -184,7 +184,7 @@ struct _StackFragment {
 };
 
 typedef struct {
-	StackFragment *first, *last, *current;
+	StackFragment *first, *current;
 	/* For GC sync */
 	int inited;
 } FrameStack;

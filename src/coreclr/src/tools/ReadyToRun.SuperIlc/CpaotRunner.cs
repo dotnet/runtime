@@ -38,10 +38,13 @@ namespace ReadyToRun.SuperIlc
             return processParameters;
         }
 
-        protected override IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName)
+        protected override IEnumerable<string> BuildCommandLineArguments(IEnumerable<string> assemblyFileNames, string outputFileName)
         {
             // The file to compile
-            yield return assemblyFileName;
+            foreach (string inputAssembly in assemblyFileNames)
+            {
+                yield return inputAssembly;
+            }
 
             // Output
             yield return $"-o:{outputFileName}";
@@ -59,9 +62,14 @@ namespace ReadyToRun.SuperIlc
                 yield return "-O";
             }
 
-            if (_options.LargeBubble)
+            if (_options.LargeBubble || _options.Composite)
             {
                 yield return "--inputbubble";
+            }
+
+            if (_options.Composite)
+            {
+                yield return "--composite";
             }
 
             if (_options.Crossgen2Parallelism != 0)
@@ -69,9 +77,18 @@ namespace ReadyToRun.SuperIlc
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
-            foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(Path.GetDirectoryName(assemblyFileName)))
+            char referenceOption = (_options.Composite ? 'u' : 'r');
+            HashSet<string> uniqueFolders = new HashSet<string>();
+            foreach (string assemblyFileName in assemblyFileNames)
             {
-                yield return $"-r:{reference}";
+                uniqueFolders.Add(Path.GetDirectoryName(assemblyFileName));
+            }
+            foreach (string folder in uniqueFolders)
+            {
+                foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(folder))
+                {
+                    yield return $"-{referenceOption}:{reference}";
+                }
             }
 
             if (_resolvedReferences == null)
@@ -87,12 +104,13 @@ namespace ReadyToRun.SuperIlc
 
         private List<string> ResolveReferences()
         {
+            char referenceOption = (_options.Composite ? 'u' : 'r');
             List<string> references = new List<string>();
             foreach (var referenceFolder in _referenceFolders)
             {
                 foreach (var reference in ComputeManagedAssemblies.GetManagedAssembliesInFolder(referenceFolder))
                 {
-                    references.Add($"-r:{reference}");
+                    references.Add($"-{referenceOption}:{reference}");
                 }
             }
             return references;

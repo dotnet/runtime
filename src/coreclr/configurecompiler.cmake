@@ -327,6 +327,7 @@ if (CLR_CMAKE_HOST_UNIX)
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
   else()
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-unknown-pragmas)
     check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)

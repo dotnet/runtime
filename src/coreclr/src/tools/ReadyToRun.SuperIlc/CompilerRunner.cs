@@ -4,11 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Build.Logging;
 
 namespace ReadyToRun.SuperIlc
 {
@@ -48,15 +46,14 @@ namespace ReadyToRun.SuperIlc
 
         protected virtual string CompilerPath => Path.Combine(_options.CoreRootDirectory.FullName, CompilerRelativePath, CompilerFileName);
 
-        protected abstract IEnumerable<string> BuildCommandLineArguments(string assemblyFileName, string outputFileName);
+        protected abstract IEnumerable<string> BuildCommandLineArguments(IEnumerable<string> assemblyFileNames, string outputFileName);
 
-        public virtual ProcessParameters CompilationProcess(string outputRoot, string assemblyFileName)
+        public virtual ProcessParameters CompilationProcess(string outputFileName, IEnumerable<string> inputAssemblyFileNames)
         {
-            CreateOutputFolder(outputRoot);
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
-            string outputFileName = GetOutputFileName(outputRoot, assemblyFileName);
-            string responseFile = GetResponseFileName(outputRoot, assemblyFileName);
-            var commandLineArgs = BuildCommandLineArguments(assemblyFileName, outputFileName);
+            string responseFile = outputFileName + ".rsp";
+            var commandLineArgs = BuildCommandLineArguments(inputAssemblyFileNames, outputFileName);
             CreateResponseFile(responseFile, commandLineArgs);
 
             ProcessParameters processParameters = new ProcessParameters();
@@ -71,9 +68,13 @@ namespace ReadyToRun.SuperIlc
                 processParameters.TimeoutMilliseconds = ProcessParameters.DefaultIlcTimeout;
             }
             processParameters.LogPath = outputFileName + ".ilc.log";
-            processParameters.InputFileName = assemblyFileName;
+            processParameters.InputFileNames = inputAssemblyFileNames;
             processParameters.OutputFileName = outputFileName;
-            processParameters.CompilationCostHeuristic = new FileInfo(assemblyFileName).Length;
+
+            foreach (string inputAssembly in inputAssemblyFileNames)
+            {
+                processParameters.CompilationCostHeuristic += new FileInfo(inputAssembly).Length;
+            }
 
             return processParameters;
         }
@@ -119,7 +120,7 @@ namespace ReadyToRun.SuperIlc
             param.Arguments = builder.ToString();
             param.TimeoutMilliseconds = R2RDumpTimeoutMilliseconds;
             param.LogPath = compiledExecutable + (naked ? ".naked.r2r.log" : ".raw.r2r.log");
-            param.InputFileName = compiledExecutable;
+            param.InputFileNames = new string[] { compiledExecutable };
             param.OutputFileName = outputFileName;
             try
             {
@@ -186,7 +187,7 @@ namespace ReadyToRun.SuperIlc
                 processParameters.Arguments = "-c " + scriptToRun;
             }
 
-            processParameters.InputFileName = scriptToRun;
+            processParameters.InputFileNames = new string[] { scriptToRun };
             processParameters.OutputFileName = scriptToRun;
             processParameters.LogPath = scriptToRun + ".log";
             processParameters.EnvironmentOverrides["CORE_ROOT"] = _options.CoreRootOutputPath(Index, isFramework: false);
@@ -199,7 +200,7 @@ namespace ReadyToRun.SuperIlc
             ProcessParameters processParameters = ExecutionProcess(modules, folders, _options.NoEtw);
             processParameters.ProcessPath = _options.CoreRunPath(Index, isFramework: false);
             processParameters.Arguments = exeToRun;
-            processParameters.InputFileName = exeToRun;
+            processParameters.InputFileNames = new string[] { exeToRun };
             processParameters.OutputFileName = exeToRun;
             processParameters.LogPath = exeToRun + ".log";
             processParameters.ExpectedExitCode = 100;
@@ -248,19 +249,19 @@ namespace ReadyToRun.SuperIlc
 
     public class CompilationProcessConstructor : CompilerRunnerProcessConstructor
     {
-        private readonly string _outputRoot;
-        private readonly string _assemblyFileName;
+        private readonly string _outputFileName;
+        private readonly IEnumerable<string> _inputAssemblyFileNames;
 
-        public CompilationProcessConstructor(CompilerRunner runner, string outputRoot, string assemblyFileName)
+        public CompilationProcessConstructor(CompilerRunner runner, string outputFileName, IEnumerable<string> inputAssemblyFileNames)
             : base(runner)
         {
-            _outputRoot = outputRoot;
-            _assemblyFileName = assemblyFileName;
+            _outputFileName = outputFileName;
+            _inputAssemblyFileNames = inputAssemblyFileNames;
         }
 
         public override ProcessParameters Construct()
         {
-            return _runner.CompilationProcess(_outputRoot, _assemblyFileName);
+            return _runner.CompilationProcess(_outputFileName, _inputAssemblyFileNames);
         }
     }
 

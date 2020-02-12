@@ -29,6 +29,7 @@ namespace ReadyToRun.SuperIlc
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
+        public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }

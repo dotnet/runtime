@@ -239,10 +239,10 @@ namespace System.Security.Cryptography
                 kdfCount,
                 Span<byte>.Empty,
                 out _,
-                out byte[] allocated);
+                out byte[]? allocated);
 
             Debug.Assert(ret);
-            return allocated;
+            return allocated!;
         }
 
         internal static bool TryExportPkcs8KeyBlob(
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography
             int kdfCount,
             Span<byte> destination,
             out int bytesWritten,
-            out byte[] allocated)
+            out byte[]? allocated)
         {
             using (SafeUnicodeStringHandle stringHandle = new SafeUnicodeStringHandle(password))
             {
@@ -568,7 +568,7 @@ namespace System.Security.Cryptography
         /// null - if property not defined on key.
         /// throws - for any other type of error.
         /// </returns>
-        private static byte[] GetProperty(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        private static byte[]? GetProperty(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
             unsafe
@@ -599,10 +599,10 @@ namespace System.Security.Cryptography
         /// Retrieve a well-known CNG string property. (Note: .NET Framework compat: this helper likes to return special values rather than throw exceptions for missing
         /// or ill-formatted property values. Only use it for well-known properties that are unlikely to be ill-formatted.)
         /// </summary>
-        internal static string GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
+        internal static string? GetPropertyAsString(SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
-            byte[] value = GetProperty(ncryptHandle, propertyName, options);
+            byte[]? value = GetProperty(ncryptHandle, propertyName, options);
             if (value == null)
                 return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
@@ -612,13 +612,13 @@ namespace System.Security.Cryptography
             {
                 fixed (byte* pValue = &value[0])
                 {
-                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
+                    string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue)!;
                     return valueAsString;
                 }
             }
         }
 
-        internal static string GetCurveName(SafeNCryptHandle ncryptHandle)
+        internal static string? GetCurveName(SafeNCryptHandle ncryptHandle)
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
             return GetPropertyAsString(ncryptHandle, KeyPropertyName.ECCCurveName, CngPropertyOptions.None);

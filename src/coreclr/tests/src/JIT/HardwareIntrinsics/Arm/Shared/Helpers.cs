@@ -1421,9 +1421,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint AbsoluteDifference(uint left, uint right) => (uint)Math.Abs((long)left - (long)right);
 
-        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
+        public static float AbsoluteDifference(float op1, float op2) => MathF.Abs(op1 - op2);
 
-        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
+        public static float FusedMultiplyAdd(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, op1);
+
+        public static float FusedMultiplyAddNegated(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(-op2, op3, -op1);
+
+        public static float FusedMultiplySubtract(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(-op2, op3, op1);
+
+        public static float FusedMultiplySubtractNegated(float op1, float op2, float op3) => MathF.FusedMultiplyAdd(op2, op3, -op1);
+
+        public static double AbsoluteDifference(double op1, double op2) => Math.Abs(op1 - op2);
+
+        public static double FusedMultiplyAdd(double op1, double op2, double op3) => Math.FusedMultiplyAdd(op2, op3, op1);
+
+        public static double FusedMultiplyAddNegated(double op1, double op2, double op3) => Math.FusedMultiplyAdd(-op2, op3, -op1);
+
+        public static double FusedMultiplySubtract(double op1, double op2, double op3) => Math.FusedMultiplyAdd(-op2, op3, op1);
+
+        public static double FusedMultiplySubtractNegated(double op1, double op2, double op3) => Math.FusedMultiplyAdd(op2, op3, -op1);
 
         public static sbyte Add(sbyte op1, sbyte op2) => (sbyte)(op1 + op2);
 
@@ -1432,6 +1448,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static sbyte Min(sbyte op1, sbyte op2) => Math.Min(op1, op2);
 
         public static sbyte Multiply(sbyte op1, sbyte op2) => (sbyte)(op1 * op2);
+
+        public static sbyte MultiplyAdd(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 + (sbyte)(op2 * op3));
+
+        public static sbyte MultiplySubtract(sbyte op1, sbyte op2, sbyte op3) => (sbyte)(op1 - (sbyte)(op2 * op3));
 
         public static sbyte Subtract(sbyte op1, sbyte op2) => (sbyte)(op1 - op2);
 
@@ -1443,6 +1463,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte Multiply(byte op1, byte op2) => (byte)(op1 * op2);
 
+        public static byte MultiplyAdd(byte op1, byte op2, byte op3) => (byte)(op1 + (byte)(op2 * op3));
+
+        public static byte MultiplySubtract(byte op1, byte op2, byte op3) => (byte)(op1 - (byte)(op2 * op3));
+
         public static byte Subtract(byte op1, byte op2) => (byte)(op1 - op2);
 
         public static short Add(short op1, short op2) => (short)(op1 + op2);
@@ -1452,6 +1476,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static short Min(short op1, short op2) => Math.Min(op1, op2);
 
         public static short Multiply(short op1, short op2) => (short)(op1 * op2);
+
+        public static short MultiplyAdd(short op1, short op2, short op3) => (short)(op1 + (short)(op2 * op3));
+
+        public static short MultiplySubtract(short op1, short op2, short op3) => (short)(op1 - (short)(op2 * op3));
 
         public static short Subtract(short op1, short op2) => (short)(op1 - op2);
 
@@ -1463,6 +1491,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ushort Multiply(ushort op1, ushort op2) => (ushort)(op1 * op2);
 
+        public static ushort MultiplyAdd(ushort op1, ushort op2, ushort op3) => (ushort)(op1 + (ushort)(op2 * op3));
+
+        public static ushort MultiplySubtract(ushort op1, ushort op2, ushort op3) => (ushort)(op1 - (ushort)(op2 * op3));
+
         public static ushort Subtract(ushort op1, ushort op2) => (ushort)(op1 - op2);
 
         public static int Add(int op1, int op2) => (int)(op1 + op2);
@@ -1472,6 +1504,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static int Min(int op1, int op2) => Math.Min(op1, op2);
 
         public static int Multiply(int op1, int op2) => (int)(op1 * op2);
+
+        public static int MultiplyAdd(int op1, int op2, int op3) => (int)(op1 + (int)(op2 * op3));
+
+        public static int MultiplySubtract(int op1, int op2, int op3) => (int)(op1 - (int)(op2 * op3));
 
         public static int Subtract(int op1, int op2) => (int)(op1 - op2);
 
@@ -1483,6 +1519,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static uint Multiply(uint op1, uint op2) => (uint)(op1 * op2);
 
+        public static uint MultiplyAdd(uint op1, uint op2, uint op3) => (uint)(op1 + (uint)(op2 * op3));
+
+        public static uint MultiplySubtract(uint op1, uint op2, uint op3) => (uint)(op1 - (uint)(op2 * op3));
+
         public static uint Subtract(uint op1, uint op2) => (uint)(op1 - op2);
 
         public static long Add(long op1, long op2) => (long)(op1 + op2);
@@ -1492,6 +1532,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static long Min(long op1, long op2) => Math.Min(op1, op2);
 
         public static long Multiply(long op1, long op2) => (long)(op1 * op2);
+
+        public static long MultiplyAdd(long op1, long op2, long op3) => (long)(op1 + (long)(op2 * op3));
+
+        public static long MultiplySubtract(long op1, long op2, long op3) => (long)(op1 - (long)(op2 * op3));
 
         public static long Subtract(long op1, long op2) => (long)(op1 - op2);
 
@@ -1503,6 +1547,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static ulong Multiply(ulong op1, ulong op2) => (ulong)(op1 * op2);
 
+        public static ulong MultiplyAdd(ulong op1, ulong op2, ulong op3) => (ulong)(op1 + (ulong)(op2 * op3));
+
+        public static ulong MultiplySubtract(ulong op1, ulong op2, ulong op3) => (ulong)(op1 - (ulong)(op2 * op3));
+
         public static ulong Subtract(ulong op1, ulong op2) => (ulong)(op1 - op2);
 
         public static float Add(float op1, float op2) => (float)(op1 + op2);
@@ -1513,6 +1561,10 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float Multiply(float op1, float op2) => (float)(op1 * op2);
 
+        public static float MultiplyAdd(float op1, float op2, float op3) => (float)(op1 + (float)(op2 * op3));
+
+        public static float MultiplySubtract(float op1, float op2, float op3) => (float)(op1 - (float)(op2 * op3));
+
         public static float Subtract(float op1, float op2) => (float)(op1 - op2);
 
         public static double Add(double op1, double op2) => (double)(op1 + op2);
@@ -1522,6 +1574,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double Min(double op1, double op2) => Math.Min(op1, op2);
 
         public static double Multiply(double op1, double op2) => (double)(op1 * op2);
+
+        public static double MultiplyAdd(double op1, double op2, double op3) => (double)(op1 + (double)(op2 * op3));
+
+        public static double MultiplySubtract(double op1, double op2, double op3) => (double)(op1 - (double)(op2 * op3));
 
         public static double Subtract(double op1, double op2) => (double)(op1 - op2);
 

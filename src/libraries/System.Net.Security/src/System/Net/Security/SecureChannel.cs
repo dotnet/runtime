@@ -783,6 +783,7 @@ namespace System.Net.Security
             SecurityStatusPal status = default;
             bool cachedCreds = false;
             byte[] thumbPrint = null;
+            ReadOnlySpan<byte> inputBuffer = new ReadOnlySpan<byte>(input, offset, count);
 
             //
             // Looping through ASC or ISC with potentially cached credential that could have been
@@ -796,7 +797,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint, new ReadOnlySpan<byte>(input, offset, count))
+                                        ? AcquireServerCredentials(ref thumbPrint, inputBuffer)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 
@@ -805,7 +806,7 @@ namespace System.Net.Security
                         status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle,
                                       ref _securityContext,
-                                      input, offset, count,
+                                      inputBuffer,
                                       ref result,
                                       _sslAuthenticationOptions);
                     }
@@ -815,7 +816,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
-                                       input, offset, count,
+                                       inputBuffer,
                                        ref result,
                                        _sslAuthenticationOptions);
                     }

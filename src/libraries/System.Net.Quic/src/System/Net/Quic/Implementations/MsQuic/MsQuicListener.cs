@@ -12,7 +12,7 @@ using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal class MsQuicListener : QuicListenerProvider, IDisposable
+    internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
         // Security configuration for MsQuic
         private MsQuicSession _session;
@@ -65,21 +65,21 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             ThrowIfDisposed();
 
-            if (await _acceptConnectionQueue.Reader.WaitToReadAsync())
-            {
-                if (_acceptConnectionQueue.Reader.TryRead(out MsQuicConnection connection))
-                {
-                    // resolve security config here.
-                    await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate);
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            MsQuicConnection connection;
 
-                    return connection;
-                }
+            try
+            {
+                connection = await _acceptConnectionQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                throw new QuicOperationAbortedException();
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate);
 
-            return null;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return connection;
         }
 
         public override void Dispose()
@@ -174,7 +174,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        protected void StopAcceptingConnections()
+        private void StopAcceptingConnections()
         {
             _acceptConnectionQueue.Writer.TryComplete();
         }

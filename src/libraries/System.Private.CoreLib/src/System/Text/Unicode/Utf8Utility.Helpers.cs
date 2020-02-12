@@ -6,7 +6,6 @@ using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Text.Unicode
@@ -61,7 +60,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Given a machine-endian DWORD which four bytes of UTF-8 data, interprets the input as a
+        /// Given a machine-endian DWORD which represents four bytes of UTF-8 data, interprets the input as a
         /// four-byte UTF-8 sequence and returns the machine-endian DWORD of the UTF-16 representation.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -69,39 +68,19 @@ namespace System.Text.Unicode
         {
             if (BitConverter.IsLittleEndian)
             {
-                if (Bmi2.IsSupported)
-                {
-                    // need to reverse endianness for bit manipulation to work correctly
-                    value = BinaryPrimitives.ReverseEndianness(value);
-
-                    // value = [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ]
-                    // want to return [ 110110wwwwxxxxxx 110111xxxxxxxxxx ]
-                    // where wwww = uuuuu - 1
-
-                    uint highSurrogateChar = Bmi2.ParallelBitExtract(value, 0b00000111_00111111_00110000_00000000u);
-                    uint lowSurrogateChar = Bmi2.ParallelBitExtract(value, 0b00000000_00000000_00001111_00111111u);
-
-                    uint combined = (lowSurrogateChar << 16) + highSurrogateChar;
-                    combined -= 0x40u; // wwww = uuuuu - 1
-                    combined += 0xDC00_D800u; // add surrogate markers
-                    return combined;
-                }
-                else
-                {
-                    // input is UTF8 [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
-                    // want to return UTF16 scalar 000uuuuuzzzzyyyyyyxxxxxx = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
-                    // where wwww = uuuuu - 1
-                    uint retVal = (uint)(byte)value << 8; // retVal = [ 00000000 00000000 11110uuu 00000000 ]
-                    retVal |= (value & 0x0000_3F00u) >> 6; // retVal = [ 00000000 00000000 11110uuu uuzzzz00 ]
-                    retVal |= (value & 0x0030_0000u) >> 20; // retVal = [ 00000000 00000000 11110uuu uuzzzzyy ]
-                    retVal |= (value & 0x3F00_0000u) >> 8; // retVal = [ 00000000 00xxxxxx 11110uuu uuzzzzyy ]
-                    retVal |= (value & 0x000F_0000u) << 6; // retVal = [ 000000yy yyxxxxxx 11110uuu uuzzzzyy ]
-                    retVal -= 0x0000_0040u; // retVal = [ 000000yy yyxxxxxx 111100ww wwzzzzyy ]
-                    retVal -= 0x0000_2000u; // retVal = [ 000000yy yyxxxxxx 110100ww wwzzzzyy ]
-                    retVal += 0x0000_0800u; // retVal = [ 000000yy yyxxxxxx 110110ww wwzzzzyy ]
-                    retVal += 0xDC00_0000u; // retVal = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
-                    return retVal;
-                }
+                // input is UTF8 [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
+                // want to return UTF16 scalar 000uuuuuzzzzyyyyyyxxxxxx = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
+                // where wwww = uuuuu - 1
+                uint retVal = (uint)(byte)value << 8; // retVal = [ 00000000 00000000 11110uuu 00000000 ]
+                retVal |= (value & 0x0000_3F00u) >> 6; // retVal = [ 00000000 00000000 11110uuu uuzzzz00 ]
+                retVal |= (value & 0x0030_0000u) >> 20; // retVal = [ 00000000 00000000 11110uuu uuzzzzyy ]
+                retVal |= (value & 0x3F00_0000u) >> 8; // retVal = [ 00000000 00xxxxxx 11110uuu uuzzzzyy ]
+                retVal |= (value & 0x000F_0000u) << 6; // retVal = [ 000000yy yyxxxxxx 11110uuu uuzzzzyy ]
+                retVal -= 0x0000_0040u; // retVal = [ 000000yy yyxxxxxx 111100ww wwzzzzyy ]
+                retVal -= 0x0000_2000u; // retVal = [ 000000yy yyxxxxxx 110100ww wwzzzzyy ]
+                retVal += 0x0000_0800u; // retVal = [ 000000yy yyxxxxxx 110110ww wwzzzzyy ]
+                retVal += 0xDC00_0000u; // retVal = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
+                return retVal;
             }
             else
             {
@@ -135,37 +114,19 @@ namespace System.Text.Unicode
                 // input = [ 110111yyyyxxxxxx 110110wwwwzzzzyy ] = scalar (000uuuuu zzzzyyyy yyxxxxxx)
                 // must return [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ], where wwww = uuuuu - 1
 
-                if (Bmi2.IsSupported)
-                {
-                    // Since pdep and pext have high latencies and can only be dispatched to a single execution port, we want
-                    // to use them conservatively. Here, we'll build up the scalar value (this would normally be pext) via simple
-                    // logical and arithmetic operations, and use only pdep for the expensive step of exploding the scalar across
-                    // all four output bytes.
+                value += 0x0000_0040u; // = [ 110111yyyyxxxxxx 11011uuuuuzzzzyy ]
 
-                    uint unmaskedScalar = (value << 10) + (value >> 16) + (0x40u << 10) /* uuuuu = wwww + 1 */ - 0xDC00u /* remove low surrogate marker */;
+                uint tempA = BinaryPrimitives.ReverseEndianness(value & 0x003F_0700u); // = [ 00000000 00000uuu 00xxxxxx 00000000 ]
+                tempA = BitOperations.RotateLeft(tempA, 16); // = [ 00xxxxxx 00000000 00000000 00000uuu ]
 
-                    // Now, unmaskedScalar = [ xxxxxx11 011uuuuu zzzzyyyy yyxxxxxx ]. There's a bit of unneeded junk at the beginning
-                    // that should normally be masked out via an and, but we'll just direct pdep to ignore it.
+                uint tempB = (value & 0x00FCu) << 6; // = [ 00000000 00000000 00uuzzzz 00000000 ]
+                uint tempC = (value >> 6) & 0x000F_0000u; // = [ 00000000 0000yyyy 00000000 00000000 ]
+                tempC |= tempB;
 
-                    uint exploded = Bmi2.ParallelBitDeposit(unmaskedScalar, 0b00000111_00111111_00111111_00111111u); // = [ 00000uuu 00uuzzzz 00yyyyyy 00xxxxxx ]
-                    return BinaryPrimitives.ReverseEndianness(exploded + 0xF080_8080u); // = [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ]
-                }
-                else
-                {
-                    value += 0x0000_0040u; // = [ 110111yyyyxxxxxx 11011uuuuuzzzzyy ]
+                uint tempD = (value & 0x03u) << 20; // = [ 00000000 00yy0000 00000000 00000000 ]
+                tempD |= 0x8080_80F0u;
 
-                    uint tempA = BinaryPrimitives.ReverseEndianness(value & 0x003F_0700u); // = [ 00000000 00000uuu 00xxxxxx 00000000 ]
-                    tempA = BitOperations.RotateLeft(tempA, 16); // = [ 00xxxxxx 00000000 00000000 00000uuu ]
-
-                    uint tempB = (value & 0x00FCu) << 6; // = [ 00000000 00000000 00uuzzzz 00000000 ]
-                    uint tempC = (value >> 6) & 0x000F_0000u; // = [ 00000000 0000yyyy 00000000 00000000 ]
-                    tempC |= tempB;
-
-                    uint tempD = (value & 0x03u) << 20; // = [ 00000000 00yy0000 00000000 00000000 ]
-                    tempD |= 0x8080_80F0u;
-
-                    return tempD | tempA | tempC; // = [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ]
-                }
+                return tempD | tempA | tempC; // = [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ]
             }
             else
             {
@@ -754,43 +715,6 @@ namespace System.Text.Unicode
 
             return (BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0))
                 || (!BitConverter.IsLittleEndian && ((value & 0x8000u) == 0));
-        }
-
-        /// <summary>
-        /// Given a DWORD which represents a buffer of 4 ASCII bytes, widen each byte to a 16-bit WORD
-        /// and writes the resulting QWORD into the destination with machine endianness.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void Widen4AsciiBytesToCharsAndWrite(ref char outputBuffer, uint value)
-        {
-            if (Bmi2.X64.IsSupported)
-            {
-                // BMI2 will work regardless of the processor's endianness.
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), Bmi2.X64.ParallelBitDeposit(value, 0x00FF00FF_00FF00FFul));
-            }
-            else
-            {
-                if (BitConverter.IsLittleEndian)
-                {
-                    outputBuffer = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 1) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 2) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 3) = (char)value;
-                }
-                else
-                {
-                    Unsafe.Add(ref outputBuffer, 3) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 2) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 1) = (char)(byte)value;
-                    value >>= 8;
-                    outputBuffer = (char)value;
-                }
-            }
         }
 
         /// <summary>

@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
+    <Compile Include="..\..\Common\Internal\Runtime\ModuleHeaders.cs" Link="Common\ModuleHeaders.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
   </ItemGroup>
 </Project>

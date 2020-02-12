@@ -17,6 +17,64 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { get => IsSupported; }
 
+        // [Intrinsic]
+        // public new abstract class Arm32 : ArmBase.Arm32
+        // {
+        //     internal Arm32() { }
+        //
+        //     public static new bool IsSupported { get => IsSupported; }
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmla_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        //     ///   A32: VMLA.F32 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => MultiplyAdd(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        //     ///   A32: VMLA.F32 Qd, Qn, Qm
+        //     /// </summary>
+        //     public static Vector128<float> MultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) => MultiplyAdd(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float64x1_t vmla_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        //     ///   A32: VMLA.F64 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<double> MultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => MultiplyAddScalar(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float32_t vmlas_f32 (float32_t a, float32_t b, float32_t c)
+        //     ///   A32: VMLA.F32 Sd, Sn, Sm
+        //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        //     /// </summary>
+        //     public static Vector64<float> MultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => MultiplyAddScalar(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x2_t vmls_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        //     ///   A32: VMLS.F32 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => MultiplySubtract(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float32x4_t vmlsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        //     ///   A32: VMLS.F32 Qd, Qn, Qm
+        //     /// </summary>
+        //     public static Vector128<float> MultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) => MultiplySubtract(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float64x1_t vmls_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        //     ///   A32: VMLS.F64 Dd, Dn, Dm
+        //     /// </summary>
+        //     public static Vector64<double> MultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => MultiplySubtractScalar(acc, left, right);
+        //
+        //     /// <summary>
+        //     /// float32_t vmlss_f32 (float32_t a, float32_t b, float32_t c)
+        //     ///   A32: VMLS.F32 Sd, Sn, Sm
+        //     /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        //     /// </summary>
+        //     public static Vector64<float> MultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => MultiplySubtractScalar(acc, left, right);
+        // }
+
         [Intrinsic]
         public new abstract class Arm64 : ArmBase.Arm64
         {
@@ -543,6 +601,18 @@ namespace System.Runtime.Intrinsics.Arm
             ///   A64: FSQRT Vd.4S, Vn.4S
             /// </summary>
             public static Vector128<float> Sqrt(Vector128<float> value) => Sqrt(value);
+
+            /// <summary>
+            /// float64x2_t vfmaq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLA Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplyAdd(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplyAdd(acc, left, right);
+
+            /// <summary>
+            /// float64x2_t vfmsq_f64 (float64x2_t a, float64x2_t b, float64x2_t c)
+            ///   A64: FMLS Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> FusedMultiplySubtract(Vector128<double> acc, Vector128<double> left, Vector128<double> right) => FusedMultiplySubtract(acc, left, right);
 
             /// <summary>
             /// float64x2_t vsubq_f64 (float64x2_t a, float64x2_t b)
@@ -2587,6 +2657,96 @@ namespace System.Runtime.Intrinsics.Arm
         public static Vector64<float> DivideScalar(Vector64<float> left, Vector64<float> right) => DivideScalar(left, right);
 
         /// <summary>
+        /// float32x2_t vfma_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        ///   A32: VFMA.F32 Dd, Dn, Dm
+        ///   A64: FMLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAdd(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// float32x4_t vfmaq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   A32: VFMA.F32 Qd, Qn, Qm
+        ///   A64: FMLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplyAdd(Vector128<float> acc, Vector128<float> left, Vector128<float> right) => FusedMultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// float64x1_t vfma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMA.F64 Dd, Dn, Dm
+        ///   A64: FMADD Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => FusedMultiplyAddScalar(acc, left, right);
+
+        /// <summary>
+        /// float32_t vfmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMA.F32 Sd, Sn, Sm
+        ///   A64: FMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplyAddScalar(acc, left, right);
+
+        /// <summary>
+        /// float64x1_t vfnma_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMA.F64 Dd, Dn, Dm
+        ///   A64: FNMADD Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplyAddNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => FusedMultiplyAddNegatedScalar(acc, left, right);
+
+        /// <summary>
+        /// float32_t vfnmas_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMA.F32 Sd, Sn, Sm
+        ///   A64: FNMADD Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplyAddNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplyAddNegatedScalar(acc, left, right);
+
+        /// <summary>
+        /// float32x2_t vfms_f32 (float32x2_t a, float32x2_t b, float32x2_t c)
+        ///   A32: VFMS.F32 Dd, Dn, Dm
+        ///   A64: FMLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtract(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// float32x4_t vfmsq_f32 (float32x4_t a, float32x4_t b, float32x4_t c)
+        ///   A32: VFMS.F32 Qd, Qn, Qm
+        ///   A64: FMLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> FusedMultiplySubtract(Vector128<float> acc, Vector128<float> left, Vector128<float> right) => FusedMultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// float64x1_t vfms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFMS.F64 Dd, Dn, Dm
+        ///   A64: FMSUB Dd, Dn, Dm, Da
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => FusedMultiplySubtractScalar(acc, left, right);
+
+        /// <summary>
+        /// float32_t vfmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFMS.F32 Sd, Sn, Sm
+        ///   A64: FMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplySubtractScalar(acc, left, right);
+
+        /// <summary>
+        /// float64x1_t vfnms_f64 (float64x1_t a, float64x1_t b, float64x1_t c)
+        ///   A32: VFNMS.F64 Dd, Dn, Dm
+        ///   A64: FNMSUB Dd, Dn, Dm, Da
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<double> FusedMultiplySubtractNegatedScalar(Vector64<double> acc, Vector64<double> left, Vector64<double> right) => FusedMultiplySubtractNegatedScalar(acc, left, right);
+
+        /// <summary>
+        /// float32_t vfnmss_f32 (float32_t a, float32_t b, float32_t c)
+        ///   A32: VFNMS.F32 Sd, Sn, Sm
+        ///   A64: FNMSUB Sd, Sn, Sm, Sa
+        /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
+        /// </summary>
+        public static Vector64<float> FusedMultiplySubtractNegatedScalar(Vector64<float> acc, Vector64<float> left, Vector64<float> right) => FusedMultiplySubtractNegatedScalar(acc, left, right);
+
+        /// <summary>
         /// int16x4_t vcls_s16 (int16x4_t a)
         ///   A32: VCLS.S16 Dd, Dm
         ///   A64: CLS Vd.4H, Vn.4H
@@ -3160,6 +3320,174 @@ namespace System.Runtime.Intrinsics.Arm
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector64<float> MultiplyScalar(Vector64<float> left, Vector64<float> right) => MultiplyScalar(left, right);
+
+        /// <summary>
+        /// uint8x8_t vmla_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplyAdd(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int16x4_t vmla_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplyAdd(Vector64<short> acc, Vector64<short> left, Vector64<short> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int32x2_t vmla_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplyAdd(Vector64<int> acc, Vector64<int> left, Vector64<int> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int8x8_t vmla_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLA.I8 Dd, Dn, Dm
+        ///   A64: MLA Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplyAdd(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint16x4_t vmla_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLA.I16 Dd, Dn, Dm
+        ///   A64: MLA Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplyAdd(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint32x2_t vmla_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLA.I32 Dd, Dn, Dm
+        ///   A64: MLA Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplyAdd(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint8x16_t vmlaq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplyAdd(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int16x8_t vmlaq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplyAdd(Vector128<short> acc, Vector128<short> left, Vector128<short> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int32x4_t vmlaq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplyAdd(Vector128<int> acc, Vector128<int> left, Vector128<int> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// int8x16_t vmlaq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLA.I8 Qd, Qn, Qm
+        ///   A64: MLA Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplyAdd(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint16x8_t vmlaq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLA.I16 Qd, Qn, Qm
+        ///   A64: MLA Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplyAdd(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint32x4_t vmlaq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLA.I32 Qd, Qn, Qm
+        ///   A64: MLA Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplyAdd(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) => MultiplyAdd(acc, left, right);
+
+        /// <summary>
+        /// uint8x8_t vmls_u8 (uint8x8_t a, uint8x8_t b, uint8x8_t c)
+        ///   A32: VMLS.I8 Dd, Dn, Dm
+        ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MultiplySubtract(Vector64<byte> acc, Vector64<byte> left, Vector64<byte> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int16x4_t vmls_s16 (int16x4_t a, int16x4_t b, int16x4_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MultiplySubtract(Vector64<short> acc, Vector64<short> left, Vector64<short> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int32x2_t vmls_s32 (int32x2_t a, int32x2_t b, int32x2_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MultiplySubtract(Vector64<int> acc, Vector64<int> left, Vector64<int> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int8x8_t vmls_s8 (int8x8_t a, int8x8_t b, int8x8_t c)
+        ///   A32: VMLS.I8 Dd, Dn, Dm
+        ///   A64: MLS Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MultiplySubtract(Vector64<sbyte> acc, Vector64<sbyte> left, Vector64<sbyte> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// uint16x4_t vmls_u16 (uint16x4_t a, uint16x4_t b, uint16x4_t c)
+        ///   A32: VMLS.I16 Dd, Dn, Dm
+        ///   A64: MLS Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MultiplySubtract(Vector64<ushort> acc, Vector64<ushort> left, Vector64<ushort> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// uint32x2_t vmls_u32 (uint32x2_t a, uint32x2_t b, uint32x2_t c)
+        ///   A32: VMLS.I32 Dd, Dn, Dm
+        ///   A64: MLS Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MultiplySubtract(Vector64<uint> acc, Vector64<uint> left, Vector64<uint> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// uint8x16_t vmlsq_u8 (uint8x16_t a, uint8x16_t b, uint8x16_t c)
+        ///   A32: VMLS.I8 Qd, Qn, Qm
+        ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<byte> MultiplySubtract(Vector128<byte> acc, Vector128<byte> left, Vector128<byte> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int16x8_t vmlsq_s16 (int16x8_t a, int16x8_t b, int16x8_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Qm
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<short> MultiplySubtract(Vector128<short> acc, Vector128<short> left, Vector128<short> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int32x4_t vmlsq_s32 (int32x4_t a, int32x4_t b, int32x4_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Qm
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<int> MultiplySubtract(Vector128<int> acc, Vector128<int> left, Vector128<int> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// int8x16_t vmlsq_s8 (int8x16_t a, int8x16_t b, int8x16_t c)
+        ///   A32: VMLS.I8 Qd, Qn, Qm
+        ///   A64: MLS Vd.16B, Vn.16B, Vm.16B
+        /// </summary>
+        public static Vector128<sbyte> MultiplySubtract(Vector128<sbyte> acc, Vector128<sbyte> left, Vector128<sbyte> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// uint16x8_t vmlsq_u16 (uint16x8_t a, uint16x8_t b, uint16x8_t c)
+        ///   A32: VMLS.I16 Qd, Qn, Qm
+        ///   A64: MLS Vd.8H, Vn.8H, Vm.8H
+        /// </summary>
+        public static Vector128<ushort> MultiplySubtract(Vector128<ushort> acc, Vector128<ushort> left, Vector128<ushort> right) => MultiplySubtract(acc, left, right);
+
+        /// <summary>
+        /// uint32x4_t vmlsq_u32 (uint32x4_t a, uint32x4_t b, uint32x4_t c)
+        ///   A32: VMLS.I32 Qd, Qn, Qm
+        ///   A64: MLS Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<uint> MultiplySubtract(Vector128<uint> acc, Vector128<uint> left, Vector128<uint> right) => MultiplySubtract(acc, left, right);
 
         /// <summary>
         /// int16x4_t vneg_s16 (int16x4_t a)
