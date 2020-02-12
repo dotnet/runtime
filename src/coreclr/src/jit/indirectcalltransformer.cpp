@@ -103,19 +103,20 @@ private:
 
         for (Statement* stmt : block->Statements())
         {
-            if (ContainsFatCalli(stmt))
+            if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
                 FatPointerCallTransformer transformer(compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-            else if (ContainsGuardedDevirtualizationCandidate(stmt))
+            else if (compiler->doesMethodHaveGuardedDevirtualization() &&
+                     ContainsGuardedDevirtualizationCandidate(stmt))
             {
                 GuardedDevirtualizationTransformer transformer(compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-            else if (ContainsExpRuntimeLookup(stmt))
+            else if (compiler->doesMethodHaveExpRuntimeLookup() && ContainsExpRuntimeLookup(stmt))
             {
                 ExpRuntimeLookupTransformer transformer(compiler, block, stmt);
                 transformer.Run();
