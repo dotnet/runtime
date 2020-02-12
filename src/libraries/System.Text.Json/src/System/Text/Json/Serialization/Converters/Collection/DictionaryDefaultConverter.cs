@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
     /// <summary>
     /// Default base class implementation of <cref>JsonDictionaryConverter{TCollection}</cref> .
     /// </summary>
-    internal abstract class JsonDictionaryDefaultConverter<TCollection, TValue>
+    internal abstract class DictionaryDefaultConverter<TCollection, TValue>
         : JsonDictionaryConverter<TCollection>
     {
         /// <summary>

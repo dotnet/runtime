@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization
 {
-    internal static class ExtensionMethods
+    internal static class IEnumerableConverterFactoryHelpers
     {
         private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
         private const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";

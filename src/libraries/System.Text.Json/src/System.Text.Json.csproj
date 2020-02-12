@@ -43,21 +43,6 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
-    <Compile Include="System\Text\Json\Node\DuplicatePropertyNameHandlingStrategy.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
-    <Compile Include="System\Text\Json\Node\JsonArrayEnumerator.cs" />
-    <Compile Include="System\Text\Json\Node\JsonBoolean.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.RecursionStackFrame.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.Traversal.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNode.TraversalHelpers.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNull.cs" />
-    <Compile Include="System\Text\Json\Node\JsonNumber.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObjectEnumerator.cs" />
-    <Compile Include="System\Text\Json\Node\JsonObjectProperty.cs" />
-    <Compile Include="System\Text\Json\Node\JsonString.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -80,6 +65,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IDictionaryOfStringTValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableConverterFactoryHelpers.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableOfTConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\IEnumerableWithAddMethodConverter.cs" />
@@ -123,7 +109,6 @@
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UInt64Converter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\UriConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\DefaultReferenceResolver.cs" />
-    <Compile Include="System\Text\Json\Serialization\ExtensionMethods.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
@@ -213,6 +198,23 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Text\Json\Node\DuplicatePropertyNameHandlingStrategy.cs" />
+    <Compile Include="System\Text\Json\Node\JsonArray.cs" />
+    <Compile Include="System\Text\Json\Node\JsonArrayEnumerator.cs" />
+    <Compile Include="System\Text\Json\Node\JsonBoolean.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.RecursionStackFrame.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.Traversal.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNode.TraversalHelpers.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNodeOptions.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNull.cs" />
+    <Compile Include="System\Text\Json\Node\JsonNumber.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObject.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObjectEnumerator.cs" />
+    <Compile Include="System\Text\Json\Node\JsonObjectProperty.cs" />
+    <Compile Include="System\Text\Json\Node\JsonString.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />

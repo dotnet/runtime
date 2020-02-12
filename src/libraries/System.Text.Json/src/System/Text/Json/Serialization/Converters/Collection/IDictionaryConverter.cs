@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization.Converters
     /// representing the dictionary element key and value.
     /// </summary>
     internal sealed class IDictionaryConverter<TCollection>
-        : JsonDictionaryDefaultConverter<TCollection, object?>
+        : DictionaryDefaultConverter<TCollection, object?>
         where TCollection : IDictionary
     {
         protected override void Add(object? value, JsonSerializerOptions options, ref ReadStack state)
