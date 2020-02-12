@@ -12,15 +12,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class NewArrayFixupSignature : Signature
     {
         private readonly ArrayType _arrayType;
-        private readonly SignatureContext _signatureContext;
 
-        public NewArrayFixupSignature(ArrayType arrayType, SignatureContext signatureContext)
+        public NewArrayFixupSignature(ArrayType arrayType)
         {
             _arrayType = arrayType;
-            _signatureContext = signatureContext;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            signatureContext.Resolver.CompilerContext.EnsureLoadableType(arrayType);
+            ((CompilerTypeSystemContext)arrayType.Context).EnsureLoadableType(arrayType);
         }
 
         public override int ClassCode => 815543321;
@@ -33,8 +31,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = _signatureContext.GetTargetModule(_arrayType);
-                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewArray, targetModule, _signatureContext);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_arrayType);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewArray, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_arrayType, innerContext);
             }
 
@@ -51,11 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             NewArrayFixupSignature otherNode = (NewArrayFixupSignature)other;
-            int result = comparer.Compare(_arrayType, otherNode._arrayType);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return comparer.Compare(_arrayType, otherNode._arrayType);
         }
     }
 }

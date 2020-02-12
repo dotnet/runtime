@@ -12,7 +12,9 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
         READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data
         READYTORUN_FLAG_Partial = 0x00000004,
-        READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008      // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+        READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+        READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
+        READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
     }
 
     /// <summary>

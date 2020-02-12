@@ -372,13 +372,18 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_BITCAST:
-        {
             assert(dstCount == 1);
-            tgtPrefUse = BuildUse(tree->gtGetOp1());
+            if (!tree->gtGetOp1()->isContained())
+            {
+                BuildUse(tree->gtGetOp1());
+                srcCount = 1;
+            }
+            else
+            {
+                srcCount = 0;
+            }
             BuildDef(tree);
-            srcCount = 1;
-        }
-        break;
+            break;
 
         case GT_NEG:
             // TODO-XArch-CQ:
@@ -2746,12 +2751,9 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
-    // If this is the rhs of a block copy (i.e. non-enregisterable struct),
-    // it has no register requirements.
-    if (indirTree->TypeGet() == TYP_STRUCT)
-    {
-        return 0;
-    }
+    // struct typed indirs are expected only on rhs of a block copy,
+    // but in this case they must be contained.
+    assert(indirTree->TypeGet() != TYP_STRUCT);
 
 #ifdef FEATURE_SIMD
     RefPosition* internalFloatDef = nullptr;

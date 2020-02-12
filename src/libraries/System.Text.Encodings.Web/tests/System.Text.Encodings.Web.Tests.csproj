@@ -14,7 +14,6 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
@@ -56,6 +55,9 @@
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

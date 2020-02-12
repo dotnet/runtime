@@ -4,7 +4,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' and '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <TargetFrameworks>netstandard2.0-Windows_NT;netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);WINHTTPHANDLER_DLL</DefineConstants>
   </PropertyGroup>

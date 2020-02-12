@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
-using System.Text;
+
+using ILCompiler.Reflection.ReadyToRun;
+using Internal.Runtime;
 
 namespace R2RDump
 {
@@ -112,7 +113,7 @@ namespace R2RDump
 
         public static void WriteTo(this ReadyToRunSection theThis, TextWriter writer, DumpOptions options)
         {
-            writer.WriteLine($"Type:  {Enum.GetName(typeof(ReadyToRunSection.SectionType), theThis.Type)} ({theThis.Type:D})");
+            writer.WriteLine($"Type:  {Enum.GetName(typeof(ReadyToRunSectionType), theThis.Type)} ({theThis.Type:D})");
             if (!options.Naked)
             {
                 writer.WriteLine($"RelativeVirtualAddress: 0x{theThis.RelativeVirtualAddress:X8}");

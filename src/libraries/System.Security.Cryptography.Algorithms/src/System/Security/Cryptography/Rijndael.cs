@@ -15,9 +15,9 @@ namespace System.Security.Cryptography
             return new RijndaelImplementation();
         }
 
-        public static new Rijndael Create(string algName)
+        public static new Rijndael? Create(string algName)
         {
-            return (Rijndael)CryptoConfig.CreateFromName(algName);
+            return (Rijndael?)CryptoConfig.CreateFromName(algName);
         }
 
         protected Rijndael()

@@ -163,7 +163,7 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (ProcessInfo[] compilation in folder.Compilations)
                 {
-                    string file = null;
+                    HashSet<string> failedFiles = new HashSet<string>();
                     string failedBuilders = null;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
@@ -184,17 +184,9 @@ namespace ReadyToRun.SuperIlc
                         else // runner process failed
                         {
                             _compilationFailureBuckets.AddCompilation(runnerProcess);
-                            try
+                            failedFiles.UnionWith(runnerProcess.Parameters.InputFileNames);
+                            if (failedBuilders == null)
                             {
-                                File.Copy(runnerProcess.Parameters.InputFileName, runnerProcess.Parameters.OutputFileName);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.Error.WriteLine("Error copying {0} to {1}: {2}", runnerProcess.Parameters.InputFileName, runnerProcess.Parameters.OutputFileName, ex.Message);
-                            }
-                            if (file == null)
-                            {
-                                file = runnerProcess.Parameters.InputFileName;
                                 failedBuilders = runner.CompilerName;
                             }
                             else
@@ -203,9 +195,12 @@ namespace ReadyToRun.SuperIlc
                             }
                         }
                     }
-                    if (file != null)
+                    if (failedFiles.Count > 0)
                     {
-                        failedCompilationsPerBuilder.Add(new KeyValuePair<string, string>(file, failedBuilders));
+                        foreach (string file in failedFiles)
+                        {
+                            failedCompilationsPerBuilder.Add(new KeyValuePair<string, string>(file, failedBuilders));
+                        }
                         success = false;
                     }
                     else
@@ -235,7 +230,7 @@ namespace ReadyToRun.SuperIlc
                         causeOfFailure = "Unknown cause of failure";
                     }
 
-                    Console.Error.WriteLine("Error running R2R dump on {0}: {1}", r2rDumpExecution.Parameters.InputFileName, causeOfFailure);
+                    Console.Error.WriteLine("Error running R2R dump on {0}: {1}", string.Join(", ", r2rDumpExecution.Parameters.InputFileNames), causeOfFailure);
                     success = false;
                 }
             }
@@ -271,23 +266,57 @@ namespace ReadyToRun.SuperIlc
             List<ProcessInfo> compilationsToRun = new List<ProcessInfo>();
             List<KeyValuePair<string, ProcessInfo[]>> compilationsPerRunner = new List<KeyValuePair<string, ProcessInfo[]>>();
             List<string> excludedAssemblies = new List<string>();
-            foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
-            {
-                string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
-                FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
 
+            if (_options.Composite)
+            {
                 ProcessInfo[] processes = new ProcessInfo[(int)CompilerIndex.Count];
-                compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
-                    if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                    List<string> inputFrameworkDlls = new List<string>();
+                    foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
                     {
-                        _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
-                        continue;
+                        string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
+                        FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
+                        if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                        {
+                            _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
+                        }
+                        else
+                        {
+                            inputFrameworkDlls.Add(frameworkDll);
+                            compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
+                        }
                     }
-                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, frameworkDll));
-                    compilationsToRun.Add(compilationProcess);
-                    processes[(int)runner.Index] = compilationProcess;
+
+                    if (inputFrameworkDlls.Count > 0)
+                    {
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework");
+                        ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
+                        compilationsToRun.Add(compilationProcess);
+                        processes[(int)runner.Index] = compilationProcess;
+                    }
+                }
+            }
+            else
+            {
+                foreach (string frameworkDll in ComputeManagedAssemblies.GetManagedAssembliesInFolder(_options.CoreRootDirectory.FullName))
+                {
+                    string simpleName = Path.GetFileNameWithoutExtension(frameworkDll);
+                    FrameworkExclusion exclusion = s_frameworkExclusions.FirstOrDefault(asm => asm.SimpleName.Equals(simpleName, StringComparison.OrdinalIgnoreCase));
+
+                    ProcessInfo[] processes = new ProcessInfo[(int)CompilerIndex.Count];
+                    compilationsPerRunner.Add(new KeyValuePair<string, ProcessInfo[]>(frameworkDll, processes));
+                    foreach (CompilerRunner runner in frameworkRunners)
+                    {
+                        if (exclusion != null && (!exclusion.Crossgen2Only || runner.Index == CompilerIndex.CPAOT))
+                        {
+                            _frameworkExclusions[exclusion.SimpleName] = exclusion.Reason;
+                            continue;
+                        }
+                        ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _options.CoreRootDirectory.FullName, new string[] { frameworkDll }));
+                        compilationsToRun.Add(compilationProcess);
+                        processes[(int)runner.Index] = compilationProcess;
+                    }
                 }
             }
 
@@ -313,7 +342,7 @@ namespace ReadyToRun.SuperIlc
                     }
                     else if (compilationProcess.Succeeded)
                     {
-                        skipCopying[(int)runner.Index].Add(compilationProcess.Parameters.InputFileName);
+                        skipCopying[(int)runner.Index].UnionWith(compilationProcess.Parameters.InputFileNames);
                         AnalyzeCompilationLog(compilationProcess, runner.Index);
                     }
                     else
@@ -450,7 +479,7 @@ namespace ReadyToRun.SuperIlc
             {
                 foreach (ProcessInfo[] execution in folder.Executions)
                 {
-                    string file = null;
+                    HashSet<string> failedFiles = new HashSet<string>();
                     string failedBuilders = null;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
@@ -459,9 +488,9 @@ namespace ReadyToRun.SuperIlc
                         {
                             _executionFailureBuckets.AddExecution(runnerProcess);
 
-                            if (file == null)
+                            failedFiles.UnionWith(runnerProcess.Parameters.InputFileNames);
+                            if (failedBuilders == null)
                             {
-                                file = runnerProcess.Parameters.InputFileName;
                                 failedBuilders = runner.CompilerName;
                             }
                             else
@@ -470,7 +499,7 @@ namespace ReadyToRun.SuperIlc
                             }
                         }
                     }
-                    if (file != null)
+                    if (failedFiles.Count > 0)
                     {
                         success = false;
                     }
@@ -572,7 +601,7 @@ namespace ReadyToRun.SuperIlc
 
             foreach (ProcessInfo processInfo in selection)
             {
-                logWriter.WriteLine($"{processInfo.DurationMilliseconds,10} | {processInfo.Parameters.InputFileName}");
+                logWriter.WriteLine($"{processInfo.DurationMilliseconds,10} | {processInfo.Parameters.OutputFileName}");
             }
         }
 
@@ -1205,7 +1234,7 @@ namespace ReadyToRun.SuperIlc
                                 ProcessInfo compilationProcess = compilation[(int)runner.Index];
                                 if (compilationProcess != null && !compilationProcess.IsEmpty)
                                 {
-                                    string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.InputFileName}";
+                                    string log = $"\nCOMPILE {runner.CompilerName}:{compilationProcess.Parameters.OutputFileName}";
                                     StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
                                     runnerLog.WriteLine(log);
                                     combinedLog.WriteLine(log);
@@ -1242,7 +1271,7 @@ namespace ReadyToRun.SuperIlc
                                 ProcessInfo executionProcess = execution[(int)runner.Index];
                                 if (executionProcess != null)
                                 {
-                                    string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.InputFileName}";
+                                    string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.OutputFileName}";
                                     combinedLog.WriteLine(header);
                                     runnerLog.WriteLine(header);
                                     try
@@ -1500,7 +1529,7 @@ namespace ReadyToRun.SuperIlc
                             GetExecutionOutcome(executionPerRunner) == outcome &&
                             executionPerRunner.Parameters != null)
                         {
-                            filteredTestList.Add(executionPerRunner.Parameters.InputFileName);
+                            filteredTestList.Add(executionPerRunner.Parameters.OutputFileName);
                         }
                     }
                 }

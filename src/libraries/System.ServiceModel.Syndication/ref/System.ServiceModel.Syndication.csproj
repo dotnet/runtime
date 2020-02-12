@@ -2,8 +2,8 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <TargetFrameworks>net461;netcoreapp2.1;netstandard2.0;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
-    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ServiceModel.Syndication.cs" />

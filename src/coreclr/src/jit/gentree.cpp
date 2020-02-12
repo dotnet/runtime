@@ -14849,7 +14849,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
 
 #ifdef DEBUG
-    /* Make sure the actual types match               */
+    // Make sure the actual types match.
     if (genActualType(valTyp) != genActualType(dstTyp))
     {
         // Plus some other exceptions that are apparently legal:
@@ -14867,6 +14867,12 @@ GenTree* Compiler::gtNewTempAssign(
         // 3) TYP_BYREF = TYP_REF when object stack allocation is enabled
         else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
+            ok = true;
+        }
+        else if (!varTypeIsGC(dstTyp) && (genTypeSize(valTyp) == genTypeSize(dstTyp)))
+        {
+            // We can have assignments that require a change of register file, e.g. for arguments
+            // and call returns. Lowering and Codegen will handle these.
             ok = true;
         }
 
@@ -14898,7 +14904,7 @@ GenTree* Compiler::gtNewTempAssign(
     // internal trees use SIMD types that are not used by the input IL. In this case, we allow
     // a null type handle and derive the necessary information about the type from its varType.
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
-    if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
+    if (varTypeIsStruct(varDsc) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
         // The struct value may be be a child of a GT_COMMA.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
@@ -14917,6 +14923,11 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else
     {
+        // We may have a scalar type variable assigned a struct value, e.g. a 'genReturnLocal'
+        // when the ABI calls for returning a struct as a primitive type.
+        // TODO-1stClassStructs: When we stop "lying" about the types for ABI purposes, the
+        // 'genReturnLocal' should be the original struct type.
+        assert(!varTypeIsStruct(valTyp) || typGetObjLayout(structHnd)->GetSize() == genTypeSize(varDsc));
         asg = gtNewAssignNode(dest, val);
     }
 
@@ -16858,6 +16869,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_OBJ:
                 structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
                 break;
+            case GT_BLK:
+                structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
+                break;
             case GT_CALL:
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
@@ -16932,6 +16946,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                                     assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
                                 }
                             }
+                        }
+                        else if (addr->OperGet() == GT_LCL_VAR)
+                        {
+                            structHnd = gtGetStructHandleIfPresent(addr);
                         }
                     }
                 }

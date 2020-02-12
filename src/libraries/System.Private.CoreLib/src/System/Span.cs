@@ -50,7 +50,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             _pointer = new ByReference<T>(ref MemoryMarshal.GetArrayDataReference(array));
@@ -79,7 +79,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 #if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
