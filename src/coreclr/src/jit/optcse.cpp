@@ -498,8 +498,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 /* Start the list with the first CSE candidate recorded */
 
-                hashDsc->csdTreeList = newElem;
-                hashDsc->csdTreeLast = newElem;
+                hashDsc->csdTreeList  = newElem;
+                hashDsc->csdTreeLast  = newElem;
+                hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -515,6 +516,20 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
+
+            CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
+            if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+            {
+                // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                // The current node does hanve the struct handle info, so record it now
+                //
+                hashDsc->csdStructHnd = newElemStructHnd;
+            }
+            else
+            {
+                // Otherwise we should have a matching struct handle
+                assert(hashDsc->csdStructHnd == newElemStructHnd);
+            }
 
             optDoCSE = true; // Found a duplicate CSE tree
 
@@ -2558,9 +2573,10 @@ public:
         var_types cseLclVarTyp = genActualType(successfulCandidate->Expr()->TypeGet());
         if (varTypeIsStruct(cseLclVarTyp))
         {
-            // After call args have been morphed, we don't need a handle for SIMD types.
-            // They are only required where the size is not implicit in the type and/or there are GC refs.
-            CORINFO_CLASS_HANDLE structHnd = m_pCompiler->gtGetStructHandleIfPresent(successfulCandidate->Expr());
+            // Retrieve the struct handle that we recorded while bulding the list of CSE candidates.
+            // If all occurances were in GT_IND nodes it could still be NO_CLASS_HANDLE
+            //
+            CORINFO_CLASS_HANDLE structHnd = successfulCandidate->CseDsc()->csdStructHnd;
             assert((structHnd != NO_CLASS_HANDLE) || (cseLclVarTyp != TYP_STRUCT));
             if (structHnd != NO_CLASS_HANDLE)
             {
