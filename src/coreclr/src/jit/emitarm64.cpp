@@ -5414,7 +5414,9 @@ void emitter::emitIns_R_R_R(
         case INS_fsub:
         case INS_fdiv:
         case INS_fmax:
+        case INS_fmaxnm:
         case INS_fmin:
+        case INS_fminnm:
         case INS_fabd:
         case INS_fmul:
         case INS_fmulx:
@@ -12808,7 +12810,9 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             switch (ins)
             {
                 case INS_fmin:
+                case INS_fminnm:
                 case INS_fmax:
+                case INS_fmaxnm:
                 case INS_fabd:
                 case INS_fadd:
                 case INS_fsub:
@@ -12890,13 +12894,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
-        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fmax, fabd, fcmXX (scalar)
+        case IF_DV_3D: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX (scalar)
             switch (ins)
             {
                 case INS_fadd:
                 case INS_fsub:
                 case INS_fmin:
+                case INS_fminnm:
                 case INS_fmax:
+                case INS_fmaxnm:
                 case INS_fmul:
                 case INS_fmulx:
                 case INS_fnmul:
