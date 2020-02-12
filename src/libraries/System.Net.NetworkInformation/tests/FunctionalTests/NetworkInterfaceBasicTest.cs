@@ -53,6 +53,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
+        [ActiveIssue(18090)]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Linux()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
