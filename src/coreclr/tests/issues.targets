@@ -601,6 +601,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Tailcall/TailcallVerifyWithPrefix/*">
             <Issue>Requires helper-based tailcalls</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_d/*">
+            <Issue>31729</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Stress/ABI/tailcalls_do/*">
+            <Issue>31729</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/sharedgenerics/sharedgenerics_r/*">
             <Issue>9565</Issue>
         </ExcludeList>

@@ -4,8 +4,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>net461-Windows_NT;netcoreapp2.0-Windows_NT;netstandard2.0;$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
-    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

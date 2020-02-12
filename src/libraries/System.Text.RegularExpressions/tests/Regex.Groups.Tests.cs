@@ -716,6 +716,9 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { null, @"(?:abcd|efg[hij]*)k", "efgjk", RegexOptions.None, new string[] { "efgjk" } };
             yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cbbabeb", RegexOptions.None, new string[] { "cbbabeb" } };
             yield return new object[] { null, @"[ace]?b[ace]?b[ace]?b[ace]?b", "cBbAbEb", RegexOptions.IgnoreCase, new string[] { "cBbAbEb" } };
+            yield return new object[] { null, @"a[^wz]*w", "abcdcdcdwz", RegexOptions.None, new string[] { "abcdcdcdw" } };
+            yield return new object[] { null, @"a[^wyz]*w", "abcdcdcdwz", RegexOptions.None, new string[] { "abcdcdcdw" } };
+            yield return new object[] { null, @"a[^wyz]*W", "abcdcdcdWz", RegexOptions.IgnoreCase, new string[] { "abcdcdcdW" } };
             // Implicitly upgrading (or not) concat loops to be atomic
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "", RegexOptions.None, new string[] { "" } };
             yield return new object[] { null, @"(?:[ab]c[de]f)*", "acdf", RegexOptions.None, new string[] { "acdf" } };

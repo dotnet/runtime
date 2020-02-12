@@ -383,7 +383,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="offset">Signature offset within the PE file byte array</param>
         public SignatureDecoder(IAssemblyResolver options, ReadyToRunReader r2rReader, int offset)
         {
-            _metadataReader = r2rReader.MetadataReader;
+            _metadataReader = r2rReader.GetGlobalMetadataReader();
             _options = options;
             _image = r2rReader.Image;
             _offset = offset;

@@ -117,10 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="net_quic_connectionaborted" xml:space="preserve">
+    <value>Connection aborted by peer ({0}).</value>
+  </data>
   <data name="net_quic_notsupported" xml:space="preserve">
     <value>QUIC is not supported on this platform. See http://aka.ms/dotnetquic</value>
   </data>
-  <data name="net_quic_placeholdertext" xml:space="preserve">
-    <value>Placeholder text</value>
+  <data name="net_quic_operationaborted" xml:space="preserve">
+    <value>Operation aborted.</value>
+  </data>
+  <data name="net_quic_streamaborted" xml:space="preserve">
+    <value>Stream aborted by peer ({0}).</value>
   </data>
 </root>

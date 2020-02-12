@@ -223,7 +223,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
         const char * pCompilerIdentifier = COMPILER_NAME " " FX_FILEVERSION_STR " " QUOTE_MACRO(__BUILDMACHINE__);
         ZapBlob * pCompilerIdentifierBlob = new (GetHeap()) ZapBlobPtr((PVOID)pCompilerIdentifier, strlen(pCompilerIdentifier) + 1);
 
-        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_COMPILER_IDENTIFIER, pCompilerIdentifierBlob);
+        GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::CompilerIdentifier, pCompilerIdentifierBlob);
         m_pHeaderSection->Place(pCompilerIdentifierBlob);
     }
 
@@ -283,7 +283,7 @@ void ZapImage::InitializeSectionsForReadyToRun()
     // Make sure the import sections table is in the image, so we can find the slot for module
     //
     _ASSERTE(m_pImportSectionsTable->GetSize() != 0);
-    GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_IMPORT_SECTIONS, m_pImportSectionsTable);
+    GetReadyToRunHeader()->RegisterSection(ReadyToRunSectionType::ImportSections, m_pImportSectionsTable);
 }
 #endif // FEATURE_READYTORUN_COMPILER
 

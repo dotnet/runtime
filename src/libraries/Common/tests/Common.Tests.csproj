@@ -54,44 +54,44 @@
     <Compile Include="$(CommonPath)System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\IHttpHeadersHandler.cs">
-      <Link>Common\System\Net\Http\Http2\IHttpHeadersHandler.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\IHttpHeadersHandler.cs">
+      <Link>Common\System\Net\Http\aspnetcore\IHttpHeadersHandler.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\DynamicTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\DynamicTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\DynamicTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HeaderField.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HeaderField.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HeaderField.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackDecodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackDecodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HPackEncodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HPackEncodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HPackEncodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\Huffman.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\Huffman.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\Huffman.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\HuffmanDecodingException.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\HuffmanDecodingException.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerDecoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\IntegerDecoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\IntegerEncoder.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\IntegerEncoder.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\H2StaticTable.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\H2StaticTable.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\Http2\Hpack\StatusCodes.cs">
-      <Link>Common\System\Net\Http\Http2\Hpack\StatusCodes.cs</Link>
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs">
+      <Link>Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
@@ -124,10 +124,10 @@
     <Compile Include="Tests\System\Collections\Generic\LargeArrayBuilderTests.cs" />
     <Compile Include="Tests\System\IO\RowConfigReaderTests.cs" />
     <Compile Include="Tests\System\Net\HttpKnownHeaderNamesTests.cs" />
-    <Compile Include="Tests\System\Net\Http2\DynamicTableTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HPackDecoderTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HPackIntegerTest.cs" />
-    <Compile Include="Tests\System\Net\Http2\HuffmanDecodingTests.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\DynamicTableTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackDecoderTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackIntegerTest.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs" />
     <Compile Include="System\Net\Sockets\Fletcher32.cs">
       <Link>System\Net\Sockets\Fletcher32.cs</Link>
     </Compile>

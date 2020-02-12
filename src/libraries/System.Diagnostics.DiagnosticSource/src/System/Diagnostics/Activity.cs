@@ -131,7 +131,7 @@ namespace System.Diagnostics
                 {
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
-                    ActivityTraceId.ByteToHexDigits(flagsChars, (byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags));
+                    HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
                     string id = "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
 
                     Interlocked.CompareExchange(ref _id, id, null);
@@ -1018,7 +1018,7 @@ namespace System.Diagnostics
             if (idData.Length != 16)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            return new ActivityTraceId(SpanToHexString(idData));
+            return new ActivityTraceId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
         public static ActivityTraceId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivityTraceId(idData);
 
@@ -1097,7 +1097,7 @@ namespace System.Diagnostics
                 span[1] = BinaryPrimitives.ReverseEndianness(span[1]);
             }
 
-            _hexString = ActivityTraceId.SpanToHexString(MemoryMarshal.AsBytes(span));
+            _hexString = HexConverter.ToString(MemoryMarshal.AsBytes(span), HexConverter.Casing.Lower);
         }
 
         /// <summary>
@@ -1118,26 +1118,6 @@ namespace System.Diagnostics
             Guid guid = Guid.NewGuid();
             ReadOnlySpan<byte> guidBytes = new ReadOnlySpan<byte>(&guid, sizeof(Guid));
             guidBytes.Slice(0, outBytes.Length).CopyTo(outBytes);
-        }
-
-        // CONVERSION binary spans to hex spans, and hex spans to binary spans
-        /* It would be nice to use generic Hex number conversion routines, but there
-         * is nothing that is exposed publicly and efficient */
-        /// <summary>
-        /// Converts each byte in 'bytes' to hex (thus two characters) and concatenates them
-        /// and returns the resulting string.
-        /// </summary>
-        internal static string SpanToHexString(ReadOnlySpan<byte> bytes)
-        {
-            Debug.Assert(bytes.Length <= 16);   // We want it to not be very big
-            Span<char> result = stackalloc char[bytes.Length * 2];
-            int pos = 0;
-            foreach (byte b in bytes)
-            {
-                result[pos++] = BinaryToHexDigit(b >> 4);
-                result[pos++] = BinaryToHexDigit(b);
-            }
-            return result.ToString();
         }
 
         /// <summary>
@@ -1161,20 +1141,6 @@ namespace System.Diagnostics
             if ('a' <= c && c <= 'f')
                 return (byte)(c - ('a' - 10));
             throw new ArgumentOutOfRangeException("idData");
-        }
-        private static char BinaryToHexDigit(int val)
-        {
-            val &= 0xF;
-            if (val <= 9)
-                return (char)('0' + val);
-            return (char)(('a' - 10) + val);
-        }
-
-        internal static void ByteToHexDigits(Span<char> outChars, byte val)
-        {
-            Debug.Assert(outChars.Length == 2);
-            outChars[0] = BinaryToHexDigit((val >> 4) & 0xF);
-            outChars[1] = BinaryToHexDigit(val & 0xF);
         }
 
         internal static bool IsLowerCaseHexAndNotAllZeros(ReadOnlySpan<char> idData)
@@ -1232,14 +1198,14 @@ namespace System.Diagnostics
         {
             ulong id;
             ActivityTraceId.SetToRandomBytes(new Span<byte>(&id, sizeof(ulong)));
-            return new ActivitySpanId(ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(&id, sizeof(ulong))));
+            return new ActivitySpanId(HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower));
         }
         public static ActivitySpanId CreateFromBytes(ReadOnlySpan<byte> idData)
         {
             if (idData.Length != 8)
                 throw new ArgumentOutOfRangeException(nameof(idData));
 
-            return new ActivitySpanId(ActivityTraceId.SpanToHexString(idData));
+            return new ActivitySpanId(HexConverter.ToString(idData, HexConverter.Casing.Lower));
         }
         public static ActivitySpanId CreateFromUtf8String(ReadOnlySpan<byte> idData) => new ActivitySpanId(idData);
 
@@ -1307,7 +1273,7 @@ namespace System.Diagnostics
                 id = BinaryPrimitives.ReverseEndianness(id);
             }
 
-            _hexString = ActivityTraceId.SpanToHexString(new ReadOnlySpan<byte>(&id, sizeof(ulong)));
+            _hexString = HexConverter.ToString(new ReadOnlySpan<byte>(&id, sizeof(ulong)), HexConverter.Casing.Lower);
         }
 
         /// <summary>

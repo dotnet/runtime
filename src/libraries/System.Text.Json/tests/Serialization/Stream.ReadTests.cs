@@ -230,5 +230,84 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(2, value[index].GetProperty("Id").GetInt32());
             }
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(32000)]
+        public static async Task ReadPrimitiveWithWhitespace(int bufferSize)
+        {
+            byte[] data = Encoding.UTF8.GetBytes("42" + new string(' ', 16 * 1024));
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.DefaultBufferSize = bufferSize;
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                int i = await JsonSerializer.DeserializeAsync<int>(stream, options);
+                Assert.Equal(42, i);
+                Assert.Equal(16386, stream.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(32000)]
+        public static async Task ReadObjectWithWhitespace(int bufferSize)
+        {
+            byte[] data = Encoding.UTF8.GetBytes("{}" + new string(' ', 16 * 1024));
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.DefaultBufferSize = bufferSize;
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                SimpleTestClass obj = await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options);
+                Assert.Equal(16386, stream.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(32000)]
+        public static async Task ReadPrimitiveWithWhitespaceAndThenInvalid(int bufferSize)
+        {
+            byte[] data = Encoding.UTF8.GetBytes("42" + new string(' ', 16 * 1024) + "!");
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.DefaultBufferSize = bufferSize;
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<int>(stream, options));
+                Assert.Equal(16387, stream.Position);
+
+                // We should get an exception like: '!' is invalid after a single JSON value.
+                Assert.Contains("!", ex.ToString());
+            }
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(16)]
+        [InlineData(32000)]
+        public static async Task ReadObjectWithWhitespaceAndThenInvalid(int bufferSize)
+        {
+            byte[] data = Encoding.UTF8.GetBytes("{}" + new string(' ', 16 * 1024) + "!");
+
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.DefaultBufferSize = bufferSize;
+
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await JsonSerializer.DeserializeAsync<SimpleTestClass>(stream, options));
+                Assert.Equal(16387, stream.Position);
+
+                // We should get an exception like: '!' is invalid after a single JSON value.
+                Assert.Contains("!", ex.ToString());
+            }
+        }
     }
 }

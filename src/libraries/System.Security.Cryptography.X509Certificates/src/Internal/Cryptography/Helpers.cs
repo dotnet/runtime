@@ -27,14 +27,14 @@ namespace Internal.Cryptography
             int i = 0;
             foreach (byte b in bytes)
             {
-                chars[i++] = NibbleToHex((byte)(b >> 4));
-                chars[i++] = NibbleToHex((byte)(b & 0xF));
+                HexConverter.ToCharsBuffer(b, chars, i, HexConverter.Casing.Upper);
+                i += 2;
             }
         }
 
         // Encode a byte array as an upper case hex string.
         public static string ToHexStringUpper(this byte[] bytes) =>
-            string.Create(bytes.Length * 2, bytes, (chars, src) => ToHexArrayUpper(src, chars));
+            HexConverter.ToString(bytes.AsSpan(), HexConverter.Casing.Upper);
 
         // Decode a hex string-encoded byte array passed to various X509 crypto api.
         // The parsing rules are overly forgiving but for compat reasons, they cannot be tightened.
@@ -105,14 +105,6 @@ namespace Internal.Cryptography
                 return (byte)((val - 'A') + 10);
             else
                 return 0xFF;
-        }
-
-        private static char NibbleToHex(byte b)
-        {
-            Debug.Assert(b >= 0 && b <= 15);
-            return (char)(b >= 0 && b <= 9 ?
-                '0' + b :
-                'A' + (b - 10));
         }
 
         public static bool ContentsEqual(this byte[] a1, byte[] a2)
