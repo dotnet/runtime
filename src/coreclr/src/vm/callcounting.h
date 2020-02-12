@@ -95,6 +95,9 @@ private:
             // Stub may be active, call counting complete, not yet promoted
             PendingCompletion,
 
+            // Stub is not active and will not become active, call counting complete, promoted, stub may be deleted
+            Complete,
+
             // Call counting is disabled, only used for the default code version to indicate that it is to be optimized
             Disabled
         };
@@ -272,7 +275,6 @@ public:
     static PCODE OnCallCountThresholdReached(TransitionBlock *transitionBlock, TADDR stubIdentifyingToken);
     static COUNT_T GetCountOfCodeVersionsPendingCompletion();
     static void CompleteCallCounting();
-    void RemoveForwarderStub(MethodDesc *methodDesc);
 
 public:
     static void StopAndDeleteAllCallCountingStubs();
