@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
@@ -56,9 +57,9 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value of the CLR reference type object to get or add an id for.</param>
         /// <param name="referenceId">The id realated to the object.</param>
         /// <returns></returns>
-        public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
+        public bool TryGetOrAddReferenceOnSerialize(object value, [NotNullWhen(true)] out string? referenceId)
         {
-            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
+            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId))
             {
                 _referenceCount++;
                 referenceId = _referenceCount.ToString();
