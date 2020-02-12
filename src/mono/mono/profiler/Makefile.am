@@ -54,9 +54,9 @@ endif
 # shared libraries, so we want errors if the profiler modules contain any.
 if HOST_DARWIN
 if BITCODE
-prof_ldflags = -no-undefined
+prof_ldflags += -no-undefined
 else
-prof_ldflags = -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
+prof_ldflags += -Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 endif
 endif
 
@@ -65,7 +65,7 @@ endif
 # profiler modules contain versioned sonames, things will fail to resolve
 # at runtime.
 if HOST_ANDROID
-prof_ldflags = -avoid-version
+prof_ldflags += -avoid-version
 endif
 
 # Linking to libmono on desktop can cause problems when loading a profiler
