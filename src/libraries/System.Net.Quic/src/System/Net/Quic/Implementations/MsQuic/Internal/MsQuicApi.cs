@@ -141,13 +141,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
             //   error code mapping when creating exceptions.
 
-            OperatingSystem ver = Environment.OSVersion;
+            // OperatingSystem ver = Environment.OSVersion;
 
-            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
-            {
-                IsQuicSupported = false;
-                return;
-            }
+            // if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
+            // {
+            //     IsQuicSupported = false;
+            //     return;
+            // }
 
             // TODO: try to initialize TLS 1.3 in SslStream.
 
