@@ -137,8 +137,9 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                client.Timeout = TimeSpan.FromSeconds(60);
+                client.Timeout = Timeout.InfiniteTimeSpan;
                 var cts = new CancellationTokenSource();
+                const int timeout = 600000;
 
                 await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
@@ -154,10 +155,10 @@ namespace System.Net.Http.Functional.Tests
                             headers.Add(new HttpHeaderData("Connection", "close"));
                         }
 
-                        await connection.ReadRequestDataAsync();
-                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, content: "123", isFinal: false);
+                        await connection.ReadRequestDataAsync().TimeoutAfter(timeout);
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: headers, content: "123", isFinal: false).TimeoutAfter(timeout);
                         responseHeadersSent.TrySetResult(true);
-                        await clientFinished.Task;
+                        await clientFinished.Task.TimeoutAfter(timeout);
                     });
 
                     await ValidateClientCancellationAsync(async () =>
@@ -165,19 +166,19 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
-                        await responseHeadersSent.Task;
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token).TimeoutAfter(timeout);
+                        await responseHeadersSent.Task.TimeoutAfter(timeout);
                         await Task.Delay(1); // make it more likely that client will have started processing response body
                         Cancel(mode, client, cts);
                         await getResponse;
-                    });
+                    }).TimeoutAfter(timeout);
 
                     try
                     {
                         clientFinished.SetResult(true);
-                        await serverTask;
+                        await serverTask.TimeoutAfter(timeout);
                     } catch { }
-                }, 120_000);
+                }, 180_000);
             }
         }
 
