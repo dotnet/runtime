@@ -69,15 +69,8 @@ namespace System
         {
             for (int i = 0; i < sArray.Length; i++)
             {
-                int digit = (sArray[i] & 0xf0) >> 4;
-                stringBuilder.Append(HexDigit(digit));
-
-                digit = sArray[i] & 0x0f;
-                stringBuilder.Append(HexDigit(digit));
+                HexConverter.ToCharsBuffer(sArray[i], stringBuilder.AppendSpan(2), 0, HexConverter.Casing.Upper);
             }
-
-            static char HexDigit(int num) =>
-                (char)((num < 10) ? (num + '0') : (num + ('A' - 10)));
         }
 
         public override bool Equals(object? o)

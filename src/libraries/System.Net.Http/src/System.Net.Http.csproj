@@ -119,6 +119,9 @@
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs">
       <Link>Common\System\Text\SimpleRegex.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
        <Link>Common\System\Net\ArrayBuffer.cs</Link>
      </Compile>
