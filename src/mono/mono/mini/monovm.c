@@ -21,10 +21,13 @@ typedef struct {
 typedef struct {
 	int dir_count;
 	char **dirs;
-} MonoCoreNativeLibPaths;
+} MonoCoreLookupPaths;
 
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
-static MonoCoreNativeLibPaths *native_lib_paths;
+static MonoCoreLookupPaths *native_lib_paths;
+static MonoCoreLookupPaths *app_paths;
+static MonoCoreLookupPaths *app_ni_paths;
+static MonoCoreLookupPaths *platform_resource_roots;
 
 static void
 mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a)
@@ -37,7 +40,7 @@ mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a
 }
 
 static void
-mono_core_native_lib_paths_free (MonoCoreNativeLibPaths *dl)
+mono_core_lookup_paths_free (MonoCoreLookupPaths *dl)
 {
 	if (!dl)
 		return;
@@ -74,10 +77,10 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	return TRUE;
 }
 
-static gboolean
-parse_native_dll_search_directories (const char *native_dlls_dirs)
+static MonoCoreLookupPaths *
+parse_lookup_paths (const char *search_path)
 {
-	char **parts = g_strsplit (native_dlls_dirs, G_SEARCHPATH_SEPARATOR_S, 0);
+	char **parts = g_strsplit (search_path, G_SEARCHPATH_SEPARATOR_S, 0);
 	int dir_count = 0;
 	for (char **p = parts; *p != NULL && **p != '\0'; p++) {
 #if 0
@@ -87,12 +90,10 @@ parse_native_dll_search_directories (const char *native_dlls_dirs)
 #endif
 		dir_count++;
 	}
-	MonoCoreNativeLibPaths *dl = g_new0 (MonoCoreNativeLibPaths, 1);
+	MonoCoreLookupPaths *dl = g_new0 (MonoCoreLookupPaths, 1);
 	dl->dirs = parts;
 	dl->dir_count = dir_count;
-
-	native_lib_paths = dl;
-	return TRUE;
+	return dl;
 }
 
 static MonoAssembly*
@@ -157,19 +158,23 @@ install_assembly_loader_hooks (void)
 static gboolean
 parse_properties (int propertyCount, const char **propertyKeys, const char **propertyValues)
 {
-	// The a partial list of relevant properties is
+	// A partial list of relevant properties is at:
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
-	// TODO: We should also pick up at least APP_PATHS and APP_NI_PATHS
-	// and PLATFORM_RESOURCE_ROOTS for satellite assemblies in culture-specific subdirectories
 
 	for (int i = 0; i < propertyCount; ++i) {
-		if (!strcmp (propertyKeys[i], "TRUSTED_PLATFORM_ASSEMBLIES")) {
+		if (!strcmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES")) {
 			parse_trusted_platform_assemblies (propertyValues[i]);
-		} else if (!strcmp (propertyKeys[i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
-			parse_native_dll_search_directories (propertyValues[i]);
-		} else if (!strcmp (propertyKeys[i], "System.Globalization.Invariant")) {
+		} else if (!strcmp (propertyKeys [i], "APP_PATHS")) {
+			app_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (!strcmp (propertyKeys [i], "APP_NI_PATHS")) {
+			app_ni_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (!strcmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS")) {
+			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
+		} else if (!strcmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
+			native_lib_paths = parse_lookup_paths (propertyValues [i]);
+		} else if (!strcmp (propertyKeys [i], "System.Globalization.Invariant")) {
 			// TODO: Ideally we should propagate this through AppContext options
-			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues[i], TRUE);
+			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
