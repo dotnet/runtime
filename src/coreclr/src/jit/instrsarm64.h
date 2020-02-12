@@ -639,8 +639,24 @@ INST2(cmtst,   "cmtst",  0, 0, IF_EN2O,   0x5EE08C00,  0x0E208C00)
 
 //    enum     name     FP LD/ST            DV_2G        DV_3B
 INST2(faddp,   "faddp",  0, 0, IF_EN2P,   0x7E30D800,  0x2E20D400)
-                                   //  faddp   Vd,Vn                DV_2G  011111100X110000 110110nnnnnddddd   7E30 D800   Vd,Vn      (scalar)
+                                   //  faddp   Vd,Vn                DV_2Q  011111100X110000 110110nnnnnddddd   7E30 D800   Vd,Vn      (scalar)
                                    //  faddp   Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 110101nnnnnddddd   2E20 D400   Vd,Vn,Vm   (vector)
+
+INST2(fmaxnmp, "fmaxnmp",0, 0, IF_EN2P,   0x7E30C800,  0x2E20C400)
+                                   //  fmaxnmp Vd,Vn                DV_2Q  011111100X110000 110010nnnnnddddd   7E30 C800   Vd,Vn      (scalar)
+                                   //  fmaxnmp Vd,Vn,Vm             DV_3B  0Q1011100X1mmmmm 110001nnnnnddddd   2E20 C400   Vd,Vn,Vm   (vector)
+
+INST2(fmaxp,   "fmaxp",  0, 0, IF_EN2P,   0x7E30F800,  0x2E20F400)
+                                   //  fmaxp Vd,Vn                  DV_2Q  011111100X110000 111110nnnnnddddd   7E30 F800   Vd,Vn      (scalar)
+                                   //  fmaxp Vd,Vn,Vm               DV_3B  0Q1011100X1mmmmm 111101nnnnnddddd   2E20 F400   Vd,Vn,Vm   (vector)
+
+INST2(fminnmp, "fminnmp",0, 0, IF_EN2P,   0x7EB0C800,  0x2EA0C400)
+                                   //  fminnmp Vd,Vn                DV_2Q  011111101X110000 110010nnnnnddddd   7EB0 C800   Vd,Vn      (scalar)
+                                   //  fminnmp Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 110001nnnnnddddd   2EA0 C400   Vd,Vn,Vm   (vector)
+
+INST2(fminp,   "fminp",  0, 0, IF_EN2P,   0x7EB0F800,  0x2EA0F400)
+                                   //  fminp Vd,Vn                  DV_2Q  011111101X110000 111110nnnnnddddd   7EB0 F800   Vd,Vn      (scalar)
+                                   //  fminp Vd,Vn,Vm               DV_3B  0Q1011101X1mmmmm 111101nnnnnddddd   2EA0 F400   Vd,Vn,Vm   (vector)
 
 INST1(ldar,    "ldar",   0,LD, IF_LS_2A,  0x88DFFC00)
                                    //  ldar    Rt,[Xn]              LS_2A  1X00100011011111 111111nnnnnttttt   88DF FC00
