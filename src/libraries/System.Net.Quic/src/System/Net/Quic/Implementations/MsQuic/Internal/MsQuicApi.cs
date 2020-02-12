@@ -242,8 +242,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 {
                     fileParams = new MsQuicNativeMethods.CertFileParams
                     {
-                        CertificateFilePath = Marshal.StringToHGlobalAnsi(certFilePath),
-                        PrivateKeyFilePath = Marshal.StringToHGlobalAnsi(privateKeyFilePath)
+                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath),
+                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath)
                     };
 
                     unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
@@ -316,7 +316,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     Marshal.FreeHGlobal(unmanagedAddr);
                 }
             }
-            
+
             return secConfig;
         }
 
