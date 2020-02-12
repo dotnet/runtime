@@ -5217,13 +5217,6 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
 {
     _ASSERTE(IsSafeToHandleHardwareException(ex->GetContextRecord(), ex->GetExceptionRecord()));
 
-    if (ex->GetExceptionRecord()->ExceptionCode == EXCEPTION_STACK_OVERFLOW)
-    {
-        GetThread()->SetExecutingOnAltStack();
-        EEPolicy::HandleFatalStackOverflow(&ex->ExceptionPointers, FALSE);
-        UNREACHABLE();
-    }
-
     if (ex->GetExceptionRecord()->ExceptionCode != STATUS_BREAKPOINT && ex->GetExceptionRecord()->ExceptionCode != STATUS_SINGLE_STEP)
     {
         // A hardware exception is handled only if it happened in a jitted code or
@@ -5284,7 +5277,6 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
             fef.InitAndLink(ex->GetContextRecord());
         }
 
-        SaveCurrentExceptionInfo(ex->GetExceptionRecord(), ex->GetContextRecord());
         DispatchManagedException(*ex, true /* isHardwareException */);
         UNREACHABLE();
     }

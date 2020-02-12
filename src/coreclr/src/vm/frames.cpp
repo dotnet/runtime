@@ -402,8 +402,7 @@ VOID Frame::Push(Thread *pThread)
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in mscorwks.dll
-    _ASSERTE(pThread->IsExecutingOnAltStack() ||
-              ((m_Next == FRAME_TOP) ||
+    _ASSERTE(((m_Next == FRAME_TOP) ||
               (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 

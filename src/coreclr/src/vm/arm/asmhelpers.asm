@@ -2160,7 +2160,7 @@ $__RealName
 ;
 ; NOTE: this helper will probe at least one page below the one pointed to by sp.
 #define PAGE_SIZE_LOG2 12
-    LEAF_ENTRY JIT_StackProbe
+    NESTED_ENTRY JIT_StackProbe
     PROLOG_PUSH {r7}
     PROLOG_STACK_SAVE r7
 
@@ -2178,7 +2178,7 @@ ProbeLoop
     EPILOG_STACK_RESTORE r7
     EPILOG_POP {r7}
     EPILOG_BRANCH_REG lr
-    LEAF_END_MARKED JIT_StackProbe
+    NESTED_END
 
 ; Must be at very end of file
     END
