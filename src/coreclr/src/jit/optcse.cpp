@@ -533,23 +533,26 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             if (newElem->tslTree->OperGet() != GT_IND)
             {
                 CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
-                if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+                if (newElemStructHnd != NO_CLASS_HANDLE)
                 {
-                    // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                    // The current node does hanve the struct handle info, so record it now
-                    //
-                    hashDsc->csdStructHnd = newElemStructHnd;
-                }
-                else
-                {
-                    hashDsc->csdStructHndMismatch = true;
-#ifdef DEBUG
-                    if (verbose)
+                    if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
                     {
-                        printf("Abandoned - CSE candidate has mismatching struct handles!\n");
-                        printTreeID(newElem->tslTree);
+                        // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                        // The current node does hanve the struct handle info, so record it now
+                        //
+                        hashDsc->csdStructHnd = newElemStructHnd;
                     }
+                    else
+                    {
+                        hashDsc->csdStructHndMismatch = true;
+#ifdef DEBUG
+                        if (verbose)
+                        {
+                            printf("Abandoned - CSE candidate has mismatching struct handles!\n");
+                            printTreeID(newElem->tslTree);
+                        }
 #endif // DEBUG
+                    }
                 }
             }
 
@@ -3012,7 +3015,7 @@ public:
         for (; (cnt > 0); cnt--, ptr++)
         {
             Compiler::CSEdsc* dsc = *ptr;
-            CSE_Candidate candidate(this, dsc);
+            CSE_Candidate     candidate(this, dsc);
 
             if (dsc->defExcSetPromise == ValueNumStore::NoVN)
             {
