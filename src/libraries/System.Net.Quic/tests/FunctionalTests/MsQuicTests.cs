@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    [ConditionalClass(typeof(QuicConnection), true)]
     public class MsQuicTests : MsQuicTestBase
     {
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");

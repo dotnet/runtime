@@ -44,7 +44,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _sendHandle;
 
         // Used to check if StartAsync has been called.
-        private StartState _started;
+        private bool _started;
 
         private ReadState _readState;
         private long _readErrorCode = -1;
@@ -67,7 +67,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         // TODO consider using Interlocked.Exchange instead of a sync if we can avoid it.
         private object _sync = new object();
 
-        private ValueTask<uint> _startTask;
+
+        private TaskCompletionSource<object> _startTcs = new TaskCompletionSource<object>();
 
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
@@ -78,13 +79,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (inbound)
             {
-                _started = StartState.Finished;
+                _started = true;
                 _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _canRead = true;
             }
             else
             {
-                _started = StartState.None;
                 _canWrite = true;
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
             }
@@ -92,10 +92,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
             _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
             _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
-
             SetCallbackHandler();
 
-            _startTask = StartWritesAsync();
+            StartWritesAsync();
         }
 
         internal override bool CanRead => _canRead;
@@ -182,17 +181,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new InvalidOperationException("Writing is not allowed on stream.");
             }
 
-            bool shouldAwaitStart = false;
             lock (_sync)
             {
                 if (_sendState == SendState.Aborted)
                 {
                     throw new OperationCanceledException("Sending has already been aborted on the stream");
-                }
-
-                if (_started != StartState.Finished)
-                {
-                    shouldAwaitStart = true;
                 }
             }
 
@@ -215,10 +208,12 @@ namespace System.Net.Quic.Implementations.MsQuic
             });
 
             // Make sure start has completed
-            if (shouldAwaitStart)
+            if (!_started)
             {
-                await _startTask.ConfigureAwait(false);
+                await _startTcs.Task.ConfigureAwait(false);
+                _started = true;
             }
+            Console.WriteLine("Started!");
 
             return registration;
         }
@@ -514,6 +509,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private uint HandleEvent(ref StreamEvent evt)
         {
             uint status = MsQuicStatusCodes.Success;
+            Console.WriteLine("event");
 
             try
             {
@@ -640,22 +636,18 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            bool shouldComplete = false;
+            //bool shouldComplete = false;
             lock (_sync)
             {
-                _started = StartState.Finished;
-
                 // Check send state before completing as send cancellation is shared between start and send.
                 if (_sendState == SendState.None)
                 {
-                    shouldComplete = true;
+                    //shouldComplete = true;
                 }
+
             }
 
-            if (shouldComplete)
-            {
-                _sendResettableCompletionSource.Complete(MsQuicStatusCodes.Success);
-            }
+            _startTcs.TrySetResult(null);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
@@ -995,14 +987,13 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private ValueTask<uint> StartWritesAsync()
+        private void StartWritesAsync()
         {
             uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
-            return _sendResettableCompletionSource.GetValueTask();
         }
 
         private void ReceiveComplete(int bufferLength)
