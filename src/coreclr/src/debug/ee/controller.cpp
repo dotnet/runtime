@@ -8961,7 +8961,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
             CONTEXT contextToAdjust;
             BOOL adjustedContext = FALSE;
             memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
-            adjustedContext = g_pEEInterface->AdjustContextForJITHelpersForDebugger(&contextToAdjust);
+            adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);
             if (adjustedContext)
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));

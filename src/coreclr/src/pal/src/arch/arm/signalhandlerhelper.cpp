@@ -13,11 +13,10 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 /*++
 Function :
-    ExecuteHandlerOnCustomStack
+    signal_handler_worker
 
-    Execute signal handler on a custom stack, the current stack pointer is specified by the customSp
-    If the customSp is 0, then the handler is executed on the original stack where the signal was fired.
-    It installs a fake stack frame to enable stack unwinding to the signal source location.
+    Handles signal on the original stack where the signal occured.
+    Invoked via setcontext.
 
 Parameters :
     POSIX signal handler parameter list ("man sigaction" for details)
@@ -25,18 +24,12 @@ Parameters :
 
     (no return value)
 --*/
-void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, size_t customSp, SignalHandlerWorkerReturnPoint* returnPoint)
+void ExecuteHandlerOnOriginalStack(int code, siginfo_t *siginfo, void *context, SignalHandlerWorkerReturnPoint* returnPoint)
 {
     ucontext_t *ucontext = (ucontext_t *)context;
     size_t faultSp = (size_t)MCREG_Sp(ucontext->uc_mcontext);
 
     _ASSERTE(IS_ALIGNED(faultSp, 4));
-
-    if (customSp == 0)
-    {
-        // preserve 8 bytes long red zone and align stack pointer
-        customSp = ALIGN_DOWN(faultSp - 8, 8);
-    }
 
     size_t fakeFrameReturnAddress;
 
@@ -49,7 +42,8 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
         fakeFrameReturnAddress = (size_t)SignalHandlerWorkerReturnOffset4 + (size_t)CallSignalHandlerWrapper4;
     }
 
-    size_t* sp = (size_t*)customSp;
+    // preserve 8 bytes long red zone and align stack pointer
+    size_t* sp = (size_t*)ALIGN_DOWN(faultSp - 8, 8);
 
 #ifndef __linux__
     size_t cpsr = (size_t)MCREG_Cpsr(ucontext->uc_mcontext);

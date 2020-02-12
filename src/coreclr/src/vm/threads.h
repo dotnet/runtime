@@ -1035,8 +1035,6 @@ public:
         if(STSGuarantee_Force == fScope)
             return TRUE;
 
-        // For debug, always enable setting thread stack guarantee so that we can print the stack trace
-#ifndef DEBUG
         //The runtime must be hosted to have escalation policy
         //If escalation policy is enabled but StackOverflow is not part of the policy
         //   then we don't use SetThreadStackGuarantee
@@ -1046,7 +1044,6 @@ public:
             //FAIL_StackOverflow is ProcessExit so don't use SetThreadStackGuarantee
             return FALSE;
         }
-#endif // DEBUG
         return TRUE;
     }
 
@@ -1084,7 +1081,7 @@ public:
 
         TS_LegalToJoin            = 0x00000020,    // Is it now legal to attempt a Join()
 
-        TS_ExecutingOnAltStack    = 0x00000040,    // Runtime is executing on an alternate stack located anywhere in the memory
+        // unused                 = 0x00000040,
 
 #ifdef FEATURE_HIJACK
         TS_Hijacked               = 0x00000080,    // Return address has been hijacked
@@ -1418,18 +1415,6 @@ public:
         return HasThreadStateOpportunistic(TS_CatchAtSafePoint);
     }
 #endif // DACCESS_COMPILE
-
-    DWORD IsExecutingOnAltStack()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_State & TS_ExecutingOnAltStack);
-    }
-
-    void SetExecutingOnAltStack()
-    {
-        LIMITED_METHOD_CONTRACT;
-        FastInterlockOr((ULONG *) &m_State, TS_ExecutingOnAltStack);
-    }
 
     DWORD IsBackground()
     {
@@ -1856,7 +1841,7 @@ public:
         {
             void* curSP;
             curSP = (void *)GetCurrentSP();
-            _ASSERTE(IsExecutingOnAltStack() || (curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
+            _ASSERTE((curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
         }
 #endif
 
