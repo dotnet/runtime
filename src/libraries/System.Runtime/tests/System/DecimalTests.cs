@@ -140,6 +140,13 @@ namespace System.Tests
             Assert.Equal(expected, new decimal(value));
         }
 
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public void Ctor_IntSpan(int[] value, decimal expected)
+        {
+            Assert.Equal(expected, new decimal(value.AsSpan()));
+        }
+
         [Fact]
         public void Ctor_NullBits_ThrowsArgumentNullException()
         {
@@ -155,6 +162,7 @@ namespace System.Tests
         public void Ctor_InvalidBits_ThrowsArgumentException(int[] bits)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits));
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits.AsSpan()));
         }
 
         [Theory]
@@ -611,6 +619,23 @@ namespace System.Tests
             int[] bits = decimal.GetBits(input);
 
             Assert.Equal(expected, bits);
+
+            bool sign = (bits[3] & 0x80000000) != 0;
+            byte scale = (byte)((bits[3] >> 16) & 0x7F);
+            decimal newValue = new decimal(bits[0], bits[1], bits[2], sign, scale);
+
+            Assert.Equal(input, newValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void GetBitsSpan(decimal input, int[] expected)
+        {
+            Span<int> bits = new int[4];
+            int bitsWritten = decimal.GetBits(input, bits);
+
+            Assert.Equal(4, bitsWritten);
+            Assert.Equal(expected, bits.ToArray());
 
             bool sign = (bits[3] & 0x80000000) != 0;
             byte scale = (byte)((bits[3] >> 16) & 0x7F);
