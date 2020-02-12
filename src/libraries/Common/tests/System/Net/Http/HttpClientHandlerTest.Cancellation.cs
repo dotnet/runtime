@@ -137,7 +137,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (HttpClient client = CreateHttpClient())
             {
-                client.Timeout = Timeout.InfiniteTimeSpan;
+                client.Timeout = TimeSpan.FromSeconds(60);
                 var cts = new CancellationTokenSource();
 
                 await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
