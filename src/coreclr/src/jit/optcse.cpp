@@ -500,7 +500,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 hashDsc->csdTreeList  = newElem;
                 hashDsc->csdTreeLast  = newElem;
-                hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                hashDsc->csdStructHnd = NO_CLASS_HANDLE;
+
+                // When we have a GT_IND node we don't have a reliable struct handle
+                // and gtGetStructHandleIfPresent will return a guess that can be wrong
+                //
+                if (hashDsc->csdTree->OperGet() != GT_IND)
+                {
+                    hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                }
             }
 
             noway_assert(hashDsc->csdTreeList);
@@ -517,18 +525,24 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
 
-            CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
-            if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+            // When we have a GT_IND node we don't have a reliable struct handle
+            // and gtGetStructHandleIfPresent will return a guess that can be wrong
+            //
+            if (newElem->tslTree->OperGet() != GT_IND)
             {
-                // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                // The current node does hanve the struct handle info, so record it now
-                //
-                hashDsc->csdStructHnd = newElemStructHnd;
-            }
-            else
-            {
-                // Otherwise we should have a matching struct handle
-                assert(hashDsc->csdStructHnd == newElemStructHnd);
+                CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
+                if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+                {
+                    // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                    // The current node does hanve the struct handle info, so record it now
+                    //
+                    hashDsc->csdStructHnd = newElemStructHnd;
+                }
+                else
+                {
+                    // Otherwise we should have a matching struct handle
+                    assert(hashDsc->csdStructHnd == newElemStructHnd);
+                }
             }
 
             optDoCSE = true; // Found a duplicate CSE tree
