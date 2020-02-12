@@ -104,7 +104,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Globally registered instance of the ComWrappers class.
         /// </summary>
-        private static ComWrappers? s_GlobalInstance;
+        private static ComWrappers? s_globalInstance;
 
         /// <summary>
         /// Create an COM representation of the supplied object that can be passed to an non-managed environment.
@@ -139,7 +139,7 @@ namespace System.Runtime.InteropServices
 
         // Call to execute the abstract instance function
         internal static unsafe void* CallComputeVtables(ComWrappers? comWrappersImpl, object obj, CreateComInterfaceFlags flags, out int count)
-            => (comWrappersImpl ?? s_GlobalInstance!).ComputeVtables(obj, flags, out count);
+            => (comWrappersImpl ?? s_globalInstance!).ComputeVtables(obj, flags, out count);
 
         /// <summary>
         /// Get the currently registered managed object or creates a new managed object and registers it.
@@ -176,7 +176,7 @@ namespace System.Runtime.InteropServices
 
         // Call to execute the abstract instance function
         internal static object CallCreateObject(ComWrappers? comWrappersImpl, IntPtr externalComObject, IntPtr agileObjectRef, CreateObjectFlags flags)
-            => (comWrappersImpl ?? s_GlobalInstance!).CreateObject(externalComObject, agileObjectRef, flags);
+            => (comWrappersImpl ?? s_globalInstance!).CreateObject(externalComObject, agileObjectRef, flags);
 
         /// <summary>
         /// Called when a request is made for a collection of objects to be released.
@@ -192,7 +192,7 @@ namespace System.Runtime.InteropServices
 
         // Call to execute the virtual instance function
         internal static void CallReleaseObjects(ComWrappers? comWrappersImpl, IEnumerable objects)
-            => (comWrappersImpl ?? s_GlobalInstance!).ReleaseObjects(objects);
+            => (comWrappersImpl ?? s_globalInstance!).ReleaseObjects(objects);
 
         /// <summary>
         /// Register this class's implementation to be used when a Reference Tracker Host instance is requested from another runtime.
@@ -203,9 +203,9 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public void RegisterForReferenceTrackerHost()
         {
-            if (null != Interlocked.CompareExchange(ref s_GlobalInstance, this, null))
+            if (null != Interlocked.CompareExchange(ref s_globalInstance, this, null))
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException(SR.InvalidOperation_ResetReferenceTrackerHostCallbacks);
             }
         }
 
