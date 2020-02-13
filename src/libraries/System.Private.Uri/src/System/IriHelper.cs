@@ -111,14 +111,9 @@ namespace System
 
             int next = start;
             char ch;
-            bool escape = false;
-            bool surrogatePair = false;
 
             for (; next < end; ++next)
             {
-                escape = false;
-                surrogatePair = false;
-
                 if ((ch = pInput[next]) == '%')
                 {
                     if (next + 2 < end)
@@ -223,53 +218,61 @@ namespace System
                 {
                     // unicode
 
-                    char ch2;
+                    bool escape;
+                    bool surrogatePair = false;
+
+                    char ch2 = '\0';
 
                     if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
                     {
                         ch2 = pInput[next + 1];
                         escape = !CheckIriUnicodeRange(ch, ch2, ref surrogatePair, component == UriComponents.Query);
-                        if (!escape)
+                    }
+                    else
+                    {
+                        escape = !CheckIriUnicodeRange(ch, component == UriComponents.Query);
+                    }
+
+                    if (escape)
+                    {
+                        Span<byte> encodedBytes = stackalloc byte[4];
+
+                        Rune rune;
+                        if (surrogatePair)
                         {
-                            // copy the two chars
-                            dest.Append(pInput[next++]);
-                            dest.Append(pInput[next]);
+                            rune = new Rune(ch, ch2);
+                        }
+                        else if (!Rune.TryCreate(ch, out rune))
+                        {
+                            rune = Rune.ReplacementChar;
+                        }
+
+                        int bytesWritten = rune.EncodeToUtf8(encodedBytes);
+                        encodedBytes = encodedBytes.Slice(0, bytesWritten);
+
+                        foreach (byte b in encodedBytes)
+                        {
+                            UriHelper.EscapeAsciiChar((char)b, ref dest);
                         }
                     }
                     else
                     {
-                        if (CheckIriUnicodeRange(ch, component == UriComponents.Query))
+                        dest.Append(ch);
+                        if (surrogatePair)
                         {
-                            // copy it
-                            dest.Append(pInput[next]);
+                            dest.Append(ch2);
                         }
-                        else
-                        {
-                            // escape it
-                            escape = true;
-                        }
+                    }
+
+                    if (surrogatePair)
+                    {
+                        next++;
                     }
                 }
                 else
                 {
                     // just copy the character
                     dest.Append(pInput[next]);
-                }
-
-                if (escape)
-                {
-                    const int MaxNumberOfBytesEncoded = sizeof(int);
-
-                    int encodedBytesBuffer;
-                    byte* pEncodedBytes = (byte*)&encodedBytesBuffer;
-
-                    int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
-                    Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
-
-                    for (int count = 0; count < encodedBytesCount; ++count)
-                    {
-                        UriHelper.EscapeAsciiChar((char)*(pEncodedBytes + count), ref dest);
-                    }
                 }
             }
 
