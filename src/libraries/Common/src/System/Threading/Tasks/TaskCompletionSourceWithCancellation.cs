@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace System.Net.Http
+namespace System.Threading.Tasks
 {
+    /// <summary>
+    /// A <see cref="TaskCompletionSource{TResult}"/> that supports cancellation registration so that any
+    /// <seealso cref="OperationCanceledException"/>s contain the relevant <see cref="CancellationToken"/>,
+    /// while also avoiding unnecessary allocations for closure captures.
+    /// </summary>
     internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
         private CancellationToken _cancellationToken;
