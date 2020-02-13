@@ -587,7 +587,7 @@ namespace
         CONTRACT_END;
 
         HRESULT hr;
-        ExternalObjectContext* extObjCxt;
+        ExternalObjectContext* extObjCxt = NULL;
 
         struct
         {

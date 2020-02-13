@@ -286,6 +286,23 @@ namespace ComWrappersTests
             GC.Collect();
         }
 
+        static void ValidateCreateObjectCachingScenario()
+        {
+            Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
+
+            var cw = new MyComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            var trackerObj1 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            var trackerObj2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+            Assert.AreEqual(trackerObj1, trackerObj2);
+
+            var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.IgnoreCache);
+            Assert.AreNotEqual(trackerObj1, trackerObj3);
+        }
+
         static void ValidateIUnknownImpls()
             => MyComWrappers.ValidateIUnknownImpls();
 
@@ -316,6 +333,7 @@ namespace ComWrappersTests
             {
                 ValidateComInterfaceCreation();
                 ValidateRuntimeTrackerScenario();
+                ValidateCreateObjectCachingScenario();
                 ValidateIUnknownImpls();
                 ValidateRegisterForReferenceTrackerHost();
             }
