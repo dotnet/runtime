@@ -558,7 +558,7 @@ namespace ILCompiler.PEWriter
         public static PEHeaderBuilder Copy(PEHeaders peHeaders, TargetDetails target)
         {
             return Create(
-                relocsStripped: (peHeaders.CoffHeader.Characteristics & Characteristics.RelocsStripped) != 0,
+                peHeaders.CoffHeader.Characteristics,
                 peHeaders.PEHeader.DllCharacteristics,
                 peHeaders.PEHeader.Subsystem,
                 target);
@@ -571,19 +571,18 @@ namespace ILCompiler.PEWriter
         /// <param name="dllCharacteristics">Extra DLL characteristics to apply</param>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(bool relocsStripped, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Characteristics characteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
-            Characteristics imageCharacteristics = (relocsStripped ? Characteristics.RelocsStripped : (Characteristics)0) |
-                (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
+            characteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
 
             ulong imageBase = PE32HeaderConstants.ImageBase;
             if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
             {
                 // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
                 // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
-                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
+                imageBase = (characteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
             }
 
             int fileAlignment = 0x200;
@@ -632,7 +631,7 @@ namespace ILCompiler.PEWriter
                 minorSubsystemVersion: PEHeaderConstants.MinorSubsystemVersion,
                 subsystem: subsystem,
                 dllCharacteristics: dllCharacteristics,
-                imageCharacteristics: imageCharacteristics,
+                imageCharacteristics: characteristics,
                 sizeOfStackReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfStackReserve : PE32HeaderConstants.SizeOfStackReserve),
                 sizeOfStackCommit: (is64BitTarget ? PE64HeaderConstants.SizeOfStackCommit : PE32HeaderConstants.SizeOfStackCommit),
                 sizeOfHeapReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfHeapReserve : PE32HeaderConstants.SizeOfHeapReserve),

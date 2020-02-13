@@ -87,7 +87,11 @@ namespace ILCompiler.DependencyAnalysis
 
                 if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
-                    headerBuilder = PEHeaderProvider.Create(relocsStripped: false, dllCharacteristics: default(DllCharacteristics), Subsystem.Unknown, _nodeFactory.Target);
+                    headerBuilder = PEHeaderProvider.Create(
+                        characteristics: Characteristics.ExecutableImage | Characteristics.Dll,
+                        dllCharacteristics: default(DllCharacteristics),
+                        Subsystem.Unknown,
+                        _nodeFactory.Target);
                     timeDateStamp = 0;
                     r2rHeaderExportSymbol = _nodeFactory.Header;
                 }
