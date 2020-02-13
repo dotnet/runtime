@@ -335,6 +335,7 @@ namespace System
 
             public unsafe static int GetICUVersion()
             {
+#if NETCOREAPP
                 if (PlatformDetection.IsMonoRuntime)
                 {
                     return GlobalizationNative_GetICUVersion();
@@ -376,6 +377,9 @@ namespace System
 
                     throw new InvalidOperationException($"Could not call native function: {functionName} in library: {moduleName}");
                 }
+#else
+                return 0; // Full Framework, doesn't matter what we return.
+#endif // NETCOREAPP
             }
         }
     }
