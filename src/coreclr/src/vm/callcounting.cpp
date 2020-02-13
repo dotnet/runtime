@@ -1230,7 +1230,13 @@ bool CallCountingManager::IsCallCountingStub(PCODE entryPoint)
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+    PTR_CallCountingManagerHash callCountingManagers = s_callCountingManagers;
+    if (callCountingManagers == NULL)
+    {
+        return false;
+    }
+
+    for (auto itEnd = callCountingManagers->End(), it = callCountingManagers->Begin(); it != itEnd; ++it)
     {
         PTR_CallCountingManager callCountingManager = *it;
         if (callCountingManager->m_callCountingStubAllocator.IsStub(entryAddress))
@@ -1272,7 +1278,13 @@ void CallCountingManager::DacEnumerateCallCountingStubHeapRanges(CLRDataEnumMemo
 
     CodeVersionManager::LockHolder codeVersioningLockHolder;
 
-    for (auto itEnd = s_callCountingManagers->End(), it = s_callCountingManagers->Begin(); it != itEnd; ++it)
+    PTR_CallCountingManagerHash callCountingManagers = s_callCountingManagers;
+    if (callCountingManagers == NULL)
+    {
+        return;
+    }
+
+    for (auto itEnd = callCountingManagers->End(), it = callCountingManagers->Begin(); it != itEnd; ++it)
     {
         PTR_CallCountingManager callCountingManager = *it;
         callCountingManager->m_callCountingStubAllocator.EnumerateHeapRanges(flags);
