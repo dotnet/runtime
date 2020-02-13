@@ -17,6 +17,7 @@ namespace InteropLibImports
 namespace InteropLib
 {
     using OBJECTHANDLE = void*;
+    using OBJECTREF_PROTECTED = void*;
 
     // Clean up the interop library.
     void Shutdown() noexcept;
@@ -87,7 +88,9 @@ namespace InteropLib
             _Out_ void** fpRelease) noexcept;
 
         // Ensure the wrapper is active and take an AddRef.
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
+        HRESULT EnsureActiveWrapperAndAddRef(
+            _In_ IUnknown* wrapper,
+            _In_ OBJECTREF_PROTECTED objRef) noexcept;
 
         // Begin the reference tracking process on external COM objects.
         // This should only be called during a runtime's GC phase.

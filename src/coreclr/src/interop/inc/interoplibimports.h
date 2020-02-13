@@ -42,7 +42,15 @@ namespace InteropLibImports
     // Release objects associated with the current thread.
     HRESULT ReleaseExternalObjectsFromCurrentThread() noexcept;
 
-    // Delete Object instance handle
+    // Create Object instance handle from a protected OBJECTREF.
+    // N.B. A protected OBJECTREF provides a level of indirection that permits
+    // the passing of the OBJECTREF around, but passing around without
+    // creating a GC hole.
+    HRESULT CreateObjectInstanceHandle(
+        _In_ InteropLib::OBJECTREF_PROTECTED objRefProtected,
+        _Out_ InteropLib::OBJECTHANDLE *handle) noexcept;
+
+    // Delete Object instance handle.
     void DeleteObjectInstanceHandle(_In_ InteropLib::OBJECTHANDLE handle) noexcept;
 
     // Get the current global pegging state.

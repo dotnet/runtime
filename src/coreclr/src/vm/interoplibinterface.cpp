@@ -560,9 +560,10 @@ namespace
         {
             _ASSERTE(wrapper != NULL);
             // It is possible the supplied wrapper is no longer valid. If so, reactivate the
-            // wrapper with the object instance's new handle.
-            OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
-            hr = InteropLib::Com::EnsureActiveWrapperAndAddRef(static_cast<IUnknown *>(wrapper), instHandle);
+            // wrapper using the protected OBJECTREF.
+            hr = InteropLib::Com::EnsureActiveWrapperAndAddRef(
+                static_cast<IUnknown*>(wrapper),
+                static_cast<InteropLib::OBJECTREF_PROTECTED>(&gc.instRef));
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
         }
@@ -827,6 +828,32 @@ namespace InteropLibImports
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;
+
+        return hr;
+    }
+
+    HRESULT CreateObjectInstanceHandle(
+        _In_ InteropLib::OBJECTREF_PROTECTED objRefProtected,
+        _Out_ InteropLib::OBJECTHANDLE *handle) noexcept
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_COOPERATIVE;
+            PRECONDITION(objRefProtected != NULL);
+            PRECONDITION(handle != NULL);
+        }
+        CONTRACTL_END;
+
+        HRESULT hr = S_OK;
+        EX_TRY
+        {
+            OBJECTREF* objRef = static_cast<OBJECTREF*>(objRefProtected);
+            OBJECTHANDLE h = GetAppDomain()->CreateTypedHandle(*objRef, InstanceHandleType);
+            *handle = static_cast<InteropLib::OBJECTHANDLE>(h);
+        }
+        EX_CATCH_HRESULT(hr);
 
         return hr;
     }

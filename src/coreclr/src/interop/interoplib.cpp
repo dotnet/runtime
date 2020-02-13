@@ -9,6 +9,7 @@
 #include "comwrappers.h"
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
+using OBJECTREF_PROTECTED = InteropLib::OBJECTREF_PROTECTED;
 using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace InteropLib
@@ -119,20 +120,24 @@ namespace InteropLib
             ManagedObjectWrapper::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
         }
 
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTREF_PROTECTED objRef) noexcept
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
-            if (wrapper == nullptr || handle == nullptr)
+            if (wrapper == nullptr)
                 return E_INVALIDARG;
 
             ULONG count = wrapper->AddRef();
             if (count == 1)
             {
+                OBJECTHANDLE handle;
+                HRESULT hr = InteropLibImports::CreateObjectInstanceHandle(objRef, &handle);
+                if (FAILED(hr))
+                {
+                    (void)wrapper->Release();
+                    return hr;
+                }
+
                 ::InterlockedExchangePointer(&wrapper->Target, handle);
-            }
-            else
-            {
-                InteropLibImports::DeleteObjectInstanceHandle(handle);
             }
 
             return S_OK;
