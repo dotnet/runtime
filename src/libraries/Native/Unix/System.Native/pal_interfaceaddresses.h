@@ -38,7 +38,7 @@ typedef struct
 {
     char Name[16];              // OS Interface name.
     uint32_t InterfaceIndex;    // Interface index.
-    int32_t Speed;              // Link speed for physical interfaces.
+    int64_t Speed;              // Link speed for physical interfaces.
     int32_t Mtu;                // Interface MTU.
     uint16_t HardwareType;      // Interface mapped from L2 to NetworkInterfaceType.
     uint8_t OperationalState;   // Operational status.
