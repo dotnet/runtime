@@ -44,8 +44,6 @@ namespace System.Data.OleDb
         private int _changeID;
         private int _lastChangeID;
 
-        private static readonly bool s_runningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
-
         public OleDbCommand() : base()
         {
             GC.SuppressFinalize(this);
@@ -423,7 +421,7 @@ namespace System.Data.OleDb
 
             OleDbHResult hr;
 
-            if (s_runningOnX86)
+            if (ODB.IsRunningOnX86)
             {
                 tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
                 for (int i = 0; i < bindInfo.Length; i++)
