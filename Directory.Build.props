@@ -1,4 +1,4 @@
-<Project>
+<Project TreatAsLocalProperty="RepoRoot">
 
   <PropertyGroup>
     <!--
@@ -20,10 +20,11 @@
 
   <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
   <PropertyGroup Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'">
-    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <RepoRoot>$([MSBuild]::EnsureTrailingSlash('$(MSBuildThisFileDirectory)'))</RepoRoot>
     <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
     <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
+    <ArtifactsObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'obj'))</ArtifactsObjDir>
   </PropertyGroup>
 
   <!-- The TFMs to build and test against. -->
@@ -33,6 +34,8 @@
     <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetFrameworkCurrent>net472</NetFrameworkCurrent>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
 
   <!--
     Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle

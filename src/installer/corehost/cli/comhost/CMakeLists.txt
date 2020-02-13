@@ -16,17 +16,13 @@ set(SOURCES
     ../fxr_resolver.cpp
     clsidmap.cpp
     ../redirected_error_writer.cpp
-    ../fxr/fx_ver.cpp
-    ../json_parser.cpp
 )
 
 set(HEADERS
     comhost.h
-    ../fxr/fx_ver.h
-    ../json_parser.h
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()
@@ -35,11 +31,11 @@ include(../lib.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     set(WINLIBS wintrust.lib)
 
     # Specify non-default Windows libs to be used for Arm/Arm64 builds
-    if (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64)
+    if (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
         list(APPEND WINLIBS Advapi32.lib Ole32.lib OleAut32.lib)
     endif()
 
@@ -48,3 +44,4 @@ endif()
 
 install(TARGETS comhost DESTINATION corehost)
 install_symbols(comhost corehost)
+target_link_libraries(comhost libhostcommon)

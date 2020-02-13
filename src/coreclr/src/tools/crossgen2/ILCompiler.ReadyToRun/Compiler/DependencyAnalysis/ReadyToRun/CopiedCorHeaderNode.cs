@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -61,7 +61,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
-            ReadyToRunCodegenNodeFactory r2rFactory = ((ReadyToRunCodegenNodeFactory)factory);
 
             BlobReader reader = _module.PEReader.GetEntireImage().GetReader();
             reader.Offset = _module.PEReader.PEHeaders.CorHeaderStartOffset;
@@ -76,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Metadata Directory
             ReadDirectoryEntry(ref reader);
-            var metadataBlob = r2rFactory.CopiedMetadataBlob(_module);
+            var metadataBlob = factory.CopiedMetadataBlob(_module);
             builder.EmitReloc(metadataBlob, RelocType.IMAGE_REL_BASED_ADDR32NB);
             builder.EmitInt(metadataBlob.Size);
 
@@ -89,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Resources Directory
             if (ReadDirectoryEntry(ref reader).Size > 0)
             {
-                var managedResources = r2rFactory.CopiedManagedResources(_module);
+                var managedResources = factory.CopiedManagedResources(_module);
                 builder.EmitReloc(managedResources, RelocType.IMAGE_REL_BASED_ADDR32NB);
                 builder.EmitInt(managedResources.Size);
             }
@@ -101,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // Strong Name Signature Directory
             if (ReadDirectoryEntry(ref reader).Size > 0)
             {
-                var strongNameSignature = r2rFactory.CopiedStrongNameSignature(_module);
+                var strongNameSignature = factory.CopiedStrongNameSignature(_module);
                 builder.EmitReloc(strongNameSignature, RelocType.IMAGE_REL_BASED_ADDR32NB);
                 builder.EmitInt(strongNameSignature.Size);
             }
@@ -125,8 +124,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Managed Native (ReadyToRun) Header Directory
             ReadDirectoryEntry(ref reader);
-            builder.EmitReloc(r2rFactory.Header, RelocType.IMAGE_REL_BASED_ADDR32NB);
-            builder.EmitReloc(r2rFactory.Header, RelocType.IMAGE_REL_SYMBOL_SIZE);
+            builder.EmitReloc(factory.Header, RelocType.IMAGE_REL_BASED_ADDR32NB);
+            builder.EmitReloc(factory.Header, RelocType.IMAGE_REL_SYMBOL_SIZE);
 
             // Did we fully read the header?
             Debug.Assert(reader.Offset - headerSize == _module.PEReader.PEHeaders.CorHeaderStartOffset);

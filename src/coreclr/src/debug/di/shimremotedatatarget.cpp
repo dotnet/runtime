@@ -68,7 +68,7 @@ public:
 private:
     DbgTransportTarget  * m_pProxy;
     DbgTransportSession * m_pTransport;
-#ifndef __APPLE__
+#ifdef FEATURE_REMOTE_PROC_MEM
     int m_fd;                           // /proc/<pid>/mem handle
 #endif
 };
@@ -106,7 +106,7 @@ ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId,
     m_fpContinueStatusChanged = NULL;
     m_pContinueStatusChangedUserData = NULL;
 
-#ifndef __APPLE__
+#ifdef FEATURE_REMOTE_PROC_MEM
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_processId);
     m_fd = _open(memPath, 0); // O_RDONLY
@@ -135,7 +135,7 @@ ShimRemoteDataTarget::~ShimRemoteDataTarget()
 
 void ShimRemoteDataTarget::Dispose()
 {
-#ifndef __APPLE__
+#ifdef FEATURE_REMOTE_PROC_MEM
     if (m_fd != -1)
     {
         _close(m_fd);
@@ -227,26 +227,26 @@ HRESULT STDMETHODCALLTYPE
 ShimRemoteDataTarget::GetPlatform(
         CorDebugPlatform *pPlatform)
 {
-#ifdef FEATURE_PAL
-     #if defined(DBG_TARGET_X86)
+#ifdef TARGET_UNIX
+     #if defined(TARGET_X86)
          *pPlatform = CORDB_PLATFORM_POSIX_X86;
-     #elif defined(DBG_TARGET_AMD64)
+     #elif defined(TARGET_AMD64)
          *pPlatform = CORDB_PLATFORM_POSIX_AMD64;
-     #elif defined(DBG_TARGET_ARM)
+     #elif defined(TARGET_ARM)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM;
-     #elif defined(DBG_TARGET_ARM64)
+     #elif defined(TARGET_ARM64)
          *pPlatform = CORDB_PLATFORM_POSIX_ARM64;
      #else
          #error Unknown Processor.
      #endif
 #else
-    #if defined(DBG_TARGET_X86)
+    #if defined(TARGET_X86)
         *pPlatform = CORDB_PLATFORM_WINDOWS_X86;
-    #elif defined(DBG_TARGET_AMD64)
+    #elif defined(TARGET_AMD64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-    #elif defined(DBG_TARGET_ARM)
+    #elif defined(TARGET_ARM)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-    #elif defined(DBG_TARGET_ARM64)
+    #elif defined(TARGET_ARM64)
         *pPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
     #else
         #error Unknown Processor.
@@ -269,7 +269,7 @@ ShimRemoteDataTarget::ReadVirtual(
     size_t read = cbRequestSize;
     HRESULT hr = S_OK;
 
-#ifndef __APPLE__
+#ifdef FEATURE_REMOTE_PROC_MEM
     if (m_fd != -1)
     {
         read = _pread(m_fd, pBuffer, cbRequestSize, (ULONG64)address);
@@ -285,7 +285,7 @@ ShimRemoteDataTarget::ReadVirtual(
     }
     if (pcbRead != NULL)
     {
-        *pcbRead = (SUCCEEDED(hr) ? read : 0);
+        *pcbRead = ULONG32(SUCCEEDED(hr) ? read : 0);
     }
     return hr;
 }

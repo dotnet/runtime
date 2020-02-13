@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -87,7 +88,7 @@ namespace System.Security.Cryptography
         {
             // https://tools.ietf.org/html/rfc3447#section-7.1.1
 
-            byte[] dbMask = null;
+            byte[]? dbMask = null;
             Span<byte> dbMaskSpan = Span<byte>.Empty;
 
             try

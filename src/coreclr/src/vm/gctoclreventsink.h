@@ -34,14 +34,16 @@ public:
     void FireGCTriggered(uint32_t reason);
     void FireGCMarkWithType(uint32_t heapNum, uint32_t type, uint64_t bytes);
     void FireGCJoin_V2(uint32_t heap, uint32_t joinTime, uint32_t joinType, uint32_t joinId);
-    void FireGCGlobalHeapHistory_V2(uint64_t finalYoungestDesired,
+    void FireGCGlobalHeapHistory_V3(uint64_t finalYoungestDesired,
                                     int32_t numHeaps,
                                     uint32_t condemnedGeneration,
                                     uint32_t gen0reductionCount,
                                     uint32_t reason,
                                     uint32_t globalMechanisms,
                                     uint32_t pauseMode,
-                                    uint32_t memoryPressure);
+                                    uint32_t memoryPressure,
+                                    uint32_t condemnReasons0,
+                                    uint32_t condemnReasons1);
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind);
     void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress);
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject);

@@ -23,11 +23,17 @@ set(NATIVE_SOURCES
     pal_sysctl.c
 )
 
-if (CMAKE_SYSTEM_NAME STREQUAL Linux)
+if (CLR_CMAKE_TARGET_LINUX)
     set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
 
     if (!HAVE_LINUX_RTNETLINK_H)
         message(FATAL_ERROR "Could not find linux/rtnetlink.h")
+    endif ()
+elseif (CLR_CMAKE_TARGET_FREEBSD)
+    set(NATIVE_SOURCES ${NATIVE_SOURCES} pal_networkchange.c)
+
+    if (!HAVE_RT_MSGHDR)
+        message(FATAL_ERROR "Could not find net/route.h")
     endif ()
 endif ()
 
@@ -37,11 +43,11 @@ if (GEN_SHARED_LIB)
         ${NATIVE_SOURCES}
         ${VERSION_FILE_PATH}
     )
-    if (CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ANDROID)
+    if (CLR_CMAKE_TARGET_LINUX AND NOT CLR_CMAKE_TARGET_ANDROID)
         target_link_libraries(System.Native rt)
     endif ()
 
-    if (CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
+    if (CLR_CMAKE_TARGET_FREEBSD)
         target_link_libraries(System.Native pthread)
     if (HAVE_INOTIFY)
         find_library(INOTIFY_LIBRARY inotify HINTS /usr/local/lib)
@@ -54,7 +60,6 @@ endif ()
 add_library(System.Native-Static
     STATIC
     ${NATIVE_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

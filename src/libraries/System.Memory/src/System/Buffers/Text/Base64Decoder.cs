@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,21 +17,23 @@ namespace System.Buffers.Text
     public static partial class Base64
     {
         /// <summary>
-        /// Decode the span of UTF-8 encoded text represented as base 64 into binary data.
+        /// Decode the span of UTF-8 encoded text represented as base64 into binary data.
         /// If the input is not a multiple of 4, it will decode as much as it can, to the closest multiple of 4.
         /// </summary>
-        /// <param name="utf8">The input span which contains UTF-8 encoded text in base 64 that needs to be decoded.</param>
+        /// <param name="utf8">The input span which contains UTF-8 encoded text in base64 that needs to be decoded.</param>
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="bytesConsumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="bytesWritten">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
-        /// <param name="isFinalBlock">True (default) when the input span contains the entire data to decode.
-        /// Set to false only if it is known that the input span contains partial data with more data to follow.</param>
+        /// <param name="isFinalBlock"><see langword="true"/> (default) when the input span contains the entire data to encode.
+        /// Set to <see langword="true"/> when the source buffer contains the entirety of the data to encode.
+        /// Set to <see langword="false"/> if this method is being called in a loop and if more input data may follow.
+        /// At the end of the loop, call this (potentially with an empty source buffer) passing <see langword="true"/>.</param>
         /// <returns>It returns the OperationStatus enum values:
         /// - Done - on successful processing of the entire input span
         /// - DestinationTooSmall - if there is not enough space in the output span to fit the decoded input
-        /// - NeedMoreData - only if isFinalBlock is false and the input is not a multiple of 4, otherwise the partial input would be considered as InvalidData
-        /// - InvalidData - if the input contains bytes outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
-        ///   or if the input is incomplete (i.e. not a multiple of 4) and isFinalBlock is true.
+        /// - NeedMoreData - only if <paramref name="isFinalBlock"/> is false and the input is not a multiple of 4, otherwise the partial input would be considered as InvalidData
+        /// - InvalidData - if the input contains bytes outside of the expected base64 range, or if it contains invalid/more than two padding characters,
+        ///   or if the input is incomplete (i.e. not a multiple of 4) and <paramref name="isFinalBlock"/> is <see langword="true"/>.
         /// </returns>
         public static unsafe OperationStatus DecodeFromUtf8(ReadOnlySpan<byte> utf8, Span<byte> bytes, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
         {
@@ -123,6 +125,10 @@ namespace System.Buffers.Text
                 {
                     if (isFinalBlock)
                         goto InvalidDataExit;
+
+                    if (src == srcBytes + utf8.Length)
+                        goto DoneExit;
+
                     goto NeedMoreDataExit;
                 }
 

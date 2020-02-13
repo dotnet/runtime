@@ -91,7 +91,7 @@ InterpreterMethodInfo::InterpreterMethodInfo(CEEInfo* comp, CORINFO_METHOD_INFO*
         hasRetBuff = false;
     }
 #endif
-#if defined(_ARM_) || defined(_AMD64_)|| defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_AMD64)|| defined(HOST_ARM64)
     // ...or it fits into one register.
     if (hasRetBuff && getClassSize(methInfo->args.retTypeClass) <= sizeof(void*))
     {
@@ -286,26 +286,26 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 
             // If there is a return buffer, it will appear next in the arguments list for a direct call.
             // Reserve its offset now, for use after the explicit arguments.
-#if defined(_ARM_)
+#if defined(HOST_ARM)
             // On ARM, for direct calls we always treat HFA return types as having ret buffs.
             // So figure out if we have an HFA return type.
             bool hasHFARetType =
                 methInfo->args.retType == CORINFO_TYPE_VALUECLASS
                 && CorInfoTypeIsFloatingPoint(comp->getHFAType(methInfo->args.retTypeClass))
                 && methInfo->args.getCallConv() != CORINFO_CALLCONV_VARARG;
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
 
             if (GetFlag<Flag_hasRetBuffArg>()
-#if defined(_ARM_)
+#if defined(HOST_ARM)
                 // On ARM, for direct calls we always treat HFA return types as having ret buffs.
                 || hasHFARetType
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
                 )
             {
                 directRetBuffOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
                 directOffset++;
             }
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
                 directVarArgOffset = reinterpret_cast<short>(ArgSlotEndianessFixup(directOffset, sizeof(void*)));
@@ -467,12 +467,12 @@ bool InterpreterMethodInfo::GetPinningBit(unsigned locNum)
 
 void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noReg, bool twoSlotAlign)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     assert(!noReg);
     assert(!twoSlotAlign);
     AddArgAmd64(canonIndex, numSlots, /*isFloatingType*/false);
-#else // !_AMD64_
-#if defined(_X86_) || defined(_ARM64_)
+#else // !HOST_AMD64
+#if defined(HOST_X86) || defined(HOST_ARM64)
     assert(!twoSlotAlign); // Shouldn't use this flag on x86 (it wouldn't work right in the stack, at least).
 #endif
     // If the argument requires two-slot alignment, make sure we have it.  This is the
@@ -495,7 +495,7 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         }
     }
 
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
     // On ARM64 we're not going to place an argument 'partially' on the stack
     // if all slots fits into registers, they go into registers, otherwise they go into stack.
     if (!noReg && numRegArgs+numSlots <= NumberOfIntegerRegArgs())
@@ -514,12 +514,12 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
     }
     else
     {
-#if defined(_X86_)
+#if defined(HOST_X86)
         // On X86, stack args are pushed in order.  We will add the total size of the arguments to this offset,
         // so we set this to a negative number relative to the SP before the first arg push.
         callerArgStackSlots += numSlots;
         ClrSafeInt<short> offset(-callerArgStackSlots);
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
         // On ARM, args are pushed in *reverse* order.  So we will create an offset relative to the address
         // of the first stack arg; later, we will add the size of the non-stack arguments.
         ClrSafeInt<short> offset(callerArgStackSlots);
@@ -527,14 +527,14 @@ void Interpreter::ArgState::AddArg(unsigned canonIndex, short numSlots, bool noR
         offset *= static_cast<short>(sizeof(void*));
         assert(!offset.IsOverflow());
         argOffsets[canonIndex] = offset.Value();
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
         callerArgStackSlots += numSlots;
 #endif
     }
-#endif // !_AMD64_
+#endif // !HOST_AMD64
 }
 
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
 // AMD64 calling convention allows any type that can be contained in 64 bits to be passed in registers,
 // if not contained or they are of a size not a power of 2, then they are passed by reference on the stack.
 // RCX, RDX, R8, R9 are the int arg registers. XMM0-3 overlap with the integer registers and are used
@@ -575,13 +575,13 @@ void Interpreter::ArgState::AddArgAmd64(unsigned canonIndex, unsigned short numS
 
 void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlots, bool twoSlotAlign)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     assert(!twoSlotAlign);
     assert(numSlots == 1);
     AddArgAmd64(canonIndex, numSlots, /*isFloatingType*/ true);
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     assert(false);  // Don't call this on x86; we pass all FP on the stack.
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     // We require "numSlots" alignment.
     assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
     argIsReg[canonIndex] = ARS_FloatReg;
@@ -630,7 +630,7 @@ void Interpreter::ArgState::AddFPArg(unsigned canonIndex, unsigned short numSlot
             numFPRegArgSlots += numSlots;
         }
     }
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
     assert(numFPRegArgSlots + numSlots <= MaxNumFPRegArgSlots);
     assert(!twoSlotAlign);
@@ -796,7 +796,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     //
     // So the structure of the code will look like this (in the non-ILstub case):
     //
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
@@ -806,7 +806,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // [if we pushed register arguments, increment esp by the right amount.]
     // pop ebp
     // ret <n>  ; where <n> is the number of argument stack slots in the call to the stub.
-#elif defined (_ARM_)
+#elif defined (HOST_ARM)
     // TODO.
 #endif
 
@@ -825,18 +825,18 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     if (!jmpCall)
     {
         sl.Init();
-#if defined(_X86_) || defined(_AMD64_)
-#if defined(_X86_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(HOST_X86)
         sl.X86EmitPushReg(kEBP);
         sl.X86EmitMovRegReg(kEBP, static_cast<X86Reg>(kESP_Unsafe));
 #endif
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
         // On ARM we use R12 as a "scratch" register -- callee-trashed, not used
         // for arguments.
         ThumbReg r11 = ThumbReg(11);
         ThumbReg r12 = ThumbReg(12);
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         // x8 through x15 are scratch registers on ARM64.
         IntReg x8 = IntReg(8);
         IntReg x9 = IntReg(9);
@@ -924,7 +924,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
     unsigned physArgIndex = 0;
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
     // The stub linker has a weird little limitation: all stubs it's used
     // for on ARM push some callee-saved register, so the unwind info
     // code was written assuming at least one would be pushed.  I don't know how to
@@ -938,18 +938,18 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #endif
     // The "1" here is for the return address.
     const int NumberOfFixedPushes = 1 + NumberOfCalleeSaveRegsToPush;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     // FP, LR
     const int NumberOfFixedPushes = 2;
 #endif
 
 #if defined(FEATURE_HFA)
-#if defined(_ARM_) || defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_ARM64)
     // On ARM, a non-retBuffArg method that returns a struct type might be an HFA return.  Figure
     // that out.
     unsigned HFARetTypeSize = 0;
 #endif
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
     unsigned cHFAVars   = 0;
 #endif
     if (info->args.retType == CORINFO_TYPE_VALUECLASS
@@ -957,10 +957,10 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         && info->args.getCallConv() != CORINFO_CALLCONV_VARARG)
     {
         HFARetTypeSize = getClassSize(info->args.retTypeClass);
-#if defined(_ARM_)
+#if defined(HOST_ARM)
         // Round up to a double boundary;
         HFARetTypeSize = ((HFARetTypeSize+ sizeof(double) - 1) / sizeof(double)) * sizeof(double);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
         // We don't need to round it up to double. Unlike ARM, whether it's a float or a double each field will
         // occupy one slot. We'll handle the stack alignment in the prolog where we have all the information about
         // what is going to be pushed on the stack.
@@ -1003,7 +1003,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 argState.AddArg(vaSigCookieIndex);
             }
 
-#if defined(_ARM_) || defined(_AMD64_) || defined(_ARM64_)
+#if defined(HOST_ARM) || defined(HOST_AMD64) || defined(HOST_ARM64)
             // Generics context comes before args on ARM.  Would be better if I factored this out as a call,
             // to avoid large swatches of duplicate code.
             if (hasGenericsContextArg)
@@ -1011,7 +1011,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 argPerm[genericsContextArgIndex] = physArgIndex; physArgIndex++;
                 argState.AddArg(genericsContextArgIndex);
             }
-#endif // _ARM_ || _AMD64_ || _ARM64_
+#endif // HOST_ARM || HOST_AMD64 || HOST_ARM64
 
             CORINFO_ARG_LIST_HANDLE argPtr = info->args.args;
             // Some arguments are have been passed in registers, some in memory. We must generate code that
@@ -1062,13 +1062,13 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     // Two integer slot arguments.
                 case CORINFO_TYPE_LONG:
                 case CORINFO_TYPE_ULONG:
-#if defined(_X86_)
+#if defined(HOST_X86)
                     // Longs are always passed on the stack -- with no obvious alignment.
                     argState.AddArg(k, 2, /*noReg*/true);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
                     // LONGS have 2-reg alignment; inc reg if necessary.
                     argState.AddArg(k, 2, /*noReg*/false, /*twoSlotAlign*/true);
-#elif defined(_AMD64_) || defined(_ARM64_)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64)
                     argState.AddArg(k);
 #else
 #error unknown platform
@@ -1077,11 +1077,11 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
                     // One float slot args:
                 case CORINFO_TYPE_FLOAT:
-#if defined(_X86_)
+#if defined(HOST_X86)
                     argState.AddArg(k, 1, /*noReg*/true);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
                     argState.AddFPArg(k, 1, /*twoSlotAlign*/false);
-#elif defined(_AMD64_) || defined(_ARM64_)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1090,11 +1090,11 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
                     // Two float slot args
                 case CORINFO_TYPE_DOUBLE:
-#if defined(_X86_)
+#if defined(HOST_X86)
                     argState.AddArg(k, 2, /*noReg*/true);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
                     argState.AddFPArg(k, 2, /*twoSlotAlign*/true);
-#elif defined(_AMD64_) || defined(_ARM64_)
+#elif defined(HOST_AMD64) || defined(HOST_ARM64)
                     argState.AddFPArg(k, 1, false);
 #else
 #error unknown platform
@@ -1107,18 +1107,18 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                     {
                         unsigned sz = getClassSize(vcTypeRet);
                         unsigned szSlots = max(1, sz / sizeof(void*));
-#if defined(_X86_)
+#if defined(HOST_X86)
                         argState.AddArg(k, static_cast<short>(szSlots), /*noReg*/true);
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
                         argState.AddArg(k, static_cast<short>(szSlots));
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
                         CorInfoType hfaType = comp->getHFAType(vcTypeRet);
                         if (CorInfoTypeIsFloatingPoint(hfaType))
                         {
                             argState.AddFPArg(k, szSlots,
-#if defined(_ARM_)
+#if defined(HOST_ARM)
                                     /*twoSlotAlign*/ (hfaType == CORINFO_TYPE_DOUBLE)
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
                                     /*twoSlotAlign*/ false // unlike ARM32 FP args always consume 1 slot on ARM64
 #endif
                                     );
@@ -1127,9 +1127,9 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                         {
                             unsigned align = comp->getClassAlignmentRequirement(vcTypeRet, FALSE);
                             argState.AddArg(k, static_cast<short>(szSlots), /*noReg*/false,
-#if defined(_ARM_)
+#if defined(HOST_ARM)
                                     /*twoSlotAlign*/ (align == 8)
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
                                     /*twoSlotAlign*/ false
 #endif
                                     );
@@ -1147,8 +1147,8 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 argPtr = comp->getArgNext(argPtr);
             }
 
-#if defined(_X86_)
-            // Generics context comes last on _X86_.  Would be better if I factored this out as a call,
+#if defined(HOST_X86)
+            // Generics context comes last on HOST_X86.  Would be better if I factored this out as a call,
             // to avoid large swatches of duplicate code.
             if (hasGenericsContextArg)
             {
@@ -1162,7 +1162,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             unsigned short stackArgBaseOffset = (argState.numRegArgs + 2 + argState.callerArgStackSlots) * sizeof(void*);
             unsigned       intRegArgBaseOffset = 0;
 
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
             // We're choosing to always push all arg regs on ARM -- this is the only option
             // that ThumbEmitProlog currently gives.
@@ -1176,20 +1176,20 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             unsigned       fpStackSlots = ((argState.numFPRegArgSlots + 1) / 2) * 2;
             unsigned       intRegArgBaseOffset = (fpStackSlots + NumberOfFixedPushes) * sizeof(void*);
             unsigned short stackArgBaseOffset = intRegArgBaseOffset + (argState.numRegArgs) * sizeof(void*);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
             // See StubLinkerCPU::EmitProlog for the layout of the stack
             unsigned       intRegArgBaseOffset = (argState.numFPRegArgSlots) * sizeof(void*);
             unsigned short stackArgBaseOffset = (unsigned short) ((argState.numRegArgs + argState.numFPRegArgSlots) * sizeof(void*));
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
             unsigned short stackArgBaseOffset = (argState.numRegArgs) * sizeof(void*);
 #else
 #error unsupported platform
 #endif
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
             WORD regArgMask = 0;
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
             // argPerm maps from an index into the argOffsets/argIsReg arrays to
             // the order that the arguments are passed.
             unsigned* argPermInverse = new unsigned[totalArgs];
@@ -1211,7 +1211,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 {
                     regArgsFound++;
                     // If any int reg args are used on ARM, we push them all (in ThumbEmitProlog)
-#if defined(_X86_)
+#if defined(HOST_X86)
                     if (regArgsFound == 1)
                     {
                         if (!jmpCall) { sl.X86EmitPushReg(kECX); }
@@ -1223,9 +1223,9 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                         if (!jmpCall) { sl.X86EmitPushReg(kEDX); }
                         argState.argOffsets[k] = (argState.numRegArgs - regArgsFound)*sizeof(void*);
                     }
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
                     argState.argOffsets[k] += intRegArgBaseOffset;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
                     // First home the register arguments in the stack space allocated by the caller.
                     // Refer to Stack Allocation on x64 [http://msdn.microsoft.com/en-US/library/ew5tede7(v=vs.80).aspx]
                     X86Reg argRegs[] = { kECX, kEDX, kR8, kR9 };
@@ -1235,7 +1235,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 #error unsupported platform
 #endif
                 }
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
                 else if (argState.argIsReg[k] == ArgState::ARS_FloatReg)
                 {
                     // Increment regArgsFound since float/int arguments have overlapping registers.
@@ -1311,7 +1311,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
             break;
         }
         // The argument registers have been pushed by now, so we can use them.
-#if defined(_X86_)
+#if defined(HOST_X86)
         // First arg is pointer to the base of the ILargs arr -- i.e., the current stack value.
         sl.X86EmitMovRegReg(kEDX, static_cast<X86Reg>(kESP_Unsafe));
         // InterpretMethod uses F_CALL_CONV == __fastcall; pass 2 args in regs.
@@ -1338,7 +1338,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         }
         sl.X86EmitPopReg(kEBP);
         sl.X86EmitReturn(static_cast<WORD>(argState.callerArgStackSlots * sizeof(void*)));
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
         // Pass "ilArgs", i.e. just the point where registers have been homed, as 2nd arg
         sl.X86EmitIndexLeaRSP(ARGUMENT_kREG2, static_cast<X86Reg>(kESP_Unsafe), 8);
 
@@ -1365,7 +1365,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         sl.X86EmitCall(sl.NewExternalCodeLabel(interpretMethodFunc), 0);
         sl.X86EmitAddEsp(interpMethodArgSize);
         sl.X86EmitReturn(0);
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
 
         // We have to maintain 8-byte stack alignment.  So if the number of
         // slots we would normally push is not a multiple of two, add a random
@@ -1427,7 +1427,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
 
         sl.ThumbEmitEpilog();
 
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
 
         UINT stackFrameSize = argState.numFPRegArgSlots;
 
@@ -2541,13 +2541,13 @@ EvalLoop:
             {
                 assert(m_curStackHt > 0);
                 m_curStackHt--;
-#if defined(_DEBUG) || defined(_AMD64_)
+#if defined(_DEBUG) || defined(HOST_AMD64)
                 CorInfoType cit = OpStackTypeGet(m_curStackHt).ToCorInfoType();
-#endif // _DEBUG || _AMD64_
+#endif // _DEBUG || HOST_AMD64
 #ifdef _DEBUG
                 assert(cit == CORINFO_TYPE_INT || cit == CORINFO_TYPE_UINT || cit == CORINFO_TYPE_NATIVEINT);
 #endif // _DEBUG
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
                 UINT32 val = (cit == CORINFO_TYPE_NATIVEINT) ? (INT32) OpStackGet<NativeInt>(m_curStackHt)
                                                              : OpStackGet<INT32>(m_curStackHt);
 #else
@@ -4371,7 +4371,7 @@ void Interpreter::BinaryArithOp()
     case CORINFO_TYPE_SHIFTED_LONG:
         {
             bool looseLong = false;
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             looseLong = (s_InterpreterLooseRules && (t2.ToCorInfoType() == CORINFO_TYPE_NATIVEINT ||
                     t2.ToCorInfoType() == CORINFO_TYPE_BYREF));
 #endif
@@ -5498,7 +5498,7 @@ CORINFO_CLASS_HANDLE Interpreter::GetTypeFromToken(BYTE* codePtr, CorInfoTokenKi
 bool Interpreter::IsValidPointerType(CorInfoType cit)
 {
     bool isValid = (cit == CORINFO_TYPE_NATIVEINT || cit == CORINFO_TYPE_BYREF);
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     isValid = isValid || (s_InterpreterLooseRules && cit == CORINFO_TYPE_LONG);
 #endif
     return isValid;
@@ -5977,7 +5977,7 @@ void Interpreter::NewArr()
             COMPlusThrow(kOverflowException);
         }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         // Even though ECMA allows using a native int as the argument to newarr instruction
         // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
         // platforms we can't create an array whose size exceeds 32 bits.
@@ -6136,14 +6136,14 @@ void Interpreter::MkRefany()
 
     InterpreterType typedRefIT = GetTypedRefIT(&m_interpCeeInfo);
     TypedByRef* tbr;
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     assert(typedRefIT.IsLargeStruct(&m_interpCeeInfo));
     tbr = (TypedByRef*) LargeStructOperandStackPush(GetTypedRefSize(&m_interpCeeInfo));
     OpStackSet<void*>(idx, tbr);
-#elif defined(_X86_) || defined(_ARM_)
+#elif defined(HOST_X86) || defined(HOST_ARM)
     assert(!typedRefIT.IsLargeStruct(&m_interpCeeInfo));
     tbr = OpStackGetAddr<TypedByRef>(idx);
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     tbr = NULL;
     NYI_INTERP("Unimplemented code: MkRefAny");
 #else
@@ -6820,7 +6820,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
     case CORINFO_TYPE_LONG:
         {
             bool looseLong = false;
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
             looseLong = s_InterpreterLooseRules && (cit2 == CORINFO_TYPE_NATIVEINT || cit2 == CORINFO_TYPE_BYREF);
 #endif
             if (cit2 == CORINFO_TYPE_LONG || looseLong)
@@ -8289,7 +8289,7 @@ void Interpreter::InitBlk()
 #ifdef _DEBUG
     CorInfoType addrCIT = OpStackTypeGet(addrInd).ToCorInfoType();
     bool addrValidType = (addrCIT == CORINFO_TYPE_NATIVEINT || addrCIT == CORINFO_TYPE_BYREF);
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     if (s_InterpreterLooseRules && addrCIT == CORINFO_TYPE_LONG)
         addrValidType = true;
 #endif
@@ -8339,7 +8339,7 @@ void Interpreter::CpBlk()
 #ifdef _DEBUG
     CorInfoType destCIT = OpStackTypeGet(destInd).ToCorInfoType();
     bool destValidType = (destCIT == CORINFO_TYPE_NATIVEINT || destCIT == CORINFO_TYPE_BYREF);
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     if (s_InterpreterLooseRules && destCIT == CORINFO_TYPE_LONG)
         destValidType = true;
 #endif
@@ -8349,7 +8349,7 @@ void Interpreter::CpBlk()
     }
     CorInfoType srcCIT = OpStackTypeGet(srcInd).ToCorInfoType();
     bool srcValidType = (srcCIT == CORINFO_TYPE_NATIVEINT || srcCIT == CORINFO_TYPE_BYREF);
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     if (s_InterpreterLooseRules && srcCIT == CORINFO_TYPE_LONG)
         srcValidType = true;
 #endif
@@ -9250,12 +9250,12 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     ARG_SLOT* args;
     InterpreterType* argTypes;
-#if defined(_X86_)
+#if defined(HOST_X86)
     unsigned totalArgSlots = nSlots;
-#elif defined(_ARM_) || defined(_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
     // ARM64TODO: Verify that the following statement is correct for ARM64.
     unsigned totalArgSlots = nSlots + HFAReturnArgSlots;
-#elif defined(_AMD64_)
+#elif defined(HOST_AMD64)
     unsigned totalArgSlots = nSlots;
 #else
 #error "unsupported platform"
@@ -9269,11 +9269,11 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     else
     {
         args = (ARG_SLOT*)_alloca(totalArgSlots * sizeof(ARG_SLOT));
-#if defined(_ARM_)
+#if defined(HOST_ARM)
         // The HFA return buffer, if any, is assumed to be at a negative
         // offset from the IL arg pointer, so adjust that pointer upward.
         args = args + HFAReturnArgSlots;
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
         argTypes = (InterpreterType*)_alloca(nSlots * sizeof(InterpreterType));
     }
     // Make sure that we don't scan any of these until we overwrite them with
@@ -9473,7 +9473,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
 
     // This is the argument slot that will be used to hold the return value.
     ARG_SLOT retVal = 0;
-#if !defined(_ARM_) && !defined(UNIX_AMD64_ABI)
+#if !defined(HOST_ARM) && !defined(UNIX_AMD64_ABI)
     _ASSERTE (NUMBER_RETURNVALUE_SLOTS == 1);
 #endif
 
@@ -9510,22 +9510,22 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         // On ARM, if there's an HFA return type, we must also allocate a return buffer, since the
         // MDCS calling convention requires it.
         if (hasRetBuffArg
-#if defined(_ARM_)
+#if defined(HOST_ARM)
             || HFAReturnArgSlots > 0
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
             )
         {
             assert(retTypeClsHnd != NULL);
             retTypeIt = InterpreterType(&m_interpCeeInfo, retTypeClsHnd);
             retTypeSz = retTypeIt.Size(&m_interpCeeInfo);
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
             if (HFAReturnArgSlots > 0)
             {
                 args[curArgSlot] = PtrToArgSlot(args - HFAReturnArgSlots);
             }
             else
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
 
             if (retTypeIt.IsLargeStruct(&m_interpCeeInfo))
             {
@@ -9864,7 +9864,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                     // We must be careful here to write the value, the type, and update the stack height in one
                     // sequence that has no COOP->PREEMP transitions in it, so no GC's happen until the value
                     // is protected by being fully "on" the operandStack.
-#if defined(_ARM_)
+#if defined(HOST_ARM)
                     // Is the return type an HFA?
                     if (HFAReturnArgSlots > 0)
                     {
@@ -9881,7 +9881,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                         }
                     }
                     else
-#endif // defined(_ARM_)
+#endif // defined(HOST_ARM)
                     if (pLargeStructRetVal != NULL)
                     {
                         assert(hasRetBuffArg);
@@ -10074,7 +10074,7 @@ void Interpreter::CallI()
         retTypeClsHnd = sigInfo.retTypeClass;
         retTypeIt = InterpreterType(&m_interpCeeInfo, retTypeClsHnd);
         retTypeSz = retTypeIt.Size(&m_interpCeeInfo);
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
         // TODO: Investigate why HasRetBuffArg can't be used. pMD is a hacked up MD for the
         // calli because it belongs to the current method. Doing what the JIT does.
         hasRetBuffArg = (retTypeSz > sizeof(void*)) || ((retTypeSz & (retTypeSz - 1)) != 0);

@@ -14,7 +14,6 @@ namespace System.ComponentModel.Composition
     ///     construct an attributed part. Use this attribute to indicate that a specific constructor
     ///     should be used.
     /// </remarks>
-    [SuppressMessage("Microsoft.Performance", "CA1813:AvoidUnsealedAttributes")]
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]
     public class ImportingConstructorAttribute : Attribute
     {

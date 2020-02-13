@@ -12,7 +12,7 @@ namespace System.Text.Json
             ref Utf8JsonReader reader)
         {
             ReadStack state = default;
-            state.Current.Initialize(returnType, options);
+            state.InitializeRoot(returnType, options);
 
             ReadCore(options, ref reader, ref state);
 

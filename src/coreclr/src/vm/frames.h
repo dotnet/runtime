@@ -102,7 +102,7 @@
 //    |   +-ComPrestubMethodFrame - prestub frame for calls from COM to CLR
 //    |
 #endif //FEATURE_COMINTEROP
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 //    | +-UMThkCallFrame        - this frame represents an unmanaged->managed
 //    |                           transition through N/Direct
 #endif
@@ -235,7 +235,7 @@ FRAME_TYPE_NAME(DebuggerClassInitMarkFrame)
 FRAME_TYPE_NAME(DebuggerSecurityCodeMarkFrame)
 FRAME_TYPE_NAME(DebuggerExitFrame)
 FRAME_TYPE_NAME(DebuggerU2MCatchHandlerFrame)
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 FRAME_TYPE_NAME(UMThkCallFrame)
 #endif
 FRAME_TYPE_NAME(InlinedCallFrame)
@@ -252,7 +252,7 @@ FRAME_TYPE_NAME(AssumeByrefFromJITStack)
 
 #ifndef __frames_h__
 #define __frames_h__
-#if defined(_MSC_VER) && defined(_TARGET_X86_) && !defined(FPO_ON)
+#if defined(_MSC_VER) && defined(TARGET_X86) && !defined(FPO_ON)
 #pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #define FPO_ON 1
 #define FRAMES_TURNED_FPO_ON 1
@@ -299,7 +299,7 @@ class ComCallMethodDesc;
 
 #ifndef DACCESS_COMPILE
 
-#if defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(CROSSGEN_COMPILE)
 
 #define DEFINE_DTOR(klass)                      \
     public:                                     \
@@ -309,7 +309,7 @@ class ComCallMethodDesc;
 
 #define DEFINE_DTOR(klass)
 
-#endif // FEATURE_PAL && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !CROSSGEN_COMPILE
 
 #define DEFINE_VTABLE_GETTER(klass)             \
     public:                                     \
@@ -486,12 +486,6 @@ public:
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
         return (ptr != NULL) ? *PTR_PCODE(ptr) : NULL;
-    }
-
-    AppDomain *GetReturnDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return NULL;
     }
 
 #ifndef DACCESS_COMPILE
@@ -751,7 +745,7 @@ private:
 #ifdef _DEBUG
     friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 #endif
-#ifdef BIT64
+#ifdef HOST_64BIT
     friend Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg);
 #endif
 #ifdef FEATURE_EH_FUNCLETS
@@ -776,11 +770,11 @@ protected:
         LIMITED_METHOD_CONTRACT;
     }
 
-#if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
     virtual ~Frame() { LIMITED_METHOD_CONTRACT; }
 
     void PopIfChained();
-#endif // FEATURE_PAL && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
 };
 
 
@@ -987,7 +981,7 @@ public:
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     void UpdateRegDisplayHelper(const PREGDISPLAY, UINT cbStackPop);
 #endif
 
@@ -1003,7 +997,7 @@ public:
 
     void PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanContext* sc, PTR_BYTE pGCRefMap);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     UINT CbStackPopUsingGCRefMap(PTR_BYTE pGCRefMap);
 #endif
 
@@ -1018,7 +1012,7 @@ protected:
 // TransitionFrames for exceptions
 //-----------------------------------------------------------------------
 
-// The define USE_FEF controls how this class is used.  Look for occurances
+// The define USE_FEF controls how this class is used.  Look for occurrences
 //  of USE_FEF.
 
 class FaultingExceptionFrame : public Frame
@@ -1026,13 +1020,13 @@ class FaultingExceptionFrame : public Frame
     friend class CheckAsmOffsets;
 
 #ifndef FEATURE_EH_FUNCLETS
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     DWORD                   m_Esp;
     CalleeSavedRegisters    m_regs;
     TADDR                   m_ReturnAddress;
-#else  // _TARGET_X86_
+#else  // TARGET_X86
     #error "Unsupported architecture"
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 #else // FEATURE_EH_FUNCLETS
     BOOL                    m_fFilterExecuted;  // Flag for FirstCallToHandler
     TADDR                   m_ReturnAddress;
@@ -1072,12 +1066,12 @@ public:
 #ifndef FEATURE_EH_FUNCLETS
     CalleeSavedRegisters *GetCalleeSavedRegisters()
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         LIMITED_METHOD_DAC_CONTRACT;
         return &m_regs;
 #else
         PORTABILITY_ASSERT("GetCalleeSavedRegisters");
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     }
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1681,7 +1675,7 @@ public:
 #ifdef COM_STUBS_SEPARATE_FP_LOCATIONS
     static int GetFPArgOffset(int iArg)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         // Floating point spill area is between return value and transition block for frames that need it
         // (code:TPMethodFrame and code:ComPlusMethodFrame)
         return -(4 * 0x10 /* floating point args */ + 0x8 /* alignment pad */ + TransitionBlock::GetNegSpaceSize()) + (iArg * 0x10);
@@ -1825,7 +1819,7 @@ public:
     static BYTE GetOffsetOfArgs()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-#if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
         size_t ofs = offsetof(UnmanagedToManagedFrame, m_argumentRegisters);
 #else
         size_t ofs = sizeof(UnmanagedToManagedFrame);
@@ -1847,7 +1841,7 @@ public:
         return offsetof(UnmanagedToManagedFrame, m_pvDatum);
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     static int GetOffsetOfCalleeSavedRegisters()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1880,14 +1874,14 @@ public:
 protected:
     TADDR           m_pvDatum;        // type depends on the sub class
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     CalleeSavedRegisters  m_calleeSavedRegisters;
     TADDR           m_ReturnAddress;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     TADDR           m_R11; // R11 chain
     TADDR           m_ReturnAddress;
     ArgumentRegisters m_argumentRegisters;
-#elif defined (_TARGET_ARM64_)
+#elif defined (TARGET_ARM64)
     TADDR           m_fp;
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
@@ -1910,7 +1904,7 @@ class ComMethodFrame : public UnmanagedToManagedFrame
 
 public:
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Return the # of stack bytes pushed by the unmanaged caller.
     UINT GetNumCallerStackBytes();
 #endif
@@ -2018,9 +2012,9 @@ public:
         return m_pVASigCookie;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     virtual void UpdateRegDisplay(const PREGDISPLAY);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     BOOL TraceFrame(Thread *thread, BOOL fromPatch,
                     TraceDestination *trace, REGDISPLAY *regs)
@@ -2157,10 +2151,10 @@ public:
     // Returns this frame GC ref map if it has one
     PTR_BYTE GetGCRefMap();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
     virtual PCODE GetReturnAddress();
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     PCODE GetUnadjustedReturnAddress()
     {
@@ -2275,7 +2269,7 @@ public:
 
     Interception GetInterception();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 #endif
 
@@ -2297,7 +2291,7 @@ public:
 
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 #endif
 
@@ -2733,7 +2727,7 @@ typedef DPTR(class UMThunkMarshInfo) PTR_UMThunkMarshInfo;
 class UMEntryThunk;
 typedef DPTR(class UMEntryThunk) PTR_UMEntryThunk;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 //------------------------------------------------------------------------
 // This frame guards an unmanaged->managed transition thru a UMThk
 //------------------------------------------------------------------------
@@ -2761,9 +2755,9 @@ protected:
     // Keep as last entry in class
     DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(UMThkCallFrame)
 };
-#endif // _TARGET_X86_ && !FEATURE_PAL
+#endif // TARGET_X86 && !TARGET_UNIX
 
-#if defined(_TARGET_X86_) && defined(FEATURE_COMINTEROP)
+#if defined(TARGET_X86) && defined(FEATURE_COMINTEROP)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame
 //  and the layout of the exception registration record structure in the stack
@@ -2783,7 +2777,7 @@ struct ComToManagedExRecord
         return &m_frame;
     }
 };
-#endif // _TARGET_X86_ && FEATURE_COMINTEROP
+#endif // TARGET_X86 && FEATURE_COMINTEROP
 
 
 //------------------------------------------------------------------------
@@ -2812,12 +2806,12 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
         // See code:GenericPInvokeCalliHelper
         return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
-#else // BIT64
+#else // HOST_64BIT
         return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
-#endif // BIT64
+#endif // HOST_64BIT
     }
 
     // Retrieves the return address into the code that called out
@@ -2844,7 +2838,7 @@ public:
     // method if the current InlinedCallFrame is inactive.
     PTR_MethodDesc GetActualInteropMethodDesc()
     {
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(TARGET_X86) || defined(TARGET_ARM)
         // Important: This code relies on the way JIT lays out frames. Keep it in sync
         // with code:Compiler.lvaAssignFrameOffsets.
         //
@@ -2861,14 +2855,14 @@ public:
         // Extract the actual MethodDesc to report from the InlinedCallFrame.
         TADDR addr = dac_cast<TADDR>(this) + sizeof(InlinedCallFrame);
         return PTR_MethodDesc(*PTR_TADDR(addr));
-#elif defined(BIT64)
+#elif defined(HOST_64BIT)
         // On 64bit, the actual interop MethodDesc is saved off in a field off the InlinedCrawlFrame
         // which is populated by the JIT. Refer to JIT_InitPInvokeFrame for details.
         return PTR_MethodDesc(m_StubSecretArg);
 #else
         _ASSERTE(!"NYI - Interop method reporting for this architecture!");
         return NULL;
-#endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#endif // defined(TARGET_X86) || defined(TARGET_ARM)
     }
 
     virtual void UpdateRegDisplay(const PREGDISPLAY);
@@ -2879,12 +2873,12 @@ public:
     // See code:HasFunction.
     PTR_NDirectMethodDesc   m_Datum;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // IL stubs fill this field with the incoming secret argument when they erect
     // InlinedCallFrame so we know which interop method was invoked even if the frame
     // is not active at the moment.
     PTR_VOID                m_StubSecretArg;
-#endif // BIT64
+#endif // HOST_64BIT
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
@@ -2909,12 +2903,12 @@ public:
     // stubs, since there is no easy way to inline an implementation of GetThread.
     PTR_VOID             m_pThread;
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Store the value of SP after prolog to ensure we can unwind functions that use
     // stackalloc. In these functions, the m_pCallSiteSP can already be augmented by
     // the stackalloc size, which is variable.
     TADDR               m_pSPAfterProlog;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 public:
     //---------------------------------------------------------------
@@ -2979,7 +2973,7 @@ public:
 bool isRetAddr(TADDR retAddr, TADDR* whereCalled);
 
 //------------------------------------------------------------------------
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // This frame is used as padding for virtual stub dispatch tailcalls.
 // When A calls B via virtual stub dispatch, the stub dispatch stub resolves
 // the target code for B and jumps to it. If A wants to do a tail call,
@@ -3014,16 +3008,16 @@ class TailCallFrame : public Frame
 {
     VPTR_VTABLE_CLASS(TailCallFrame, Frame)
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     TADDR           m_CallerAddress;    // the address the tailcall was initiated from
     CalleeSavedRegisters    m_regs;     // callee saved registers - the stack walk assumes that all non-JIT frames have them
     TADDR           m_ReturnAddress;    // the return address of the tailcall
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     TADDR                 m_pGCLayout;
     TADDR                 m_padding;    // code:StubLinkerCPU::CreateTailCallCopyArgsThunk expects the size of TailCallFrame to be 16-byte aligned
     CalleeSavedRegisters  m_calleeSavedRegisters;
     TADDR                 m_ReturnAddress;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     union {
         CalleeSavedRegisters m_calleeSavedRegisters;
         // alias saved link register as m_ReturnAddress
@@ -3039,7 +3033,7 @@ class TailCallFrame : public Frame
 
 public:
 #ifndef	CROSSGEN_COMPILE
-#if !defined(_TARGET_X86_)
+#if !defined(TARGET_X86)
 
 #ifndef DACCESS_COMPILE
     TailCallFrame(T_CONTEXT * pContext, Thread * pThread)
@@ -3056,9 +3050,9 @@ public:
 #endif
 
     static TailCallFrame * GetFrameFromContext(CONTEXT * pContext);
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     static TailCallFrame* FindTailCallFrame(Frame* pFrame)
     {
         LIMITED_METHOD_CONTRACT;
@@ -3073,7 +3067,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_CallerAddress;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     virtual TADDR GetReturnAddressPtr()
     {
@@ -3089,7 +3083,7 @@ public:
 
     virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 #endif // !CROSSGEN_COMPILE
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     void SetGCLayout(TADDR pGCLayout)
     {
         LIMITED_METHOD_CONTRACT;

@@ -20,9 +20,9 @@ namespace System.Security.Cryptography
 
         protected DSA() { }
 
-        public static new DSA Create(string algName)
+        public static new DSA? Create(string algName)
         {
-            return (DSA)CryptoConfig.CreateFromName(algName);
+            return (DSA?)CryptoConfig.CreateFromName(algName);
         }
 
         public static DSA Create(int keySizeInBits)

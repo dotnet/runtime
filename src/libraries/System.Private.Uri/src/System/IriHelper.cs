@@ -252,7 +252,7 @@ namespace System
 
                         foreach (byte b in encodedBytes)
                         {
-                            UriHelper.EscapeAsciiChar((char)b, ref dest);
+                            UriHelper.EscapeAsciiChar(b, ref dest);
                         }
                     }
                     else

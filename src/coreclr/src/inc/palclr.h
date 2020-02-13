@@ -10,7 +10,7 @@
 // ===========================================================================
 
 
-#if !defined(FEATURE_PAL)
+#if defined(HOST_WINDOWS)
 
 #ifndef __PALCLR_H__
 #define __PALCLR_H__
@@ -19,11 +19,7 @@
 // Unix L"" is UTF32, and on windows it's UTF16.  Because of built-in assumptions on the size
 // of string literals, it's important to match behaviour between Unix and Windows.  Unix will be defined
 // as u"" (char16_t)
-#ifdef PLATFORM_UNIX
-#define W(str)  u##str
-#else // PLATFORM_UNIX
 #define W(str)  L##str
-#endif // PLATFORM_UNIX
 
 #include <windef.h>
 
@@ -55,6 +51,12 @@
 
 #define ANALYZER_NORETURN
 
+#ifdef _MSC_VER
+#define EMPTY_BASES_DECL __declspec(empty_bases)
+#else
+#define EMPTY_BASES_DECL
+#endif // !_MSC_VER
+
 //
 // CPP_ASSERT() can be used within a class definition, to perform a
 // compile-time assertion involving private names within the class.
@@ -70,11 +72,11 @@
 // usage pattern is:
 //
 // int get_scratch_register() {
-// #if defined(_TARGET_X86_)
+// #if defined(TARGET_X86)
 //     return eax;
-// #elif defined(_TARGET_AMD64_)
+// #elif defined(TARGET_AMD64)
 //     return rax;
-// #elif defined(_TARGET_ARM_)
+// #elif defined(TARGET_ARM)
 //     return r0;
 // #else
 //     PORTABILITY_ASSERT("scratch register");
@@ -99,7 +101,7 @@
 // The message in these two macros should not contain any keywords like TODO
 // or NYI. It should be just the brief description of the problem.
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 // Finished ports - compile-time errors
 #define PORTABILITY_WARNING(message)    NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
 #define PORTABILITY_ASSERT(message)     NEED_TO_PORT_THIS_ONE(NEED_TO_PORT_THIS_ONE)
@@ -509,7 +511,7 @@
 #endif
 
 
-#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(JIT64_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
+#if defined(_DEBUG_IMPL) && !defined(JIT_BUILD) && !defined(CROSS_COMPILE) && !defined(DISABLE_CONTRACTS)
 #define PAL_TRY_HANDLER_DBG_BEGIN                                               \
     BOOL ___oldOkayToThrowValue = FALSE;                                        \
     ClrDebugState *___pState = ::GetClrDebugState();                            \
@@ -554,7 +556,7 @@
 #define PAL_TRY_HANDLER_DBG_BEGIN_DLLMAIN(_reason)  ANNOTATION_TRY_BEGIN;
 #define PAL_TRY_HANDLER_DBG_END                     ANNOTATION_TRY_END;
 #define PAL_ENDTRY_NAKED_DBG
-#endif // defined(ENABLE_CONTRACTS_IMPL) && !defined(JIT64_BUILD)
+#endif // defined(ENABLE_CONTRACTS_IMPL)
 
 
 #if !BIGENDIAN
@@ -589,7 +591,7 @@
 #define SET_UNALIGNED_VAL64(_pObject, _Value) SET_UNALIGNED_64(_pObject, VAL64((UINT64)_Value))
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define VALPTR(x) VAL64(x)
 #define GET_UNALIGNED_PTR(x) GET_UNALIGNED_64(x)
 #define GET_UNALIGNED_VALPTR(x) GET_UNALIGNED_VAL64(x)
@@ -625,4 +627,4 @@
 
 #include "palclr_win.h"
 
-#endif // !defined(FEATURE_PAL)
+#endif // defined(HOST_WINDOWS)

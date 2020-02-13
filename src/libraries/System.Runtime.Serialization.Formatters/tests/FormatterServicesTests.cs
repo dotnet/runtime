@@ -141,7 +141,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(GetUninitializedObject_ByRefLikeType_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "full .NET Framework has bug that allows allocating instances of byref-like types.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has bug that allows allocating instances of byref-like types.")]
         public void GetUninitializedObject_ByRefLikeType_NonNetfx_ThrowsNotSupportedException(Type type)
         {
             Assert.Throws<NotSupportedException>(() => FormatterServices.GetUninitializedObject(type));
@@ -150,6 +150,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "The coreclr doesn't support GetUninitializedObject for shared generic instances")]
+        [SkipOnMonoAttribute("System.__Canon doesn't exist on Mono")]
         public void GetUninitializedObject_SharedGenericInstance_NetCore_ThrowsNotSupportedException()
         {
             Type canonType = Type.GetType("System.__Canon");
@@ -172,7 +173,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
         public void GetUninitializedObject_ContextBoundObjectSubclass_NetCore_InitializesValue()
         {
             Assert.Equal(0, ((ContextBoundSubclass)FormatterServices.GetUninitializedObject(typeof(ContextBoundSubclass))).Value);

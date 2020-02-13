@@ -14,12 +14,9 @@ set (SOURCES
     winrthost.cpp
     ../redirected_error_writer.cpp
     ../fxr_resolver.cpp
-    ../../common/trace.cpp
-    ../../common/utils.cpp
-    ../fxr/fx_ver.cpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         Exports.def)
 endif()
@@ -29,11 +26,11 @@ include(../lib.cmake)
 add_definitions(-DFEATURE_LIBHOST=1)
 
 # Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
     target_link_libraries(winrthost Advapi32.lib Ole32.lib OleAut32.lib)
 endif()
 
-target_link_libraries(winrthost RuntimeObject.lib)
+target_link_libraries(winrthost RuntimeObject.lib libhostmisc libhostcommon)
 
 install(TARGETS winrthost DESTINATION corehost)
 install_symbols(winrthost corehost)

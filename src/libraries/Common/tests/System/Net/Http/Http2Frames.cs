@@ -4,6 +4,7 @@
 
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Text;
 
 namespace System.Net.Test.Common
 {
@@ -19,8 +20,7 @@ namespace System.Net.Test.Common
         GoAway = 7,
         WindowUpdate = 8,
         Continuation = 9,
-
-        Last = 9
+        AltSvc = 10
     }
 
     [Flags]
@@ -515,5 +515,45 @@ namespace System.Net.Test.Common
         {
             return base.ToString() + $"\nLastStreamId: {LastStreamId}\nErrorCode: {ErrorCode}";
         }
+    }
+
+    public class AltSvcFrame : Frame
+    {
+        public string Origin;
+        public string AltSvc;
+
+        /// <summary>
+        /// ALTSVC frame, defined in https://tools.ietf.org/html/rfc7838#section-4
+        /// </summary>
+        /// <param name="origin">
+        /// Origin in format &lt;scheme&gt;://&lt;hostname&gt;:&lt;port&gt;.
+        /// Defined by https://tools.ietf.org/html/rfc6454#section-6.2.
+        /// </param>
+        /// <param name="altSvc">
+        /// An Alt-Svc header value as defined by https://tools.ietf.org/html/rfc7838#section-3
+        /// E.g. "h3=contoso.com:12345"
+        /// </param>
+        public AltSvcFrame(string origin, string altSvc, int streamId)
+            : base(2 + origin.Length + altSvc.Length, FrameType.AltSvc, FrameFlags.None, streamId)
+        {
+            Origin = origin;
+            AltSvc = altSvc;
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+            buffer = buffer.Slice(Frame.FrameHeaderLength);
+
+            BinaryPrimitives.WriteUInt16BigEndian(buffer, checked((ushort)Origin.Length));
+            buffer = buffer.Slice(2);
+
+            Encoding.ASCII.GetBytes(Origin, buffer);
+            buffer = buffer.Slice(Origin.Length);
+
+            Encoding.ASCII.GetBytes(AltSvc, buffer);
+        }
+
+        public override string ToString() => $"{base.ToString()}\n{nameof(Origin)}: {Origin}\n{nameof(AltSvc)}: {AltSvc}";
     }
 }

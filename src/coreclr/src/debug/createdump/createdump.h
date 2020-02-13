@@ -16,6 +16,8 @@ extern bool g_diagnostics;
             printf(args); \
         }
 
+#include "config.h"
+
 #include <winternl.h>
 #include <winver.h>
 #include <windows.h>
@@ -45,6 +47,9 @@ typedef int T_CONTEXT;
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <sys/procfs.h>
+#ifdef HAVE_PROCESS_VM_READV
+#include <sys/uio.h>
+#endif
 #include <dirent.h>
 #include <fcntl.h>
 #include <elf.h>

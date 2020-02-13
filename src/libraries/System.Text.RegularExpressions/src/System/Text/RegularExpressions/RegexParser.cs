@@ -642,7 +642,21 @@ namespace System.Text.RegularExpressions
                         case '-':
                             if (!scanOnly)
                             {
-                                charClass!.AddRange(ch, ch);
+                                if (inRange)
+                                {
+                                    if (chPrev > ch)
+                                    {
+                                        throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
+                                    }
+
+                                    charClass!.AddRange(chPrev, ch);
+                                    inRange = false;
+                                    chPrev = '\0';
+                                }
+                                else
+                                {
+                                    charClass!.AddRange(ch, ch);
+                                }
                             }
                             continue;
 
@@ -1736,7 +1750,7 @@ namespace System.Text.RegularExpressions
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
                 'A' => RegexNode.Beginning,
                 'G' => RegexNode.Start,
                 'Z' => RegexNode.EndZ,
@@ -1874,7 +1888,7 @@ namespace System.Text.RegularExpressions
                             else
                             {
                                 // Simple (unnamed) capture group.
-                                // Add unnamend parentheses if ExplicitCapture is not set
+                                // Add unnamed parentheses if ExplicitCapture is not set
                                 // and the next parentheses is not ignored.
                                 if (!UseOptionN() && !_ignoreNextParen)
                                 {
@@ -2313,7 +2327,7 @@ namespace System.Text.RegularExpressions
         private char CharAt(int i) => _pattern[i];
 
         /// <summary>Returns the char right of the current parsing position.</summary>
-        internal char RightChar() => _pattern[_currentPos];
+        private char RightChar() => _pattern[_currentPos];
 
         /// <summary>Returns the char i chars right of the current parsing position.</summary>
         private char RightChar(int i) => _pattern[_currentPos + i];

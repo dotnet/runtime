@@ -232,7 +232,7 @@
 // whether it is an issue on x86.
 //==============================================================================================
 
-#if defined(_TARGET_AMD64_) && !defined(FEATURE_PAL)
+#if defined(TARGET_AMD64) && !defined(TARGET_UNIX)
 
 //
 // On AMD64 this is accomplished by including a setjmp anywhere in a function.
@@ -372,7 +372,7 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define F_CALL_VA_CONV __cdecl
 
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 // Choose the appropriate calling convention for FCALL helpers on the basis of the JIT calling convention
 #ifdef __GNUC__
@@ -387,13 +387,13 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #endif // !__GNUC__
 
 #define SWIZZLE_STKARG_ORDER
-#else // _TARGET_X86_
+#else // TARGET_X86
 
 //
 // non-x86 platforms don't have messed-up calling convention swizzling
 //
 #define F_CALL_CONV
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
 #ifdef SWIZZLE_STKARG_ORDER
 #ifdef SWIZZLE_REGARG_ORDER
@@ -852,7 +852,7 @@ private:
 #endif
     bool          didGCPoll;            // GC poll was done
     bool          notNeeded;            // GC poll not needed
-    unsigned __int64 startTicks;        // tick count at begining of FCall
+    unsigned __int64 startTicks;        // tick count at beginning of FCall
 };
 
         // FC_COMMON_PROLOG is used for both FCalls and HCalls
@@ -1304,7 +1304,7 @@ typedef LPVOID FC_BOOL_RET;
 
 #else
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 // The return value is artifically widened on x86 and amd64
 typedef INT32 FC_BOOL_RET;
 #else
@@ -1316,7 +1316,7 @@ typedef CLR_BOOL FC_BOOL_RET;
 #endif
 
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 // The return value is artifically widened on x86 and amd64
 typedef UINT32 FC_CHAR_RET;
 typedef INT32 FC_INT8_RET;

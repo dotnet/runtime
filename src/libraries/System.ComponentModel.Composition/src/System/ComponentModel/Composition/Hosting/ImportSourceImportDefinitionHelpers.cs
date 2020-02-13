@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition.Hosting
         internal class NonImportSourceImportDefinition : ContractBasedImportDefinition
         {
             private readonly ContractBasedImportDefinition _sourceDefinition;
-            private IDictionary<string, object> _metadata;
+            private IDictionary<string, object?>? _metadata;
 
             public NonImportSourceImportDefinition(ContractBasedImportDefinition sourceDefinition)
             {
@@ -46,14 +46,14 @@ namespace System.ComponentModel.Composition.Hosting
                 get { return _sourceDefinition.ContractName; }
             }
 
-            public override IDictionary<string, object> Metadata
+            public override IDictionary<string, object?> Metadata
             {
                 get
                 {
                     var reply = _metadata;
                     if (reply == null)
                     {
-                        reply = new Dictionary<string, object>(_sourceDefinition.Metadata);
+                        reply = new Dictionary<string, object?>(_sourceDefinition.Metadata);
                         reply.Remove(CompositionConstants.ImportSourceMetadataName);
                         _metadata = reply;
                     }
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return _sourceDefinition.ToString();
             }
 
-            public override string RequiredTypeIdentity
+            public override string? RequiredTypeIdentity
             {
                 get { return _sourceDefinition.RequiredTypeIdentity; }
             }

@@ -18,9 +18,9 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly ImportEngine _importEngine;
             private readonly List<PartManager> _addedPartManagers = new List<PartManager>();
             private readonly List<PartManager> _removedPartManagers = new List<PartManager>();
-            private readonly EngineContext _parentEngineContext;
+            private readonly EngineContext? _parentEngineContext;
 
-            public EngineContext(ImportEngine importEngine, EngineContext parentEngineContext)
+            public EngineContext(ImportEngine importEngine, EngineContext? parentEngineContext)
             {
                 _importEngine = importEngine;
                 _parentEngineContext = parentEngineContext;
@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
 
-            public IEnumerable<PartManager> GetAddedPartManagers()
+            public IEnumerable<PartManager>? GetAddedPartManagers()
             {
                 if (_parentEngineContext != null)
                 {
@@ -61,7 +61,7 @@ namespace System.ComponentModel.Composition.Hosting
                 return _addedPartManagers;
             }
 
-            public IEnumerable<PartManager> GetRemovedPartManagers()
+            public IEnumerable<PartManager>? GetRemovedPartManagers()
             {
                 if (_parentEngineContext != null)
                 {

@@ -16,11 +16,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 T exportedValue;
                 Action disposeAction;
-                IDisposable disposable = null;
+                IDisposable? disposable = null;
 
-                CatalogExportProvider.ScopeFactoryExport scopeFactoryExport = export as CatalogExportProvider.ScopeFactoryExport;
-
-                if (scopeFactoryExport != null)
+                if (export is CatalogExportProvider.ScopeFactoryExport scopeFactoryExport)
                 {
                     // Scoped PartCreatorExport
                     Export exportProduct = scopeFactoryExport.CreateExportProduct();
@@ -29,9 +27,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
                 else
                 {
-                    CatalogExportProvider.FactoryExport factoryExport = export as CatalogExportProvider.FactoryExport;
-
-                    if (factoryExport != null)
+                    if (export is CatalogExportProvider.FactoryExport factoryExport)
                     {
                         // PartCreatorExport is the more optimized route
                         Export exportProduct = factoryExport.CreateExportProduct();

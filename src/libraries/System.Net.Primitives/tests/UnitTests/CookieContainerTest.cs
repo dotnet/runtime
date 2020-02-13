@@ -332,7 +332,7 @@ namespace System.Net.Primitives.Unit.Tests
                 }
             }; // Empty header followed by another empty header at the end
 
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 yield return new object[]
                 {

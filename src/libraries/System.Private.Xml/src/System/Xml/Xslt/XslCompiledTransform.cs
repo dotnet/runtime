@@ -355,7 +355,6 @@ namespace System.Xml.Xsl
         // suppress the message.
         //------------------------------------------------
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XmlWriter results)
         {
             CheckArguments(inputUri, results);
@@ -365,7 +364,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, XmlWriter results)
         {
             CheckArguments(inputUri, results);
@@ -375,7 +373,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, TextWriter results)
         {
             CheckArguments(inputUri, results);
@@ -387,7 +384,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, XsltArgumentList arguments, Stream results)
         {
             CheckArguments(inputUri, results);
@@ -399,7 +395,6 @@ namespace System.Xml.Xsl
             }
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings")]
         public void Transform(string inputUri, string resultsFile)
         {
             if (inputUri == null)

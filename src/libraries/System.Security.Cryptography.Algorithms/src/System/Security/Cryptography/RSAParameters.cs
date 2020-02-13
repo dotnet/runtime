@@ -11,13 +11,13 @@ namespace System.Security.Cryptography
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct RSAParameters
     {
-        public byte[] D;
-        public byte[] DP;
-        public byte[] DQ;
-        public byte[] Exponent;
-        public byte[] InverseQ;
-        public byte[] Modulus;
-        public byte[] P;
-        public byte[] Q;
+        public byte[]? D;
+        public byte[]? DP;
+        public byte[]? DQ;
+        public byte[]? Exponent;
+        public byte[]? InverseQ;
+        public byte[]? Modulus;
+        public byte[]? P;
+        public byte[]? Q;
     }
 }

@@ -10,18 +10,18 @@ namespace System.Security.Cryptography.Asn1
     {
         internal static SetOfValueComparer Instance { get; } = new SetOfValueComparer();
 
-        public int Compare(ReadOnlyMemory<byte> x, ReadOnlyMemory<byte> y)
-        {
-            ReadOnlySpan<byte> xSpan = x.Span;
-            ReadOnlySpan<byte> ySpan = y.Span;
+        public int Compare(ReadOnlyMemory<byte> x, ReadOnlyMemory<byte> y) =>
+            Compare(x.Span, y.Span);
 
+        internal static int Compare(ReadOnlySpan<byte> x, ReadOnlySpan<byte> y)
+        {
             int min = Math.Min(x.Length, y.Length);
             int diff;
 
             for (int i = 0; i < min; i++)
             {
-                int xVal = xSpan[i];
-                byte yVal = ySpan[i];
+                int xVal = x[i];
+                byte yVal = y[i];
                 diff = xVal - yVal;
 
                 if (diff != 0)

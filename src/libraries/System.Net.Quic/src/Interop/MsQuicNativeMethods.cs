@@ -183,7 +183,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct ConnectionEventDataShutdownBeginPeer
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -264,7 +264,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal bool EarlyDataAccepted => Data.Connected.EarlyDataAccepted;
             internal ulong NumBytes => Data.IdealSendBuffer.NumBytes;
             internal uint ShutdownBeginStatus => Data.ShutdownBegin.Status;
-            internal ushort ShutdownBeginPeerStatus => Data.ShutdownBeginPeer.ErrorCode;
+            internal long ShutdownBeginPeerStatus => Data.ShutdownBeginPeer.ErrorCode;
             internal bool ShutdownTimedOut => Data.ShutdownComplete.TimedOut;
             internal ushort BiDirectionalCount => Data.StreamsAvailable.BiDirectionalCount;
             internal ushort UniDirectionalCount => Data.StreamsAvailable.UniDirectionalCount;
@@ -295,7 +295,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint ConnectionShutdownDelegate(
             IntPtr connection,
             uint flags,
-            ushort errorCode);
+            long errorCode);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataRecv
@@ -324,13 +324,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerSendAbort
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerRecvAbort
         {
-            internal ushort ErrorCode;
+            internal long ErrorCode;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -435,7 +435,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamCallbackDelegate(
             IntPtr stream,
             IntPtr context,
-            StreamEvent streamEvent);
+            ref StreamEvent streamEvent);
 
         internal delegate uint StreamOpenDelegate(
             IntPtr connection,
@@ -454,7 +454,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal delegate uint StreamShutdownDelegate(
             IntPtr stream,
             uint flags,
-            ushort errorCode);
+            long errorCode);
 
         internal delegate uint StreamSendDelegate(
             IntPtr stream,

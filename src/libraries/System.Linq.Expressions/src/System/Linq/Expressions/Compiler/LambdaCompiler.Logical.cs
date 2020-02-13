@@ -454,7 +454,6 @@ namespace System.Linq.Expressions.Compiler
         /// constant folding over conditionals and logical expressions at the
         /// tree level.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private void EmitExpressionAndBranch(bool branchValue, Expression node, Label label)
         {
             Debug.Assert(node.Type == typeof(bool));

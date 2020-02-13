@@ -3,7 +3,6 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <GCStressIncompatible>true</GCStressIncompatible>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
     <!-- https://github.com/dotnet/coreclr/issues/24423 -->

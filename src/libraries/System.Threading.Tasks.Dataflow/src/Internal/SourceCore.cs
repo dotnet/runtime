@@ -28,7 +28,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
 
     /// <summary>Provides a core implementation for blocks that implement <see cref="ISourceBlock{TOutput}"/>.</summary>
     /// <typeparam name="TOutput">Specifies the type of data supplied by the <see cref="SourceCore{TOutput}"/>.</typeparam>
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
     [DebuggerDisplay("{DebuggerDisplayContent,nq}")]
     internal sealed class SourceCore<TOutput>
     {
@@ -123,7 +122,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
         {
             // Validate arguments
@@ -792,7 +790,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Task body used to process messages.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void OfferMessagesLoopCore()
         {
             Debug.Assert(_taskForOutputProcessing != null && _taskForOutputProcessing.Id == Task.CurrentId,
@@ -980,7 +977,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <summary>Gets the object to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

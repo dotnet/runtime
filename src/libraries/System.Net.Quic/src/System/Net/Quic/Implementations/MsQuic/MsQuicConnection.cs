@@ -39,6 +39,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _disposed;
         private bool _connected;
         private MsQuicSecurityConfig _securityConfig;
+        private long _abortErrorCode = -1;
 
         // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
@@ -200,6 +201,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private uint HandleEventShutdownInitiatedByPeer(ConnectionEvent connectionEvent)
         {
+            _abortErrorCode = connectionEvent.Data.ShutdownBeginPeer.ErrorCode;
             _acceptQueue.Writer.Complete();
             return MsQuicStatusCodes.Success;
         }
@@ -237,18 +239,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             ThrowIfDisposed();
 
-            if (await _acceptQueue.Reader.WaitToReadAsync(cancellationToken))
+            MsQuicStream stream;
+
+            try
             {
-                if (_acceptQueue.Reader.TryRead(out MsQuicStream stream))
+                stream = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                throw _abortErrorCode switch
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-                    return stream;
-                }
+                    -1 => new QuicOperationAbortedException(), // Shutdown initiated by us.
+                    long err => new QuicConnectionAbortedException(err) // Shutdown initiated by peer.
+                };
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-
-            return null;
+            return stream;
         }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
@@ -265,6 +272,16 @@ namespace System.Net.Quic.Implementations.MsQuic
             return StreamOpen(QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
+        internal override long GetRemoteAvailableUnidirectionalStreamCount()
+        {
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_UNIDI_STREAM_COUNT);
+        }
+
+        internal override long GetRemoteAvailableBidirectionalStreamCount()
+        {
+            return MsQuicParameterHelpers.GetUShortParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.PEER_BIDI_STREAM_COUNT);
+        }
+
         private unsafe void SetIdleTimeout(TimeSpan timeout)
         {
             MsQuicParameterHelpers.SetULongParam(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.IDLE_TIMEOUT, (ulong)timeout.TotalMilliseconds);
@@ -274,12 +291,13 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
-            MsQuicStatusException.ThrowIfFailed(
+            QuicExceptionHelpers.ThrowIfFailed(
                 MsQuicApi.Api.ConnectionStartDelegate(
                 _ptr,
                 (ushort)_remoteEndPoint.AddressFamily,
                 _remoteEndPoint.Address.ToString(),
-                (ushort)_remoteEndPoint.Port));
+                (ushort)_remoteEndPoint.Port),
+                "Failed to connect to peer.");
 
             return _connectTcs.GetTypelessValueTask();
         }
@@ -290,13 +308,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
             IntPtr streamPtr = IntPtr.Zero;
-            MsQuicStatusException.ThrowIfFailed(
+            QuicExceptionHelpers.ThrowIfFailed(
                 MsQuicApi.Api.StreamOpenDelegate(
                 _ptr,
                 (uint)flags,
                 MsQuicStream.NativeCallbackHandler,
                 IntPtr.Zero,
-                out streamPtr));
+                out streamPtr),
+                "Failed to open stream to peer.");
 
             MsQuicStream stream = new MsQuicStream(this, flags, streamPtr, inbound: false);
 
@@ -316,7 +335,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private ValueTask ShutdownAsync(
             QUIC_CONNECTION_SHUTDOWN_FLAG Flags,
-            ushort ErrorCode)
+            long ErrorCode)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -324,7 +343,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _ptr,
                 (uint)Flags,
                 ErrorCode);
-            MsQuicStatusException.ThrowIfFailed(status);
+            QuicExceptionHelpers.ThrowIfFailed(status, "Failed to shutdown connection.");
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return _shutdownTcs.GetTypelessValueTask();
@@ -379,11 +398,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        internal override ValueTask CloseAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
-            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, 0);
+            return ShutdownAsync(QUIC_CONNECTION_SHUTDOWN_FLAG.NONE, errorCode);
         }
 
         private void ThrowIfDisposed()

@@ -118,11 +118,11 @@
 // }
 
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 #define QCALLTYPE __cdecl
-#else // PLATFORM_UNIX
+#else // TARGET_UNIX
 #define QCALLTYPE __stdcall
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
     INSTALL_MANAGED_EXCEPTION_DISPATCHER \
@@ -196,6 +196,12 @@ public:
     struct ObjectHandleOnStack
     {
         Object ** m_ppObject;
+
+        OBJECTREF Get()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ObjectToOBJECTREF(*m_ppObject);
+        }
 
 #ifndef DACCESS_COMPILE
         //

@@ -57,6 +57,13 @@
       <Architectures>x64</Architectures>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="ios">
+      <Parent>unix</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <!-- starting from 11 because 10 will need different graph with arm included -->
+      <Versions>11;12;13</Versions>
+    </RuntimeGroup>
+
     <!-- linux mint includes major version in Include because Parent is different for each major -->
     <RuntimeGroup Include="linuxmint.17">
       <Parent>ubuntu.14.04</Parent>
@@ -134,7 +141,13 @@
     <RuntimeGroup Include="tizen">
       <Parent>linux</Parent>
       <Architectures>x86;armel</Architectures>
-      <Versions>4.0.0;5.0.0</Versions>
+      <Versions>4.0.0;5.0.0;5.5.0;6.0.0</Versions>
+    </RuntimeGroup>
+
+    <RuntimeGroup Include="tvos">
+      <Parent>unix</Parent>
+      <Architectures>arm64;x64</Architectures>
+      <Versions>10;11;12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ubuntu">

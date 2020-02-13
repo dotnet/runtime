@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -70,17 +71,20 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                state.Current.Initialize(inputType, options);
-                state.Current.CurrentValue = value;
+                state.InitializeRoot(inputType, options, supportContinuation: true);
 
                 bool isFinalBlock;
-                int flushThreshold;
 
                 do
                 {
-                    flushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    state.FlushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
+                    isFinalBlock = WriteCore(
+                        writer,
+                        value,
+                        options,
+                        ref state,
+                        state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
 
-                    isFinalBlock = Write(writer, originalWriterDepth: 0, flushThreshold, options, ref state);
                     writer.Flush();
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);

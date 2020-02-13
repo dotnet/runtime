@@ -1,0 +1,52 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BinderTracingTest.cs" />
+    <Compile Include="BinderEventListener.cs" />
+    <Compile Include="Helpers.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="AssemblyToLoad.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Build the same AssemblyToLoad project with a different assembly name. These will be moved to a subdirectory
+         by the MoveDependentAssembliesToSubdirectory target, such that they will not be on the test's app path -->
+    <ProjectReference Include="AssemblyToLoad.csproj">
+      <Properties>AssemblyNameSuffix=Subdirectory</Properties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Targets>Build;SatelliteDllsProjectOutputGroup</Targets>
+    </ProjectReference>
+    <ProjectReference Include="AssemblyToLoad.csproj">
+      <Properties>AssemblyNameSuffix=SubdirectoryMismatch</Properties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="AssemblyToLoad.csproj" Link="AssemblyToLoad_V2.dll">
+      <Properties>AssemblyV2=true</Properties>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Content</OutputItemType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+
+  <Target Name="MoveDependentAssembliesToSubdirectory" AfterTargets="CopyFilesToOutputDirectory">
+    <PropertyGroup>
+      <AssemblyToLoadResourceCulture>fr-FR</AssemblyToLoadResourceCulture>
+    </PropertyGroup>
+    <ItemGroup>
+      <SatelliteAssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.resources.*" />
+      <AssembliesToCopy Include="$(OutDir)/AssemblyToLoad.dll" />
+      <AssembliesToMove Include="$(OutDir)/AssemblyToLoad_*.*" Exclude="@(SatelliteAssembliesToMove)" />
+      <AssembliesToMove Include="$(OutDir)/AssemblyToLoadDependency.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFolder="$(OutDir)/DependentAssemblies" />
+    <Move SourceFiles="@(AssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies" />
+    <Move SourceFiles="@(SatelliteAssembliesToMove)" DestinationFolder="$(OutDir)/DependentAssemblies/$(AssemblyToLoadResourceCulture)" />
+  </Target>
+</Project>

@@ -14,7 +14,7 @@ using Internal.Runtime.CompilerServices;
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -50,7 +50,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             _pointer = new ByReference<T>(ref MemoryMarshal.GetArrayDataReference(array));
@@ -79,9 +79,9 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (!typeof(T).IsValueType && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
-#if BIT64
+#if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
             if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -444,7 +444,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> Slice(int start, int length)
         {
-#if BIT64
+#if TARGET_64BIT
             // Since start and length are both 32-bit, their sum can be computed across a 64-bit domain
             // without loss of fidelity. The cast to uint before the cast to ulong ensures that the
             // extension from 32- to 64-bit is zero-extending rather than sign-extending. The end result

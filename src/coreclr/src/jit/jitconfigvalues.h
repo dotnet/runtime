@@ -98,8 +98,8 @@ CONFIG_INTEGER(JitQueryCurrentStaticFieldClass, W("JitQueryCurrentStaticFieldCla
 CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions"), 0)
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
-CONFIG_INTEGER(JitPrintInlinedMethods, W("JitPrintInlinedMethods"), 0)
-CONFIG_INTEGER(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"), 0)
+CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
+CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitRequired, W("JITRequired"), -1)
 CONFIG_INTEGER(JitRoundFloat, W("JITRoundFloat"), DEFAULT_ROUND_LEVEL)
 CONFIG_INTEGER(JitStackAllocToLocalSize, W("JitStackAllocToLocalSize"), DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
@@ -208,19 +208,19 @@ CONFIG_INTEGER(JitNoRangeChks, W("JitNoRngChks"), 0) // If 1, don't generate ran
 
 // AltJitAssertOnNYI should be 0 on targets where JIT is under development or bring up stage, so as to facilitate
 // fallback to main JIT on hitting a NYI.
-#if defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#if defined(TARGET_ARM64) || defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 0) // Controls the AltJit behavior of NYI stuff
-#else                                                        // !defined(_TARGET_ARM64_) && !defined(_TARGET_X86_)
+#else                                                        // !defined(TARGET_ARM64) && !defined(TARGET_X86)
 CONFIG_INTEGER(AltJitAssertOnNYI, W("AltJitAssertOnNYI"), 1) // Controls the AltJit behavior of NYI stuff
-#endif                                                       // defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
+#endif                                                       // defined(TARGET_ARM64) || defined(TARGET_X86)
 ///
 /// JIT Hardware Intrinsics
 ///
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 CONFIG_INTEGER(EnableSSE3_4, W("EnableSSE3_4"), 1) // Enable SSE3, SSSE3, SSE 4.1 and 4.2 instruction set as default
 #endif
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_X86_)
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
 // Enable AVX instruction set for wide operations as default. When both AVX and SSE3_4 are set, we will use the most
 // capable instruction set available which will prefer AVX over SSE3/4.
 CONFIG_INTEGER(EnableHWIntrinsic, W("EnableHWIntrinsic"), 1) // Enable Base
@@ -239,14 +239,14 @@ CONFIG_INTEGER(EnableBMI2, W("EnableBMI2"), 1)               // Enable BMI2
 CONFIG_INTEGER(EnableLZCNT, W("EnableLZCNT"), 1)             // Enable AES
 CONFIG_INTEGER(EnablePCLMULQDQ, W("EnablePCLMULQDQ"), 1)     // Enable PCLMULQDQ
 CONFIG_INTEGER(EnablePOPCNT, W("EnablePOPCNT"), 1)           // Enable POPCNT
-#else                                                        // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#else                                                        // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 // Enable AVX instruction set for wide operations as default
 CONFIG_INTEGER(EnableAVX, W("EnableAVX"), 0)
-#endif                                                       // !defined(_TARGET_AMD64_) && !defined(_TARGET_X86_)
+#endif                                                       // !defined(TARGET_AMD64) && !defined(TARGET_X86)
 
 // clang-format off
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 CONFIG_INTEGER(EnableHWIntrinsic,       W("EnableHWIntrinsic"), 1)
 CONFIG_INTEGER(EnableArm64Aes,          W("EnableArm64Aes"), 1)
 CONFIG_INTEGER(EnableArm64Atomics,      W("EnableArm64Atomics"), 1)
@@ -269,7 +269,7 @@ CONFIG_INTEGER(EnableArm64AdvSimd_Fp16, W("EnableArm64AdvSimd_Fp16"), 1)
 CONFIG_INTEGER(EnableArm64Sm3,          W("EnableArm64Sm3"), 1)
 CONFIG_INTEGER(EnableArm64Sm4,          W("EnableArm64Sm4"), 1)
 CONFIG_INTEGER(EnableArm64Sve,          W("EnableArm64Sve"), 1)
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
 // clang-format on
 
@@ -285,7 +285,7 @@ CONFIG_INTEGER(JitEnableNoWayAssert, W("JitEnableNoWayAssert"), 1)
 // It was originally intended that JitMinOptsTrackGCrefs only be enabled for amd64 on CoreCLR. A mistake was
 // made, and it was enabled for x86 as well. Whether it should continue to be enabled for x86 should be investigated.
 // This is tracked by issue https://github.com/dotnet/coreclr/issues/12415.
-#if (defined(_TARGET_AMD64_) && defined(FEATURE_CORECLR)) || defined(_TARGET_X86_)
+#if (defined(TARGET_AMD64) && defined(FEATURE_CORECLR)) || defined(TARGET_X86)
 #define JitMinOptsTrackGCrefs_Default 0 // Not tracking GC refs in MinOpts is new behavior
 #else
 #define JitMinOptsTrackGCrefs_Default 1
@@ -412,14 +412,14 @@ CONFIG_STRING(JitFunctionFile, W("JitFunctionFile"))
 #endif // DEBUG
 
 #if defined(DEBUG)
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 // JitSaveFpLrWithCalleeSavedRegisters:
 //    0: use default frame type decision
 //    1: disable frames that save FP/LR registers with the callee-saved registers (at the top of the frame)
 //    2: force all frames to use the frame types that save FP/LR registers with the callee-saved registers (at the top
 //    of the frame)
 CONFIG_INTEGER(JitSaveFpLrWithCalleeSavedRegisters, W("JitSaveFpLrWithCalleeSavedRegisters"), 0)
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 #endif // DEBUG
 
 #undef CONFIG_INTEGER

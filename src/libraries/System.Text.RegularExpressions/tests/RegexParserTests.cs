@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexParserTests()
         {
-            if (!PlatformDetection.IsFullFramework)
+            if (!PlatformDetection.IsNetFramework)
             {
                 s_parseExceptionType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexParseException", true);
                 s_parseErrorField = s_parseExceptionType.GetField("_error", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -383,7 +383,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-\c>]", RegexOptions.None, RegexParseError.UnrecognizedControl)]
         [InlineData(@"[a--]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[--a]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-]", RegexOptions.None, null)]
         [InlineData(@"[\--a]", RegexOptions.None, null)]
         [InlineData(@"[\0-\1]", RegexOptions.None, null)]
         [InlineData(@"[\1-\0]", RegexOptions.None, RegexParseError.ReversedCharRange)]
@@ -428,13 +427,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[\cB-\ca]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[\cB-\cA]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[\--#]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-b]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-\-b]", RegexOptions.None, null)]
         [InlineData(@"[b-\-a]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[b-\-\-a]", RegexOptions.None, RegexParseError.ReversedCharRange)]
-        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.BadClassInCharRange)]
-        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.BadClassInCharRange)]
-        [InlineData(@"[a -\-\b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"()\2", RegexOptions.None, RegexParseError.UndefinedBackref)]
         [InlineData(@"()()\2", RegexOptions.None, null)]
         [InlineData(@"()\1", RegexOptions.ExplicitCapture, RegexParseError.UndefinedBackref)]
@@ -731,6 +725,12 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [InlineData(@"[a-\-]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\-b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a -\-\b]", RegexOptions.None, null)]
         // OutOfMemoryException
         [InlineData("a{2147483647}", RegexOptions.None, null)]
         [InlineData("a{2147483647,}", RegexOptions.None, null)]
@@ -879,9 +879,9 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         private static void Throws(RegexParseError error, Action action)
         {
-            // If no specific error is supplied, or we are running on full framework where RegexParseException
+            // If no specific error is supplied, or we are running on .NET Framework where RegexParseException doesn't exist
             // we expect an ArgumentException.
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsNetFramework)
             {
                 Assert.ThrowsAny<ArgumentException>(action);
                 return;

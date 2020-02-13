@@ -1,6 +1,8 @@
 parameters:
+  runtimeFlavor: 'coreclr'
   platforms: []
   jobParameters: []
+  buildConfig: Release
 
 jobs:
 
@@ -10,8 +12,9 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
-    buildConfig: Release
+    buildConfig: ${{ parameters.buildConfig }}
     platforms: ${{ parameters.platforms }}
     passPlatforms: true
+    runtimeFlavor: ${{ parameters.runtimeFlavor }}
     jobParameters:
       ${{ insert }}: ${{ parameters.jobParameters }}

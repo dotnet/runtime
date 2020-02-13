@@ -9,11 +9,11 @@
 #else
 #define MCC_API extern "C" __attribute__((visibility("default")))
 #define WINAPI
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define __int64     long
-#else // BIT64
+#else // HOST_64BIT
 #define __int64     long long
-#endif // BIT64
+#endif // HOST_64BIT
 
 #define __int32     int
 #define __int16     short int

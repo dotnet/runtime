@@ -45,7 +45,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Corefx has limitations to build a UWP executable that can be launched directly using Process.Start")]
         public void TargetFrameworkTest()
         {
             const int ExpectedExitCode = 0;
@@ -86,7 +85,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ActiveIssue(12716)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/12716")]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
@@ -936,7 +935,7 @@ namespace System.Tests
                     return null;
                 };
 
-                // The issue resolved by coreclr#24450, was only reproduced when there was a Resolving handler present
+                // The issue resolved by https://github.com/dotnet/coreclr/issues/24450, was only reproduced when there was a Resolving handler present
                 System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += resolvingHandler;
 
                 assembly.GetType("System.Tests.AGenericClass`1[[Bogus, BogusAssembly]]", false);

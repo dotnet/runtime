@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <CLRTestPriority>0</CLRTestPriority>
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Due to https://github.com/dotnet/coreclr/issues/22247 -->

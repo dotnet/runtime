@@ -13,10 +13,10 @@ Module Name:
 #ifndef __gc_record_h__
 #define __gc_record_h__
 
-//#define max_generation 2
-
+// We have 3 generations [0-2] that can be condemned
+// All non-SOH generations are logically Gen 2.
 // We pack the dynamic tuning for deciding which gen to condemn in a uint32_t.
-// We assume that 2 bits are enough to represent the generation.
+// We assume that 2 bits are enough to represent a generation that can be condemned.
 #define bits_generation 2
 #define generation_mask (~(~0u << bits_generation))
 //=======================note !!!===================================//
@@ -61,12 +61,25 @@ enum gc_condemn_reason_condition
     gen_induced_noforce_p = 14,
     gen_before_bgc = 15,
     gen_almost_max_alloc = 16,
-    gcrc_max = 17
+    gen_joined_avoid_unproductive = 17,
+    gen_joined_pm_induced_fullgc_p = 18,
+    gen_joined_pm_alloc_loh = 19,
+    gen_joined_gen1_in_pm = 20,
+    gen_joined_limit_before_oom = 21,
+    gen_joined_limit_loh_frag = 22,
+    gen_joined_limit_loh_reclaim = 23,
+    gen_joined_servo_initial = 24,
+    gen_joined_servo_ngc = 25,
+    gen_joined_servo_bgc = 26,
+    gen_joined_servo_postpone = 27,
+    gen_joined_stress_mix = 28,
+    gen_joined_stress = 29,
+    gcrc_max = 30
 };
 
 #ifdef DT_LOG
 static char* record_condemn_reasons_gen_header = "[cg]i|f|a|t|";
-static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|";
+static char* record_condemn_reasons_condition_header = "[cc]i|e|h|v|l|l|e|m|m|m|m|g|o|s|n|b|a|1|2|3|4|5|6|7|8|9|0|a|b";
 static char char_gen_number[4] = {'0', '1', '2', '3'};
 #endif //DT_LOG
 
@@ -320,7 +333,7 @@ int index_of_highest_set_bit (size_t value);
 class gc_history_per_heap
 {
 public:
-    gc_generation_data gen_data[max_generation+2];
+    gc_generation_data gen_data[total_generation_count];
     maxgen_size_increase maxgen_size_info;
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
@@ -410,6 +423,7 @@ struct gc_history_global
     int pause_mode;
     uint32_t mem_pressure;
     uint32_t global_mechanisms_p;
+    gen_to_condemn_tuning gen_to_condemn_reasons;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {

@@ -141,7 +141,7 @@ struct HWIntrinsicInfo
     static bool isFullyImplementedIsa(InstructionSet isa);
     static bool isScalarIsa(InstructionSet isa);
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     static bool isAVX2GatherIntrinsic(NamedIntrinsic id);
 #endif
 

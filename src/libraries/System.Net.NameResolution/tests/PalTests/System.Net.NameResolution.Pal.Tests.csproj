@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>annotations</Nullable>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
@@ -20,10 +21,10 @@
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs" Condition="'$(TargetsWindows)' == 'true'">
       <Link>Common\System\Net\Sockets\ProtocolType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(OSGroup)' == 'Windows_NT'">
+    <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs" Condition="'$(TargetsWindows)' == 'true'">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\IPEndPointStatics.cs">
@@ -98,18 +99,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.GetAddrInfoExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
-      <Link>Common\CoreLi\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">

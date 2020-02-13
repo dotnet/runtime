@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -3879,6 +3879,7 @@ void emitter::emitIns_R_R(
             assert(isGeneralRegisterOrZR(reg2));
             assert(isValidVectorDatasize(size));
             assert(isValidArrangement(size, opt));
+            assert(opt != INS_OPTS_1D); // Reserved encoding
             fmt = IF_DV_2C;
             break;
 
@@ -5256,19 +5257,20 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
-                fmt      = IF_DV_3A;
+                assert(opt != INS_OPTS_1D); // Reserved encoding
+                fmt = IF_DV_3A;
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
-                assert(size == EA_8BYTE); // Only Double supported
+                assert(insOptsNone(opt));
+                assert(size == EA_8BYTE); // Only Int64/UInt64 supported
                 fmt = IF_DV_3E;
             }
             break;
@@ -5280,10 +5282,10 @@ void emitter::emitIns_R_R_R(
             assert(isVectorRegister(reg2));
             assert(isVectorRegister(reg3));
 
-            if (isValidVectorDatasize(size))
+            if (insOptsAnyArrangement(opt))
             {
                 // Vector operation
-                assert(insOptsAnyArrangement(opt));
+                assert(isValidVectorDatasize(size));
                 assert(isValidArrangement(size, opt));
                 elemsize = optGetElemsize(opt);
                 assert((elemsize == EA_8BYTE) || (elemsize == EA_4BYTE)); // Only Double/Float supported
@@ -5292,8 +5294,8 @@ void emitter::emitIns_R_R_R(
             }
             else
             {
-                NYI("Untested");
                 // Scalar operation
+                assert(insOptsNone(opt));
                 assert((size == EA_8BYTE) || (size == EA_4BYTE)); // Only Double/Float supported
                 fmt = IF_DV_3D;
             }
@@ -11569,10 +11571,31 @@ void emitter::emitDispIns(
             break;
 
         case IF_DV_2A: // DV_2A   .Q.......X...... ......nnnnnddddd      Vd Vn   (fabs, fcvt - vector)
-        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg   - vector)
         case IF_DV_2P: // DV_2P   ................ ......nnnnnddddd      Vd Vn   (aes*, sha1su1)
             emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+            break;
+
+        case IF_DV_2M: // DV_2M   .Q......XX...... ......nnnnnddddd      Vd Vn   (abs, neg - vector)
+            switch (ins)
+            {
+                case INS_addv:
+                case INS_saddlv:
+                case INS_smaxv:
+                case INS_sminv:
+                case INS_uaddlv:
+                case INS_umaxv:
+                case INS_uminv:
+                    elemsize = optGetElemsize(id->idInsOpt());
+                    emitDispReg(id->idReg1(), elemsize, true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+
+                default:
+                    emitDispVectorReg(id->idReg1(), id->idInsOpt(), true);
+                    emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
+                    break;
+            }
             break;
 
         case IF_DV_2N: // DV_2N   .........iiiiiii ......nnnnnddddd      Vd Vn imm   (shift - scalar)
@@ -12355,6 +12378,22 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_1C;
                     break;
 
+                case INS_crc32b:
+                case INS_crc32h:
+                case INS_crc32cb:
+                case INS_crc32ch:
+                case INS_crc32x:
+                case INS_crc32cx:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    break;
+
+                case INS_crc32w:
+                case INS_crc32cw:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_1C;
+                    break;
+
                 default:
                     // all other instructions
                     perfScoreUnhandledInstruction(id, &result);
@@ -12740,13 +12779,24 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     result.insLatency    = PERFSCORE_LATENCY_4C;
                     break;
 
+                case INS_facge:
+                case INS_facgt:
                 case INS_fcmeq:
                 case INS_fcmge:
                 case INS_fcmgt:
                 case INS_fcmle:
                 case INS_fcmlt:
-                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-                    result.insLatency    = PERFSCORE_LATENCY_2C;
+                    if (id->idOpSize() == EA_16BYTE)
+                    {
+                        // Q-form
+                        result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
+                    else
+                    {
+                        result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                        result.insLatency    = PERFSCORE_LATENCY_2C;
+                    }
                     break;
 
                 case INS_fdiv:
@@ -12795,6 +12845,15 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fnmul:
                     result.insThroughput = PERFSCORE_THROUGHPUT_2X;
                     result.insLatency    = PERFSCORE_LATENCY_4C;
+                    break;
+
+                case INS_facge:
+                case INS_facgt:
+                case INS_fcmeq:
+                case INS_fcmge:
+                case INS_fcmgt:
+                    result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                    result.insLatency    = PERFSCORE_LATENCY_2C;
                     break;
 
                 case INS_fdiv:
@@ -13124,4 +13183,4 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)

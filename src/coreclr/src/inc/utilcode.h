@@ -66,7 +66,7 @@ class StringArrayList;
 #define _DEBUG_IMPL 1
 #endif
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
 
 // Under ARM we generate code only with Thumb encoding. In order to ensure we execute such code in the correct
 // mode we must ensure the low-order bit is set in any code address we'll call as a sub-routine. In C++ this
@@ -102,13 +102,13 @@ inline ResultType ThumbCodeToDataPointer(SourceType pCode)
     return (ResultType)(((UINT_PTR)pCode) & ~THUMB_CODE);
 }
 
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 // Convert from a PCODE to the corresponding PINSTR.  On many architectures this will be the identity function;
 // on ARM, this will mask off the THUMB bit.
 inline TADDR PCODEToPINSTR(PCODE pc)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return ThumbCodeToDataPointer<TADDR,PCODE>(pc);
 #else
     return dac_cast<PCODE>(pc);
@@ -119,7 +119,7 @@ inline TADDR PCODEToPINSTR(PCODE pc)
 // on ARM, this will raise the THUMB bit.
 inline PCODE PINSTRToPCODE(TADDR addr)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     return DataPointerToThumbCode<PCODE,TADDR>(addr);
 #else
     return dac_cast<PCODE>(addr);
@@ -490,7 +490,7 @@ inline void *__cdecl operator new(size_t, void *_P)
 /********************************************************************************/
 /* portability helpers */
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define IN_TARGET_64BIT(x)     x
 #define IN_TARGET_32BIT(x)
 #else
@@ -566,14 +566,6 @@ void GetResourceCultureCallbacks(
         FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
 );
-
-#if !defined(DACCESS_COMPILE)
-// Get the MUI ID, on downlevel platforms where MUI is not supported it
-// returns the default system ID.
-extern int GetMUILanguageID(LocaleIDValue* pResult);
-extern HRESULT GetMUILanguageNames(__inout StringArrayList* pCultureNames);
-
-#endif // !defined(DACCESS_COMPILE)
 
 //*****************************************************************************
 // Use this class by privately deriving from noncopyable to disallow copying of
@@ -712,9 +704,9 @@ public:
         m_nHashSize = 0;
         m_csMap = NULL;
         m_pResourceFile = NULL;
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
         m_pResourceDomain = NULL;
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
     }// CCompRC
 
@@ -726,8 +718,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_bUseFallback;
     };
-
-    static void SetIsMscoree() {s_bIsMscoree = TRUE;}
 
     HRESULT LoadString(ResourceCategory eCategory, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax , int *pcwchUsed=NULL);
     HRESULT LoadString(ResourceCategory eCategory, LocaleID langId, UINT iResourceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax, int *pcwchUsed);
@@ -742,13 +732,10 @@ public:
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId
     );
 
-    HRESULT LoadMUILibrary(HRESOURCEDLL * pHInst);
-
     // Get the default resource location (mscorrc.dll for desktop, mscorrc.debug.dll for CoreCLR)
     static CCompRC* GetDefaultResourceDll();
     // Get the generic messages dll (Silverlight only, mscorrc.dll)
     static CCompRC* GetFallbackResourceDll();
-    static void ShutdownDefaultResourceDll();
     static void GetDefaultCallbacks(
                     FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
                     FPGETTHREADUICULTUREID* fpGetThreadUICultureId)
@@ -775,24 +762,7 @@ public:
         m_FallbackResourceDll.SetResourceCultureCallbacks(
                 fpGetThreadUICultureNames,
                 fpGetThreadUICultureId);
-
     }
-
-#ifdef USE_FORMATMESSAGE_WRAPPER
-
-DWORD
-PALAPI
-static
-FormatMessage(
-           IN DWORD dwFlags,
-           IN LPCVOID lpSource,
-           IN DWORD dwMessageId,
-           IN DWORD dwLanguageId,
-           OUT LPWSTR lpBuffer,
-           IN DWORD nSize,
-           IN va_list *Arguments);
-#endif // USE_FORMATMESSAGE_WRAPPER
-
 
 private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
@@ -824,12 +794,12 @@ private:
     CRITSEC_COOKIE m_csMap;
 
     LPCWSTR m_pResourceFile;
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
     // Resource domain is an ANSI string identifying a native resources file
     static LPCSTR  m_pDefaultResourceDomain;
     static LPCSTR  m_pFallbackResourceDomain;
     LPCSTR m_pResourceDomain;
-#endif // FEATURE_PAL
+#endif // HOST_UNIX
 
     // Main accessors for hash
     HRESOURCEDLL LookupNode(LocaleID langId, BOOL &fMissing);
@@ -839,7 +809,6 @@ private:
     FPGETTHREADUICULTURENAMES m_fpGetThreadUICultureNames;
 
     BOOL m_bUseFallback;
-    static BOOL s_bIsMscoree;
 };
 
 HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResouceID, __out_ecount (iMax) LPWSTR szBuffer, int iMax);
@@ -1311,16 +1280,16 @@ public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
                                      DWORD allocType, DWORD prot, DWORD node);
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
     static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
     static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
-#else // !FEATURE_PAL
+#else // HOST_WINDOWS
     static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 #endif
 };
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 struct CPU_Group_Info
 {
@@ -1384,7 +1353,7 @@ public:
 
 DWORD_PTR GetCurrentProcessCpuMask();
 
-#endif // !FEATURE_PAL
+#endif // HOST_WINDOWS
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -4327,13 +4296,13 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
 class ClrTeb
 {
 public:
-#if defined(FEATURE_PAL)
+#if defined(HOST_UNIX)
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
     {
         LIMITED_METHOD_CONTRACT;
-        // not fiber for FEATURE_PAL - use the regular thread ID
+        // not fiber for HOST_UNIX - use the regular thread ID
         return (void *)(size_t)GetCurrentThreadId();
     }
 
@@ -4352,7 +4321,7 @@ public:
         return PAL_GetStackLimit();
     }
 
-#else // !FEATURE_PAL
+#else // HOST_UNIX
 
     // returns pointer that uniquely identifies the fiber
     static void* GetFiberPtrId()
@@ -4401,7 +4370,7 @@ public:
     {
         return (void*) 1;
     }
-#endif // !FEATURE_PAL
+#endif // HOST_UNIX
 };
 
 #if !defined(DACCESS_COMPILE)
@@ -4840,7 +4809,7 @@ namespace util
  * Overloaded operators for the executable heap
  * ------------------------------------------------------------------------ */
 
-#ifndef FEATURE_PAL
+#ifdef HOST_WINDOWS
 
 struct CExecutable { int x; };
 extern const CExecutable executable;
@@ -4864,7 +4833,7 @@ template<class T> void DeleteExecutable(T *p)
     }
 }
 
-#endif // FEATURE_PAL
+#endif // HOST_WINDOWS
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 

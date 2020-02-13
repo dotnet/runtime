@@ -40,9 +40,6 @@ namespace System.Net.Mail
         private readonly ChannelBinding _channelBindingToken = null;
         private bool _enableSsl;
         private X509CertificateCollection _clientCertificates;
-#pragma warning disable CS0414
-        private bool _aborted; // Tracks whether Abort was called, for debugging https://github.com/dotnet/corefx/issues/40711.
-#pragma warning restore CS0414
 
         internal SmtpConnection(SmtpTransport parent, SmtpClient client, ICredentialsByHost credentials, ISmtpAuthenticationModule[] authenticationModules)
         {
@@ -154,29 +151,31 @@ namespace System.Net.Mail
 
         internal void Abort()
         {
-            _aborted = true;
-
             if (!_isClosed)
             {
-                lock (this)
+                try
                 {
-                    if (!_isClosed && _tcpClient != null)
+                    lock (this)
                     {
-                        //free CBT buffer
-                        if (_channelBindingToken != null)
+                        if (!_isClosed && _tcpClient != null)
                         {
-                            _channelBindingToken.Close();
-                        }
+                            _channelBindingToken?.Close();
 
-                        // must destroy manually since sending a QUIT here might not be
-                        // interpreted correctly by the server if it's in the middle of a
-                        // DATA command or some similar situation.  This may send a RST
-                        // but this is ok in this situation.  Do not reuse this connection
-                        _tcpClient.LingerState = new LingerOption(true, 0);
-                        _networkStream?.Close();
-                        _tcpClient.Dispose();
+                            // Must destroy manually since sending a QUIT here might not be
+                            // interpreted correctly by the server if it's in the middle of a
+                            // DATA command or some similar situation.  This may send a RST
+                            // but this is ok in this situation.  Do not reuse this connection
+                            _tcpClient.LingerState = new LingerOption(true, 0);
+                            _networkStream?.Close();
+                            _tcpClient.Dispose();
+                        }
+                        _isClosed = true;
                     }
-                    _isClosed = true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                    // catch additional exception types here if need demonstrates.
                 }
             }
             _isConnected = false;

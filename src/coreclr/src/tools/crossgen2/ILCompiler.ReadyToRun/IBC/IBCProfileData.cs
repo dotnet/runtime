@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,7 +16,7 @@ namespace ILCompiler.IBC
             foreach (MethodProfileData data in methodData)
             {
                 if (_methodData.ContainsKey(data.Method))
-                    throw new Exception("Multiple copies of data for the same method"); // TODO, I think this is actually valid, but lets see
+                    throw new Exception("Multiple copies of data for the same method");
 
                 _methodData.Add(data.Method, data);
             }

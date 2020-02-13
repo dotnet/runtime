@@ -649,11 +649,6 @@ namespace Internal.TypeSystem
                 fieldOrdinal++;
             }
 
-            if (type.IsValueType)
-            {
-                cumulativeInstanceFieldPos = LayoutInt.Max(cumulativeInstanceFieldPos, new LayoutInt(layoutMetadata.Size));
-            }
-
             // The JITs like to copy full machine words,
             // so if the size is bigger than a void* round it up to minAlign
             // and if the size is smaller than void* round it up to next power of two
@@ -780,7 +775,7 @@ namespace Internal.TypeSystem
 
         private static int ComputePackingSize(MetadataType type, ClassLayoutMetadata layoutMetadata)
         {
-            // If a type contains pointers then the metadata specified packing size is ignored (On desktop this is disqualification from ManagedSequential)
+            // If a type contains pointers then the metadata specified packing size is ignored (On .NET Framework this is disqualification from ManagedSequential)
             if (layoutMetadata.PackingSize == 0 || type.ContainsGCPointers)
                 return type.Context.Target.DefaultPackingSize;
             else

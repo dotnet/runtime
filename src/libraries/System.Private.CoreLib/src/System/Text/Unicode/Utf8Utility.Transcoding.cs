@@ -6,17 +6,18 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nint = System.Int32;
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System.Text.Unicode
 {
@@ -78,7 +79,8 @@ namespace System.Text.Unicode
             byte* pLastBufferPosProcessed = null; // used for invariant checking in debug builds
 #endif
 
-            while (pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer)
+            Debug.Assert(pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer);
+            do
             {
                 // Read 32 bits at a time. This is enough to hold any possible UTF8-encoded scalar.
 
@@ -101,7 +103,7 @@ namespace System.Text.Unicode
                         goto ProcessRemainingBytesSlow; // running out of space, but may be able to write some data
                     }
 
-                    Widen4AsciiBytesToCharsAndWrite(ref *pOutputBuffer, thisDWord);
+                    ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
                     pInputBuffer += 4;
                     pOutputBuffer += 4;
                     outputCharsRemaining -= 4;
@@ -127,8 +129,8 @@ namespace System.Text.Unicode
 
                         pInputBuffer += 8;
 
-                        Widen4AsciiBytesToCharsAndWrite(ref pOutputBuffer[0], thisDWord);
-                        Widen4AsciiBytesToCharsAndWrite(ref pOutputBuffer[4], secondDWord);
+                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[0], thisDWord);
+                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pOutputBuffer[4], secondDWord);
 
                         pOutputBuffer += 8;
                     }
@@ -143,7 +145,7 @@ namespace System.Text.Unicode
                     {
                         // The first DWORD contained all-ASCII bytes, so expand it.
 
-                        Widen4AsciiBytesToCharsAndWrite(ref *pOutputBuffer, thisDWord);
+                        ASCIIUtility.WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref *pOutputBuffer, thisDWord);
 
                         // continue the outer loop from the second DWORD
 
@@ -487,12 +489,10 @@ namespace System.Text.Unicode
                     }
 
                     // As an optimization, on compatible platforms check if a second three-byte sequence immediately
-                    // follows the one we just read, and if so use BSWAP and BMI2 to extract them together.
+                    // follows the one we just read, and if so extract them together.
 
-                    if (Bmi2.X64.IsSupported)
+                    if (BitConverter.IsLittleEndian)
                     {
-                        Debug.Assert(BitConverter.IsLittleEndian, "BMI2 requires little-endian.");
-
                         // First, check that the leftover byte from the original DWORD is in the range [ E0..EF ], which
                         // would indicate the potential start of a second three-byte sequence.
 
@@ -504,7 +504,7 @@ namespace System.Text.Unicode
 
                             if (outputCharsRemaining > 1 && (nint)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) >= 3)
                             {
-                                // We're going to attempt to read a second 3-byte sequence and write them both out simultaneously using PEXT.
+                                // We're going to attempt to read a second 3-byte sequence and write them both out one after the other.
                                 // We need to check the continuation bit mask on the remaining two bytes (and we may as well check the leading
                                 // byte mask again since it's free), then perform overlong + surrogate checks. If the overlong or surrogate
                                 // checks fail, we'll fall through to the remainder of the logic which will transcode the original valid
@@ -517,14 +517,8 @@ namespace System.Text.Unicode
                                     && ((secondDWord & 0x0000_200Fu) != 0)
                                     && (((secondDWord - 0x0000_200Du) & 0x0000_200Fu) != 0))
                                 {
-                                    // combinedQWord = [ 1110ZZZZ 10YYYYYY 10XXXXXX ######## | 1110zzzz 10yyyyyy 10xxxxxx ######## ], where xyz are from first DWORD, XYZ are from second DWORD
-                                    ulong combinedQWord = ((ulong)BinaryPrimitives.ReverseEndianness(secondDWord) << 32) | BinaryPrimitives.ReverseEndianness(thisDWord);
-                                    thisDWord = secondDWord; // store this value in the correct local for the ASCII drain logic
-
-                                    // extractedQWord = [ 00000000 00000000 00000000 00000000 | ZZZZYYYYYYXXXXXX zzzzyyyyyyxxxxxx ]
-                                    ulong extractedQWord = Bmi2.X64.ParallelBitExtract(combinedQWord, 0x0F3F3F00_0F3F3F00ul);
-
-                                    Unsafe.WriteUnaligned<uint>(pOutputBuffer, (uint)extractedQWord);
+                                    pOutputBuffer[0] = (char)ExtractCharFromFirstThreeByteSequence(thisDWord);
+                                    pOutputBuffer[1] = (char)ExtractCharFromFirstThreeByteSequence(secondDWord);
                                     pInputBuffer += 6;
                                     pOutputBuffer += 2;
                                     outputCharsRemaining -= 2;
@@ -658,7 +652,7 @@ namespace System.Text.Unicode
 
                     continue; // go back to beginning of loop for processing
                 }
-            }
+            } while (pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer);
 
         ProcessRemainingBytesSlow:
             inputLength = (int)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) + 4;
@@ -900,6 +894,16 @@ namespace System.Text.Unicode
 
             char* pFinalPosWhereCanReadDWordFromInputBuffer = pInputBuffer + (uint)inputLength - CharsPerDWord;
 
+            // We have paths for SSE4.1 vectorization inside the inner loop. Since the below
+            // vector is only used in those code paths, we leave it uninitialized if SSE4.1
+            // is not enabled.
+
+            Unsafe.SkipInit(out Vector128<short> nonAsciiUtf16DataMask);
+            if (Sse41.X64.IsSupported)
+            {
+                nonAsciiUtf16DataMask = Vector128.Create(unchecked((short)0xFF80)); // mask of non-ASCII bits in a UTF-16 char
+            }
+
             // Begin the main loop.
 
 #if DEBUG
@@ -908,7 +912,8 @@ namespace System.Text.Unicode
 
             uint thisDWord;
 
-            while (pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer)
+            Debug.Assert(pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer);
+            do
             {
                 // Read 32 bits at a time. This is enough to hold any possible UTF16-encoded scalar.
 
@@ -952,27 +957,26 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-                    if (Bmi2.X64.IsSupported)
+                    if (Sse41.X64.IsSupported)
                     {
-                        Debug.Assert(BitConverter.IsLittleEndian, "BMI2 requires little-endian.");
-                        const ulong PEXT_MASK = 0x00FF00FF_00FF00FFul;
+                        Debug.Assert(BitConverter.IsLittleEndian, "SSE41 requires little-endian.");
 
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;
-                        ulong firstQWord, secondQWord;
+                        ulong possibleNonAsciiQWord;
                         int i;
+                        Vector128<short> utf16Data;
                         for (i = 0; (uint)i < maxIters; i++)
                         {
-                            firstQWord = Unsafe.ReadUnaligned<ulong>(pInputBuffer);
-                            secondQWord = Unsafe.ReadUnaligned<ulong>(pInputBuffer + 4);
-
-                            if (!Utf16Utility.AllCharsInUInt64AreAscii(firstQWord | secondQWord))
+                            utf16Data = Unsafe.ReadUnaligned<Vector128<short>>(pInputBuffer);
+                            if (!Sse41.TestZ(utf16Data, nonAsciiUtf16DataMask))
                             {
-                                goto LoopTerminatedDueToNonAsciiData;
+                                goto LoopTerminatedDueToNonAsciiDataInVectorLocal;
                             }
 
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, (uint)Bmi2.X64.ParallelBitExtract(firstQWord, PEXT_MASK));
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer + 4, (uint)Bmi2.X64.ParallelBitExtract(secondQWord, PEXT_MASK));
+                            // narrow and write
+
+                            Sse2.StoreScalar((ulong*)pOutputBuffer /* unaligned */, Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt64());
 
                             pInputBuffer += 8;
                             pOutputBuffer += 8;
@@ -984,14 +988,14 @@ namespace System.Text.Unicode
 
                         if ((minElementsRemaining & 4) != 0)
                         {
-                            secondQWord = Unsafe.ReadUnaligned<ulong>(pInputBuffer);
-
-                            if (!Utf16Utility.AllCharsInUInt64AreAscii(secondQWord))
+                            possibleNonAsciiQWord = Unsafe.ReadUnaligned<ulong>(pInputBuffer);
+                            if (!Utf16Utility.AllCharsInUInt64AreAscii(possibleNonAsciiQWord))
                             {
-                                goto LoopTerminatedDueToNonAsciiDataInSecondQWord;
+                                goto LoopTerminatedDueToNonAsciiDataInPossibleNonAsciiQWordLocal;
                             }
 
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, (uint)Bmi2.X64.ParallelBitExtract(secondQWord, PEXT_MASK));
+                            utf16Data = Vector128.CreateScalarUnsafe(possibleNonAsciiQWord).AsInt16();
+                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
 
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
@@ -1000,29 +1004,31 @@ namespace System.Text.Unicode
 
                         continue; // Go back to beginning of main loop, read data, check for ASCII
 
-                    LoopTerminatedDueToNonAsciiData:
+                    LoopTerminatedDueToNonAsciiDataInVectorLocal:
 
                         outputBytesRemaining -= 8 * i;
+                        possibleNonAsciiQWord = Sse2.X64.ConvertToUInt64(utf16Data.AsUInt64());
 
-                        // First, see if we can drain any ASCII data from the first QWORD.
+                        // Temporarily set 'possibleNonAsciiQWord' to be the low 64 bits of the vector,
+                        // then check whether it's all-ASCII. If so, narrow and write to the destination
+                        // buffer. Since we know that either the high 64 bits or the low 64 bits of the
+                        // vector contains non-ASCII data, by the end of the following block the
+                        // 'possibleNonAsciiQWord' local is guaranteed to contain the non-ASCII segment.
 
-                        if (Utf16Utility.AllCharsInUInt64AreAscii(firstQWord))
+                        if (Utf16Utility.AllCharsInUInt64AreAscii(possibleNonAsciiQWord)) // all chars in first QWORD are ASCII
                         {
-                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, (uint)Bmi2.X64.ParallelBitExtract(firstQWord, PEXT_MASK));
+                            Unsafe.WriteUnaligned<uint>(pOutputBuffer, Sse2.ConvertToUInt32(Sse2.PackUnsignedSaturate(utf16Data, utf16Data).AsUInt32()));
                             pInputBuffer += 4;
                             pOutputBuffer += 4;
                             outputBytesRemaining -= 4;
-                        }
-                        else
-                        {
-                            secondQWord = firstQWord;
+                            possibleNonAsciiQWord = utf16Data.AsUInt64().GetElement(1);
                         }
 
-                    LoopTerminatedDueToNonAsciiDataInSecondQWord:
+                    LoopTerminatedDueToNonAsciiDataInPossibleNonAsciiQWordLocal:
 
-                        Debug.Assert(!Utf16Utility.AllCharsInUInt64AreAscii(secondQWord)); // this condition should've been checked earlier
+                        Debug.Assert(!Utf16Utility.AllCharsInUInt64AreAscii(possibleNonAsciiQWord)); // this condition should've been checked earlier
 
-                        thisDWord = (uint)secondQWord;
+                        thisDWord = (uint)possibleNonAsciiQWord;
                         if (Utf16Utility.AllCharsInUInt32AreAscii(thisDWord))
                         {
                             // [ 00000000 0bbbbbbb | 00000000 0aaaaaaa ] -> [ 00000000 0bbbbbbb | 0bbbbbbb 0aaaaaaa ]
@@ -1030,14 +1036,14 @@ namespace System.Text.Unicode
                             pInputBuffer += 2;
                             pOutputBuffer += 2;
                             outputBytesRemaining -= 2;
-                            thisDWord = (uint)(secondQWord >> 32);
+                            thisDWord = (uint)(possibleNonAsciiQWord >> 32);
                         }
 
                         goto AfterReadDWordSkipAllCharsAsciiCheck;
                     }
                     else
                     {
-                        // Can't use BMI2 x64, so we'll only read and write 4 elements per iteration.
+                        // Can't use SSE41 x64, so we'll only read and write 4 elements per iteration.
                         uint maxIters = minElementsRemaining / 4;
                         uint secondDWord;
                         int i;
@@ -1358,7 +1364,7 @@ namespace System.Text.Unicode
                 }
 
                 goto Error; // an ill-formed surrogate sequence: high not followed by low, or low not preceded by high
-            }
+            } while (pInputBuffer <= pFinalPosWhereCanReadDWordFromInputBuffer);
 
         ProcessNextCharAndFinish:
             inputLength = (int)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + CharsPerDWord;

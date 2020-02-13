@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,7 +19,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private unsafe MsQuicApi()
         {
-            MsQuicStatusException.ThrowIfFailed(Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration));
+            MsQuicNativeMethods.NativeApi* registration;
+
+            try
+            {
+                uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
+                if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+                {
+                    throw new NotSupportedException(SR.net_quic_notsupported);
+                }
+            }
+            catch (DllNotFoundException)
+            {
+                throw new NotSupportedException(SR.net_quic_notsupported);
+            }
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 
@@ -112,7 +127,40 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _registrationContext = ctx;
         }
 
-        internal static MsQuicApi Api { get; } = new MsQuicApi();
+        internal static MsQuicApi Api { get; }
+
+        internal static bool IsQuicSupported { get; }
+
+        static MsQuicApi()
+        {
+            // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
+            // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
+
+            // TODO:
+            // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
+            // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
+            //   error code mapping when creating exceptions.
+
+            OperatingSystem ver = Environment.OSVersion;
+
+            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
+            {
+                IsQuicSupported = false;
+                return;
+            }
+
+            // TODO: try to initialize TLS 1.3 in SslStream.
+
+            try
+            {
+                Api = new MsQuicApi();
+                IsQuicSupported = true;
+            }
+            catch (NotSupportedException)
+            {
+                IsQuicSupported = false;
+            }
+        }
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
@@ -184,10 +232,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
-            uint status;
+            uint createConfigStatus;
+
+            // If no certificate is provided, provide a null one.
             if (certificate != null)
             {
-                status = SecConfigCreateDelegate(
+                createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
                     (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
                     certificate.Handle,
@@ -197,7 +247,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
             else
             {
-                status = SecConfigCreateDelegate(
+                createConfigStatus = SecConfigCreateDelegate(
                     _registrationContext,
                     (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
                     IntPtr.Zero,
@@ -206,7 +256,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     SecCfgCreateCallbackHandler);
             }
 
-            MsQuicStatusException.ThrowIfFailed(status);
+            QuicExceptionHelpers.ThrowIfFailed(
+                createConfigStatus,
+                "Could not create security configuration.");
 
             void SecCfgCreateCallbackHandler(
                 IntPtr context,
@@ -220,7 +272,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             await tcs.Task.ConfigureAwait(false);
 
-            MsQuicStatusException.ThrowIfFailed(secConfigCreateStatus);
+            QuicExceptionHelpers.ThrowIfFailed(
+                secConfigCreateStatus,
+                "Could not create security configuration.");
 
             return secConfig;
         }
@@ -234,7 +288,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 alpn,
                 IntPtr.Zero,
                 ref sessionPtr);
-            MsQuicStatusException.ThrowIfFailed(status);
+
+            QuicExceptionHelpers.ThrowIfFailed(status, "Could not open session.");
 
             return sessionPtr;
         }

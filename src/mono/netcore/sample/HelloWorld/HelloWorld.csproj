@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+</Project>

@@ -8,11 +8,9 @@ namespace System.Diagnostics.Tracing
 {
     internal static class RuntimeEventSourceHelper
     {
-        private static Interop.Sys.ProcessCpuInformation cpuInfo;
+        private static Interop.Sys.ProcessCpuInformation s_cpuInfo;
 
-        internal static int GetCpuUsage()
-        {
-            return Interop.Sys.GetCpuUtilization(ref cpuInfo);
-        }
+        internal static int GetCpuUsage() =>
+            Interop.Sys.GetCpuUtilization(ref s_cpuInfo) / Environment.ProcessorCount;
     }
 }

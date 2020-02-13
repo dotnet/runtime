@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace System.Net.Quic
     public sealed class QuicConnection : IDisposable
     {
         private readonly QuicConnectionProvider _provider;
+
+        public static bool IsQuicSupported => MsQuicApi.IsQuicSupported;
 
         /// <summary>
         /// Create an outbound QUIC connection.
@@ -79,8 +82,18 @@ namespace System.Net.Quic
         /// <summary>
         /// Close the connection and terminate any active streams.
         /// </summary>
-        public ValueTask CloseAsync(CancellationToken cancellationToken = default) => _provider.CloseAsync(cancellationToken);
+        public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(errorCode, cancellationToken);
 
         public void Dispose() => _provider.Dispose();
+
+        /// <summary>
+        /// Gets the maximum number of bidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
+
+        /// <summary>
+        /// Gets the maximum number of unidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
     }
 }

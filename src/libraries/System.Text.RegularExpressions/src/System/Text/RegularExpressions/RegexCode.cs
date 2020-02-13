@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 // This RegexCode class is internal to the regular expression package.
-// It provides operator constants for use by the Builder and the Machine.
 
 // Implementation notes:
 //
@@ -16,7 +15,6 @@
 // Strings and sets are indices into a string table.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
@@ -49,7 +47,7 @@ namespace System.Text.RegularExpressions
         public const int Bol = 14;                //                          ^
         public const int Eol = 15;                //                          $
         public const int Boundary = 16;           //                          \b
-        public const int Nonboundary = 17;        //                          \B
+        public const int NonBoundary = 17;        //                          \B
         public const int Beginning = 18;          //                          \A
         public const int Start = 19;              //                          \G
         public const int EndZ = 20;               //                          \Z
@@ -95,24 +93,27 @@ namespace System.Text.RegularExpressions
         public const int Back2 = 256; // bit to indicate that we're backtracking on a second branch.
         public const int Ci = 512;    // bit to indicate that we're case-insensitive.
 
-        public readonly RegexTree Tree;                  // the optimized parse tree
-        public readonly int[] Codes;                     // the code
-        public readonly string[] Strings;                // the string/set table
-        public readonly int[]?[] StringsAsciiLookup;     // the ASCII lookup table optimization for the sets in Strings
-        public readonly int TrackCount;                  // how many instructions use backtracking
-        public readonly Hashtable? Caps;                 // mapping of user group numbers -> impl group slots
-        public readonly int CapSize;                     // number of impl group slots
-        public readonly RegexPrefix? FCPrefix;           // the set of candidate first characters (may be null)
-        public int[]? FCPrefixAsciiLookup;               // the ASCII lookup table optimization for the set of candidate first characters if there are any
-        public readonly RegexBoyerMoore? BMPrefix;       // the fixed prefix string as a Boyer-Moore machine (may be null)
-        public readonly int Anchors;                     // the set of zero-length start anchors (RegexFCD.Bol, etc)
-        public readonly bool RightToLeft;                // true if right to left
+        public readonly RegexTree Tree;                                                 // the optimized parse tree
+        public readonly int[] Codes;                                                    // the code
+        public readonly string[] Strings;                                               // the string/set table
+        public readonly int[]?[] StringsAsciiLookup;                                    // the ASCII lookup table optimization for the sets in Strings
+        public readonly int TrackCount;                                                 // how many instructions use backtracking
+        public readonly Hashtable? Caps;                                                // mapping of user group numbers -> impl group slots
+        public readonly int CapSize;                                                    // number of impl group slots
+        public readonly (string CharClass, bool CaseInsensitive)[]? LeadingCharClasses; // the set of candidate first characters, if available.  Each entry corresponds to the next char in the input.
+        public int[]? LeadingCharClassAsciiLookup;                                      // the ASCII lookup table optimization for LeadingCharClasses[0], if it exists; only used by the interpreter
+        public readonly RegexBoyerMoore? BoyerMoorePrefix;                              // the fixed prefix string as a Boyer-Moore machine, if available
+        public readonly int Anchors;                                                    // the set of zero-length start anchors (RegexPrefixAnalyzer.Bol, etc)
+        public readonly bool RightToLeft;                                               // true if right to left
 
         public RegexCode(RegexTree tree, int[] codes, string[] strings, int trackcount,
                          Hashtable? caps, int capsize,
-                         RegexBoyerMoore? bmPrefix, RegexPrefix? fcPrefix,
+                         RegexBoyerMoore? boyerMoorePrefix,
+                         (string CharClass, bool CaseInsensitive)[]? leadingCharClasses,
                          int anchors, bool rightToLeft)
         {
+            Debug.Assert(boyerMoorePrefix is null || leadingCharClasses is null);
+
             Tree = tree;
             Codes = codes;
             Strings = strings;
@@ -120,8 +121,8 @@ namespace System.Text.RegularExpressions
             TrackCount = trackcount;
             Caps = caps;
             CapSize = capsize;
-            BMPrefix = bmPrefix;
-            FCPrefix = fcPrefix;
+            BoyerMoorePrefix = boyerMoorePrefix;
+            LeadingCharClasses = leadingCharClasses;
             Anchors = anchors;
             RightToLeft = rightToLeft;
         }
@@ -169,7 +170,7 @@ namespace System.Text.RegularExpressions
                 case Bol:
                 case Eol:
                 case Boundary:
-                case Nonboundary:
+                case NonBoundary:
                 case ECMABoundary:
                 case NonECMABoundary:
                 case Beginning:
@@ -244,7 +245,7 @@ namespace System.Text.RegularExpressions
                 Bol => nameof(Bol),
                 Eol => nameof(Eol),
                 Boundary => nameof(Boundary),
-                Nonboundary => nameof(Nonboundary),
+                NonBoundary => nameof(NonBoundary),
                 Beginning => nameof(Beginning),
                 Start => nameof(Start),
                 EndZ => nameof(EndZ),
@@ -286,13 +287,13 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage]
         public string OpcodeDescription(int offset)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             int opcode = Codes[offset];
 
             sb.AppendFormat("{0:D6} ", offset);
             sb.Append(OpcodeBacktracks(opcode & Mask) ? '*' : ' ');
             sb.Append(OperatorDescription(opcode));
-            sb.Append('(');
+            sb.Append(Indent());
 
             opcode &= Mask;
 
@@ -308,8 +309,7 @@ namespace System.Text.RegularExpressions
                 case Notoneloopatomic:
                 case Onelazy:
                 case Notonelazy:
-                    sb.Append("Ch = ");
-                    sb.Append(RegexCharClass.CharDescription((char)Codes[offset + 1]));
+                    sb.Append("'").Append(RegexCharClass.CharDescription((char)Codes[offset + 1])).Append("'");
                     break;
 
                 case Set:
@@ -317,34 +317,32 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append("Set = ");
                     sb.Append(RegexCharClass.SetDescription(Strings[Codes[offset + 1]]));
                     break;
 
                 case Multi:
-                    sb.Append("String = ");
-                    sb.Append(Strings[Codes[offset + 1]]);
+                    sb.Append('"').Append(Strings[Codes[offset + 1]]).Append('"');
                     break;
 
                 case Ref:
                 case Testref:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
                 case Capturemark:
-                    sb.Append("Index = ");
+                    sb.Append("index = ");
                     sb.Append(Codes[offset + 1]);
                     if (Codes[offset + 2] != -1)
                     {
-                        sb.Append(", Unindex = ");
+                        sb.Append(", unindex = ");
                         sb.Append(Codes[offset + 2]);
                     }
                     break;
 
                 case Nullcount:
                 case Setcount:
-                    sb.Append("Value = ");
+                    sb.Append("value = ");
                     sb.Append(Codes[offset + 1]);
                     break;
 
@@ -354,7 +352,7 @@ namespace System.Text.RegularExpressions
                 case Lazybranchmark:
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append("Addr = ");
+                    sb.Append("addr = ");
                     sb.Append(Codes[offset + 1]);
                     break;
             }
@@ -373,7 +371,7 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                 case Setloopatomic:
                 case Setlazy:
-                    sb.Append(", Rep = ");
+                    sb.Append(", rep = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -382,7 +380,7 @@ namespace System.Text.RegularExpressions
 
                 case Branchcount:
                 case Lazybranchcount:
-                    sb.Append(", Limit = ");
+                    sb.Append(", limit = ");
                     if (Codes[offset + 2] == int.MaxValue)
                         sb.Append("inf");
                     else
@@ -390,33 +388,47 @@ namespace System.Text.RegularExpressions
                     break;
             }
 
-            sb.Append(')');
+            string Indent() => new string(' ', Math.Max(1, 25 - sb.Length));
 
             return sb.ToString();
         }
 
         [ExcludeFromCodeCoverage]
-        public void Dump()
+        public void Dump() => Debug.WriteLine(ToString());
+
+        [ExcludeFromCodeCoverage]
+        public override string ToString()
         {
-            int i;
+            var sb = new StringBuilder();
 
-            Debug.WriteLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
-            Debug.WriteLine("Firstchars: " + (FCPrefix == null ? "n/a" : RegexCharClass.SetDescription(FCPrefix.GetValueOrDefault().Prefix)));
-            Debug.WriteLine("Prefix:     " + (BMPrefix == null ? "n/a" : Regex.Escape(BMPrefix.ToString())));
-            Debug.WriteLine("Anchors:    " + RegexFCD.AnchorDescription(Anchors));
-            Debug.WriteLine("");
-            if (BMPrefix != null)
+            sb.AppendLine("Direction:  " + (RightToLeft ? "right-to-left" : "left-to-right"));
+            sb.AppendLine("Anchors:    " + RegexPrefixAnalyzer.AnchorDescription(Anchors));
+            sb.AppendLine("");
+
+            if (BoyerMoorePrefix != null)
             {
-                Debug.WriteLine("BoyerMoore:");
-                Debug.WriteLine(BMPrefix.Dump("    "));
-            }
-            for (i = 0; i < Codes.Length;)
-            {
-                Debug.WriteLine(OpcodeDescription(i));
-                i += OpcodeSize(Codes[i]);
+                sb.AppendLine("Boyer-Moore:");
+                sb.AppendLine(BoyerMoorePrefix.Dump("    "));
+                sb.AppendLine();
             }
 
-            Debug.WriteLine("");
+            if (LeadingCharClasses != null)
+            {
+                sb.AppendLine("First Chars:");
+                for (int i = 0; i < LeadingCharClasses.Length; i++)
+                {
+                    sb.AppendLine($"{i}: {RegexCharClass.SetDescription(LeadingCharClasses[i].CharClass)}");
+                }
+                sb.AppendLine();
+            }
+
+            for (int i = 0; i < Codes.Length; i += OpcodeSize(Codes[i]))
+            {
+                sb.AppendLine(OpcodeDescription(i));
+            }
+            sb.AppendLine();
+
+            return sb.ToString();
         }
 #endif
     }

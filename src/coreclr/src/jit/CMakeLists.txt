@@ -10,7 +10,7 @@ endif()
 
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_PLATFORM_UNIX))
+if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX))
   add_definitions(-DFEATURE_SIMD)
   add_definitions(-DFEATURE_HW_INTRINSICS)
 endif ()
@@ -18,9 +18,9 @@ endif ()
 # JIT_BUILD disables certain PAL_TRY debugging features
 add_definitions(-DJIT_BUILD)
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   set(JIT_RESOURCES Native.rc)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 set( JIT_SOURCES
   alloc.cpp
@@ -67,6 +67,7 @@ set( JIT_SOURCES
   objectalloc.cpp
   optcse.cpp
   optimizer.cpp
+  phase.cpp
   rangecheck.cpp
   rationalize.cpp
   regalloc.cpp
@@ -89,7 +90,7 @@ set( JIT_SOURCES
 
 # Add header files to Visual Studio vcxproj, not required for unixes
 # change has effect on editor experience and has no impact on build
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
   set( JIT_HEADERS
     ../inc/corinfo.h
     ../inc/corjit.h
@@ -210,7 +211,7 @@ if (WIN32)
       hwintrinsic.h
       instrsxarch.h)
   endif ()
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 # Define all the architecture-specific source files
 
@@ -297,7 +298,7 @@ convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
@@ -309,12 +310,12 @@ else()
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
   generate_exports_file(${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
-  if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_NETBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Bsymbolic-functions")
 
     set(JIT_EXPORTS_LINKER_OPTION -Wl,--version-script=${JIT_EXPORTS_FILE})
-  elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+  elseif(CLR_CMAKE_TARGET_DARWIN)
     set(JIT_EXPORTS_LINKER_OPTION -Wl,-exported_symbols_list,${JIT_EXPORTS_FILE})
   endif()
 
@@ -331,7 +332,7 @@ set(JIT_ARCH_LINK_LIBRARIES
    gcinfo
 )
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     list(APPEND JIT_LINK_LIBRARIES
        mscorrc_debug
        coreclrpal
@@ -353,13 +354,13 @@ else()
        crypt32.lib
        RuntimeObject.lib
     )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
 function(add_jit jitName)
-    if(WIN32)
+    if(CLR_CMAKE_TARGET_WIN32)
         add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
-    endif(WIN32)
+    endif(CLR_CMAKE_TARGET_WIN32)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -395,18 +396,18 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 
 add_subdirectory(standalone)
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64)
+if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
     # On x86, build RyuJIT/ARM32 cross-compiling altjit.
     # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
     add_subdirectory(protononjit)
 endif ()
 
-if (CLR_CMAKE_PLATFORM_ARCH_I386)
+if (CLR_CMAKE_HOST_ARCH_I386)
      # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
     add_subdirectory(armelnonjit)
 endif ()
 
-if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
+if ((CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64) AND CLR_CMAKE_TARGET_WIN32)
     # On Windows, build altjit that targets the Linux ABI:
     #   On x86, build Linux/x86 altjit. This enables UNIX_X86_ABI.
     #   On amd64, build Linux/AMD64 altjit. This enables UNIX_AMD64_ABI.

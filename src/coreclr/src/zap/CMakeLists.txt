@@ -43,9 +43,9 @@ if (FEATURE_READYTORUN)
     )
 endif (FEATURE_READYTORUN)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND ZAP_SOURCES ${ZAP_HEADERS})
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(corzap_crossgen STATIC ${ZAP_SOURCES})
 set_target_properties(corzap_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)

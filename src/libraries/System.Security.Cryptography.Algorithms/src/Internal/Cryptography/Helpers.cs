@@ -17,7 +17,7 @@ namespace Internal.Cryptography
             return cipherMode != CipherMode.ECB;
         }
 
-        public static byte[] GetCipherIv(this CipherMode cipherMode, byte[] iv)
+        public static byte[]? GetCipherIv(this CipherMode cipherMode, byte[]? iv)
         {
             if (cipherMode.UsesIv())
             {

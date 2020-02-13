@@ -768,7 +768,6 @@ namespace System.Threading
 #if DEBUG
         private int executed;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallbackBase()
         {
             Interlocked.MemoryBarrier(); // ensure that an old cached value is not read below

@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // Desktop compat: Read the SafeKeyHandle property to force the key to load,
+                // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
                 SafeKeyHandle localHandle = SafeKeyHandle;
                 Debug.Assert(localHandle != null);

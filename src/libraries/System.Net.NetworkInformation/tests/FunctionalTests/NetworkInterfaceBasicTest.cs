@@ -53,6 +53,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18090")]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Linux()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -85,7 +86,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [ActiveIssue(1332)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1332")]
         [Fact]
         [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
         public void BasicTest_AccessInstanceProperties_NoExceptions_Bsd()
