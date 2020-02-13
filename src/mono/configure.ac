@@ -6752,6 +6752,7 @@ AC_COMPILE_IFELSE(
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(CCLDFLAGS)
 AC_SUBST(ZLIB_CFLAGS)
 
 # Update all submodules recursively to ensure everything is checked out
