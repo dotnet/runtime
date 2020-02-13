@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization
 
         public static bool IsImmutableDictionaryType(this Type type)
         {
-            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,"))
+            if (!type.IsGenericType || !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
             {
                 return false;
             }
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization
 
         public static bool IsImmutableEnumerableType(this Type type)
         {
-            if (!type.IsGenericType|| !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,"))
+            if (!type.IsGenericType|| !type.Assembly.FullName!.StartsWith("System.Collections.Immutable,", StringComparison.Ordinal))
             {
                 return false;
             }

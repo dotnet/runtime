@@ -3063,7 +3063,7 @@ namespace System.Management
 
             //Find "group within" clause
             keyword = "group within ";
-            if ((q.Length >= keyword.Length) && ((i = q.ToLower(CultureInfo.InvariantCulture).IndexOf(keyword, StringComparison.Ordinal)) != -1)) //found
+            if ((q.Length >= keyword.Length) && ((i = q.ToLowerInvariant().IndexOf(keyword, StringComparison.Ordinal)) != -1)) //found
             {
                 //Separate the part of the string before this - that should be the "where" clause
                 w = q.Substring(0, i).Trim();

@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
             foreach (string line in fileLines)
             {
-                if (line.StartsWith(interfaceName))
+                if (line.StartsWith(interfaceName, StringComparison.Ordinal))
                 {
                     StringParser parser = new StringParser(line, '\t', skipEmpty: true);
                     parser.MoveNext();
@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
             // 9. Interface name
             foreach (string line in fileLines)
             {
-                if (line.StartsWith("00000000000000000000000000000000"))
+                if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
                    string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")

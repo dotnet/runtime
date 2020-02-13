@@ -97,7 +97,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
-                ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
+                ? ApplicationUri.ToLowerInvariant()
                 : null;
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
@@ -272,7 +272,7 @@ namespace System.Configuration
                     // Try the remainder of the namespace
                     if (ns != null)
                     {
-                        int lastDot = ns.LastIndexOf(".", StringComparison.Ordinal);
+                        int lastDot = ns.LastIndexOf('.');
                         if ((lastDot != -1) && (lastDot < ns.Length - 1)) ProductName = ns.Substring(lastDot + 1);
                         else ProductName = ns;
 
@@ -291,7 +291,7 @@ namespace System.Configuration
                     // Try the first part of the namespace
                     if (ns != null)
                     {
-                        int firstDot = ns.IndexOf(".", StringComparison.Ordinal);
+                        int firstDot = ns.IndexOf('.');
                         _companyName = firstDot != -1 ? ns.Substring(0, firstDot) : ns;
 
                         _companyName = _companyName.Trim();

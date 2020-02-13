@@ -2507,7 +2507,7 @@ namespace System.Xml.Serialization
                         Debug.Assert(initValue.MemberInfo.Name == initValue.Arg.Substring(3));
                         initValue.ILG.LoadMember(initValue.ILG.GetLocal("o"), initValue.MemberInfo);
                     }
-                    else if (initValue.Source.EndsWith("]", StringComparison.Ordinal))
+                    else if (initValue.Source.EndsWith(']'))
                     {
                         initValue.Load(initValue.Type);
                     }
