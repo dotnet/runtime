@@ -10473,7 +10473,7 @@ void CodeGen::genIPmappingAddBoundary(InlineContext *context, IL_OFFSETX offsx, 
     aux->ipmdNext          = nullptr;
     aux->isMethodBoundary  = true;
 
-    if (compiler->genIPmappingList != nullptr)
+    if (compiler->genIPmappingList == nullptr)
     {
         compiler->genIPmappingList = aux;
         compiler->genIPmappingLast = aux;
@@ -10569,13 +10569,13 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
         ContextList prevPathToMain(compiler->getAllocator(CMK_DebugInfo));
         for (InlineContext* it = prevInlineContext; it != nullptr; it = it->GetParent())
         {
-            prevPathToMain.push_back(it);
+            prevPathToMain.push_back(it->IsRoot() ? nullptr : it);
         }
 
         ContextList newPathToMain(compiler->getAllocator(CMK_DebugInfo));
         for (InlineContext* it = inlineContext; it != nullptr; it = it->GetParent())
         {
-            newPathToMain.push_front(it);    
+            newPathToMain.push_front(it->IsRoot() ? nullptr : it);    
         }
 
         while (!prevPathToMain.empty() && !newPathToMain.empty() && prevPathToMain.back() == newPathToMain.front())
