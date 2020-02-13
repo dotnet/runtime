@@ -1140,7 +1140,7 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
     _ASSERTE(!context->IsActive());
 #endif
 
-    InteropLib::Com::DestroyWrapperForExternal(context);
+    InteropLib::Com::DestroyWrapperForExternal(contextRaw);
 }
 
 void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* contextRaw)
