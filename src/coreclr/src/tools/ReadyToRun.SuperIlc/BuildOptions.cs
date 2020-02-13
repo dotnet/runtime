@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -29,6 +29,7 @@ namespace ReadyToRun.SuperIlc
         public bool UseFramework { get; set; }
         public bool Release { get; set; }
         public bool LargeBubble { get; set; }
+        public bool Composite { get; set; }
         public int Crossgen2Parallelism { get; set; }
         public int CompilationTimeoutMinutes { get; set; }
         public int ExecutionTimeoutMinutes { get; set; }
@@ -36,11 +37,12 @@ namespace ReadyToRun.SuperIlc
         public FileInfo[] IssuesPath { get; set; }
         public FileInfo R2RDumpPath { get; set; }
         public FileInfo CrossgenResponseFile { get; set; }
-        public DirectoryInfo[] RewriteOldPath { get;set; }
-        public DirectoryInfo[] RewriteNewPath { get;set; }
+        public DirectoryInfo[] RewriteOldPath { get; set; }
+        public DirectoryInfo[] RewriteNewPath { get; set; }
         public bool MeasurePerf { get; set; }
         public string InputFileSearchString { get; set; }
         public string ConfigurationSuffix => (Release ? "-ret.out" : "-chk.out");
+        public string GCStress { get; set; }
 
         public IEnumerable<string> ReferencePaths()
         {

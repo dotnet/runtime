@@ -42,6 +42,7 @@ namespace System.Threading.Tasks.Tests
 
         // Stresses on multiple continuations from a single antecedent
         [Fact]
+        [SkipOnCoreClr("Test timing out: https://github.com/dotnet/runtime/issues/2271", RuntimeConfiguration.Checked)]
         public static void RunContinueWithStressTestsNoState()
         {
             int numIterations = 3;
@@ -1421,7 +1422,7 @@ namespace System.Threading.Tasks.Tests
             // Set up teardown cancellation.  We will request cancellation when a) the supplied options token
             // has cancellation requested or b) when we actually complete somewhere in order to tear down
             // the rest of our configured set up.
-            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationToken.None);
+            var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
             Task branch1 = CreateChooseBranch<int>(cts, result, TaskScheduler.Default);
             Task branch2 = CreateChooseBranch<int>(cts, result, TaskScheduler.Default);

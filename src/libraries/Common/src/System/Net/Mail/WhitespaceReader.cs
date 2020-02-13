@@ -28,11 +28,12 @@ namespace System.Net.Mail
         // - The index of the next character that is NOT a whitespace character.
         // - -1 if the beginning of the data string is reached.
         //
-        // A FormatException will be thrown if a CR or LF is found NOT in the sequence CRLF.
-        internal static int ReadFwsReverse(string data, int index)
+        // A FormatException will be thrown or false is returned if a CR or LF is found NOT in the sequence CRLF.
+        internal static bool TryReadFwsReverse(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(!string.IsNullOrEmpty(data), "data was null or empty");
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
+
             bool expectCR = false;
 
             for (; index >= 0; index--)
@@ -45,7 +46,15 @@ namespace System.Net.Mail
                 // LF without CR, or CR without LF, invalid
                 else if (data[index] == MailBnfHelper.CR || expectCR)
                 {
-                    throw new FormatException(SR.MailAddressInvalidFormat);
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.MailAddressInvalidFormat);
+                    }
+                    else
+                    {
+                        outIndex = default;
+                        return false;
+                    }
                 }
                 // LF is only valid if preceded by a CR.
                 // Skip both if they're found together.
@@ -67,10 +76,20 @@ namespace System.Net.Mail
 
             if (expectCR)
             {
-                // We found a LF without an immediately preceding CR, invalid.
-                throw new FormatException(SR.MailAddressInvalidFormat);
+                if (throwExceptionIfFail)
+                {
+                    // We found a LF without an immediately preceding CR, invalid.
+                    throw new FormatException(SR.MailAddressInvalidFormat);
+                }
+                else
+                {
+                    outIndex = default;
+                    return false;
+                }
             }
-            return index;
+
+            outIndex = index;
+            return true;
         }
 
         // This method functions similarly to ReadFwsReverse but will also skip any comments.
@@ -92,8 +111,8 @@ namespace System.Net.Mail
         // - -1 if skipping the comments and/or whitespace moves you to the beginning of the data string.
         //   e.g. " (comment) " returns -1
         //
-        // Throws a FormatException for mismatched '(' and ')', or for unescaped characters not allowed in comments.
-        internal static int ReadCfwsReverse(string data, int index)
+        // Throws a FormatException or false is returned for mismatched '(' and ')', or for unescaped characters not allowed in comments.
+        internal static bool TryReadCfwsReverse(string data, int index, out int outIndex, bool throwExceptionIfFail)
         {
             Debug.Assert(!string.IsNullOrEmpty(data), "data was null or empty");
             Debug.Assert(index < data.Length, "index was outside the bounds of the string");
@@ -101,15 +120,24 @@ namespace System.Net.Mail
             int commentDepth = 0;
 
             // Check for valid whitespace
-            index = ReadFwsReverse(data, index);
+            if (!TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
+            {
+                outIndex = default;
+                return false;
+            }
 
             while (index >= 0)
             {
                 // Check for escaped characters.  They must be within comments.
-                int quotedCharCount = QuotedPairReader.CountQuotedChars(data, index, true);
+                if (!QuotedPairReader.TryCountQuotedChars(data, index, true, out int quotedCharCount, throwExceptionIfFail))
+                {
+                    outIndex = default;
+                    return false;
+                }
+
                 if (commentDepth > 0 && quotedCharCount > 0)
                 {
-                    index = index - quotedCharCount;
+                    index -= quotedCharCount;
                 }
                 // Start a new comment
                 else if (data[index] == MailBnfHelper.EndComment)
@@ -123,9 +151,17 @@ namespace System.Net.Mail
                     commentDepth--;
                     if (commentDepth < 0)
                     {
-                        // Mismatched '('
-                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter,
-                            MailBnfHelper.StartComment));
+                        if (throwExceptionIfFail)
+                        {
+                            // Mismatched '('
+                            throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter,
+                                MailBnfHelper.StartComment));
+                        }
+                        else
+                        {
+                            outIndex = default;
+                            return false;
+                        }
                     }
                     index--;
                 }
@@ -138,7 +174,15 @@ namespace System.Net.Mail
                 // If we're still in a comment, this must be an invalid char
                 else if (commentDepth > 0)
                 {
-                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    if (throwExceptionIfFail)
+                    {
+                        throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, data[index]));
+                    }
+                    else
+                    {
+                        outIndex = default;
+                        return false;
+                    }
                 }
                 // We must no longer be in a comment, and this is not a whitespace char, return
                 else
@@ -147,16 +191,29 @@ namespace System.Net.Mail
                 }
 
                 // Check for valid whitespace
-                index = ReadFwsReverse(data, index);
+                if (!TryReadFwsReverse(data, index, out index, throwExceptionIfFail))
+                {
+                    outIndex = default;
+                    return false;
+                }
             }
 
             if (commentDepth > 0)
             {
-                // Mismatched ')', throw
-                throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.EndComment));
+                if (throwExceptionIfFail)
+                {
+                    // Mismatched ')', throw
+                    throw new FormatException(SR.Format(SR.MailHeaderFieldInvalidCharacter, MailBnfHelper.EndComment));
+                }
+                else
+                {
+                    outIndex = default;
+                    return false;
+                }
             }
 
-            return index;
+            outIndex = index;
+            return true;
         }
     }
 }

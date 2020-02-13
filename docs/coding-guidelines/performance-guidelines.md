@@ -1,7 +1,7 @@
 Managed Code Performance Guidelines
 ===================================
 
-Different applications have different needs when it comes to performance.  For libraries that may be used in any of them and potentially on critical paths, however, it is of the utmost importance that code is as efficient as possible.  The code in CoreFX should strive to be high-performing, including minimizing the number and size of allocations, minimizing the number of branches involved in code, and overall minimizing the amount of work that must be done to perform any given operation.
+Different applications have different needs when it comes to performance.  For libraries that may be used in any of them and potentially on critical paths, however, it is of the utmost importance that code is as efficient as possible.  The code in dotnet/runtime should strive to be high-performing, including minimizing the number and size of allocations, minimizing the number of branches involved in code, and overall minimizing the amount of work that must be done to perform any given operation.
 
 Much has been written about writing high-performance code in C#.  This page provides links to some of that material and will expand over time as additional resources are found and identified as being relevant and useful.
 

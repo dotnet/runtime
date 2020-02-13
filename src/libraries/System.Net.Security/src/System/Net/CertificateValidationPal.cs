@@ -21,7 +21,6 @@ namespace System.Net
         {
             X509Store store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-            // TODO #3862 Investigate if this can be switched to either the static or Lazy<T> patterns.
             if (store == null)
             {
                 StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;

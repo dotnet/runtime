@@ -138,7 +138,7 @@ class MethodDataCache
     UINT32 m_cEntries;
     UINT32 m_iLastTouched;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     UINT32 pad;      // insures that we are a multiple of 8-bytes
 #endif
 };  // class MethodDataCache
@@ -1025,7 +1025,7 @@ void MethodTable::FixupExtraInterfaceInfo(DataImage *pImage)
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
 // Define a macro that generates a mask for a given bit in a TADDR correctly on either 32 or 64 bit platforms.
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define SELECT_TADDR_BIT(_index) (1ULL << (_index))
 #else
 #define SELECT_TADDR_BIT(_index) (1U << (_index))
@@ -2206,7 +2206,6 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
     case SystemVClassificationTypeIntegerReference:     return "IntegerReference";
     case SystemVClassificationTypeIntegerByRef:         return "IntegerByReference";
     case SystemVClassificationTypeSSE:                  return "SSE";
-    case SystemVClassificationTypeTypedReference:       return "TypedReference";
     default:                                            return "ERROR";
     }
 };
@@ -2436,64 +2435,6 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             }
 
             continue;
-        }
-
-        if (fieldClassificationType == SystemVClassificationTypeTypedReference ||
-            CorInfoType2UnixAmd64Classification(GetClass_NoLogging()->GetInternalCorElementType()) == SystemVClassificationTypeTypedReference)
-        {
-            // The TypedReference is a very special type.
-            // In source/metadata it has two fields - Type and Value and both are defined of type IntPtr.
-            // When the VM creates a layout of the type it changes the type of the Value to ByRef type and the
-            // type of the Type field is left to IntPtr (TYPE_I internally - native int type.)
-            // This requires a special treatment of this type. The code below handles the both fields (and this entire type).
-
-            for (unsigned i = 0; i < 2; i++)
-            {
-                fieldSize = 8;
-                fieldOffset = (i == 0 ? 0 : 8);
-                normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
-                fieldClassificationType = (i == 0 ? SystemVClassificationTypeIntegerByRef : SystemVClassificationTypeInteger);
-                if ((normalizedFieldOffset % fieldSize) != 0)
-                {
-                    // The spec requires that struct values on the stack from register passed fields expects
-                    // those fields to be at their natural alignment.
-
-                    LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
-                    return false;
-                }
-
-                helperPtr->largestFieldOffset = (int)normalizedFieldOffset;
-
-                // Set the data for a new field.
-
-                // The new field classification must not have been initialized yet.
-                _ASSERTE(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] == SystemVClassificationTypeNoClass);
-
-                // There are only a few field classifications that are allowed.
-                _ASSERTE((fieldClassificationType == SystemVClassificationTypeInteger) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerReference) ||
-                    (fieldClassificationType == SystemVClassificationTypeIntegerByRef) ||
-                    (fieldClassificationType == SystemVClassificationTypeSSE));
-
-                helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField] = fieldClassificationType;
-                helperPtr->fieldSizes[helperPtr->currentUniqueOffsetField] = fieldSize;
-                helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
-
-                LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-                    nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
-                    GetSystemVClassificationTypeName(fieldClassificationType),
-                    GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
-
-                helperPtr->currentUniqueOffsetField++;
-#ifdef _DEBUG
-                ++fieldIndex;
-#endif // _DEBUG
-            }
-
-            // Both fields of the special TypedReference struct are handled.
-            // Done classifying the System.TypedReference struct fields.
-            break;
         }
 
         if ((normalizedFieldOffset % fieldSize) != 0)
@@ -3283,7 +3224,7 @@ void MethodTable::DoRunClassInitThrowing()
         // Some error occurred trying to init this class
         ListLockEntry*     pEntry= (ListLockEntry *) _pLock->Find(this);
         _ASSERTE(pEntry!=NULL);
-        _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+        _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
 
         // If this isn't a TypeInitializationException, then its creation failed
         // somehow previously, so we should make one last attempt to create it. If
@@ -3444,7 +3385,7 @@ void MethodTable::DoRunClassInitThrowing()
                                     wszName, &gc.pInnerException, &gc.pInitException, &gc.pThrowable);
                             }
 
-                            pEntry->m_pLoaderAllocator = GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator();
+                            pEntry->m_pLoaderAllocator = GetLoaderAllocator();
 
                             // CreateHandle can throw due to OOM. We need to catch this so that we make sure to set the
                             // init error. Whatever exception was thrown will be rethrown below, so no worries.
@@ -3499,7 +3440,7 @@ void MethodTable::DoRunClassInitThrowing()
                     // An exception may have occurred in the cctor. DoRunClassInit() should return FALSE in that
                     // case.
                     _ASSERTE(pEntry->m_hInitException);
-                    _ASSERTE(pEntry->m_pLoaderAllocator == (GetDomain()->IsSharedDomain() ? pDomain->GetLoaderAllocator() : GetLoaderAllocator()));
+                    _ASSERTE(pEntry->m_pLoaderAllocator == GetLoaderAllocator());
                     _ASSERTE(IsInitError());
 
                     // Throw the saved exception. Since we are rethrowing a previously cached exception, must clear the stack trace first.
@@ -3667,7 +3608,7 @@ OBJECTREF MethodTable::FastBox(void** data)
     return ref;
 }
 
-#if _TARGET_X86_ || _TARGET_AMD64_
+#if TARGET_X86 || TARGET_AMD64
 //==========================================================================================
 static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
 {
@@ -3677,7 +3618,7 @@ static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
 
     BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
     __asm
     {
@@ -3686,16 +3627,16 @@ static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
         INDEBUG(nop)            // Mark the fact that we can call managed code
     }
 
-#else // _TARGET_X86_
+#else // TARGET_X86
 
     FastCallFinalizeWorker(obj, funcPtr);
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     END_CALL_TO_MANAGED();
 }
 
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
 void CallFinalizerOnThreadObject(Object *obj)
 {
@@ -3806,7 +3747,7 @@ void MethodTable::CallFinalizer(Object *obj)
     }
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerTraceCall())
@@ -3815,7 +3756,7 @@ void MethodTable::CallFinalizer(Object *obj)
 
     FastCallFinalize(obj, funcPtr, fCriticalFinalizer);
 
-#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#else // defined(TARGET_X86) || defined(TARGET_AMD64)
 
     PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(funcPtr);
 
@@ -3830,7 +3771,7 @@ void MethodTable::CallFinalizer(Object *obj)
 
     CALL_MANAGED_METHOD_NORET(args);
 
-#endif // (defined(_TARGET_X86_) && defined(_TARGET_AMD64_)
+#endif // (defined(TARGET_X86) && defined(TARGET_AMD64)
 
 #ifdef STRESS_LOG
     if (fCriticalFinalizer)
@@ -5103,7 +5044,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     }
     CONTRACTL_END;
 
-    StaticAccessCheckContext accessContext(NULL, pAskingMT);
+    AccessCheckContext accessContext(NULL, pAskingMT);
 
     if (!ClassLoader::CanAccessClass(&accessContext,
                                      pTargetMT,                 //the desired class
@@ -9642,7 +9583,7 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
     // IBC logging is not needed here - slots in ngen images are immutable.
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     // Ensure on ARM that all target addresses are marked as thumb code.
     _ASSERTE(IsThumbCode(slotCode));
 #endif

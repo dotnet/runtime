@@ -42,7 +42,7 @@ int __cdecl main(int argc, char *argv[]) {
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64)
+#if defined(HOST_64BIT)
     /* Compare START_VALUE with BaseVariableToManipulate, they're equal, 
        so exchange 
     */
@@ -95,7 +95,7 @@ int __cdecl main(int argc, char *argv[]) {
              TempValue,BaseVariableToManipulate);  
     }
 
-#endif  //if defined(BIT64)
+#endif  //if defined(HOST_64BIT)
     PAL_Terminate();
     return PASS; 
 }

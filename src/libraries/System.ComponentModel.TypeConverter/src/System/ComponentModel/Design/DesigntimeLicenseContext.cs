@@ -99,7 +99,7 @@ namespace System.ComponentModel.Design
 
                         if (s != null)
                         {
-                            DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpper(CultureInfo.InvariantCulture), this);
+                            DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                             break;
                         }
                     }
@@ -140,7 +140,7 @@ namespace System.ComponentModel.Design
                     }
                     if (s != null)
                     {
-                        DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpper(CultureInfo.InvariantCulture), this);
+                        DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                     }
                 }
             }

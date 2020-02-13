@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>ILCompiler.ReadyToRun</AssemblyName>
@@ -22,14 +22,6 @@
     <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.6.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>4.3.0</Version>
-    </PackageReference>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\Common\Internal\Runtime\CorConstants.cs" Link="Common\CorConstants.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\ReadyToRunConstants.cs" Link="Common\ReadyToRunConstants.cs" />
@@ -101,12 +93,15 @@
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.ReadyToRun.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedFieldRvaNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedManagedResourcesNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedMetadataBlobNode.cs" />
@@ -115,9 +110,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CopiedStrongNameSignatureNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DelayLoadHelperMethodImport.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ExceptionInfoLookupTableNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ExternalTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRunCodegenNodeFactory.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AvailableType.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ByteArrayComparer.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\CompilerIdentifierNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugInfoTableNode.cs" />
@@ -134,6 +127,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Import.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ImportSectionsTableNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InliningInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InstanceEntryPointTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\IReadyToRunMethodCodeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeMethodImport.cs" />
@@ -172,8 +166,10 @@
     <Compile Include="Compiler\DependencyAnalysis\TypeAndMethod.cs" />
     <Compile Include="Compiler\IRootingServiceProvider.cs" />
     <Compile Include="Compiler\MethodExtensions.cs" />
+    <Compile Include="Compiler\ReadyToRunCompilationModuleGroupBase.cs" />
     <Compile Include="IBC\IBCDataModel.cs" />
     <Compile Include="IBC\IBCDataReader.cs" />
+    <Compile Include="IBC\MIbcProfileParser.cs" />
     <Compile Include="IBC\ReaderExtensions.cs" />
     <Compile Include="Compiler\ProfileData.cs" />
     <Compile Include="Compiler\ReadyToRunHashCode.cs" />

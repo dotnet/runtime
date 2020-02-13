@@ -43,330 +43,13 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 #include "mscorrc.common.rc"
 
-#define MDARC_PINVOKE_SIGNATURE_MISMATCH_MSG                                                                \
-    L"A call to PInvoke function '%1$s' has unbalanced the stack. This is likely because the managed PInvoke "\
-    L"signature does not match the unmanaged target signature. Check that the calling convention and "      \
-    L"parameters of the PInvoke signature match the target unmanaged signature."
-
-#define MDARC_PINVOKE_LOG_MSG                                                                               \
-    L"The first PInvoke call to export '%1$s' in module '%2$s' has been made."
-
-#define MDARC_LOAD_FROM_CONTEXT_MSG                                                                         \
-    L"The assembly named '%1$s' was loaded from '%2$s' using the LoadFrom context. The use of this "        \
-    L"context can result in unexpected behavior for serialization, casting and dependency resolution. "     \
-    L"In almost all cases, it is recommended that the LoadFrom context be avoided. This can be done "       \
-    L"by installing assemblies in the Global Assembly Cache or in the ApplicationBase directory and "       \
-    L"using Assembly.Load when explicitly loading assemblies."
-
-#define MDARC_BINDING_FAILURE_CODEBASE_ONLY_MSG                                                             \
-    L"The assembly loaded from code base '%1$s' failed to load in the '%2$s' binding context of the "       \
-    L"AppDomain with ID %3$d. The cause of the failure was: %4$s"
-
-#define MDARC_BINDING_FAILURE_DISPLAYNAME_ONLY_MSG                                                          \
-    L"The assembly with display name '%1$s' failed to load in the '%2$s' binding context of the "           \
-    L"AppDomain with ID %3$d. The cause of the failure was: %4$s"
-
-#define MDARC_BINDING_FAILURE_MSG                                                                           \
-    L"The assembly with display name '%1$s' loaded from code base '%2$s' failed to load "                   \
-    L"in the '%3$s' binding context of the AppDomain with ID %4$d. The cause of the failure was: %5$s"
-
-#define MDARC_INVALID_CONFIG_FILE_MSG                                                                       \
-    L"The '%1$s' configuration file is invalid."
-
-#define MDARC_CALLBACK_ON_COLLECTED_DELEGATE_MSG                                                            \
-    L"A callback was made on a garbage collected delegate of type '%1$s'. This may cause application "      \
-    L"crashes, corruption and data loss. "                                                                  \
-    L"When passing delegates to unmanaged code, they must be kept alive by the "                            \
-    L"managed application until it is guaranteed that they will never be called."
-
-#define MDARC_INVALID_APT_STATE_CHANGE_SET_MSG                                                              \
-    L"An attempt was made to change the apartment state of the thread to %1$s, "                            \
-    L"but it has already been set to %2$s. When creating a new thread the apartment state should"           \
-    L"be set before the thread is started. For the main thread of the application, the apartment"           \
-    L"state can be set by specifying either [STAThreadAttribute] or [MTAThreadAttribute] on the"            \
-    L"main method of the application. "                                                                     \
-    L"If the application really needs to attempt to set the apartment state on a running thread, "          \
-    L"Thread.TrySetApartmentState should be used and the return value should be consulted to determine "    \
-    L"if the operation was successful. Note that Thread.TrySetApartmentState will not fire the "            \
-    L"InvalidApartmentStateChange MDA."
-
-#define MDARC_INVALID_APT_STATE_CHANGE_NOTSET_MSG                                                           \
-    L"The current thread used to have an apartment state of %1$s, but the application has CoUnitialized "   \
-    L"this thread and it is now %2$s. This may cause calls on RuntimeCallableWrappers "                     \
-    L"representing some COM components to fail and may also cause COM component that are "                  \
-    L"not multi-threaded to be accessed from multiple threads at the same time which can cause "            \
-    L"corruption or data loss."
-
-#define MDARC_JIT_ATTACH_MSG                                                                                \
-    L"%1$s Managed Debugging Assistant"
-
-#define MDARC_LOADER_LOCK_MSG                                                                               \
-    L"Attempting managed execution inside OS Loader lock. Do not "                                          \
-    L"attempt to run managed code inside a DllMain or image initialization function since doing "           \
-    L"so can cause the application to hang."
-
-#define MDARC_LOADER_LOCK_DLL_MSG                                                                           \
-    L"DLL '%1$s' is attempting managed execution inside OS Loader lock. Do not "                            \
-    L"attempt to run managed code inside a DllMain or image initialization function since doing "           \
-    L"so can cause the application to hang."
-
-#define MDARC_REENTRANCY_MSG                                                                                \
-    L"Attempting to call into managed code without transitioning out first.  Do not "                       \
-    L"attempt to run managed code inside low-level native extensibility points, such as the vectored "      \
-    L"exception handler, since doing so can cause corruption and data loss."
-
-#define MDARC_REPORT_AV_ON_COM_RELEASE_MSG                                                                  \
-    L"An exception was caught but handled while releasing a COM interface pointer "                         \
-    L"through Marshal.Release, Marshal.ReleaseComObject or implicitly after the corresponding "             \
-    L"RuntimeCallableWrapper was garbage collected. This is the result of a user "                          \
-    L"refcount error or other problem with a COM object's Release. Make sure "                              \
-    L"refcounts are managed properly. While these types of exceptions are caught by the CLR, "              \
-    L"they can still lead to corruption and data loss so if possible the issue causing the exception "      \
-    L"should be addressed"
-
-#define MDARC_REPORT_AV_ON_COM_RELEASE_WITH_VTABLE_MSG                                                      \
-    L"An exception was caught but handled while releasing a COM interface pointer "                         \
-    L"through Marshal.Release or Marshal.ReleaseComObject or implicitly after the corresponding "           \
-    L"RuntimeCallableWrapper was garbage collected. This is the result of a user "                          \
-    L"refcount error or other problem with a COM object's Release. Make sure "                              \
-    L"refcounts are managed properly.  The COM interface pointer's original vtable "                        \
-    L"pointer was 0x%1$x. While these types of exceptions are caught by the CLR, "                          \
-    L"they can still lead to corruption and data loss so if possible the issue causing the exception "      \
-    L"should be addressed"
-
-#define MDARC_INVALID_VARIANT_MSG                                                                           \
-    L"An invalid VARIANT was detected during a conversion from an unmanaged VARIANT "                       \
-    L"to a managed object. Passing invalid VARIANTs to the CLR can cause unexpected exceptions, "           \
-    L"corruption or data loss."
-
-#define MDARC_FAILED_QI_MSG                                                                                 \
-    L"The call to QI for interface '%1$s' with IID '%2$s' failed with HRESULT 0x%3$s (%4$s). "              \
-    L"One likely reason this failed is that the object does not have a proxy/stub dll properly registered."
-
-#define MDARC_DISCONNECTED_CONTEXT_1_MSG                                                                    \
-    L"Transition into COM context 0x%1$x for this RuntimeCallableWrapper failed with the following error: " \
-    L"%2$s. "                                                                                               \
-    L"This is typically because the COM context 0x%1$x where this RuntimeCallableWrapper was created "      \
-    L"has been disconnected or it is busy doing something else and cannot process the context transition. " \
-    L"No proxy will be used to service the request on the COM component and calls will be made to the "     \
-    L"COM component directly. This may cause corruption or data loss. "										\
-    L"To avoid this problem, please ensure that all COM contexts/apartments/threads stay alive and are "    \
-    L"available for context transition, until the application is completely done with the "                 \
-    L"RuntimeCallableWrappers that represents COM components that live inside them."
-
-#define MDARC_DISCONNECTED_CONTEXT_2_MSG                                                                    \
-    L"Transition into COM context 0x%1$x for this RuntimeCallableWrapper failed with the following error: " \
-    L"%2$s. "                                                                                               \
-    L"This is typically because the COM context 0x%1$x where this RuntimeCallableWrapper was created "      \
-    L"has been disconnected or it is busy doing something else. " 								            \
-    L"Releasing the interfaces from the current COM context (COM context 0x%3$x). "                         \
-    L"This may cause corruption or data loss. "                                                             \
-    L"To avoid this problem, please ensure that all COM contexts/apartments/threads stay alive and are "    \
-    L"available for context transition, until the application is completely done with the "                 \
-    L"RuntimeCallableWrappers that represents COM components that live inside them."
-
-#define MDARC_NOTMARSHALABLE_MSG                                                                            \
-    L"A non marshalable COM component is being used from a different apartment/context then the "           \
-    L"one where it first entered the CLR. Since the component is non marshalable, it will be called directly " \
-    L"from the current apartment/context. This may cause corruption or data loss if the component does "    \
-    L"not support being accessed from multiple threads at once. This is most likely caused by a faulty "    \
-    L"IMarshal implementation on the part of the COM component."
-
-#define MDARC_INVALID_IUNKNOWN_MSG                                                                          \
-    L"An invalid IUnknown* was detected during a conversion from a COM component "                          \
-    L"to a managed object. Passing invalid IUnknown pointers to the CLR can cause unexpected "              \
-    L"exceptions, corruption or data loss."
-
-#define MDARC_CONTEXT_SWITCH_DEADLOCK_MSG                                                                                                                                       \
-   L"The CLR has been unable to transition from COM context 0x%1$x to COM context 0x%2$x for 60 seconds. "  \
-   L"The thread that owns the destination context/apartment is most likely either doing a non pumping wait " \
-   L"or processing a very long running operation without pumping Windows messages. "                        \
-   L"This situation generally has a negative performance impact and may even lead to "                      \
-   L"the application becoming non responsive or memory usage accumulating continually over time. "          \
-   L"To avoid this problem, all single threaded apartment (STA) threads should use pumping wait "           \
-   L"primitives (such as CoWaitForMultipleHandles) and routinely pump messages during long running operations."
-
-#define MDARC_RCW_CLEANUP_RACE_MSG                                                                          \
-   L"An attempt has been made to free an RCW that is in use.  The RCW is in use on the active thread or "   \
-   L"another thread.  Attempting to free an in-use RCW can cause corruption or data loss."
-
-#define MDARC_MARSHALING_METHOD_MSG                                                                         \
-    L"Marshaling parameter with index %1$i and name '%2$s' from '%3$s' to '%4$s'"
-
-#define MDARC_MARSHALING_FIELD_MSG                                                                          \
-    L"Marshaling field '%1$s' from '%2$s' to '%3$s'"
-
-#define MDARC_INVALID_FUNCTION_PTR_IN_DELEGATE_MSG                                                          \
-    L"Invalid function pointer 0x%1$x was passed into the runtime to be converted to a delegate. "          \
-    L"Passing in invalid function pointers to be converted to delegates can cause crashes, "                \
-    L"corruption or data loss. "
-
-#define MDARC_DIRTY_CAST_AND_CALL_ON_INTERFACE_MSG                                                          \
-    L"The native component calling into the CLR through this ComCallWrapper has performed an "              \
-    L"illegal cast on this IUnknown or IDispatch pointer.  The caller neglected to call QueryInterface "    \
-    L"for the correct interface before making this call."
-
-#define MDARC_VTABLE_CALL_ON_AUTODISP_MEMBER_MSG                                                            \
-    L"An early bound call (vtable call) was made on the following member of an auto "                       \
-    L"dispatch class interface: '%1$s'. Early bound calls on members of auto dispatch "                     \
-    L"class interfaces are not allowed. Please consider using an explicit interface "                       \
-    L"as the default interface for the type. If a class interface must be "                                 \
-    L"called early bound, change it to auto dual. This can be accomplished "                                \
-    L"by marking the class with the following attribute, located in the "                                   \
-    L"System.Runtime.InteropServices namespace: "                                                           \
-    L"[ClassInterface(ClassInterfaceType.AutoDual)] "                                                       \
-
-#define MDARC_INVALID_CER_CALL_MSG                                                                          \
-    L"Method '%1$s', while executing within a constrained execution region, makes a call "                  \
-    L"at IL offset 0x%2$04X to '%3$s', which does not have a sufficiently strong reliability "              \
-    L"contract and might cause non-deterministic results."
-
-#define MDARC_VIRTUAL_CER_CALL_MSG                                                                          \
-    L"Method '%1$s', while executing within a constrained execution region, makes a call "                  \
-    L"at IL offset 0x%2$04X to '%3$s', which is virtual and cannot be prepared automatically "              \
-    L"at compile time. The caller must ensure this method is prepared explicitly at "                       \
-    L"runtime before entering the constrained execution region."
-
-#define MDARC_OPENGENERIC_CER_CALL_MSG                                                                      \
-    L"Method '%1$s', which contains at least one constrained execution region, cannot be "                  \
-    L"prepared automatically since it has one or more unbound generic type parameters. "                    \
-    L"The caller must ensure this method is prepared explicitly at runtime prior to "                       \
-    L"execution."
-
-#define MDARC_ILLEGAL_PCR_MSG                                                                               \
-    L"Method '%1$s' calls RuntimeHelpers.PrepareConstrainedRegions() at IL offset 0x%2$04X. "               \
-    L"This is invalid since it does not coincide with the beginning of a try clause."
-
-#define MDARC_MARSHALCLEANUPERROR_THREADCULTURE_MSG                                                         \
-    L"The CLR marshaler encountered an error while attempting to restore the thread culture after a call "  \
-    L"from unmanaged to managed where an LCID was used to specify the culture for the call. This will "     \
-    L"cause the thread's culture to remain set to the one associated with the LCID. The cause of the failure was: %1$s"
-
-#define MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP_MSG                                                        \
-    L"The CLR marshaler encountered an error while attempting to associate a SafeHandle with an unmanaged resource. " \
-    L"This may cause the unmanaged resource to be leaked. The cause of the failure was: %1$s"
-
-#define MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP_MSG                                                         \
-    L"An exception was thrown from the CleanupNativeData method of a custom marshaler of type '%1$s'. "     \
-    L"This may cause an unmanaged data leak and should be corrected if possible. The cause of the failure was: %1$s"
-
-#define MDARC_SAFEHANDLE_CRITICAL_FAILURE_MSG                                                               \
-    L"A SafeHandle or CriticalHandle of type '%1$s' failed to properly release the handle "                 \
-    L"with value 0x%2$p. This usually indicates that the handle was released incorrectly "                  \
-    L"via another means (such as extracting the handle using DangerousGetHandle and "                       \
-    L"closing it directly or building another SafeHandle around it.)"
-
-#define MDARC_DLLMAIN_RETURNS_FALSE_MSG                                                                     \
-    L"Function DllMain, called with reason DLL_PROCESS_ATTACH, returned FALSE. DLL initialization failed. " \
-    L"To ignore the DllMain return, set Registry value "                                                    \
-    L"HKEY_LOCAL_MACHINE\\Software\\Microsoft\\.NETFramework\\IgnoreDllMainReturn to 1"
-
-#define MDARC_INVALID_MEMBER_DECLARATION_MSG                                                                \
-    L"The following error occurred while determining how to marshal the parameters of member '%1$s' of type '%2$s': " \
-    L"%3$s This is most likely due to an incompatible MarshalAs attribute on one of the parameters. "
-
-#define MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR_MSG                                                            \
-    L"A COM client has called managed method '%1$s' on type '%2$s'. This method does not have an HRESULT return type and " \
-    L"an exception was thrown that was not handled. The exception contains the following message: %3$s. "   \
-    L"This exception will be caught and zero will be returned to the COM caller if the method's return "    \
-    L"type is not void."
-
-#define MDARC_ASYNCHRONOUS_THREADABORT_MSG                                                                  \
-    L"User code running on thread %1$i has attempted to abort thread %2$i. This may result in a corrupt state " \
-    L"or resource leaks if the thread being aborted was in the middle of an operation that modifies global "\
-    L"state or uses native resources. Aborting threads other than the currently running thread is strongly "\
-    L"discouraged."
-
-#define MDARC_DANGEROUS_THREADINGAPI_MSG                                                                    \
-    L"User code has attempted to call the following API: '%1$s'. This may result in a deadlock in the process."
-
-#define MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG                                                        \
-    L"A QueryInterface call was made requesting the class interface of COM visible managed class '%1$s'. "  \
-    L"However since this class derives from non COM visible class '%2$s', the QueryInterface call will fail. " \
-    L"This is done to prevent the non COM visible base class from being constrained by the COM versioning " \
-    L"rules."
-
-#define MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG                                                       \
-    L"A QueryInterface call was made requesting the default IDispatch interface of COM visible managed "    \
-    L"class '%1$s'. However since this class does not have an explicit default interface and derives from non "\
-    L"COM visible class '%2$s', the QueryInterface call will fail. This is done to prevent the non COM "    \
-    L"visible base class from being constrained by the COM versioning rules."
-
-#define MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG \
-    L"The runtime has encountered a fatal error. The address of the error was at 0x%1$08x, on thread 0x%2$x. "\
-    L"The error code is 0x%3$08x. This error may be a bug in the CLR or in the unsafe "                     \
-    L"or non-verifiable portions of user code. Common sources of this bug include user marshaling errors "  \
-    L"for COM-interop or PInvoke, which may corrupt the stack." \
-
-#define MDARC_INVALID_OVERLAPPED_TO_PINVOKE_MSG                                                             \
-    L"An overlapped pointer (0x%1$p) that was not allocated on the GC heap was passed via PInvoke to "      \
-    L"the Win32 function '%2$s' in module '%3$s'. "                                                         \
-    L"If the AppDomain is shut down, this can cause heap corruption when the async I/O completes. "         \
-    L"The best solution is to pass a NativeOverlapped structure retrieved from a call to "                  \
-    L"System.Threading.Overlapped.Pack(). If the AppDomain exits, the CLR will keep this structure "        \
-    L"alive and pinned until the I/O completes."
-
-#define MDARC_INVALID_OVERLAPPED_FREE_MSG                                                                   \
-    L"An overlapped pointer (0x%1$p) may have been freed before the I/O operation completed. "              \
-    L"Freeing an overlapped pointer before the I/O operation completes will cause GC heap corruption "      \
-    L"when the I/O does complete. "                                                                         \
-    L"Note that this MDA may not represent an error if the overlapped operation did not start successfully"
 
 #define MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG                                                         \
     L"A thread has entered fiber mode and therefore debugging must be stopped."
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    MDARC_PINVOKE_SIGNATURE_MISMATCH            MDARC_PINVOKE_SIGNATURE_MISMATCH_MSG
-    MDARC_LOAD_FROM_CONTEXT                     MDARC_LOAD_FROM_CONTEXT_MSG
-    MDARC_BINDING_FAILURE                       MDARC_BINDING_FAILURE_MSG
-    MDARC_INVALID_CONFIG_FILE                   MDARC_INVALID_CONFIG_FILE_MSG
-    MDARC_CALLBACK_ON_COLLECTED_DELEGATE        MDARC_CALLBACK_ON_COLLECTED_DELEGATE_MSG
-    MDARC_INVALID_APT_STATE_CHANGE_SET          MDARC_INVALID_APT_STATE_CHANGE_SET_MSG
-    MDARC_INVALID_APT_STATE_CHANGE_NOTSET       MDARC_INVALID_APT_STATE_CHANGE_NOTSET_MSG
-    MDARC_LOADER_LOCK                           MDARC_LOADER_LOCK_MSG
-    MDARC_LOADER_LOCK_DLL                       MDARC_LOADER_LOCK_DLL_MSG
-    MDARC_JIT_ATTACH							MDARC_JIT_ATTACH_MSG
-    MDARC_REENTRANCY                            MDARC_REENTRANCY_MSG
-    MDARC_ASYNCHRONOUS_THREADABORT              MDARC_ASYNCHRONOUS_THREADABORT_MSG
-    MDARC_DANGEROUS_THREADINGAPI                MDARC_DANGEROUS_THREADINGAPI_MSG
-    MDARC_REPORT_AV_ON_COM_RELEASE              MDARC_REPORT_AV_ON_COM_RELEASE_MSG
-    MDARC_REPORT_AV_ON_COM_RELEASE_WITH_VTABLE  MDARC_REPORT_AV_ON_COM_RELEASE_WITH_VTABLE_MSG
-    MDARC_INVALID_VARIANT                       MDARC_INVALID_VARIANT_MSG
-    MDARC_FAILED_QI                             MDARC_FAILED_QI_MSG
-    MDARC_DISCONNECTED_CONTEXT_1                MDARC_DISCONNECTED_CONTEXT_1_MSG
-    MDARC_DISCONNECTED_CONTEXT_2                MDARC_DISCONNECTED_CONTEXT_2_MSG
-    MDARC_NOTMARSHALABLE                        MDARC_NOTMARSHALABLE_MSG
-    MDARC_MARSHALCLEANUPERROR_THREADCULTURE     MDARC_MARSHALCLEANUPERROR_THREADCULTURE_MSG
-    MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP    MDARC_MARSHALCLEANUPERROR_SAFEHANDLEPROP_MSG
-    MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP     MDARC_MARSHALCLEANUPERROR_CUSTOMCLEANUP_MSG
-    MDARC_INVALID_IUNKNOWN                      MDARC_INVALID_IUNKNOWN_MSG
-    MDARC_CONTEXT_SWITCH_DEADLOCK               MDARC_CONTEXT_SWITCH_DEADLOCK_MSG
-    MDARC_RCW_CLEANUP_RACE                      MDARC_RCW_CLEANUP_RACE_MSG
-    MDARC_INVALID_FUNCTION_PTR_IN_DELEGATE      MDARC_INVALID_FUNCTION_PTR_IN_DELEGATE_MSG
-    MDARC_DIRTY_CAST_AND_CALL_ON_INTERFACE      MDARC_DIRTY_CAST_AND_CALL_ON_INTERFACE_MSG
-    MDARC_VTABLE_CALL_ON_AUTODISP_MEMBER        MDARC_VTABLE_CALL_ON_AUTODISP_MEMBER_MSG
-    MDARC_INVALID_CER_CALL                      MDARC_INVALID_CER_CALL_MSG
-    MDARC_VIRTUAL_CER_CALL                      MDARC_VIRTUAL_CER_CALL_MSG
-    MDARC_OPENGENERIC_CER_CALL                  MDARC_OPENGENERIC_CER_CALL_MSG
-    MDARC_ILLEGAL_PCR                           MDARC_ILLEGAL_PCR_MSG
-    MDARC_SAFEHANDLE_CRITICAL_FAILURE           MDARC_SAFEHANDLE_CRITICAL_FAILURE_MSG
-    MDARC_DLLMAIN_RETURNS_FALSE                 MDARC_DLLMAIN_RETURNS_FALSE_MSG
-    MDARC_INVALID_MEMBER_DECLARATION            MDARC_INVALID_MEMBER_DECLARATION_MSG
-    MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR        MDARC_EXCEPTION_SWALLOWED_COM_TO_CLR_MSG
-    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF    MDARC_NON_COMVISIBLE_BASE_CLASS_CLASSITF_MSG
-    MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH   MDARC_NON_COMVISIBLE_BASE_CLASS_IDISPATCH_MSG
-    MDARC_PINVOKE_LOG                           MDARC_PINVOKE_LOG_MSG
-    MDARC_FATAL_EXECUTION_ENGINE_ERROR          MDARC_FATAL_EXECUTION_ENGINE_ERROR_MSG
-    MDARC_INVALID_OVERLAPPED_TO_PINVOKE         MDARC_INVALID_OVERLAPPED_TO_PINVOKE_MSG
-    MDARC_INVALID_OVERLAPPED_FREE               MDARC_INVALID_OVERLAPPED_FREE_MSG
     MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED     MDARC_DEBUGGER_FIBER_MODE_NOT_SUPPORTED_MSG
-    MDARC_BINDING_FAILURE_CODEBASE_ONLY         MDARC_BINDING_FAILURE_CODEBASE_ONLY_MSG
-    MDARC_BINDING_FAILURE_DISPLAYNAME_ONLY      MDARC_BINDING_FAILURE_DISPLAYNAME_ONLY_MSG
-    MDARC_MARSHALING_METHOD                     MDARC_MARSHALING_METHOD_MSG
-    MDARC_MARSHALING_FIELD                      MDARC_MARSHALING_FIELD_MSG
-    MDARC_MARSHALING_RETURN_VALUE_NAME          "return value"
-    MDARC_MARSHALING_UNKNOWN_PARAM_NAME         "unknown"
 END
 
 STRINGTABLE DISCARDABLE
@@ -528,8 +211,6 @@ BEGIN
     IDS_EE_NOTNDIRECT                       "Not a PInvoke method."
     IDS_EE_ERRORTITLE                       "Error"
     IDS_EE_ERRORMESSAGETEMPLATE             "Error 0x%08x.\n\n%s."
-    IDS_EE_TWO_LOADED_MSCOREE_TITLE         "MSCOREE.DLL load error."
-    IDS_EE_TWO_LOADED_MSCOREE_MSG           "Two different copies of MSCORWKS.DLL have been loaded.\n\nFirst copy:\n%s\n\nSecond copy:\n%s\n\nThis is typically caused by having a registered MSCOREE.DLL that is different\nfrom the one that is statically linked with the application."
     IDS_EE_RETHROW_NOT_ALLOWED              "No exception available to rethrow."
     IDS_EE_INVALID_OLE_VARIANT              "Specified OLE variant is invalid."
     IDS_EE_TO_MANY_ARGUMENTS_IN_MAIN        "Signature for the entry point has too many arguments."
@@ -608,8 +289,6 @@ BEGIN
     IDS_EE_BADMARSHAL_SAFEHANDLEARRAY       "Invalid managed/unmanaged type combination (Arrays of SafeHandles are not supported)."
     IDS_EE_BADMARSHAL_CRITICALHANDLEARRAY   "Invalid managed/unmanaged type combination (Arrays of CriticalHandles are not supported)."
     IDS_EE_BADMARSHAL_SYSARRAY              "Invalid managed/unmanaged type combination (System.Array must be paired with SafeArray or Interface)."
-    IDS_EE_BADMARSHAL_PTRSUBTYPE            "Pointers cannot reference managed objects.  Use ByRef instead."
-    IDS_EE_BADMARSHAL_PTRNONBLITTABLE       "Pointers cannot reference marshaled structures.  Use ByRef instead."
     IDS_EE_BADMARSHAL_RESTRICTION           "This type can only be marshaled in restricted ways."
     IDS_EE_BADMARSHAL_ASANYRESTRICTION      "AsAny cannot be used on return types, ByRef parameters, ArrayWithOffset, or parameters passed from unmanaged to managed."
     IDS_EE_BADMARSHAL_VBBYVALSTRRESTRICTION "VBByRefStr can only be used in combination with in/out, ByRef managed-to-unmanaged strings."
@@ -624,8 +303,6 @@ BEGIN
     IDS_EE_BADMARSHAL_CRITICALHANDLENATIVETOCOM "CriticalHandles cannot be marshaled from unmanaged to managed."
     IDS_EE_BADMARSHAL_ABSTRACTOUTCRITICALHANDLE "Ref and out CriticalHandle parameters cannot be abstract."
     IDS_EE_BADMARSHAL_ABSTRACTRETCRITICALHANDLE "Returned CriticalHandles cannot be abstract."
-    IDS_EE_BADMARSHAL_NOTMARSHALABLE        "The type definition of this field has layout information but has an invalid managed/unmanaged type combination or is unmarshalable."
-    IDS_EE_BADMARSHAL_BADMETADATA           "Invalid marshaling metadata."
     IDS_EE_BADMARSHAL_CUSTOMMARSHALER       "Custom marshalers are only allowed on classes, strings, arrays, and boxed value types."
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Non-blittable generic types cannot be marshaled."
     IDS_EE_BADMARSHAL_STRING_OUT            "Cannot marshal a string by-value with the [Out] attribute."
@@ -634,16 +311,13 @@ BEGIN
     IDS_EE_BADMARSHALPARAM_NO_LPTSTR        "Invalid managed/unmanaged type combination (Strings cannot be paired with LPTStr for parameters and return types of methods in interfaces exposed to COM)."
 
     IDS_EE_BADMARSHALFIELD_NOCUSTOMMARSH    "Custom marshalers cannot be used on fields of structures."
-    IDS_EE_BADMARSHALFIELD_FIXEDARRAY_NOSIZE   "Fixed sized array fields inside structures must have the MarshalAs SizeConst field set to the size of the array."
     IDS_EE_BADMARSHALFIELD_FIXEDARRAY_ZEROSIZE "Fixed sized array fields cannot have a SizeConst of zero."
     IDS_EE_BADMARSHALFIELD_LAYOUTCLASS      "Invalid managed/unmanaged type combination  (Classes with layout fields must be paired with Struct or Interface)."
     IDS_EE_BADMARSHALFIELD_NOSTRINGBUILDER  "Struct or class fields cannot be of type StringBuilder. The same effect can usually be achieved by using a String field and preinitializing it to a string with length matching the length of the appropriate buffer."
     IDS_EE_BADMARSHALFIELD_ZEROLENGTHFIXEDSTRING "The length for ByValTStr strings cannot be zero."
 
 #ifdef FEATURE_COMINTEROP
-    IDS_EE_BADMARSHALFIELD_NULL_HSTRING     "Null strings may not be marshaled in Windows Runtime fields."
     IDS_EE_BADMARSHALARRAY_NULL_HSTRING     "Null strings may not be marshaled in Windows Runtime arrays. Null string was encountered at index %1."
-    IDS_EE_BADMARSHAL_NULLABLE_RESTRICTION  "Given Windows.Foundation.IReference can not be converted to System.Nullable type. Type arguments can't be empty, string or non-value types. "
 #endif // FEATURE_COMINTEROP
 
 // For ManagedToNativeComInteropStubAttribute
@@ -673,10 +347,6 @@ BEGIN
 #endif // FEATURE_COMINTEROP
 
     IDS_EE_INTEROP_CODE_SIZE_COMMENT        "Code size"
-
-    IDS_EE_ADUNLOAD_IN_FINALIZER            "AppDomain cannot be unloaded during object finalization."
-    IDS_EE_ADUNLOAD_DEFAULT                 "The default domain cannot be unloaded."
-    IDS_EE_ADUNLOAD_CANT_UNWIND_THREAD      "AppDomain cannot be unloaded because the thread '%1' cannot be unwound out of it."
 
     IDS_CLASSLOAD_TYPEWRONGNUMGENERICARGS      "The generic type '%1' was used with the wrong number of generic arguments in assembly '%2'."
     IDS_CLASSLOAD_INVALIDINSTANTIATION    "The generic type '%1' was used with an invalid instantiation in assembly '%2'."
@@ -764,7 +434,6 @@ BEGIN
     IDS_INVALID_REDIM                       "Illegal attempt to replace or redimension a fixed or locked SafeArray."
 
     IDS_INVALID_PINVOKE_CALLCONV            "Invalid unmanaged calling convention: must be one of stdcall, cdecl, or thiscall."
-    IDS_NOLAYOUT_IN_EMBEDDED_VALUECLASS     "Type could not be marshaled because an embedded valuetype has no layout information."
     IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET   "Could not load type '%1' from assembly '%2' because field '%3' was not given an explicit offset."
     IDS_WRONGSIZEARRAY_IN_NSTRUCT           "Type could not be marshaled because the length of an embedded array instance does not match the declared length in the layout."
 
@@ -795,11 +464,9 @@ BEGIN
     // Errors associated with parsing security custom attributes at compile time.
     CORSECATTR_E_BAD_ACTION                 "Security custom attribute has invalid SecurityAction."
 
-    IDS_EE_COPY_OUTOFRANGE                   "Requested range extends past the end of the array."
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
     IDS_EE_SIZECONTROLBADTYPE               "Array size control parameter type not supported."
-    IDS_EE_DUPLICATE_DECLSEC                "Multiple permission sets specified with the same SecurityAction."
     IDS_EE_SAFEARRAYSZARRAYMISMATCH         "SafeArray cannot be marshaled to this array type because it has either nonzero lower bounds or more than one dimension."
 
     IDS_EE_WINRT_LOADFAILURE                "Could not find Windows Runtime type '%1'."
@@ -850,8 +517,6 @@ BEGIN
 
     IDS_EE_ARRAY_DIMENSIONS_EXCEEDED        "Array dimensions exceeded supported range."
 
-    IDS_EE_PROFILING_FAILURE                "Profiling failure"
-
 
     IDS_EE_THREAD_NOTSTARTED                "Thread has not been started."
     IDS_EE_STRING_TOOLONG                   "Marshaler restriction: Excessively long string."
@@ -869,11 +534,8 @@ BEGIN
     IDS_EE_THREAD_BAD_STATE                 "Thread in invalid state."
     IDS_EE_THREAD_ABORT_WHILE_SUSPEND       "Thread is suspended; attempting to abort."
     IDS_EE_NOVARIANTRETURN                  "PInvoke restriction: cannot return variants."
-    IDS_EE_THREAD_DEADLOCK_VICTIM           "The current thread has been chosen as a deadlock victim."
 
     IDS_EE_PATH_TOO_LONG                    "The path is too long after being fully qualified.  Make sure the full path is less than 260 characters and the directory name is less than 248 characters."
-
-    IDS_EE_INVALID_SAFEARRAY                "Specified SAFEARRAY is invalid."
 
     IDS_EE_METHOD_NOT_FOUND_ON_EV_PROV      "Method '%1' of COM event interface '%2' is not present on event provider '%3'."
     IDS_EE_BAD_COMEVENTITF_CLASS            "Methods on COM event interfaces must take a single delegate derived class as a parameter and have a void return type."
@@ -891,11 +553,8 @@ BEGIN
     IDS_EE_SAFEHANDLECLOSED                 "Safe handle has been closed"
     IDS_EE_SAFEHANDLECANNOTSETHANDLE        "Safe handle's handle field can only be set if the safe handle is not closed and has a ref count of 1."
 
-    IDS_EE_SH_FIELD_INVALID_OPERATION       "Structures containing SafeHandle fields are not allowed in this operation."
-    IDS_EE_CANNOT_CREATE_SAFEHANDLE_FIELD   "SafeHandle fields cannot be created from an unmanaged handle."
     IDS_EE_SH_IN_VARIANT_NOT_SUPPORTED      "SafeHandle derived types cannot be stored in Variants."
 
-    IDS_EE_CANNOT_CREATE_CRITICALHANDLE_FIELD "CriticalHandle fields cannot be created from an unmanaged handle."
     IDS_EE_CH_IN_VARIANT_NOT_SUPPORTED      "CriticalHandle derived types cannot be stored in Variants."
 
     IDS_EE_VAR_WRAP_IN_VAR_NOT_SUPPORTED    "VariantWrappers cannot be stored in Variants."
@@ -965,8 +624,6 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_COMPLUS_ERROR                        "CLR error: %lx.\n The program will now terminate."
-    IDS_FATAL_ERROR                         "Fatal error"
     IDS_ERROR                               "Error"
 
     IDS_DEBUG_UNHANDLEDEXCEPTION_IPC         "INTERNAL ERROR:\n\nUnhandled exception in Debugger::HandleIPCEvent.\n\nEvent ID=0x%x.\n\nException code=0x%08x, Eip=0x%08x.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\n"
@@ -1105,15 +762,8 @@ BEGIN
         IDS_E_PROF_INIT_CALLBACK_FAILED         "Loading profiler failed.  The profiler COM object was instantiated, but the profiler failed during its initialization callback.  Profiler CLSID: '%s'.  HRESULT: 0x%x."
         IDS_PROF_SUPPLEMENTARY_INFO             "Process ID (decimal): %d.  Message ID: [0x%x]."
         IDS_PROF_LOAD_COMPLETE                  "The profiler was loaded successfully.  Profiler CLSID: '%s'."
-        IDS_E_PROF_ATTACH_INIT                  "There was a failure initializing profiling API attach infrastructure.  This process will not allow a profiler to attach.  HRESULT: 0x%x."
-        IDS_E_PROF_ATTACHTHREAD_INIT            "Loading profiler failed.  Failed creating interprocess communication infrastructure.  HRESULT: 0x%x."
-        IDS_E_PROF_CONNECT_TO_TRIGGER           "Loading profiler failed.  Unable to connect to the process that is trying to request the attach.  HRESULT: 0x%x."
-        IDS_E_PROF_NO_ATTACH_REQ                "Loading profiler failed.  The inter-process communication mechanism was initialized, but an attach request was not received. HRESULT: 0x%x."
-        IDS_E_PROF_PIPE_RCV                     "Loading profiler failed.  Failed trying to receive from out of process a request to attach a profiler.  HRESULT: 0x%x."
         IDS_E_PROF_NOT_ATTACHABLE               "Loading profiler failed.  The profiler COM object was instantiated, but the profiler does not support attaching to a live process.  The profiler must be loaded at application startup by using a launcher program included with the profiler (if any) or by setting the COR_ENABLE_PROFILING and COR_PROFILER environment variables before launching the application to be profiled.  Profiler CLSID: '%s'"
         IDS_E_PROF_UNHANDLED_EXCEPTION_ON_LOAD  "Loading profiler failed.  There was an unhandled exception while trying to instantiate the profiler COM object.  Please ensure the CLSID is associated with a valid profiler designed to work with this version of the runtime.  Profiler CLSID: '%s'."
-        IDS_E_PROF_INVALID_MSG                  "Loading profiler failed.  Received an improperly formatted attach request."
-        IDS_E_PROF_PROFILER_ALREADY_ACTIVE      "Loading profiler failed.  A profiler is already loaded, so the request to attach another profiler was denied."
         IDS_PROF_ATTACH_REQUEST_RECEIVED        "The CLR received a request to attach a profiler. Profiler CLSID: '%s'."
         IDS_PROF_DETACH_INITIATED               "The profiler currently in use has requested to be detached from the process.  The CLR has disabled communication with the profiler and will unload the profiler when it is safe to do so."
         IDS_PROF_DETACH_COMPLETE                "The CLR has fully detached and unloaded the profiler."
@@ -1145,7 +795,6 @@ BEGIN
     IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT "Assembly with same name is already loaded"
     IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED "Dynamically emitted assemblies are unsupported during host-based resolution."
     IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT "Assembly is already bound to an incompatible binding context."
-    IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_TPA_BINDING_CONTEXT "Default binding context is already attached to managed load context."
 END
 
 STRINGTABLE DISCARDABLE

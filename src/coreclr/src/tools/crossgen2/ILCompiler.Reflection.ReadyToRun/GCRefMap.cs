@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -57,12 +57,12 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public class GCRefMapDecoder
     {
-        private readonly R2RReader _reader;
+        private readonly ReadyToRunReader _reader;
         private int _offset;
         private int _pendingByte;
         private int _pos;
 
-        public GCRefMapDecoder(R2RReader reader, int offset)
+        public GCRefMapDecoder(ReadyToRunReader reader, int offset)
         {
             _reader = reader;
             _offset = offset;

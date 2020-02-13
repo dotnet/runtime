@@ -99,7 +99,7 @@ namespace System.Net.Sockets
         public override long Position { get { throw null; } set { } }
         protected bool Readable { get { throw null; } set { } }
         public override int ReadTimeout { get { throw null; } set { } }
-        protected System.Net.Sockets.Socket Socket { get { throw null; } }
+        public System.Net.Sockets.Socket Socket { get { throw null; } }
         protected bool Writeable { get { throw null; } set { } }
         public override int WriteTimeout { get { throw null; } set { } }
         public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int size, System.AsyncCallback callback, object state) { throw null; }

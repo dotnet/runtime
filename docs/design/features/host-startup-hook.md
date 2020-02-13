@@ -100,7 +100,7 @@ needs to be built against the same or lower version of .NET Core than the app.
 
 This could be used with `AssemblyLoadContext` APIs to resolve
 dependencies not on the TPA list from a shared location, similar to
-the GAC on full framework. It could also be used to forcibly preload
+the GAC on .NET Framework. It could also be used to forcibly preload
 assemblies that are on the TPA list from a different location. Future
 changes to `AssemblyLoadContext` could make this easier to use by
 making the default load context or TPA list modifiable.

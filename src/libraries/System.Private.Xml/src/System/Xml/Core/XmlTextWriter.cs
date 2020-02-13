@@ -1519,7 +1519,7 @@ namespace System.Xml
             else if (nsIndex == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
+                _nsHashtable = new Dictionary<string, int>();
                 for (int i = 0; i <= nsIndex; i++)
                 {
                     AddToNamespaceHashtable(i);

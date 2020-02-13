@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestPublicImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -100,7 +100,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestInternalImportsExpectingPublicExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -109,7 +109,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestPublicImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestInternalImportsExpectingInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -127,7 +127,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestPublicImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -136,7 +136,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestInternalImportsExpectingProtectedExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -145,7 +145,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestPublicImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -154,7 +154,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestInternalImportsExpectingProtectedInternalExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestPublicImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();
@@ -172,7 +172,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
         public void TestInternalImportsExpectingPrivateExportsFromCatalog()
         {
             var cat = CatalogFactory.CreateDefaultAttributed();

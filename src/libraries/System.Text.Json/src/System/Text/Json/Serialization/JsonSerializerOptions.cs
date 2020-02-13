@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Text.Encodings.Web;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json
 {
@@ -20,12 +19,14 @@ namespace System.Text.Json
         internal static readonly JsonSerializerOptions s_defaultOptions = new JsonSerializerOptions();
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
-        private static readonly ConcurrentDictionary<string, ImmutableCollectionCreator> s_createRangeDelegates = new ConcurrentDictionary<string, ImmutableCollectionCreator>();
+
         private MemberAccessor? _memberAccessorStrategy;
-        private JsonNamingPolicy? _dictionayKeyPolicy;
+        private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
-        private JavaScriptEncoder? _encoder;
+        private ReferenceHandling _referenceHandling = ReferenceHandling.Default;
+        private JavaScriptEncoder? _encoder = null;
+
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -121,12 +122,12 @@ namespace System.Text.Json
         {
             get
             {
-                return _dictionayKeyPolicy;
+                return _dictionaryKeyPolicy;
             }
             set
             {
                 VerifyMutable();
-                _dictionayKeyPolicy = value;
+                _dictionaryKeyPolicy = value;
             }
         }
 
@@ -297,16 +298,29 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        /// Defines how references are treated when reading and writing JSON, this is convenient to deal with circularity.
+        /// </summary>
+        public ReferenceHandling ReferenceHandling
+        {
+            get => _referenceHandling;
+            set
+            {
+                VerifyMutable();
+
+                _referenceHandling = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
+
         internal MemberAccessor MemberAccessorStrategy
         {
             get
             {
                 if (_memberAccessorStrategy == null)
                 {
-#if BUILDING_INBOX_LIBRARY
+#if NETFRAMEWORK || NETCOREAPP
                     _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
-                    // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
                     _memberAccessorStrategy = new ReflectionMemberAccessor();
 #endif
                 }
@@ -348,21 +362,6 @@ namespace System.Text.Json
                 SkipValidation = true
 #endif
             };
-        }
-
-        internal bool CreateRangeDelegatesContainsKey(string key)
-        {
-            return s_createRangeDelegates.ContainsKey(key);
-        }
-
-        internal bool TryGetCreateRangeDelegate(string delegateKey, [NotNullWhen(true)] out ImmutableCollectionCreator? createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
-        }
-
-        internal bool TryAddCreateRangeDelegate(string key, ImmutableCollectionCreator createRangeDelegate)
-        {
-            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
         }
 
         internal void VerifyMutable()

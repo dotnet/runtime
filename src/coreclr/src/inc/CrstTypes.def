@@ -105,7 +105,7 @@ Crst AssemblyDependencyGraph
 End
 
 Crst AvailableParamTypes
-    AcquiredBefore IbcProfile LoaderHeap
+    AcquiredBefore ModuleLookupTable IbcProfile LoaderHeap
 End
 
 Crst BaseDomain

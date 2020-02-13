@@ -68,7 +68,7 @@ namespace System.Security.AccessControl
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/24903", TargetFrameworkMonikers.NetFramework)]
         public void GetAccessRules_InvalidTargetType()
         {
             var activeDirectorySecurity = new ActiveDirectorySecurity();

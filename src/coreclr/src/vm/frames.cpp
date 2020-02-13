@@ -64,7 +64,7 @@ void Frame::Log() {
 
     MethodDesc* method = GetFunction();
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
         method = ((UMThkCallFrame*) this)->GetUMEntryThunk()->GetMethod();
 #endif
@@ -75,7 +75,7 @@ void Frame::Log() {
     const char* frameType;
     if (GetVTablePtr() == PrestubMethodFrame::GetMethodFrameVPtr())
         frameType = "PreStub";
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     else if (GetVTablePtr() == UMThkCallFrame::GetMethodFrameVPtr())
         frameType = "UMThkCallFrame";
 #endif
@@ -127,7 +127,7 @@ void __stdcall Frame::LogTransition(Frame* frame)
 
     BEGIN_ENTRYPOINT_VOIDRET;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // On x86, StubLinkerCPU::EmitMethodStubProlog calls Frame::LogTransition
     // but the caller of EmitMethodStubProlog sets the GSCookie later on.
     // So the cookie is not initialized by the point we get here.
@@ -157,7 +157,7 @@ void __stdcall Frame::LogTransition(Frame* frame)
 
 bool isLegalManagedCodeCaller(PCODE retAddr) {
     WRAPPER_NO_CONTRACT;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
         // we expect to be called from JITTED code or from special code sites inside
         // mscorwks like callDescr which we have put a NOP (0x90) so we know that they
@@ -197,9 +197,9 @@ bool isLegalManagedCodeCaller(PCODE retAddr) {
 
     _ASSERTE(!"Bad return address on stack");
     return false;
-#else  // _TARGET_X86_
+#else  // TARGET_X86
     return true;
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 #endif //0
 
@@ -402,7 +402,8 @@ VOID Frame::Push(Thread *pThread)
     // in which the C compiler will lay them out in the stack frame.
     // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in mscorwks.dll
-    _ASSERTE(((m_Next == FRAME_TOP) ||
+    _ASSERTE(pThread->IsExecutingOnAltStack() ||
+              ((m_Next == FRAME_TOP) ||
               (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
 
@@ -456,7 +457,7 @@ VOID Frame::Pop(Thread *pThread)
     m_Next = NULL;
 }
 
-#if defined(FEATURE_PAL) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 void Frame::PopIfChained()
 {
     CONTRACTL
@@ -475,7 +476,7 @@ void Frame::PopIfChained()
         Pop();
     }
 }
-#endif // FEATURE_PAL && !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // TARGET_UNIX && !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 //-----------------------------------------------------------------------
 #endif // #ifndef DACCESS_COMPILE
@@ -522,7 +523,7 @@ TADDR TransitionFrame::GetAddrOfThis()
 
 VASigCookie * TransitionFrame::GetVASigCookie()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     LIMITED_METHOD_CONTRACT;
     return dac_cast<PTR_VASigCookie>(
         *dac_cast<PTR_TADDR>(GetTransitionBlock() +
@@ -829,7 +830,7 @@ void DynamicHelperFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     if (m_dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg)
     {
         TADDR pArgument = GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // x86 is special as always
         pArgument += offsetof(ArgumentRegisters, ECX);
 #endif
@@ -839,7 +840,7 @@ void DynamicHelperFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     if (m_dynamicHelperFrameFlags & DynamicHelperFrameFlags_ObjectArg2)
     {
         TADDR pArgument = GetTransitionBlock() + TransitionBlock::GetOffsetOfArgumentRegisters();
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // x86 is special as always
         pArgument += offsetof(ArgumentRegisters, EDX);
 #else
@@ -1112,7 +1113,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
         switch (r)
         {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case RT_Float: // Fall through
 #endif
         case RT_Scalar:
@@ -1310,7 +1311,7 @@ void TransitionFrame::PromoteCallerStackHelper(promote_func* fn, ScanContext* sc
     }
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 UINT TransitionFrame::CbStackPopUsingGCRefMap(PTR_BYTE pGCRefMap)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1326,7 +1327,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
     GCRefMapDecoder decoder(pGCRefMap);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // Skip StackPop
     decoder.ReadStackPop();
 #endif
@@ -1340,7 +1341,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
 
         int ofs;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         ofs = (pos < NUM_ARGUMENT_REGISTERS) ?
             (TransitionBlock::GetOffsetOfArgumentRegisters() + ARGUMENTREGISTERS_SIZE - (pos + 1) * sizeof(TADDR)) :
             (TransitionBlock::GetOffsetOfArgs() + (pos - NUM_ARGUMENT_REGISTERS) * sizeof(TADDR));
@@ -1520,7 +1521,7 @@ BOOL TransitionFrame::Protects(OBJECTREF * ppORef)
 
 #ifdef FEATURE_COMINTEROP
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // Return the # of stack bytes pushed by the unmanaged caller.
 UINT ComMethodFrame::GetNumCallerStackBytes()
 {
@@ -1533,7 +1534,7 @@ UINT ComMethodFrame::GetNumCallerStackBytes()
     // compute the callee pop stack bytes
     return pCMD->GetNumStackBytes();
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
@@ -1574,7 +1575,7 @@ void ComMethodFrame::DoSecondPassHandlerCleanup(Frame * pCurFrame)
 #endif // FEATURE_COMINTEROP
 
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 PTR_UMEntryThunk UMThkCallFrame::GetUMEntryThunk()
 {
@@ -1597,11 +1598,11 @@ void UMThkCallFrame::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 #endif
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #ifndef DACCESS_COMPILE
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)   // Small critical routines, don't put in EBP frame
 #endif
 
@@ -1658,7 +1659,7 @@ void HelperMethodFrame::Pop()
     PopSlowHelper();
 }
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)     // Go back to command line default optimizations
 #endif
 
@@ -1861,15 +1862,15 @@ BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
     BYTE *pbDel = NULL;
     int delegateCount = 0;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // At this point the counter hasn't been incremented yet.
     delegateCount = *regs->GetEdiLocation() + 1;
     pbDel = *(BYTE **)( (size_t)*regs->GetEsiLocation() + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     // At this point the counter hasn't been incremented yet.
     delegateCount = (int)regs->pCurrentContext->Rdi + 1;
     pbDel = *(BYTE **)( (size_t)(regs->pCurrentContext->Rsi) + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // At this point the counter has not yet been incremented. Counter is in R7, frame pointer in R4.
     delegateCount = regs->pCurrentContext->R7 + 1;
     pbDel = *(BYTE **)( (size_t)(regs->pCurrentContext->R4) + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());

@@ -93,25 +93,8 @@ uint64_t SystemNative_GetTimestamp()
 #endif
 }
 
-#if defined(_ARM_) || defined(_ARM64_)
-#define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
-#else
-#define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
-#endif
-
 int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
-    static long numProcessors = 0;
-
-    if (numProcessors <= 0)
-    {
-        numProcessors = sysconf(SYSCONF_GET_NUMPROCS);
-        if (numProcessors <= 0)
-        {
-            return 0;
-        }
-    }
-
     uint64_t kernelTime = 0;
     uint64_t userTime = 0;
 
@@ -143,11 +126,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     uint64_t cpuTotalTime = 0;
     if (currentTime > lastRecordedCurrentTime)
     {
-        // cpuTotalTime is based on clock time. Since multiple threads can run in parallel,
-        // we need to scale cpuTotalTime cover the same amount of total CPU time.
-        // rusage time is already scaled across multiple processors.
         cpuTotalTime = (currentTime - lastRecordedCurrentTime);
-        cpuTotalTime *= (uint64_t)numProcessors;
     }
 
     uint64_t cpuBusyTime = 0;
@@ -161,8 +140,6 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     {
         cpuUtilization = (int32_t)(cpuBusyTime * 100 / cpuTotalTime);
     }
-
-    assert(cpuUtilization >= 0 && cpuUtilization <= 100);
 
     previousCpuInfo->lastRecordedCurrentTime = currentTime;
     previousCpuInfo->lastRecordedUserTime = userTime;

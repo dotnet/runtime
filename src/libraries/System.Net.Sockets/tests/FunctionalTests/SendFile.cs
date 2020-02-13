@@ -105,7 +105,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(SendFileSync_MemberData))]
         public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend, bool forceNonBlocking)
@@ -189,7 +189,7 @@ namespace System.Net.Sockets.Tests
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
                 {
                     Task socketOperation = Task.Run(() =>
@@ -257,7 +257,7 @@ namespace System.Net.Sockets.Tests
             }, maxAttempts: 10);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop]
         [Theory]
         [MemberData(nameof(SendFile_MemberData))]
         public async Task SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
@@ -314,21 +314,6 @@ namespace System.Net.Sockets.Tests
 
             // Clean up the file we created
             File.Delete(filename);
-        }
-
-        protected static (Socket, Socket) CreateConnectedSocketPair()
-        {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                client.Connect(listener.LocalEndPoint);
-                Socket server = listener.Accept();
-
-                return (client, server);
-            }
         }
     }
 }

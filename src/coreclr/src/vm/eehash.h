@@ -332,7 +332,7 @@ public:
         LIMITED_METHOD_CONTRACT;
 
 		return (DWORD)ppiKey.iValue ^
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         	(DWORD)(size_t) ppiKey.pValue;
 #else
         // <TODO> IA64: Is this a good hashing mechanism on IA64?</TODO>
@@ -529,7 +529,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         return (DWORD)(size_t) dac_cast<TADDR>(pKey);
 #else
         // <TODO> IA64: Is this a good hashing mechanism on IA64?</TODO>

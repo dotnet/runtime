@@ -1303,7 +1303,7 @@ Retry:
 
         // Attempt uncached bind and register stream if possible
         // We skip version compatibility check - so assemblies with same simple name will be reported
-        // as a successfull bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
+        // as a successful bind. Below we compare MVIDs in that case instead (which is a more precise equality check).
         hr = BindByName(pApplicationContext,
                         pAssemblyName,
                         true,  // skipFailureCaching

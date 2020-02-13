@@ -321,7 +321,7 @@ int ExecuteManagedAssembly(
     // Indicates failure
     int exitCode = -1;
 
-#ifdef _ARM_
+#ifdef HOST_ARM
     // libunwind library is used to unwind stack frame, but libunwind for ARM
     // does not support ARM vfpv3/NEON registers in DWARF format correctly.
     // Therefore let's disable stack unwinding using DWARF information
@@ -333,7 +333,7 @@ int ExecuteManagedAssembly(
     // UNW_ARM_METHOD_FRAME        0x02
     // UNW_ARM_METHOD_EXIDX        0x04
     putenv(const_cast<char *>("UNW_ARM_UNWIND_METHOD=6"));
-#endif // _ARM_
+#endif // HOST_ARM
 
     std::string coreClrDllPath(clrFilesAbsolutePath);
     coreClrDllPath.append("/");
@@ -350,15 +350,6 @@ int ExecuteManagedAssembly(
     GetDirectory(managedAssemblyAbsolutePath, appPath);
 
     std::string tpaList;
-    if (strlen(managedAssemblyAbsolutePath) > 0)
-    {
-        // Target assembly should be added to the tpa list. Otherwise corerun.exe
-        // may find wrong assembly to execute.
-        // Details can be found at https://github.com/dotnet/coreclr/issues/5631
-        tpaList = managedAssemblyAbsolutePath;
-        tpaList.append(":");
-    }
-
     // Construct native search directory paths
     std::string nativeDllSearchDirs(appPath);
     char *coreLibraries = getenv("CORE_LIBRARIES");
@@ -371,7 +362,6 @@ int ExecuteManagedAssembly(
             AddFilesFromDirectoryToTpaList(coreLibraries, tpaList);
         }
     }
-
     nativeDllSearchDirs.append(":");
     nativeDllSearchDirs.append(clrFilesAbsolutePath);
 

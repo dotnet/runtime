@@ -20,7 +20,7 @@
       <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
     </ItemGroup>
 
-    <Copy Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'"
+    <Copy Condition="'$(BuildArch)' != 'arm64'"
         SourceFiles="@(UcrtFilesToCopy)"
         DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)" />
   </Target>

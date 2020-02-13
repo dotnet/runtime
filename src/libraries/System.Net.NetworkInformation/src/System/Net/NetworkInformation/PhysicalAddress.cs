@@ -9,7 +9,6 @@ namespace System.Net.NetworkInformation
     public class PhysicalAddress
     {
         private readonly byte[] _address = null;
-        private bool _hashNotComputed = true;
         private int _hash = 0;
 
         public static readonly PhysicalAddress None = new PhysicalAddress(Array.Empty<byte>());
@@ -21,17 +20,16 @@ namespace System.Net.NetworkInformation
 
         public override int GetHashCode()
         {
-            if (_hashNotComputed)
+            if (_hash == 0)
             {
-                _hashNotComputed = false;
-                _hash = 0;
+                int hash = 0;
 
                 int i;
                 int size = _address.Length & ~3;
 
                 for (i = 0; i < size; i += 4)
                 {
-                    _hash ^= (int)_address[i]
+                    hash ^= (int)_address[i]
                             | ((int)_address[i + 1] << 8)
                             | ((int)_address[i + 2] << 16)
                             | ((int)_address[i + 3] << 24);
@@ -48,8 +46,15 @@ namespace System.Net.NetworkInformation
                         shift += 8;
                     }
 
-                    _hash ^= remnant;
+                    hash ^= remnant;
                 }
+
+                if (hash == 0)
+                {
+                    hash = 1;
+                }
+
+                _hash = hash;
             }
 
             return _hash;
@@ -86,16 +91,7 @@ namespace System.Net.NetworkInformation
 
         public override string ToString()
         {
-            return string.Create(_address.Length * 2, _address, (span, addr) =>
-            {
-                int p = 0;
-                foreach (byte value in addr)
-                {
-                    byte upper = (byte)(value >> 4), lower = (byte)(value & 0xF);
-                    span[p++] = (char)(upper + (upper < 10 ? '0' : 'A' - 10));
-                    span[p++] = (char)(lower + (lower < 10 ? '0' : 'A' - 10));
-                }
-            });
+            return HexConverter.ToString(_address.AsSpan(), HexConverter.Casing.Upper);
         }
 
         public byte[] GetAddressBytes()

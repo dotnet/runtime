@@ -6,9 +6,10 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
+#nullable enable
 namespace System.Security.Cryptography.Asn1
 {
-    internal partial class AsnReader
+    internal ref partial struct AsnValueReader
     {
         /// <summary>
         ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
@@ -54,11 +55,17 @@ namespace System.Security.Cryptography.Asn1
         /// </exception>
         public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
         {
-            byte[] rented = null;
+            byte[]? rented = null;
+            Span<byte> tmpSpace;
 
-            // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
-            // BER specified offset.
-            Span<byte> tmpSpace = stackalloc byte[64];
+            unsafe
+            {
+                // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
+                // BER specified offset.
+                const int StackBufSize = 64;
+                byte* stackBuf = stackalloc byte[StackBufSize];
+                tmpSpace = new Span<byte>(stackBuf, StackBufSize);
+            }
 
             ReadOnlySpan<byte> contents = GetOctetStringContents(
                 expectedTag,
@@ -403,6 +410,59 @@ namespace System.Security.Cryptography.Asn1
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+    }
+
+    internal partial class AsnReader
+    {
+        /// <summary>
+        ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
+        /// </summary>
+        /// <param name="disallowFractions">
+        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
+        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
+        ///   Time attribute.
+        /// </param>
+        /// <returns>
+        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        public DateTimeOffset ReadGeneralizedTime(bool disallowFractions = false) =>
+            ReadGeneralizedTime(Asn1Tag.GeneralizedTime, disallowFractions);
+
+        /// <summary>
+        ///   Reads the next value as a GeneralizedTime with a specified tag.
+        /// </summary>
+        /// <param name="expectedTag">The tag to check for before reading.</param>
+        /// <param name="disallowFractions">
+        ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
+        ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
+        ///   Time attribute.
+        /// </param>
+        /// <returns>
+        ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   the next value does not have the correct tag --OR--
+        ///   the length encoding is not valid under the current encoding rules --OR--
+        ///   the contents are not valid under the current encoding rules
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+        ///   <see cref="TagClass.Universal"/>, but
+        ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
+        ///   the method
+        /// </exception>
+        public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false)
+        {
+            AsnValueReader valueReader = OpenValueReader();
+            DateTimeOffset ret = valueReader.ReadGeneralizedTime(expectedTag, disallowFractions);
+            valueReader.MatchSlice(ref _data);
+            return ret;
         }
     }
 }

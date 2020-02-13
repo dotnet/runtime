@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -118,11 +119,11 @@ namespace System.Dynamic
             // if the target is IDO, standard binders ask it to bind the rule so we may have a target-specific binding.
             // it makes sense to restrict on the target's type in such cases.
             // ideally IDO metaobjects should do this, but they often miss that type of "this" is significant.
-            if (IsStandardBinder && args[0] as IDynamicMetaObjectProvider != null)
+            if (IsStandardBinder && args[0] is IDynamicMetaObjectProvider)
             {
                 if (restrictions == BindingRestrictions.Empty)
                 {
-                    throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value.GetType(), this);
+                    throw System.Linq.Expressions.Error.DynamicBindingNeedsRestrictions(target.Value!.GetType(), this);
                 }
             }
 
@@ -175,7 +176,6 @@ namespace System.Dynamic
         /// </summary>
         /// <param name="type">The <see cref="Expression.Type">Type</see> property of the resulting expression; any type is allowed.</param>
         /// <returns>The update expression.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
         public Expression GetUpdateExpression(Type type)
         {
             return Expression.Goto(CallSiteBinder.UpdateLabel, type);
@@ -187,7 +187,7 @@ namespace System.Dynamic
         /// <param name="target">The target of the dynamic operation.</param>
         /// <param name="args">An array of arguments of the dynamic operation.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[] args)
+        public DynamicMetaObject Defer(DynamicMetaObject target, params DynamicMetaObject[]? args)
         {
             ContractUtils.RequiresNotNull(target, nameof(target));
 

@@ -3,39 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static void GetRuntimeClassInfo(object? value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
-        {
-            if (value != null)
-            {
-                Type runtimeType = value.GetType();
-
-                // Nothing to do for typeof(object)
-                if (runtimeType != typeof(object))
-                {
-                    jsonClassInfo = options.GetOrAddClass(runtimeType);
-                }
-            }
-        }
-
-        private static void GetRuntimePropertyInfo(object? value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
-        {
-            if (value != null)
-            {
-                Type runtimeType = value.GetType();
-
-                // Nothing to do for typeof(object)
-                if (runtimeType != typeof(object))
-                {
-                    jsonPropertyInfo = jsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, runtimeType, options);
-                }
-            }
-        }
-
         private static void VerifyValueAndType(object? value, Type type)
         {
             if (type == null)
@@ -128,11 +101,8 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                Debug.Assert(type != null);
-                state.Current.Initialize(type, options);
-                state.Current.CurrentValue = value;
-
-                Write(writer, writer.CurrentDepth, flushThreshold: -1, options, ref state);
+                state.InitializeRoot(type!, options, supportContinuation: false);
+                WriteCore(writer, value, options, ref state, state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
             }
 
             writer.Flush();

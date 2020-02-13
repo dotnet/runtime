@@ -1466,7 +1466,7 @@ DelayLoad_Helper\suffix:
 #define PAGE_SIZE      0x1000
 #define PAGE_SIZE_LOG2 12
 
-        NESTED_ENTRY JIT_StackProbe, _TEXT, NoHandler
+        LEAF_ENTRY JIT_StackProbe, _TEXT
         PROLOG_PUSH "{r7}"
         PROLOG_STACK_SAVE r7
 
@@ -1484,4 +1484,4 @@ ProbeLoop:
         EPILOG_STACK_RESTORE r7
         EPILOG_POP "{r7}"
         EPILOG_BRANCH_REG lr
-        NESTED_END JIT_StackProbe, _TEXT
+        LEAF_END_MARKED JIT_StackProbe, _TEXT

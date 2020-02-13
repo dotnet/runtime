@@ -11,7 +11,7 @@ public static class HashCodeTests
     [Fact]
     public static void HashCode_Add()
     {
-        // The version of xUnit used by corefx does not support params theories.
+        // The version of xUnit used by .NET Core does not support params theories.
         void Theory(uint expected, params uint[] vector)
         {
             var hc = new HashCode();

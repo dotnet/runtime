@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other HMAC* classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from HMAC, it can't be helped.
+    // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
     public class HMACSHA512 : HMAC
@@ -24,9 +24,14 @@ namespace System.Security.Cryptography
 
         public HMACSHA512(byte[] key)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             this.HashName = HashAlgorithmNames.SHA512;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA512, key, BlockSize);
-            base.Key = _hMacCommon.ActualKey;
+            base.Key = _hMacCommon.ActualKey!;
             // change the default value of BlockSizeValue to 128 instead of 64
             BlockSizeValue = BlockSize;
             HashSizeValue = _hMacCommon.HashSizeInBits;
@@ -55,8 +60,13 @@ namespace System.Security.Cryptography
             }
             set
             {
+                if (value is null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
                 _hMacCommon.ChangeKey(value);
-                base.Key = _hMacCommon.ActualKey;
+                base.Key = _hMacCommon.ActualKey!;
             }
         }
 
@@ -85,7 +95,7 @@ namespace System.Security.Cryptography
                 HMACCommon hMacCommon = _hMacCommon;
                 if (hMacCommon != null)
                 {
-                    _hMacCommon = null;
+                    _hMacCommon = null!;
                     hMacCommon.Dispose(disposing);
                 }
             }

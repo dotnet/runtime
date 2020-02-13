@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -784,6 +783,7 @@ namespace System.Net.Security
             SecurityStatusPal status = default;
             bool cachedCreds = false;
             byte[] thumbPrint = null;
+            ReadOnlySpan<byte> inputBuffer = new ReadOnlySpan<byte>(input, offset, count);
 
             //
             // Looping through ASC or ISC with potentially cached credential that could have been
@@ -797,7 +797,7 @@ namespace System.Net.Security
                     if (_refreshCredentialNeeded)
                     {
                         cachedCreds = _sslAuthenticationOptions.IsServer
-                                        ? AcquireServerCredentials(ref thumbPrint, new ReadOnlySpan<byte>(input, offset, count))
+                                        ? AcquireServerCredentials(ref thumbPrint, inputBuffer)
                                         : AcquireClientCredentials(ref thumbPrint);
                     }
 
@@ -806,7 +806,7 @@ namespace System.Net.Security
                         status = SslStreamPal.AcceptSecurityContext(
                                       ref _credentialsHandle,
                                       ref _securityContext,
-                                      input, offset, count,
+                                      inputBuffer,
                                       ref result,
                                       _sslAuthenticationOptions);
                     }
@@ -816,7 +816,7 @@ namespace System.Net.Security
                                        ref _credentialsHandle,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
-                                       input, offset, count,
+                                       inputBuffer,
                                        ref result,
                                        _sslAuthenticationOptions);
                     }
@@ -846,13 +846,6 @@ namespace System.Net.Security
             }
 
             output = result;
-            if (_negotiatedApplicationProtocol == default)
-            {
-                // try to get ALPN info unless we already have it. (this function can be called multiple times)
-                byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
-                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
-            }
-
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Exit(this);
@@ -872,6 +865,13 @@ namespace System.Net.Security
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
+
+            if (_negotiatedApplicationProtocol == default)
+            {
+                // try to get ALPN info unless we already have it. (renegotiation)
+                byte[] alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
+            }
 
             SslStreamPal.QueryContextStreamSizes(_securityContext, out StreamSizes streamSizes);
 

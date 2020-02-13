@@ -509,7 +509,7 @@ namespace System
         public DateTime AddMonths(int months)
         {
             if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
-            GetDatePart(out int y, out int m, out int d);
+            GetDate(out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
             {
@@ -935,10 +935,10 @@ namespace System
             return n - days[m - 1] + 1;
         }
 
-        // Exactly the same as GetDatePart(int part), except computing all of
-        // year/month/day rather than just one of them.  Used when all three
+        // Exactly the same as GetDatePart, except computing all of
+        // year/month/day rather than just one of them. Used when all three
         // are needed rather than redoing the computations for each.
-        internal void GetDatePart(out int year, out int month, out int day)
+        internal void GetDate(out int year, out int month, out int day)
         {
             long ticks = InternalTicks;
             // n = number of days since 1/1/0001
@@ -978,6 +978,42 @@ namespace System
             // compute month and day
             month = m;
             day = n - days[m - 1] + 1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void GetTime(out int hour, out int minute, out int second)
+        {
+            long n = InternalTicks / TicksPerSecond;
+            n = Math.DivRem(n, 60, out long m);
+            second = (int)m;
+            n = Math.DivRem(n, 60, out m);
+            minute = (int)m;
+            hour = (int)(n % 24);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void GetTime(out int hour, out int minute, out int second, out int millisecond)
+        {
+            long n = InternalTicks / TicksPerMillisecond;
+            n = Math.DivRem(n, 1000, out long m);
+            millisecond = (int)m;
+            n = Math.DivRem(n, 60, out m);
+            second = (int)m;
+            n = Math.DivRem(n, 60, out m);
+            minute = (int)m;
+            hour = (int)(n % 24);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void GetTimePrecise(out int hour, out int minute, out int second, out int tick)
+        {
+            long n = Math.DivRem(InternalTicks, TicksPerSecond, out long m);
+            tick = (int)m;
+            n = Math.DivRem(n, 60, out m);
+            second = (int)m;
+            n = Math.DivRem(n, 60, out m);
+            minute = (int)m;
+            hour = (int)(n % 24);
         }
 
         // Returns the day-of-month part of this DateTime. The returned

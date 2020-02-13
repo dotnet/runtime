@@ -249,11 +249,11 @@ public:
 
         // sentinel value indicating uninitialized data
         *(reinterpret_cast<DWORD*>(PatchBypass)) = SentinelValue;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         *(reinterpret_cast<DWORD*>(BypassBuffer)) = SentinelValue;
         RipTargetFixup = 0;
         RipTargetFixupSize = 0;
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
         RipTargetFixup = 0;
 
 #endif
@@ -288,13 +288,13 @@ public:
 
     // "PatchBypass" must be the first field of this class for alignment to be correct.
     BYTE    PatchBypass[MAX_INSTRUCTION_LENGTH];
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     const static int cbBufferBypass = 0x10;
     BYTE    BypassBuffer[cbBufferBypass];
 
     UINT_PTR                RipTargetFixup;
     BYTE                    RipTargetFixupSize;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     UINT_PTR                RipTargetFixup;
 #endif
 
@@ -431,7 +431,7 @@ private:
     // this is shared among all the skippers for this controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
     SharedPatchBypassBuffer* m_pSharedPatchBypassBuffer;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 public:
     SIZE_T                  pid;
@@ -547,7 +547,7 @@ public:
         if (m_pSharedPatchBypassBuffer != NULL)
             m_pSharedPatchBypassBuffer->Release();
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
 private:
     DebuggerPatchKind kind;
@@ -962,9 +962,9 @@ inline bool IsInUsedAction(DPOSS_ACTION action)
 inline void VerifyExecutableAddress(const BYTE* address)
 {
 // TODO: : when can we apply this to x86?
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 #if defined(_DEBUG)
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     MEMORY_BASIC_INFORMATION mbi;
 
     if (sizeof(mbi) == ClrVirtualQuery(address, &mbi, sizeof(mbi)))
@@ -982,9 +982,9 @@ inline void VerifyExecutableAddress(const BYTE* address)
                 ("VEA: address (0x%p) is not on an executable page.", address));
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 #endif // _DEBUG
-#endif // BIT64
+#endif // HOST_64BIT
 }
 
 #endif // !DACCESS_COMPILE
@@ -1469,7 +1469,7 @@ public:
         BYTE* patchBypass = m_pSharedPatchBypassBuffer->PatchBypass;
         return (CORDB_ADDRESS_TYPE *)patchBypass;
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 };
 
 /* ------------------------------------------------------------------------- *

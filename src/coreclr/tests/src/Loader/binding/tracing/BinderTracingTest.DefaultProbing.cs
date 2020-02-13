@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -18,8 +18,6 @@ namespace BinderTracingTests
 {
     partial class BinderTracingTest
     {
-        private static CultureInfo SatelliteCulture = CultureInfo.CreateSpecificCulture("fr-FR");
-
         // Assembly found in app path:
         //   KnownPathProbed : AppNativeImagePaths  (DLL)   [COR_E_FILENOTFOUND]
         //   KnownPathProbed : AppNativeImagePaths  (EXE)   [COR_E_FILENOTFOUND]

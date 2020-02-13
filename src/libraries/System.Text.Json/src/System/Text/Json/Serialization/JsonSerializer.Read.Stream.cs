@@ -4,8 +4,8 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -84,8 +84,11 @@ namespace System.Text.Json
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            ReadStack readStack = default;
-            readStack.Current.Initialize(returnType, options);
+            ReadStack state = default;
+            state.InitializeRoot(returnType, options);
+
+            // Ensures converters support contination due to having to re-populate the buffer from a Stream.
+            state.SupportContinuation = true;
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
@@ -95,7 +98,7 @@ namespace System.Text.Json
             int bytesInBuffer = 0;
             long totalBytesRead = 0;
             int clearMax = 0;
-            bool firstIteration = true;
+            bool isFirstIteration = true;
 
             try
             {
@@ -136,9 +139,10 @@ namespace System.Text.Json
                     }
 
                     int start = 0;
-                    if (firstIteration)
+                    if (isFirstIteration)
                     {
-                        firstIteration = false;
+                        isFirstIteration = false;
+
                         // Handle the UTF-8 BOM if present
                         Debug.Assert(buffer.Length >= JsonConstants.Utf8Bom.Length);
                         if (buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
@@ -154,10 +158,10 @@ namespace System.Text.Json
                         isFinalBlock,
                         new ReadOnlySpan<byte>(buffer, start, bytesInBuffer),
                         options,
-                        ref readStack);
+                        ref state);
 
-                    Debug.Assert(readStack.BytesConsumed <= bytesInBuffer);
-                    int bytesConsumed = checked((int)readStack.BytesConsumed);
+                    Debug.Assert(state.BytesConsumed <= bytesInBuffer);
+                    int bytesConsumed = checked((int)state.BytesConsumed);
 
                     bytesInBuffer -= bytesConsumed;
 
@@ -198,7 +202,7 @@ namespace System.Text.Json
             // The reader should have thrown if we have remaining bytes.
             Debug.Assert(bytesInBuffer == 0);
 
-            return (TValue)readStack.Current.ReturnValue!;
+            return (TValue)state.Current.ReturnValue!;
         }
 
         private static void ReadCore(
@@ -206,7 +210,7 @@ namespace System.Text.Json
             bool isFinalBlock,
             ReadOnlySpan<byte> buffer,
             JsonSerializerOptions options,
-            ref ReadStack readStack)
+            ref ReadStack state)
         {
             var reader = new Utf8JsonReader(buffer, isFinalBlock, readerState);
 
@@ -214,13 +218,13 @@ namespace System.Text.Json
             // to enable read ahead behaviors to ensure we have complete json objects and arrays
             // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
             // to assign to object and JsonElement properties in the constructed .NET object.)
-            readStack.ReadAhead = !isFinalBlock;
-            readStack.BytesConsumed = 0;
+            state.ReadAhead = !isFinalBlock;
+            state.BytesConsumed = 0;
 
             ReadCore(
                 options,
                 ref reader,
-                ref readStack);
+                ref state);
 
             readerState = reader.CurrentState;
         }

@@ -466,7 +466,7 @@ namespace System.Linq.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core optimizes SelectMany and throws an OverflowException. On the full .NET Framework this takes a long time. See https://github.com/dotnet/corefx/pull/13942.")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, ".NET Core optimizes SelectMany and throws an OverflowException. On the .NET Framework this takes a long time. See https://github.com/dotnet/corefx/pull/13942.")]
         [InlineData(new[] { int.MaxValue, 1 })]
         [InlineData(new[] { 2, int.MaxValue - 1 })]
         [InlineData(new[] { 123, 456, int.MaxValue - 100000, 123456 })]

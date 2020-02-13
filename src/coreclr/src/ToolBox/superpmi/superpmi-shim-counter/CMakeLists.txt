@@ -6,10 +6,10 @@ remove_definitions(-D_UNICODE)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
   #use static crt
   add_definitions(-MT)
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 include_directories(.)
 include_directories(../superpmi-shared)
@@ -37,11 +37,11 @@ set(SUPERPMI_SHIM_COUNTER_SOURCES
     ../superpmi-shared/spmidumphelper.cpp
 )
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
     preprocess_file(${CMAKE_CURRENT_SOURCE_DIR}/superpmi-shim-counter.def ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-counter.def)
 
     list(APPEND SUPERPMI_SHIM_COUNTER_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/superpmi-shim-counter.def)
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 _add_library(superpmi-shim-counter
     SHARED
@@ -50,7 +50,7 @@ _add_library(superpmi-shim-counter
 
 target_precompile_header(TARGET superpmi-shim-counter HEADER standardpch.h)
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
         utilcodestaticnohost
         mscorrc_debug
@@ -65,6 +65,6 @@ else()
     )
 
     _install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/superpmi-shim-counter.pdb DESTINATION PDB)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 _install (TARGETS superpmi-shim-counter DESTINATION .)

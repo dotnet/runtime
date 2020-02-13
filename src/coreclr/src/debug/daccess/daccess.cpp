@@ -24,7 +24,7 @@
 #include "dwreport.h"
 #include "primitives.h"
 #include "dbgutil.h"
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #include <dactablerva.h>
 #endif
 
@@ -39,7 +39,7 @@ ClrDataAccess* g_dacImpl;
 HINSTANCE g_thisModule;
 
 EXTERN_C
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
 BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
@@ -52,7 +52,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
     {
         if (g_procInitialized)
         {
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
             // Double initialization can happen on Unix
             // in case of manual load of DAC shared lib and calling DllMain
             // not a big deal, we just ignore it.
@@ -62,7 +62,7 @@ BOOL WINAPI DllMain(HANDLE instance, DWORD reason, LPVOID reserved)
 #endif
         }
 
-#ifdef FEATURE_PAL
+#ifdef HOST_UNIX
         int err = PAL_InitializeDLL();
         if(err != 0)
         {
@@ -2329,7 +2329,7 @@ namespace serialization { namespace bin {
 
     static const size_t ErrOverflow = (size_t)(-1);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     // Template class is_blittable
     template <typename _Ty, typename Enable = void>
@@ -2380,11 +2380,11 @@ namespace serialization { namespace bin {
     template <typename T>
     class Traits<T, typename std::enable_if<is_blittable<T>::value>::type>
     {
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     template <typename T>
     class Traits
     {
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     public:
         //
         // raw_size() returns the size in bytes of the binary representation of a
@@ -2546,7 +2546,7 @@ namespace serialization { namespace bin {
 
     };
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     //
     // Specialization for SString-derived classes (like SStrings)
     //
@@ -2555,7 +2555,7 @@ namespace serialization { namespace bin {
         : public Traits<SString>
     {
     };
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     //
     // Convenience functions to allow argument type deduction
@@ -3702,7 +3702,7 @@ ClrDataAccess::GetRuntimeNameByAddress(
 
     EX_TRY
     {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         address &= ~THUMB_CODE; //workaround for windbg passing in addresses with the THUMB mode bit set
 #endif
         status = RawGetMethodName(address, flags, bufLen, symbolLen, symbolBuf,
@@ -5527,26 +5527,26 @@ ClrDataAccess::Initialize(void)
 
     // Determine our platform based on the pre-processor macros set when we were built
 
-#ifdef FEATURE_PAL
-    #if defined(DBG_TARGET_X86)
+#ifdef TARGET_UNIX
+    #if defined(TARGET_X86)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_X86;
-    #elif defined(DBG_TARGET_AMD64)
+    #elif defined(TARGET_AMD64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_AMD64;
-    #elif defined(DBG_TARGET_ARM)
+    #elif defined(TARGET_ARM)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
-    #elif defined(DBG_TARGET_ARM64)
+    #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
     #else
         #error Unknown Processor.
     #endif
 #else
-    #if defined(DBG_TARGET_X86)
+    #if defined(TARGET_X86)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_X86;
-    #elif defined(DBG_TARGET_AMD64)
+    #elif defined(TARGET_AMD64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_AMD64;
-    #elif defined(DBG_TARGET_ARM)
+    #elif defined(TARGET_ARM)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM;
-    #elif defined(DBG_TARGET_ARM64)
+    #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_WINDOWS_ARM64;
     #else
         #error Unknown Processor.
@@ -5572,16 +5572,14 @@ ClrDataAccess::Initialize(void)
 
     if (m_globalBase == 0)
     {
-        // Caller didn't specify which CLR to debug.  This supports Whidbey SOS cases, so we should
-        // be using a legacy data target.
+        // Caller didn't specify which CLR to debug, we should be using a legacy data target.
         if (m_pLegacyTarget == NULL)
         {
             DacError(E_INVALIDARG);
             UNREACHABLE();
         }
 
-        // Since this is Whidbey, assume there's only 1 CLR named "mscorwks.dll" and pick that.
-        IfFailRet(m_pLegacyTarget->GetImageBase(MAIN_CLR_DLL_NAME_W, &base));
+        IfFailRet(m_pLegacyTarget->GetImageBase(TARGET_MAIN_CLR_DLL_NAME_W, &base));
 
         m_globalBase = TO_TADDR(base);
     }
@@ -5724,12 +5722,12 @@ ClrDataAccess::GetJitHelperName(
     };
     static_assert_no_msg(COUNTOF(s_rgHelperNames) == CORINFO_HELP_COUNT);
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     if (!dynamicHelpersOnly)
 #else
     if (!dynamicHelpersOnly && g_runtimeLoadedBaseAddress <= address &&
             address < g_runtimeLoadedBaseAddress + g_runtimeVirtualSize)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     {
         // Read the whole table from the target in one shot for better performance
         VMHELPDEF * pTable = static_cast<VMHELPDEF *>(
@@ -5772,7 +5770,7 @@ ClrDataAccess::RawGetMethodName(
     /* [size_is][out] */ __out_ecount_opt(bufLen) WCHAR symbolBuf[  ],
     /* [out] */ CLRDATA_ADDRESS* displacement)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     _ASSERTE((address & THUMB_CODE) == 0);
     address &= ~THUMB_CODE;
 #endif
@@ -5848,7 +5846,7 @@ ClrDataAccess::RawGetMethodName(
 #endif
             PCODE alignedAddress = AlignDown(TO_TADDR(address), PRECODE_ALIGNMENT);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
             alignedAddress += THUMB_CODE;
 #endif
 
@@ -7028,7 +7026,7 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 //
 HRESULT ClrDataAccess::VerifyDlls()
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     // Provide a knob for disabling this check if we really want to try and proceed anyway with a
     // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
     // address, data structures may be laid out differently, etc.
@@ -7136,11 +7134,11 @@ HRESULT ClrDataAccess::VerifyDlls()
                 "error.  If you really want to try and use the mimatched DLLs, you can disable this\n"\
                 "check by setting COMPlus_DbgDACSkipVerifyDlls=1.  However, using a mismatched DAC\n"\
                 "DLL will usually result in arbitrary debugger failures.\n",
-                MAIN_CLR_DLL_NAME_A,
-                MAIN_CLR_DLL_NAME_A,
-                MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
                 szExpectedTime,
-                MAIN_CLR_DLL_NAME_A,
+                TARGET_MAIN_CLR_DLL_NAME_A,
                 szActualTime);
             _ASSERTE_MSG(false, szMsgBuf);
         }
@@ -7149,7 +7147,7 @@ HRESULT ClrDataAccess::VerifyDlls()
         // Return a specific hresult indicating this problem
         return CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS;
     }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
     return S_OK;
 }
@@ -7249,7 +7247,7 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 HRESULT
 ClrDataAccess::GetDacGlobals()
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 #ifdef DAC_TABLE_SIZE
     if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
     {
@@ -7276,7 +7274,7 @@ ClrDataAccess::GetDacGlobals()
 
     if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 
@@ -7284,7 +7282,7 @@ ClrDataAccess::GetDacGlobals()
         resourceSectionRVA, (DWORD)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
         &rsrcRVA, &rsrcSize)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 
@@ -7294,7 +7292,7 @@ ClrDataAccess::GetDacGlobals()
 
     if (FAILED(status = ReadFromDataTarget(m_pTarget, m_globalBase + rsrcRVA, (BYTE*)rsrcData, rsrcSize)))
     {
-        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " MAIN_CLR_DLL_NAME_A);
+        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " TARGET_MAIN_CLR_DLL_NAME_A);
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
 
@@ -7404,7 +7402,7 @@ BOOL ClrDataAccess::IsExceptionFromManagedCode(EXCEPTION_RECORD* pExceptionRecor
     return flag;
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //
@@ -7444,7 +7442,7 @@ HRESULT ClrDataAccess::GetWatsonBuckets(DWORD dwThreadId, GenericModeBlock * pGM
     return hr;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //
@@ -7548,7 +7546,7 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
 {
     _ASSERTE((pPId != NULL) && (pThreadId != NULL));
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     // UNIXTODO: mikem 1/13/15 Need appropriate PAL functions for getting ids
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
@@ -7581,7 +7579,7 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
 
     *pPId = (*pGetProcessIdOfThread)(hThread);
     *pThreadId = (*pGetThreadId)(hThread);
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     return TRUE;
 }
 
@@ -7598,7 +7596,7 @@ typedef struct _WER_RUNTIME_EXCEPTION_INFORMATION
 #endif // !defined(WER_RUNTIME_EXCEPTION_INFORMATION)
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //
@@ -7885,7 +7883,7 @@ STDAPI OutOfProcessExceptionEventSignatureCallback(__in PDWORD pContext,
     return S_OK;
 }
 
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //----------------------------------------------------------------------------
 //

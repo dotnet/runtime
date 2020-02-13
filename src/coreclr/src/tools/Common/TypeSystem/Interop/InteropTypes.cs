@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -45,9 +45,9 @@ namespace Internal.TypeSystem.Interop
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "Marshal");
         }
 
-        public static MetadataType GetRuntimeHelpers(TypeSystemContext context)
+        public static MetadataType GetMemoryMarshal(TypeSystemContext context)
         {
-            return context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RuntimeHelpers");
+            return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
         }
 
         public static MetadataType GetStubHelpers(TypeSystemContext context)
@@ -111,6 +111,16 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "ByReference`1");
+        }
+
+        public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "Span`1");
+        }
+
+        public static bool IsSystemReadOnlySpan(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System", "ReadOnlySpan`1");
         }
 
         public static bool IsSystemNullable(TypeSystemContext context, TypeDesc type)

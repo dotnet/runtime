@@ -201,5 +201,14 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Equal(baseline, offsetData);
             }
         }
+
+        [Fact]
+        public void InvalidKey_ThrowArgumentNullException()
+        {
+            using (HMAC hash = Create())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("value", () => hash.Key = null);
+            }
+        }
     }
 }

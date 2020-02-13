@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -21,6 +21,7 @@ namespace System.Runtime.CompilerServices
         // The special dll name to be used for DllImport of QCalls
         internal const string QCall = "QCall";
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
@@ -106,7 +107,7 @@ namespace System.Runtime.CompilerServices
         public static extern void PrepareDelegate(Delegate d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHashCode(object o);
+        public static extern int GetHashCode(object? o);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
@@ -124,11 +125,11 @@ namespace System.Runtime.CompilerServices
                 // after the sync block, so don't count that.
                 // This property allows C#'s fixed statement to work on Strings.
                 // On 64 bit platforms, this should be 12 (8+4) and on 32 bit 8 (4+4).
-#if BIT64
+#if TARGET_64BIT
                 12;
 #else // 32
                 8;
-#endif // BIT64
+#endif // TARGET_64BIT
 
         }
 
@@ -284,7 +285,7 @@ namespace System.Runtime.CompilerServices
     internal class RawArrayData
     {
         public uint Length; // Array._numComponents padded to IntPtr
-#if BIT64
+#if TARGET_64BIT
         public uint Padding;
 #endif
         public byte Data;
@@ -300,10 +301,37 @@ namespace System.Runtime.CompilerServices
         private uint Flags;
         [FieldOffset(4)]
         public uint BaseSize;
+        [FieldOffset(0x0e)]
+        public ushort InterfaceCount;
+        [FieldOffset(ParentMethodTableOffset)]
+        public MethodTable* ParentMethodTable;
+        [FieldOffset(InterfaceMapOffset)]
+        public MethodTable** InterfaceMap;
 
         // WFLAGS_HIGH_ENUM
         private const uint enum_flag_ContainsPointers = 0x01000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
+        private const uint enum_flag_HasTypeEquivalence = 0x00004000;
+        // Types that require non-trivial interface cast have this bit set in the category
+        private const uint enum_flag_NonTrivialInterfaceCast = 0x00080000 // enum_flag_Category_Array
+                                                             | 0x40000000 // enum_flag_ComObject
+                                                             | 0x00400000;// enum_flag_ICastable;
+
+        private const int ParentMethodTableOffset = 0x10
+#if DEBUG
+        + sizeof(nuint)   // adjust for debug_m_szClassName
+#endif
+        ;
+
+#if TARGET_64BIT
+        private const int InterfaceMapOffset = 0x38
+#else
+        private const int InterfaceMapOffset = 0x24
+#endif
+#if DEBUG
+        + sizeof(nuint)   // adjust for debug_m_szClassName
+#endif
+        ;
 
         public bool HasComponentSize
         {
@@ -318,6 +346,22 @@ namespace System.Runtime.CompilerServices
             get
             {
                 return (Flags & enum_flag_ContainsPointers) != 0;
+            }
+        }
+
+        public bool NonTrivialInterfaceCast
+        {
+            get
+            {
+                return (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
+            }
+        }
+
+        public bool HasTypeEquivalence
+        {
+            get
+            {
+                return (Flags & enum_flag_HasTypeEquivalence) != 0;
             }
         }
 

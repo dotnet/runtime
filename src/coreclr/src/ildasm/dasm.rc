@@ -4,7 +4,7 @@
 
 #include "resource.h"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -14,7 +14,7 @@
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 #define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Framework IL disassembler\0"
 
@@ -101,32 +101,32 @@ BEGIN
     IDS_USAGE_24            L"  /STATS              Include statistics on the image.\n"
     IDS_USAGE_25            L"  /CLASSLIST          Include list of classes defined in the module.\n"
     IDS_USAGE_26            L"  /ALL                Combination of /HEADER,/BYTES,/STATS,/CLASSLIST,/TOKENS\n\n"
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     IDS_USAGE_27            L"Options for EXE,DLL,OBJ and LIB files:\n"
 #else
     IDS_USAGE_27            L""
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     IDS_USAGE_28            L"  /METADATA[=<specifier>] Show MetaData, where <specifier> is:\n"
     IDS_USAGE_29            L"          MDHEADER    Show MetaData header information and sizes.\n"
     IDS_USAGE_30            L"          HEX         Show more things in hex as well as words.\n"
     IDS_USAGE_31            L"          CSV         Show the record counts and heap sizes.\n"
     IDS_USAGE_32            L"          UNREX       Show unresolved externals.\n"
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     IDS_USAGE_33            L"          DEBUG       Show debug information in addition to other MetaData.\n"
 #else
     IDS_USAGE_33            L""
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     IDS_USAGE_34            L"          SCHEMA      Show the MetaData header and schema information.\n"
     IDS_USAGE_35            L"          RAW         Show the raw MetaData tables.\n"
     IDS_USAGE_36            L"          HEAPS       Show the raw heaps.\n"
     IDS_USAGE_37            L"          VALIDATE    Validate the consistency of the metadata.\n"
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     IDS_USAGE_38            L"Options for LIB files only:\n"
     IDS_USAGE_39            L"  /OBJECTFILE=<obj_file_name> Show MetaData of a single object file in library\n"
 #else
     IDS_USAGE_38            L""
     IDS_USAGE_39            L""
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 END
 
 STRINGTABLE DISCARDABLE
@@ -254,7 +254,7 @@ END
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
 #ifndef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -264,4 +264,4 @@ END
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
-#endif    // !FEATURE_PAL
+#endif    // !TARGET_UNIX

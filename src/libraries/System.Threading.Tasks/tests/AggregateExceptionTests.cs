@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
@@ -103,7 +101,9 @@ namespace System.Threading.Tasks.Tests
             Exception exceptionB = new Exception("B");
             Exception exceptionC = new Exception("C");
 
-            AggregateException aggExceptionBase = new AggregateException(exceptionA, exceptionB, exceptionC);
+            AggregateException aggExceptionBase = new AggregateException("message", exceptionA, exceptionB, exceptionC);
+
+            Assert.Equal("message (A) (B) (C)", aggExceptionBase.Message);
 
             // Verify flattening one with another.
             // > Flattening (no recursion)...
@@ -114,15 +114,17 @@ namespace System.Threading.Tasks.Tests
             };
 
             Assert.Equal(expected1, flattened1.InnerExceptions);
+            Assert.Equal("message (A) (B) (C)", flattened1.Message);
 
             // Verify flattening one with another, accounting for recursion.
-            AggregateException aggExceptionRecurse = new AggregateException(aggExceptionBase, aggExceptionBase);
+            AggregateException aggExceptionRecurse = new AggregateException("message", aggExceptionBase, aggExceptionBase);
             AggregateException flattened2 = aggExceptionRecurse.Flatten();
             Exception[] expected2 = new Exception[] {
                 exceptionA, exceptionB, exceptionC, exceptionA, exceptionB, exceptionC,
             };
 
             Assert.Equal(expected2, flattened2.InnerExceptions);
+            Assert.Equal("message (A) (B) (C) (A) (B) (C)", flattened2.Message);
         }
     }
 }

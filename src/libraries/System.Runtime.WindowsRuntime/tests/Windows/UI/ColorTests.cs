@@ -74,7 +74,7 @@ namespace Windows.UI.Tests
         }
 
         [Theory]
-        [ActiveIssue(41849)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/41849")]
         [MemberData(nameof(ToString_TestData))]
         public void ToString_Invoke_ReturnsExpected(Color color, string format, IFormatProvider formatProvider, string expected)
         {

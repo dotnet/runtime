@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        // On Desktop, list is untyped so it allows arbitrary types in it
+        // On .NET Framework, list is untyped so it allows arbitrary types in it
         public static void X509CertificateCollectionAsIListBogusEntry()
         {
             using (X509Certificate2 c = new X509Certificate2())

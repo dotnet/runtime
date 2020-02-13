@@ -2017,62 +2017,22 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     Module* pModule = pMD->GetModule();
     mdMethodDef methodDef = pMD->GetMemberDef();
     BaseDomain * pBaseDomainFromModule = pModule->GetDomain();
-    _ASSERTE(pBaseDomainFromModule->IsAppDomain() ||
-        pBaseDomainFromModule->IsSharedDomain());
+    _ASSERTE(pBaseDomainFromModule->IsAppDomain());
 
-    if (pBaseDomainFromModule->IsSharedDomain())
-    {
-        // Iterate through all modules loaded into the shared domain, to
-        // find all instantiations living in the shared domain. This will
-        // include orphaned code (i.e., shared code used by ADs that have
-        // all unloaded), which is good, because orphaned code could get
-        // re-adopted if a new AD is created that can use that shared code
-        hr = EnumerateDomainClosedMethodDescs(
-            NULL,  // NULL means to search SharedDomain instead of an AD
-            pModule,
-            methodDef,
-            pClosedMethodDescs,
-            pUnsupportedMethodErrors);
-    }
-    else
-    {
-        // Module is unshared, so just use the module's domain to find instantiations.
-        hr = EnumerateDomainClosedMethodDescs(
-            pBaseDomainFromModule->AsAppDomain(),
-            pModule,
-            methodDef,
-            pClosedMethodDescs,
-            pUnsupportedMethodErrors);
-    }
+    // Module is unshared, so just use the module's domain to find instantiations.
+    hr = EnumerateDomainClosedMethodDescs(
+        pBaseDomainFromModule->AsAppDomain(),
+        pModule,
+        methodDef,
+        pClosedMethodDescs,
+        pUnsupportedMethodErrors);
+
     if (FAILED(hr))
     {
         _ASSERTE(hr == E_OUTOFMEMORY);
         return hr;
     }
 
-    // We want to iterate through all compilations of existing instantiations to
-    // ensure they get marked for rejit.  Note: There may be zero instantiations,
-    // but we won't know until we try.
-    if (pBaseDomainFromModule->IsSharedDomain())
-    {
-        // Iterate through all real domains, to find shared instantiations.
-        AppDomainIterator appDomainIterator(TRUE);
-        while (appDomainIterator.Next())
-        {
-            AppDomain * pAppDomain = appDomainIterator.GetDomain();
-            hr = EnumerateDomainClosedMethodDescs(
-                pAppDomain,
-                pModule,
-                methodDef,
-                pClosedMethodDescs,
-                pUnsupportedMethodErrors);
-            if (FAILED(hr))
-            {
-                _ASSERTE(hr == E_OUTOFMEMORY);
-                return hr;
-            }
-        }
-    }
     return S_OK;
 }
 
@@ -2108,10 +2068,7 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     // instantiations will also be non-domain-neutral and loaded into the same
     // domain as the generic definition.  So the caller may only pass the
     // domain containing the generic definition as pAppDomainToSearch
-    if (!pDomainContainingGenericDefinition->IsSharedDomain())
-    {
-        _ASSERTE(pDomainContainingGenericDefinition == pAppDomainToSearch);
-    }
+    _ASSERTE(pDomainContainingGenericDefinition == pAppDomainToSearch);
 #endif //_DEBUG
 
     // these are the default flags which won't actually be used in shared mode other than
@@ -2151,13 +2108,9 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
         }
 
 #ifdef _DEBUG
-        if (!pDomainContainingGenericDefinition->IsSharedDomain())
-        {
-            // Method is defined outside of the shared domain, so its instantiation must
-            // be defined in the AD we're iterating over (pAppDomainToSearch, which, as
-            // asserted above, must be the same domain as the generic's definition)
-            _ASSERTE(pLoadedMD->GetDomain() == pAppDomainToSearch);
-        }
+        // Method's instantiation must be defined in the AD we're iterating over (pAppDomainToSearch, which, as
+        // asserted above, must be the same domain as the generic's definition)
+        _ASSERTE(pLoadedMD->GetDomain() == pAppDomainToSearch);
 #endif // _DEBUG
 
         MethodDesc ** ppMD = pClosedMethodDescs->Append();

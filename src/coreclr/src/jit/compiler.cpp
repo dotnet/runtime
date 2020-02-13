@@ -65,7 +65,7 @@ MethodSet* Compiler::s_pJitMethodSet               = nullptr;
  */
 #ifdef FEATURE_JIT_METHOD_PERF
 
-#if defined(_HOST_X86_) || defined(_HOST_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined(_MSC_VER)
 
@@ -93,7 +93,7 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 
 #endif
 
-#elif defined(_HOST_ARM_) || defined(_HOST_ARM64_)
+#elif defined(HOST_ARM) || defined(HOST_ARM64)
 
 // If this doesn't work please see ../gc/gc.cpp for additional ARM
 // info (and possible solutions).
@@ -548,19 +548,19 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
 // Start by determining if we have an HFA/HVA with a single element.
 #ifdef FEATURE_HFA
-#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
     // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
     // as if they are not HFA types.
     if (!isVarArg)
-#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
     {
         switch (structSize)
         {
             case 4:
             case 8:
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             case 16:
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
             {
                 var_types hfaType;
 #ifdef ARM_SOFTFP
@@ -605,28 +605,28 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
             useType = TYP_SHORT;
             break;
 
-#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 3:
             useType = TYP_INT;
             break;
 
-#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case 4:
             // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
             useType = TYP_INT;
             break;
 
-#if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
+#if !defined(TARGET_XARCH) || defined(UNIX_AMD64_ABI)
         case 5:
         case 6:
         case 7:
             useType = TYP_I_IMPL;
             break;
 
-#endif // !_TARGET_XARCH_ || UNIX_AMD64_ABI
-#endif // _TARGET_64BIT_
+#endif // !TARGET_XARCH || UNIX_AMD64_ABI
+#endif // TARGET_64BIT
 
         case TARGET_POINTER_SIZE:
         {
@@ -694,7 +694,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 // Determine if we can pass the struct as a primitive type.
 // Note that on x86 we never pass structs as primitive types (unless the VM unwraps them for us).
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
 #ifdef UNIX_AMD64_ABI
 
     // An 8-byte struct may need to be passed in a floating point register
@@ -729,7 +729,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         useType = getPrimitiveTypeForStruct(structSize, clsHnd, isVarArg);
     }
 
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     // Did we change this struct type into a simple "primitive" type?
     //
@@ -749,13 +749,13 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
             // as if they are not HFA/HVA types.
             var_types hfaType;
-#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             if (isVarArg)
             {
                 hfaType = TYP_UNDEF;
             }
             else
-#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             {
                 hfaType = GetHfaType(clsHnd);
             }
@@ -792,7 +792,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
@@ -815,18 +815,18 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#elif defined(TARGET_X86) || defined(TARGET_ARM)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
                 howToPassStruct = SPK_ByValue;
                 useType         = TYP_STRUCT;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getArgTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_PASS_MULTIREG_BYTES)
@@ -835,25 +835,25 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // and can't be passed in multiple registers
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_X86) || defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
 
             // Otherwise we pass this struct by value on the stack
             // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)
             howToPassStruct = SPK_ByReference;
             useType         = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             noway_assert(!"Unhandled TARGET in getArgTypeForStruct");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
         }
     }
 
@@ -985,7 +985,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         }
     }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // Note this handles an odd case when FEATURE_MULTIREG_RET is disabled and HFAs are enabled
     //
     // getPrimitiveTypeForStruct will return TYP_UNKNOWN for a struct that is an HFA of two floats
@@ -1050,7 +1050,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     assert(structDesc.passedInRegisters == false);
                 }
 
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
 
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
@@ -1072,7 +1072,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType           = TYP_UNKNOWN;
                 }
 
-#elif defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#elif defined(TARGET_ARM) || defined(TARGET_X86)
 
                 // Otherwise we return this struct using a return buffer
                 // setup wbPassType and useType indicate that this is returned using a return buffer register
@@ -1080,11 +1080,11 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                 howToReturnStruct = SPK_ByReference;
                 useType           = TYP_UNKNOWN;
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");
 
-#endif //  _TARGET_XXX_
+#endif //  TARGET_XXX
             }
         }
         else // (structSize > MAX_RET_MULTIREG_BYTES) || (FEATURE_MULTIREG_RET == 0)
@@ -1724,6 +1724,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     assert(pAlloc);
     compArenaAllocator = pAlloc;
 
+#if defined(DEBUG) || defined(LATE_DISASM)
+    info.compMethodName = nullptr;
+    info.compClassName  = nullptr;
+    info.compFullName   = nullptr;
+#endif // defined(DEBUG) || defined(LATE_DISASM)
+
     // Inlinee Compile object will only be allocated when needed for the 1st time.
     InlineeCompiler = nullptr;
 
@@ -1745,6 +1751,12 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
         compInlineResult = nullptr;
     }
 
+    // Initialize this to the first phase to run.
+    mostRecentlyActivePhase = PHASE_PRE_IMPORT;
+
+    // Initially, no phase checks are active.
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
     // but no later than a point where noway_asserts can be thrown.
@@ -1753,9 +1765,8 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
     //    Note: JIT telemetry could gather data when compiler is not fully initialized.
     //          So you have to initialize the compiler variables you use for telemetry.
     assert((unsigned)PHASE_PRE_IMPORT == 0);
-    previousCompletedPhase = PHASE_PRE_IMPORT;
-    info.compILCodeSize    = 0;
-    info.compMethodHnd     = nullptr;
+    info.compILCodeSize = 0;
+    info.compMethodHnd  = nullptr;
     compJitTelemetry.Initialize(this);
 #endif
 
@@ -2035,7 +2046,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
 const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloatReg)
 {
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     isFloatReg = genIsValidFloatReg(reg);
 #endif
 
@@ -2079,7 +2090,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
         { "cl", "cx" },
         { "dl", "dx" },
         { "bl", "bx" },
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         {  "spl",   "sp" }, // ESP
         {  "bpl",   "bp" }, // EBP
         {  "sil",   "si" }, // ESI
@@ -2092,7 +2103,7 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
         { "r13b", "r13w" },
         { "r14b", "r14w" },
         { "r15b", "r15w" },
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     };
     // clang-format on
 
@@ -2152,13 +2163,13 @@ void Compiler::compSetProcessor()
 
     const JitFlags& jitFlags = *opts.jitFlags;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     info.genCPU = CPU_ARM;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     info.genCPU      = CPU_ARM64;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     info.genCPU                   = CPU_X64;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_TARGET_P4))
         info.genCPU = CPU_X86_PENTIUM_4;
     else
@@ -2170,19 +2181,19 @@ void Compiler::compSetProcessor()
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     opts.compUseCMOV = true;
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     opts.compUseCMOV = jitFlags.IsSet(JitFlags::JIT_FLAG_USE_CMOV);
 #ifdef DEBUG
     if (opts.compUseCMOV)
         opts.compUseCMOV = !compStressCompile(STRESS_USE_CMOV, 50);
 #endif // DEBUG
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 // Instruction set flags for Intel hardware intrinsics
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     opts.compSupportsISA = 0;
 
 #ifdef FEATURE_CORECLR
@@ -2196,16 +2207,16 @@ void Compiler::compSetProcessor()
     if (JitConfig.EnableSSE())
     {
         opts.setSupportedISA(InstructionSet_SSE);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_SSE_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
         if (JitConfig.EnableSSE2())
         {
             opts.setSupportedISA(InstructionSet_SSE2);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             opts.setSupportedISA(InstructionSet_SSE2_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES) && JitConfig.EnableAES())
             {
@@ -2230,23 +2241,23 @@ void Compiler::compSetProcessor()
                     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE41) && JitConfig.EnableSSE41())
                     {
                         opts.setSupportedISA(InstructionSet_SSE41);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                         opts.setSupportedISA(InstructionSet_SSE41_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42) && JitConfig.EnableSSE42())
                         {
                             opts.setSupportedISA(InstructionSet_SSE42);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                             opts.setSupportedISA(InstructionSet_SSE42_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
                             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT) && JitConfig.EnablePOPCNT())
                             {
                                 opts.setSupportedISA(InstructionSet_POPCNT);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                                 opts.setSupportedISA(InstructionSet_POPCNT_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
                             }
 
                             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX) && JitConfig.EnableAVX())
@@ -2273,9 +2284,9 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT) && JitConfig.EnableLZCNT())
     {
         opts.setSupportedISA(InstructionSet_LZCNT);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_LZCNT_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
@@ -2283,9 +2294,9 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI1) && JitConfig.EnableBMI1() && compSupports(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI1);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_BMI1_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 
     // We currently need to also check that AVX is supported as that controls the support for the VEX encoding
@@ -2293,9 +2304,9 @@ void Compiler::compSetProcessor()
     if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2) && JitConfig.EnableBMI2() && compSupports(InstructionSet_AVX))
     {
         opts.setSupportedISA(InstructionSet_BMI2);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         opts.setSupportedISA(InstructionSet_BMI2_X64);
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
     }
 #else  // !FEATURE_CORECLR
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -2334,9 +2345,9 @@ void Compiler::compSetProcessor()
             codeGen->GetEmitter()->SetContains256bitAVX(false);
         }
     }
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     if (JitConfig.EnableHWIntrinsic())
     {
         // Dummy ISAs for simplifying the JIT code
@@ -2457,17 +2468,17 @@ void Compiler::compSetProcessor()
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
 // These are used when complus_JitEltHookEnabled=1
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle, UINT_PTR callerSP)
 {
     return;
 }
-#else  //! _TARGET_AMD64_
+#else  //! TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle)
 {
     return;
 }
-#endif //!_TARGET_AMD64_
+#endif //! TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
 
@@ -2804,10 +2815,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitELTHookEnabled = false;
 #endif // PROFILING_SUPPORTED
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     // 0 is default: use the appropriate frame type based on the function.
     opts.compJitSaveFpLrWithCalleeSavedRegisters = 0;
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
@@ -3041,7 +3052,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compGcChecks = (JitConfig.JitGCChecks() != 0) || compStressCompile(STRESS_GENERIC_VARN, 5);
 #endif
 
-#if defined(DEBUG) && defined(_TARGET_XARCH_)
+#if defined(DEBUG) && defined(TARGET_XARCH)
     enum
     {
         STACK_CHECK_ON_RETURN = 0x1,
@@ -3055,10 +3066,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         dwJitStackChecks = STACK_CHECK_ALL;
     }
     opts.compStackCheckOnRet = (dwJitStackChecks & DWORD(STACK_CHECK_ON_RETURN)) != 0;
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     opts.compStackCheckOnCall = (dwJitStackChecks & DWORD(STACK_CHECK_ON_CALL)) != 0;
-#endif // defined(_TARGET_X86_)
-#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+#endif // defined(TARGET_X86)
+#endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #if MEASURE_MEM_ALLOC
     s_dspMemStats = (JitConfig.DisplayMemStats() != 0);
@@ -3086,10 +3097,16 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     // Honour COMPlus_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
-    if (!compProfilerHookNeeded &&
-        ((JitConfig.JitELTHookEnabled() != 0) || compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+    // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
+    // for the call to the fake ELT hook, which wouldn't make sense, as we can't store that
+    // in the pre-JIT image.
+    if (!compProfilerHookNeeded)
     {
-        opts.compJitELTHookEnabled = true;
+        if ((JitConfig.JitELTHookEnabled() != 0) ||
+            (!jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) && compStressCompile(STRESS_PROFILER_CALLBACKS, 5)))
+        {
+            opts.compJitELTHookEnabled = true;
+        }
     }
 
     // TBD: Exclude PInvoke stubs
@@ -3126,7 +3143,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compReloc = jitFlags->IsSet(JitFlags::JIT_FLAG_RELOC);
 
 #ifdef DEBUG
-#if defined(_TARGET_XARCH_)
+#if defined(TARGET_XARCH)
     // Whether encoding of absolute addr as PC-rel offset is enabled
     opts.compEnablePCRelAddr = (JitConfig.EnablePCRelAddr() != 0);
 #endif
@@ -3134,10 +3151,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compProcedureSplitting = jitFlags->IsSet(JitFlags::JIT_FLAG_PROCSPLIT);
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     // TODO-ARM64-NYI: enable hot/cold splitting
     opts.compProcedureSplitting = false;
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     opts.compProcedureSplittingEH = opts.compProcedureSplitting;
@@ -3297,12 +3314,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif // UNIX_AMD64_ABI
 #endif
 
-#if defined(DEBUG) && defined(_TARGET_ARM64_)
+#if defined(DEBUG) && defined(TARGET_ARM64)
     if ((s_pJitMethodSet == nullptr) || s_pJitMethodSet->IsActiveMethod(info.compFullName, info.compMethodHash()))
     {
         opts.compJitSaveFpLrWithCalleeSavedRegisters = JitConfig.JitSaveFpLrWithCalleeSavedRegisters();
     }
-#endif // defined(DEBUG) && defined(_TARGET_ARM64_)
+#endif // defined(DEBUG) && defined(TARGET_ARM64)
 }
 
 #ifdef DEBUG
@@ -3343,91 +3360,44 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 #undef STRESS_MODE
 };
 
+//------------------------------------------------------------------------
+// compStressCompile: determine if a stress mode should be enabled
+//
+// Argumemnts:
+//   stressArea - stress mode to possibly enable
+//   weight - percent of time this mode should be turned on
+//     (range 0 to 100); weight 0 effectively disables
+//
+// Returns:
+//   true if this stress mode is enabled
+//
+// Notes:
+//   Methods may be excluded from stress via name or hash.
+//
+//   Particular stress modes may be disabled or forcibly enabled.
+//
+//   With JitStress=2, some stress modes are enabled regardless of weight;
+//   these modes are the ones after COUNT_VARN in the enumeration.
+//
+//   For other modes or for nonzero JitStress values, stress will be
+//   enabled selectively for roughly weight% of methods.
+//
 bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 {
-    unsigned hash;
-    DWORD    stressLevel;
-
-    if (!bRangeAllowStress)
+    // This can be called early, before info is fully set up.
+    if ((info.compMethodName == nullptr) || (info.compFullName == nullptr))
     {
         return false;
     }
 
-    if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    // Inlinees defer to the root method for stress, so that we can
+    // more easily isolate methods that cause stress failures.
+    if (compIsForInlining())
     {
-        return false;
+        return impInlineRoot()->compStressCompile(stressArea, weight);
     }
 
-    bool         doStress = false;
-    const WCHAR* strStressModeNames;
-
-    // Does user explicitly prevent using this STRESS_MODE through the command line?
-    const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
-    if ((strStressModeNamesNot != nullptr) &&
-        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
-    {
-        doStress = false;
-        goto _done;
-    }
-
-    // Does user explicitly set this STRESS_MODE through the command line?
-    strStressModeNames = JitConfig.JitStressModeNames();
-    if (strStressModeNames != nullptr)
-    {
-        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
-        {
-            doStress = true;
-            goto _done;
-        }
-
-        // This stress mode name did not match anything in the stress
-        // mode whitelist. If user has requested only enable mode,
-        // don't allow this stress mode to turn on.
-        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
-
-        if (onlyEnableMode)
-        {
-            doStress = false;
-            goto _done;
-        }
-    }
-
-    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
-    // !=2: Vary stress. Performance will be slightly/moderately degraded
-    // 2:   Check-all stress. Performance will be REALLY horrible
-    stressLevel = getJitStressLevel();
-
-    assert(weight <= MAX_STRESS_WEIGHT);
-
-    /* Check for boundary conditions */
-
-    if (stressLevel == 0 || weight == 0)
-    {
-        return false;
-    }
-
-    // Should we allow unlimited stress ?
-    if (stressArea > STRESS_COUNT_VARN && stressLevel == 2)
-    {
-        return true;
-    }
-
-    if (weight == MAX_STRESS_WEIGHT)
-    {
-        doStress = true;
-        goto _done;
-    }
-
-    // Get a hash which can be compared with 'weight'
-
-    assert(stressArea != 0);
-    hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
-
-    assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
-    doStress = (hash < weight);
-
-_done:
+    const bool doStress = compStressCompileHelper(stressArea, weight);
 
     if (doStress && !compActiveStressModes[stressArea])
     {
@@ -3439,6 +3409,93 @@ _done:
     }
 
     return doStress;
+}
+
+//------------------------------------------------------------------------
+// compStressCompileHelper: helper to determine if a stress mode should be enabled
+//
+// Argumemnts:
+//   stressArea - stress mode to possibly enable
+//   weight - percent of time this mode should be turned on
+//     (range 0 to 100); weight 0 effectively disables
+//
+// Returns:
+//   true if this stress mode is enabled
+//
+// Notes:
+//   See compStressCompile
+//
+bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weight)
+{
+    if (!bRangeAllowStress)
+    {
+        return false;
+    }
+
+    if (!JitConfig.JitStressOnly().isEmpty() &&
+        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    {
+        return false;
+    }
+
+    // Does user explicitly prevent using this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNamesNot = JitConfig.JitStressModeNamesNot();
+    if ((strStressModeNamesNot != nullptr) &&
+        (wcsstr(strStressModeNamesNot, s_compStressModeNames[stressArea]) != nullptr))
+    {
+        return false;
+    }
+
+    // Does user explicitly set this STRESS_MODE through the command line?
+    const WCHAR* strStressModeNames = JitConfig.JitStressModeNames();
+    if (strStressModeNames != nullptr)
+    {
+        if (wcsstr(strStressModeNames, s_compStressModeNames[stressArea]) != nullptr)
+        {
+            return true;
+        }
+
+        // This stress mode name did not match anything in the stress
+        // mode whitelist. If user has requested only enable mode,
+        // don't allow this stress mode to turn on.
+        const bool onlyEnableMode = JitConfig.JitStressModeNamesOnly() != 0;
+
+        if (onlyEnableMode)
+        {
+            return false;
+        }
+    }
+
+    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
+    // !=2: Vary stress. Performance will be slightly/moderately degraded
+    // 2:   Check-all stress. Performance will be REALLY horrible
+    const int stressLevel = getJitStressLevel();
+
+    assert(weight <= MAX_STRESS_WEIGHT);
+
+    // Check for boundary conditions
+    if (stressLevel == 0 || weight == 0)
+    {
+        return false;
+    }
+
+    // Should we allow unlimited stress ?
+    if ((stressArea > STRESS_COUNT_VARN) && (stressLevel == 2))
+    {
+        return true;
+    }
+
+    if (weight == MAX_STRESS_WEIGHT)
+    {
+        return true;
+    }
+
+    // Get a hash which can be compared with 'weight'
+    assert(stressArea != 0);
+    const unsigned hash = (info.compMethodHash() ^ stressArea ^ stressLevel) % MAX_STRESS_WEIGHT;
+
+    assert(hash < MAX_STRESS_WEIGHT && weight <= MAX_STRESS_WEIGHT);
+    return (hash < weight);
 }
 
 #endif // DEBUG
@@ -3802,7 +3859,7 @@ _SetMinOpts:
             codeGen->setFrameRequired(true);
         }
 
-#if !defined(_TARGET_AMD64_)
+#if !defined(TARGET_AMD64)
         // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
@@ -3832,7 +3889,7 @@ _SetMinOpts:
     fgCanRelocateEHRegions = true;
 }
 
-#ifdef _TARGET_ARMARCH_
+#ifdef TARGET_ARMARCH
 // Function compRsvdRegCheck:
 //  given a curState to use for calculating the total frame size
 //  it will return true if the REG_OPT_RSVD should be reserved so
@@ -3871,13 +3928,13 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 
     noway_assert(frameSize >= calleeSavedRegMaxSz);
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
     // TODO-ARM64-CQ: update this!
     JITDUMP(" Returning true (ARM64)\n\n");
     return true; // just always assume we'll need it, for now
 
-#else  // _TARGET_ARM_
+#else  // TARGET_ARM
 
     // frame layout:
     //
@@ -3998,10 +4055,18 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     //
     JITDUMP(" Returning false\n\n");
     return false;
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 }
-#endif // _TARGET_ARMARCH_
+#endif // TARGET_ARMARCH
 
+//------------------------------------------------------------------------
+// compGetTieringName: get a string describing tiered compilation settings
+//   for this method
+//
+// Returns:
+//   String describing tiering decisions for this method, including cases
+//   where the jit codegen will differ from what the runtime requested.
+//
 const char* Compiler::compGetTieringName() const
 {
     bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
@@ -4053,6 +4118,49 @@ const char* Compiler::compGetTieringName() const
     {
         return "Unknown optimization level";
     }
+}
+
+//------------------------------------------------------------------------
+// compGetStressMessage: get a string describing jitstress capability
+//   for this method
+//
+// Returns:
+//   An empty string if stress is not enabled, else a string describing
+//   if this method is subject to stress or is excluded by name or hash.
+//
+const char* Compiler::compGetStressMessage() const
+{
+    // Add note about stress where appropriate
+    const char* stressMessage = "";
+
+#ifdef DEBUG
+    // Is stress enabled via mode name or level?
+    if ((JitConfig.JitStressModeNames() != nullptr) || (getJitStressLevel() > 0))
+    {
+        // Is the method being jitted excluded from stress via range?
+        if (bRangeAllowStress)
+        {
+            // Or is it excluded via name?
+            if (!JitConfig.JitStressOnly().isEmpty() ||
+                !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName,
+                                                    &info.compMethodInfo->args))
+            {
+                // Not excluded -- stress can happen
+                stressMessage = " JitStress";
+            }
+            else
+            {
+                stressMessage = " NoJitStress(Only)";
+            }
+        }
+        else
+        {
+            stressMessage = " NoJitStress(Range)";
+        }
+    }
+#endif // DEBUG
+
+    return stressMessage;
 }
 
 void Compiler::compFunctionTraceStart()
@@ -4111,15 +4219,54 @@ void Compiler::compFunctionTraceEnd(void* methodCodePtr, ULONG methodCodeSize, b
 #endif // DEBUG
 }
 
-//*********************************************************************************************
-// #Phases
+//------------------------------------------------------------------------
+// BeginPhase: begin execution of a phase
 //
-// This is the most interesting 'toplevel' function in the JIT.  It goes through the operations of
-// importing, morphing, optimizations and code generation.  This is called from the EE through the
-// code:CILJit::compileMethod function.
+// Arguments:
+//    phase - the phase that is about to begin
 //
-// For an overview of the structure of the JIT, see:
+void Compiler::BeginPhase(Phases phase)
+{
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
+// EndPhase: finish execution of a phase
+//
+// Arguments:
+//    phase - the phase that has just finished
+//
+void Compiler::EndPhase(Phases phase)
+{
+#if defined(FEATURE_JIT_METHOD_PERF)
+    if (pCompJitTimer != nullptr)
+    {
+        pCompJitTimer->EndPhase(this, phase);
+    }
+#endif
+#if DUMP_FLOWGRAPHS
+    fgDumpFlowGraph(phase);
+#endif // DUMP_FLOWGRAPHS
+    mostRecentlyActivePhase = phase;
+}
+
+//------------------------------------------------------------------------
+// compCompile: run phases needed for compilation
+//
+// Arguments:
+//   methodCodePtr [OUT] - address of generated code
+//   methodCodeSize [OUT] - size of the generated code (hot + cold setions)
+//   compileFlags [IN] - flags controlling jit behavior
+//
+// Notes:
+//  This is the most interesting 'toplevel' function in the JIT.  It goes through the operations of
+//  importing, morphing, optimizations and code generation.  This is called from the EE through the
+//  code:CILJit::compileMethod function.
+//
+//  For an overview of the structure of the JIT, see:
 //   https://github.com/dotnet/runtime/blob/master/docs/design/coreclr/botr/ryujit-overview.md
+//
+//  Also called for inlinees, though they will only be run through the first few phases.
 //
 void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags* compileFlags)
 {
@@ -4133,8 +4280,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
 
-    /* The temp holding the secret stub argument is used by fgImport() when importing the intrinsic. */
-
+    // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
     if (info.compPublishStubParam)
     {
         assert(lvaStubArgumentVar == BAD_VAR_NUM);
@@ -4146,8 +4292,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     compFunctionTraceStart();
 
-    /* Convert the instrs in each basic block to a tree based intermediate representation */
-
+    // Convert the instrs in each basic block to a tree based intermediate representation
     fgImport();
 
     assert(!fgComputePredsDone);
@@ -4166,12 +4311,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (compIsForInlining())
     {
-        /* Quit inlining if fgImport() failed for any reason. */
-
+        // Abandon inlining if fgImport() failed for any reason
         if (!compDonotInline())
         {
-            /* Filter out unimported BBs */
-
+            // Filter out unimported BBs
             fgRemoveEmptyBlocks();
 
             // Update type of return spill temp if we have gathered
@@ -4208,7 +4351,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         return;
     }
 
-    assert(!compDonotInline());
+    // At this point in the phase list, all the inlinee phases have
+    // been run, and inlinee compiles have exited, so we should only
+    // get this far if we are jitting the root method.
+    noway_assert(!compIsForInlining());
 
     // Maybe the caller was not interested in generating code
     if (compIsForImportOnly())
@@ -4251,16 +4397,215 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     EndPhase(PHASE_POST_IMPORT);
 
-    /* Initialize the BlockSet epoch */
-
+    // Initialize the BlockSet epoch
     NewBasicBlockEpoch();
 
-    /* Massage the trees so that we can generate code out of them */
+    // Start phases that are broadly called morphing, and includes
+    // global morph, as well as other phases that massage the trees so
+    // that we can generate code out of them.
+    fgOutgoingArgTemps = nullptr;
 
-    fgMorph();
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("*************** In fgMorph()\n");
+    }
+    if (verboseTrees)
+    {
+        fgDispBasicBlocks(true);
+    }
+#endif // DEBUG
+
+    // Insert call to class constructor as the first basic block if
+    // we were asked to do so.
+    if (info.compCompHnd->initClass(nullptr /* field */, info.compMethodHnd /* method */,
+                                    impTokenLookupContextHandle /* context */) &
+        CORINFO_INITCLASS_USE_HELPER)
+    {
+        fgEnsureFirstBBisScratch();
+        fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
+    }
+
+#ifdef DEBUG
+    if (opts.compGcChecks)
+    {
+        for (unsigned i = 0; i < info.compArgsCount; i++)
+        {
+            if (lvaTable[i].TypeGet() == TYP_REF)
+            {
+                // confirm that the argument is a GC pointer (for debugging (GC stress))
+                GenTree*          op   = gtNewLclvNode(i, TYP_REF);
+                GenTreeCall::Use* args = gtNewCallArgs(op);
+                op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+
+                fgEnsureFirstBBisScratch();
+                fgNewStmtAtEnd(fgFirstBB, op);
+
+                if (verbose)
+                {
+                    printf("\ncompGcChecks tree:\n");
+                    gtDispTree(op);
+                }
+            }
+        }
+    }
+#endif // DEBUG
+
+#if defined(DEBUG) && defined(TARGET_XARCH)
+    if (opts.compStackCheckOnRet)
+    {
+        lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+        lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
+    }
+#endif // defined(DEBUG) && defined(TARGET_XARCH)
+
+#if defined(DEBUG) && defined(TARGET_X86)
+    if (opts.compStackCheckOnCall)
+    {
+        lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
+    }
+#endif // defined(DEBUG) && defined(TARGET_X86)
+
+    // Filter out unimported BBs
+    fgRemoveEmptyBlocks();
+
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+#endif // DEBUG
+
+    EndPhase(PHASE_MORPH_INIT);
+
+    // Inline callee methods into this root method
+    fgInline();
+
+    RecordStateAtEndOfInlining(); // Record "start" values for post-inlining cycles and elapsed time.
+
+    EndPhase(PHASE_MORPH_INLINE);
+
+    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
+    // local variable allocation on the stack.
+    ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
+
+    if (JitConfig.JitObjectStackAllocation() && opts.OptimizationEnabled())
+    {
+        objectAllocator.EnableObjectStackAllocation();
+    }
+
+    objectAllocator.Run();
+
+    // Add any internal blocks/trees we may need
+    fgAddInternal();
+
+#ifdef DEBUG
+    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
+    fgDebugCheckBBlist(false, false);
+    // Inliner could clone some trees.
+    fgDebugCheckNodesUniqueness();
+#endif // DEBUG
+
+    fgRemoveEmptyTry();
+
+    EndPhase(PHASE_EMPTY_TRY);
+
+    fgRemoveEmptyFinally();
+
+    EndPhase(PHASE_EMPTY_FINALLY);
+
+    fgMergeFinallyChains();
+
+    EndPhase(PHASE_MERGE_FINALLY_CHAINS);
+
+    fgCloneFinally();
+    fgUpdateFinallyTargetFlags();
+
+    EndPhase(PHASE_CLONE_FINALLY);
+
+    // Compute bbNum, bbRefs and bbPreds
+    //
+    JITDUMP("\nRenumbering the basic blocks for fgComputePreds\n");
+    fgRenumberBlocks();
+
+    // This is the first time full (not cheap) preds will be computed
+    //
+    noway_assert(!fgComputePredsDone);
+    fgComputePreds();
+
+    // Run an early flow graph simplification pass
+    if (opts.OptimizationEnabled())
+    {
+        fgUpdateFlowGraph();
+    }
+
+    EndPhase(PHASE_COMPUTE_PREDS);
+
+    // From this point on the flowgraph information such as bbNum,
+    // bbRefs or bbPreds has to be kept updated
+
+    // For x64 and ARM64 we need to mark irregular parameters
+    lvaRefCountState = RCS_EARLY;
+    fgResetImplicitByRefRefCount();
+
+    // Promote struct locals if necessary
+    fgPromoteStructs();
+
+    // Figure out what locals are address exposed
+    fgMarkAddressExposedLocals();
+
+    EndPhase(PHASE_STR_ADRLCL);
+
+    // Apply type updates to implicit byref parameters; also choose (based on address-exposed
+    // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
+    fgRetypeImplicitByRefArgs();
+
+#ifdef DEBUG
+    // Now that locals have address-taken and implicit byref marked, we can safely apply stress.
+    lvaStressLclFld();
+    fgStress64RsltMul();
+#endif // DEBUG
+
+    EndPhase(PHASE_MORPH_IMPBYREF);
+
+    // Morph the trees in all the blocks of the method
+    fgMorphBlocks();
+
+    // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
+    fgMarkDemotedImplicitByRefArgs();
+    lvaRefCountState = RCS_INVALID;
+
+    EndPhase(PHASE_MORPH_GLOBAL);
+
+#if 0
+    JITDUMP("trees after fgMorphBlocks\n");
+    DBEXEC(VERBOSE, fgDispBasicBlocks(true));
+#endif
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    if (fgNeedToAddFinallyTargetBits)
+    {
+        // We previously wiped out the BBF_FINALLY_TARGET bits due to some morphing; add them back.
+        fgAddFinallyTargetFlags();
+        fgNeedToAddFinallyTargetBits = false;
+    }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
+    // Decide the kind of code we want to generate
+    fgSetOptions();
+
+    fgExpandQmarkNodes();
+
+#ifdef DEBUG
+    compCurBB = nullptr;
+#endif // DEBUG
+
+    // End of the morphing phases
+    //
+    // We can now enable all phase checking
     EndPhase(PHASE_MORPH_END);
+    activePhaseChecks = PhaseChecks::CHECK_ALL;
 
-    /* GS security checks for unsafe buffers */
+    // GS security checks for unsafe buffers
     if (getNeedsGSSecurityCookie())
     {
 #ifdef DEBUG
@@ -4287,22 +4632,14 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     }
     EndPhase(PHASE_GS_COOKIE);
 
-    /* Compute bbNum, bbRefs and bbPreds */
-
-    JITDUMP("\nRenumbering the basic blocks for fgComputePred\n");
+    // GC Poll marking assumes block bbnums match lexical block order,
+    // so make sure this is the case.
     fgRenumberBlocks();
 
-    noway_assert(!fgComputePredsDone); // This is the first time full (not cheap) preds will be computed.
-    fgComputePreds();
-    EndPhase(PHASE_COMPUTE_PREDS);
-
-    /* If we need to emit GC Poll calls, mark the blocks that need them now.  This is conservative and can
-     * be optimized later. */
+    // If we need to emit GC Poll calls, mark the blocks that need them now.
+    // This is conservative and can be optimized later.
     fgMarkGCPollBlocks();
     EndPhase(PHASE_MARK_GC_POLL_BLOCKS);
-
-    /* From this point on the flowgraph information such as bbNum,
-     * bbRefs or bbPreds has to be kept updated */
 
     // Compute the block and edge weights
     fgComputeBlockAndEdgeWeights();
@@ -4310,8 +4647,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
 #if defined(FEATURE_EH_FUNCLETS)
 
-    /* Create funclets from the EH handlers. */
-
+    // Create funclets from the EH handlers.
     fgCreateFunclets();
     EndPhase(PHASE_CREATE_FUNCLETS);
 
@@ -4332,12 +4668,10 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
     if (opts.OptimizationEnabled())
     {
-        /*  Perform loop inversion (i.e. transform "while" loops into
-            "repeat" loops) and discover and classify natural loops
-            (e.g. mark iterative loops as such). Also marks loop blocks
-            and sets bbWeight to the loop nesting levels
-        */
-
+        // Perform loop inversion (i.e. transform "while" loops into
+        // "repeat" loops) and discover and classify natural loops
+        // (e.g. mark iterative loops as such). Also marks loop blocks
+        // and sets bbWeight to the loop nesting levels
         optOptimizeLoops();
         EndPhase(PHASE_OPTIMIZE_LOOPS);
 
@@ -4346,7 +4680,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         optCloneLoops();
         EndPhase(PHASE_CLONE_LOOPS);
 
-        /* Unroll loops */
+        // Unroll loops
         optUnrollLoops();
         EndPhase(PHASE_UNROLL_LOOPS);
     }
@@ -4355,29 +4689,24 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Create the variable table (and compute variable ref counts) */
-
+    // Create the variable table (and compute variable ref counts)
     lvaMarkLocalVars();
     EndPhase(PHASE_MARK_LOCAL_VARS);
 
-    // IMPORTANT, after this point, every place where trees are modified or cloned
-    // the local variable reference counts must be updated
-    // You can test the value of the following variable to see if
-    // the local variable ref counts must be updated
-    //
+    // IMPORTANT, after this point, locals are ref counted.
+    // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
     if (opts.OptimizationEnabled())
     {
-        /* Optimize boolean conditions */
-
+        // Optimize boolean conditions
         optOptimizeBools();
         EndPhase(PHASE_OPTIMIZE_BOOLS);
 
         // optOptimizeBools() might have changed the number of blocks; the dominators/reachability might be bad.
     }
 
-    /* Figure out the order in which operators are to be evaluated */
+    // Figure out the order in which operators are to be evaluated
     fgFindOperOrder();
     EndPhase(PHASE_FIND_OPER_ORDER);
 
@@ -4440,7 +4769,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
             if (doEarlyProp)
             {
-                /* Propagate array length and rewrite getType() method call */
+                // Propagate array length and rewrite getType() method call
                 optEarlyProp();
                 EndPhase(PHASE_EARLY_PROP);
             }
@@ -4453,41 +4782,41 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
 
             if (doLoopHoisting)
             {
-                /* Hoist invariant code out of loops */
+                // Hoist invariant code out of loops
                 optHoistLoopCode();
                 EndPhase(PHASE_HOIST_LOOP_CODE);
             }
 
             if (doCopyProp)
             {
-                /* Perform VN based copy propagation */
+                // Perform VN based copy propagation
                 optVnCopyProp();
                 EndPhase(PHASE_VN_COPY_PROP);
             }
 
 #if FEATURE_ANYCSE
-            /* Remove common sub-expressions */
+            // Remove common sub-expressions
             optOptimizeCSEs();
 #endif // FEATURE_ANYCSE
 
 #if ASSERTION_PROP
             if (doAssertionProp)
             {
-                /* Assertion propagation */
+                // Assertion propagation
                 optAssertionPropMain();
                 EndPhase(PHASE_ASSERTION_PROP_MAIN);
             }
 
             if (doRangeAnalysis)
             {
-                /* Optimize array index range checks */
+                // Optimize array index range checks
                 RangeCheck rc(this);
                 rc.OptimizeRangeChecks();
                 EndPhase(PHASE_OPTIMIZE_INDEX_CHECKS);
             }
 #endif // ASSERTION_PROP
 
-            /* update the flowgraph if we modified it during the optimization phase*/
+            // update the flowgraph if we modified it during the optimization phase
             if (fgModified)
             {
                 fgUpdateFlowGraph();
@@ -4508,7 +4837,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         }
     }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     //  Check if we need to add the Quirk for the PPP backward compat issue
     compQuirkForPPPflag = compQuirkForPPP();
 #endif
@@ -4551,20 +4880,19 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Enable this to gather statistical data such as
-     * call and register argument info, flowgraph and loop info, etc. */
-
+    // Enable this to gather statistical data such as
+    // call and register argument info, flowgraph and loop info, etc.
     compJitStats();
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     if (compLocallocUsed)
     {
         // We reserve REG_SAVED_LOCALLOC_SP to store SP on entry for stack unwinding
         codeGen->regSet.rsMaskResvd |= RBM_SAVED_LOCALLOC_SP;
     }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
-    /* Assign registers to variables, etc. */
+    // Assign registers to variables, etc.
 
     ///////////////////////////////////////////////////////////////////////////////
     // Dominator and reachability sets are no longer valid. They haven't been
@@ -4572,19 +4900,22 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     ///////////////////////////////////////////////////////////////////////////////
     fgDomsComputed = false;
 
-    /* Create LSRA before Lowering, this way Lowering can initialize the TreeNode Map */
+    // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
+    // for determining whether locals are register candidates and (for xarch) whether
+    // a node is a containable memory op.
     m_pLinearScan = getLinearScanAllocator(this);
 
-    /* Lower */
+    // Lower
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
     StackLevelSetter stackLevelSetter(this); // PHASE_STACK_LEVEL_SETTER
     stackLevelSetter.Run();
 
-    lvaTrackedFixed = true; // We can not add any new tracked variables after this point.
+    // We can not add any new tracked variables after this point.
+    lvaTrackedFixed = true;
 
-    /* Now that lowering is completed we can proceed to perform register allocation */
+    // Now that lowering is completed we can proceed to perform register allocation
     m_pLinearScan->doLinearScan();
     EndPhase(PHASE_LINEAR_SCAN);
 
@@ -4595,8 +4926,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     fgDebugCheckLinks();
 #endif
 
-    /* Generate code */
-
+    // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
 #ifdef FEATURE_JIT_METHOD_PERF
@@ -4700,7 +5030,7 @@ void Compiler::ProcessShutdownWork(ICorStaticInfo* statInfo)
 {
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //  Check if we need to add the Quirk for the PPP backward compat issue.
 //  This Quirk addresses a compatibility issue between the new RyuJit and the previous JIT64.
 //  A backward compatibity issue called 'PPP' exists where a PInvoke call passes a 32-byte struct
@@ -4781,7 +5111,7 @@ bool Compiler::compQuirkForPPP()
     }
     return false;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 /*****************************************************************************/
 
@@ -4800,7 +5130,7 @@ bool Compiler::skipMethod()
     // So, the logic below relies on the fact that a null range string
     // passed to ConfigMethodRange represents the set of all methods.
 
-    if (!fJitRange.Contains(info.compCompHnd, info.compMethodHnd))
+    if (!fJitRange.Contains(info.compMethodHash()))
     {
         return true;
     }
@@ -4878,9 +5208,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
             compJitFuncInfoFile = _wfopen(compJitFuncInfoFilename, W("a"));
             if (compJitFuncInfoFile == nullptr)
             {
-#if defined(DEBUG) && !defined(FEATURE_PAL) // no 'perror' in the PAL
+#if defined(DEBUG) && !defined(TARGET_UNIX) // no 'perror' in the PAL
                 perror("Failed to open JitFuncInfoLogFile");
-#endif // defined(DEBUG) && !defined(FEATURE_PAL)
+#endif // defined(DEBUG) && !defined(TARGET_UNIX)
             }
         }
     }
@@ -4903,7 +5233,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-#ifdef _TARGET_UNIX_
+#ifdef TARGET_UNIX
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
 #else
     info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
@@ -4920,13 +5250,13 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     if (!info.compMatchedVM)
     {
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
 
 // Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
 
-#endif // defined(_TARGET_ARM_)
+#endif // defined(TARGET_ARM)
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
 
         // The x86/x64 architecture capabilities flags overlap with the ARM64 ones. Set a reasonable architecture
         // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
@@ -4954,7 +5284,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM4);
         compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SVE);
 
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(TARGET_ARM64)
     }
 
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
@@ -5017,7 +5347,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     static ConfigMethodRange fJitStressRange;
     fJitStressRange.EnsureInit(JitConfig.JitStressRange());
     assert(!fJitStressRange.Error());
-    bRangeAllowStress = fJitStressRange.Contains(info.compCompHnd, info.compMethodHnd);
+    bRangeAllowStress = fJitStressRange.Contains(info.compMethodHash());
 
 #endif // DEBUG
 
@@ -5384,7 +5714,7 @@ void Compiler::compCompileFinish()
     {
         if (compJitHaltMethod())
         {
-#if !defined(_HOST_UNIX_)
+#if !defined(HOST_UNIX)
             // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
 
             // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
@@ -5784,11 +6114,11 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
 
 #ifdef DEBUG
-    if (JitConfig.DumpJittedMethods() == 1 && !compIsForInlining())
+    if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
     {
-        printf("Compiling %4d %s::%s, IL size = %u, hash=%08x %s\n", Compiler::jitTotalMethodCompiled,
+        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s\n", Compiler::jitTotalMethodCompiled,
                info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName());
+               compGetTieringName(), compGetStressMessage());
     }
     if (compIsForInlining())
     {
@@ -8478,7 +8808,7 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_MUL:
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
             case GT_MUL_LONG:
 #endif
 
@@ -8771,6 +9101,21 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     if (call->gtCallMoreFlags & GTF_CALL_M_PINVOKE)
                     {
                         chars += printf("[CALL_M_PINVOKE]");
+                    }
+
+                    if (call->IsFatPointerCandidate())
+                    {
+                        chars += printf("[CALL_FAT_POINTER_CANDIDATE]");
+                    }
+
+                    if (call->IsGuarded())
+                    {
+                        chars += printf("[CALL_GUARDED]");
+                    }
+
+                    if (call->IsExpRuntimeLookup())
+                    {
+                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
                     }
                 }
                 break;

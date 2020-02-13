@@ -17,7 +17,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return typeInfo.DeclaredEvents;
         }
 
-        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter filter, RuntimeTypeInfo reflectedType)
+        public sealed override IEnumerable<EventInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? filter, RuntimeTypeInfo reflectedType)
         {
             return type.GetEventsCore(filter, reflectedType);
         }
@@ -26,7 +26,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(EventInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetAccessorMethod(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited EventInfo that only had private accessors and is now refusing to give them out
@@ -48,7 +48,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         }
 
         //
-        // Desktop compat: Events hide events in base types if they have the same name.
+        // .NET Framework compat: Events hide events in base types if they have the same name.
         //
         public sealed override bool IsSuppressedByMoreDerivedMember(EventInfo member, EventInfo[] priorMembers, int startIndex, int endIndex)
         {
@@ -60,10 +60,10 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        public sealed override bool ImplicitlyOverrides(EventInfo baseMember, EventInfo derivedMember)
+        public sealed override bool ImplicitlyOverrides(EventInfo? baseMember, EventInfo? derivedMember)
         {
-            MethodInfo baseAccessor = GetAccessorMethod(baseMember);
-            MethodInfo derivedAccessor = GetAccessorMethod(derivedMember);
+            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
+            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
             return MemberPolicies<MethodInfo>.Default.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
@@ -72,9 +72,9 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        private MethodInfo GetAccessorMethod(EventInfo e)
+        private MethodInfo? GetAccessorMethod(EventInfo e)
         {
-            MethodInfo accessor = e.AddMethod;
+            MethodInfo? accessor = e.AddMethod;
             return accessor;
         }
     }

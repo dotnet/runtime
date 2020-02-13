@@ -29,10 +29,11 @@ namespace System
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
         [NonSerialized]
-        private int _stringLength;
+        private readonly int _stringLength;
 
-        // For empty strings, this will be '\0' since
-        // strings are both null-terminated and length prefixed
+        // For empty strings, _firstChar will be '\0', since strings are both null-terminated and length-prefixed.
+        // The field is also read-only, however String uses .ctors that C# doesn't recognise as .ctors,
+        // so trying to mark the field as 'readonly' causes the compiler to complain.
         [NonSerialized]
         private char _firstChar;
 
@@ -46,7 +47,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [PreserveDependency("Ctor(System.Char[])", "System.String")]
-        public extern String(char[] value);
+        public extern String(char[]? value);
 
 #if !CORECLR
         static
@@ -216,7 +217,7 @@ namespace System
             if (numBytes == 0)
                 return Empty;
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
             int numCharsRequired = Interop.Kernel32.MultiByteToWideChar(Interop.Kernel32.CP_ACP, Interop.Kernel32.MB_PRECOMPOSED, pb, numBytes, (char*)null, 0);
             if (numCharsRequired == 0)
                 throw new ArgumentException(SR.Arg_InvalidANSIString);

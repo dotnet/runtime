@@ -14,7 +14,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <MSBuildAllProjects>$(MSBuildThisFileFullPath);$(MSBuildAllProjects)</MSBuildAllProjects>
-    <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(MSBuildThisFileDirectory)..\targets\Microsoft.NET.Sdk.IL.targets</LanguageTargets>
+    <LanguageTargets Condition="'$(MSBuildProjectExtension)' == '.ilproj'">$(MSBuildThisFileDirectory)..\targets\Microsoft.NET.Sdk.IL.Common.targets</LanguageTargets>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
