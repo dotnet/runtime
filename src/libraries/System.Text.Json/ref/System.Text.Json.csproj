@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
@@ -17,7 +17,7 @@
     <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
-  <!-- Since S.T.E.W is live built as part of the repo as both an in-box library and a standalone netstandard2.0 assembly,
+  <!-- Since S.T.E.W continues to be built live within this repo (as both an in-box library and a standalone netstandard2.0 assembly),
     we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM.
   -->
   <ItemGroup>
