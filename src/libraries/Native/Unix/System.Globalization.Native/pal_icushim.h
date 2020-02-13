@@ -243,8 +243,6 @@ FOR_ALL_ICU_FUNCTIONS
 
 #endif // ifndef __LIB_NATIVE_ENTRYPOINTS
 
-#define PALEXPORT __attribute__ ((__visibility__ ("hidden")))
-
 #include "pal_compiler.h"
 
 #ifdef __LIB_NATIVE_ENTRYPOINTS
