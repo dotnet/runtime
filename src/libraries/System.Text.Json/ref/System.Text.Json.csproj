@@ -17,8 +17,8 @@
     <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
-  <!-- Since S.T.E.W is built as part of the repo as both an in-box library and a standalone netstandard2.0 assembly,
-    we should use ProjectReference instead of Reference to make sure that its ref gets built first before S.T.Json, regardless of the TFM.
+  <!-- Since S.T.E.W is live built as part of the repo as both an in-box library and a standalone netstandard2.0 assembly,
+    we should use ProjectReference instead of Reference to make sure that its ref assembly gets built first before S.T.Json, regardless of the TFM.
   -->
   <ItemGroup>
     <ProjectReference Include="..\..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
