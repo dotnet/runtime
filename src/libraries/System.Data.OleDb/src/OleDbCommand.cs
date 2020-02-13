@@ -428,12 +428,10 @@ namespace System.Data.OleDb
                 tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
                 for (int i = 0; i < bindInfo.Length; i++)
                 {
-                    bindInfo_x86[i].pwszDataSourceType = bindInfo[i].pwszDataSourceType;
-                    bindInfo_x86[i].pwszName = bindInfo[i].pwszName;
-                    bindInfo_x86[i].ulParamSize = bindInfo[i].ulParamSize;
-                    bindInfo_x86[i].dwFlags = bindInfo[i].dwFlags;
-                    bindInfo_x86[i].bPrecision = bindInfo[i].bPrecision;
-                    bindInfo_x86[i].bScale = bindInfo[i].bScale;
+                    fixed (tagDBPARAMBINDINFO* p = &bindInfo[i])
+                    {
+                        bindInfo_x86[i] = (tagDBPARAMBINDINFO_x86)Marshal.PtrToStructure((IntPtr)p, typeof(tagDBPARAMBINDINFO_x86));
+                    }
                 }
                 fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
                 {
