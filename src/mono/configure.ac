@@ -1758,7 +1758,7 @@ AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads.],
+	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1939,6 +1939,11 @@ if test "x$mono_feature_disable_cfgdir_config" = "xyes"; then
 	AC_MSG_NOTICE([Disabled config directories.])
 fi
 
+if test "x$mono_feature_disable_config" = "xyes"; then
+	AC_DEFINE(DISABLE_CONFIG, 1, [Disable .config file support.])
+	AC_MSG_NOTICE([Disabled .config file support.])
+fi
+
 if test "x$mono_feature_disable_cleanup" = "xyes"; then
 	AC_DEFINE(DISABLE_CLEANUP, 1, [Disable runtime cleanup.])
 	AC_MSG_NOTICE([Disabled runtime cleanup.])
@@ -1983,6 +1988,11 @@ fi
 if test "x$mono_feature_disable_threads" = "xyes"; then
 	AC_DEFINE(DISABLE_THREADS, 1, [Disable Threads])
 	AC_MSG_NOTICE([Disabled threading support])
+fi
+
+if test "x$mono_feature_disable_processes" = "xyes"; then
+	AC_DEFINE(DISABLE_PROCESSES, 1, [Disable process support])
+	AC_MSG_NOTICE([Disabled process support])
 fi
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
