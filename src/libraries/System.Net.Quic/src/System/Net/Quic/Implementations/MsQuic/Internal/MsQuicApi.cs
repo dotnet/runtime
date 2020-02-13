@@ -303,12 +303,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             {
                 if (fileParams.CertificateFilePath != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal(fileParams.CertificateFilePath);
+                    Marshal.FreeCoTaskMem(fileParams.CertificateFilePath);
                 }
 
                 if (fileParams.PrivateKeyFilePath != IntPtr.Zero)
                 {
-                    Marshal.FreeHGlobal(fileParams.PrivateKeyFilePath);
+                    Marshal.FreeCoTaskMem(fileParams.PrivateKeyFilePath);
                 }
 
                 if (unmanagedAddr != IntPtr.Zero)
