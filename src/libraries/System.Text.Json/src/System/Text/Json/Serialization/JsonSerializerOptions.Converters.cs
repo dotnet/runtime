@@ -189,7 +189,7 @@ namespace System.Text.Json
             return converter;
         }
 
-        private JsonConverter? GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
+        private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, PropertyInfo? propertyInfo)
         {
             JsonConverter? converter;
 
