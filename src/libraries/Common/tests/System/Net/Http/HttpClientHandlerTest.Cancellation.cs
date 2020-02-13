@@ -139,7 +139,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 var cts = new CancellationTokenSource();
-                const int timeout = 600000;
+                const int timeout = 60_000;
 
                 await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
                 {
@@ -166,11 +166,11 @@ namespace System.Net.Http.Functional.Tests
                         var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
-                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token).TimeoutAfter(timeout);
+                        Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
                         await responseHeadersSent.Task.TimeoutAfter(timeout);
                         await Task.Delay(1); // make it more likely that client will have started processing response body
                         Cancel(mode, client, cts);
-                        await getResponse;
+                        await getResponse.TimeoutAfter(timeout);
                     }).TimeoutAfter(timeout);
 
                     try
@@ -178,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
                         clientFinished.SetResult(true);
                         await serverTask.TimeoutAfter(timeout);
                     } catch { }
-                }, 180_000);
+                }, 300_000);
             }
         }
 
