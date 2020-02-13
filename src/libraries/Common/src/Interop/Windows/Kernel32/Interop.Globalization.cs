@@ -40,7 +40,7 @@ internal static partial class Interop
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int LocaleNameToLCID(string lpName, uint dwFlags);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int LCMapStringEx(
                     string? lpLocaleName,
                     uint dwMapFlags,
@@ -52,7 +52,7 @@ internal static partial class Interop
                     void* lpReserved,
                     IntPtr sortHandle);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx")]
+        [DllImport("kernel32.dll", EntryPoint = "FindNLSStringEx", SetLastError = true)]
         internal static extern int FindNLSStringEx(
                     char* lpLocaleName,
                     uint dwFindNLSStringFlags,
@@ -85,7 +85,7 @@ internal static partial class Interop
                     int cchCount2,
                     bool bIgnoreCase);
 
-        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal")]
+        [DllImport("kernel32.dll", EntryPoint = "FindStringOrdinal", SetLastError = true)]
         internal static extern int FindStringOrdinal(
                     uint dwFindStringOrdinalFlags,
                     char* lpStringSource,
