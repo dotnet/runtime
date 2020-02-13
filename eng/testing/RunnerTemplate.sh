@@ -156,12 +156,6 @@ echo pushd $EXECUTION_DIR
 [[RunCommandsEcho]]
 echo popd
 echo ===========================================================================================================
-echo Manicka!!!
-if [ "$(uname -s)" == "Linux" ]; then
-  ethtool eth0
-else
-  networksetup -listallhardwareports ; ifconfig -a
-fi
 pushd $EXECUTION_DIR
 [[RunCommands]]
 test_exitcode=$?
