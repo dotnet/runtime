@@ -112,18 +112,7 @@ namespace System.Collections.Concurrent
             if (!_frozenForEnqueues) // flag used to ensure we don't increase the Tail more than once if frozen more than once
             {
                 _frozenForEnqueues = true;
-
-                // Increase the tail by FreezeOffset, spinning until we're successful in doing so.
-                int tail = _headAndTail.Tail;
-                while (true)
-                {
-                    int oldTail = Interlocked.CompareExchange(ref _headAndTail.Tail, tail + FreezeOffset, tail);
-                    if (oldTail == tail)
-                    {
-                        break;
-                    }
-                    tail = oldTail;
-                }
+                Interlocked.Add(ref _headAndTail.Tail, FreezeOffset);
             }
         }
 

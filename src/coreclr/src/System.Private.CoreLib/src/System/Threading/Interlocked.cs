@@ -2,105 +2,245 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    /// <summary>
-    /// After much discussion, we decided the Interlocked class doesn't need
-    /// any HPA's for synchronization or external threading.  They hurt C#'s
-    /// codegen for the yield keyword, and arguably they didn't protect much.
-    /// Instead, they penalized people (and compilers) for writing threadsafe
-    /// code.
-    /// </summary>
+    /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>
     public static class Interlocked
     {
-        /// <summary>
-        /// Implemented: int, long
-        /// </summary>
-        public static int Increment(ref int location)
-        {
-            return Add(ref location, 1);
-        }
+        #region Increment
+        /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be incremented.</param>
+        /// <returns>The incremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        public static int Increment(ref int location) =>
+            Add(ref location, 1);
 
-        public static long Increment(ref long location)
-        {
-            return Add(ref location, 1);
-        }
+        /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be incremented.</param>
+        /// <returns>The incremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static uint Increment(ref uint location) =>
+            Add(ref location, 1);
 
-        /// <summary>
-        /// Implemented: int, long
-        /// </summary>
-        public static int Decrement(ref int location)
-        {
-            return Add(ref location, -1);
-        }
+        /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be incremented.</param>
+        /// <returns>The incremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        public static long Increment(ref long location) =>
+            Add(ref location, 1);
 
-        public static long Decrement(ref long location)
-        {
-            return Add(ref location, -1);
-        }
+        /// <summary>Increments a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be incremented.</param>
+        /// <returns>The incremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static ulong Increment(ref ulong location) =>
+            Add(ref location, 1);
+        #endregion
 
-        /// <summary>
-        /// Implemented: int, long, float, double, Object, IntPtr
-        /// </summary>
+        #region Decrement
+        /// <summary>Decrements a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be decremented.</param>
+        /// <returns>The decremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        public static int Decrement(ref int location) =>
+            Add(ref location, -1);
+
+        /// <summary>Decrements a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be decremented.</param>
+        /// <returns>The decremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static uint Decrement(ref uint location) =>
+            (uint)Add(ref Unsafe.As<uint, int>(ref location), -1);
+
+        /// <summary>Decrements a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be decremented.</param>
+        /// <returns>The decremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        public static long Decrement(ref long location) =>
+            Add(ref location, -1);
+
+        /// <summary>Decrements a specified variable and stores the result, as an atomic operation.</summary>
+        /// <param name="location">The variable whose value is to be decremented.</param>
+        /// <returns>The decremented value.</returns>
+        /// <exception cref="NullReferenceException">The address of location is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static ulong Decrement(ref ulong location) =>
+            (ulong)Add(ref Unsafe.As<ulong, long>(ref location), -1);
+        #endregion
+
+        #region Exchange
+        /// <summary>Sets a 32-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int Exchange(ref int location1, int value);
 
+        /// <summary>Sets a 32-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static uint Exchange(ref uint location1, uint value) =>
+            (uint)Exchange(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+        /// <summary>Sets a 64-bit signed integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long Exchange(ref long location1, long value);
 
+        /// <summary>Sets a 64-bit unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        [CLSCompliant(false)]
+        public static ulong Exchange(ref ulong location1, ulong value) =>
+            (ulong)Exchange(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+
+        /// <summary>Sets a single-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Exchange(ref float location1, float value);
 
+        /// <summary>Sets a double-precision floating point number to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Exchange(ref double location1, double value);
 
+        /// <summary>Sets an object to the specified value and returns a reference to the original object, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull("location1")]
         public static extern object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value);
 
+        /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
 
-        // This whole method reduces to a single call to Exchange(ref object, object) but
+        // The below whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
+
+        /// <summary>Sets a variable of the specified type <typeparamref name="T"/> to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        /// <typeparam name="T">The type to be used for <paramref name="location1"/> and <paramref name="value"/>. This type must be a reference type.</typeparam>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull("location1")]
-        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class?
-        {
-            return Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
-        }
+        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class? =>
+            Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
+        #endregion
 
-        /// <summary>
-        /// Implemented: int, long, float, double, Object, IntPtr
-        /// </summary>
+        #region CompareExchange
+        /// <summary>Compares two 32-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
 
+        /// <summary>Compares two 32-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint CompareExchange(ref uint location1, uint value, uint comparand) =>
+            (uint)CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)value, (int)comparand);
+
+        /// <summary>Compares two 64-bit signed integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern long CompareExchange(ref long location1, long value, long comparand);
 
+        /// <summary>Compares two 64-bit unsigned integers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong CompareExchange(ref ulong location1, ulong value, ulong comparand) =>
+            (ulong)CompareExchange(ref Unsafe.As<ulong, long>(ref location1), (long)value, (long)comparand);
+
+        /// <summary>Compares two single-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float CompareExchange(ref float location1, float value, float comparand);
 
+        /// <summary>Compares two double-precision floating point numbers for equality and, if they are equal, replaces the first value.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
+        /// <summary>Compares two objects for reference equality and, if they are equal, replaces the first object.</summary>
+        /// <param name="location1">The destination object that is compared by reference with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The object that replaces the destination object if the reference comparison results in equality.</param>
+        /// <param name="comparand">The object that is compared by reference to the object at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         [return: NotNullIfNotNull("location1")]
         public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
+        /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>
+        /// <param name="location1">The destination <see cref="IntPtr"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
+        /// <param name="value">The <see cref="IntPtr"/> that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
 
         // Note that getILIntrinsicImplementationForInterlocked() in vm\jitinterface.cpp replaces
-        // the body of this method with the the following IL:
+        // the body of the following method with the the following IL:
         //     ldarg.0
         //     ldarg.1
         //     ldarg.2
@@ -108,42 +248,89 @@ namespace System.Threading
         //     ret
         // The workaround is no longer strictly necessary now that we have Unsafe.As but it does
         // have the advantage of being less sensitive to JIT's inliner decisions.
+
+        /// <summary>Compares two instances of the specified reference type <typeparamref name="T"/> for reference equality and, if they are equal, replaces the first one.</summary>
+        /// <param name="location1">The destination, whose value is compared by reference with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison by reference results in equality.</param>
+        /// <param name="comparand">The object that is compared by reference to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        /// <typeparam name="T">The type to be used for <paramref name="location1"/>, <paramref name="value"/>, and <paramref name="comparand"/>. This type must be a reference type.</typeparam>
         [return: NotNullIfNotNull("location1")]
         [Intrinsic]
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
-        {
-            return Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
-        }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? =>
+            Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
 
-        // BCL-internal overload that returns success via a ref bool param, useful for reliable spin locks.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
+        private static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
+        #endregion
 
-        /// <summary>
-        /// Implemented: int, long
-        /// </summary>
+        #region Add
+        /// <summary>Adds two 32-bit signed integers and replaces the first integer with the sum, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be added. The sum of the two values is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be added to the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        public static int Add(ref int location1, int value) =>
+            ExchangeAdd(ref location1, value) + value;
+
+        /// <summary>Adds two 32-bit unsigned integers and replaces the first integer with the sum, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be added. The sum of the two values is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be added to the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint Add(ref uint location1, uint value) =>
+            (uint)ExchangeAdd(ref Unsafe.As<uint, int>(ref location1), (int)value) + value;
+
+        /// <summary>Adds two 64-bit signed integers and replaces the first integer with the sum, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be added. The sum of the two values is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be added to the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        public static long Add(ref long location1, long value) =>
+            ExchangeAdd(ref location1, value) + value;
+
+        /// <summary>Adds two 64-bit unsigned integers and replaces the first integer with the sum, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be added. The sum of the two values is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be added to the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong Add(ref ulong location1, ulong value) =>
+            (ulong)ExchangeAdd(ref Unsafe.As<ulong, long>(ref location1), (long)value) + value;
+
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int ExchangeAdd(ref int location1, int value);
+        private static extern int ExchangeAdd(ref int location1, int value);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern long ExchangeAdd(ref long location1, long value);
+        private static extern long ExchangeAdd(ref long location1, long value);
+        #endregion
 
-        public static int Add(ref int location1, int value)
-        {
-            return ExchangeAdd(ref location1, value) + value;
-        }
+        #region Read
+        /// <summary>Returns a 64-bit signed value, loaded as an atomic operation.</summary>
+        /// <param name="location">The 64-bit value to be loaded.</param>
+        /// <returns>The loaded value.</returns>
+        public static long Read(ref long location) =>
+            CompareExchange(ref location, 0, 0);
 
-        public static long Add(ref long location1, long value)
-        {
-            return ExchangeAdd(ref location1, value) + value;
-        }
+        /// <summary>Returns a 64-bit unsigned value, loaded as an atomic operation.</summary>
+        /// <param name="location">The 64-bit value to be loaded.</param>
+        /// <returns>The loaded value.</returns>
+        [CLSCompliant(false)]
+        public static ulong Read(ref ulong location) =>
+            CompareExchange(ref location, 0, 0);
+        #endregion
 
-        public static long Read(ref long location)
-        {
-            return Interlocked.CompareExchange(ref location, 0, 0);
-        }
-
+        #region MemoryBarrier
+        /// <summary>
+        /// Synchronizes memory access as follows:
+        /// The processor that executes the current thread cannot reorder instructions in such a way that memory accesses before
+        /// the call to <see cref="MemoryBarrier"/> execute after memory accesses that follow the call to <see cref="MemoryBarrier"/>.
+        /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void MemoryBarrier();
@@ -151,9 +338,200 @@ namespace System.Threading
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _MemoryBarrierProcessWide();
 
-        public static void MemoryBarrierProcessWide()
+        /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
+        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
+        #endregion
+
+        #region And
+        /// <summary>Bitwise "ands" two 32-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int And(ref int location1, int value)
         {
-            _MemoryBarrierProcessWide();
+            int current = Volatile.Read(ref location1);
+            while (true)
+            {
+                int newValue = current & value;
+                int oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
         }
+
+        /// <summary>Bitwise "ands" two 32-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint And(ref uint location1, uint value) =>
+            (uint)And(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+        /// <summary>Bitwise "ands" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long And(ref long location1, long value)
+        {
+            long current = Volatile.Read(ref location1);
+            while (true)
+            {
+                long newValue = current & value;
+                long oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
+        }
+
+        /// <summary>Bitwise "ands" two 64-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong And(ref ulong location1, ulong value) =>
+            (ulong)And(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        #endregion
+
+        #region Or
+        /// <summary>Bitwise "ors" two 32-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Or(ref int location1, int value)
+        {
+            int current = Volatile.Read(ref location1);
+            while (true)
+            {
+                int newValue = current | value;
+                int oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
+        }
+
+        /// <summary>Bitwise "ors" two 32-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint Or(ref uint location1, uint value) =>
+            (uint)Or(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+        /// <summary>Bitwise "ors" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long Or(ref long location1, long value)
+        {
+            long current = Volatile.Read(ref location1);
+            while (true)
+            {
+                long newValue = current | value;
+                long oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
+        }
+
+        /// <summary>Bitwise "ors" two 64-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong Or(ref ulong location1, ulong value) =>
+            (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        #endregion
+
+        #region Xor
+        /// <summary>Bitwise "xors" two 32-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Xor(ref int location1, int value)
+        {
+            int current = Volatile.Read(ref location1);
+            while (true)
+            {
+                int newValue = current ^ value;
+                int oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
+        }
+
+        /// <summary>Bitwise "xors" two 32-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint Xor(ref uint location1, uint value) =>
+            (uint)Xor(ref Unsafe.As<uint, int>(ref location1), (int)value);
+
+        /// <summary>Bitwise "xors" two 64-bit signed integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static long Xor(ref long location1, long value)
+        {
+            long current = Volatile.Read(ref location1);
+            while (true)
+            {
+                long newValue = current ^ value;
+                long oldValue = CompareExchange(ref location1, newValue, current);
+                if (oldValue == current)
+                {
+                    return newValue;
+                }
+                current = oldValue;
+            }
+        }
+
+        /// <summary>Bitwise "xors" two 64-bit unsigned integers and replaces the first integer with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the integer at <paramref name="location1"/>.</param>
+        /// <returns>The new value stored at <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong Xor(ref ulong location1, ulong value) =>
+            (ulong)Xor(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+        #endregion
     }
 }
