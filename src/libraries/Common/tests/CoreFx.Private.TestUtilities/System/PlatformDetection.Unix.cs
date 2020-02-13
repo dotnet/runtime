@@ -119,7 +119,7 @@ namespace System
             }
             else
             {
-                int ver = libc.GlobalizationNative_GetICUVersion();
+                int ver = libc.GetICUVersion();
                 return new Version( ver & 0xFF,
                                 (ver >> 8)  & 0xFF,
                                 (ver >> 16) & 0xFF,
@@ -330,6 +330,53 @@ namespace System
 
             [DllImport("System.Globalization.Native", SetLastError = true)]
             public static extern int GlobalizationNative_GetICUVersion();
+
+            delegate void GetICUVersionDelegate(IntPtr ptr);
+
+            public unsafe static int GetICUVersion()
+            {
+                if (PlatformDetection.IsMonoRuntime)
+                {
+                    return GlobalizationNative_GetICUVersion();
+                }
+                else
+                {
+                    string moduleName = null;
+                    foreach (System.Diagnostics.ProcessModule m in System.Diagnostics.Process.GetCurrentProcess().Modules)
+                    {
+                        if (m.ModuleName.StartsWith("libicuuc.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            moduleName = m.ModuleName;
+                            break;
+                        }
+                    }
+
+                    if (moduleName == null)
+                    {
+                        throw new InvalidOperationException("Could not find ICU, please install it.");
+                    }
+
+                    string functionName = "u_getVersion";
+                    string[] splitVersion = moduleName.Split(".");
+                    if (splitVersion.Length >= 3)
+                    {
+                        functionName += $"_{splitVersion[2]}";
+                    }
+
+                    IntPtr library = NativeLibrary.Load(moduleName);
+
+                    if(NativeLibrary.TryGetExport(library, functionName, out IntPtr functionPointer))
+                    {
+                        var function = Marshal.GetDelegateForFunctionPointer<GetICUVersionDelegate>(functionPointer);
+
+                        int version = 0;
+                        function(new IntPtr(&version));
+                        return version;
+                    }
+
+                    throw new InvalidOperationException($"Could not call native function: {functionName} in library: {moduleName}");
+                }
+            }
         }
     }
 }
