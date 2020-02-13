@@ -10786,6 +10786,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             {
                 printf("0x%x", jitGetILoffs(tree->AsILOffset()->gtStmtILoffsx));
             }
+            if (tree->AsILOffset()->gtInlineContext != nullptr)
+            {
+                printf(" inl from %s", eeGetMethodFullName(tree->AsILOffset()->gtInlineContext->GetCallee()));
+            }
             break;
 
         case GT_JCC:
