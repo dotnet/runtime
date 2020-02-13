@@ -4,7 +4,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true'">true</IsPartialFacadeAssembly>
     <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
     <TargetFrameworks>net461;netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <Compile Include="Microsoft\CSharp\CSharpCodeGenerator.cs" />

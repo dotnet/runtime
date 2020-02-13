@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -22,7 +23,7 @@ namespace Internal.Cryptography
     //
     internal abstract class BasicSymmetricCipher : IDisposable
     {
-        protected BasicSymmetricCipher(byte[] iv, int blockSizeInBytes)
+        protected BasicSymmetricCipher(byte[]? iv, int blockSizeInBytes)
         {
             IV = iv;
             BlockSizeInBytes = blockSizeInBytes;
@@ -52,6 +53,6 @@ namespace Internal.Cryptography
             }
         }
 
-        protected byte[] IV { get; private set; }
+        protected byte[]? IV { get; private set; }
     }
 }

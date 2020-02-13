@@ -1216,7 +1216,7 @@ void GenerateTopLevelHRExceptionMessage(HRESULT hresult, SString &result)
 
 #if !defined(DACCESS_COMPILE)
 
-void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo)
+void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo DEBUG_ARG(bool checkExceptionRecordLocation))
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1227,7 +1227,7 @@ void GetCurrentExceptionPointers(PEXCEPTION_POINTERS pExceptionInfo)
     pExceptionInfo->ExceptionRecord = pRecord;
 
 #ifdef _DEBUG
-    if (pRecord != NULL)
+    if (pRecord != NULL && checkExceptionRecordLocation)
     {
         _ASSERTE ((PVOID)(pRecord) > (PVOID)(&pRecord));
     }

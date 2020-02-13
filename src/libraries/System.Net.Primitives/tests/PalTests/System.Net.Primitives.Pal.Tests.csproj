@@ -47,6 +47,9 @@
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HostInformationPalTest.cs" />

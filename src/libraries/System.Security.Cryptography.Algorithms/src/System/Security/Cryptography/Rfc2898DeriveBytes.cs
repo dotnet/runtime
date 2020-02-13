@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         private HMAC _hmac;
         private readonly int _blockSize;
 
-        private byte[] _buffer;
+        private byte[] _buffer = null!; // Initialized in helper
         private uint _block;
         private int _startIndex;
         private int _endIndex;
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography
                 if (_hmac != null)
                 {
                     _hmac.Dispose();
-                    _hmac = null;
+                    _hmac = null!;
                 }
 
                 if (_buffer != null)

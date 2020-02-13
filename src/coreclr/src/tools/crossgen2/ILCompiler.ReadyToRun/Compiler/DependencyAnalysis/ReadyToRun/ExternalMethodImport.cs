@@ -18,8 +18,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ReadyToRunFixupKind fixupKind,
             MethodWithToken method,
             bool isUnboxingStub,
-            bool isInstantiatingStub,
-            SignatureContext signatureContext)
+            bool isInstantiatingStub)
             : base(
                   factory,
                   factory.MethodImports,
@@ -28,8 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                       fixupKind,
                       method,
                       isUnboxingStub,
-                      isInstantiatingStub,
-                      signatureContext))
+                      isInstantiatingStub))
         {
             _method = method;
         }

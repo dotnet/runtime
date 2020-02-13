@@ -5,7 +5,7 @@
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_SystemManagement</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">

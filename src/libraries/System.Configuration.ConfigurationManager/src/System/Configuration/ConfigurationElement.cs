@@ -1138,7 +1138,7 @@ namespace System.Configuration
                     ((_itemLockedFlag & ConfigurationValueFlags.XmlParentInherited) == 0))
                 {
                     dataToWrite = true;
-                    writer?.WriteAttributeString(LockItemKey, true.ToString().ToLower(CultureInfo.InvariantCulture));
+                    writer?.WriteAttributeString(LockItemKey, true.ToString().ToLowerInvariant());
                 }
             }
 

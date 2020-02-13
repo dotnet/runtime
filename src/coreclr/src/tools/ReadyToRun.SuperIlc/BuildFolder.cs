@@ -46,15 +46,30 @@ namespace ReadyToRun.SuperIlc
             _compilations = new List<ProcessInfo[]>();
             _executions = new List<ProcessInfo[]>();
 
-            foreach (string file in _compilationInputFiles)
+            if (options.Composite)
             {
                 ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, _outputFolder, file));
+                    string outputFile = runner.GetOutputFileName(_outputFolder, "composite-r2r.dll");
+                    ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFile, _compilationInputFiles));
                     fileCompilations[(int)runner.Index] = compilationProcess;
                 }
                 _compilations.Add(fileCompilations);
+            }
+            else
+            {
+                foreach (string file in _compilationInputFiles)
+                {
+                    ProcessInfo[] fileCompilations = new ProcessInfo[(int)CompilerIndex.Count];
+                    foreach (CompilerRunner runner in compilerRunners)
+                    {
+                        string outputFile = runner.GetOutputFileName(_outputFolder, file);
+                        ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFile, new string[] { file }));
+                        fileCompilations[(int)runner.Index] = compilationProcess;
+                    }
+                    _compilations.Add(fileCompilations);
+                }
             }
 
             if (!options.NoExe)
@@ -98,7 +113,8 @@ namespace ReadyToRun.SuperIlc
                 {
                     compilationInputFiles.Add(file);
                 }
-                else if ((Path.GetExtension(file) != ".pdb") && (Path.GetExtension(file) != ".ilk")) // exclude .pdb and .ilk files that are large and not needed in the target folder
+                if ((!isManagedAssembly || options.Composite) &&
+                    (Path.GetExtension(file) != ".pdb") && (Path.GetExtension(file) != ".ilk")) // exclude .pdb and .ilk files that are large and not needed in the target folder
                 {
                     passThroughFiles.Add(file);
                 }

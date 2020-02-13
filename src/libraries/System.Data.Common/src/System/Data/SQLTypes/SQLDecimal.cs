@@ -486,7 +486,8 @@ namespace System.Data.SqlTypes
             // m_data1 = *pInt++; // lo part
             // m_data2 = *pInt++; // mid part
 
-            int[] bits = decimal.GetBits(value);
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
             uint sgnscl;
 
             unchecked

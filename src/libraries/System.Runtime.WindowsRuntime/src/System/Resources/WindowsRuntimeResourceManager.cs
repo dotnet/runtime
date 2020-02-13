@@ -270,7 +270,7 @@ namespace System.Resources
                                   StringComparison.OrdinalIgnoreCase) == 0 &&
                    // Ensure wzPackagePath is not just a prefix, but a path prefix
                    // This says: packagepath is c:\foo || c:\foo\
-                   (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\"));
+                   (libpath[packagepath.Length] == '\\' || packagepath.EndsWith("\\", StringComparison.Ordinal));
         }
 
 #if NETSTANDARD2_0 || NETCOREAPP
@@ -620,23 +620,14 @@ namespace System.Resources
                     else
                     {
                         expandedBytes[pos++] = (byte)'%';
-                        expandedBytes[pos++] = (byte)IntToHex((b >> 4) & 0xf);
-                        expandedBytes[pos++] = (byte)IntToHex(b & 0xf);
+                        expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
+                        expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
                     }
                 }
             }
 
             // Since all the bytes in expandedBytes are ascii characters UTF8 encoding can be used
             return Encoding.UTF8.GetString(expandedBytes);
-        }
-
-        // Adapted from IntToHex originally in file:ndp\fx\src\xsp\system\web\util\httpencoderutility.cs
-        private static char IntToHex(int n)
-        {
-            if (n <= 9)
-                return (char)(n + (int)'0');
-            else
-                return (char)(n - 10 + (int)'a');
         }
 
         // Modified from IsUrlSafeChar originally in file:ndp\fx\src\xsp\system\web\util\httpencoderutility.cs

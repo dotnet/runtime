@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_ComponentModel_Composition</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0;$(NetCoreAppCurrent);_$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
     <NoWarn Condition="'$(TargetsNetCoreApp)' != 'true' or '$(TargetFramework)' == 'netcoreapp2.0'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
