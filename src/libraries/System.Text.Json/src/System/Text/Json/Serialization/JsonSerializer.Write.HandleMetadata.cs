@@ -29,15 +29,12 @@ namespace System.Text.Json
             }
             else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
             {
-                Debug.Assert(referenceId != null);
                 writer.WriteString(s_metadataRef, referenceId);
                 writer.WriteEndObject();
                 metadataToWrite = MetadataPropertyName.Ref;
             }
             else
             {
-                // TryGetOrAddReferenceOnSerialize is guaranteed to not return null.
-                Debug.Assert(referenceId != null);
                 writer.WriteString(s_metadataId, referenceId);
                 metadataToWrite = MetadataPropertyName.Id;
             }
@@ -61,7 +58,6 @@ namespace System.Text.Json
             }
             else if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
             {
-                Debug.Assert(referenceId != null);
                 writer.WriteStartObject();
                 writer.WriteString(s_metadataRef, referenceId);
                 writer.WriteEndObject();
@@ -69,8 +65,6 @@ namespace System.Text.Json
             }
             else
             {
-                // TryGetOrAddReferenceOnSerialize is guaranteed to not return null.
-                Debug.Assert(referenceId != null);
                 writer.WriteStartObject();
                 writer.WriteString(s_metadataId, referenceId);
                 writer.WriteStartArray(s_metadataValues);
