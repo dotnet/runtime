@@ -9076,7 +9076,7 @@ calli_end:
 						}
 					}
 
-					// Opt d timize
+					// Optimize
 					// 
 					//    box
 					//    isinst [Type]
