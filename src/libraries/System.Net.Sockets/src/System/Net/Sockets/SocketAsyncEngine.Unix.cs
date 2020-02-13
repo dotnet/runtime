@@ -76,7 +76,9 @@ namespace System.Net.Sockets
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
         private readonly Interop.Sys.AioContext* _aioContext;
-        private readonly GCHandle[] _pinnedHandles;
+        private readonly Interop.Sys.IoEvent* _aioEvents;
+        private readonly Interop.Sys.IoControlBlock* _aioBlocks;
+        private readonly Interop.Sys.IoControlBlock** _aioBlocksPointers;
 
         //
         // The read and write ends of a native pipe, used to signal that this instance's event loop should stop
@@ -137,6 +139,8 @@ namespace System.Net.Sockets
         // on the next handle allocation.
         //
         private bool IsFull { get { return _nextHandle == MaxHandles; } }
+
+        private bool IsAio => _aioContext != null;
 
         // True if we've don't have sufficient active sockets to allow allocating a new engine.
         private bool HasLowNumberOfSockets
@@ -281,7 +285,17 @@ namespace System.Net.Sockets
 
                 if (Interop.Sys.IoSetup(EventBufferCount, out _aioContext) == 0)
                 {
-                    _pinnedHandles = new GCHandle[EventBufferCount];
+                    _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
+                    _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
+                    _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * EventBufferCount);
+
+                    // Marshal.AllocHGlobal allocated memory might contain some garbage
+                    new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount).Clear();
+
+                    for (int i = 0; i < EventBufferCount; i++)
+                    {
+                        _aioBlocksPointers[i] = &_aioBlocks[i];
+                    }
                 }
 
                 //
@@ -291,6 +305,7 @@ namespace System.Net.Sockets
                 try
                 {
                     if (suppressFlow) ExecutionContext.SuppressFlow();
+
                     Task.Factory.StartNew(
                         s => ((SocketAsyncEngine)s).EventLoop(),
                         this,
@@ -314,37 +329,13 @@ namespace System.Net.Sockets
         {
             try
             {
-                bool shutdown = false;
-                while (!shutdown)
+                if (IsAio)
                 {
-                    int numEvents = EventBufferCount;
-                    Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
-                    if (err != Interop.Error.SUCCESS)
-                    {
-                        throw new InternalException(err);
-                    }
-
-                    // The native shim is responsible for ensuring this condition.
-                    Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
-
-                    for (int i = 0; i < numEvents; i++)
-                    {
-                        IntPtr handle = _buffer[i].Data;
-                        if (handle == ShutdownHandle)
-                        {
-                            shutdown = true;
-                        }
-                        else
-                        {
-                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext context);
-                            if (context != null)
-                            {
-                                context.HandleEvents(_buffer[i].Events);
-                                context = null;
-                            }
-                        }
-                    }
+                    EventLoopBodyAio();
+                }
+                else
+                {
+                    EventLoopBody();
                 }
 
                 FreeNativeResources();
@@ -352,6 +343,111 @@ namespace System.Net.Sockets
             catch (Exception e)
             {
                 Environment.FailFast("Exception thrown from SocketAsyncEngine event loop: " + e.ToString(), e);
+            }
+        }
+
+        private void EventLoopBody()
+        {
+            bool shutdown = false;
+            while (!shutdown)
+            {
+                int numEvents = EventBufferCount;
+                Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    throw new InternalException(err);
+                }
+
+                // The native shim is responsible for ensuring this condition.
+                Debug.Assert(numEvents > 0, $"Unexpected numEvents: {numEvents}");
+
+                for (int i = 0; i < numEvents; i++)
+                {
+                    IntPtr handle = _buffer[i].Data;
+                    if (handle == ShutdownHandle)
+                    {
+                        shutdown = true;
+                    }
+                    else
+                    {
+                        Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+                        _handleToContextMap.TryGetValue(handle, out SocketAsyncContext context);
+                        if (context != null)
+                        {
+                            context.HandleEvents(_buffer[i].Events);
+                            context = null;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void EventLoopBodyAio()
+        {
+            bool shutdown = false;
+            SocketAsyncContext.AsyncOperation[] batchedOperations = new SocketAsyncContext.AsyncOperation[EventBufferCount];
+            Span<Interop.Sys.IoControlBlock> ioControlBlocks = new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount);
+            while (!shutdown)
+            {
+                int numEvents = EventBufferCount;
+                Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    throw new InternalException(err);
+                }
+
+                var socketEvents = new ReadOnlySpan<Interop.Sys.SocketEvent>(_buffer, numEvents);
+                int batchedCount = 0;
+                foreach (var socketEvent in socketEvents)
+                {
+                    if (socketEvent.Data == ShutdownHandle)
+                    {
+                        shutdown = true;
+                    }
+                    else if (_handleToContextMap.TryGetValue(socketEvent.Data, out SocketAsyncContext context))
+                    {
+                        if ((socketEvent.Events & Interop.Sys.SocketEvents.Error) != 0)
+                        {
+                            // there was an error, we use the non-buffered execution path (this should be very rare)
+                            context.HandleEvents(socketEvent.Events);
+                        }
+                        else if (context.TryGetNextOperation(socketEvent.Events, out SocketAsyncContext.AsyncOperation nextOperation))
+                        {
+                            // todo: batch more than 1 operation from a single queue
+                            // todo: if TrySetRunning fails, we have pinned memory...
+                            if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]) && nextOperation.TrySetRunning())
+                            {
+                                ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
+                                batchedOperations[batchedCount++] = nextOperation;
+                            }
+                            else
+                            {
+                                // todo: should we dispatch it to thread poll or execute on this thread??
+                                nextOperation.Dispatch();
+                            }
+                        }
+                    }
+                }
+
+                if (batchedCount > 0)
+                {
+                    if (Interop.Sys.IoSubmit(*_aioContext, batchedCount, _aioBlocksPointers) != batchedCount)
+                    {
+                        throw new InternalException("IoSubmit has failed"); // todo: provide sth in the future and|or implement a while loop
+                    }
+
+                    // todo: perf: avoid the syscall by using a well known pattern that reads from the ring
+                    if (Interop.Sys.IoGetEvents(*_aioContext, batchedCount, batchedCount, _aioEvents) != batchedCount)
+                    {
+                        throw new InternalException("IoGetEvents has failed"); // todo: provide sth in the future and|or implement a while loop
+                    }
+
+                    ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(_aioEvents, batchedCount);
+                    for (int i = 0; i < events.Length; i++)
+                    {
+                        batchedOperations[events[i].Data].HandleBatchResponse(in events[i]);
+                    }
+                }
             }
         }
 
@@ -389,6 +485,9 @@ namespace System.Net.Sockets
             if (_aioContext != null)
             {
                 Interop.Sys.IoDestroy(*_aioContext);
+                Marshal.FreeHGlobal(new IntPtr((void*)_aioEvents));
+                Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocksPointers));
+                Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocks));
             }
         }
 

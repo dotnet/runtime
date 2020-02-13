@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -56,6 +57,7 @@ namespace System.Net.Sockets
         {
             operation.Reset();
             operation.Buffer = default;
+            operation.PinHandle = default;
             operation.Callback = null;
             operation.SocketAddress = null;
             Volatile.Write(ref _cachedBufferMemoryReceiveOperation, operation); // benign race condition
@@ -74,6 +76,7 @@ namespace System.Net.Sockets
         {
             operation.Reset();
             operation.Buffer = default;
+            operation.PinHandle = default;
             operation.Callback = null;
             operation.SocketAddress = null;
             Volatile.Write(ref _cachedBufferMemorySendOperation, operation); // benign race condition
@@ -108,7 +111,7 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _cachedBufferListSendOperation, null) ??
             new BufferListSendOperation(this);
 
-        private abstract class AsyncOperation : IThreadPoolWorkItem
+        internal abstract class AsyncOperation : IThreadPoolWorkItem
         {
             private enum State
             {
@@ -310,6 +313,10 @@ namespace System.Net.Sockets
 
             public abstract void InvokeCallback(bool allowPooling);
 
+            internal virtual unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
+
+            internal virtual unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock) => throw new InvalidOperationException();
+
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
             public void Trace(string message, [CallerMemberName] string memberName = null)
             {
@@ -325,21 +332,21 @@ namespace System.Net.Sockets
 
         // These two abstract classes differentiate the operations that go in the
         // read queue vs the ones that go in the write queue.
-        private abstract class ReadOperation : AsyncOperation, IThreadPoolWorkItem
+        internal abstract class ReadOperation : AsyncOperation, IThreadPoolWorkItem
         {
             public ReadOperation(SocketAsyncContext context) : base(context) { }
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncReadOperation(this);
         }
 
-        private abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
+        internal abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
         {
             public WriteOperation(SocketAsyncContext context) : base(context) { }
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
         }
 
-        private abstract class SendOperation : WriteOperation
+        internal abstract class SendOperation : WriteOperation
         {
             public SocketFlags Flags;
             public int BytesTransferred;
@@ -359,9 +366,10 @@ namespace System.Net.Sockets
                 ((Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent)(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
         }
 
-        private sealed class BufferMemorySendOperation : SendOperation
+        internal sealed class BufferMemorySendOperation : SendOperation
         {
             public Memory<byte> Buffer;
+            internal MemoryHandle PinHandle;
 
             public BufferMemorySendOperation(SocketAsyncContext context) : base(context) { }
 
@@ -386,9 +394,44 @@ namespace System.Net.Sockets
 
                 cb(bt, sa, sal, SocketFlags.None, ec);
             }
+
+            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            {
+                PinHandle = Buffer.Pin();
+
+                ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
+                ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
+                ioControlBlock.AioBuf = (ulong)PinHandle.Pointer + (ulong)Offset;
+                ioControlBlock.AioNbytes = (ulong)Count;
+
+                return true;
+            }
+
+            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            {
+                PinHandle.Dispose();
+
+                if (ioControlBlock.Res < 0)
+                {
+                    SetWaiting();
+                    ErrorCode = (SocketError)(-ioControlBlock.Res);
+                    return false;
+                }
+
+                BytesTransferred = (int)ioControlBlock.Res;
+                Offset += (int)ioControlBlock.Res;
+                Count -= (int)ioControlBlock.Res;
+                ErrorCode = SocketError.Success;
+
+                SetComplete();
+
+                AssociatedContext.ProcessBatchWriteOperation(this);
+
+                return true;
+            }
         }
 
-        private sealed class BufferListSendOperation : SendOperation
+        internal sealed class BufferListSendOperation : SendOperation
         {
             public IList<ArraySegment<byte>> Buffers;
             public int BufferIndex;
@@ -417,7 +460,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private sealed unsafe class BufferPtrSendOperation : SendOperation
+        internal sealed unsafe class BufferPtrSendOperation : SendOperation
         {
             public byte* BufferPtr;
 
@@ -428,9 +471,40 @@ namespace System.Net.Sockets
                 int bufferIndex = 0;
                 return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
+
+            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            {
+                ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
+                ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
+                ioControlBlock.AioBuf = (ulong)BufferPtr + (ulong)Offset;
+                ioControlBlock.AioNbytes = (ulong)Count;
+
+                return true;
+            }
+
+            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            {
+                if (ioControlBlock.Res < 0)
+                {
+                    SetWaiting();
+                    ErrorCode = (SocketError)(-ioControlBlock.Res);
+                    return false;
+                }
+
+                BytesTransferred = (int)ioControlBlock.Res;
+                Offset += (int)ioControlBlock.Res;
+                Count -= (int)ioControlBlock.Res;
+                ErrorCode = SocketError.Success;
+
+                SetComplete();
+
+                AssociatedContext.ProcessBatchWriteOperation(this);
+
+                return true;
+            }
         }
 
-        private abstract class ReceiveOperation : ReadOperation
+        internal abstract class ReceiveOperation : ReadOperation
         {
             public SocketFlags Flags;
             public SocketFlags ReceivedFlags;
@@ -450,9 +524,10 @@ namespace System.Net.Sockets
                     BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
         }
 
-        private sealed class BufferMemoryReceiveOperation : ReceiveOperation
+        internal sealed class BufferMemoryReceiveOperation : ReceiveOperation
         {
             public Memory<byte> Buffer;
+            internal MemoryHandle PinHandle;
 
             public BufferMemoryReceiveOperation(SocketAsyncContext context) : base(context) { }
 
@@ -489,9 +564,41 @@ namespace System.Net.Sockets
 
                 cb(bt, sa, sal, rf, ec);
             }
+
+            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            {
+                // todo: handle if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
+                PinHandle = Buffer.Pin();
+
+                ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
+                ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
+                ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
+                ioControlBlock.AioNbytes = (ulong)Buffer.Length;
+
+                return true;
+            }
+
+            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            {
+                if (ioControlBlock.Res < 0)
+                {
+                    SetWaiting();
+                    ErrorCode = (SocketError)(-ioControlBlock.Res);
+                    return false;
+                }
+
+                BytesTransferred = (int)ioControlBlock.Res;
+                ErrorCode = SocketError.Success;
+
+                SetComplete();
+
+                AssociatedContext.ProcessBatchReadOperation(this);
+
+                return true;
+            }
         }
 
-        private sealed class BufferListReceiveOperation : ReceiveOperation
+        internal sealed class BufferListReceiveOperation : ReceiveOperation
         {
             public IList<ArraySegment<byte>> Buffers;
 
@@ -518,7 +625,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private sealed unsafe class BufferPtrReceiveOperation : ReceiveOperation
+        internal sealed unsafe class BufferPtrReceiveOperation : ReceiveOperation
         {
             public byte* BufferPtr;
             public int Length;
@@ -527,9 +634,38 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+
+            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            {
+                ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
+                ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
+                ioControlBlock.AioBuf = (ulong)BufferPtr;
+                ioControlBlock.AioNbytes = (ulong)Length;
+
+                return true;
+            }
+
+            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            {
+                if (ioControlBlock.Res < 0)
+                {
+                    SetWaiting();
+                    ErrorCode = (SocketError)(-ioControlBlock.Res);
+                    return false;
+                }
+
+                BytesTransferred = (int)ioControlBlock.Res;
+                ErrorCode = SocketError.Success;
+
+                SetComplete();
+
+                AssociatedContext.ProcessBatchReadOperation(this);
+
+                return true;
+            }
         }
 
-        private sealed class ReceiveMessageFromOperation : ReadOperation
+        internal sealed class ReceiveMessageFromOperation : ReadOperation
         {
             public Memory<byte> Buffer;
             public SocketFlags Flags;
@@ -558,7 +694,7 @@ namespace System.Net.Sockets
                     BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
-        private sealed class AcceptOperation : ReadOperation
+        internal sealed class AcceptOperation : ReadOperation
         {
             public IntPtr AcceptedFileDescriptor;
 
@@ -596,7 +732,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private sealed class ConnectOperation : WriteOperation
+        internal sealed class ConnectOperation : WriteOperation
         {
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
 
@@ -618,7 +754,7 @@ namespace System.Net.Sockets
                 ((Action<SocketError>)CallbackOrEvent)(ErrorCode);
         }
 
-        private sealed class SendFileOperation : WriteOperation
+        internal sealed class SendFileOperation : WriteOperation
         {
             public SafeFileHandle FileHandle;
             public long Offset;
@@ -825,10 +961,8 @@ namespace System.Net.Sockets
                 }
             }
 
-            // Called on the epoll thread whenever we receive an epoll notification.
-            public void HandleEvent(SocketAsyncContext context)
+            internal bool TryGetNextOperation(SocketAsyncContext context, out AsyncOperation op)
             {
-                AsyncOperation op;
                 using (Lock())
                 {
                     Trace(context, $"Enter");
@@ -839,34 +973,44 @@ namespace System.Net.Sockets
                             Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (previously ready)");
-                            return;
+                            op = default;
+                            return false;
 
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
                             _state = QueueState.Processing;
                             op = _tail.Next;
-                            // Break out and release lock
-                            break;
+                            return true;
 
                         case QueueState.Processing:
                             Debug.Assert(_tail != null, "State == Processing but queue is empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (currently processing)");
-                            return;
+                            op = default;
+                            return false;
 
                         case QueueState.Stopped:
                             Debug.Assert(_tail == null);
                             Trace(context, $"Exit (stopped)");
-                            return;
+                            op = default;
+                            return false;
 
                         default:
                             Environment.FailFast("unexpected queue state");
-                            return;
+                            op = default;
+                            return false;
                     }
                 }
+            }
 
-                // Dispatch the op so we can try to process it.
-                op.Dispatch();
+            // Called on the epoll thread whenever we receive an epoll notification.
+            public void HandleEvent(SocketAsyncContext context)
+            {
+                if (TryGetNextOperation(context, out AsyncOperation op))
+                {
+                    // Dispatch the op so we can try to process it.
+                    op.Dispatch();
+                }
             }
 
             internal void ProcessAsyncOperation(TOperation op)
@@ -1006,6 +1150,39 @@ namespace System.Net.Sockets
                 nextOp?.Dispatch();
 
                 return (wasCompleted ? OperationResult.Completed : OperationResult.Cancelled);
+            }
+
+            public void ProcessBatchedOperation(TOperation op)
+            {
+                using (Lock())
+                {
+                    if (_state == QueueState.Stopped)
+                    {
+                        Debug.Assert(_tail == null);
+                    }
+                    else
+                    {
+                        Debug.Assert(_state == QueueState.Processing, $"_state={_state} while processing queue!");
+                        Debug.Assert(_tail.Next == op, "Queue modified while processing queue");
+
+                        if (op == _tail)
+                        {
+                            // No more operations to process
+                            _tail = null;
+                            _state = QueueState.Ready;
+                            _sequenceNumber++;
+                        }
+                        else
+                        {
+                            // Pop current operation and advance to next
+                            _tail.Next = op.Next;
+                        }
+                    }
+                }
+
+                // todo: propbably this is not the best place to call this stuff
+                op.CancellationRegistration.Dispose();
+                op.InvokeCallback(allowPooling: true);
             }
 
             public void CancelAndContinueProcessing(TOperation op)
@@ -1295,6 +1472,10 @@ namespace System.Net.Sockets
         private void ProcessAsyncReadOperation(ReadOperation op) => _receiveQueue.ProcessAsyncOperation(op);
 
         private void ProcessAsyncWriteOperation(WriteOperation op) => _sendQueue.ProcessAsyncOperation(op);
+
+        private void ProcessBatchReadOperation(ReadOperation op) => _receiveQueue.ProcessBatchedOperation(op);
+
+        private void ProcessBatchWriteOperation(WriteOperation op) => _sendQueue.ProcessBatchedOperation(op);
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd)
         {
@@ -1964,6 +2145,24 @@ namespace System.Net.Sockets
             {
                 _sendQueue.HandleEvent(this);
             }
+        }
+
+        internal bool TryGetNextOperation(Interop.Sys.SocketEvents events, out AsyncOperation nextOperation)
+        {
+            Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "Should never be used for the error case");
+
+            if ((events & Interop.Sys.SocketEvents.Read) != 0 && _receiveQueue.TryGetNextOperation(this, out nextOperation))
+            {
+                return true;
+            }
+
+            if ((events & Interop.Sys.SocketEvents.Write) != 0 && _sendQueue.TryGetNextOperation(this, out nextOperation))
+            {
+                return true;
+            }
+
+            nextOperation = default;
+            return false;
         }
 
         //
