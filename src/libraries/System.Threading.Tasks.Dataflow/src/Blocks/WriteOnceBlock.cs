@@ -110,7 +110,6 @@ namespace System.Threading.Tasks.Dataflow
         /// <remarks>
         /// This must only be called once all of the completion conditions are met.
         /// </remarks>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void CompleteBlockAsync(IList<Exception> exceptions)
         {
             Debug.Assert(_decliningPermanently, "We may get here only after we have started to decline permanently.");
@@ -303,7 +302,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public IDisposable LinkTo(ITargetBlock<T> target, DataflowLinkOptions linkOptions)
         {
             // Validate arguments
@@ -449,7 +447,6 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <summary>Offers the WriteOnceBlock's message to all targets.</summary>
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private List<Exception> OfferToTargets()
         {
             Common.ContractAssertMonitorStatus(ValueLock, held: false);
@@ -515,7 +512,6 @@ namespace System.Threading.Tasks.Dataflow
         public override string ToString() { return Common.GetNameForDebugger(this, _dataflowBlockOptions); }
 
         /// <summary>The data to display in the debugger display attribute.</summary>
-        [SuppressMessage("Microsoft.Globalization", "CA1305:SpecifyIFormatProvider")]
         private object DebuggerDisplayContent
         {
             get

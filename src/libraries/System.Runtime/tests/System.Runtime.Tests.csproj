@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1718</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs">
@@ -131,10 +131,11 @@
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
+    <Compile Include="System\String.SplitTests.cs" />
     <Compile Include="System\StringComparerTests.cs" />
     <Compile Include="System\StringGetHashCodeTests.cs" />
+    <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
-    <Compile Include="System\String.SplitTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
@@ -251,18 +252,14 @@
     <Compile Include="System\Text\ASCIIUtilityTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />
-    <Compile Include="System\Text\Unicode\UnicodeData.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.cs" />
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.netcoreapp.cs" Link="System\RealFormatterTestsBase.netcoreapp.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
     <Compile Include="System\RealFormatterTests.cs" />
-    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
-    <Compile Include="System\RealParserTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
-    <Compile Include="System\StringSplitExtensions.cs" />
+    <Compile Include="$(CommonPath)..\tests\System\RealParserTestsBase.cs" Link="System\RealParserTestsBase.cs" />
+    <Compile Include="System\RealParserTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
@@ -279,23 +276,10 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.11.0.txt">
-      <Link>System\Text\Unicode\UnicodeData.11.0.txt</Link>
-      <LogicalName>UnicodeData.11.0.txt</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)Data\CaseFolding-12.1.0.txt">
-      <Link>System\Text\Unicode\CaseFolding-12.1.0.txt</Link>
-      <LogicalName>CaseFolding-12.1.0.txt</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(CommonTestPath)Data\PropList-12.1.0.txt">
-      <Link>System\Text\Unicode\PropList-12.1.0.txt</Link>
-      <LogicalName>PropList-12.1.0.txt</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
+    <ProjectReference Include="$(CommonTestPath)CoreFx.Private.TestUtilities.Unicode\CoreFx.Private.TestUtilities.Unicode.csproj" />
   </ItemGroup>
 </Project>

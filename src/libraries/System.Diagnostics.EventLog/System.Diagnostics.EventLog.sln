@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B218883-369E-4C3D-8BD0-74843474DCBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{432779B9-3CBD-4871-A7DC-D8A192319DBD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F405C42E-EF6F-4404-80FD-3B87E216707C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

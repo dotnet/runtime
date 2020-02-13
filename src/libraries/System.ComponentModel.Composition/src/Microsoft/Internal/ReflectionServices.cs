@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics;
 
 namespace Microsoft.Internal
 {
@@ -14,27 +16,29 @@ namespace Microsoft.Internal
     {
         public static Assembly Assembly(this MemberInfo member)
         {
-            Type type = member as Type;
-            if (type != null)
+            if (member is Type type)
             {
                 return type.Assembly;
             }
 
+            Debug.Assert(member.DeclaringType != null);
             return member.DeclaringType.Assembly;
         }
 
         public static bool IsVisible(this ConstructorInfo constructor)
         {
-            return constructor.DeclaringType.IsVisible && constructor.IsPublic;
+            return constructor.DeclaringType!.IsVisible && constructor.IsPublic;
         }
 
         public static bool IsVisible(this FieldInfo field)
         {
+            Debug.Assert(field.DeclaringType != null);
             return field.DeclaringType.IsVisible && field.IsPublic;
         }
 
         public static bool IsVisible(this MethodInfo method)
         {
+            Debug.Assert(method.DeclaringType != null);
             if (!method.DeclaringType.IsVisible)
                 return false;
 
@@ -54,7 +58,7 @@ namespace Microsoft.Internal
             return true;
         }
 
-        public static string GetDisplayName(Type declaringType, string name)
+        public static string GetDisplayName(Type declaringType, string? name)
         {
             if (declaringType == null)
             {
@@ -79,10 +83,10 @@ namespace Microsoft.Internal
                     return AttributedModelServices.GetTypeIdentity(((Type)member));
             }
 
-            return GetDisplayName(member.DeclaringType, member.Name);
+            return GetDisplayName(member.DeclaringType!, member.Name);
         }
 
-        internal static bool TryGetGenericInterfaceType(Type instanceType, Type targetOpenInterfaceType, out Type targetClosedInterfaceType)
+        internal static bool TryGetGenericInterfaceType(Type instanceType, Type targetOpenInterfaceType, [NotNullWhen(true)] out Type? targetClosedInterfaceType)
         {
             // The interface must be open
             if (!targetOpenInterfaceType.IsInterface ||
@@ -107,7 +111,7 @@ namespace Microsoft.Internal
                 //  more expensive implementation of GetInterface, this does mean that we're
                 //  takign the chance that there aren't too many types which implement multiple
                 //  interfaces by the same name...
-                Type targetInterface = instanceType.GetInterface(targetOpenInterfaceType.Name, false);
+                Type? targetInterface = instanceType.GetInterface(targetOpenInterfaceType.Name, false);
                 if (targetInterface != null &&
                     targetInterface.UnderlyingSystemType.GetGenericTypeDefinition() == targetOpenInterfaceType.UnderlyingSystemType)
                 {
@@ -133,7 +137,8 @@ namespace Microsoft.Internal
         {
             IEnumerable<MethodInfo> declaredMethods = type.GetDeclaredMethods();
 
-            Type baseType = type.BaseType;
+            Type? baseType = type.BaseType;
+            Debug.Assert(baseType != null);
             if (baseType.UnderlyingSystemType != typeof(object))
             {
                 return declaredMethods.Concat(baseType.GetAllMethods());
@@ -156,7 +161,8 @@ namespace Microsoft.Internal
         {
             IEnumerable<FieldInfo> declaredFields = type.GetDeclaredFields();
 
-            Type baseType = type.BaseType;
+            Type? baseType = type.BaseType;
+            Debug.Assert(baseType != null);
             if (baseType.UnderlyingSystemType != typeof(object))
             {
                 return declaredFields.Concat(baseType.GetAllFields());
@@ -175,7 +181,7 @@ namespace Microsoft.Internal
             }
         }
 
-        internal static bool HasBaseclassOf(this Type type, Type baseClass)
+        internal static bool HasBaseclassOf(this Type? type, Type baseClass)
         {
             if (type == baseClass)
             {

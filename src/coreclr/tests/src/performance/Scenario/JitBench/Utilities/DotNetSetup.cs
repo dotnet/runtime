@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -235,7 +235,11 @@ namespace JitBench
 
         public static string GetTargetFrameworkMonikerForFrameworkVersion(string runtimeVersion)
         {
-            if (runtimeVersion.StartsWith("3.0"))
+            if (runtimeVersion.StartsWith("5.0"))
+            {
+                return "netcoreapp5.0";
+            }
+            else if (runtimeVersion.StartsWith("3.0"))
             {
                 return "netcoreapp3.0";
             }

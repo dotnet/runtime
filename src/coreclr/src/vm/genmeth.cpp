@@ -1433,26 +1433,33 @@ void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIM
     m_pPerInstInfo.SetValue((Dictionary *) pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(dwAllocSize)));
 
     TypeHandle * pInstDest = (TypeHandle *) IMD_GetMethodDictionaryNonNull();
-    for(unsigned int i = 0; i < numTyPars; i++)
+
     {
-        hEnumTyPars.EnumNext(&tkTyPar);
+        // Protect multi-threaded access to Module.m_GenericParamToDescMap. Other threads may be loading the same type
+        // to break type recursion dead-locks
 
-        // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
-        // instances so that we do not leak by allocating them all over again, if the declaring
-        // type repeatedly fails to load.
-        TypeVarTypeDesc *pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
-        if (pTypeVarTypeDesc == NULL)
+        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+        GCX_COOP();
+        CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
+
+        for (unsigned int i = 0; i < numTyPars; i++)
         {
-            // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
-            void *mem = (void *)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
-            pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
+            hEnumTyPars.EnumNext(&tkTyPar);
 
-            // No race here - the row in GenericParam table is owned exclusively by this method and we
-            // are holding a lock preventing other threads from loading the declaring type and setting
-            // up this method desc.
-            pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+            // code:Module.m_GenericParamToDescMap maps generic parameter RIDs to TypeVarTypeDesc
+            // instances so that we do not leak by allocating them all over again, if the declaring
+            // type repeatedly fails to load.
+            TypeVarTypeDesc* pTypeVarTypeDesc = pModule->LookupGenericParam(tkTyPar);
+            if (pTypeVarTypeDesc == NULL)
+            {
+                // Do NOT use pamTracker for this memory as we need it stay allocated even if the load fails.
+                void* mem = (void*)pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(TypeVarTypeDesc)));
+                pTypeVarTypeDesc = new (mem) TypeVarTypeDesc(pModule, tok, i, tkTyPar);
+
+                pModule->StoreGenericParamThrowing(tkTyPar, pTypeVarTypeDesc);
+            }
+            pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
         }
-        pInstDest[i] = TypeHandle(pTypeVarTypeDesc);
     }
     LOG((LF_JIT, LL_INFO10000, "GENERICSVER: Initialized typical  method instantiation with %d type handles\n",numTyPars));
 }

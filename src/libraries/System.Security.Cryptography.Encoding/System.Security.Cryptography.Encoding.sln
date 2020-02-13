@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0581E9FA-D639-4B88-96D8-D092760F90B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA81E343-5E54-40B0-9381-C459419BE780}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81B846C6-3CE3-4D7D-8A30-54ECEC63F6DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

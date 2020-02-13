@@ -225,7 +225,7 @@ namespace System
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
         public static System.TypeCode GetTypeCode(object? value) { throw null; }
-        public static bool IsDBNull(object? value) { throw null; }
+        public static bool IsDBNull([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? value) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut) { throw null; }
         public static int ToBase64CharArray(byte[] inArray, int offsetIn, int length, char[] outArray, int offsetOut, System.Base64FormattingOptions options) { throw null; }
         public static string ToBase64String(byte[] inArray) { throw null; }
@@ -1332,8 +1332,8 @@ namespace System.IO
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public System.IO.Stream UnderlyingStream { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
@@ -1383,8 +1383,8 @@ namespace System.IO
         public virtual int Capacity { get { throw null; } set { } }
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
-        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -1453,7 +1453,7 @@ namespace System.IO
         public static bool IsPathFullyQualified(System.ReadOnlySpan<char> path) { throw null; }
         public static bool IsPathFullyQualified(string path) { throw null; }
         public static bool IsPathRooted(System.ReadOnlySpan<char> path) { throw null; }
-        public static bool IsPathRooted(string? path) { throw null; }
+        public static bool IsPathRooted([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? path) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3) { throw null; }
         public static string Join(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.ReadOnlySpan<char> path4) { throw null; }
@@ -1790,10 +1790,7 @@ namespace System.Runtime.Versioning
         Stable = 2,
         SideBySide = 4,
     }
-    public sealed partial class FrameworkName :
-#nullable disable
-        System.IEquatable<System.Runtime.Versioning.FrameworkName>
-#nullable restore
+    public sealed partial class FrameworkName : System.IEquatable<System.Runtime.Versioning.FrameworkName?>
     {
         public FrameworkName(string frameworkName) { }
         public FrameworkName(string identifier, System.Version version) { }

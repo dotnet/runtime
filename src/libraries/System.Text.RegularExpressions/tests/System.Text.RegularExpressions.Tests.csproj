@@ -1,29 +1,36 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <NoWarn>$(NoWarn);xUnit2008</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AttRegexTests.cs" />
     <Compile Include="CaptureCollectionTests.cs" />
     <Compile Include="GroupCollectionTests.cs" />
     <Compile Include="MatchCollectionTests.cs" />
+    <Compile Include="MonoRegexTests.cs" />
+    <Compile Include="Regex.CompileToAssembly.Tests.cs" />
+    <Compile Include="Regex.Ctor.Tests.cs" />
     <Compile Include="Regex.Cache.Tests.cs" />
     <Compile Include="Regex.EscapeUnescape.Tests.cs" />
     <Compile Include="Regex.GetGroupNames.Tests.cs" />
-    <Compile Include="Regex.Ctor.Tests.cs" />
-    <Compile Include="Regex.MultipleMatches.Tests.cs" />
-    <Compile Include="Regex.UnicodeChar.Tests.cs" />
     <Compile Include="Regex.Groups.Tests.cs" />
+    <Compile Include="Regex.KnownPattern.Tests.cs" />
+    <Compile Include="Regex.Match.Tests.cs" />
+    <Compile Include="Regex.MultipleMatches.Tests.cs" />
     <Compile Include="Regex.Replace.Tests.cs" />
     <Compile Include="Regex.Split.Tests.cs" />
-    <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
+    <Compile Include="Regex.UnicodeChar.Tests.cs" />
+    <Compile Include="RegexCharacterSetTests.cs" />
     <Compile Include="RegexCompilationHelper.cs" />
     <Compile Include="RegexCultureTests.cs" />
+    <Compile Include="RegexMatchTimeoutExceptionTests.cs" />
     <Compile Include="RegexParserTests.cs" />
+    <Compile Include="RegexReductionTests.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
       <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
     </Compile>

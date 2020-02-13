@@ -478,6 +478,15 @@ void MethodContext::dumpToConsole(int mcNumber)
     {
         printf(" method context #%d", mcNumber);
     }
+
+    // Dump method name, etc., to output.
+    char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    if (cbLen >= 0)
+    {
+        printf(" %s", bufferIdentityInfo);
+    }
+
     printf("\n");
 
 #define LWM(map, key, value) dumpLWM(this, map)
@@ -756,7 +765,7 @@ void MethodContext::recGetClassAttribs(CORINFO_CLASS_HANDLE classHandle, DWORD a
 }
 void MethodContext::dmpGetClassAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetClassAttribs key %016llX, value %u", key, value);
+    printf("GetClassAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetClassAttribs(CORINFO_CLASS_HANDLE classHandle)
 {
@@ -780,7 +789,7 @@ void MethodContext::recGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle, DWOR
 }
 void MethodContext::dmpGetMethodAttribs(DWORDLONG key, DWORD value)
 {
-    printf("GetMethodAttribs key %016llX, value %u", key, value);
+    printf("GetMethodAttribs key %016llX, value %08X (%s)", key, value, SpmiDumpHelper::DumpCorInfoFlag((CorInfoFlag)value).c_str());
 }
 DWORD MethodContext::repGetMethodAttribs(CORINFO_METHOD_HANDLE methodHandle)
 {
@@ -1041,11 +1050,11 @@ void MethodContext::recGetMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,
 
 void MethodContext::dmpGetMethodNameFromMetadata(Agnostic_CORINFO_METHODNAME_TOKENin key, Agnostic_CORINFO_METHODNAME_TOKENout value)
 {
-    unsigned char* methodName    = (unsigned char*)GetMethodName->GetBuffer(value.methodName);
-    unsigned char* className     = (unsigned char*)GetMethodName->GetBuffer(value.className);
-    unsigned char* namespaceName = (unsigned char*)GetMethodName->GetBuffer(value.namespaceName);
-    unsigned char* enclosingClassName = (unsigned char*)GetMethodName->GetBuffer(value.enclosingClassName);
-    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u nclosingClassNonNull-%u, value meth-'%s', "
+    unsigned char* methodName    = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.methodName);
+    unsigned char* className     = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.className);
+    unsigned char* namespaceName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.namespaceName);
+    unsigned char* enclosingClassName = (unsigned char*)GetMethodNameFromMetadata->GetBuffer(value.enclosingClassName);
+    printf("GetMethodNameFromMetadata key - ftn-%016llX classNonNull-%u namespaceNonNull-%u enclosingClassNonNull-%u, value meth-'%s', "
            "class-'%s', namespace-'%s' enclosingClass-'%s'",
            key.ftn, key.className, key.namespaceName, key.enclosingClassName, methodName, className, namespaceName, enclosingClassName);
     GetMethodNameFromMetadata->Unlock();
@@ -1384,7 +1393,7 @@ void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnost
            " ipl{at-%08X hnd-%016llX}"
            " sdi-%08X"
            " excp-%08X"
-           "stubLookup%s",
+           " stubLookup{%s}",
            value.hMethod, value.methodFlags, value.classFlags,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.sig).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.verSig).c_str(), value.instParamLookup.accessType,
@@ -3979,7 +3988,12 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-        pEEInfoOut->osType                                     = (CORINFO_OS)0;
+#ifdef TARGET_UNIX
+        pEEInfoOut->osType                                     = CORINFO_UNIX;
+#else
+        pEEInfoOut->osType                                     = CORINFO_WINNT;
+#endif
+
         pEEInfoOut->osMajor                                    = (unsigned)0;
         pEEInfoOut->osMinor                                    = (unsigned)0;
         pEEInfoOut->osBuild                                    = (unsigned)0;
@@ -6337,7 +6351,7 @@ const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
     return value;
 }
 
-int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
+int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
 {
     char* obuff = buff;
 
@@ -6351,7 +6365,7 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
     repCompileMethod(&info, &flags);
 
     // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args));
+    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, info.ftn, info.args, ignoreMethodName));
     buff += t;
     len -= t;
 
@@ -6370,11 +6384,11 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
 
     return (int)(buff - obuff);
 }
-int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len)
+int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName /* = false */)
 {
     char bufferIdentityInfo[METHOD_IDENTITY_INFO_SIZE];
 
-    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE);
+    int cbLen = dumpMethodIdentityInfoToBuffer(bufferIdentityInfo, METHOD_IDENTITY_INFO_SIZE, ignoreMethodName);
 
     if (cbLen < 0)
         return cbLen;
@@ -6386,7 +6400,7 @@ int MethodContext::dumpMethodMD5HashToBuffer(char* buff, int len)
 
 int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, int hashLen)
 {
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 
     MD5HASHDATA md5_hashdata;
     MD5         md5_hasher;
@@ -6406,7 +6420,7 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
 
     return MD5_HASH_BUFFER_SIZE; // if we had success we wrote MD5_HASH_BUFFER_SIZE bytes to the buffer
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 
     HCRYPTPROV hProv = NULL; // CryptoProvider
     HCRYPTHASH hHash = NULL;
@@ -6453,7 +6467,7 @@ OnError:
         CryptReleaseContext(hProv, 0);
     return -1;
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 MethodContext::Environment MethodContext::cloneEnvironment()

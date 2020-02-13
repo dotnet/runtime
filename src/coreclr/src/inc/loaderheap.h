@@ -215,8 +215,6 @@ private:
 
     size_t              m_dwTotalAlloc;
 
-    size_t *             m_pPrivatePerfCounter_LoaderBytes;
-
     DWORD                m_Options;
 
     LoaderHeapFreeBlock *m_pFirstFreeBlock;
@@ -286,7 +284,6 @@ protected:
                        DWORD dwCommitBlockSize,
                        const BYTE* dwReservedRegionAddress,
                        SIZE_T dwReservedRegionSize,
-                       size_t *pPrivatePerfCounter_LoaderBytes = NULL,
                        RangeList *pRangeList = NULL,
                        BOOL fMakeExecutable = FALSE);
 
@@ -441,14 +438,12 @@ private:
 public:
     LoaderHeap(DWORD dwReserveBlockSize,
                DWORD dwCommitBlockSize,
-               size_t *pPrivatePerfCounter_LoaderBytes = NULL,
                RangeList *pRangeList = NULL,
                BOOL fMakeExecutable = FALSE
                )
       : UnlockedLoaderHeap(dwReserveBlockSize,
                            dwCommitBlockSize,
                            NULL, 0,
-                           pPrivatePerfCounter_LoaderBytes,
                            pRangeList,
                            fMakeExecutable)
     {
@@ -463,7 +458,6 @@ public:
                DWORD dwCommitBlockSize,
                const BYTE* dwReservedRegionAddress,
                SIZE_T dwReservedRegionSize,
-               size_t *pPrivatePerfCounter_LoaderBytes = NULL,
                RangeList *pRangeList = NULL,
                BOOL fMakeExecutable = FALSE
                )
@@ -471,7 +465,6 @@ public:
                            dwCommitBlockSize,
                            dwReservedRegionAddress,
                            dwReservedRegionSize,
-                           pPrivatePerfCounter_LoaderBytes,
                            pRangeList,
                            fMakeExecutable)
     {
@@ -774,12 +767,10 @@ class ExplicitControlLoaderHeap : public UnlockedLoaderHeap
 {
 #ifndef DACCESS_COMPILE
 public:
-    ExplicitControlLoaderHeap(size_t *pPrivatePerfCounter_LoaderBytes = NULL,
-                              RangeList *pRangeList = NULL,
+    ExplicitControlLoaderHeap(RangeList *pRangeList = NULL,
                               BOOL fMakeExecutable = FALSE
                )
       : UnlockedLoaderHeap(0, 0, NULL, 0,
-                           pPrivatePerfCounter_LoaderBytes,
                            pRangeList,
                            fMakeExecutable)
     {

@@ -100,7 +100,7 @@ namespace System.ComponentModel.Tests
             Assert.Equal(expectedMemberInfo, actualUnInitInstanceDescriptor.MemberInfo);
             Assert.Equal(new[] { NullableConverterTests.s_uninitializedInt }, actualUnInitInstanceDescriptor.Arguments);
             Assert.True(actualUnInitInstanceDescriptor.IsComplete);
-            // This appears to be a bug present in desktop as well
+            // This appears to be a bug present in .NET Framework as well
             // Assert.Equal(NullableConverterTests.s_uninitializedInt, actualUnInitInstanceDescriptor.Invoke());
             Assert.Equal(0, actualUnInitInstanceDescriptor.Invoke());
 

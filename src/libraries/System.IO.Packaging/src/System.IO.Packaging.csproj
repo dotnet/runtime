@@ -1,13 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.IO.Packaging</RootNamespace>
-    <AssemblyName>System.IO.Packaging</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx' or '$(TargetGroup)'=='net46'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(TargetGroup)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
-    <Configurations>net46-Debug;net46-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <DefineConstants Condition="'$(TargetFramework)' != 'netstandard1.3'">$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
+    <TargetFrameworks>net46;netstandard1.3;netstandard2.0;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard1.3'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.3'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Globalization" />
@@ -49,9 +48,9 @@
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
-    <Compile Condition="'$(TargetGroup)'!='netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
+    <Compile Condition="'$(TargetFramework)' != 'netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netfx' or '$(TargetGroup)' == 'net46' ">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="WindowsBase" />
   </ItemGroup>

@@ -17,6 +17,9 @@ namespace System.Collections.Immutable
     {
         internal static bool IsValueType<T>()
         {
+#if NETCOREAPP
+            return typeof(T).IsValueType;
+#else
             if (default(T) != null)
             {
                 return true;
@@ -29,6 +32,7 @@ namespace System.Collections.Immutable
             }
 
             return false;
+#endif
         }
 
 #if EqualsStructurally
@@ -300,7 +304,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The list-ified sequence.
             /// </summary>
-            private IList<T> _collection;
+            private IList<T>? _collection;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="FallbackWrapper{T}"/> class.

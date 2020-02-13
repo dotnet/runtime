@@ -15,7 +15,7 @@ Below table shows the combined area owners on this repository:
 | area-ILTools | @BruceForstall @dotnet/jit-contrib | |
 | area-Infrastructure-coreclr | @jeffschwMSFT @jashook @trylek | |
 | area-Infrastructure-installer | @dleeapho @wtgodbe @dagood | |
-| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for CoreFX repo</li><li>VS integration</li></ul><br/> |
+| area-Infrastructure-libraries | @ViktorHofer @ericstj @wtgodbe @safern @Anipik | Covers:<ul><li>Packaging</li><li>Build and test infra for libraries in dotnet/runtime repo</li><li>VS integration</li></ul><br/> |
 | area-Infrastructure | @ViktorHofer @jeffschwMSFT @dleeapho | |
 | area-Interop | @jeffschwMSFT @AaronRobinsonMSFT | |
 | area-Meta | @joperezr | Issues without clear association to any specific API/contract, e.g. <ul><li>new contract proposals</li><li>cross-cutting code/test pattern changes (e.g. FxCop failures)</li><li>project-wide docs</li></ul><br/> |
@@ -33,6 +33,20 @@ Below table shows the combined area owners on this repository:
 | area-TypeSystem | @davidwrighton @MichalStrehovsky @fadimounir | |
 | area-UWP | @nattress | UWP-specific issues including Microsoft.NETCore.UniversalWindowsPlatform and Microsoft.Net.UWPCoreRuntimeSdk |
 | area-VM | @sergiy-k | |
+| area-AssemblyLoader-mono | @CoffeeFlux | |
+| area-Codegen-meta-mono | @vargaz | |
+| area-Codegen-JIT-mono | @SamMonoRT | |
+| area-Codegen-AOT-mono | @SamMonoRT | |
+| area-Codegen-Interpreter-mono | @BrzVlad | |
+| area-CoreLib-mono | @steveisok | |
+| area-GC-mono | @BrzVlad | |
+| area-Build-mono | @akoeplinger | |
+| area-Infrastructure-mono | @directhex | |
+| area-Debugger-mono | @thaystg | |
+| area-VM-meta-mono | @lambdageek | |
+| area-Threading-mono | @lambdageek | |
+| area-Tracing-mono | @lambdageek | |
+| area-Performance-mono | @SamMonoRT | |
 | **System contract assemblies** | | |
 | area-System.AppContext | @safern @Anipik | |
 | area-System.Buffers | @layomia @JeremyKuhne @ahsonkhan | |
@@ -43,8 +57,8 @@ Below table shows the combined area owners on this repository:
 | area-System.Composition | @maryamariyan @ViktorHofer | |
 | area-System.Configuration | @maryamariyan @safern | |
 | area-System.Console | @wtgodbe | |
-| area-System.Data | @ajcvickers @cheenamalhotra @david-engel @Gary-Zh | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
-| area-System.Data.SqlClient | @cheenamalhotra @Gary-Zh @david-engel | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
+| area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
+| area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
 | area-System.Diagnostics | @tommcdon @wtgodbe @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
 | area-System.Diagnostics.Process | @wtgodbe @krwq | |
 | area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |

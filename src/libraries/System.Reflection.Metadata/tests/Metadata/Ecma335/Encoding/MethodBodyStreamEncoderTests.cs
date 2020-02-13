@@ -374,7 +374,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }
         }
 
-        [Fact, ActiveIssue(26910)]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/26910")]
         public unsafe void LocAlloc()
         {
             var streamBuilder = new BlobBuilder();
@@ -419,7 +419,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             }, bodyBytes);
         }
 
-        [Fact, ActiveIssue(26910)]
+        [Fact, ActiveIssue("https://github.com/dotnet/corefx/issues/26910")]
         public unsafe void LocAlloc_WithInstructionEncoder()
         {
             var streamBuilder = new BlobBuilder();

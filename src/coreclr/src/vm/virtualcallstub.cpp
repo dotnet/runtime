@@ -84,7 +84,7 @@ UINT32 g_bucket_space_dead = 0;         //# of bytes of abandoned buckets not ye
 // This is the number of times a successful chain lookup will occur before the
 // entry is promoted to the front of the chain. This is declared as extern because
 // the default value (CALL_STUB_CACHE_INITIAL_SUCCESS_COUNT) is defined in the header.
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
 extern "C" size_t g_dispatch_cache_chain_success_counter;
 #else
 extern size_t g_dispatch_cache_chain_success_counter;
@@ -546,19 +546,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  300;
         vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  600;
     }
-    else if (parentDomain->IsSharedDomain())
-    {
-        indcell_heap_commit_size     = 16;        indcell_heap_reserve_size      =  100;
-#ifdef BIT64
-                                                  indcell_heap_reserve_size      = 2000;
-#endif
-        cache_entry_heap_commit_size = 16;        cache_entry_heap_reserve_size  =  500;
-
-        lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  200;
-        dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  450;
-        resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  200;
-        vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  450;
-    }
     else
     {
         indcell_heap_commit_size     = 8;         indcell_heap_reserve_size      = 8;
@@ -570,7 +557,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         vtable_heap_commit_size      = 8;         vtable_heap_reserve_size       = 8;
     }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     // If we're on 64-bit, there's a ton of address space, so reserve more space to
     // try to avoid getting into the situation where the resolve heap is more than
     // a rel32 jump away from the dispatch heap, since this will cause us to produce
@@ -592,7 +579,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     lookup_heap_commit_size         *= sizeof(LookupHolder);
 
     DWORD dispatchHolderSize        = sizeof(DispatchHolder);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     dispatchHolderSize               = static_cast<DWORD>(DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_SHORT));
 #endif
 
@@ -721,7 +708,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              NULL, NULL, FALSE));
+                                              NULL, FALSE));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -729,7 +716,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              NULL,
                                               &cache_entry_rangeList, FALSE));
 
     initReservedMem += cache_entry_heap_reserve_size;
@@ -738,7 +724,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> lookup_heap_holder(
                                new LoaderHeap(lookup_heap_reserve_size, lookup_heap_commit_size,
                                               initReservedMem, lookup_heap_reserve_size,
-                                              NULL,
                                               &lookup_rangeList, TRUE));
 
     initReservedMem += lookup_heap_reserve_size;
@@ -747,7 +732,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> dispatch_heap_holder(
                                new LoaderHeap(dispatch_heap_reserve_size, dispatch_heap_commit_size,
                                               initReservedMem, dispatch_heap_reserve_size,
-                                              NULL,
                                               &dispatch_rangeList, TRUE));
 
     initReservedMem += dispatch_heap_reserve_size;
@@ -756,7 +740,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> resolve_heap_holder(
                                new LoaderHeap(resolve_heap_reserve_size, resolve_heap_commit_size,
                                               initReservedMem, resolve_heap_reserve_size,
-                                              NULL,
                                               &resolve_rangeList, TRUE));
 
     initReservedMem += resolve_heap_reserve_size;
@@ -765,7 +748,6 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> vtable_heap_holder(
                                new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
                                               initReservedMem, vtable_heap_reserve_size,
-                                              NULL,
                                               &vtable_rangeList, TRUE));
 
     initReservedMem += vtable_heap_reserve_size;
@@ -1059,12 +1041,12 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     BOOL fIsOwner = isStub(stubStartAddress);
 
-#if defined(_TARGET_X86_) && defined(FEATURE_PREJIT)
+#if defined(TARGET_X86) && defined(FEATURE_PREJIT)
     if (!fIsOwner && parentDomain->IsDefaultDomain())
     {
         fIsOwner = (stubStartAddress == GetEEFuncEntryPoint(StubDispatchFixupStub));
     }
-#endif // defined(_TARGET_X86_) && defined(FEATURE_PREJIT)
+#endif // defined(TARGET_X86) && defined(FEATURE_PREJIT)
 
     return fIsOwner;
 }
@@ -1581,7 +1563,7 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
 PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                         TADDR siteAddrForRegisterIndirect,
                         size_t token
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
                         , UINT_PTR flags
 #endif
                         )
@@ -1624,7 +1606,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
         _ASSERTE(!"Throw returned");
     }
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     if (flags & SDF_ResolvePromoteChain)
     {
         ResolveCacheElem * pElem =  (ResolveCacheElem *)token;
@@ -1672,7 +1654,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
     PREFIX_ASSUME(pMgr != NULL);
 
-#ifndef _TARGET_X86_
+#ifndef TARGET_X86
     // Have we failed the dispatch stub too many times?
     if (flags & SDF_ResolveBackPatch)
     {
@@ -1716,7 +1698,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     END_ENTRYPOINT_VOIDRET;
 }
 
-#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
+#if defined(TARGET_X86) && defined(TARGET_UNIX)
 void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
 {
     VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
@@ -1779,16 +1761,8 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     BOOL bCallToShorterLivedTarget = FALSE;
 
     // We care about the following cases:
-    // Call from shared domain -> domain-specific target (collectible or not)
     // Call from any site -> collectible target
-    if (parentDomain->IsSharedDomain())
-    {
-        // The callee's manager
-        pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
-        // We already know that we are the shared manager, so we can just see if the callee has the same manager
-        bCallToShorterLivedTarget = (pCalleeMgr != this);
-    }
-    else if (objectType->GetLoaderAllocator()->IsCollectible())
+    if (objectType->GetLoaderAllocator()->IsCollectible())
     {
         // The callee's manager
         pCalleeMgr = objectType->GetLoaderAllocator()->GetVirtualCallStubManager();
@@ -1929,12 +1903,12 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     PCODE pBackPatchFcn;
                     PCODE pResolverFcn;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                     // Only X86 implementation needs a BackPatch function
                     pBackPatchFcn = (PCODE) GetEEFuncEntryPoint(BackPatchWorkerAsmStub);
-#else // !_TARGET_X86_
+#else // !TARGET_X86
                     pBackPatchFcn = NULL;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
 #ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
@@ -2751,7 +2725,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
 
     size_t dispatchHolderSize = sizeof(DispatchHolder);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // See comment around m_fShouldAllocateLongJumpDispatchStubs for explanation.
     if (m_fShouldAllocateLongJumpDispatchStubs
         INDEBUG(|| g_pConfig->ShouldGenerateLongJumpDispatchStub()))
@@ -2770,7 +2744,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     DispatchHolder * holder = (DispatchHolder*) (void*)
         dispatch_heap->AllocAlignedMem(dispatchHolderSize, CODE_SIZE_ALIGN);
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     if (!DispatchHolder::CanShortJumpDispatchStubReachFailTarget(addrOfFail, (LPCBYTE)holder))
     {
         m_fShouldAllocateLongJumpDispatchStubs = TRUE;
@@ -2781,7 +2755,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     holder->Initialize(addrOfCode,
                        addrOfFail,
                        (size_t)pMTExpected
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
                        , DispatchStub::e_TYPE_SHORT
 #endif
                        );
@@ -2816,7 +2790,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     RETURN (holder);
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //----------------------------------------------------------------------------
 /* Generate a dispatcher stub, pMTExpected is the method table to burn in the stub, and the two addrOf's
 are the addresses the stub is to transfer to depending on the test with pMTExpected
@@ -2893,7 +2867,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         PRECONDITION(addrOfPatcher != NULL);
 #endif
         POSTCONDITION(CheckPointer(RETVAL));
@@ -3119,7 +3093,6 @@ void VirtualCallStubManager::LogStats()
         return;
     }
 
-    BOOL isShared  = parentDomain->IsSharedDomain();
     BOOL isDefault = parentDomain->IsDefaultDomain();
 
     // Temp space to use for formatting the output.
@@ -3129,8 +3102,7 @@ void VirtualCallStubManager::LogStats()
 
     if (g_hStubLogFile && (stats.site_write != 0))
     {
-        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nStats for %s Manager\r\n", isShared  ? "the Shared"  :
-                                                            isDefault ? "the Default" : "an Unshared");
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), "\r\nStats for %s Manager\r\n", isDefault ? "the Default" : "an Unshared");
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
         //output counters
@@ -3871,11 +3843,11 @@ void DispatchCache::LogStats()
    2. For every bit we try to have half one bits and half zero bits
    3. Adjacent entries when xor-ed should have 5,6 or 7 bits that are different
 */
-#ifdef BIT64
+#ifdef HOST_64BIT
 static const UINT16 tokenHashBits[64] =
-#else // !BIT64
+#else // !HOST_64BIT
 static const UINT16 tokenHashBits[32] =
-#endif // !BIT64
+#endif // !HOST_64BIT
 {
     0xcd5, 0x8b9, 0x875, 0x439,
     0xbf0, 0x38d, 0xa5b, 0x6a7,
@@ -3886,7 +3858,7 @@ static const UINT16 tokenHashBits[32] =
     0xf05, 0x994, 0x472, 0x626,
     0x15c, 0x3a8, 0x56e, 0xe2d,
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     0xe3c, 0xbe2, 0x58e, 0x0f3,
     0x54d, 0x70f, 0xf88, 0xe2b,
     0x353, 0x153, 0x4a5, 0x943,
@@ -3895,7 +3867,7 @@ static const UINT16 tokenHashBits[32] =
     0x0f7, 0x49a, 0xdd0, 0x366,
     0xd84, 0xba5, 0x4c5, 0x6bc,
     0x8ec, 0x0b9, 0x617, 0x85c,
-#endif // BIT64
+#endif // HOST_64BIT
 };
 
 /*static*/ UINT16 DispatchCache::HashToken(size_t token)

@@ -56,7 +56,7 @@ using asm_sigcontext::_xstate;
 
 #if HAVE___GREGSET_T
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define MCREG_Rbx(mc)       ((mc).__gregs[_REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).__gregs[_REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).__gregs[_REG_RDX])
@@ -92,7 +92,7 @@ using asm_sigcontext::_xstate;
 #define FPREG_MxCsr(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr)
 #define FPREG_MxCsr_Mask(uc) (((struct fxsave*)(&(uc)->uc_mcontext.__fpregs))->fx_mxcsr_mask)
 
-#else // BIT64
+#else // HOST_64BIT
 
 #define MCREG_Ebx(mc)       ((mc).__gregs[_REG_EBX])
 #define MCREG_Ecx(mc)       ((mc).__gregs[_REG_ECX])
@@ -107,11 +107,11 @@ using asm_sigcontext::_xstate;
 #define MCREG_SegSs(mc)     ((mc).__gregs[_REG_SS])
 #define MCREG_EFlags(mc)    ((mc).__gregs[_REG_RFLAGS])
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 #elif HAVE_GREGSET_T
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define MCREG_Rbx(mc)       ((mc).gregs[REG_RBX])
 #define MCREG_Rcx(mc)       ((mc).gregs[REG_RCX])
 #define MCREG_Rdx(mc)       ((mc).gregs[REG_RDX])
@@ -157,8 +157,8 @@ using asm_sigcontext::_xstate;
 #define FPSTATE_RESERVED padding
 #endif
 
-// The mask for YMM registers presence flag stored in the xstate_bv. On current Linuxes, this definition is
-// only in internal headers, so we define it here. The xstate_bv is extracted from the processor xstate bit
+// The mask for YMM registers presence flag stored in the xfeatures (formerly xstate_bv). On current Linuxes, this definition is
+// only in internal headers, so we define it here. The xfeatures (formerly xstate_bv) is extracted from the processor xstate bit
 // vector register, so the value is OS independent.
 #ifndef XSTATE_YMM
 #define XSTATE_YMM 4
@@ -204,7 +204,11 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
         return false;
     }
 
+#if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
     return (FPREG_FpxSwBytes(uc)->xstate_bv & XSTATE_YMM) != 0;
+#else
+    return (FPREG_FpxSwBytes(uc)->xfeatures & XSTATE_YMM) != 0;
+#endif
 }
 
 inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
@@ -219,7 +223,7 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 
 /////////////////////
 
-#else // BIT64
+#else // HOST_64BIT
 
 #define MCREG_Ebx(mc)       ((mc).gregs[REG_EBX])
 #define MCREG_Ecx(mc)       ((mc).gregs[REG_ECX])
@@ -233,15 +237,15 @@ inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc)
 #define MCREG_SegCs(mc)     ((mc).gregs[REG_CS])
 #define MCREG_SegSs(mc)     ((mc).gregs[REG_SS])
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 #define MCREG_EFlags(mc)    ((mc).gregs[REG_EFL])
 
 #else // HAVE_GREGSET_T
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
-#if defined(_ARM64_)
+#if defined(HOST_ARM64)
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
 #define MCREG_X2(mc)      ((mc).regs[2])
@@ -353,9 +357,9 @@ const fpsimd_context* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
 #endif
 
-#else // BIT64
+#else // HOST_64BIT
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
 
 #define MCREG_R0(mc)        ((mc).arm_r0)
 #define MCREG_R1(mc)        ((mc).arm_r1)
@@ -428,7 +432,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 
 #define MCREG_Ebx(mc)       ((mc).mc_ebx)
 #define MCREG_Ecx(mc)       ((mc).mc_ecx)
@@ -447,14 +451,14 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #error "Unsupported arch"
 #endif
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 #endif // HAVE_GREGSET_T
 
 
 #if HAVE_PT_REGS
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #define PTREG_Rbx(ptreg)    ((ptreg).rbx)
 #define PTREG_Rcx(ptreg)    ((ptreg).rcx)
 #define PTREG_Rdx(ptreg)    ((ptreg).rdx)
@@ -475,9 +479,9 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_R14(ptreg)    ((ptreg).r14)
 #define PTREG_R15(ptreg)    ((ptreg).r15)
 
-#else // BIT64
+#else // HOST_64BIT
 
-#if defined(_ARM_)
+#if defined(HOST_ARM)
 #define PTREG_R0(ptreg)        ((ptreg).uregs[0])
 #define PTREG_R1(ptreg)        ((ptreg).uregs[1])
 #define PTREG_R2(ptreg)        ((ptreg).uregs[2])
@@ -495,7 +499,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define PTREG_Lr(ptreg)        ((ptreg).uregs[14])
 #define PTREG_Pc(ptreg)        ((ptreg).uregs[15])
 #define PTREG_Cpsr(ptreg)      ((ptreg).uregs[16])
-#elif defined(_X86_)
+#elif defined(HOST_X86)
 #define PTREG_Ebx(ptreg)    ((ptreg).ebx)
 #define PTREG_Ecx(ptreg)    ((ptreg).ecx)
 #define PTREG_Edx(ptreg)    ((ptreg).edx)
@@ -511,7 +515,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #error "Unsupported arch"
 #endif
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 
 #define PTREG_EFlags(ptreg) ((ptreg).eflags)
@@ -526,7 +530,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #error "struct reg" has unrecognized format
 #endif
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 
 #define BSDREG_Rbx(reg)     BSD_REGS_STYLE(reg,RBX,rbx)
 #define BSDREG_Rcx(reg)     BSD_REGS_STYLE(reg,RCX,rcx)
@@ -549,7 +553,7 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_R15(reg)     BSD_REGS_STYLE(reg,R15,r15)
 #define BSDREG_EFlags(reg)  BSD_REGS_STYLE(reg,RFLAGS,rflags)
 
-#else // BIT64
+#else // HOST_64BIT
 
 #define BSDREG_Ebx(reg)     BSD_REGS_STYLE(reg,EBX,ebx)
 #define BSDREG_Ecx(reg)     BSD_REGS_STYLE(reg,ECX,ecx)
@@ -564,17 +568,17 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_Esp(reg)     BSD_REGS_STYLE(reg,ESP,esp)
 #define BSDREG_SegSs(reg)   BSD_REGS_STYLE(reg,SS,ss)
 
-#endif // BIT64
+#endif // HOST_64BIT
 
 #endif // HAVE_BSD_REGS_T
 
 inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     return pContext->Rip;
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     return pContext->Eip;
-#elif defined(_ARM64_) || defined(_ARM_)
+#elif defined(HOST_ARM64) || defined(HOST_ARM)
     return pContext->Pc;
 #else
 #error "don't know how to get the program counter for this architecture"
@@ -583,11 +587,11 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
 
 inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     pContext->Rip = pc;
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     pContext->Eip = pc;
-#elif defined(_ARM64_) || defined(_ARM_)
+#elif defined(HOST_ARM64) || defined(HOST_ARM)
     pContext->Pc = pc;
 #else
 #error "don't know how to set the program counter for this architecture"
@@ -596,13 +600,13 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
 
 inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
 {
-#if defined(_AMD64_)
+#if defined(HOST_AMD64)
     return pContext->Rbp;
-#elif defined(_X86_)
+#elif defined(HOST_X86)
     return pContext->Ebp;
-#elif defined(_ARM_)
+#elif defined(HOST_ARM)
     return pContext->R7;
-#elif defined(_ARM64_)
+#elif defined(HOST_ARM64)
     return pContext->Fp;
 #else
 #error "don't know how to get the frame pointer for this architecture"

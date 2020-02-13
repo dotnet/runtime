@@ -189,14 +189,14 @@ namespace System.Net.Mime
         {
             Debug.Assert(!string.IsNullOrEmpty(offset), "violation of precondition: offset must not be null or empty");
             Debug.Assert(offset != UnknownTimeZoneDefaultOffset, "Violation of precondition: do not pass an unknown offset");
-            Debug.Assert(offset.StartsWith("-") || offset.StartsWith("+"), "offset initial character was not a + or -");
+            Debug.Assert(offset.StartsWith('-') || offset.StartsWith('+'), "offset initial character was not a + or -");
 
             if (offset.Length != OffsetLength)
             {
                 throw new FormatException(SR.MailDateInvalidFormat);
             }
 
-            positive = offset.StartsWith("+", StringComparison.Ordinal);
+            positive = offset.StartsWith('+');
 
             // TryParse will parse in base 10 by default.  do not allow any styles of input beyond the default
             // which is numeric values only

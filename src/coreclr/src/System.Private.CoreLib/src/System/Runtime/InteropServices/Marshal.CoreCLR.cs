@@ -198,7 +198,7 @@ namespace System.Runtime.InteropServices
         private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
         {
             var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: false, fillCache: false, wrapExceptions: true);
+            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, skipCheckThis: false, fillCache: false, wrapExceptions: true)!;
             PtrToStructureHelper(ptr, structure, allowValueClasses: true);
             return structure;
         }
@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices
             // though I couldn't reproduce that.  In either case, that means we should continue
             // throwing an OOM instead of an ArgumentOutOfRangeException for "negative" amounts of memory.
             UIntPtr numBytes;
-#if BIT64
+#if TARGET_64BIT
             numBytes = new UIntPtr(unchecked((ulong)cb.ToInt64()));
 #else // 32
             numBytes = new UIntPtr(unchecked((uint)cb.ToInt32()));

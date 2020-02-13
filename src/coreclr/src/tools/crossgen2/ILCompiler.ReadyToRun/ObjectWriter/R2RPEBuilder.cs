@@ -217,6 +217,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.SetCorHeader(symbol, headerSize);
         }
 
+        public void SetDebugDirectory(ISymbolNode symbol, int size)
+        {
+            _sectionBuilder.SetDebugDirectory(symbol, size);
+        }
+
         public void SetWin32Resources(ISymbolNode symbol, int resourcesSize)
         {
             _sectionBuilder.SetWin32Resources(symbol, resourcesSize);
@@ -256,6 +261,11 @@ namespace ILCompiler.PEWriter
             _sectionBuilder.AddObjectData(objectData, targetSectionIndex, name, mapFile);
         }
 
+        public int GetSymbolFilePosition(ISymbolNode symbol)
+        {
+            return _sectionBuilder.GetSymbolFilePosition(symbol);
+        }
+
         /// <summary>
         /// Emit built sections into the R2R PE file.
         /// </summary>
@@ -265,14 +275,11 @@ namespace ILCompiler.PEWriter
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
 
-            _sectionBuilder.RelocateOutputFile(
-                outputPeFile,
-                _peReader.PEHeaders.PEHeader.ImageBase,
-                outputStream);
-
+            _sectionBuilder.RelocateOutputFile(outputPeFile, Header.ImageBase, outputStream);
             UpdateSectionRVAs(outputStream);
-
             ApplyMachineOSOverride(outputStream);
+
+            CopyTimeStampFromInputImage(outputStream);
 
             _written = true;
         }
@@ -388,6 +395,23 @@ namespace ILCompiler.PEWriter
 
             outputStream.Seek(DosHeaderSize + PESignatureSize, SeekOrigin.Begin);
             outputStream.Write(patchedTargetMachine, 0, patchedTargetMachine.Length);
+        }
+
+        /// <summary>
+        /// Copy over the timestamp from IL image for determinism.
+        /// </summary>
+        /// <param name="outputStream">Output stream representing the R2R PE executable</param>
+        private void CopyTimeStampFromInputImage(Stream outputStream)
+        {
+            byte[] patchedTimestamp = BitConverter.GetBytes(_peReader.PEHeaders.CoffHeader.TimeDateStamp);
+            int seekSize =
+                DosHeaderSize +
+                PESignatureSize +
+                sizeof(short) +     // Machine
+                sizeof(short);      //NumberOfSections
+
+            outputStream.Seek(seekSize, SeekOrigin.Begin);
+            outputStream.Write(patchedTimestamp, 0, patchedTimestamp.Length);
         }
 
         /// <summary>
@@ -536,6 +560,10 @@ namespace ILCompiler.PEWriter
         /// <param name="target">Target architecture to set in the header</param>
         public static PEHeaderBuilder Copy(PEHeaders peHeaders, TargetDetails target)
         {
+            // Default base addresses used by Roslyn
+            const ulong DefaultExeBaseAddress64Bit = 0x1_4000_0000;
+            const ulong DefaultDllBaseAddress64Bit = 0x1_8000_0000;
+
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
             Characteristics imageCharacteristics = peHeaders.CoffHeader.Characteristics;
@@ -543,6 +571,14 @@ namespace ILCompiler.PEWriter
             {
                 imageCharacteristics &= ~Characteristics.Bit32Machine;
                 imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
+            ulong imageBase = peHeaders.PEHeader.ImageBase;
+            if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
+            {
+                // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
+                // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
+                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? DefaultDllBaseAddress64Bit : DefaultExeBaseAddress64Bit;
             }
 
             int fileAlignment = 0x200;
@@ -562,11 +598,6 @@ namespace ILCompiler.PEWriter
 
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
 
-            if (!is64BitTarget)
-            {
-                dllCharacteristics |= DllCharacteristics.NoSeh;
-            }
-
             // Copy over selected DLL characteristics bits from IL image
             dllCharacteristics |= peHeaders.PEHeader.DllCharacteristics &
                 (DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
@@ -575,12 +606,16 @@ namespace ILCompiler.PEWriter
             {
                 dllCharacteristics |= DllCharacteristics.HighEntropyVirtualAddressSpace;
             }
+            else
+            {
+                dllCharacteristics |= DllCharacteristics.NoSeh;
+            }
 
             return new PEHeaderBuilder(
                 machine: target.MachineFromTarget(),
                 sectionAlignment: sectionAlignment,
                 fileAlignment: fileAlignment,
-                imageBase: peHeaders.PEHeader.ImageBase,
+                imageBase: imageBase,
                 majorLinkerVersion: 11,
                 minorLinkerVersion: 0,
                 majorOperatingSystemVersion: 5,

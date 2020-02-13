@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
 {
-    public static partial class CookieCollectionTest
+    public static class CookieCollectionTest
     {
         //These cookies are designed to have some similar and different properties so that each is unique in the eyes of a CookieComparer object
         private static Cookie c1 = new Cookie("name1", "value");
@@ -160,7 +160,7 @@ namespace System.Net.Primitives.Functional.Tests
             object current = null;
             var exception = Record.Exception(() => current = enumerator.Current);
 
-            // On full framework, enumerator.Current throws an exception because the collection has been modified after
+            // On .NET Framework, enumerator.Current throws an exception because the collection has been modified after
             // creating the enumerator.
             if (exception == null)
             {
@@ -168,6 +168,51 @@ namespace System.Net.Primitives.Functional.Tests
             }
 
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext()); // Enumerator out of sync
+        }
+
+        [Fact]
+        public static void Clear_Success()
+        {
+            ICollection<Cookie> cc = CreateCookieCollection1();
+            Assert.InRange(cc.Count, 1, int.MaxValue);
+            cc.Clear();
+            Assert.Equal(0, cc.Count);
+        }
+
+        [Fact]
+        public static void Contains_Success()
+        {
+            ICollection<Cookie> cc = new CookieCollection();
+            cc.Add(c1);
+            Assert.True(cc.Contains(c1));
+            Assert.False(cc.Contains(c2));
+        }
+
+        [Fact]
+        public static void Remove_Success()
+        {
+            ICollection<Cookie> cc = CreateCookieCollection1();
+            Assert.Equal(5, cc.Count);
+            Assert.True(cc.Remove(c1));
+            Assert.False(cc.Contains(c1));
+            Assert.Equal(4, cc.Count);
+        }
+
+        [Fact]
+        public static void Remove_NonExistantCookie_ReturnsFalse()
+        {
+            ICollection<Cookie> cc = CreateCookieCollection1();
+            Assert.Equal(5, cc.Count);
+
+            cc.Remove(c1);
+            cc.Remove(c2);
+
+            Assert.Equal(3, cc.Count);
+
+            Assert.False(cc.Remove(c1));
+            Assert.False(cc.Remove(c2));
+
+            Assert.Equal(3, cc.Count);
         }
     }
 }

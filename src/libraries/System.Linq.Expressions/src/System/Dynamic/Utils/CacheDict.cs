@@ -4,6 +4,7 @@
 
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Dynamic.Utils
 {
@@ -11,7 +12,7 @@ namespace System.Dynamic.Utils
     /// Provides a dictionary-like object used for caches which holds onto a maximum
     /// number of elements specified at construction time.
     /// </summary>
-    internal sealed class CacheDict<TKey, TValue>
+    internal sealed class CacheDict<TKey, TValue> where TKey : notnull
     {
         // cache size is always ^2.
         // items are placed at [hash ^ mask]
@@ -65,7 +66,7 @@ namespace System.Dynamic.Utils
         /// Tries to get the value associated with 'key', returning true if it's found and
         /// false if it's not present.
         /// </summary>
-        internal bool TryGetValue(TKey key, out TValue value)
+        internal bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             int hash = key.GetHashCode();
             int idx = hash & _mask;
@@ -77,7 +78,7 @@ namespace System.Dynamic.Utils
                 return true;
             }
 
-            value = default(TValue);
+            value = default(TValue)!;
             return false;
         }
 

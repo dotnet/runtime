@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -69,11 +69,7 @@ namespace Internal.CorConstants
         // by the RID of a GenericParam token, encoded as a compressed integer.
         ELEMENT_TYPE_VAR_ZAPSIG = 0x3b,
 
-        // ZapSig encoding for an array MethodTable to allow it to remain such after decoding
-        // (rather than being transformed into the TypeHandle representing that array)
-        //
-        // The element is always followed by ELEMENT_TYPE_SZARRAY or ELEMENT_TYPE_ARRAY
-        ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG = 0x3c,
+        // UNUSED = 0x3c,
 
         // ZapSig encoding for native value types in IL stubs. IL stub signatures may contain
         // ELEMENT_TYPE_INTERNAL followed by ParamTypeDesc with ELEMENT_TYPE_VALUETYPE element

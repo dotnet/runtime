@@ -2,7 +2,7 @@ Interop Guidelines
 ==================
 
 ## Goals
-We have the following goals related to interop code being used in CoreFX:
+We have the following goals related to interop code being used in dotnet/runtime:
 
 - Minimize code duplication for interop.
   - We should only define a given interop signature in a single place. This stuff is tricky, and we shouldn't be copy-and-pasting it.
@@ -120,7 +120,7 @@ internal static partial class Interop // contents of Common\src\Interop\Windows\
 ```
 
 ### Build System
-When building CoreFx, we use the "OSGroup" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
+When building dotnet/runtime, we use the "OSGroup" property to control what target platform we are building for. The valid values for this property are Windows_NT (which is the default value from MSBuild when running on Windows), Linux and OSX.
 
 The build system sets a few MSBuild properties, depending on the OSGroup setting:
 
@@ -196,7 +196,7 @@ Often, various UNIX flavors offer the same API from the point-of-view of compati
 
 This leaves us with a situation where we can't write portable P/Invoke declarations that will work on all flavors, and writing separate declarations per flavor is quite fragile and won't scale.
 
-To address this, we're moving to a model where all UNIX interop from corefx starts with a P/Invoke to a C++ lib written specifically for corefx. These libs -- System.*.Native.so (aka "shims") -- are intended to be very thin layers over underlying platform libraries. Generally, they are not there to add any significant abstraction, but to create a stable ABI such that the same IL assembly can work across UNIX flavors.
+To address this, we're moving to a model where all UNIX interop from dotnet/runtime starts with a P/Invoke to a C++ lib written specifically for dotnet/runtime. These libs -- System.*.Native.so (aka "shims") -- are intended to be very thin layers over underlying platform libraries. Generally, they are not there to add any significant abstraction, but to create a stable ABI such that the same IL assembly can work across UNIX flavors.
 
 Guidelines for shim C++ API:
 
@@ -206,7 +206,7 @@ Guidelines for shim C++ API:
 - Don't cheat and take advantage of coincidental agreement between one flavor's ABI and the shim's ABI. 
 - Use PascalCase in a style closer to Win32 than libc.
   - If an export point has a 1:1 correspondence to the platform API, then name it after the platform API in PascalCase (e.g. stat -> Stat, fstat -> FStat).
-  - If an export is not 1:1, then spell things out as we typically would in CoreFX code (i.e. don't use abbreviations unless they come from the underlying API.
+  - If an export is not 1:1, then spell things out as we typically would in dotnet/runtime code (i.e. don't use abbreviations unless they come from the underlying API.
   - At first, it seemed that we'd want to use 1:1 names throughout, but it turns out there are many cases where being strictly 1:1 isn't practical.
   - In order to reduce the chance of collisions when linking with CoreRT, all exports should have a prefix that corresponds to the Libraries' name, e.g. "SystemNative_" or "CryptoNative_" to make the method name more unique. See https://github.com/dotnet/corefx/issues/4818.
 - Stick to data types which are guaranteed not to vary in size across flavors.

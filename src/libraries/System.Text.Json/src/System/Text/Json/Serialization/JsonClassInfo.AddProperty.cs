@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace System.Text.Json
 {
@@ -21,89 +17,42 @@ namespace System.Text.Json
                 return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
             }
 
+            JsonConverter? converter;
             ClassType classType = GetClassType(
                 propertyType,
                 parentClassType,
                 propertyInfo,
-                out Type runtimeType,
-                out Type elementType,
-                out Type nullableUnderlyingType,
-                out _,
-                out JsonConverter converter,
-                checkForAddMethod: false,
+                out Type? runtimeType,
+                out Type? _,
+                out converter,
                 options);
+
+            if (converter == null)
+            {
+                ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(propertyType, parentClassType, propertyInfo);
+            }
 
             return CreateProperty(
                 declaredPropertyType: propertyType,
                 runtimePropertyType: runtimeType,
                 propertyInfo,
                 parentClassType,
-                collectionElementType: elementType,
-                nullableUnderlyingType,
                 converter,
                 classType,
                 options);
         }
 
-        [PreserveDependency(".ctor()", "System.Text.Json.JsonPropertyInfoNullable`2")]
-        [PreserveDependency(".ctor()", "System.Text.Json.Serialization.JsonPropertyInfoNotNullableContravariant`4")]
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
-            Type runtimePropertyType,
-            PropertyInfo propertyInfo,
+            Type? runtimePropertyType,
+            PropertyInfo? propertyInfo,
             Type parentClassType,
-            Type collectionElementType,
-            Type nullableUnderlyingType,
             JsonConverter converter,
             ClassType classType,
             JsonSerializerOptions options)
         {
-            bool treatAsNullable = nullableUnderlyingType != null;
-
-            // Obtain the type of the JsonPropertyInfo class to construct.
-            Type propertyInfoClassType;
-
-            if (treatAsNullable && converter != null)
-            {
-                propertyInfoClassType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(parentClassType, nullableUnderlyingType);
-            }
-            else
-            {
-                Type typeToConvert = converter?.TypeToConvert;
-                if (typeToConvert == null)
-                {
-                    typeToConvert = declaredPropertyType;
-                }
-
-                // For the covariant case, create JsonPropertyInfoNotNullable. The generic constraints are "where TConverter : TDeclaredProperty".
-                if (runtimePropertyType.IsAssignableFrom(typeToConvert))
-                {
-                    propertyInfoClassType = typeof(JsonPropertyInfoNotNullable<,,,>).MakeGenericType(
-                        parentClassType,
-                        declaredPropertyType,
-                        runtimePropertyType,
-                        typeToConvert);
-                }
-                else
-                {
-                    Debug.Assert(typeToConvert.IsAssignableFrom(runtimePropertyType));
-
-                    // For the contravariant case, create JsonPropertyInfoNotNullableContravariant. The generic constraints are "where TDeclaredProperty : TConverter".
-                    propertyInfoClassType = typeof(JsonPropertyInfoNotNullableContravariant<,,,>).MakeGenericType(
-                        parentClassType,
-                        declaredPropertyType,
-                        runtimePropertyType,
-                        typeToConvert);
-                }
-            }
-
             // Create the JsonPropertyInfo instance.
-            JsonPropertyInfo jsonPropertyInfo = (JsonPropertyInfo)Activator.CreateInstance(
-                propertyInfoClassType,
-                BindingFlags.Instance | BindingFlags.Public,
-                binder: null,
-                args: null,
-                culture: null);
+            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
 
             jsonPropertyInfo.Initialize(
                 parentClassType,
@@ -111,9 +60,7 @@ namespace System.Text.Json
                 runtimePropertyType,
                 runtimeClassType: classType,
                 propertyInfo,
-                collectionElementType,
                 converter,
-                treatAsNullable,
                 options);
 
             return jsonPropertyInfo;
@@ -127,9 +74,7 @@ namespace System.Text.Json
         /// </summary>
         internal static JsonPropertyInfo CreatePolicyProperty(
             Type declaredPropertyType,
-            Type runtimePropertyType,
-            Type elementType,
-            Type nullableUnderlyingType,
+            Type? runtimePropertyType,
             JsonConverter converter,
             ClassType classType,
             JsonSerializerOptions options)
@@ -139,70 +84,9 @@ namespace System.Text.Json
                 runtimePropertyType: runtimePropertyType,
                 propertyInfo: null, // Not a real property so this is null.
                 parentClassType: typeof(object), // a dummy value (not used)
-                collectionElementType : elementType,
-                nullableUnderlyingType,
                 converter : converter,
                 classType : classType,
                 options);
-        }
-
-        /// <summary>
-        /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
-        /// </summary>
-        internal JsonPropertyInfo CreateRootProperty(JsonSerializerOptions options)
-        {
-            JsonConverter converter = options.DetermineConverterForProperty(Type, Type, propertyInfo: null);
-
-            return CreateProperty(
-                declaredPropertyType: Type,
-                runtimePropertyType: Type,
-                propertyInfo: null,
-                parentClassType: typeof(object), // a dummy value (not used)
-                ElementType,
-                Nullable.GetUnderlyingType(Type),
-                converter,
-                ClassType,
-                options);
-        }
-
-        internal JsonPropertyInfo GetOrAddPolymorphicProperty(JsonPropertyInfo property, Type runtimePropertyType, JsonSerializerOptions options)
-        {
-            static JsonPropertyInfo CreateRuntimeProperty((JsonPropertyInfo property, Type runtimePropertyType) key, (JsonSerializerOptions options, Type classType) arg)
-            {
-                ClassType classType = GetClassType(
-                    key.runtimePropertyType,
-                    arg.classType,
-                    key.property.PropertyInfo,
-                    out _,
-                    out Type elementType,
-                    out Type nullableType,
-                    out _,
-                    out JsonConverter converter,
-                    checkForAddMethod: false,
-                    arg.options);
-
-                JsonPropertyInfo runtimeProperty = CreateProperty(
-                    key.property.DeclaredPropertyType,
-                    key.runtimePropertyType,
-                    key.property.PropertyInfo,
-                    parentClassType: arg.classType,
-                    collectionElementType: elementType,
-                    nullableType,
-                    converter,
-                    classType,
-                    options: arg.options);
-                key.property.CopyRuntimeSettingsTo(runtimeProperty);
-
-                return runtimeProperty;
-            }
-
-            ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo> cache =
-                LazyInitializer.EnsureInitialized(ref RuntimePropertyCache, () => new ConcurrentDictionary<(JsonPropertyInfo, Type), JsonPropertyInfo>());
-#if BUILDING_INBOX_LIBRARY
-            return cache.GetOrAdd((property, runtimePropertyType), (key, arg) => CreateRuntimeProperty(key, arg), (options, Type));
-#else
-            return cache.GetOrAdd((property, runtimePropertyType), key => CreateRuntimeProperty(key, (options, Type)));
-#endif
         }
     }
 }

@@ -10,10 +10,13 @@ namespace System.Net.Security
     public readonly struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
     {
         private static readonly Encoding s_utf8 = Encoding.GetEncoding(Encoding.UTF8.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
+        private static readonly byte[] s_http3Utf8 = new byte[] { 0x68, 0x33 }; // "h3"
         private static readonly byte[] s_http2Utf8 = new byte[] { 0x68, 0x32 }; // "h2"
         private static readonly byte[] s_http11Utf8 = new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }; // "http/1.1"
 
         // Refer to IANA on ApplicationProtocols: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
+        // h3
+        public static readonly SslApplicationProtocol Http3 = new SslApplicationProtocol(s_http3Utf8, copy: false);
         // h2
         public static readonly SslApplicationProtocol Http2 = new SslApplicationProtocol(s_http2Utf8, copy: false);
         // http/1.1
@@ -92,14 +95,12 @@ namespace System.Net.Security
                     byte b = arr[index++];
                     byteChars[i] = '0';
                     byteChars[i + 1] = 'x';
-                    byteChars[i + 2] = GetHexValue(Math.DivRem(b, 16, out int rem));
-                    byteChars[i + 3] = GetHexValue(rem);
+                    byteChars[i + 2] = HexConverter.ToCharLower(b >> 4);
+                    byteChars[i + 3] = HexConverter.ToCharLower(b);
                     byteChars[i + 4] = ' ';
                 }
 
                 return new string(byteChars, 0, byteChars.Length - 1);
-
-                static char GetHexValue(int i) => (char)(i < 10 ? i + '0' : i - 10 + 'a');
             }
         }
 

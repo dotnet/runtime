@@ -1,11 +1,11 @@
 
-if (WIN32)
-  if(CLR_CMAKE_PLATFORM_ARCH_ARM OR CLR_CMAKE_PLATFORM_ARCH_ARM64)
+if (CLR_CMAKE_TARGET_WIN32)
+  if(CLR_CMAKE_HOST_ARCH_ARM OR CLR_CMAKE_HOST_ARCH_ARM64)
     preprocess_compile_asm(ASM_FILES ${VM_SOURCES_WKS_ARCH_ASM} OUTPUT_OBJECTS VM_WKS_ARCH_ASM_OBJECTS)
     list(APPEND VM_SOURCES_WKS_ARCH_ASM ${VM_WKS_ARCH_ASM_OBJECTS})
   endif()
 
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)
 
 add_library_clr(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
 target_precompile_header(TARGET cee_wks HEADER common.h)
@@ -15,13 +15,13 @@ if (MSVC)
 endif()
 add_dependencies(cee_wks eventing_headers)
 
-if (WIN32)
+if (CLR_CMAKE_TARGET_WIN32)
 
-  if(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  if(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
 
-    if (CLR_CMAKE_PLATFORM_ARCH_I386)
+    if (CLR_CMAKE_HOST_ARCH_I386)
         set_source_files_properties(${VM_SOURCES_WKS_ARCH_ASM} PROPERTIES COMPILE_FLAGS "/Zm /safeseh")
-    endif (CLR_CMAKE_PLATFORM_ARCH_I386)
+    endif (CLR_CMAKE_HOST_ARCH_I386)
 
     # Convert AsmConstants.h into AsmConstants.inc
     find_program(POWERSHELL powershell)
@@ -47,6 +47,6 @@ if (WIN32)
 
     add_dependencies(cee_wks asmconstants_inc)
 
-  endif(NOT CLR_CMAKE_PLATFORM_ARCH_ARM AND NOT CLR_CMAKE_PLATFORM_ARCH_ARM64)
+  endif(NOT CLR_CMAKE_HOST_ARCH_ARM AND NOT CLR_CMAKE_HOST_ARCH_ARM64)
 
-endif (WIN32)
+endif (CLR_CMAKE_TARGET_WIN32)

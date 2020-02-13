@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -408,6 +411,75 @@ namespace System.IO
             var fileSecurity = new FileSecurity();
             Type type = fileSecurity.AuditRuleType;
             Assert.Equal(typeof(FileSystemAuditRule), type);
+        }
+
+        [Fact]
+        public void DirNotFound_DirectorySecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
+
+            // A non-existent directory path is considered:
+            // - In NetFX: an invalid name because paths that are too long are not correctly handled
+            // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
+            AssertExtensions.Throws<DirectoryNotFoundException, ArgumentException>(() =>
+            {
+                var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+            });
+            
+        }
+
+        [Fact]
+        public void FileNotFound_FileSecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            string longDir = CreateLongDirectory(tempDirectory.Path, create: false);
+            string filePath = Path.Combine(longDir, "file.txt");
+
+            // A non-existent file path is considered:
+            // - In NetFX: an invalid name because paths that are too long are not correctly handled
+            // - NetCore: a valid name because long paths are correctly handled, and non-existent, as expected
+            AssertExtensions.Throws<FileNotFoundException, ArgumentException>(() =>
+            {
+                var security = new FileSecurity(filePath, AccessControlSections.Owner);
+            });
+        }
+
+        // Attempting to create a directory with a very long path in .NET Framework fails with DirectoryNotFoundException
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public void MaxLengthPath_DirectorySecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            string longDir = CreateLongDirectory(tempDirectory.Path);
+            var security = new DirectorySecurity(longDir, AccessControlSections.Owner);
+            Assert.NotNull(security);
+        }
+
+        // Attempting to create a directory with a very long path in .NET Framework fails with DirectoryNotFoundException
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [Fact]
+        public void MaxLengthPath_FileSecurity()
+        {
+            using TempDirectory tempDirectory = new TempDirectory();
+            string longDir = CreateLongDirectory(tempDirectory.Path);
+            using TempFile tempFile = new TempFile(Path.Combine(longDir, "file.txt"));
+            var security = new FileSecurity(tempFile.Path, AccessControlSections.Owner);
+            Assert.NotNull(security);
+        }
+
+        private string CreateLongDirectory(string basePath, bool create = true)
+        {
+            string name = TempDirectory.GetMaxLengthRandomName();
+
+            string fullPath = Path.Combine(basePath, name, name, name, name, name);
+
+            if (create)
+            {
+                Directory.CreateDirectory(fullPath);
+            }
+
+            return fullPath;
         }
     }
 }

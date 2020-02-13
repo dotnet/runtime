@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28AE24F8-BEF4-4358-B612-ADD9D587C8E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D5CBF2F-337C-4AEB-B035-A17D33A9BC1F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

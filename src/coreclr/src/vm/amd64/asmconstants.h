@@ -8,9 +8,9 @@
 // Allow multiple inclusion.
 
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
 #error this file should only be used on an AMD64 platform
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #include "../../inc/switches.h"
 
@@ -496,7 +496,7 @@ ASMCONSTANTS_C_ASSERT(MethodDescClassification__mdcClassification == mdcClassifi
 #define MethodDescClassification__mcInstantiated 0x5
 ASMCONSTANTS_C_ASSERT(MethodDescClassification__mcInstantiated == mcInstantiated);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define OFFSET__TEB__ThreadLocalStoragePointer 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__TEB__ThreadLocalStoragePointer == offsetof(TEB, ThreadLocalStoragePointer));
 #endif
@@ -531,10 +531,6 @@ ASMCONSTANTS_RUNTIME_ASSERT(STRING_BASE_SIZE == StringObject::GetBaseSize());
 #define               OFFSETOF__StringObject__m_StringLength 0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
                     == offsetof(StringObject, m_StringLength));
-
-#define               OFFSETOF__ArrayTypeDesc__m_Arg 0x10
-ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
-                    == offsetof(ArrayTypeDesc, m_Arg));
 
 // For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
 #define               OFFSETOF__InlinedCallFrame__m_Datum 0x10

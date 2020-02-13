@@ -1,4 +1,3 @@
-cmake_minimum_required (VERSION 2.6)
 project (CustomMarshalersConflictingNames)
 include_directories(${INC_PLATFORM_DIR})
 set(SOURCES CustomMarshalerNative.cpp )

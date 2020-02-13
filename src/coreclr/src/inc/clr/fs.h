@@ -10,7 +10,5 @@
 #define _clr_fs_h_
 
 #include "fs/path.h"
-#include "fs/file.h"
-#include "fs/dir.h"
 
 #endif // _clr_fs_h_

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -330,7 +332,8 @@ namespace System
             return false;
         }
 
-        public virtual bool IsAssignableFrom(Type? c)
+        [Intrinsic]
+        public virtual bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
             if (c == null)
                 return false;

@@ -729,15 +729,15 @@ Return Value:
             //
 
             UnwindOp = UnwindInfo->UnwindCode[Index].UnwindOp;
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
             if (UnwindOp > UWOP_SET_FPREG_LARGE) {
                 return E_UNEXPECTED;
             }
-#else // !PLATFORM_UNIX
+#else // !TARGET_UNIX
             if (UnwindOp > UWOP_PUSH_MACHFRAME) {
                 return E_UNEXPECTED;
             }
-#endif // !PLATFORM_UNIX
+#endif // !TARGET_UNIX
 
             OpInfo = UnwindInfo->UnwindCode[Index].OpInfo;
             if (PrologOffset >= UnwindInfo->UnwindCode[Index].CodeOffset) {
@@ -805,7 +805,7 @@ Return Value:
                     ContextRecord->Rsp -= UnwindInfo->FrameOffset * 16;
                     break;
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
 
                     //
                     // Establish the the frame pointer register using a large size displacement.
@@ -824,7 +824,7 @@ Return Value:
                     ContextRecord->Rsp -= FrameOffset * 16;
                     break;
 
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
                     //
                     // Save nonvolatile integer register on the stack using a
@@ -1142,7 +1142,7 @@ Arguments:
 
         FrameOffset = UnwindInfo->FrameOffset;
 
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
         // If UnwindInfo->FrameOffset == 15 (the maximum value), then there might be a UWOP_SET_FPREG_LARGE.
         // However, it is still legal for a UWOP_SET_FPREG to set UnwindInfo->FrameOffset == 15 (since this
         // was always part of the specification), so we need to look through the UnwindCode array to determine
@@ -1161,7 +1161,7 @@ Arguments:
                 Index += UnwindOpSlots(UnwindOp);
             }
         }
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
         *EstablisherFrame = (&ContextRecord->Rax)[UnwindInfo->FrameRegister];
         *EstablisherFrame -= FrameOffset * 16;
@@ -1174,14 +1174,14 @@ Arguments:
             if (UnwindOp.UnwindOp == UWOP_SET_FPREG) {
                 break;
             }
-#ifdef PLATFORM_UNIX
+#ifdef TARGET_UNIX
             else if (UnwindOp.UnwindOp == UWOP_SET_FPREG_LARGE) {
                 UNWINDER_ASSERT(UnwindInfo->FrameOffset == 15);
                 FrameOffset = UnwindInfo->UnwindCode[Index + 1].FrameOffset;
                 FrameOffset += UnwindInfo->UnwindCode[Index + 2].FrameOffset << 16;
                 break;
             }
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
             Index += UnwindOpSlots(UnwindOp);
         }

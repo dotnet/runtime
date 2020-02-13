@@ -107,23 +107,6 @@ namespace System.ComponentModel.Composition
             eventListener.VerifyCatalogRemove(() => aggCat.Catalogs.Remove(catalog), typeof(SampleCatalogExport));
         }
 
-        [Export]
-        public class SampleCatalogExport2 { }
-
-        [Fact]
-        [ActiveIssue(812029)]
-        public void CatalogMultipleAdds_ShouldFireEvents()
-        {
-            var catalog = new TypeCatalog(typeof(SampleCatalogExport));
-            var aggCat = new AggregateCatalog();
-            var container = ContainerFactory.Create(aggCat);
-            var eventListener = new ExportProviderListener(container, container);
-
-            var otherAggCat = new AggregateCatalog(new TypeCatalog(typeof(SampleCatalogExport)), new TypeCatalog(typeof(SampleCatalogExport2)));
-
-            eventListener.VerifyCatalogAdd(() => aggCat.Catalogs.Add(otherAggCat), typeof(SampleCatalogExport), typeof(SampleCatalogExport2));
-        }
-
         [Fact]
         public void CatalogNestedContainerAdds_ShouldFireEvents()
         {

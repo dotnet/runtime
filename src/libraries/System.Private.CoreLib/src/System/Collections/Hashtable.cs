@@ -662,7 +662,7 @@ namespace System.Collections
                     //     in the same bucket. So in the reader we need to check if the hash table is modified during above steps.
                     //
                     // Writers (Insert, Remove, Clear) will set 'isWriterInProgress' flag before it starts modifying
-                    // the hashtable and will ckear the flag when it is done.  When the flag is cleared, the 'version'
+                    // the hashtable and will clear the flag when it is done.  When the flag is cleared, the 'version'
                     // will be increased.  We will repeat the reading if a writer is in progress or done with the modification
                     // during the read.
                     //

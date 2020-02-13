@@ -17,6 +17,8 @@ namespace System
     {
         private static Func<string, object>? s_directoryCreateDirectory;
 
+        public static bool UserInteractive => true;
+
         private static string CurrentDirectoryCore
         {
             get => Interop.Sys.GetCwd();
@@ -74,7 +76,6 @@ namespace System
             {
                 Debug.Assert(option == SpecialFolderOption.Create);
 
-                // TODO #11151: Replace with Directory.CreateDirectory once we have access to System.IO.FileSystem here.
                 Func<string, object> createDirectory = LazyInitializer.EnsureInitialized(ref s_directoryCreateDirectory, () =>
                 {
                     Type dirType = Type.GetType("System.IO.Directory, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: true)!;
@@ -95,7 +96,7 @@ namespace System
             {
                 case SpecialFolder.CommonApplicationData: return "/usr/share";
                 case SpecialFolder.CommonTemplates: return "/usr/share/templates";
-#if PLATFORM_OSX
+#if TARGET_OSX
                 case SpecialFolder.ProgramFiles: return "/Applications";
                 case SpecialFolder.System: return "/System";
 #endif
@@ -151,7 +152,7 @@ namespace System
                 case SpecialFolder.MyVideos:
                     return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
 
-#if PLATFORM_OSX
+#if TARGET_OSX
                 case SpecialFolder.MyMusic:
                     return Path.Combine(home, "Music");
                 case SpecialFolder.MyPictures:

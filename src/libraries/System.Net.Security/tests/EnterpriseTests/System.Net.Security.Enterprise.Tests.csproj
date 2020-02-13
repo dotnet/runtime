@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- NegotiateStream Tests -->
+    <Compile Include="NegotiateStreamLoopbackTest.cs" />
+
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs">
+      <Link>Common\System\Net\EnterpriseTests\EnterpriseTestConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs">
+      <Link>Common\System\Net\VirtualNetwork\VirtualNetwork.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs">
+      <Link>Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

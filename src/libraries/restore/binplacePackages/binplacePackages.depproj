@@ -5,38 +5,39 @@
     <NETStandardVersion Condition="'$(TargetsNetStandard)' == 'true'">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
+    <TargetFrameworks>net461;net472;netstandard1.1;netstandard1.2;netstandard1.3;netstandard1.4;netstandard1.5;netstandard1.6;netstandard2.0;netstandard2.0;netcoreapp2.0;netcoreapp3.0;$(netcoreappCurrent)</TargetFrameworks>    
   </PropertyGroup>
 
     <!-- Ref binplacing for all configurations -->
   <ItemGroup>
-    <BinPlaceConfiguration Include="$(Configuration)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <RefPath>$(RefPath)</RefPath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <!-- Runtime / test-runtime binplacing, when we aren't building better live version of these libs -->
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <BinPlaceConfiguration Include="$(Configuration)">
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(RuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(Configuration)">
+    </BinPlaceTargetFrameworks>
+    <BinPlaceTargetFrameworks Include="$(TargetFramework)">
       <ItemName>BinPlaceLib</ItemName>
       <RuntimePath>$(TestHostRuntimePath)</RuntimePath>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFrameworks>
   </ItemGroup>
 
   <!-- This is to make sure that nothing unintended gets restored for netcoreapp. -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetFramework)' != '$(NetCoreAppCurrent)'">
     <!-- runtime dependency: System.Diagnostics.PerformanceCounters netcoreapp2.0,net461 -->
-    <PackageReference Include="System.Memory" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &gt;= 1.1)" />
+    <PackageReference Include="System.Memory" Version="4.5.3" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or ('$(TargetsNetStandard)' == 'true' and '$(NETStandardVersion)' &gt;= 1.1)" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' or '$(TargetsNetfx)' == 'true'" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.2" Condition="'$(TargetFramework)' == 'netcoreapp2.0' or '$(TargetsNetfx)' == 'true' or '$(TargetsNetStandard)' == 'true'" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.7.0" Condition="'$(TargetsNetfx)' == 'true'" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" Condition="'$(TargetsNetStandard)' != 'true' or '$(NETStandardVersion)' &gt;= 2.0" />
     <!-- Only include the assets from the direct packages we reference in the output -->
     <PackageToInclude Include="@(PackageReference)" />
   </ItemGroup>

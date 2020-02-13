@@ -11,12 +11,13 @@ parameters:
   testGroup: ''
   crossrootfsDir: ''
   corefxTests: false
+  liveLibrariesBuildConfig: ''
   stagedBuild: false
   strategy: ''
   pool: ''
 
   # arcade-specific parameters
-  condition: ''
+  condition: true
   continueOnError: false
   dependsOn: ''
   displayName: ''
@@ -40,16 +41,16 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     strategy: ${{ parameters.strategy }}
     pool: ${{ parameters.pool }}
-  
+
     # arcade-specific parameters
-    condition: ${{ parameters.condition }}
+    condition: and(succeeded(), ${{ parameters.condition }})
     continueOnError: ${{ parameters.continueOnError }}
     dependsOn: ${{ parameters.dependsOn }}
     displayName: ${{ parameters.displayName }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     gatherAssetManifests: ${{ parameters.gatherAssetManifests }}
-  
+
     variables:
     - ${{ if ne(parameters.testGroup, '') }}:
       - name: testArtifactRootName
@@ -88,7 +89,7 @@ jobs:
 
     - name: microsoftNetSdkIlFolderPath
       value: '$(Build.SourcesDirectory)/.packages/microsoft.net.sdk.il'
-      
+
     - name: microsoftNetSdkIlArtifactName
       value: 'MicrosoftNetSdkIlPackage_${{ parameters.managedTestBuildOsGroup }}${{ parameters.managedTestBuildOsSubgroup }}_$(archType)_$(buildConfig)'
 
@@ -102,6 +103,15 @@ jobs:
       - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
         - name: priorityArg
           value: '-priority=1'
+
+    - librariesBuildArtifactName: ''
+    - librariesOverrideArg: ''
+    - librariesDownloadDir: ''
+
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      - librariesDownloadDir: $(Build.SourcesDirectory)/artifacts
+      - librariesOverrideArg: ' /p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}

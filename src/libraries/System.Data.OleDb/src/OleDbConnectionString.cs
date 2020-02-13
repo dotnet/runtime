@@ -448,7 +448,7 @@ namespace System.Data.OleDb
             {
                 throw ODB.InvalidProviderSpecified();
             }
-            progid = progid.ToLower(CultureInfo.InvariantCulture);
+            progid = progid.ToLowerInvariant();
             if (IsMSDASQL(progid))
             {
                 // fail msdasql even if not on the machine.

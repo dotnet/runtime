@@ -14,14 +14,6 @@
 #endif
 #include "comcallablewrapper.h"
 
-//*****************************************************************************
-// Used by LoaderAllocator::Init for easier readability.
-#ifdef ENABLE_PERF_COUNTERS
-#define LOADERHEAP_PROFILE_COUNTER (&(GetPerfCounters().m_Loading.cbLoaderHeapSize))
-#else
-#define LOADERHEAP_PROFILE_COUNTER (NULL)
-#endif
-
 #ifndef CROSSGEN_COMPILE
 #define STUBMANAGER_RANGELIST(stubManager) (stubManager::g_pManager->GetRangeList())
 #else
@@ -1124,7 +1116,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
-#if !defined(BIT64)
+#if !defined(HOST_64BIT)
     // Make sure that we reserve as little as possible on 32-bit to save address space
     _ASSERTE(dwTotalReserveMemSize <= VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 #endif
@@ -1156,8 +1148,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
         m_pLowFrequencyHeap = new (&m_LowFreqHeapInstance) LoaderHeap(LOW_FREQUENCY_HEAP_RESERVE_SIZE,
                                                                       LOW_FREQUENCY_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
-                                                                      dwLowFrequencyHeapReserveSize,
-                                                                      LOADERHEAP_PROFILE_COUNTER);
+                                                                      dwLowFrequencyHeapReserveSize);
         initReservedMem += dwLowFrequencyHeapReserveSize;
     }
 
@@ -1169,7 +1160,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                                       STUB_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
-                                                                      LOADERHEAP_PROFILE_COUNTER,
                                                                       NULL,
                                                                       TRUE /* Make heap executable */
                                                                       );
@@ -1179,8 +1169,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pHighFrequencyHeap = new (&m_HighFreqHeapInstance) LoaderHeap(HIGH_FREQUENCY_HEAP_RESERVE_SIZE,
                                                                     HIGH_FREQUENCY_HEAP_COMMIT_SIZE,
                                                                     initReservedMem,
-                                                                    dwHighFrequencyHeapReserveSize,
-                                                                    LOADERHEAP_PROFILE_COUNTER);
+                                                                    dwHighFrequencyHeapReserveSize);
     initReservedMem += dwHighFrequencyHeapReserveSize;
 
     if (IsCollectible())
@@ -1194,7 +1183,6 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
                                                        STUB_HEAP_COMMIT_SIZE,
                                                        initReservedMem,
                                                        dwStubHeapReserveSize,
-                                                       LOADERHEAP_PROFILE_COUNTER,
                                                        STUBMANAGER_RANGELIST(StubLinkStubManager),
                                                        TRUE /* Make heap executable */);
 

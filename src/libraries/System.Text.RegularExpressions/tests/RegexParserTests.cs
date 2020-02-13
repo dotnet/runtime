@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 using Xunit.Sdk;
 
@@ -15,8 +17,11 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexParserTests()
         {
-            s_parseExceptionType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexParseException", true);
-            s_parseErrorField = s_parseExceptionType.GetField("_error", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (!PlatformDetection.IsNetFramework)
+            {
+                s_parseExceptionType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexParseException", true);
+                s_parseErrorField = s_parseExceptionType.GetField("_error", BindingFlags.NonPublic | BindingFlags.Instance);
+            }
         }
 
         [Theory]
@@ -378,7 +383,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-\c>]", RegexOptions.None, RegexParseError.UnrecognizedControl)]
         [InlineData(@"[a--]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[--a]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-]", RegexOptions.None, null)]
         [InlineData(@"[\--a]", RegexOptions.None, null)]
         [InlineData(@"[\0-\1]", RegexOptions.None, null)]
         [InlineData(@"[\1-\0]", RegexOptions.None, RegexParseError.ReversedCharRange)]
@@ -423,13 +427,8 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[\cB-\ca]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[\cB-\cA]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[\--#]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-b]", RegexOptions.None, null)]
-        [InlineData(@"[a-\-\-b]", RegexOptions.None, null)]
         [InlineData(@"[b-\-a]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"[b-\-\-a]", RegexOptions.None, RegexParseError.ReversedCharRange)]
-        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.BadClassInCharRange)]
-        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.BadClassInCharRange)]
-        [InlineData(@"[a -\-\b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
         [InlineData(@"()\2", RegexOptions.None, RegexParseError.UndefinedBackref)]
         [InlineData(@"()()\2", RegexOptions.None, null)]
         [InlineData(@"()\1", RegexOptions.ExplicitCapture, RegexParseError.UndefinedBackref)]
@@ -713,6 +712,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\d{2147483648}", RegexOptions.None, RegexParseError.CaptureGroupOutOfRange)]
         [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.TooManyAlternates)]
+        [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket)]
         public void Parse(string pattern, RegexOptions options, object errorObj)
         {
             RegexParseError? error = (RegexParseError?)errorObj;
@@ -725,6 +725,12 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
+        [InlineData(@"[a-\-]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\-b]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\D]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a-\-\-\D]", RegexOptions.None, RegexParseError.ReversedCharRange)]
+        [InlineData(@"[a -\-\b]", RegexOptions.None, null)]
         // OutOfMemoryException
         [InlineData("a{2147483647}", RegexOptions.None, null)]
         [InlineData("a{2147483647,}", RegexOptions.None, null)]
@@ -799,9 +805,25 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("a{0,2147483648}", RegexOptions.None, RegexParseError.CaptureGroupOutOfRange)]
         // Surrogate pair which is parsed as [char,char-char,char] as we operate on UTF-16 code units.
         [InlineData("[\uD82F\uDCA0-\uD82F\uDCA3]", RegexOptions.IgnoreCase, RegexParseError.ReversedCharRange)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Parse_NotNetFramework(string pattern, RegexOptions options, object error)
         {
             Parse(pattern, options, error);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void RegexParseException_Serializes()
+        {
+            ArgumentException e = Assert.ThrowsAny<ArgumentException>(() => new Regex("(abc|def"));
+
+            var bf = new BinaryFormatter();
+            var s = new MemoryStream();
+            bf.Serialize(s, e);
+            s.Position = 0;
+
+            ArgumentException e2 = (ArgumentException)bf.Deserialize(s);
+            Assert.Equal(e.Message, e2.Message);
         }
 
         private static void ParseSubTrees(string pattern, RegexOptions options)
@@ -857,11 +879,19 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         private static void Throws(RegexParseError error, Action action)
         {
+            // If no specific error is supplied, or we are running on .NET Framework where RegexParseException doesn't exist
+            // we expect an ArgumentException.
+            if (PlatformDetection.IsNetFramework)
+            {
+                Assert.ThrowsAny<ArgumentException>(action);
+                return;
+            }
+
             try
             {
                 action();
             }
-            catch (Exception e)
+            catch (ArgumentException e)
             {
                 // We use reflection to check if the exception is an internal RegexParseException
                 // and extract its error property and compare with the given one.

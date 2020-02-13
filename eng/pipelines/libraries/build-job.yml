@@ -1,0 +1,195 @@
+parameters:
+  buildConfig: ''
+  osGroup: ''
+  osSubgroup: ''
+  archType: ''
+  crossrootfsDir: ''
+  framework: ''
+  isOfficialBuild: false
+  isOfficialAllConfigurations: false
+
+  # When set to a non-empty value (Debug / Release), it determines the runtime's
+  # build configuration to use for building libraries and tests. Setting this
+  # property implies a dependency of this job on the appropriate runtime build
+  # and is used to construct the name of the Azure artifact representing
+  # runtime build to use for building the libraries and library tests.
+  liveRuntimeBuildConfig: ''
+  runtimeFlavor: 'coreclr'
+
+  timeoutInMinutes: 150
+  preBuildSteps: []
+  container: ''
+  condition: true
+  variables: {}
+  pool: ''
+  runTests: false
+  testScope: ''
+
+jobs:
+  - template: /eng/pipelines/libraries/base-job.yml
+    parameters:
+      buildConfig: ${{ parameters.buildConfig }}
+      osGroup:  ${{ parameters.osGroup }}
+      osSubgroup:  ${{ parameters.osSubgroup }}
+      archType:  ${{ parameters.archType }}
+      crossrootfsDir: ${{ parameters.crossrootfsDir }}
+      framework:  ${{ parameters.framework }}
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
+      liveRuntimeBuildConfig: ${{ parameters.liveRuntimeBuildConfig }}
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+      preBuildSteps: ${{ parameters.preBuildSteps }}
+      container: ${{ parameters.container }}
+      condition: ${{ parameters.condition }}
+      pool: ${{ parameters.pool }}
+      testScope: ${{ parameters.testScope }}
+      name: build
+      displayName: 'Build'
+
+      ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        dependsOn:
+        - ${{ if ne(parameters.osGroup, 'WebAssembly') }}:
+          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - ${{ format('{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeFlavor, 'linux', parameters.osSubgroup, 'x64', parameters.liveRuntimeBuildConfig) }}
+
+      variables:
+        - _skipTestRestoreArg: /p:SkipTestRestore=true
+        - _buildAction: -build
+        - ${{ parameters.variables }}
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - EMSDK_PATH: $(Build.BinariesDirectory)/emsdk
+        - ${{ if eq(parameters.runTests, true) }}:
+          - _buildAction: -build -buildtests /p:ArchiveTests=true
+          - ${{ if ne(parameters.framework, 'allConfigurations') }}:
+            - _skipTestRestoreArg: /p:SkipTestRestore=false
+
+        - ${{ parameters.variables }}
+
+      steps:
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          - script: |
+              brew install pkgconfig icu4c openssl
+              brew link --force icu4c
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
+              ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+            displayName: Install Build Dependencies
+
+        - ${{ if eq(parameters.osGroup, 'WebAssembly') }}:
+          - script: |
+              EMSCRIPTEN_VERSION=1.38.47
+              git clone https://github.com/emscripten-core/emsdk.git $(EMSDK_PATH)
+              cd $(EMSDK_PATH)
+              ./emsdk install ${EMSCRIPTEN_VERSION}-upstream
+              ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
+            displayName: Install Emscripten
+
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - template: /eng/pipelines/common/restore-internal-tools.yml
+            parameters:
+              installDotnet: true
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
+          displayName: Restore
+
+        - script: $(_buildScript)
+                $(_buildAction)
+                $(_buildArguments)
+          displayName: Build
+
+        - ${{ if eq(parameters.runTests, false) }}:
+          - task: CopyFiles@2
+            displayName: Prepare ref folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref
+
+          - task: CopyFiles@2
+            displayName: Prepare runtime folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/runtime
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/runtime
+
+          - task: CopyFiles@2
+            displayName: Prepare shared framework ref assemblies to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/ref/microsoft.netcore.app
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/ref/microsoft.netcore.app
+
+          - task: CopyFiles@2
+            displayName: Prepare shared framework runtime folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
+
+          - task: CopyFiles@2
+            displayName: Prepare docs folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/docs
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/docs
+
+          - task: CopyFiles@2
+            displayName: Prepare native folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/native
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/native
+
+          - task: CopyFiles@2
+            displayName: Prepare testhost folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/testhost
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/testhost
+            condition: ne(variables['_skipTestHostCopy'], 'true')
+
+          - task: CopyFiles@2
+            displayName: Prepare artifacts toolset folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/toolset
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/toolset
+
+          - task: CopyFiles@2
+            displayName: Prepare artifacts packages folder to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+            condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
+
+          - task: CopyFiles@2
+            displayName: Prepare tmp assets to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/tmp
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/tmp
+
+          - template: /eng/pipelines/common/upload-artifact-step.yml
+            parameters:
+              rootFolder: $(Build.ArtifactStagingDirectory)/artifacts
+              includeRootFolder: false
+              archiveType: $(archiveType)
+              archiveExtension: $(archiveExtension)
+              tarCompression: $(tarCompression)
+              artifactName: $(librariesBuildArtifactName)
+              displayName: Build Assets
+
+          # Save AllConfigurations artifacts using the prepare-signed-artifacts format. The
+          # platform-specific jobs' nupkgs automatically flow through the matching platform-specific
+          # Installer build, but AllConfigurations should only be uploaded once, here.
+          - ${{ if eq(parameters.isOfficialAllConfigurations, true) }}:
+            - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+              parameters:
+                name: Libraries_AllConfigurations
+
+        - ${{ if eq(parameters.runTests, true) }}:
+          - template: /eng/pipelines/libraries/helix.yml
+            parameters:
+              targetOS: ${{ parameters.osGroup }}
+              archGroup: ${{ parameters.archType }}
+              configuration: ${{ parameters.buildConfig }}
+              helixQueues: ${{ join('+', parameters.helixQueues) }}
+              msbuildScript: $(_msbuildCommand)
+              framework: ${{ parameters.framework }}
+              testScope: ${{ parameters.testScope }}
+              creator: dotnet-bot
+              helixToken: ''
+              testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
+              extraHelixArguments: $(_extraHelixArguments)

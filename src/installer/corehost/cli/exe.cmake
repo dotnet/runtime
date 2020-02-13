@@ -4,6 +4,9 @@
 
 project (${DOTNET_PROJECT_NAME})
 
+cmake_policy(SET CMP0011 NEW)
+cmake_policy(SET CMP0083 NEW)
+
 include(${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 
 # Include directories
@@ -13,12 +16,12 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/fxr)
 list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/fxr_resolver.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../corehost.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../common/trace.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../common/utils.cpp)
+)
 
 add_executable(${DOTNET_PROJECT_NAME} ${SOURCES} ${RESOURCES})
+target_link_libraries(${DOTNET_PROJECT_NAME} libhostmisc)
 
-if(NOT WIN32)
+if(NOT CLR_CMAKE_TARGET_WIN32)
     disable_pax_mprotect(${DOTNET_PROJECT_NAME})
 endif()
 

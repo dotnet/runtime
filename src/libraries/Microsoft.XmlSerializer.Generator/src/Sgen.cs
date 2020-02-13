@@ -309,7 +309,7 @@ namespace Microsoft.XmlSerializer.Generator
                     //However when a path ending with backslash, if followed by double quote, it becomes an escapte sequence
                     //e.g. "obj\Debug\netcoreapp2.0\", it will be converted as obj\Debug\netcoreapp2.0", which is not valid and not exist
                     //We need remove the ending quote for this situation
-                    if (!outputDirectory.EndsWith("\"") || !Directory.Exists(outputDirectory = outputDirectory.Remove(outputDirectory.Length - 1)))
+                    if (!outputDirectory.EndsWith("\"", StringComparison.Ordinal) || !Directory.Exists(outputDirectory = outputDirectory.Remove(outputDirectory.Length - 1)))
                     {
                         throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, outputDirectory));
                     }

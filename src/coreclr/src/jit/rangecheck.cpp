@@ -334,7 +334,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreeOp* binop)
     // Check if we have a var + const.
     if (op2->OperGet() == GT_LCL_VAR)
     {
-        jitstd::swap(op1, op2);
+        std::swap(op1, op2);
     }
     if (op1->OperGet() != GT_LCL_VAR)
     {
@@ -362,7 +362,7 @@ bool RangeCheck::IsMonotonicallyIncreasing(GenTree* expr, bool rejectNegativeCon
     JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
 
     // Add hashtable entry for expr.
-    bool alreadyPresent = !m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
+    bool alreadyPresent = m_pSearchPath->Set(expr, nullptr, SearchPath::Overwrite);
     if (alreadyPresent)
     {
         return true;

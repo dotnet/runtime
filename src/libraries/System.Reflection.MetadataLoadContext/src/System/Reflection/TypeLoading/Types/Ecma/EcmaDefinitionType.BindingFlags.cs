@@ -16,7 +16,7 @@ namespace System.Reflection.TypeLoading.Ecma
         //
         // - All GetConstructor() apis act as if BindingFlags.DeclaredOnly were specified. So the ReflectedType will always be the declaring type and so is not passed to this method.
         //
-        internal sealed override IEnumerable<ConstructorInfo> SpecializeConstructors(NameFilter filter, RoInstantiationProviderType declaringType)
+        internal sealed override IEnumerable<ConstructorInfo> SpecializeConstructors(NameFilter? filter, RoInstantiationProviderType declaringType)
         {
             MetadataReader reader = Reader;
             foreach (MethodDefinitionHandle handle in TypeDefinition.GetMethods())
@@ -30,7 +30,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override IEnumerable<MethodInfo> SpecializeMethods(NameFilter filter, Type reflectedType, RoInstantiationProviderType declaringType)
+        internal sealed override IEnumerable<MethodInfo> SpecializeMethods(NameFilter? filter, Type reflectedType, RoInstantiationProviderType declaringType)
         {
             MetadataReader reader = Reader;
             foreach (MethodDefinitionHandle handle in TypeDefinition.GetMethods())
@@ -44,7 +44,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override IEnumerable<EventInfo> SpecializeEvents(NameFilter filter, Type reflectedType, RoInstantiationProviderType declaringType)
+        internal sealed override IEnumerable<EventInfo> SpecializeEvents(NameFilter? filter, Type reflectedType, RoInstantiationProviderType declaringType)
         {
             MetadataReader reader = Reader;
             foreach (EventDefinitionHandle handle in TypeDefinition.GetEvents())
@@ -54,7 +54,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override IEnumerable<FieldInfo> SpecializeFields(NameFilter filter, Type reflectedType, RoInstantiationProviderType declaringType)
+        internal sealed override IEnumerable<FieldInfo> SpecializeFields(NameFilter? filter, Type reflectedType, RoInstantiationProviderType declaringType)
         {
             MetadataReader reader = Reader;
             foreach (FieldDefinitionHandle handle in TypeDefinition.GetFields())
@@ -64,7 +64,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override IEnumerable<PropertyInfo> SpecializeProperties(NameFilter filter, Type reflectedType, RoInstantiationProviderType declaringType)
+        internal sealed override IEnumerable<PropertyInfo> SpecializeProperties(NameFilter? filter, Type reflectedType, RoInstantiationProviderType declaringType)
         {
             MetadataReader reader = Reader;
             foreach (PropertyDefinitionHandle handle in TypeDefinition.GetProperties())
@@ -74,7 +74,7 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter filter)
+        internal sealed override IEnumerable<RoType> GetNestedTypesCore(NameFilter? filter)
         {
             MetadataReader reader = Reader;
             foreach (TypeDefinitionHandle handle in TypeDefinition.GetNestedTypes())
@@ -85,9 +85,9 @@ namespace System.Reflection.TypeLoading.Ecma
             }
         }
 
-        internal sealed override RoDefinitionType GetNestedTypeCore(ReadOnlySpan<byte> utf8Name)
+        internal sealed override RoDefinitionType? GetNestedTypeCore(ReadOnlySpan<byte> utf8Name)
         {
-            RoDefinitionType match = null;
+            RoDefinitionType? match = null;
             MetadataReader reader = Reader;
             foreach (TypeDefinitionHandle handle in TypeDefinition.GetNestedTypes())
             {

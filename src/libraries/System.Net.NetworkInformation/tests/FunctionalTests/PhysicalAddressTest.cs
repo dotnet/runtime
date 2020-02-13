@@ -116,49 +116,150 @@ namespace System.Net.NetworkInformation.Tests
             };
         }
 
-        [Theory]
-        [MemberData(nameof(RoundtripParseToString_String_Bytes))]
-        public void Parse_Valid_Success(string address, byte[] expectedBytes)
+        public static IEnumerable<object[]> InvalidAddressStrings()
         {
-            PhysicalAddress parsedAddress = PhysicalAddress.Parse(address);
-            byte[] addressBytes = parsedAddress.GetAddressBytes();
-            Assert.Equal(addressBytes, expectedBytes);
+            yield return new object[] { "F" };
+            yield return new object[] { "M0" };
+            yield return new object[] { "33-3" };
+            yield return new object[] { "D2-C3-" };
+            yield return new object[] { "D2-A33" };
+            yield return new object[] { "B4-A5-F01" };
+            yield return new object[] { "00:111:22:33:44:55" };
+            yield return new object[] { "0:1:22:33:44:55" };
+            yield return new object[] { "0:0:1:1:22:33:44:55" };
+            yield return new object[] { ":::00112233444" };
+            yield return new object[] { "0011:2233" };
+            yield return new object[] { "0011:2233:4455:6677" };
+            yield return new object[] { "0011:2233:4455:6677:8899:0011" };
+            yield return new object[] { "001:12233:4455" };
+            yield return new object[] { "0011:2233:" };
+            yield return new object[] { "0011:2233:44555" };
+            yield return new object[] { "001.12233.4455" };
+            yield return new object[] { "0011.2233." };
+            yield return new object[] { "0011.2233.44555" };
+            yield return new object[] { "00.111.22.33.44.55" };
+            yield return new object[] { "001.122.334.455" };
         }
 
         [Theory]
-        [InlineData("F")]
-        [InlineData("M0")]
-        [InlineData("33-3")]
-        [InlineData("D2-C3-")]
-        [InlineData("D2-A33")]
-        [InlineData("B4-A5-F01")]
-        [InlineData("00:111:22:33:44:55")]
-        [InlineData("0:1:22:33:44:55")]
-        [InlineData("0:0:1:1:22:33:44:55")]
-        [InlineData(":::00112233444")]
-        [InlineData("0011:2233")]
-        [InlineData("0011:2233:4455:6677")]
-        [InlineData("0011:2233:4455:6677:8899:0011")]
-        [InlineData("001:12233:4455")]
-        [InlineData("0011:2233:")]
-        [InlineData("0011:2233:44555")]
-        [InlineData("001.12233.4455")]
-        [InlineData("0011.2233.")]
-        [InlineData("0011.2233.44555")]
-        [InlineData("00.111.22.33.44.55")]
-        [InlineData("001.122.334.455")]
+        [MemberData(nameof(RoundtripParseToString_String_Bytes))]
+        public void ParseString_Valid_Success(string address, byte[] expectedBytes)
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(address);
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(expectedBytes, addressBytes);
+        }
 
-        public void Parse_Invalid_ThrowsFormatException(string address)
+        [Fact]
+        public void ParseString_Null_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(null);
+            Assert.Equal(PhysicalAddress.None, parsedAddress);
+        }
+
+        [Fact]
+        public void ParseString_Empty_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(string.Empty);
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Empty(addressBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundtripParseToString_String_Bytes))]
+        public void TryParseString_Valid_Success(string address, byte[] expectedBytes)
+        {
+            Assert.True(PhysicalAddress.TryParse(address, out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void TryParseString_Null_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(null, out PhysicalAddress parsedAddress));
+            Assert.Equal(PhysicalAddress.None, parsedAddress);
+        }
+
+        [Fact]
+        public void TryParseString_Empty_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(string.Empty, out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Empty(addressBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundtripParseToString_String_Bytes))]
+        public void ParseSpan_Valid_Success(string address, byte[] expectedBytes)
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(address.AsSpan());
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void ParseSpan_Empty_Success()
+        {
+            PhysicalAddress parsedAddress = PhysicalAddress.Parse(new ReadOnlySpan<char>());
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Empty(addressBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(RoundtripParseToString_String_Bytes))]
+        public void TryParseSpan_Valid_Success(string address, byte[] expectedBytes)
+        {
+            Assert.True(PhysicalAddress.TryParse(address.AsSpan(), out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Equal(expectedBytes, addressBytes);
+        }
+
+        [Fact]
+        public void TryParseSpan_Empty_Success()
+        {
+            Assert.True(PhysicalAddress.TryParse(new ReadOnlySpan<char>(), out PhysicalAddress parsedAddress));
+            byte[] addressBytes = parsedAddress.GetAddressBytes();
+            Assert.Empty(addressBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidAddressStrings))]
+        public void ParseString_Invalid_ThrowsFormatException(string address)
         {
             FormatException ex = Assert.Throws<FormatException>(() => PhysicalAddress.Parse(address));
             Assert.Contains(address, ex.Message);
         }
 
+        [Theory]
+        [MemberData(nameof(InvalidAddressStrings))]
+        public void TryParseString_Invalid_ReturnsFalse(string address)
+        {
+            Assert.False(PhysicalAddress.TryParse(address, out PhysicalAddress value));
+            Assert.Null(value);
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidAddressStrings))]
+        public void ParseSpan_Invalid_ThrowsFormatException(string address)
+        {
+            FormatException ex = Assert.Throws<FormatException>(() => PhysicalAddress.Parse(address.AsSpan()));
+            Assert.Contains(address, ex.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidAddressStrings))]
+        public void TryParseSpan_Invalid_ReturnsFalse(string address)
+        {
+            Assert.False(PhysicalAddress.TryParse(address.AsSpan(), out PhysicalAddress value));
+            Assert.Null(value);
+        }
+
         [Fact]
-        public void ToString_NullAddress_NullReferenceException()
+        public void ToString_NullAddress_EmptyString()
         {
             var pa = new PhysicalAddress(null);
-            Assert.Throws<NullReferenceException>(() => pa.ToString());
+            Assert.Equal("", pa.ToString());
         }
 
         [Theory]

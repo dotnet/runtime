@@ -8,10 +8,7 @@ namespace System.Globalization
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed class SortVersion :
-#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
-        IEquatable<SortVersion>
-#nullable restore
+    public sealed class SortVersion : IEquatable<SortVersion?>
     {
         private readonly int m_NlsVersion; // Do not rename (binary serialization)
         private Guid m_SortId; // Do not rename (binary serialization)

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->
@@ -24,8 +24,8 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ReadLink.cs">
-      <Link>Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\UnixCommandLinePing.cs">
       <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
@@ -33,8 +33,5 @@
     <Compile Include="$(CommonTestPath)System\Net\Capability.RawSocketPermissions.cs">
       <Link>Common\System\Net\Capability.RawSocketPermissions.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Buffers" />
   </ItemGroup>
 </Project>

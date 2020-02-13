@@ -1,7 +1,7 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <!-- Currently the netstandard build is locked to the netfx API -->
+    <!-- Currently the netstandard build is locked to the $(NetFrameworkCurrent) API -->
     <AssemblyVersion Condition="'$(TargetsNetStandard)' == 'true'">4.0.4.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
   </PropertyGroup>

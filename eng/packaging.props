@@ -3,7 +3,6 @@
     <PackageDescriptionFile>$(PkgDir)descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <RuntimeIdGraphDefinitionFile>$(PkgDir)Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl Condition="'$(ProjectUrl)' == ''">https://github.com/dotnet/corefx</ProjectUrl>
     <Copyright>$(CopyrightNetFoundation)</Copyright>
@@ -13,7 +12,7 @@
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
 
     <!-- Used by PackageLibs.targets -->
-    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
+    <XmlDocFileRoot>$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/IntellisenseFiles/netcoreapp</XmlDocFileRoot>
 
     <!-- By default the packaging targets will package desktop facades as ref,
          but we don't use this as we now build partial-reference-facades. -->
@@ -30,7 +29,7 @@
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
     <!-- Don't build referenced projects -->
     <BuildPackageLibraryReferences>false</BuildPackageLibraryReferences>

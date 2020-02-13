@@ -5,6 +5,7 @@
 #include "common.h"
 #include "assemblybinder.hpp"
 #include "clrprivbindercoreclr.h"
+#include "variables.hpp"
 
 using namespace BINDER_SPACE;
 
@@ -71,12 +72,29 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByName(IAssemblyName     *pIAssemblyNa
             // 2) An assembly with the same simple name was already loaded in the context of the current binder but we ran into a Ref/Def
             //    mismatch (either due to version difference or strong-name difference).
             //
-            // Thus, if default binder has been overridden, then invoke it in an attempt to perform the binding for it make the call
-            // of what to do next. The host-overridden binder can either fail the bind or return reference to an existing assembly
-            // that has been loaded.
-
-            // Attempt to resolve the assembly via managed TPA ALC instance if one exists
+            // Attempt to resolve the assembly via managed ALC instance. This can either fail the bind or return reference to an existing
+            // assembly that has been loaded
             INT_PTR pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
+            if (pManagedAssemblyLoadContext == NULL)
+            {
+                // For satellite assemblies, the managed ALC has additional resolution logic (defined by the runtime) which
+                // should be run even if the managed default ALC has not yet been used. (For non-satellite assemblies, any
+                // additional logic comes through a user-defined event handler which would have initialized the managed ALC,
+                // so if the managed ALC is not set yet, there is no additional logic to run)
+                SString &culture = pAssemblyName->GetCulture();
+                if (!culture.IsEmpty() && !culture.EqualsCaseInsensitive(g_BinderVariables->cultureNeutral))
+                {
+                    // Make sure the managed default ALC is initialized.
+                    GCX_COOP();
+                    PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__INITIALIZE_DEFAULT_CONTEXT);
+                    DECLARE_ARGHOLDER_ARRAY(args, 0);
+                    CALL_MANAGED_METHOD_NORET(args)
+
+                    pManagedAssemblyLoadContext = GetManagedAssemblyLoadContext();
+                    _ASSERTE(pManagedAssemblyLoadContext != NULL);
+                }
+            }
+
             if (pManagedAssemblyLoadContext != NULL)
             {
                 hr = AssemblyBinder::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName, pIAssemblyName,
@@ -179,13 +197,6 @@ Exit:;
     return hr;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-
-HRESULT CLRPrivBinderCoreCLR::GetBinderID(
-        UINT_PTR *pBinderId)
-{
-    *pBinderId = reinterpret_cast<UINT_PTR>(this);
-    return S_OK;
-}
 
 HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,

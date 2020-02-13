@@ -3,7 +3,8 @@
     <AssemblyName>System.Net.Ping</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
@@ -62,17 +63,17 @@
       <Link>Common\System\Net\NetworkInformation\UnixCommandLinePing.cs</Link>
     </Compile>
     <!-- Interop -->
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
-      <Link>Interop\Unix\System.Native\Interop.Close.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Close.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.ReadLink.cs">
-      <Link>Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ReadLink.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.ReadLink.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Socket.cs</Link>
@@ -105,15 +106,6 @@
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ICMP.cs">
       <Link>Common\Interop\Windows\IpHlpApi\Interop.ICMP.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.closesocket.cs">
       <Link>Common\Interop\Windows\WinSock\Interop.closesocket.cs</Link>
     </Compile>
@@ -121,7 +113,7 @@
       <Link>Common\Interop\Windows\WinSock\Interop.WSASocketW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
+      <Link>Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs</Link>
     </Compile>
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Sockets\SocketType.cs">
@@ -132,22 +124,18 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />

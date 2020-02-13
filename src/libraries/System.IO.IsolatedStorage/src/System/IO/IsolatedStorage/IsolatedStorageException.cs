@@ -15,7 +15,7 @@ namespace System.IO.IsolatedStorage
 
         // All the exceptions from IsolatedStorage are wrapped as IsolatedStorageException,
         // this field is used to provide the underlying exception under debugger.
-        internal Exception _underlyingException;
+        internal Exception? _underlyingException;
 
         public IsolatedStorageException()
             : base(SR.IsolatedStorage_Exception)
@@ -23,13 +23,13 @@ namespace System.IO.IsolatedStorage
             HResult = COR_E_ISOSTORE;
         }
 
-        public IsolatedStorageException(string message)
+        public IsolatedStorageException(string? message)
             : base(message)
         {
             HResult = COR_E_ISOSTORE;
         }
 
-        public IsolatedStorageException(string message, Exception inner)
+        public IsolatedStorageException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = COR_E_ISOSTORE;

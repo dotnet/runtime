@@ -1519,7 +1519,7 @@ namespace System.Xml
             else if (nsIndex == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(new SecureStringHasher());
+                _nsHashtable = new Dictionary<string, int>();
                 for (int i = 0; i <= nsIndex; i++)
                 {
                     AddToNamespaceHashtable(i);
@@ -1655,7 +1655,7 @@ namespace System.Xml
         // Unfortunatelly the names of elements and attributes are not validated by the XmlTextWriter.
         // Also this method does not check wheather the character after ':' is a valid start name character. It accepts
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
-        private unsafe void ValidateName(string name, bool isNCName)
+        private void ValidateName(string name, bool isNCName)
         {
             if (name == null || name.Length == 0)
             {

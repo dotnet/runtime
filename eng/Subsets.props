@@ -47,15 +47,22 @@
       artifacts to the test layout, then running the test subset.
   -->
 
-  <!-- Import only when imported by Arcade's Build.proj as we import Directory.Build.props ourselves. -->
-  <Import Project="$(RepoRoot)Directory.Build.props" Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'" />
+  <PropertyGroup>
+    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
+    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
+    <MonoProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono'))</MonoProjectRoot>
+    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
+    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
+    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+  </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultSubsetCategories>libraries-installer-coreclr</DefaultSubsetCategories>
+    <DefaultSubsetCategories>libraries-installer-coreclr-mono</DefaultSubsetCategories>
     <DefaultInstallerSubsets>corehost-managed-depproj-pkgproj-bundle-installers-test</DefaultInstallerSubsets>
     <!-- TODO: Split into multiple sets. -->
     <DefaultLibrariesSubsets>all</DefaultLibrariesSubsets>
     <DefaultCoreClrSubsets>all</DefaultCoreClrSubsets>
+    <DefaultMonoSubsets>all</DefaultMonoSubsets>
 
     <_subsetCategory Condition="'$(SubsetCategory)' != ''">$(SubsetCategory.ToLowerInvariant())</_subsetCategory>
     <_subsetCategory Condition="'$(SubsetCategory)' == ''">$(DefaultSubsetCategories)</_subsetCategory>
@@ -63,6 +70,7 @@
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('installer'))">$(DefaultInstallerSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('libraries'))">$(_subset)$(DefaultLibrariesSubsets)</_subset>
     <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('coreclr'))">$(_subset)$(DefaultCoreClrSubsets)</_subset>
+    <_subset Condition="'$(Subset)' == '' and $(_subsetCategory.Contains('mono'))">$(_subset)$(DefaultMonoSubsets)</_subset>
   </PropertyGroup>
 
   <ItemGroup>
@@ -71,9 +79,12 @@
 
     <!-- Libraries -->
     <SubsetName Include="All" Category="Libraries" Description="The .NET libraries comprising the shared framework." />
-    
+
     <!-- CoreClr -->
     <SubsetName Include="All" Category="CoreClr" Description="The .NET runtime." />
+
+    <!-- Mono -->
+    <SubsetName Include="All" Category="Mono" Description="The Mono .NET runtime." />
 
     <!-- Installer -->
     <SubsetName Include="All" Category="Installer" Description="The .NET Core hosts, hosting libraries, bundles, and installers. Includes these projects' tests." />
@@ -91,14 +102,41 @@
     <ProjectToBuild Include="$(RepoToolsLocalDir)regenerate-readme-table.proj" />
   </ItemGroup>
 
-  <!-- Libraries sets -->
-  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('all'))">
-    <ProjectToBuild Include="$(LibrariesProjectRoot)build.proj" />
-  </ItemGroup>
+  <ItemDefinitionGroup Condition="'$(CoreCLRConfiguration)' != ''">
+    <CoreClrProjectToBuild>
+      <AdditionalProperties>Configuration=$(CoreCLRConfiguration)</AdditionalProperties>
+    </CoreClrProjectToBuild>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(MonoConfiguration)' != ''">
+    <MonoProjectToBuild>
+      <AdditionalProperties>Configuration=$(MonoConfiguration)</AdditionalProperties>
+    </MonoProjectToBuild>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(LibrariesConfiguration)' != ''">
+    <LibrariesProjectToBuild>
+      <AdditionalProperties>Configuration=$(LibrariesConfiguration)</AdditionalProperties>
+    </LibrariesProjectToBuild>
+  </ItemDefinitionGroup>
 
   <!-- CoreClr sets -->
   <ItemGroup Condition="$(_subsetCategory.Contains('coreclr')) and $(_subset.Contains('all'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" />
+    <CoreClrProjectToBuild Include="$(CoreClrProjectRoot)coreclr.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CoreClrProjectToBuild)" />
+  </ItemGroup>
+
+  <!-- Mono sets -->
+  <ItemGroup Condition="$(_subsetCategory.Contains('mono')) and $(_subset.Contains('all'))">
+    <MonoProjectToBuild Include="$(MonoProjectRoot)mono.proj" BuildInParallel="false" />
+    <MonoProjectToBuild Include="$(MonoProjectRoot)netcore\System.Private.CoreLib\System.Private.CoreLib.csproj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(MonoProjectToBuild)" />
+  </ItemGroup>
+
+  <!-- Libraries sets -->
+  <ItemGroup Condition="$(_subsetCategory.Contains('libraries')) and $(_subset.Contains('all'))">
+    <LibrariesProjectToBuild Include="$(LibrariesProjectRoot)build.proj" BuildInParallel="false" />
+    <ProjectToBuild Include="@(LibrariesProjectToBuild)" />
   </ItemGroup>
 
   <!-- Installer sets -->
@@ -114,23 +152,23 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('depproj'))">
-    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="Binaries" />
+    <DepprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.depproj" SignPhase="R2RBinaries" BuildInParallel="false" />
     <ProjectToBuild Include="@(DepprojProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('pkgproj'))">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(PkgprojProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('bundle'))">
-    <BundleProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" />
+    <BundleProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\**\*.bundleproj" SignPhase="BundleInstallerFiles" BuildInParallel="false" />
     <ProjectToBuild Include="@(BundleProjectToBuild)" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subsetCategory.Contains('installer')) and $(_subset.Contains('installers'))">
-    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" />
-    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" />
+    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\installers.proj" BuildInParallel="false" />
+    <InstallerProjectToBuild Include="$(InstallerProjectRoot)pkg\packaging\vs-insertion-packages.proj" BuildInParallel="false" />
     <ProjectToBuild Include="@(InstallerProjectToBuild)" />
   </ItemGroup>
 
@@ -142,7 +180,7 @@
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\HostActivation.Tests\HostActivation.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
-    <ProjectToBuild Include="@(TestProjectToBuild)" />
+    <ProjectToBuild Include="@(TestProjectToBuild)" BuildInParallel="false" />
   </ItemGroup>
 
 </Project>

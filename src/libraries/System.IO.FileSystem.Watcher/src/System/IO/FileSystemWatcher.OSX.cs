@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -67,7 +66,7 @@ namespace System.IO
             if (IsSuspended())
                 return;
 
-            CancellationTokenSource token = _cancellation;
+            CancellationTokenSource? token = _cancellation;
             if (token != null)
             {
                 _cancellation = null;
@@ -80,7 +79,7 @@ namespace System.IO
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        private CancellationTokenSource _cancellation;
+        private CancellationTokenSource? _cancellation;
 
         private static FSEventStreamEventFlags TranslateFlags(NotifyFilters flagsToTranslate)
         {
@@ -141,11 +140,11 @@ namespace System.IO
             private FSEventStreamEventFlags _filterFlags;
 
             // The EventStream to listen for events on
-            private SafeEventStreamHandle _eventStream;
+            private SafeEventStreamHandle? _eventStream;
 
 
             // Callback delegate for the EventStream events
-            private Interop.EventStream.FSEventStreamCallback _callback;
+            private Interop.EventStream.FSEventStreamCallback? _callback;
 
             // Token to monitor for cancellation requests, upon which processing is stopped and all
             // state is cleaned up.
@@ -154,7 +153,7 @@ namespace System.IO
             // Calling RunLoopStop multiple times SegFaults so protect the call to it
             private bool _stopping;
 
-            private ExecutionContext _context;
+            private ExecutionContext? _context;
 
             internal RunningInstance(
                 FileSystemWatcher watcher,
@@ -171,7 +170,7 @@ namespace System.IO
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
                 _cancellationToken = cancelToken;
-                _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj).CancellationCallback(), this);
+                _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CancellationCallback(), this);
                 _stopping = false;
             }
 
@@ -199,7 +198,13 @@ namespace System.IO
                         Debug.Assert(s_scheduledStreamsCount == 0);
                         s_scheduledStreamsCount = 1;
                         var runLoopStarted = new ManualResetEventSlim();
-                        new Thread(WatchForFileSystemEventsThreadStart) { IsBackground = true }.Start(new object[] { runLoopStarted, eventStream });
+                        new Thread(args =>
+                        {
+                            object[] inputArgs = (object[])args!;
+                            WatchForFileSystemEventsThreadStart((ManualResetEventSlim)inputArgs[0], (SafeEventStreamHandle)inputArgs[1]);
+                        })
+                        { IsBackground = true }.Start(new object[] { runLoopStarted, eventStream });
+
                         runLoopStarted.Wait();
                     }
                 }
@@ -225,11 +230,8 @@ namespace System.IO
                     }
                 }
 
-                private static void WatchForFileSystemEventsThreadStart(object args)
+                private static void WatchForFileSystemEventsThreadStart(ManualResetEventSlim runLoopStarted, SafeEventStreamHandle eventStream)
                 {
-                    var inputArgs = (object[])args;
-                    var runLoopStarted = (ManualResetEventSlim)inputArgs[0];
-                    var _eventStream = (SafeEventStreamHandle)inputArgs[1];
                     // Get this thread's RunLoop
                     IntPtr runLoop = Interop.RunLoop.CFRunLoopGetCurrent();
                     s_watcherRunLoop = runLoop;
@@ -240,7 +242,7 @@ namespace System.IO
                     Debug.Assert(retainResult == runLoop, "CFRetain is supposed to return the input value");
 
                     // Schedule the EventStream to run on the thread's RunLoop
-                    Interop.EventStream.FSEventStreamScheduleWithRunLoop(_eventStream, runLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
+                    Interop.EventStream.FSEventStreamScheduleWithRunLoop(eventStream, runLoop, Interop.RunLoop.kCFRunLoopDefaultMode);
 
                     runLoopStarted.Set();
                     try
@@ -260,7 +262,7 @@ namespace System.IO
 
             private void CancellationCallback()
             {
-                SafeEventStreamHandle eventStream =  _eventStream;
+                SafeEventStreamHandle? eventStream =  _eventStream;
                 if (!_stopping && eventStream != null)
                 {
                     _stopping = true;
@@ -343,8 +345,7 @@ namespace System.IO
                 if (!started)
                 {
                     // Try to get the Watcher to raise the error event; if we can't do that, just silently exit since the watcher is gone anyway
-                    FileSystemWatcher watcher;
-                    if (_weakWatcher.TryGetTarget(out watcher))
+                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                     {
                         // An error occurred while trying to start the run loop so fail out
                         watcher.OnError(new ErrorEventArgs(new IOException(SR.EventStream_FailedToStart, Marshal.GetLastWin32Error())));
@@ -364,14 +365,13 @@ namespace System.IO
                 // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
                 // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
                 // there's nothing more to do (we can't raise events), so bail.
-                FileSystemWatcher watcher;
-                if (!_weakWatcher.TryGetTarget(out watcher))
+                if (!_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                 {
                     CancellationCallback();
                     return;
                 }
 
-                ExecutionContext context = _context;
+                ExecutionContext? context = _context;
                 if (context is null)
                 {
                     // Flow suppressed, just run here
@@ -381,7 +381,7 @@ namespace System.IO
                 {
                     ExecutionContext.Run(
                         context,
-                        (object o) => ((RunningInstance)o).ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher),
+                        (object? o) => ((RunningInstance)o!).ProcessEvents(numEvents.ToInt32(), eventPaths, new Span<FSEventStreamEventFlags>(eventFlags, numEvents.ToInt32()), new Span<FSEventStreamEventId>(eventIds, numEvents.ToInt32()), watcher),
                         this);
                 }
             }

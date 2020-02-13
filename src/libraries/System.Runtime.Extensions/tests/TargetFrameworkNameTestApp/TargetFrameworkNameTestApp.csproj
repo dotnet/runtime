@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- Setting a custom TargetFrameworkAttribute in AssemblyAttributes.cs -->
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <TestRuntime>true</TestRuntime>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

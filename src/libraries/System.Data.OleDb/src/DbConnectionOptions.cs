@@ -484,7 +484,7 @@ namespace System.Data.Common
         [System.Diagnostics.Conditional("DEBUG")]
         private static void DebugTraceKeyValuePair(string keyname, string keyvalue, Hashtable synonyms)
         {
-            Debug.Assert(keyname == keyname.ToLower(CultureInfo.InvariantCulture), "missing ToLower");
+            Debug.Assert(keyname == keyname.ToLowerInvariant(), "missing ToLower");
 
             string realkeyname = ((null != synonyms) ? (string)synonyms[keyname] : keyname);
             if ((KEY.Password != realkeyname) && (SYNONYM.Pwd != realkeyname))
@@ -505,7 +505,7 @@ namespace System.Data.Common
             {
                 count--; // trailing whitespace
             }
-            return buffer.ToString(0, count).ToLower(CultureInfo.InvariantCulture);
+            return buffer.ToString(0, count).ToLowerInvariant();
         }
 
         private static string GetKeyValue(StringBuilder buffer, bool trimWhitespace)
@@ -795,7 +795,7 @@ namespace System.Data.Common
                 CaptureCollection keyvalues = match.Groups[ValueIndex].Captures;
                 foreach (Capture keypair in match.Groups[KeyIndex].Captures)
                 {
-                    string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLower(CultureInfo.InvariantCulture);
+                    string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLowerInvariant();
                     string keyvalue = keyvalues[indexValue++].Value;
                     if (0 < keyvalue.Length)
                     {

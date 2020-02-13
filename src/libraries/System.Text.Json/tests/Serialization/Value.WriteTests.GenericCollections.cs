@@ -892,7 +892,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        // Regression test for https://github.com/dotnet/corefx/issues/39770.
         public static void ConvertIEnumerableValueTypesThenSerialize()
         {
             IEnumerable<ValueA> valueAs = Enumerable.Range(0, 5).Select(x => new ValueA { Value = x }).ToList();

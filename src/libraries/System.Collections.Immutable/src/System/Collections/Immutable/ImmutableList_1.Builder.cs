@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner Builder class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableList<T>
     {
         /// <summary>
@@ -29,8 +28,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableListBuilderDebuggerProxy<>))]
         public sealed class Builder : IList<T>, IList, IOrderedCollection<T>, IImmutableListQueries<T>, IReadOnlyList<T>
@@ -44,7 +41,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableList<T> _immutable;
+            private ImmutableList<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.
@@ -54,7 +51,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// The object callers may use to synchronize access to this collection.
             /// </summary>
-            private object _syncRoot;
+            private object? _syncRoot;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Builder"/> class.
@@ -130,7 +127,6 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="index">The index of the desired element.</param>
             /// <returns>The value at the specified index.</returns>
-            [SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId = "index+1", Justification = "There is no chance of this overflowing")]
             public T this[int index]
             {
                 get
@@ -401,6 +397,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
+            [return: MaybeNull]
             public T Find(Predicate<T> match) => _root.Find(match);
 
             /// <summary>
@@ -474,6 +471,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
+            [return: MaybeNull]
             public T FindLast(Predicate<T> match) => _root.FindLast(match);
 
             /// <summary>
@@ -597,7 +595,7 @@ namespace System.Collections.Immutable
             /// contains count number of elements, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            public int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer) =>
+            public int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.IndexOf(item, index, count, equalityComparer);
 
             /// <summary>
@@ -693,7 +691,7 @@ namespace System.Collections.Immutable
             /// and ends at index, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T> equalityComparer) =>
+            public int LastIndexOf(T item, int startIndex, int count, IEqualityComparer<T>? equalityComparer) =>
                 _root.LastIndexOf(item, startIndex, count, equalityComparer);
 
             /// <summary>
@@ -823,7 +821,7 @@ namespace System.Collections.Immutable
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
-            public void Sort(IComparer<T> comparer)
+            public void Sort(IComparer<T>? comparer)
             {
                 this.Root = this.Root.Sort(comparer);
             }
@@ -842,7 +840,7 @@ namespace System.Collections.Immutable
             /// The <see cref="IComparer{T}"/> implementation to use when comparing
             /// elements, or null to use <see cref="Comparer{T}.Default"/>.
             /// </param>
-            public void Sort(int index, int count, IComparer<T> comparer)
+            public void Sort(int index, int count, IComparer<T>? comparer)
             {
                 Requires.Range(index >= 0, nameof(index));
                 Requires.Range(count >= 0, nameof(count));
@@ -891,7 +889,7 @@ namespace System.Collections.Immutable
             /// cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
             /// or the System.IComparable interface for type T.
             /// </exception>
-            public int BinarySearch(T item, IComparer<T> comparer)
+            public int BinarySearch(T item, IComparer<T>? comparer)
             {
                 return this.BinarySearch(0, this.Count, item, comparer);
             }
@@ -925,7 +923,7 @@ namespace System.Collections.Immutable
             /// cannot find an implementation of the System.IComparable&lt;T&gt; generic interface
             /// or the System.IComparable interface for type T.
             /// </exception>
-            public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
+            public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
             {
                 return this.Root.BinarySearch(index, count, item, comparer);
             }
@@ -962,9 +960,9 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
             /// </returns>
-            int IList.Add(object value)
+            int IList.Add(object? value)
             {
-                this.Add((T)value);
+                this.Add((T)value!);
                 return this.Count - 1;
             }
 
@@ -983,11 +981,11 @@ namespace System.Collections.Immutable
             /// <returns>
             /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
             /// </returns>
-            bool IList.Contains(object value)
+            bool IList.Contains(object? value)
             {
                 if (IsCompatibleObject(value))
                 {
-                    return this.Contains((T)value);
+                    return this.Contains((T)value!);
                 }
 
                 return false;
@@ -1000,11 +998,11 @@ namespace System.Collections.Immutable
             /// <returns>
             /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
             /// </returns>
-            int IList.IndexOf(object value)
+            int IList.IndexOf(object? value)
             {
                 if (IsCompatibleObject(value))
                 {
-                    return this.IndexOf((T)value);
+                    return this.IndexOf((T)value!);
                 }
 
                 return -1;
@@ -1015,9 +1013,9 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
             /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
-            void IList.Insert(int index, object value)
+            void IList.Insert(int index, object? value)
             {
-                this.Insert(index, (T)value);
+                this.Insert(index, (T)value!);
             }
 
             /// <summary>
@@ -1043,11 +1041,11 @@ namespace System.Collections.Immutable
             /// Removes the first occurrence of a specific object from the <see cref="IList"/>.
             /// </summary>
             /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
-            void IList.Remove(object value)
+            void IList.Remove(object? value)
             {
                 if (IsCompatibleObject(value))
                 {
-                    this.Remove((T)value);
+                    this.Remove((T)value!);
                 }
             }
 
@@ -1059,10 +1057,10 @@ namespace System.Collections.Immutable
             /// </value>
             /// <param name="index">The index.</param>
             /// <returns></returns>
-            object IList.this[int index]
+            object? IList.this[int index]
             {
                 get { return this[index]; }
-                set { this[index] = (T)value; }
+                set { this[index] = (T)value!; }
             }
 
             #endregion
@@ -1100,7 +1098,7 @@ namespace System.Collections.Immutable
                 {
                     if (_syncRoot == null)
                     {
-                        System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
+                        System.Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
 
                     return _syncRoot;
@@ -1123,7 +1121,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// The simple view of the collection.
         /// </summary>
-        private T[] _cachedContents;
+        private T[]? _cachedContents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableListBuilderDebuggerProxy{T}"/> class.

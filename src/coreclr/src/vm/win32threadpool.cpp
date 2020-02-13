@@ -35,7 +35,7 @@ Revision History:
 #include "configuration.h"
 
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #ifndef DACCESS_COMPILE
 
 // APIs that must be accessed through dynamic linking.
@@ -72,7 +72,7 @@ typedef BOOL (WINAPI * SetWaitableTimerExProc) (
 SetWaitableTimerExProc g_pufnSetWaitableTimerEx = NULL;
 
 #endif // !DACCESS_COMPILE
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 BOOL ThreadpoolMgr::InitCompletionPortThreadpool = FALSE;
 HANDLE ThreadpoolMgr::GlobalCompletionPort;                 // used for binding io completions on file handles
@@ -119,9 +119,6 @@ LONG ThreadpoolMgr::Initialization=0;           // indicator of whether the thre
 
 // Cacheline aligned, hot variable
 DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) unsigned int ThreadpoolMgr::LastDequeueTime; // used to determine if work items are getting thread starved
-
-// Move out of from preceeding variables' cache line
-DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) int ThreadpoolMgr::offset_counter = 0;
 
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestHead);        // Head of work request queue
 SPTR_IMPL(WorkRequest,ThreadpoolMgr,WorkRequestTail);        // Head of work request queue
@@ -345,16 +342,16 @@ BOOL ThreadpoolMgr::Initialize()
     UnManagedPerAppDomainTPCount* pADTPCount;
     pADTPCount = PerAppDomainTPCountList::GetUnmanagedTPCount();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     //ThreadPool_CPUGroup
     CPUGroupInfo::EnsureInitialized();
     if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
         NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
     else
         NumberOfProcessors = GetCurrentProcessCpuCount();
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     NumberOfProcessors = GetCurrentProcessCpuCount();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     InitPlatformVariables();
 
     EX_TRY
@@ -384,15 +381,15 @@ BOOL ThreadpoolMgr::Initialize()
         RetiredWorkerSemaphore = new CLRLifoSemaphore();
         RetiredWorkerSemaphore->Create(0, ThreadCounter::MaxPossibleCount);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         //ThreadPool_CPUGroup
         if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
             RecycledLists.Initialize( CPUGroupInfo::GetNumActiveProcessors() );
         else
             RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
         RecycledLists.Initialize( PAL_GetTotalCpuCount() );
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
     EX_CATCH
     {
@@ -450,14 +447,14 @@ BOOL ThreadpoolMgr::Initialize()
     counts.MaxWorking = MinLimitTotalCPThreads;
     CPThreadCounter.counts.AsLongLong = counts.AsLongLong;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     {
         GlobalCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE,
                                                       NULL,
                                                       0,        /*ignored for invalid handle value*/
                                                       NumberOfProcessors);
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     HillClimbingInstance.Initialize();
 
@@ -476,7 +473,7 @@ void ThreadpoolMgr::InitPlatformVariables()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HINSTANCE  hNtDll;
     HINSTANCE  hCoreSynch;
     {
@@ -922,10 +919,6 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
 
     _ASSERTE(ThreadAdjustmentLock.IsHeld());
 
-    DWORD currentTicks = GetTickCount();
-    LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
-    LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
-
     LARGE_INTEGER startTime = CurrentSampleStartTime;
     LARGE_INTEGER endTime;
     QueryPerformanceCounter(&endTime);
@@ -944,6 +937,9 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     //
     if (elapsed*1000.0 >= (ThreadAdjustmentInterval/2))
     {
+        DWORD currentTicks = GetTickCount();
+        LONG totalNumCompletions = (LONG)Thread::GetTotalWorkerThreadPoolCompletionCount();
+        LONG numCompletions = totalNumCompletions - VolatileLoad(&PriorCompletedWorkRequests);
         ThreadCounter::Counts currentCounts = WorkerCounter.GetCleanCounts();
 
         int newMax = HillClimbingInstance.Update(
@@ -1095,7 +1091,7 @@ BOOL ThreadpoolMgr::PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     EnsureInitialized();
 
     _ASSERTE(GlobalCompletionPort != NULL);
@@ -1132,7 +1128,7 @@ BOOL ThreadpoolMgr::PostQueuedCompletionStatus(LPOVERLAPPED lpOverlapped,
 #else
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 
@@ -1152,7 +1148,7 @@ void ThreadpoolMgr::WaitIOCompletionCallback(
         DWORD ret = AsyncCallbackCompletion((PVOID)lpOverlapped);
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // We need to make sure that the next jobs picked up by a completion port thread
 // is inserted into the queue after we start cleanup.  The cleanup starts when a completion
 // port thread processes a special overlapped (overlappedForInitiateCleanup).
@@ -1164,7 +1160,7 @@ void ThreadpoolMgr::WaitIOCompletionCallback(
 //    job.
 OVERLAPPED overlappedForInitiateCleanup;
 OVERLAPPED overlappedForContinueCleanup;
-#endif  // !FEATURE_PAL
+#endif  // !TARGET_UNIX
 
 Volatile<ULONG> g_fCompletionPortDrainNeeded = FALSE;
 
@@ -1182,7 +1178,7 @@ VOID ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue(
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     CounterHolder hldNumCPIT(&NumCPInfrastructureThreads);
 
     // It is OK if this overlapped is from a previous round.
@@ -1205,7 +1201,7 @@ VOID ThreadpoolMgr::CallbackForContinueDrainageOfCompletionPortQueue(
             __SwitchToThread(100, CALLER_LIMITS_SPINNING);
         }
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 
@@ -1216,7 +1212,7 @@ ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue(
     LPOVERLAPPED lpOverlapped
     )
 {
- #ifndef FEATURE_PAL
+ #ifndef TARGET_UNIX
     CONTRACTL
     {
         NOTHROW;
@@ -1296,7 +1292,7 @@ ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue(
     }
 
     FastInterlockAnd(&g_fCompletionPortDrainNeeded, 0);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 extern void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
@@ -1308,7 +1304,7 @@ void HostIOCompletionCallback(
     DWORD numBytesTransferred,
     LPOVERLAPPED lpOverlapped)
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     if (lpOverlapped == &overlappedForInitiateCleanup)
     {
         ThreadpoolMgr::CallbackForInitiateDrainageOfCompletionPortQueue (
@@ -1330,12 +1326,12 @@ void HostIOCompletionCallback(
             numBytesTransferred,
             lpOverlapped);
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 BOOL ThreadpoolMgr::DrainCompletionPortQueue()
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     CONTRACTL
     {
         NOTHROW;
@@ -1355,7 +1351,7 @@ BOOL ThreadpoolMgr::DrainCompletionPortQueue()
                                                     &overlappedForInitiateCleanup);
 #else
     return FALSE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
 
@@ -1736,29 +1732,6 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
     }
 }
 
-#define THROTTLE_RATE  0.10 /* rate by which we increase the delay as number of threads increase */
-
-// This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
-// which can significantly impact performance with HyperThreading enabled
-DWORD WINAPI ThreadpoolMgr::intermediateThreadProc(PVOID arg)
-{
-    WRAPPER_NO_CONTRACT;
-
-    offset_counter++;
-    if (offset_counter * offset_multiplier > (int)GetOsPageSize())
-        offset_counter = 0;
-
-    (void)_alloca(offset_counter * offset_multiplier);
-
-    intermediateThreadParam* param = (intermediateThreadParam*)arg;
-
-    LPTHREAD_START_ROUTINE ThreadFcnPtr = param->lpThreadFunction;
-    PVOID args = param->lpArg;
-    delete param;
-
-    return ThreadFcnPtr(args);
-}
-
 Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpArgs, BOOL *pIsCLRThread)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -1806,32 +1779,24 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
                                        W(".NET ThreadPool Worker"));
     }
     else {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         HandleHolder token;
         BOOL bReverted = FALSE;
         bOK = RevertIfImpersonated(&bReverted, &token);
         if (bOK != TRUE)
             return NULL;
-#endif // !FEATURE_PAL
-        NewHolder<intermediateThreadParam> lpThreadArgs(new (nothrow) intermediateThreadParam);
-        if (lpThreadArgs != NULL)
-        {
-            lpThreadArgs->lpThreadFunction = lpStartAddress;
-            lpThreadArgs->lpArg = lpArgs;
-            threadHandle = CreateThread(NULL,               // security descriptor
-                                        0,                  // default stack size
-                                        intermediateThreadProc,
-                                        lpThreadArgs,       // arguments
-                                        CREATE_SUSPENDED,
-                                        &threadId);
+#endif // !TARGET_UNIX
+        threadHandle = CreateThread(NULL,               // security descriptor
+                                    0,                  // default stack size
+                                    lpStartAddress,
+                                    lpArgs,
+                                    CREATE_SUSPENDED,
+                                    &threadId);
 
-            SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
-            if (threadHandle != NULL)
-                lpThreadArgs.SuppressRelease();
-        }
-#ifndef FEATURE_PAL
+        SetThreadName(threadHandle, W(".NET ThreadPool Worker"));
+#ifndef TARGET_UNIX
         UndoRevert(bReverted, token);
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     }
 
     if (*pIsCLRThread && !bOK)
@@ -2559,7 +2524,7 @@ DWORD ThreadpoolMgr::MinimumRemainingWait(LIST_ENTRY* waitInfo, unsigned int num
 }
 
 #ifdef _MSC_VER
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -2766,7 +2731,7 @@ DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 #endif
 
 #ifdef _MSC_VER
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)
@@ -2809,11 +2774,11 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
 
             InterlockedIncrement(&waitInfo->refCount);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             if (FALSE == PostQueuedCompletionStatus((LPOVERLAPPED)asyncCallback, (LPOVERLAPPED_COMPLETION_ROUTINE)WaitIOCompletionCallback))
-#else  // FEATURE_PAL
+#else  // TARGET_UNIX
             if (FALSE == QueueUserWorkItem(AsyncCallbackCompletion, asyncCallback, QUEUE_ONLY))
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
                 ReleaseAsyncCallback(asyncCallback);
         }
     }
@@ -2879,7 +2844,7 @@ DWORD WINAPI ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
         ((WAITORTIMERCALLBACKFUNC) waitInfo->Callback)
                                     ( waitInfo->Context, asyncCallback->waitTimedOut != FALSE);
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         Thread::IncrementIOThreadPoolCompletionCount(pThread);
 #endif
     }
@@ -3170,7 +3135,7 @@ BOOL ThreadpoolMgr::BindIoCompletionCallback(HANDLE FileHandle,
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
     errCode = S_OK;
 
@@ -3197,13 +3162,13 @@ BOOL ThreadpoolMgr::BindIoCompletionCallback(HANDLE FileHandle,
     _ASSERTE(h == GlobalCompletionPort);
 
     return TRUE;
-#else // FEATURE_PAL
+#else // TARGET_UNIX
     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
     return FALSE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 BOOL ThreadpoolMgr::CreateCompletionPortThread(LPVOID lpArgs)
 {
     CONTRACTL
@@ -3504,7 +3469,7 @@ Top:
 
                 for (;;)
                 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
                     if (g_fCompletionPortDrainNeeded && pThread)
                     {
                         // The thread is not going to process IO job now.
@@ -3513,7 +3478,7 @@ Top:
                             pThread->MarkCompletionPortDrained();
                         }
                     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
                     DWORD status = SafeWait(RetiredCPWakeupEvent,CP_THREAD_PENDINGIO_WAIT,FALSE);
                     _ASSERTE(status == WAIT_TIMEOUT || status == WAIT_OBJECT_0);
@@ -3706,7 +3671,7 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     //Very Very Important!
     //Do not change the timeout for GetQueuedCompletionStatus to a non-zero value.
     //Selecting a non-zero value can cause the thread to block, and lead to expensive context switches.
-    //In real life scenarios, we have noticed a packet to be not availabe immediately, but very shortly
+    //In real life scenarios, we have noticed a packet to be not available immediately, but very shortly
     //(after few 100's of instructions), and falling back to the VM is good in that case as compared to
     //taking a context switch. Changing the timeout to non-zero can lead to perf degrades, that are very
     //hard to diagnose.
@@ -3883,7 +3848,7 @@ void ThreadpoolMgr::GrowCompletionPortThreadpoolIfNeeded()
         }
     }
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 // Returns true if there is pending io on the thread.
 BOOL ThreadpoolMgr::IsIoPending()
@@ -3896,7 +3861,7 @@ BOOL ThreadpoolMgr::IsIoPending()
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     int Status;
     ULONG IsIoPending;
 
@@ -3917,12 +3882,12 @@ BOOL ThreadpoolMgr::IsIoPending()
     return TRUE;
 #else
     return FALSE;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -3939,7 +3904,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
 
     if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
-#if !defined(FEATURE_REDHAWK) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_REDHAWK) && !defined(TARGET_UNIX)
         FILETIME newIdleTime, newKernelTime, newUserTime;
 
         CPUGroupInfo::GetSystemTimes(&newIdleTime, &newKernelTime, &newUserTime);
@@ -3997,14 +3962,14 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo)
     return (int)reading;
 }
 
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 
 int ThreadpoolMgr::GetCPUBusyTime_NT(PAL_IOCP_CPU_INFORMATION* pOldInfo)
 {
     return PAL_GetCPUBusyTime(pOldInfo);
 }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 //
 // A timer that ticks every GATE_THREAD_DELAY milliseconds.
@@ -4013,7 +3978,7 @@ int ThreadpoolMgr::GetCPUBusyTime_NT(PAL_IOCP_CPU_INFORMATION* pOldInfo)
 //
 class GateThreadTimer
 {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     HANDLE m_hTimer;
 
 public:
@@ -4063,7 +4028,7 @@ public:
         }
     }
 
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 public:
     void Wait()
@@ -4075,11 +4040,11 @@ public:
         }
         CONTRACTL_END;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         if (m_hTimer)
             WaitForSingleObject(m_hTimer, INFINITE);
         else
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
             __SwitchToThread(GATE_THREAD_DELAY, CALLER_LIMITS_SPINNING);
     }
 };
@@ -4104,7 +4069,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     // TODO: do we need to do this?
     timer.Wait(); // delay getting initial CPU reading
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     PROCESS_CPU_INFORMATION prevCPUInfo;
 
     if (!g_pufnNtQuerySystemInformation)
@@ -4113,10 +4078,10 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
         return 0;
     }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     //GateThread can start before EESetup, so ensure CPU group information is initialized;
     CPUGroupInfo::EnsureInitialized();
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
     // initialize CPU usage information structure;
     prevCPUInfo.idleTime.QuadPart   = 0;
     prevCPUInfo.kernelTime.QuadPart = 0;
@@ -4132,7 +4097,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
      * 2. GCCpuGroups=1, CLR creates GC threads for all processors in all CPU groups
      *    thus, the threadpool thread would use a whole CPU group (if Thread_UseAllCpuGroups is not set).
      *    ==> use g_SystemInfo.dwNumberOfProcessors.
-     * 3. !defined(FEATURE_PAL) but defined(FEATURE_CORESYSTEM), GetCurrentProcessCpuCount()
+     * 3. !defined(TARGET_UNIX) but defined(FEATURE_CORESYSTEM), GetCurrentProcessCpuCount()
      *    returns g_SystemInfo.dwNumberOfProcessors ==> use g_SystemInfo.dwNumberOfProcessors;
      * Other cases:
      * 1. Normal case: the mask is all or a subset of all processors in a CPU group;
@@ -4167,10 +4132,10 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     memset((void *)prevCPUInfo.usageBuffer, 0, prevCPUInfo.usageBufferSize); //must clear it with 0s
 
     GetCPUBusyTime_NT(&prevCPUInfo);
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
     PAL_IOCP_CPU_INFORMATION prevCPUInfo;
     GetCPUBusyTime_NT(&prevCPUInfo);                  // ignore return value the first time
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
     BOOL IgnoreNextSample = FALSE;
 
@@ -4215,7 +4180,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
             IgnoreNextSample = TRUE;
         }
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
         // don't mess with CP thread pool settings if not initialized yet
         if (InitCompletionPortThreadpool)
         {
@@ -4307,7 +4272,7 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
                 }
             }
         }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
         if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection))
         {
@@ -4409,7 +4374,7 @@ BOOL ThreadpoolMgr::SufficientDelaySinceLastDequeue()
 
 
 #ifdef _MSC_VER
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)
@@ -4517,7 +4482,7 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
 }
 
 #ifdef _MSC_VER
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (disable : 4716)
 #else
 #pragma warning (disable : 4715)
@@ -4624,7 +4589,7 @@ void ThreadpoolMgr::TimerThreadFire()
 }
 
 #ifdef _MSC_VER
-#ifdef BIT64
+#ifdef HOST_64BIT
 #pragma warning (default : 4716)
 #else
 #pragma warning (default : 4715)

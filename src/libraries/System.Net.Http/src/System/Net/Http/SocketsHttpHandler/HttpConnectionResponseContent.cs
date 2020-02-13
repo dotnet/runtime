@@ -37,7 +37,7 @@ namespace System.Net.Http
         protected sealed override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
             SerializeToStreamAsync(stream, context, CancellationToken.None);
 
-        internal sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
+        protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
 

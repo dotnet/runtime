@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -121,6 +122,7 @@ namespace System.IO
         }
 
         // Null is a valid volume label.
+        [AllowNull]
         public unsafe string VolumeLabel
         {
             get

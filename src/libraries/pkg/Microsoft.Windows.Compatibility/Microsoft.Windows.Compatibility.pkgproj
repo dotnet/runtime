@@ -1,5 +1,5 @@
 ﻿<Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
     <ServiceModelVersion>4.7.0</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
@@ -22,7 +22,6 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.OleDb" />
-    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
@@ -58,6 +57,9 @@
     </LibraryPackage>
     <LibraryPackage Include="System.Data.DataSetExtensions">
       <Version>4.5.0</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Data.SqlClient">
+      <Version>4.8.0</Version>
     </LibraryPackage>
 
     <!-- Service model packages -->
@@ -120,5 +122,5 @@
       <TargetFramework>netstandard2.1</TargetFramework>
     </Dependency>
   </ItemGroup>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

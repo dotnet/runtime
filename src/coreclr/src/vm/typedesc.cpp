@@ -10,7 +10,6 @@
 // This file contains definitions for methods in the code:TypeDesc class and its
 // subclasses
 //     code:ParamTypeDesc,
-//     code:ArrayTypeDesc,
 //     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
 //
@@ -41,26 +40,9 @@ BOOL ParamTypeDesc::Verify() {
 
     _ASSERTE(m_TemplateMT.IsNull() || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
-    BAD_FORMAT_NOTHROW_ASSERT(GetTypeParam().IsTypeDesc() || !GetTypeParam().AsMethodTable()->IsArray());
-    BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
+    _ASSERTE(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
                               GetInternalCorElementType() == ELEMENT_TYPE_VALUETYPE);
     GetTypeParam().Verify();
-    return(true);
-}
-
-BOOL ArrayTypeDesc::Verify() {
-
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_CANNOT_TAKE_LOCK;
-    STATIC_CONTRACT_DEBUG_ONLY;
-    STATIC_CONTRACT_SUPPORTS_DAC;
-
-    // m_TemplateMT == 0 may be null when building types involving TypeVarTypeDesc's
-    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || GetTemplateMethodTable()->IsArray());
-    BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType()));
-    ParamTypeDesc::Verify();
     return(true);
 }
 
@@ -68,16 +50,16 @@ BOOL ArrayTypeDesc::Verify() {
 
 #endif // #ifndef DACCESS_COMPILE
 
-TypeHandle TypeDesc::GetBaseTypeParam()
+TypeHandle TypeDesc::GetRootTypeParam()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     _ASSERTE(HasTypeParam());
 
-    TypeHandle th = dac_cast<PTR_ParamTypeDesc>(this)->GetTypeParam();
+    TypeHandle th = GetTypeParam();
     while (th.HasTypeParam())
     {
-        th = dac_cast<PTR_ParamTypeDesc>(th.AsTypeDesc())->GetTypeParam();
+        th = th.GetTypeParam();
     }
     _ASSERTE(!th.IsNull());
 
@@ -93,7 +75,7 @@ PTR_Module TypeDesc::GetLoaderModule()
 
     if (HasTypeParam())
     {
-        return GetBaseTypeParam().GetLoaderModule();
+        return GetRootTypeParam().GetLoaderModule();
     }
     else if (IsGenericVariable())
     {
@@ -153,7 +135,7 @@ PTR_Module TypeDesc::GetModule() {
 
     if (HasTypeParam())
     {
-        return GetBaseTypeParam().GetModule();
+        return GetRootTypeParam().GetModule();
     }
 
     if (IsGenericVariable())
@@ -216,9 +198,7 @@ void TypeDesc::GetName(SString &ssBuf)
     else
         th = TypeHandle(this);
 
-    if (kind == ELEMENT_TYPE_ARRAY)
-        rank = dac_cast<PTR_ArrayTypeDesc>(this)->GetRank();
-    else if (CorTypeInfo::IsGenericVariable(kind))
+    if (CorTypeInfo::IsGenericVariable(kind))
         rank = dac_cast<PTR_TypeVarTypeDesc>(this)->GetIndex();
     else
         rank = 0;
@@ -307,12 +287,6 @@ void TypeDesc::ConstructName(CorElementType kind,
     }
 }
 
-BOOL TypeDesc::IsArray()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType());
-}
-
 BOOL TypeDesc::IsGenericVariable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -356,33 +330,6 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
         return TRUE;
 
     BOOL fCast = FALSE;
-
-    if (IsArray())
-    {
-        MethodTable* pMT = dac_cast<PTR_ArrayTypeDesc>(this)->GetMethodTable();
-
-        if (toTypeHnd.IsArray())
-        {
-            fCast = pMT->ArrayIsInstanceOf(toTypeHnd, pVisited);
-        }
-        else if (!toTypeHnd.IsTypeDesc())
-        {
-            MethodTable* toMT = toTypeHnd.AsMethodTable();
-            if (toMT->IsInterface() && toMT->HasInstantiation())
-            {
-                fCast = pMT->ArraySupportsBizarreInterface(toMT, pVisited);
-            }
-            else
-            {
-                fCast = pMT->CanCastToClassOrInterface(toMT, pVisited);
-            }
-        }
-
-        // leafs add cached conversion for the method table.
-        // since we started from a typedesc, add a typedesc conversion too
-        CastCache::TryAddToCache(TypeHandle(this), toTypeHnd, fCast);
-        return fCast;
-    }
 
     //A boxed variable type can be cast to any of its constraints, or object, if none are specified
     if (IsGenericVariable())
@@ -439,18 +386,8 @@ BOOL TypeDesc::CanCastTo(TypeHandle toTypeHnd, TypeHandlePairList *pVisited)
             case ELEMENT_TYPE_PTR:
                 fCast = TypeDesc::CanCastParam(dac_cast<PTR_ParamTypeDesc>(this)->GetTypeParam(), dac_cast<PTR_ParamTypeDesc>(toTypeDesc)->GetTypeParam(), pVisited);
                 break;
-            case ELEMENT_TYPE_VAR:
-            case ELEMENT_TYPE_MVAR:
-            case ELEMENT_TYPE_FNPTR:
-                fCast = FALSE;
-                break;
             default:
-                BAD_FORMAT_NOTHROW_ASSERT(toKind == ELEMENT_TYPE_TYPEDBYREF || CorTypeInfo::IsPrimitiveType(toKind));
-                // array cast should have been handled above
-                _ASSERTE(toKind != ELEMENT_TYPE_ARRAY);
-                _ASSERTE(toKind != ELEMENT_TYPE_SZARRAY);
-
-                fCast = TRUE;
+                break;
             }
         }
     }
@@ -550,17 +487,7 @@ BOOL TypeDesc::IsEquivalentTo(TypeHandle type COMMA_INDEBUG(TypeHandlePairList *
 
     if (HasTypeParam())
     {
-        // pointer, byref, array
-
-        // Arrays must have the same rank.
-        if (IsArray())
-        {
-            ArrayTypeDesc *pThisArray = (ArrayTypeDesc *)this;
-            ArrayTypeDesc *pOtherArray = (ArrayTypeDesc *)pOther;
-            if (pThisArray->GetRank() != pOtherArray->GetRank())
-                return FALSE;
-        }
-
+        // pointer, byref
         return GetTypeParam().IsEquivalentTo(pOther->GetTypeParam() COMMA_INDEBUG(pVisited));
     }
 
@@ -578,11 +505,7 @@ TypeHandle TypeDesc::GetParent() {
     STATIC_CONTRACT_FORBID_FAULT;
 
     CorElementType kind = GetInternalCorElementType();
-    if (CorTypeInfo::IsArray_NoThrow(kind)) {
-        _ASSERTE(IsArray());
-        BAD_FORMAT_NOTHROW_ASSERT(kind == ELEMENT_TYPE_SZARRAY || kind == ELEMENT_TYPE_ARRAY);
-        return ((ArrayTypeDesc*)this)->GetParent();
-    }
+
     if (CorTypeInfo::IsPrimitiveType_NoThrow(kind))
         return (MethodTable*)g_pObjectClass;
     return TypeHandle();
@@ -784,10 +707,10 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
     // First ensure that we're loaded to just below CLASS_LOADED
     ClassLoader::EnsureLoaded(TypeHandle(this), (ClassLoadLevel) (level-1));
 
-    Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
-
     if (HasTypeParam())
     {
+        Generics::RecursionGraph newVisited(pVisited, TypeHandle(this));
+
         // Fully load the type parameter
         GetTypeParam().DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
 
@@ -908,17 +831,10 @@ void TypeDesc::Fixup(DataImage *image)
     }
     else
     {
-        // Works for array and PTR/BYREF types, but not function pointers
+        // Works for PTR/BYREF types, but not function pointers
         _ASSERTE(HasTypeParam());
 
-        if (IsArray())
-        {
-            ((ArrayTypeDesc*) this)->Fixup(image);
-        }
-        else
-        {
-            ((ParamTypeDesc*) this)->Fixup(image);
-        }
+        ((ParamTypeDesc*) this)->Fixup(image);
     }
 
     if (NeedsRestore(image))
@@ -950,14 +866,7 @@ void ParamTypeDesc::Save(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
 
-    if (IsArray())
-    {
-        image->StoreStructure(this, sizeof(ArrayTypeDesc), DataImage::ITEM_ARRAY_TYPEDESC);
-    }
-    else
-    {
-        image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
-    }
+    image->StoreStructure(this, sizeof(ParamTypeDesc), DataImage::ITEM_PARAM_TYPEDESC);
 
     // This set of checks matches precisely those in ParamTypeDesc::ComputeNeedsRestore
     //
@@ -1013,18 +922,6 @@ void ParamTypeDesc::Fixup(DataImage *image)
 
     // The managed object will get regenerated on demand
     image->ZeroField(this, offsetof(ParamTypeDesc, m_hExposedClassObject), sizeof(m_hExposedClassObject));
-}
-
-void ArrayTypeDesc::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-
-    ParamTypeDesc::Fixup(image);
-
-#ifdef FEATURE_COMINTEROP
-    // We don't save CCW templates into ngen images
-    image->ZeroField(this, offsetof(ArrayTypeDesc, m_pCCWTemplate), sizeof(m_pCCWTemplate));
-#endif // FEATURE_COMINTEROP
 }
 
 BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisited)

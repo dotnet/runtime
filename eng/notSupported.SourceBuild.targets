@@ -8,7 +8,7 @@
            Text="'DotNetSourceBuildIntermediatePath' must be specified when 'DotNetBuildFromSource' is true" />
 
     <PropertyGroup>
-      <_notSupportedSourceDirectory>$([MSBuild]::NormalizeDirectory('$(DotNetSourceBuildIntermediatePath)', '$(MSBuildProjectName)', '$(TargetGroup)-$(OSGroup)'))</_notSupportedSourceDirectory>
+      <_notSupportedSourceDirectory>$([MSBuild]::NormalizeDirectory('$(DotNetSourceBuildIntermediatePath)', '$(MSBuildProjectName)', '$(TargetFramework)-$(OSGroup)'))</_notSupportedSourceDirectory>
       <NotSupportedSourceFile>$(_notSupportedSourceDirectory)$(TargetName).notsupported.cs</NotSupportedSourceFile>
     </PropertyGroup>
 

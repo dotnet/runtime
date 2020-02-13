@@ -1,0 +1,198 @@
+<Project>
+
+  <PropertyGroup>
+    <CoreCLROSGroup Condition="'$(CoreCLROSGroup)' == ''">$(OSGroup)</CoreCLROSGroup>
+    <MonoOSGroup Condition="'$(MonoOSGroup)' == ''">$(OSGroup)</MonoOSGroup>
+    <LibrariesOSGroup Condition="'$(LibrariesOSGroup)' == ''">$(OSGroup)</LibrariesOSGroup>
+    <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+
+    <LibrariesOSGroupConfigurationArchitecture Condition="'$(LibrariesOSGroupConfigurationArchitecture)' == ''">$(LibrariesOSGroup)-$(LibrariesConfiguration)-$(TargetArchitecture)</LibrariesOSGroupConfigurationArchitecture>
+  </PropertyGroup>
+
+  <!-- Accept override paths for live artifacts. -->
+  <PropertyGroup>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLROverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLROverridePath)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(MonoOverridePath)'))</MonoArtifactsPath>
+    <LibrariesArtifactsPath Condition="'$(LibrariesOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesOverridePath)'))</LibrariesArtifactsPath>
+    <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsOverridePath)' != ''">$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsOverridePath)'))</LibrariesAllConfigurationsArtifactsPath>
+
+    <!-- Honor the RuntimeArtifactsPath property. -->
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == '' and '$(RuntimeArtifactsPath)' != ''">$([MSBuild]::NormalizeDirectory('$(RuntimeArtifactsPath)'))</MonoArtifactsPath>
+  </PropertyGroup>
+
+  <!--
+    If this is running and the output RID is not the same as the targeted RID, resolve live assets
+    for the targeted RID, if available. This is used to gather asset metadata for the platform
+    manifest. In CI (multi-machine lab) builds, CoreCLR and Libraries artifacts are all downloaded
+    onto the current machine from all platforms for the Installer portion of the build.
+
+    Higher priority than override paths: in official builds, the overrides are passed to the build,
+    but we need to point to the AllArtifacts locations when building the platform manifest.
+  -->
+  <PropertyGroup Condition="
+    '$(RuntimeIdentifier)' != '$(OutputRid)' and
+    '$(AllArtifactsDownloadPath)' != ''">
+    <!-- Convert the OS component in the RID into names that match the job IDs. -->
+    <ArtifactPlatform>$(RuntimeIdentifier)</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('win-', 'Windows_NT-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('unix-', 'Unix-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('linux-', 'Linux-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('osx-', 'OSX-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('freebsd-', 'FreeBSD-'))</ArtifactPlatform>
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('netbsd-', 'NetBSD-'))</ArtifactPlatform>
+    <!-- Artifact name uses '_' rather than '-'. -->
+    <ArtifactPlatform>$(ArtifactPlatform.Replace('-', '_'))</ArtifactPlatform>
+
+    <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'CoreCLRProduct_$(ArtifactPlatform)_$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'MonoProduct_$(ArtifactPlatform)_$(MonoConfiguration)'))</MonoArtifactsPath>
+    <LibrariesArtifactsPath>$([MSBuild]::NormalizeDirectory('$(AllArtifactsDownloadPath)', 'libraries_bin_$(ArtifactPlatform)_$(LibrariesConfiguration)'))</LibrariesArtifactsPath>
+
+    <!--
+      Use '*', calculating these in a static context based on RID is hard. Note that putting '*'
+      through a dir/path normalization function makes it not work, so avoid that.
+    -->
+    <LibrariesOSGroupConfigurationArchitecture>*</LibrariesOSGroupConfigurationArchitecture>
+  </PropertyGroup>
+
+  <!-- Set up default live asset paths if no overrides provided. -->
+  <PropertyGroup>
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(CoreCLROSGroup).$(TargetArchitecture).$(CoreCLRConfiguration)'))</CoreCLRArtifactsPath>
+    <MonoArtifactsPath Condition="'$(MonoArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'mono', '$(MonoOSGroup).$(TargetArchitecture).$(MonoConfiguration)'))</MonoArtifactsPath>
+    <LibrariesArtifactsPath Condition="'$(LibrariesArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesArtifactsPath>
+    <LibrariesAllConfigurationsArtifactsPath Condition="'$(LibrariesAllConfigurationsArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</LibrariesAllConfigurationsArtifactsPath>
+  </PropertyGroup>
+
+  <!-- Set up artifact subpaths. -->
+  <PropertyGroup>
+    <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
+    <CoreCLRCrossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))</CoreCLRCrossgen2Dir>
+
+    <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
+    <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
+    <LibrariesNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'NonShipping'))</LibrariesNonShippingPackagesDir>
+
+    <LibrariesAllConfigPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigurationsArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesAllConfigPackagesDir>
+    <LibrariesAllConfigShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'Shipping'))</LibrariesAllConfigShippingPackagesDir>
+    <LibrariesAllConfigNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'NonShipping'))</LibrariesAllConfigNonShippingPackagesDir>
+
+    <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesSharedFrameworkRefArtifactsPath>
+    <LibrariesAllRefArtifactsPath Condition="'$(LibrariesAllRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', '$(NetCoreAppCurrent)'))</LibrariesAllRefArtifactsPath>
+    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime'))$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesSharedFrameworkBinArtifactsPath>
+    <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime'))$(NetCoreAppCurrent)-$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesAllBinArtifactsPath>
+    <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native'))$(NetCoreAppCurrent)-$(LibrariesOSGroupConfigurationArchitecture)\</LibrariesNativeArtifactsPath>
+
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm64' and '$(BuildArchitecture)' != 'arm64'">x64</CoreCLRCrossTargetComponentDirName>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsWindows)' == 'true'">x86</CoreCLRCrossTargetComponentDirName>
+    <CoreCLRCrossTargetComponentDirName Condition="'$(TargetArchitecture)' == 'arm' and '$(BuildArchitecture)' != 'arm' and '$(TargetsLinux)' == 'true'">x64</CoreCLRCrossTargetComponentDirName>
+  </PropertyGroup>
+
+  <Target Name="ResolveCoreCLRFilesFromLocalBuild">
+    <Error Condition="!Exists('$(CoreCLRArtifactsPath)')" Text="The CoreCLR artifacts path does not exist '$(CoreCLRArtifactsPath)'. The CoreCLR subset category must be built before building this project." />
+
+    <PropertyGroup>
+      <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
+      <!--
+        Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
+        value is different after CoreCLRArtifactsPath is normalized.
+      -->
+      <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
+      <CoreCLRCrossTargetComponentDir
+        Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLRSharedFrameworkDir)*.*" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''" Include="$(CoreCLRCrossTargetComponentDir)*.*" IsNative="true" />
+      <CoreCLRFiles Include="$(CoreCLRArtifactsPath)Redist/**/*.dll" />
+      <CoreCLRFiles>
+        <IsNative>true</IsNative>
+      </CoreCLRFiles>
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.dll"
+                             Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')" />
+      <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
+                             Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
+      <CoreCLRFiles Include="@(_systemPrivateCoreLib)" />
+      <CoreCLRFiles
+        Include="
+          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
+          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+      <CoreCLRFiles
+        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb;" />
+      <CoreCLRFiles Condition="Exists('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb')"
+        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb" />
+      <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
+        Include="
+          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
+          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+
+      <CoreCLRCrossTargetFiles>
+        <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
+      </CoreCLRCrossTargetFiles>
+    </ItemGroup>
+
+    <Error Condition="'@(CoreCLRFiles)' == ''" Text="The CoreCLR subset category must be built before building this project." />
+  </Target>
+
+  <Target Name="ResolveMonoFilesFromLocalBuild">
+    <Error Condition="!Exists('$(MonoArtifactsPath)')" Text="The Mono artifacts path does not exist '$(MonoArtifactsPath)'. The Mono subset category must be built before building this project." />
+
+    <ItemGroup>
+      <MonoFiles Include="$(MonoArtifactsPath)\*.*" />
+    </ItemGroup>
+
+    <Error Condition="'@(MonoFiles)' == ''" Text="The Mono subset category must be built before building this project." />
+  </Target>
+
+  <Target Name="EnsureLocalArtifactsExist">
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkRefArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesAllRefArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllRefArtifactsPath)" />
+  </Target>
+
+  <!--
+    Ensure artifacts exist for the more advanced paths. If the configuration is '*', don't emit
+    these errors: it isn't a local dev scenario.
+  -->
+  <Target Name="EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist"
+          Condition="'$(LibrariesOSGroupConfigurationArchitecture)' != '*'">
+    <Error Condition="!Exists('$(LibrariesSharedFrameworkBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesSharedFrameworkBinArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesAllBinArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesAllBinArtifactsPath)" />
+    <Error Condition="!Exists('$(LibrariesNativeArtifactsPath)')" Text="The libraries subset category must be built before building this project. Missing artifacts: $(LibrariesNativeArtifactsPath)" />
+  </Target>
+
+  <Target Name="ResolveLibrariesFromLocalBuild"
+          DependsOnTargets="
+            EnsureLocalArtifactsExist;
+            EnsureLocalOSGroupConfigurationArchitectureSpecificArtifactsExist">
+    <ItemGroup>
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' != 'true'" Include="$(LibrariesSharedFrameworkRefArtifactsPath)*.dll;$(LibrariesSharedFrameworkRefArtifactsPath)*.pdb" />
+      <LibrariesRefAssemblies Condition="'$(IncludeOOBLibraries)' == 'true'" Include="$(LibrariesAllRefArtifactsPath)*.dll;$(LibrariesAllRefArtifactsPath)*.pdb" />
+      <LibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' != 'true'" Include="
+        $(LibrariesSharedFrameworkBinArtifactsPath)*.dll;
+        $(LibrariesSharedFrameworkBinArtifactsPath)*.pdb"
+        IsNative="" />
+      <LibrariesRuntimeFiles Condition="'$(IncludeOOBLibraries)' == 'true'" Include="
+        $(LibrariesAllBinArtifactsPath)*.dll;
+        $(LibrariesAllBinArtifactsPath)*.pdb"
+        IsNative="" />
+      <LibrariesRuntimeFiles Include="
+        $(LibrariesNativeArtifactsPath)*.dll;
+        $(LibrariesNativeArtifactsPath)*.dylib;
+        $(LibrariesNativeArtifactsPath)*.a;
+        $(LibrariesNativeArtifactsPath)*.so;
+        $(LibrariesNativeArtifactsPath)*.dbg;
+        $(LibrariesNativeArtifactsPath)*.dwarf;
+        $(LibrariesNativeArtifactsPath)*.pdb"
+        IsNative="true" />
+    </ItemGroup>
+
+    <Error Condition="'@(LibrariesRefAssemblies)' == ''" Text="The libraries subset category must be built before building this project." />
+    <Error Condition="'@(LibrariesRuntimeFiles)' == ''" Text="The libraries subset category must be built before building this project." />
+  </Target>
+
+  <PropertyGroup>
+    <LiveRuntimeIdentifierGraphPath>$(RuntimeIdGraphDefinitionFile)</LiveRuntimeIdentifierGraphPath>
+    <RuntimeIdentifierGraphPath Condition="'$(UseLiveRuntimeIdentifierGraph)' == 'true'">$(LiveRuntimeIdentifierGraphPath)</RuntimeIdentifierGraphPath>
+  </PropertyGroup>
+</Project>

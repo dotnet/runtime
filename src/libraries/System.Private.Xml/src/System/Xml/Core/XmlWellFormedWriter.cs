@@ -66,10 +66,6 @@ namespace System.Xml
         // char type tables
         private XmlCharType _xmlCharType = XmlCharType.Instance;
 
-        // hash randomizer
-        private readonly SecureStringHasher _hasher;
-
-
         //
         // Constants
         //
@@ -288,8 +284,6 @@ namespace System.Xml
             _elemTop = 0;
 
             _attrStack = new AttrName[AttributeArrayInitialSize];
-
-            _hasher = new SecureStringHasher();
         }
 
         //
@@ -1848,7 +1842,7 @@ namespace System.Xml
             else if (_nsTop == MaxNamespacesWalkCount)
             {
                 // add all
-                _nsHashtable = new Dictionary<string, int>(_hasher);
+                _nsHashtable = new Dictionary<string, int>();
                 for (int i = 0; i <= _nsTop; i++)
                 {
                     AddToNamespaceHashtable(i);
@@ -2122,7 +2116,7 @@ namespace System.Xml
             return s;
         }
 
-        private unsafe void CheckNCName(string ncname)
+        private void CheckNCName(string ncname)
         {
             Debug.Assert(ncname != null && ncname.Length > 0);
 
@@ -2229,7 +2223,7 @@ namespace System.Xml
                 {
                     if (_attrHashTable == null)
                     {
-                        _attrHashTable = new Dictionary<string, int>(_hasher);
+                        _attrHashTable = new Dictionary<string, int>();
                     }
                     Debug.Assert(_attrHashTable.Count == 0);
                     for (int i = 0; i < top; i++)

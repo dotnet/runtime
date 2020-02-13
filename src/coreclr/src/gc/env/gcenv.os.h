@@ -140,7 +140,7 @@ public:
 // GC thread function prototype
 typedef void (*GCThreadFunction)(void* param);
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 // Right now we support maximum 1024 procs - meaning that we will create at most
 // that many GC threads and GC heaps.
 #define MAX_SUPPORTED_CPUS 1024
@@ -148,7 +148,7 @@ typedef void (*GCThreadFunction)(void* param);
 #else
 #define MAX_SUPPORTED_CPUS 64
 #define MAX_SUPPORTED_NODES 16
-#endif // BIT64
+#endif // HOST_64BIT
 
 // Add of processor indices used to store affinity.
 class AffinitySet

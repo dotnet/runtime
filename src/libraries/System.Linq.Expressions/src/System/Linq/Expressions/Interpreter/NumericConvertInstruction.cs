@@ -20,8 +20,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public sealed override int Run(InterpretedFrame frame)
         {
-            object obj = frame.Pop();
-            object converted;
+            object? obj = frame.Pop();
+            object? converted;
             if (obj == null)
             {
                 if (_isLiftedToNull)
@@ -32,7 +32,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     // We cannot have null in a non-lifted numeric context. Throw the exception
                     // about not Nullable object requiring a value.
-                    return (int)(int?)obj;
+                    return (int)(int?)obj!;
                 }
             }
             else
@@ -52,7 +52,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToString() => InstructionName + "(" + _from + "->" + _to + ")";
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Unchecked : NumericConvertInstruction
         {
             public override string InstructionName => "UncheckedConvert";
@@ -176,7 +175,6 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible")]
         internal sealed class Checked : NumericConvertInstruction
         {
             public override string InstructionName => "CheckedConvert";

@@ -19,7 +19,7 @@ namespace System
         //
 
         public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
+        public static bool IsNetFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
         public static bool IsWindows7 => IsWindows && GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => IsWindows && GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
@@ -58,6 +58,11 @@ namespace System
         // >= Windows 10 May 2019 Update (19H1)
         public static bool IsWindows10Version1903OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18362;
+
+        // >= Windows 10 20H1 Update (As of Jan. 2020 yet to be released)
+        // Per https://docs.microsoft.com/en-us/windows-insider/flight-hub/ the first 20H1 build is 18836.
+        public static bool IsWindows10Version2004OrGreater => IsWindows &&
+            GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 18836;
 
         public static bool IsWindowsIoTCore
         {
@@ -196,7 +201,7 @@ namespace System
             // This actually checks whether code is running in a modern app.
             // Currently this is the only situation where we run in app container.
             // If we want to distinguish the two cases in future,
-            // EnvironmentHelpers.IsAppContainerProcess in desktop code shows how to check for the AC token.
+            // EnvironmentHelpers.IsAppContainerProcess in .NET Framework code shows how to check for the AC token.
             get
             {
                 if (s_isInAppContainer != -1)

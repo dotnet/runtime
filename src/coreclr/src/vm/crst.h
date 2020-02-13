@@ -296,9 +296,7 @@ protected:
     void DebugDestroy();
 #endif
 
-    union {
-        CRITICAL_SECTION    m_criticalsection;
-    };
+    T_CRITICAL_SECTION m_criticalsection;
 
     typedef enum
     {

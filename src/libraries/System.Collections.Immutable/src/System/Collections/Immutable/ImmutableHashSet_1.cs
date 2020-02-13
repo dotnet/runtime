@@ -21,7 +21,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty immutable hash set with the default comparer for <typeparamref name="T"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableHashSet<T> Empty = new ImmutableHashSet<T>(SortedInt32KeyNode<HashBucket>.EmptyNode, EqualityComparer<T>.Default, 0);
 
         /// <summary>
@@ -435,7 +434,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T> equalityComparer)
+        public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
             if (equalityComparer == null)
             {

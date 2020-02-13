@@ -4,9 +4,8 @@
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <!-- Platform agnostic files -->
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Interop.Brotli.cs" />
@@ -18,8 +17,8 @@
     <Compile Include="System\IO\Compression\enc\BrotliEncoderOperation.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliEncoderParameter.cs" />
     <Compile Include="System\IO\Compression\BrotliStream.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeBrotliHandle.cs</Link>
@@ -38,17 +37,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>

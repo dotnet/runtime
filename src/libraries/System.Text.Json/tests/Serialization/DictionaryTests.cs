@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.Specialized;
 using System.Reflection;
 using System.Text.Encodings.Web;
 using Xunit;
@@ -323,7 +325,7 @@ namespace System.Text.Json.Serialization.Tests
 
         public static IEnumerable<string> InvalidJsonForIntValue()
         {
-            yield return @"""1""" ;
+            yield return @"""1""";
             yield return "[";
             yield return "}";
             yield return @"[""1""]";
@@ -932,6 +934,136 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonString, json);
         }
 
+        private interface IClass { }
+
+        private class MyClass : IClass { }
+
+        private class MyNonGenericDictionary : Dictionary<string, int> { }
+
+        private class MyFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type typeToConvert)
+            {
+                return typeToConvert == typeof(IClass) || typeToConvert == typeof(MyClass);
+            }
+
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (typeToConvert == typeof(IClass))
+                {
+                    return new MyStuffConverterForIClass();
+                }
+                else if (typeToConvert == typeof(MyClass))
+                {
+                    return new MyStuffConverterForMyClass();
+                }
+                else
+                {
+                    throw new InvalidOperationException();
+                }
+            }
+        }
+
+        private class MyStuffConverterForIClass : JsonConverter<IClass>
+        {
+            public override IClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new MyClass();
+            }
+
+            public override void Write(Utf8JsonWriter writer, IClass value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(1);
+            }
+        }
+
+        private class MyStuffConverterForMyClass : JsonConverter<MyClass>
+        {
+            public override MyClass Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new MyClass();
+            }
+
+            public override void Write(Utf8JsonWriter writer, MyClass value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(1);
+            }
+        }
+
+        // This method generates 316 unique test cases for nested dictionaries up to 4
+        // levels deep, along with matching JSON, encompassing the various planes of
+        // dictionaries that can be combined: generic, non-generic, BCL, user-derived,
+        // immutable, mutable, readonly, concurrent, specialized.
+        private static IEnumerable<(Type, string)> NestedDictionaryTypeData()
+        {
+            string testJson = @"{""Key"":1}";
+
+            List<Type> genericDictTypes = new List<Type>()
+            {
+                typeof(IDictionary<,>),
+                typeof(ConcurrentDictionary<,>),
+                typeof(GenericIDictionaryWrapper<,>),
+            };
+
+            List<Type> nonGenericDictTypes = new List<Type>()
+            {
+                typeof(Hashtable),
+                typeof(OrderedDictionary),
+            };
+
+            List<Type> baseDictionaryTypes = new List<Type>
+            {
+                typeof(MyNonGenericDictionary),
+                typeof(IReadOnlyDictionary<string, MyClass>),
+                typeof(ConcurrentDictionary<string, int>),
+                typeof(ImmutableDictionary<string, IClass>),
+                typeof(GenericIDictionaryWrapper<string, int?>),
+            };
+            baseDictionaryTypes.AddRange(nonGenericDictTypes);
+
+            // This method has exponential behavior which this depth value significantly impacts.
+            // Don't change this value without checking how many test cases are generated and
+            // how long the tests run for.
+            int maxTestDepth = 4;
+
+            HashSet<(Type, string)> tests = new HashSet<(Type, string)>();
+
+            for (int i = 0; i < maxTestDepth; i++)
+            {
+                List<Type> newBaseTypes = new List<Type>();
+
+                foreach (Type testType in baseDictionaryTypes)
+                {
+                    tests.Add((testType, testJson));
+
+                    foreach (Type genericType in genericDictTypes)
+                    {
+                        newBaseTypes.Add(genericType.MakeGenericType(typeof(string), testType));
+                    }
+
+                    newBaseTypes.AddRange(nonGenericDictTypes);
+                }
+
+                baseDictionaryTypes = newBaseTypes;
+                testJson = @"{""Key"":" + testJson + "}";
+            }
+
+            return tests;
+        }
+
+        [Fact]
+        public static void NestedDictionariesRoundtrip()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+            options.Converters.Add(new MyFactory());
+
+            foreach ((Type dictionaryType, string testJson) in NestedDictionaryTypeData())
+            {
+                object dict = JsonSerializer.Deserialize(testJson, dictionaryType, options);
+                Assert.Equal(testJson, JsonSerializer.Serialize(dict, options));
+            }
+        }
+
         [Fact]
         public static void DictionaryOfClasses()
         {
@@ -1107,7 +1239,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CustomEscapingOnPropertyNameAndValue()
         {
             var dict = new Dictionary<string, string>();
-            dict.Add("A\u046701","Value\u0467");
+            dict.Add("A\u046701", "Value\u0467");
 
             // Baseline with no escaping.
             var json = JsonSerializer.Serialize(dict);
@@ -1830,7 +1962,8 @@ namespace System.Text.Json.Serialization.Tests
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return GetEnumerator();
+                // This GetEnumerator() should not be called.
+                throw new NotImplementedException();
             }
 
             public bool Remove(string key)
@@ -1900,11 +2033,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(Json, json);
         }
 
-        public class DictionaryThatHasIncomatibleEnumerator<TValue> : IDictionary<string, TValue>
+        public class DictionaryThatHasIncompatibleEnumerator : IDictionary
         {
-            IDictionary<string, TValue> _inner = new Dictionary<string, TValue>();
+            Hashtable _inner = new Hashtable();
 
-            public TValue this[string key]
+            public object this[string key]
             {
                 get
                 {
@@ -1916,22 +2049,35 @@ namespace System.Text.Json.Serialization.Tests
                 }
             }
 
-            public ICollection<string> Keys => _inner.Keys;
+            public ICollection Keys => _inner.Keys;
 
-            public ICollection<TValue> Values => _inner.Values;
+            public ICollection Values => _inner.Values;
 
             public int Count => _inner.Count;
 
             public bool IsReadOnly => _inner.IsReadOnly;
 
-            public void Add(string key, TValue value)
+            public bool IsFixedSize => _inner.IsFixedSize;
+
+            public bool IsSynchronized => throw new NotImplementedException();
+
+            public object SyncRoot => throw new NotImplementedException();
+
+            public object this[object key]
             {
-                _inner.Add(key, value);
+                get
+                {
+                    return _inner[key];
+                }
+                set
+                {
+                    _inner[key] = value;
+                }
             }
 
-            public void Add(KeyValuePair<string, TValue> item)
+            public void Add(object key, object value)
             {
-                _inner.Add(item);
+                _inner.Add(key, value);
             }
 
             public void Clear()
@@ -1939,49 +2085,30 @@ namespace System.Text.Json.Serialization.Tests
                 throw new NotImplementedException();
             }
 
-            public bool Contains(KeyValuePair<string, TValue> item)
-            {
-                return _inner.Contains(item);
-            }
-
-            public bool ContainsKey(string key)
-            {
-                return _inner.ContainsKey(key);
-            }
-
-            public void CopyTo(KeyValuePair<string, TValue>[] array, int arrayIndex)
-            {
-                // CopyTo should not be called.
-                throw new NotImplementedException();
-            }
-
-            public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator()
-            {
-                // The generic GetEnumerator() should not be called for this test.
-                throw new NotImplementedException();
-            }
-
             IEnumerator IEnumerable.GetEnumerator()
             {
-                // Create an incompatible converter.
-                return new int[] {100,200 }.GetEnumerator();
-            }
-
-            public bool Remove(string key)
-            {
-                // Remove should not be called.
                 throw new NotImplementedException();
             }
 
-            public bool Remove(KeyValuePair<string, TValue> item)
+            public bool Contains(object key)
             {
-                // Remove should not be called.
                 throw new NotImplementedException();
             }
 
-            public bool TryGetValue(string key, out TValue value)
+            public IDictionaryEnumerator GetEnumerator()
             {
-                return _inner.TryGetValue(key, out value);
+                // Throw NotSupportedException so we can detect this GetEnumerator was called.
+                throw new NotSupportedException();
+            }
+
+            public void Remove(object key)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                throw new NotImplementedException();
             }
         }
 
@@ -1990,24 +2117,32 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string Json = @"{""One"":1,""Two"":2}";
 
-            DictionaryThatHasIncomatibleEnumerator<int> dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator<int>>(Json);
-            Assert.Equal(1, dictionary["One"]);
-            Assert.Equal(2, dictionary["Two"]);
+            DictionaryThatHasIncompatibleEnumerator dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
+            Assert.Equal(1, ((JsonElement)dictionary["One"]).GetInt32());
+            Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetInt32());
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
         }
-
 
         [Fact]
         public static void VerifyDictionaryThatHasIncomatibleEnumeratorWithPoco()
         {
             const string Json = @"{""One"":{""Id"":1},""Two"":{""Id"":2}}";
 
-            DictionaryThatHasIncomatibleEnumerator<Poco> dictionary;
-            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncomatibleEnumerator<Poco>>(Json);
-            Assert.Equal(1, dictionary["One"].Id);
-            Assert.Equal(2, dictionary["Two"].Id);
+            DictionaryThatHasIncompatibleEnumerator dictionary;
+            dictionary = JsonSerializer.Deserialize<DictionaryThatHasIncompatibleEnumerator>(Json);
+            Assert.Equal(1, ((JsonElement)dictionary["One"]).GetProperty("Id").GetInt32());
+            Assert.Equal(2, ((JsonElement)dictionary["Two"]).GetProperty("Id").GetInt32());
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(dictionary));
+        }
+
+
+        [Fact]
+        public static void VerifyIDictionaryWithNonStringKey()
+        {
+            IDictionary dictionary = new Hashtable();
+            dictionary.Add(1, "value");
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(dictionary));
         }
 
         public class ClassWithoutParameterlessCtor

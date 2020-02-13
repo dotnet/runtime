@@ -1,0 +1,27 @@
+parameters:
+  installDotnet: false
+
+steps:
+  - ${{ if eq(parameters.installDotnet, true) }}:
+    - task: UseDotNet@2
+      displayName: Install dotnet ${{ parameters.dotnetVersion }}
+      inputs:
+        packageType: sdk
+        useGlobalJson: true
+        installationPath: $(Agent.TempDirectory)/_dotnet
+
+  - task: NuGetAuthenticate@0
+    inputs:
+      nuGetServiceConnections: 'dotnet-core-internal-tooling'
+      forceReinstallCredentialProvider: true
+
+  - task: DotNetCoreCLI@2
+    displayName: Restore internal tools
+    condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+    inputs:
+      command: restore
+      feedsToUse: config
+      projects: 'eng/common/internal/Tools.csproj'
+      nugetConfigPath: 'eng/internal/NuGet.config'
+      restoreDirectory: '$(Build.SourcesDirectory)\.packages'
+      verbosityRestore: 'diagnostic'

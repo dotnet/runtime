@@ -28,7 +28,7 @@
 #include "appdomain.hpp"
 #include "appdomain.inl"
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #include "utilcode.h"
 #endif
 
@@ -734,7 +734,7 @@ UINT64 QCALLTYPE ThreadNative::GetCurrentOSThreadId()
     UINT64 threadId;
 
     BEGIN_QCALL;
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
     threadId = (UINT64) GetCurrentThreadId();
 #else
     threadId = (UINT64) PAL_GetCurrentOSThreadId();
@@ -1450,6 +1450,12 @@ FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
 {
     FCALL_CONTRACT;
 
+#ifndef TARGET_UNIX
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
+#else
     return ::GetCurrentProcessorNumber();
+#endif //!TARGET_UNIX
 }
 FCIMPLEND;

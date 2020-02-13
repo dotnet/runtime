@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CommonManaged.props))\CommonManaged.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(CommonManaged.props))" />
 
   <PropertyGroup>
     <Description>Abstractions for making code that uses file system and environment testable.</Description>

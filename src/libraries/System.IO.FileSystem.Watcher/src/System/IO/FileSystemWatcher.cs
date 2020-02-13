@@ -46,11 +46,11 @@ namespace System.IO
         private bool _disposed;
 
         // Event handlers
-        private FileSystemEventHandler _onChangedHandler = null;
-        private FileSystemEventHandler _onCreatedHandler = null;
-        private FileSystemEventHandler _onDeletedHandler = null;
-        private RenamedEventHandler _onRenamedHandler = null;
-        private ErrorEventHandler _onErrorHandler = null;
+        private FileSystemEventHandler? _onChangedHandler;
+        private FileSystemEventHandler? _onCreatedHandler;
+        private FileSystemEventHandler? _onDeletedHandler;
+        private RenamedEventHandler? _onRenamedHandler;
+        private ErrorEventHandler? _onErrorHandler;
 
         private const int c_notifyFiltersValidMask = (int)(NotifyFilters.Attributes |
                                                            NotifyFilters.CreationTime |
@@ -65,8 +65,10 @@ namespace System.IO
         static FileSystemWatcher()
         {
             int s_notifyFiltersValidMask = 0;
+#pragma warning disable CS8605 // Unboxing a possibly null value
             foreach (int enumValue in Enum.GetValues(typeof(NotifyFilters)))
                 s_notifyFiltersValidMask |= enumValue;
+#pragma warning restore CS8605
             Debug.Assert(c_notifyFiltersValidMask == s_notifyFiltersValidMask, "The NotifyFilters enum has changed. The c_notifyFiltersValidMask must be updated to reflect the values of the NotifyFilters enum.");
         }
 #endif
@@ -265,7 +267,7 @@ namespace System.IO
         /// <devdoc>
         ///    Occurs when a file or directory in the specified <see cref='System.IO.FileSystemWatcher.Path'/> is changed.
         /// </devdoc>
-        public event FileSystemEventHandler Changed
+        public event FileSystemEventHandler? Changed
         {
             add
             {
@@ -280,7 +282,7 @@ namespace System.IO
         /// <devdoc>
         ///    Occurs when a file or directory in the specified <see cref='System.IO.FileSystemWatcher.Path'/> is created.
         /// </devdoc>
-        public event FileSystemEventHandler Created
+        public event FileSystemEventHandler? Created
         {
             add
             {
@@ -295,7 +297,7 @@ namespace System.IO
         /// <devdoc>
         ///    Occurs when a file or directory in the specified <see cref='System.IO.FileSystemWatcher.Path'/> is deleted.
         /// </devdoc>
-        public event FileSystemEventHandler Deleted
+        public event FileSystemEventHandler? Deleted
         {
             add
             {
@@ -310,7 +312,7 @@ namespace System.IO
         /// <devdoc>
         ///    Occurs when the internal buffer overflows.
         /// </devdoc>
-        public event ErrorEventHandler Error
+        public event ErrorEventHandler? Error
         {
             add
             {
@@ -326,7 +328,7 @@ namespace System.IO
         ///    Occurs when a file or directory in the specified <see cref='System.IO.FileSystemWatcher.Path'/>
         ///    is renamed.
         /// </devdoc>
-        public event RenamedEventHandler Renamed
+        public event RenamedEventHandler? Renamed
         {
             add
             {
@@ -417,7 +419,7 @@ namespace System.IO
         private void NotifyRenameEventArgs(WatcherChangeTypes action, ReadOnlySpan<char> name, ReadOnlySpan<char> oldName)
         {
             // filter if there's no handler or neither new name or old name match a specified pattern
-            RenamedEventHandler handler = _onRenamedHandler;
+            RenamedEventHandler? handler = _onRenamedHandler;
             if (handler != null &&
                 (MatchPattern(name) || MatchPattern(oldName)))
             {
@@ -425,7 +427,7 @@ namespace System.IO
             }
         }
 
-        private FileSystemEventHandler GetHandler(WatcherChangeTypes changeType)
+        private FileSystemEventHandler? GetHandler(WatcherChangeTypes changeType)
         {
             switch (changeType)
             {
@@ -446,7 +448,7 @@ namespace System.IO
         /// </summary>
         private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, ReadOnlySpan<char> name)
         {
-            FileSystemEventHandler handler = GetHandler(changeType);
+            FileSystemEventHandler? handler = GetHandler(changeType);
 
             if (handler != null && MatchPattern(name.IsEmpty ? _directory : name))
             {
@@ -459,7 +461,7 @@ namespace System.IO
         /// </summary>
         private void NotifyFileSystemEventArgs(WatcherChangeTypes changeType, string name)
         {
-            FileSystemEventHandler handler = GetHandler(changeType);
+            FileSystemEventHandler? handler = GetHandler(changeType);
 
             if (handler != null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
             {
@@ -470,7 +472,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Changed'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnChanged(FileSystemEventArgs e)
         {
             InvokeOn(e, _onChangedHandler);
@@ -479,7 +480,6 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Created'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnCreated(FileSystemEventArgs e)
         {
             InvokeOn(e, _onCreatedHandler);
@@ -488,17 +488,16 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Deleted'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnDeleted(FileSystemEventArgs e)
         {
             InvokeOn(e, _onDeletedHandler);
         }
 
-        private void InvokeOn(FileSystemEventArgs e, FileSystemEventHandler handler)
+        private void InvokeOn(FileSystemEventArgs e, FileSystemEventHandler? handler)
         {
             if (handler != null)
             {
-                ISynchronizeInvoke syncObj = SynchronizingObject;
+                ISynchronizeInvoke? syncObj = SynchronizingObject;
                 if (syncObj != null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
@@ -509,13 +508,12 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Error'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnError(ErrorEventArgs e)
         {
-            ErrorEventHandler handler = _onErrorHandler;
+            ErrorEventHandler? handler = _onErrorHandler;
             if (handler != null)
             {
-                ISynchronizeInvoke syncObj = SynchronizingObject;
+                ISynchronizeInvoke? syncObj = SynchronizingObject;
                 if (syncObj != null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
@@ -526,13 +524,12 @@ namespace System.IO
         /// <devdoc>
         ///    Raises the <see cref='System.IO.FileSystemWatcher.Renamed'/> event.
         /// </devdoc>
-        [SuppressMessage("Microsoft.Security", "CA2109:ReviewVisibleEventHandlers", MessageId = "0#", Justification = "Changing from protected to private would be a breaking change")]
         protected void OnRenamed(RenamedEventArgs e)
         {
-            RenamedEventHandler handler = _onRenamedHandler;
+            RenamedEventHandler? handler = _onRenamedHandler;
             if (handler != null)
             {
-                ISynchronizeInvoke syncObj = SynchronizingObject;
+                ISynchronizeInvoke? syncObj = SynchronizingObject;
                 if (syncObj != null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
@@ -549,8 +546,8 @@ namespace System.IO
             // none is done here, either.
 
             var tcs = new TaskCompletionSource<WaitForChangedResult>();
-            FileSystemEventHandler fseh = null;
-            RenamedEventHandler reh = null;
+            FileSystemEventHandler? fseh = null;
+            RenamedEventHandler? reh = null;
 
             // Register the event handlers based on what events are desired.  The full framework
             // doesn't register for the Error event, so this doesn't either.
@@ -642,7 +639,7 @@ namespace System.IO
             StartRaisingEvents();
         }
 
-        public override ISite Site
+        public override ISite? Site
         {
             get
             {
@@ -659,7 +656,7 @@ namespace System.IO
             }
         }
 
-        public ISynchronizeInvoke SynchronizingObject { get; set; }
+        public ISynchronizeInvoke? SynchronizingObject { get; set; }
 
         public void BeginInit()
         {

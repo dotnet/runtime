@@ -9,6 +9,6 @@
     <Compile Include="co1727ctor_oo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

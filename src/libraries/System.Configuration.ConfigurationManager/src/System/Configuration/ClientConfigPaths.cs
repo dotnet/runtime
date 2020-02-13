@@ -55,7 +55,7 @@ namespace System.Configuration
 
                 HasEntryAssembly = true;
 
-                // The original NetFX (desktop) code tried to get the local path without using Uri.
+                // The original .NET Framework code tried to get the local path without using Uri.
                 // If we ever find a need to do this again be careful with the logic. "file:///" is
                 // used for local paths and "file://" for UNCs. Simply removing the prefix will make
                 // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
@@ -97,7 +97,7 @@ namespace System.Configuration
             if (string.IsNullOrEmpty(namePrefix))
                 namePrefix = Validate(ProductName, limitSize: true);
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
-                ? ApplicationUri.ToLower(CultureInfo.InvariantCulture)
+                ? ApplicationUri.ToLowerInvariant()
                 : null;
             string hashSuffix = GetTypeAndHashSuffix(applicationUriLower);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
@@ -272,7 +272,7 @@ namespace System.Configuration
                     // Try the remainder of the namespace
                     if (ns != null)
                     {
-                        int lastDot = ns.LastIndexOf(".", StringComparison.Ordinal);
+                        int lastDot = ns.LastIndexOf('.');
                         if ((lastDot != -1) && (lastDot < ns.Length - 1)) ProductName = ns.Substring(lastDot + 1);
                         else ProductName = ns;
 
@@ -291,7 +291,7 @@ namespace System.Configuration
                     // Try the first part of the namespace
                     if (ns != null)
                     {
-                        int firstDot = ns.IndexOf(".", StringComparison.Ordinal);
+                        int firstDot = ns.IndexOf('.');
                         _companyName = firstDot != -1 ? ns.Substring(0, firstDot) : ns;
 
                         _companyName = _companyName.Trim();

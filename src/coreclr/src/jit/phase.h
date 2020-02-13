@@ -6,15 +6,17 @@
 #ifndef _PHASE_H_
 #define _PHASE_H_
 
+// A phase encapsulates a part of the compilation pipeline for a method.
+//
 class Phase
 {
 public:
     virtual void Run();
 
 protected:
-    Phase(Compiler* _comp, const char* _name, Phases _phase = PHASE_NUMBER_OF)
-        : comp(_comp), name(_name), phase(_phase), doChecks(true)
+    Phase(Compiler* _compiler, Phases _phase) : comp(_compiler), m_name(nullptr), m_phase(_phase)
     {
+        m_name = PhaseNames[_phase];
     }
 
     virtual void PrePhase();
@@ -22,61 +24,66 @@ protected:
     virtual void PostPhase();
 
     Compiler*   comp;
-    const char* name;
-    Phases      phase;
-    bool        doChecks;
+    const char* m_name;
+    Phases      m_phase;
 };
 
-inline void Phase::Run()
+// A phase that accepts a lambda for the actions done by the phase.
+//
+// Would prefer to use std::function via <functional> here, but seemingly can't.
+//
+template <typename A>
+class ActionPhase final : public Phase
 {
-    PrePhase();
-    DoPhase();
-    PostPhase();
+public:
+    ActionPhase(Compiler* _compiler, Phases _phase, A _action) : Phase(_compiler, _phase), action(_action)
+    {
+    }
+
+protected:
+    virtual void DoPhase() override
+    {
+        action();
+    }
+
+private:
+    A action;
+};
+
+// Wrapper for using ActionPhase
+//
+template <typename A>
+void DoPhase(Compiler* _compiler, Phases _phase, A _action)
+{
+    ActionPhase<A> phase(_compiler, _phase, _action);
+    phase.Run();
 }
 
-inline void Phase::PrePhase()
+// A simple phase that just invokes a method on the compiler instance
+//
+class CompilerPhase final : public Phase
 {
-#ifdef DEBUG
-    if (VERBOSE)
+public:
+    CompilerPhase(Compiler* _compiler, Phases _phase, void (Compiler::*_action)()) : Phase(_compiler, _phase)
     {
-        printf("*************** In %s\n", name);
-        printf("Trees before %s\n", name);
-        comp->fgDispBasicBlocks(true);
     }
 
-    if (doChecks && comp->expensiveDebugCheckLevel >= 2)
+protected:
+    virtual void DoPhase() override
     {
-        // If everyone used the Phase class, this would duplicate the PostPhase() from the previous phase.
-        // But, not everyone does, so go ahead and do the check here, too.
-        comp->fgDebugCheckBBlist();
-        comp->fgDebugCheckLinks();
+        (comp->*action)();
     }
-#endif // DEBUG
-}
 
-inline void Phase::PostPhase()
+private:
+    void (Compiler::*action)();
+};
+
+// Wrapper for using CompilePhase
+//
+inline void DoPhase(Compiler* _compiler, Phases _phase, void (Compiler::*_action)())
 {
-#ifdef DEBUG
-    if (VERBOSE)
-    {
-        printf("*************** Exiting %s\n", name);
-        printf("Trees after %s\n", name);
-        comp->fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
-
-    if (phase != PHASE_NUMBER_OF)
-    {
-        comp->EndPhase(phase);
-    }
-
-#ifdef DEBUG
-    if (doChecks)
-    {
-        comp->fgDebugCheckBBlist();
-        comp->fgDebugCheckLinks();
-    }
-#endif // DEBUG
+    CompilerPhase phase(_compiler, _phase, _action);
+    phase.Run();
 }
 
 #endif /* End of _PHASE_H_ */

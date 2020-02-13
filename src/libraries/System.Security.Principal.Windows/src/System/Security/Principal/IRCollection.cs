@@ -18,7 +18,7 @@ namespace System.Security.Principal
         // Container enumerated by this collection
         //
 
-        private readonly List<IdentityReference> _Identities;
+        private readonly List<IdentityReference> _identities;
 
         #endregion
 
@@ -39,7 +39,7 @@ namespace System.Security.Principal
 
         public IdentityReferenceCollection(int capacity)
         {
-            _Identities = new List<IdentityReference>(capacity);
+            _identities = new List<IdentityReference>(capacity);
         }
 
         #endregion
@@ -48,14 +48,14 @@ namespace System.Security.Principal
 
         public void CopyTo(IdentityReference[] array, int offset)
         {
-            _Identities.CopyTo(0, array, offset, Count);
+            _identities.CopyTo(0, array, offset, Count);
         }
 
         public int Count
         {
             get
             {
-                return _Identities.Count;
+                return _identities.Count;
             }
         }
 
@@ -74,7 +74,7 @@ namespace System.Security.Principal
                 throw new ArgumentNullException(nameof(identity));
             }
 
-            _Identities.Add(identity);
+            _identities.Add(identity);
         }
 
         public bool Remove(IdentityReference identity)
@@ -86,7 +86,7 @@ namespace System.Security.Principal
 
             if (Contains(identity))
             {
-                return _Identities.Remove(identity);
+                return _identities.Remove(identity);
             }
 
             return false;
@@ -94,7 +94,7 @@ namespace System.Security.Principal
 
         public void Clear()
         {
-            _Identities.Clear();
+            _identities.Clear();
         }
 
         public bool Contains(IdentityReference identity)
@@ -104,7 +104,7 @@ namespace System.Security.Principal
                 throw new ArgumentNullException(nameof(identity));
             }
 
-            return _Identities.Contains(identity);
+            return _identities.Contains(identity);
         }
 
         #endregion
@@ -129,17 +129,16 @@ namespace System.Security.Principal
         {
             get
             {
-                return _Identities[index];
+                return _identities[index];
             }
 
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-
-                _Identities[index] = value;
+                _identities[index] = value;
             }
         }
 
@@ -147,7 +146,7 @@ namespace System.Security.Principal
         {
             get
             {
-                return _Identities;
+                return _identities;
             }
         }
 
@@ -216,8 +215,8 @@ namespace System.Security.Principal
             }
 
             bool Homogeneous = false;
-            IdentityReferenceCollection SourceSids = null;
-            IdentityReferenceCollection SourceNTAccounts = null;
+            IdentityReferenceCollection? SourceSids = null;
+            IdentityReferenceCollection? SourceNTAccounts = null;
 
             if (SourceSidsCount == Count)
             {
@@ -242,7 +241,7 @@ namespace System.Security.Principal
             // Repackage only if the source is not homogeneous (contains different source types)
             //
 
-            IdentityReferenceCollection Result = null;
+            IdentityReferenceCollection? Result = null;
 
             if (!Homogeneous)
             {
@@ -260,11 +259,11 @@ namespace System.Security.Principal
                     }
                     else if (type == typeof(SecurityIdentifier))
                     {
-                        SourceSids.Add(id);
+                        SourceSids!.Add(id);
                     }
                     else if (type == typeof(NTAccount))
                     {
-                        SourceNTAccounts.Add(id);
+                        SourceNTAccounts!.Add(id);
                     }
                     else
                     {
@@ -279,11 +278,11 @@ namespace System.Security.Principal
             }
 
             bool someFailed = false;
-            IdentityReferenceCollection TargetSids = null, TargetNTAccounts = null;
+            IdentityReferenceCollection? TargetSids = null, TargetNTAccounts = null;
 
             if (SourceSidsCount > 0)
             {
-                TargetSids = SecurityIdentifier.Translate(SourceSids, targetType, out someFailed);
+                TargetSids = SecurityIdentifier.Translate(SourceSids!, targetType, out someFailed);
 
                 if (Homogeneous && !(forceSuccess && someFailed))
                 {
@@ -293,7 +292,7 @@ namespace System.Security.Principal
 
             if (SourceNTAccountsCount > 0)
             {
-                TargetNTAccounts = NTAccount.Translate(SourceNTAccounts, targetType, out someFailed);
+                TargetNTAccounts = NTAccount.Translate(SourceNTAccounts!, targetType, out someFailed);
 
                 if (Homogeneous && !(forceSuccess && someFailed))
                 {
@@ -353,11 +352,11 @@ namespace System.Security.Principal
                     }
                     else if (type == typeof(SecurityIdentifier))
                     {
-                        Result.Add(TargetSids[SourceSidsCount++]);
+                        Result.Add(TargetSids![SourceSidsCount++]);
                     }
                     else if (type == typeof(NTAccount))
                     {
-                        Result.Add(TargetNTAccounts[SourceNTAccountsCount++]);
+                        Result.Add(TargetNTAccounts![SourceNTAccountsCount++]);
                     }
                     else
                     {
@@ -371,7 +370,7 @@ namespace System.Security.Principal
                 }
             }
 
-            return Result;
+            return Result!;
         }
         #endregion
     }
@@ -398,11 +397,10 @@ namespace System.Security.Principal
 
         internal IdentityReferenceEnumerator(IdentityReferenceCollection collection)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
-
             _collection = collection;
             _current = -1;
         }

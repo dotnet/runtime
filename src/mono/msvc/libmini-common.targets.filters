@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="common_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-runtime.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\seq-points.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\seq-points.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\ir-emit.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\method-to-ir.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\cfgdump.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\cfgdump.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\decompose.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\version.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\optflags-def.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\jit-icalls.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\jit-icalls.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\trace.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\trace.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\patch-info.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-ops.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-arch.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\dominators.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\cfold.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\regalloc.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\helpers.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\liveness.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\ssa.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\abcremoval.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\abcremoval.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\local-propagation.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\driver.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debug-mini.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\linear-scan.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\aot-compiler.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\aot-compiler.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\aot-runtime.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\aot-runtime-wasm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\graph.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-codegen.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-exceptions.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-trampolines.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\branch-opts.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-generic-sharing.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\simd-methods-netcore.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\tasklets.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\tasklets.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-native-types.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\simd-intrinsics-netcore.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-unwind.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\unwind.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\image-writer.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\image-writer.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\dwarfwriter.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\dwarfwriter.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-gc.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-gc.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-agent.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-engine.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-engine.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\debugger-state-machine.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-state-machine.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\debugger-agent-stubs.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\xdebug.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-llvm.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvm-jit.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\alias-analysis.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-cross-helpers.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\arch-stubs.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\type-checking.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\calls.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\lldb.h">
+      <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\lldb.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\memory-access.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\intrinsics.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-profiler.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.h">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\monovm.h">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\monovm.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MonoSourceLocation)\mono\mini\Makefile.am.in">
+      <Filter>Resource Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files$(MonoMiniFilterSubFolder)\common">
+      <UniqueIdentifier>{5E1443AF-3832-4C37-AD99-0D264DE68344}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files$(MonoMiniFilterSubFolder)\common">
+      <UniqueIdentifier>{D09DBA53-D0BA-4E90-B207-4B23A9E7709B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files$(MonoMiniFilterSubFolder)\common">
+      <UniqueIdentifier>{C0C82F0C-77A6-447F-BED2-39FD6ACDDC3A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

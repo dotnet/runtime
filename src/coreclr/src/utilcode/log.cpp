@@ -31,13 +31,13 @@
 #define LOG_ENABLE                      0x0040
 
 
-static DWORD    LogFlags                    = 0;
-static CQuickWSTR     szLogFileName;
-static HANDLE   LogFileHandle               = INVALID_HANDLE_VALUE;
-static MUTEX_COOKIE   LogFileMutex                = 0;
-static DWORD    LogFacilityMask             = LF_ALL;
-static DWORD    LogFacilityMask2            = 0;
-static DWORD    LogVMLevel                  = LL_INFO100;
+static          DWORD        LogFlags                    = 0;
+static          CQuickWSTR   szLogFileName;
+static          HANDLE       LogFileHandle               = INVALID_HANDLE_VALUE;
+static volatile MUTEX_COOKIE LogFileMutex                = 0;
+static          DWORD        LogFacilityMask             = LF_ALL;
+static          DWORD        LogFacilityMask2            = 0;
+static          DWORD        LogVMLevel                  = LL_INFO100;
         // <TODO>@todo FIX should probably only display warnings and above by default</TODO>
 
 
@@ -95,15 +95,6 @@ VOID InitLogging()
             fdwCreate,
             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |  ((LogFlags & LOG_ENABLE_FLUSH_FILE) ? FILE_FLAG_WRITE_THROUGH : 0),
             NULL);
-
-        if(0 == LogFileMutex)
-        {
-            LogFileMutex = ClrCreateMutex(
-                NULL,
-                FALSE,
-                NULL);
-            _ASSERTE(LogFileMutex != 0);
-        }
 
             // Some other logging may be going on, try again with another file name
         if (LogFileHandle == INVALID_HANDLE_VALUE && wcslen(szLogFileName.Ptr()) + 3 <= szLogFileName.Size())
@@ -187,16 +178,28 @@ VOID LeaveLogLock()
     }
 }
 
-static bool bLoggingInitialized = false;
+static volatile bool bLoggingInitialized = false;
 VOID InitializeLogging()
 {
     STATIC_CONTRACT_NOTHROW;
 
     if (bLoggingInitialized)
         return;
-    bLoggingInitialized = true;
 
-    InitLogging();      // You can call this in the debugger to fetch new settings
+    MUTEX_COOKIE mutexCookie = ClrCreateMutex(NULL, FALSE, NULL);
+    _ASSERTE(mutexCookie != 0);
+    if (InterlockedCompareExchangeT(&LogFileMutex, mutexCookie, 0) != 0)
+    {
+        ClrCloseMutex(mutexCookie);
+    }
+
+    EnterLogLock();
+    if (!bLoggingInitialized)
+    {
+        InitLogging();      // You can call this in the debugger to fetch new settings
+        bLoggingInitialized = true;
+    }
+    LeaveLogLock();
 }
 
 VOID FlushLogging() {
@@ -337,7 +340,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
     // trashing your program...
     _ASSERTE((buflen < (DWORD) BUFFERSIZE) && "Log text is too long!") ;
 
-#if !PLATFORM_UNIX
+#if !TARGET_UNIX
     //convert NL's to CR NL to fixup notepad
     const int BUFFERSIZE2 = BUFFERSIZE + 500;
     char rgchBuffer2[BUFFERSIZE2];
@@ -358,7 +361,7 @@ VOID LogSpewAlwaysValist(const char *fmt, va_list args)
 
     buflen = (DWORD)(d - pBuffer2);
     pBuffer = pBuffer2;
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
 
     if (LogFlags & LOG_ENABLE_FILE_LOGGING && LogFileHandle != INVALID_HANDLE_VALUE)
     {

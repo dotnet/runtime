@@ -119,9 +119,13 @@ namespace HttpStress
 
             using HttpClient client = CreateHttpClient();
 
+            Console.WriteLine($"Trying connect to the server {_baseAddress}.");
+
             // Before starting the full-blown test, make sure can communicate with the server
             // Needed for scenaria where we're deploying server & client in separate containers, simultaneously.
             await SendTestRequestToServer(maxRetries: 10);
+
+            Console.WriteLine($"Connected succesfully.");
 
             // Spin up a thread dedicated to outputting stats for each defined interval
             new Thread(() =>
@@ -133,6 +137,8 @@ namespace HttpStress
                 }
             })
             { IsBackground = true }.Start();
+
+            Console.WriteLine($"Spinning up {_config.ConcurrentRequests} concurrent workers.");
 
             // Start N workers, each of which sits in a loop making requests.
             Task[] tasks = Enumerable.Range(0, _config.ConcurrentRequests).Select(RunWorker).ToArray();

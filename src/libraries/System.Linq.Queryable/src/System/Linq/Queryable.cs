@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -22,9 +23,8 @@ namespace System.Linq
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
-            IQueryable queryable = source as IQueryable;
-            if (queryable != null) return queryable;
-            Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
+            if (source is IQueryable queryable) return queryable;
+            Type? enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
                 throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
             return EnumerableQuery.Create(enumType.GenericTypeArguments[0], source);
@@ -168,7 +168,7 @@ namespace System.Linq
 
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
         {
-            IQueryable<TSource> q = source as IQueryable<TSource>;
+            IQueryable<TSource>? q = source as IQueryable<TSource>;
             return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 
@@ -190,7 +190,7 @@ namespace System.Linq
                     CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
-        public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (outer == null)
                 throw Error.ArgumentNull(nameof(outer));
@@ -226,7 +226,7 @@ namespace System.Linq
                     CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
-        public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (outer == null)
                 throw Error.ArgumentNull(nameof(outer));
@@ -258,7 +258,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
+        public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -286,7 +286,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
+        public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -314,7 +314,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
+        public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -342,7 +342,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey> comparer)
+        public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -466,7 +466,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -480,7 +480,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -526,7 +526,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -540,7 +540,7 @@ namespace System.Linq
                     CachedReflectionInfo.GroupBy_TSource_TKey_TResult_4(typeof(TSource), typeof(TKey), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
-        public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey> comparer)
+        public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -566,7 +566,7 @@ namespace System.Linq
                     CachedReflectionInfo.Distinct_TSource_1(typeof(TSource)), source.Expression));
         }
 
-        public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource> comparer)
+        public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -641,7 +641,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
+        public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
             if (source1 == null)
                 throw Error.ArgumentNull(nameof(source1));
@@ -671,7 +671,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
+        public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
             if (source1 == null)
                 throw Error.ArgumentNull(nameof(source1));
@@ -701,7 +701,7 @@ namespace System.Linq
                     ));
         }
 
-        public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
+        public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
             if (source1 == null)
                 throw Error.ArgumentNull(nameof(source1));
@@ -741,6 +741,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
@@ -751,6 +752,7 @@ namespace System.Linq
                     CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [return: MaybeNull]
         public static TSource FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
@@ -789,6 +791,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
@@ -799,6 +802,7 @@ namespace System.Linq
                     CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [return: MaybeNull]
         public static TSource LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
@@ -837,6 +841,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
@@ -847,6 +852,7 @@ namespace System.Linq
                     CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [return: MaybeNull]
         public static TSource SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
             if (source == null)
@@ -875,6 +881,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
         {
             if (source == null)
@@ -921,7 +928,7 @@ namespace System.Linq
                     ));
         }
 
-        public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item, IEqualityComparer<TSource> comparer)
+        public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item, IEqualityComparer<TSource>? comparer)
         {
             if (source == null)
                 throw Error.ArgumentNull(nameof(source));
@@ -957,7 +964,7 @@ namespace System.Linq
                     ));
         }
 
-        public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource> comparer)
+        public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
             if (source1 == null)
                 throw Error.ArgumentNull(nameof(source1));
@@ -1059,6 +1066,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource Min<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
@@ -1069,6 +1077,7 @@ namespace System.Linq
                     CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [return: MaybeNull]
         public static TResult Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)
@@ -1083,6 +1092,7 @@ namespace System.Linq
                     ));
         }
 
+        [return: MaybeNull]
         public static TSource Max<TSource>(this IQueryable<TSource> source)
         {
             if (source == null)
@@ -1093,6 +1103,7 @@ namespace System.Linq
                     CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
         }
 
+        [return: MaybeNull]
         public static TResult Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
             if (source == null)

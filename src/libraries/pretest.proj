@@ -2,9 +2,11 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <BuildDependsOnTargets>FilterProjects;GenerateLaunchSettingsFiles</BuildDependsOnTargets>
+    <BuildDependsOnTargets>GenerateLaunchSettingsFiles</BuildDependsOnTargets>
     <BuildDependsOnTargets Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(BuildDependsOnTargets);GenerateTestSharedFrameworkDepsFile</BuildDependsOnTargets>
     <BuildDependsOnTargets Condition="'$(PlatformManifestFile)' != ''">$(BuildDependsOnTargets);GenerateFileVersionProps</BuildDependsOnTargets>
+    <TargetFrameworkIdentifier>netcoreapp</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>5.0</TargetFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,7 +31,7 @@
   </Target>
 
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateFileVersionProps">
+  <Target Name="GenerateFileVersionProps" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="Microsoft.NETCore.App"
                               PackageVersion="$(ProductVersion)"
@@ -44,7 +46,7 @@
     To use invoke target directly specifying NETCoreAppTestSharedFrameworkPath property.
   -->
   <UsingTask TaskName="GenerateTestSharedFrameworkDepsFile" AssemblyFile="$(InstallerTasksAssemblyPath)"/>
-  <Target Name="GenerateTestSharedFrameworkDepsFile">
+  <Target Name="GenerateTestSharedFrameworkDepsFile" Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)'">
     <GenerateTestSharedFrameworkDepsFile SharedFrameworkDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                                          RuntimeGraphFiles="$(RuntimeIdGraphDefinitionFile)"
                                          TargetRuntimeIdentifier="$(PackageRID)" />
@@ -70,11 +72,11 @@
 
   <Target Name="Build"
           Condition="'$(SkipPrepareTest)' != 'true'"
-          DependsOnTargets="$(BuildDependsOnTargets)">
+          DependsOnTargets="GenerateLaunchSettingsFiles;GenerateTestSharedFrameworkDepsFile;GenerateFileVersionProps">
 
     <MSBuild Targets="Build"
              Projects="@(Project)"
-             Properties="BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             Properties="TargetFramework=$(BuildTargetFramework);%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 

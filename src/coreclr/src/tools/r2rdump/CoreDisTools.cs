@@ -1,7 +1,8 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ILCompiler.Reflection.ReadyToRun;
 using System;
 using System.Collections.Generic;
 using System.Reflection.PortableExecutable;
@@ -88,7 +89,7 @@ namespace R2RDump
         /// <summary>
         /// R2R reader is used to access architecture info, the PE image data and symbol table.
         /// </summary>
-        private readonly R2RReader _reader;
+        private readonly ReadyToRunReader _reader;
 
         /// <summary>
         /// Dump options
@@ -104,7 +105,7 @@ namespace R2RDump
         /// Store the R2R reader and construct the disassembler for the appropriate architecture.
         /// </summary>
         /// <param name="reader"></param>
-        public Disassembler(R2RReader reader, DumpOptions options)
+        public Disassembler(ReadyToRunReader reader, DumpOptions options)
         {
             _reader = reader;
             _options = options;
@@ -139,6 +140,8 @@ namespace R2RDump
             }
 
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
+            CoreDisTools.ClearOutputBuffer();
+
             instruction = instruction.Replace('\t', ' ');
 
             if (_options.Naked)
@@ -158,8 +161,15 @@ namespace R2RDump
                             colon += 3;
                         }
 
-                        nakedInstruction.Append($"{(rtfOffset + rtf.CodeOffset),8:x4}:");
-                        nakedInstruction.Append("  ");
+                        if (!_options.HideOffsets)
+                        {
+                            nakedInstruction.Append($"{(rtfOffset + rtf.CodeOffset),8:x4}:");
+                            nakedInstruction.Append("  ");
+                        }
+                        else
+                        {
+                            nakedInstruction.Append("    ");
+                        }
                         nakedInstruction.Append(line.Substring(colon).TrimStart());
                         nakedInstruction.Append('\n');
                     }
@@ -311,23 +321,73 @@ namespace R2RDump
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeCommonIntelQuirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
         {
+            int instructionRVA = rtf.StartAddress + rtfOffset;
+            int nextInstructionRVA = instructionRVA + instrSize;
             if (instrSize == 2 && IsIntelJumpInstructionWithByteOffset(imageOffset + rtfOffset))
             {
                 sbyte offset = (sbyte)_reader.Image[imageOffset + rtfOffset + 1];
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target, rtf);
+                ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
             }
             else if (instrSize == 5 && IsIntel1ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
             {
                 int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 1);
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target, rtf);
+                ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
+            }
+            else if (instrSize == 5 && IsIntelCallInstructionWithIntOffset(imageOffset + rtfOffset))
+            {
+                int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 1);
+                int targetRVA = nextInstructionRVA + offset;
+                int targetImageOffset = _reader.GetOffset(targetRVA);
+                bool pointsOutsideRuntimeFunction = (targetRVA < rtf.StartAddress || targetRVA >= rtf.StartAddress + rtf.Size);
+                if (pointsOutsideRuntimeFunction && IsIntel2ByteIndirectJumpPCRelativeInstruction(targetImageOffset, out int instructionRelativeOffset))
+                {
+                    int thunkTargetRVA = targetRVA + instructionRelativeOffset;
+                    bool haveImportCell = _reader.ImportCellNames.TryGetValue(thunkTargetRVA, out string importCellName);
+
+                    if (_options.Naked && haveImportCell)
+                    {
+                        ReplaceRelativeOffset(ref instruction, $@"qword ptr [{importCellName}]", rtf);
+                    }
+                    else
+                    {
+                        ReplaceRelativeOffset(ref instruction, targetRVA, rtf);
+                        if (haveImportCell)
+                        {
+                            int instructionEnd = instruction.IndexOf('\n');
+                            StringBuilder builder = new StringBuilder(instruction, 0, instructionEnd, capacity: 256);
+                            AppendComment(builder, @$"JMP [0x{thunkTargetRVA:X4}]: {importCellName}");
+                            builder.AppendLine();
+                            instruction = builder.ToString();
+                        }
+                    }
+                }
+                else if (pointsOutsideRuntimeFunction && IsAnotherRuntimeFunctionWithinMethod(targetRVA, rtf, out int runtimeFunctionIndex))
+                {
+                    string runtimeFunctionName = string.Format("RUNTIME_FUNCTION[{0}]", runtimeFunctionIndex);
+
+                    if (_options.Naked)
+                    {
+                        ReplaceRelativeOffset(ref instruction, runtimeFunctionName, rtf);
+                    }
+                    else
+                    {
+                        ReplaceRelativeOffset(ref instruction, targetRVA, rtf);
+                        int instructionEnd = instruction.IndexOf('\n');
+                        StringBuilder builder = new StringBuilder(instruction, 0, instructionEnd, capacity: 256);
+                        AppendComment(builder, runtimeFunctionName);
+                        builder.AppendLine();
+                        instruction = builder.ToString();
+                    }
+                }
+                else
+                {
+                    ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
+                }
             }
             else if (instrSize == 6 && IsIntel2ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
             {
                 int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 2);
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target, rtf);
+                ReplaceRelativeOffset(ref instruction, nextInstructionRVA + offset, rtf);
             }
         }
 
@@ -389,22 +449,49 @@ namespace R2RDump
             String targetName;
             if (_reader.ImportCellNames.TryGetValue(importCellRva, out targetName))
             {
-                int fill = 61 - builder.Length;
-                if (fill > 0)
-                {
-                    builder.Append(' ', fill);
-                }
-                builder.Append(" // ");
-                builder.Append(targetName);
+                AppendComment(builder, targetName);
             }
+        }
+
+        /// <summary>
+        /// Append a given comment to the string builder.
+        /// </summary>
+        /// <param name="builder">String builder to append comment to</param>
+        /// <param name="comment">Comment to append</param>
+        private void AppendComment(StringBuilder builder, string comment)
+        {
+            int fill = 61 - builder.Length;
+            if (fill > 0)
+            {
+                builder.Append(' ', fill);
+            }
+            builder.Append(" // ");
+            builder.Append(comment);
         }
 
         /// <summary>
         /// Replace relative offset in the disassembled instruction with the true target RVA.
         /// </summary>
-        /// <param name="instruction"></param>
-        /// <param name="target"></param>
+        /// <param name="instruction">Disassembled instruction to modify</param>
+        /// <param name="target">Target string to replace offset with</param>
+        /// <param name="rtf">Runtime function being disassembled</param>
         private void ReplaceRelativeOffset(ref string instruction, int target, RuntimeFunction rtf)
+        {
+            int outputOffset = target;
+            if (_options.Naked)
+            {
+                outputOffset -= rtf.StartAddress;
+            }
+            ReplaceRelativeOffset(ref instruction, string.Format("0x{0:X4}", outputOffset), rtf);
+        }
+
+        /// <summary>
+        /// Replace relative offset in the disassembled instruction with an arbitrary string.
+        /// </summary>
+        /// <param name="instruction">Disassembled instruction to modify</param>
+        /// <param name="replacementString">String to replace offset with</param>
+        /// <param name="rtf">Runtime function being disassembled</param>
+        private void ReplaceRelativeOffset(ref string instruction, string replacementString, RuntimeFunction rtf)
         {
             int numberEnd = instruction.IndexOf('\n');
             int number = numberEnd;
@@ -420,12 +507,7 @@ namespace R2RDump
 
             StringBuilder translated = new StringBuilder();
             translated.Append(instruction, 0, number);
-            int outputOffset = target;
-            if (_options.Naked)
-            {
-                outputOffset -= rtf.StartAddress;
-            }
-            translated.AppendFormat("0x{0:x4}", outputOffset);
+            translated.Append(replacementString);
             translated.Append(instruction, numberEnd, instruction.Length - numberEnd);
             instruction = translated.ToString();
         }
@@ -446,16 +528,22 @@ namespace R2RDump
         }
 
         /// <summary>
+        /// Returns true for the call relative opcode with signed 4-byte offset.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array</param>
+        private bool IsIntelCallInstructionWithIntOffset(int imageOffset)
+        {
+            return _reader.Image[imageOffset] == 0xE8; // CALL rel32
+        }
+
+        /// <summary>
         /// Returns true when this is one of the x86 / amd64 near jump / call opcodes
         /// with signed 4-byte offset.
         /// </summary>
         /// <param name="imageOffset">Offset within the PE image byte array</param>
         private bool IsIntel1ByteJumpInstructionWithIntOffset(int imageOffset)
         {
-            byte opCode = _reader.Image[imageOffset];
-            return opCode == 0xE8 // call near
-                || opCode == 0xE9 // jmp near
-                ;
+            return _reader.Image[imageOffset] == 0xE9; // JMP rel32
         }
 
         /// <summary>
@@ -469,6 +557,59 @@ namespace R2RDump
             byte opCode2 = _reader.Image[imageOffset + 1];
             return opCode1 == 0x0F &&
                 (opCode2 >= 0x80 && opCode2 <= 0x8F); // near conditional jumps
+        }
+
+        /// <summary>
+        /// Returns true when this is the 2-byte instruction for indirect jump
+        /// with RIP-relative offset.
+        /// </summary>
+        /// <param name="imageOffset">Offset within the PE image byte array</param>
+        /// <returns></returns>
+        private bool IsIntel2ByteIndirectJumpPCRelativeInstruction(int imageOffset, out int instructionRelativeOffset)
+        {
+            byte opCode1 = _reader.Image[imageOffset + 0];
+            byte opCode2 = _reader.Image[imageOffset + 1];
+            int offsetDelta = 6;
+
+            if (opCode1 == 0x48 && opCode2 == 0x8B && _reader.Image[imageOffset + 2] == 0x15) // MOV RDX, [R2R module]
+            {
+                imageOffset += 7;
+                offsetDelta += 7;
+                opCode1 = _reader.Image[imageOffset + 0];
+                opCode2 = _reader.Image[imageOffset + 1];
+            }
+
+            if (opCode1 == 0xFF && opCode2 == 0x25)
+            {
+                // JMP [RIP + rel32]
+                instructionRelativeOffset = offsetDelta + BitConverter.ToInt32(_reader.Image, imageOffset + 2);
+                return true;
+            }
+
+            instructionRelativeOffset = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Check whether a given target RVA corresponds to another runtime function within the same method.
+        /// </summary>
+        /// <param name="rva">Target RVA to analyze</param>
+        /// <param name="rtf">Runtime function being disassembled</param>
+        /// <param name="runtimeFunctionIndex">Output runtime function index if found, -1 otherwise</param>
+        /// <returns>true if target runtime function has been found, false otherwise</returns>
+        private bool IsAnotherRuntimeFunctionWithinMethod(int rva, RuntimeFunction rtf, out int runtimeFunctionIndex)
+        {
+            for (int rtfIndex = 0; rtfIndex < rtf.Method.RuntimeFunctions.Count; rtfIndex++)
+            {
+                if (rva == rtf.Method.RuntimeFunctions[rtfIndex].StartAddress)
+                {
+                    runtimeFunctionIndex = rtfIndex;
+                    return true;
+                }
+            }
+
+            runtimeFunctionIndex = -1;
+            return false;
         }
     }
 }

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Interop.settings.targets))" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- IJW is Windows-only -->
@@ -21,6 +21,6 @@
   <ItemGroup>
     <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
     <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

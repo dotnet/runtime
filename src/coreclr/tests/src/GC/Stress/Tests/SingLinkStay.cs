@@ -23,26 +23,26 @@ namespace SingLink
     {
         internal SingLink[] Mv_Sing;
 
-        public static int Main(System.String[] Args)
+        public static int Main(string[] args)
         {
             int iRep = 0;
             int iObj = 0;
 
             Console.WriteLine("Test should return with ExitCode 100 ...");
-            switch (Args.Length)
+            switch (args.Length)
             {
                 case 1:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 100;
                     }
                     break;
                 case 2:
-                    if (!Int32.TryParse(Args[0], out iRep))
+                    if (!Int32.TryParse(args[0], out iRep))
                     {
                         iRep = 100;
                     }
-                    if (!Int32.TryParse(Args[1], out iObj))
+                    if (!Int32.TryParse(args[1], out iObj))
                     {
                         iObj = 10;
                     }

@@ -33,16 +33,39 @@
         are published from every job. RID-agnostic nupkgs are built with the same ID/version by
         every job, so one specific job's outputs must be picked to sign and publish.
       -->
+
+      <!-- RID-specific framework packs. -->
       <RuntimeNupkgFile
         Include="
-          $(DownloadDirectory)**\runtime.*.nupkg;
-          $(DownloadDirectory)**\*.Runtime.*.nupkg;
-          $(DownloadDirectory)**\*.App.Host.*.nupkg;
-          $(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
+          $(DownloadDirectory)**\Microsoft.*.Runtime.*.nupkg;
+          $(DownloadDirectory)**\Microsoft.*.App.Host.*.nupkg;
+          $(DownloadDirectory)**\Microsoft.*.App.Crossgen2.*.nupkg"
         Exclude="@(DownloadedSymbolNupkgFile)" />
 
+      <!-- VS insertion packages, carrying RID-specific installers. -->
+      <RuntimeNupkgFile
+        Include="$(DownloadDirectory)**\VS.Redist.Common.*.nupkg"
+        Exclude="@(DownloadedSymbolNupkgFile)" />
+
+      <!--
+        Runtime packages associated with some identity packages. Need to exclude "runtime.native.*"
+        because Libraries produces some "runtime.native.Foo" packages with
+        "runtime.<rid>.runtime.native.Foo" identity packages.
+      -->
+      <RuntimeNupkgFile
+        Include="$(DownloadDirectory)**\runtime.*.nupkg"
+        Exclude="
+          $(DownloadDirectory)**\runtime.native.*.nupkg;
+          @(DownloadedSymbolNupkgFile)" />
+
+      <!--
+        Packages that aren't matched above as RID-specific are considered RID-agnostic. Also include
+        the AllConfigurations packages from the Libraries build.
+      -->
       <RidAgnosticNupkgToPublishFile
-        Include="$(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromJobName)\**\*.nupkg"
+        Include="
+          $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
+          $(DownloadDirectory)*\Libraries_AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />
 
       <NupkgToPublishFile Include="@(RuntimeNupkgFile);@(RidAgnosticNupkgToPublishFile)" />
@@ -55,9 +78,15 @@
         reasons, such as the VS insertion packages that transport MSIs. Symbol package validation
         will check for symbol completeness with file-by-file granularity rather than looking for
         missing symbols.nupkg files: https://github.com/dotnet/arcade/issues/2499.
+
+        Handles several conventions:
+        * NonShipping packages have symbol nupkgs that are Shipping.
+        * Shipping packages have symbol packages in a "symbols" subdirectory.
       -->
       <PotentialSymbolNupkgToPublishFile
-        Include="@(NupkgToPublishFile->Replace('\NonShipping\', '\Shipping\')->Replace('.nupkg', '.symbols.nupkg'))" />
+        Include="
+          @(NupkgToPublishFile->Replace('\NonShipping\', '\Shipping\')->Replace('.nupkg', '.symbols.nupkg'));
+          @(NupkgToPublishFile->Replace('\Shipping\', '\Shipping\symbols\')->Replace('.nupkg', '.symbols.nupkg'))" />
 
       <SymbolNupkgToPublishFile
         Include="@(PotentialSymbolNupkgToPublishFile)"
@@ -69,6 +98,16 @@
     <Error
       Condition="'@(SymbolNupkgToPublishFile)' == ''"
       Text="No symbol packages found." />
+
+    <!--
+      Duplicate RuntimeNupkgFile items mean artifact upload will fail, but only after another hour
+      of signing. Detect this early. It's possible to automatically "fix" this with Distinct(),
+      however the patterns should be fairly specific: this is likely a build infra mistake that
+      should be corrected.
+    -->
+    <Error
+      Text="Duplicate RuntimeNupkgFile entries for: %(RuntimeNupkgFile.Identity)"
+      Condition="@(RuntimeNupkgFile->Count()) &gt; 1" />
   </Target>
 
   <Import Project="..\Directory.Build.targets" />

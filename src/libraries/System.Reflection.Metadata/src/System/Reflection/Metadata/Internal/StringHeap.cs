@@ -12,10 +12,10 @@ namespace System.Reflection.Metadata.Ecma335
 {
     internal struct StringHeap
     {
-        private static string[] s_virtualValues;
+        private static string[]? s_virtualValues;
 
         internal readonly MemoryBlock Block;
-        private VirtualHeap _lazyVirtualHeap;
+        private VirtualHeap? _lazyVirtualHeap;
 
         internal StringHeap(MemoryBlock block, MetadataKind metadataKind)
         {
@@ -112,7 +112,7 @@ namespace System.Reflection.Metadata.Ecma335
         [Conditional("DEBUG")]
         private static void AssertFilled()
         {
-            for (int i = 0; i < s_virtualValues.Length; i++)
+            for (int i = 0; i < s_virtualValues!.Length; i++)
             {
                 Debug.Assert(s_virtualValues[i] != null, "Missing virtual value for StringHandle.VirtualIndex." + (StringHandle.VirtualIndex)i);
             }
@@ -157,10 +157,10 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal static string GetVirtualString(StringHandle.VirtualIndex index)
         {
-            return s_virtualValues[(int)index];
+            return s_virtualValues![(int)index];
         }
 
-        private string GetNonVirtualString(StringHandle handle, MetadataStringDecoder utf8Decoder, byte[] prefixOpt)
+        private string GetNonVirtualString(StringHandle handle, MetadataStringDecoder utf8Decoder, byte[]? prefixOpt)
         {
             Debug.Assert(handle.StringKind != StringKind.Virtual);
 

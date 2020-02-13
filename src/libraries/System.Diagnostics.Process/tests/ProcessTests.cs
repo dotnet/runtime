@@ -1316,8 +1316,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StandardInput);
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "GC has different behavior on Mono")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void CanBeFinalized()
         {
             FinalizingProcess.CreateAndRelease();
@@ -1845,7 +1844,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(37054, TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/37054", TestPlatforms.OSX)]
         [Fact]
         public void LongProcessNamesAreSupported()
         {

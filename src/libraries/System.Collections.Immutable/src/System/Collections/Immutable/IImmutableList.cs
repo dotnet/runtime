@@ -16,7 +16,6 @@ namespace System.Collections.Immutable
     /// Mutations on this list generate new lists.  Incremental changes to a list share as much memory as possible with the prior versions of a list,
     /// while allowing garbage collection to clean up any unique list data that is no longer being referenced.
     /// </remarks>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public interface IImmutableList<T> : IReadOnlyList<T>
     {
         /// <summary>
@@ -51,7 +50,7 @@ namespace System.Collections.Immutable
         /// contains count number of elements, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        int IndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);
+        int IndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer);
 
         /// <summary>
         /// Searches for the specified object and returns the zero-based index of the
@@ -75,7 +74,7 @@ namespace System.Collections.Immutable
         /// and ends at <paramref name="index"/>, if found; otherwise, -1.
         /// </returns>
         [Pure]
-        int LastIndexOf(T item, int index, int count, IEqualityComparer<T> equalityComparer);
+        int LastIndexOf(T item, int index, int count, IEqualityComparer<T>? equalityComparer);
 
         /// <summary>
         /// Adds the specified value to this list.
@@ -121,7 +120,7 @@ namespace System.Collections.Immutable
         /// </param>
         /// <returns>A new list with the element removed, or this list if the element is not in this list.</returns>
         [Pure]
-        IImmutableList<T> Remove(T value, IEqualityComparer<T> equalityComparer);
+        IImmutableList<T> Remove(T value, IEqualityComparer<T>? equalityComparer);
 
         /// <summary>
         /// Removes all the elements that match the conditions defined by the specified
@@ -149,7 +148,7 @@ namespace System.Collections.Immutable
         /// A new list with the elements removed.
         /// </returns>
         [Pure]
-        IImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T> equalityComparer);
+        IImmutableList<T> RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer);
 
         /// <summary>
         /// Removes the specified values from this list.
@@ -191,6 +190,6 @@ namespace System.Collections.Immutable
         /// <returns>The new list -- even if the value being replaced is equal to the new value for that position.</returns>
         /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
         [Pure]
-        IImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer);
+        IImmutableList<T> Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer);
     }
 }

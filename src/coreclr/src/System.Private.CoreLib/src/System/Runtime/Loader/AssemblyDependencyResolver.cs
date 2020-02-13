@@ -205,7 +205,7 @@ namespace System.Runtime.Loader
             }
         }
 
-#if PLATFORM_WINDOWS
+#if TARGET_WINDOWS
         private const CharSet HostpolicyCharSet = CharSet.Unicode;
 #else
         private const CharSet HostpolicyCharSet = CharSet.Ansi;

@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MarshalArrayByValTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
   </ItemGroup>
 </Project>

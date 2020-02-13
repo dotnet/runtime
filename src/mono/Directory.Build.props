@@ -1,0 +1,86 @@
+<Project>
+  <PropertyGroup>
+    <SkipImportArcadeSdkFromRoot>true</SkipImportArcadeSdkFromRoot>
+  </PropertyGroup>
+  <Import Project="..\..\Directory.Build.props" />
+  
+  <!-- Set default Configuration and Platform -->
+  <PropertyGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == '' and '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</OSGroup>
+
+    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+    <Platform>$(ArchGroup)</Platform>
+    <TargetArchitecture>$(ArchGroup)</TargetArchitecture>
+
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+
+    <PlatformConfigPathPart>$(OSGroup).$(Platform).$(Configuration)</PlatformConfigPathPart>
+  </PropertyGroup>
+
+  <!-- Common properties -->
+  <PropertyGroup>
+    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</BinDir>
+
+    <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">5.0.0</PackageVersion>
+
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+
+    <PreReleaseLabel>preview8</PreReleaseLabel>
+  </PropertyGroup>
+
+  <!-- Set up common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsFreeBSD Condition="'$(OSGroup)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(OSGroup)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(OSGroup)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(OSGroup)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(OSGroup)' == 'Windows_NT'">true</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>8.0</LangVersion>
+    <UseSharedCompilation>true</UseSharedCompilation>
+  </PropertyGroup>
+
+  <!-- Set the kind of PDB to Portable -->
+  <PropertyGroup>
+    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
+  </PropertyGroup>
+
+  <!-- Output paths -->
+  <PropertyGroup>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <!-- Ensure our properties are set before Arcade defines defaults -->
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SignAssembly Condition="'$(UsingMicrosoftNETSdk)'!='true'">false</SignAssembly>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CL_MPCount>$(NumberOfCores)</CL_MPCount>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict;nullablePublicOnly</Features>
+  </PropertyGroup>
+</Project>

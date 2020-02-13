@@ -55,7 +55,6 @@ class ThreadExceptionState
 public:
 
     void FreeAllStackTraces();
-    void ClearThrowablesForUnload(IGCHandleStore* handleStore);
 
 #ifdef _DEBUG
     typedef enum
@@ -102,9 +101,6 @@ public:
 #ifdef DACCESS_COMPILE
     void EnumChainMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif // DACCESS_COMPILE
-
-    // After unwinding from an SO, there may be stale exception state.
-    void ClearExceptionStateAfterSO(void* pStackFrameSP);
 
     enum ThreadExceptionFlag
     {
@@ -219,7 +215,7 @@ public:
 private:
     ThreadExceptionFlag      m_flag;
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 private:
     EHWatsonBucketTracker    m_UEWatsonBucketTracker;
 public:
@@ -228,7 +224,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return PTR_EHWatsonBucketTracker(PTR_HOST_MEMBER_TADDR(ThreadExceptionState, this, m_UEWatsonBucketTracker));
     }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 private:
 
@@ -269,7 +265,7 @@ private:
                                    EXCEPTION_REGISTRATION_RECORD* pEstablisherFrame,
                                    DWORD exceptionCode);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     friend LPVOID COMPlusEndCatchWorker(Thread * pThread);
 #endif
 
@@ -277,10 +273,10 @@ private:
 
     friend StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     friend void ResumeAtJitEH(CrawlFrame* pCf, BYTE* startPC, EE_ILEXCEPTION_CLAUSE *EHClausePtr,
                                    DWORD nestingLevel, Thread *pThread, BOOL unwindStack);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     friend _EXCEPTION_HANDLER_DECL(COMPlusNestedExceptionHandler);
 
@@ -319,7 +315,7 @@ private:
 
 extern BOOL IsWatsonEnabled();
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 // This preprocessor definition is used to capture watson buckets
 // at AppDomain transition boundary in END_DOMAIN_TRANSITION macro.
 //
@@ -359,8 +355,8 @@ extern BOOL IsWatsonEnabled();
                 SetupWatsonBucketsForNonPreallocatedExceptions(throwable);                                                                  \
             }                                                                                                                               \
         }
-#else // !FEATURE_PAL
+#else // !TARGET_UNIX
 #define CAPTURE_BUCKETS_AT_TRANSITION(pThread, oThrowable)
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 #endif // __ExState_h__

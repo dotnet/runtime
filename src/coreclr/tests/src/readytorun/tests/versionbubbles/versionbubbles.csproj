@@ -2,11 +2,11 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <ZapRequire>1</ZapRequire>
     <CLRTestPriority>1</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <CrossGenTest>false</CrossGenTest>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include=".\helper.csproj">

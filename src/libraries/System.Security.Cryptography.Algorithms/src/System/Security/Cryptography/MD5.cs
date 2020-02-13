@@ -8,17 +8,20 @@ namespace System.Security.Cryptography
 {
     //
     // If you change anything in this class, you must make the same change in the other *Provider classes. This is a pain but given that the
-    // preexisting contract from the desktop locks all of these into deriving directly from the abstract HashAlgorithm class,
+    // preexisting contract from the .NET Framework locks all of these into deriving directly from the abstract HashAlgorithm class,
     // it can't be helped.
     //
 
     public abstract class MD5 : HashAlgorithm
     {
-        protected MD5() { }
+        protected MD5()
+        {
+            HashSizeValue = 128;
+        }
 
         public static new MD5 Create() => new Implementation();
 
-        public static new MD5 Create(string algName) => (MD5)CryptoConfig.CreateFromName(algName);
+        public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
 
         private sealed class Implementation : MD5
         {

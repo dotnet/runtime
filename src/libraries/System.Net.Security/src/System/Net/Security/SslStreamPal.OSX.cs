@@ -35,7 +35,7 @@ namespace System.Net.Security
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -46,7 +46,7 @@ namespace System.Net.Security
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
             string targetName,
-            ArraySegment<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -233,7 +233,7 @@ namespace System.Net.Security
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext context,
-            ArraySegment<byte> inputBuffer,
+            ReadOnlySpan<byte> inputBuffer,
             ref byte[] outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
@@ -260,9 +260,9 @@ namespace System.Net.Security
                     }
                 }
 
-                if (inputBuffer.Array != null && inputBuffer.Count > 0)
+                if (inputBuffer.Length > 0)
                 {
-                    sslContext.Write(inputBuffer.Array, inputBuffer.Offset, inputBuffer.Count);
+                    sslContext.Write(inputBuffer);
                 }
 
                 SafeSslHandle sslHandle = sslContext.SslContext;

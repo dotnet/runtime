@@ -76,6 +76,11 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
 {
     STANDARD_VM_CONTRACT;
 
+    if (type.IsArray())
+    {
+        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(type.GetArrayElementTypeHandle()), type.GetRank());
+    }
+    else
     if (!type.IsTypeDesc())
     {
         MethodTable *pMT = type.AsMethodTable();
@@ -103,12 +108,6 @@ int GetVersionResilientTypeHashCode(TypeHandle type)
         {
             return hashcode;
         }
-    }
-    else
-    if (type.IsArray())
-    {
-        ArrayTypeDesc *pArray = type.AsArray();
-        return ComputeArrayTypeHashCode(GetVersionResilientTypeHashCode(pArray->GetArrayElementTypeHandle()), pArray->GetRank());
     }
     else
     if (type.IsPointer())
@@ -142,5 +141,10 @@ int GetVersionResilientMethodHashCode(MethodDesc *pMD)
     }
 
     return hashCode;
+}
+
+int GetVersionResilientModuleHashCode(Module* pModule)
+{
+    return ComputeNameHashCode(pModule->GetSimpleName());
 }
 #endif // DACCESS_COMPILE

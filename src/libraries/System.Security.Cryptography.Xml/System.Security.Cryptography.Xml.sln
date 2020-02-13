@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
-		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A85232C-E914-4E06-8542-26DAF4B22D60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7266957-DB20-4250-9C2E-E1FF83EDBD71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

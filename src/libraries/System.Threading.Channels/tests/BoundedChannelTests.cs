@@ -17,6 +17,41 @@ namespace System.Threading.Channels.Tests
             return c;
         }
 
+        [Fact]
+        public void Count_IncrementsDecrementsAsExpected()
+        {
+            const int Bound = 3;
+
+            Channel<int> c = Channel.CreateBounded<int>(Bound);
+            Assert.True(c.Reader.CanCount);
+
+            for (int iter = 0; iter < 2; iter++)
+            {
+                for (int i = 0; i < Bound; i++)
+                {
+                    Assert.Equal(i, c.Reader.Count);
+                    Assert.True(c.Writer.TryWrite(i));
+                    Assert.Equal(i + 1, c.Reader.Count);
+                }
+
+                Assert.False(c.Writer.TryWrite(42));
+                Assert.Equal(Bound, c.Reader.Count);
+
+                if (iter != 0)
+                {
+                    c.Writer.Complete();
+                }
+
+                for (int i = 0; i < Bound; i++)
+                {
+                    Assert.Equal(Bound - i, c.Reader.Count);
+                    Assert.True(c.Reader.TryRead(out int item));
+                    Assert.Equal(i, item);
+                    Assert.Equal(Bound - (i + 1), c.Reader.Count);
+                }
+            }
+        }
+
         [Theory]
         [InlineData(1)]
         [InlineData(10)]

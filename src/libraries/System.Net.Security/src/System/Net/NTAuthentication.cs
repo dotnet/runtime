@@ -5,7 +5,6 @@
 using System.ComponentModel;
 using System.Net.Security;
 using System.Security.Authentication.ExtendedProtection;
-using System.Threading;
 
 namespace System.Net
 {

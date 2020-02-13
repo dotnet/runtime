@@ -34,15 +34,15 @@ set(ILASM_HEADERS
   typar.hpp
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND ILASM_SOURCES ${ILASM_HEADERS})
 
   set(ILASM_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=ilasm.exe)
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   # Need generate a right form of asmparse.cpp to avoid the following options.
   # Clang also produces a bad-codegen on this prebuilt file with optimization.
   # https://github.com/dotnet/coreclr/issues/2305
@@ -50,9 +50,9 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   add_compile_options(-Wno-array-bounds)
   add_compile_options(-Wno-unused-label)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
-if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
     # This option is necessary to ensure that the overloaded delete operator defined inside
     # of the utilcode will be used instead of the standard library delete operator.
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic -Xlinker -Bsymbolic-functions")
@@ -61,7 +61,7 @@ if(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_
     # ensure proper resolving of circular references between a subset of the libraries.
     set(START_LIBRARY_GROUP -Wl,--start-group)
     set(END_LIBRARY_GROUP -Wl,--end-group)
-endif(CLR_CMAKE_PLATFORM_LINUX OR CLR_CMAKE_PLATFORM_FREEBSD OR CLR_CMAKE_PLATFORM_NETBSD)
+endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD)
 
 
 _add_executable(ilasm
@@ -77,14 +77,13 @@ set(ILASM_LINK_LIBRARIES
   mdcompiler_wks
   mdruntime_wks
   mdruntimerw_wks
-  strongname_tool
   mdstaticapi
   ${END_LIBRARY_GROUP} # End group of libraries that have circular references
   ceefgen
   corguids
 )
 
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND ILASM_LINK_LIBRARIES
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
@@ -106,10 +105,10 @@ else()
         mscorrc_debug
         palrt
     )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
     utilcodestaticnohost
@@ -119,11 +118,11 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   )
 
   # FreeBSD and NetBSD implement dlopen(3) in libc
-  if(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  if(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
     target_link_libraries(ilasm
       dl
     )
-  endif(NOT CMAKE_SYSTEM_NAME STREQUAL FreeBSD AND NOT CMAKE_SYSTEM_NAME STREQUAL NetBSD)
+  endif(NOT CLR_CMAKE_TARGET_FREEBSD AND NOT CLR_CMAKE_TARGET_NETBSD)
 else()
   target_link_libraries(ilasm
     ${ILASM_LINK_LIBRARIES}
@@ -131,6 +130,6 @@ else()
     oleaut32
     shell32
   )
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 install_clr(TARGETS ilasm)

@@ -4,65 +4,179 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
     [DebuggerDisplay("Path:{PropertyPath()} Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
     internal struct WriteStack
     {
-        // Fields are used instead of properties to avoid value semantics.
-        public WriteStackFrame Current;
-        private List<WriteStackFrame> _previous;
-        private int _index;
+        /// <summary>
+        /// The number of stack frames when the continuation started.
+        /// </summary>
+        private int _continuationCount;
 
-        public void Push()
+        /// <summary>
+        /// The number of stack frames including Current. _previous will contain _count-1 higher frames.
+        /// </summary>
+        private int _count;
+
+        private List<WriteStackFrame> _previous;
+
+        // A field is used instead of a property to avoid value semantics.
+        public WriteStackFrame Current;
+
+        /// <summary>
+        /// The amount of bytes to write before the underlying Stream should be flushed and the
+        /// current buffer adjusted to remove the processed bytes.
+        /// </summary>
+        public int FlushThreshold;
+
+        public bool IsContinuation => _continuationCount != 0;
+
+        // The bag of preservable references.
+        public DefaultReferenceResolver ReferenceResolver;
+
+        /// <summary>
+        /// Internal flag to let us know that we need to read ahead in the inner read loop.
+        /// </summary>
+        public bool SupportContinuation;
+
+        private void AddCurrent()
         {
             if (_previous == null)
             {
                 _previous = new List<WriteStackFrame>();
             }
 
-            if (_index == _previous.Count)
+            if (_count > _previous.Count)
             {
                 // Need to allocate a new array element.
                 _previous.Add(Current);
             }
             else
             {
-                Debug.Assert(_index < _previous.Count);
-
                 // Use a previously allocated slot.
-                _previous[_index] = Current;
+                _previous[_count - 1] = Current;
             }
 
-            Current.Reset();
-            _index++;
+            _count++;
         }
 
-        public void Push(JsonClassInfo nextClassInfo, object nextValue)
+        /// <summary>
+        /// Initializes the state for the first type being serialized.
+        /// </summary>
+        public void InitializeRoot(Type type, JsonSerializerOptions options, bool supportContinuation)
         {
-            Push();
-            Current.JsonClassInfo = nextClassInfo;
-            Current.CurrentValue = nextValue;
+            JsonClassInfo jsonClassInfo = options.GetOrAddClass(type);
+            Debug.Assert(jsonClassInfo.ClassType != ClassType.Invalid);
 
-            ClassType classType = nextClassInfo.ClassType;
+            Current.JsonClassInfo = jsonClassInfo;
 
-            if (classType == ClassType.Enumerable || nextClassInfo.ClassType == ClassType.Dictionary)
+            if ((jsonClassInfo.ClassType & (ClassType.Enumerable | ClassType.Dictionary)) == 0)
             {
-                Current.PopStackOnEndCollection = true;
-                Current.JsonPropertyInfo = Current.JsonClassInfo.PolicyProperty;
+                Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+            }
+
+            if (options.ReferenceHandling.ShouldWritePreservedReferences())
+            {
+                ReferenceResolver = new DefaultReferenceResolver(writing: true);
+            }
+
+            SupportContinuation = supportContinuation;
+        }
+
+        public void Push()
+        {
+            if (_continuationCount == 0)
+            {
+                if (_count == 0)
+                {
+                    // The first stack frame is held in Current.
+                    _count = 1;
+                }
+                else
+                {
+                    JsonClassInfo jsonClassInfo = Current.GetPolymorphicJsonPropertyInfo().RuntimeClassInfo;
+
+                    AddCurrent();
+                    Current.Reset();
+
+                    Current.JsonClassInfo = jsonClassInfo;
+                    Current.DeclaredJsonPropertyInfo = jsonClassInfo.PolicyProperty!;
+                }
+            }
+            else if (_continuationCount == 1)
+            {
+                // No need for a push since there is only one stack frame.
+                Debug.Assert(_count == 1);
+                _continuationCount = 0;
             }
             else
             {
-                Debug.Assert(nextClassInfo.ClassType == ClassType.Object || nextClassInfo.ClassType == ClassType.Unknown);
-                Current.PopStackOnEndObject = true;
+                // A continuation, adjust the index.
+                Current = _previous[_count - 1];
+
+                // Check if we are done.
+                if (_count == _continuationCount)
+                {
+                    _continuationCount = 0;
+                }
+                else
+                {
+                    _count++;
+                }
             }
         }
 
-        public void Pop()
+        public void Pop(bool success)
         {
-            Debug.Assert(_index > 0);
-            Current = _previous[--_index];
+            Debug.Assert(_count > 0);
+
+            if (!success)
+            {
+                // Check if we need to initialize the continuation.
+                if (_continuationCount == 0)
+                {
+                    if (_count == 1)
+                    {
+                        // No need for a continuation since there is only one stack frame.
+                        _continuationCount = 1;
+                        _count = 1;
+                    }
+                    else
+                    {
+                        AddCurrent();
+                        _count--;
+                        _continuationCount = _count;
+                        _count--;
+                        Current = _previous[_count - 1];
+                    }
+
+                    return;
+                }
+
+                if (_continuationCount == 1)
+                {
+                    // No need for a pop since there is only one stack frame.
+                    Debug.Assert(_count == 1);
+                    return;
+                }
+
+                // Update the list entry to the current value.
+                _previous[_count - 1] = Current;
+
+                Debug.Assert(_count > 0);
+            }
+            else
+            {
+                Debug.Assert(_continuationCount == 0);
+            }
+
+            if (_count > 1)
+            {
+                Current = _previous[--_count - 1];
+            }
         }
 
         // Return a property path as a simple JSONPath using dot-notation when possible. When special characters are present, bracket-notation is used:
@@ -72,36 +186,49 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            for (int i = 0; i < _index; i++)
+            // If a continuation, always report back full stack.
+            int count = Math.Max(_count, _continuationCount);
+
+            for (int i = 0; i < count - 1; i++)
             {
                 AppendStackFrame(sb, _previous[i]);
             }
 
-            AppendStackFrame(sb, Current);
-            return sb.ToString();
-        }
-
-        private void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
-        {
-            // Append the property name.
-            string propertyName = frame.JsonPropertyInfo?.PropertyInfo?.Name;
-            AppendPropertyName(sb, propertyName);
-        }
-
-        private void AppendPropertyName(StringBuilder sb, string propertyName)
-        {
-            if (propertyName != null)
+            if (_continuationCount == 0)
             {
-                if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                AppendStackFrame(sb, Current);
+            }
+
+            return sb.ToString();
+
+            void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
+            {
+                // Append the property name.
+                string? propertyName = frame.DeclaredJsonPropertyInfo?.PropertyInfo?.Name;
+                if (propertyName == null)
                 {
-                    sb.Append(@"['");
-                    sb.Append(propertyName);
-                    sb.Append(@"']");
+                    // Attempt to get the JSON property name from the property name specified in re-entry.
+                    propertyName = frame.JsonPropertyNameAsString;
                 }
-                else
+
+                AppendPropertyName(sb, propertyName);
+            }
+
+            void AppendPropertyName(StringBuilder sb, string? propertyName)
+            {
+                if (propertyName != null)
                 {
-                    sb.Append('.');
-                    sb.Append(propertyName);
+                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    {
+                        sb.Append(@"['");
+                        sb.Append(propertyName);
+                        sb.Append(@"']");
+                    }
+                    else
+                    {
+                        sb.Append('.');
+                        sb.Append(propertyName);
+                    }
                 }
             }
         }

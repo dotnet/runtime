@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.Constants.cs" Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs" Link="Interop\Windows\Kernel32\Interop.Constants.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs" Link="Interop\Windows\Kernel32\Interop.MAX_PATH.cs" />
     <Compile Include="AclTests.cs" />
     <Compile Include="EventWaitHandleAclTests.cs" />
     <Compile Include="MutexAclTests.cs" />
