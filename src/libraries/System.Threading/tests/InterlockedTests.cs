@@ -302,38 +302,6 @@ namespace System.Threading.Tests
             Assert.Equal(0x17755771u, value);
         }
 
-        [Fact]
-        public void InterlockedXor_Int32()
-        {
-            int value = 0x12345670;
-            Assert.Equal(0x15511551, Interlocked.Xor(ref value, 0x7654321));
-            Assert.Equal(0x15511551, value);
-        }
-
-        [Fact]
-        public void InterlockedXor_UInt32()
-        {
-            uint value = 0x12345670u;
-            Assert.Equal(0x15511551u, Interlocked.Xor(ref value, 0x7654321));
-            Assert.Equal(0x15511551u, value);
-        }
-
-        [Fact]
-        public void InterlockedXor_Int64()
-        {
-            long value = 0x12345670;
-            Assert.Equal(0x15511551, Interlocked.Xor(ref value, 0x7654321));
-            Assert.Equal(0x15511551, value);
-        }
-
-        [Fact]
-        public void InterlockedXor_UInt64()
-        {
-            ulong value = 0x12345670u;
-            Assert.Equal(0x15511551u, Interlocked.Xor(ref value, 0x7654321));
-            Assert.Equal(0x15511551u, value);
-        }
-
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue("https://github.com/dotnet/coreclr/issues/20215")]
         public void MemoryBarrierProcessWide()
         {

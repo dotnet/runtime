@@ -212,12 +212,6 @@ namespace System.Threading
         public static long Read(ref long location) { throw null; }
         [System.CLSCompliant(false)]
         public static ulong Read(ref ulong location) { throw null; }
-        public static int Xor(ref int location1, int value) { throw null; }
-        [System.CLSCompliant(false)]
-        public static uint Xor(ref uint location1, uint value) { throw null; }
-        public static long Xor(ref long location1, long value) { throw null; }
-        [System.CLSCompliant(false)]
-        public static ulong Xor(ref ulong location1, ulong value) { throw null; }
     }
     public static partial class LazyInitializer
     {
