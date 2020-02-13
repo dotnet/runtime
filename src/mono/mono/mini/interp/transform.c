@@ -3298,7 +3298,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (name);
 		}
 
-		if (header->num_locals && header->init_locals)
+		/*
+		 * We initialize the locals regardless of the presence of the init_locals
+		 * flag. Locals holding references need to be zeroed so we don't risk
+		 * crashing the GC if they end up being stored in an object.
+		 *
+		 * FIXME
+		 * Track values of locals over multiple basic blocks. This would enable
+		 * us to kill the MINT_INITLOCALS instruction if all locals are initialized
+		 * before use. We also don't need this instruction if the init locals flag
+		 * is not set and there are no locals holding references.
+		 */
+		if (header->num_locals)
 			interp_add_ins (td, MINT_INITLOCALS);
 
 		guint16 enter_profiling = 0;
@@ -4517,7 +4528,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 								break;
 							}
 						}
-						// If inlining failed we need to restore the stack
+						// If inlining failed, restore the stack.
+						// At runtime, interp.c newobj_fast uses an extra stack element
+						// after the parameters to store `o` across the non-recursive call
+						// where GC will see it.
+						// move_stack with the last parameter negative does not reduce max_stack.
 						move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
 						// Set the method to be executed as part of newobj instruction
 						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
@@ -5400,6 +5415,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_un = *td->ip == CEE_CONV_OVF_I1_UN;
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, is_un ? MINT_CONV_OVF_I1_UN_R4 : MINT_CONV_OVF_I1_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, is_un ? MINT_CONV_OVF_I1_UN_R8 : MINT_CONV_OVF_I1_R8);
 				break;
@@ -5420,6 +5438,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_CONV_OVF_U1_UN:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, MINT_CONV_OVF_U1_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, MINT_CONV_OVF_U1_R8);
 				break;
@@ -5440,6 +5461,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_un = *td->ip == CEE_CONV_OVF_I2_UN;
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, is_un ? MINT_CONV_OVF_I2_UN_R4 : MINT_CONV_OVF_I2_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, is_un ? MINT_CONV_OVF_I2_UN_R8 : MINT_CONV_OVF_I2_R8);
 				break;
@@ -5460,6 +5484,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_CONV_OVF_U2:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, MINT_CONV_OVF_U2_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, MINT_CONV_OVF_U2_R8);
 				break;

@@ -60,6 +60,18 @@ namespace System.Diagnostics.Tests
             return p;
         }
 
+        protected Process CreateProcess(Func<Task<int>> method)
+        {
+            Process p = null;
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method, new RemoteInvokeOptions { Start = false }))
+            {
+                p = handle.Process;
+                handle.Process = null;
+            }
+            AddProcessForDispose(p);
+            return p;
+        }
+
         protected Process CreateProcess(Func<string, int> method, string arg, bool autoDispose = true)
         {
             Process p = null;

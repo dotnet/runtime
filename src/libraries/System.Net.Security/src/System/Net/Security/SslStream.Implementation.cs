@@ -54,10 +54,6 @@ namespace System.Net.Security
             AppData = 23
         }
 
-        // This block is used by re-handshake code to buffer data decrypted with the old key.
-        private byte[] _queuedReadData;
-        private int _queuedReadCount;
-
         //
         // This block is used to rule the >>re-handshakes<< that are concurrent with read/write I/O requests.
         //
@@ -200,35 +196,6 @@ namespace System.Net.Security
         private SecurityStatusPal PrivateDecryptData(byte[] buffer, ref int offset, ref int count)
         {
             return _context.Decrypt(buffer, ref offset, ref count);
-        }
-
-        //
-        // When re-handshaking the "old" key decrypted data are queued until the handshake is done.
-        // When stream calls for decryption we will feed it queued data left from "old" encryption key.
-        //
-        // Must be called under the lock in case concurrent handshake is going.
-        //
-        private int CheckOldKeyDecryptedData(Memory<byte> buffer)
-        {
-            ThrowIfExceptionalOrNotAuthenticated();
-            if (_queuedReadData != null)
-            {
-                // This is inefficient yet simple and should be a REALLY rare case.
-                int toCopy = Math.Min(_queuedReadCount, buffer.Length);
-                new Span<byte>(_queuedReadData, 0, toCopy).CopyTo(buffer.Span);
-                _queuedReadCount -= toCopy;
-                if (_queuedReadCount == 0)
-                {
-                    _queuedReadData = null;
-                }
-                else
-                {
-                    Buffer.BlockCopy(_queuedReadData, toCopy, _queuedReadData, 0, _queuedReadCount);
-                }
-
-                return toCopy;
-            }
-            return -1;
         }
 
         //
@@ -602,23 +569,18 @@ namespace System.Net.Security
         // X     - some bytes are ready, no need for IO
         private int CheckEnqueueRead(Memory<byte> buffer)
         {
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
+            ThrowIfExceptionalOrNotAuthenticated();
 
+            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
             if (lockState != LockHandshake)
             {
                 // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return CheckOldKeyDecryptedData(buffer);
+                return -1;
             }
 
             LazyAsyncResult lazyResult = null;
             lock (SyncLock)
             {
-                int result = CheckOldKeyDecryptedData(buffer);
-                if (result != -1)
-                {
-                    return result;
-                }
-
                 // Check again under lock.
                 if (_lockReadState != LockHandshake)
                 {
@@ -631,30 +593,23 @@ namespace System.Net.Security
             }
             // Need to exit from lock before waiting.
             lazyResult.InternalWaitForCompletion();
-            lock (SyncLock)
-            {
-                return CheckOldKeyDecryptedData(buffer);
-            }
+            ThrowIfExceptionalOrNotAuthenticated();
+            return -1;
         }
 
         private ValueTask<int> CheckEnqueueReadAsync(Memory<byte> buffer)
         {
-            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
+            ThrowIfExceptionalOrNotAuthenticated();
 
+            int lockState = Interlocked.CompareExchange(ref _lockReadState, LockRead, LockNone);
             if (lockState != LockHandshake)
             {
                 // Proceed, no concurrent handshake is ongoing so no need for a lock.
-                return new ValueTask<int>(CheckOldKeyDecryptedData(buffer));
+                return new ValueTask<int>(-1);
             }
 
             lock (SyncLock)
             {
-                int result = CheckOldKeyDecryptedData(buffer);
-                if (result != -1)
-                {
-                    return new ValueTask<int>(result);
-                }
-
                 // Check again under lock.
                 if (_lockReadState != LockHandshake)
                 {
@@ -671,6 +626,8 @@ namespace System.Net.Security
 
         private Task CheckEnqueueWriteAsync()
         {
+            ThrowIfExceptionalOrNotAuthenticated();
+
             // Clear previous request.
             int lockState = Interlocked.CompareExchange(ref _lockWriteState, LockWrite, LockNone);
             if (lockState != LockHandshake)

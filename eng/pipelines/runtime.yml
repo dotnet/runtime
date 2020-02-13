@@ -210,8 +210,8 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
+    - Linux_arm
+    - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
     - Windows_NT_x64
@@ -237,8 +237,8 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
+    - Linux_arm
+    - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
     - Windows_NT_x64

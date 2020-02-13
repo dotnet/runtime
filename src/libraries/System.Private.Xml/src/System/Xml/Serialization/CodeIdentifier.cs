@@ -34,7 +34,7 @@ namespace System.Xml.Serialization
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
-                return CultureInfo.InvariantCulture.TextInfo.ToUpper(identifier);
+                return identifier.ToUpperInvariant();
             }
             else if (char.IsLower(identifier[0]))
             {
@@ -55,11 +55,11 @@ namespace System.Xml.Serialization
             identifier = MakeValid(identifier);
             if (identifier.Length <= 2)
             {
-                return CultureInfo.InvariantCulture.TextInfo.ToLower(identifier);
+                return identifier.ToLowerInvariant();
             }
             else if (char.IsUpper(identifier[0]))
             {
-                char lower = char.ToLower(identifier[0]);
+                char lower = char.ToLowerInvariant(identifier[0]);
                 return string.Concat(MemoryMarshal.CreateReadOnlySpan(ref lower, 1), identifier.AsSpan(1));
             }
             else

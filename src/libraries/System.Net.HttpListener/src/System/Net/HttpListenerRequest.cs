@@ -179,7 +179,7 @@ namespace System.Net
                     }
                     else
                     {
-                        header = header.ToLower(CultureInfo.InvariantCulture);
+                        header = header.ToLowerInvariant();
                         _keepAlive =
                             header.IndexOf("close", StringComparison.OrdinalIgnoreCase) < 0 ||
                             header.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) >= 0;
