@@ -30,7 +30,7 @@
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <_MonoExtraCFLAGS>-O2 -g</_MonoExtraCFLAGS>
-        <_MonoExtraCXXFLAGS>-O2 -g</_MonoExtraCXXFLAGS>
+        <_MonoExtraCXXFLAGS>-O2 -g -D_GLIBCXX_USE_CXX11_ABI=0</_MonoExtraCXXFLAGS>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(TargetArchitecture)' == 'arm64' ">
         <_MonoTuple>aarch64-linux-gnu</_MonoTuple>
