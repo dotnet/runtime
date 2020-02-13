@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
         public Range Base64Data { get; }
 
         /// <summary>
-        /// The size of the decoded base 64, in bytes.
+        /// The size of the decoded base-64, in bytes.
         /// </summary>
         public int DecodedDataLength { get; }
     }

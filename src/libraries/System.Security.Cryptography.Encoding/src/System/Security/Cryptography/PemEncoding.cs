@@ -2,8 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Security.Cryptography
 {
+    /// <summary>
+    /// RFC-7468 PEM (Privacy-Enhanced Mail) parsing and encoding.
+    /// </summary>
     public static class PemEncoding
     {
         private const string Preeb = "-----BEGIN ";
@@ -11,6 +16,19 @@ namespace System.Security.Cryptography
         private const string Ending = "-----";
         private const int EncodedLineLength = 64;
 
+        /// <summary>
+        /// Finds the first PEM-encoded data.
+        /// </summary>
+        /// <param name="pemData">
+        /// A span containing the PEM encoded data.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="pemData"/> does not contain a well-formed PEM encoded value.
+        /// </exception>
+        /// <returns>
+        /// A <see cref="PemFields"/> structure that contains the location, label, and
+        /// data location of the encoded data.
+        /// </returns>
         public static PemFields Find(ReadOnlySpan<char> pemData)
         {
             if (!TryFind(pemData, out PemFields fields))
@@ -20,6 +38,19 @@ namespace System.Security.Cryptography
             return fields;
         }
 
+        /// <summary>
+        /// Finds the first PEM-encoded data.
+        /// </summary>
+        /// <param name="pemData">
+        /// A span containing the PEM encoded data.
+        /// </param>
+        /// <param name="fields">
+        /// When this method returns <c>true</c>, the found <see cref="PemFields"/> structure
+        /// that contains the location, label, and data location of the encoded data.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if PEM encoded data was found; otherwise <c>false</c>.
+        /// </returns>
         public static bool TryFind(ReadOnlySpan<char> pemData, out PemFields fields)
         {
             // Check for the minimum possible encoded length of a PEM structure
@@ -209,6 +240,37 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Given the length of a label and binary data, determines the
+        /// length of an encoded PEM in characters.
+        /// </summary>
+        /// <param name="labelLength">
+        /// The length of the label, in characters.
+        /// </param>
+        /// <param name="dataLength">
+        /// The length of the data, in bytes.
+        /// </param>
+        /// <returns>
+        /// The number of characters in the encoded PEM.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="labelLength"/> is a negative value.
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <paramref name="dataLength"/> is a negative value.
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <paramref name="labelLength"/> exceeds the maximum possible label length.
+        ///   <para>
+        ///       -or-
+        ///   </para>
+        ///   <paramref name="dataLength"/> exceeds the maximum possible encoded data length.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The PEM is too large to encode in a signed 32-bit integer.
+        /// </exception>
         public static int GetEncodedSize(int labelLength, int dataLength)
         {
             // The largest possible label is MaxLabelSize - when included in the posteb
@@ -251,13 +313,115 @@ namespace System.Security.Cryptography
             return encodedDataLengthWithBreaks + totalEncapLength;
         }
 
+        /// <summary>
+        /// Tries to write PEM encoded data to <paramref name="destination" />.
+        /// </summary>
+        /// <param name="label">
+        /// The label to encode.
+        /// </param>
+        /// <param name="data">
+        /// The data to encode.
+        /// </param>
+        /// <param name="destination">
+        /// The destination to write the PEM encoded data to.
+        /// </param>
+        /// <param name="charsWritten">
+        /// When this method returns <c>true</c>, this parameter contains the number of characters
+        /// written to the buffer.
+        /// </param>
+        /// <returns>
+        /// <c>true</c> if the <paramref name="charsWritten"/> buffer is large enough to contain
+        /// the encoded PEM, otherwise <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method always wraps the base-64 encoded text to 64 characters, per the
+        /// recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
+        /// </remarks>
         public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
         {
+            static void Write(ReadOnlySpan<char> str, Span<char> dest, ref int offset)
+            {
+                str.CopyTo(dest[offset..]);
+                offset += str.Length;
+            }
+
+            static void WriteBase64(ReadOnlySpan<byte> bytes, Span<char> dest, ref int offset)
+            {
+                bool success = Convert.TryToBase64Chars(bytes, dest[offset..], out int base64Written);
+
+                if (!success)
+                    throw new CryptographicException();
+
+                offset += base64Written;
+            }
+
+            const string NewLine = "\n";
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+
+            if (destination.Length < encodedSize)
+            {
+                charsWritten = 0;
+                return false;
+            }
+
             charsWritten = 0;
-            return false;
+            Write(Preeb, destination, ref charsWritten);
+            Write(label, destination, ref charsWritten);
+            Write(Ending, destination, ref charsWritten);
+            Write(NewLine, destination, ref charsWritten);
+
+            ReadOnlySpan<byte> remainingData = data;
+            while (remainingData.Length >= 48)
+            {
+                WriteBase64(remainingData[..48], destination, ref charsWritten);
+                remainingData = remainingData[48..];
+                Write(NewLine, destination, ref charsWritten);
+            }
+
+            Debug.Assert(remainingData.Length < 48);
+
+            if (remainingData.Length > 0)
+            {
+                WriteBase64(remainingData, destination, ref charsWritten);
+                Write(NewLine, destination, ref charsWritten);
+                remainingData = default;
+            }
+
+            Write(Posteb, destination, ref charsWritten);
+            Write(label, destination, ref charsWritten);
+            Write(Ending, destination, ref charsWritten);
+
+            return true;
         }
 
-        public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data) =>
-             throw new System.NotImplementedException();
+        /// <summary>
+        /// Creates an encoded PEM with the given label and data.
+        /// </summary>
+        /// <param name="label">
+        /// The label to encode.
+        /// </param>
+        /// <param name="data">
+        /// The data to encode.
+        /// </param>
+        /// <returns>
+        /// A character array of the encoded PEM.
+        /// </returns>
+        /// <remarks>
+        /// This method always wraps the base-64 encoded text to 64 characters, per the
+        /// recommended wrapping of RFC-7468. Unix-style line endings are used for line breaks.
+        /// </remarks>
+        public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            int encodedSize = GetEncodedSize(label.Length, data.Length);
+            char[] buffer = new char[encodedSize];
+
+            if (!TryWrite(label, data, buffer, out int charsWritten))
+            {
+                throw new CryptographicException();
+            }
+
+            Debug.Assert(charsWritten == encodedSize);
+            return buffer;
+        }
     }
 }
