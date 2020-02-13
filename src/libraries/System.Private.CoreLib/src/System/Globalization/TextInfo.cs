@@ -45,9 +45,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static TextInfo Invariant => s_invariant ??= new TextInfo(CultureData.Invariant);
-
-        private static volatile TextInfo? s_invariant;
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true);
 
         internal TextInfo(CultureData cultureData)
         {
@@ -57,6 +55,12 @@ namespace System.Globalization
             _textInfoName = _cultureData.TextInfoName;
 
             FinishInitialization();
+        }
+
+        private TextInfo(CultureData cultureData, bool readOnly)
+            : this(cultureData)
+        {
+            SetReadOnlyState(readOnly);
         }
 
         void IDeserializationCallback.OnDeserialization(object? sender)

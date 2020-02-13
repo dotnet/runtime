@@ -1107,7 +1107,7 @@ namespace System.DirectoryServices.ActiveDirectory
             foreach (string propertyName in propertiesWithoutRangeRetrieval)
             {
                 // need to convert to lower case since S.DS returns property names in all lower case
-                string lowerCasePropertyName = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string lowerCasePropertyName = propertyName.ToLowerInvariant();
                 propertyNamesWithoutRangeInfo.Add(lowerCasePropertyName);
                 results.Add(lowerCasePropertyName, new ArrayList());
                 // add to the seachers's propertiesToLoad
@@ -1119,7 +1119,7 @@ namespace System.DirectoryServices.ActiveDirectory
             foreach (string propertyName in propertiesWithRangeRetrieval)
             {
                 // need to convert to lower case since S.DS returns property names in all lower case
-                string lowerCasePropertyName = propertyName.ToLower(CultureInfo.InvariantCulture);
+                string lowerCasePropertyName = propertyName.ToLowerInvariant();
                 propertiesStillToLoad.Add(lowerCasePropertyName);
                 results.Add(lowerCasePropertyName, new ArrayList());
             }
@@ -1131,7 +1131,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     string propertyToLoad = propertyName + ";range=" + rangeStart + "-*";
                     searcher.PropertiesToLoad.Add(propertyToLoad);
                     // need to convert to lower case since S.DS returns property names in all lower case
-                    propertyNamesWithRangeInfo.Add(propertyName.ToLower(CultureInfo.InvariantCulture), propertyToLoad);
+                    propertyNamesWithRangeInfo.Add(propertyName.ToLowerInvariant(), propertyToLoad);
                 }
 
                 //clear for the nezxt round
@@ -1294,8 +1294,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
 
                     // extract the property values
-                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLower(CultureInfo.InvariantCulture)];
-                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLower(CultureInfo.InvariantCulture)];
+                    ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLowerInvariant()];
+                    ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLowerInvariant()];
                     Debug.Assert(replicaLocations != null);
 
                     if (replicaLocations.Count == 0)
@@ -1935,10 +1935,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             //extract IPv6 port number if any
-            bool isBrace = serverName.StartsWith("[");
+            bool isBrace = serverName.StartsWith("[", StringComparison.Ordinal);
             if (isBrace == true)
             {
-                if (serverName.EndsWith("]"))
+                if (serverName.EndsWith("]", StringComparison.Ordinal))
                 {
                     //[IPv6]
                     serverName = serverName.Substring(1, serverName.Length - 2); //2 for []

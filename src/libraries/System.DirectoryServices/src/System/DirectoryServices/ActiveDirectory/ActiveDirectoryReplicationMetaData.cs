@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                string tempName = name.ToLower(CultureInfo.InvariantCulture);
+                string tempName = name.ToLowerInvariant();
                 if (Contains(tempName))
                 {
                     return (AttributeMetadata)InnerHashtable[tempName];
@@ -40,7 +40,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(string attributeName)
         {
-            string tempName = attributeName.ToLower(CultureInfo.InvariantCulture);
+            string tempName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(tempName);
         }
 
@@ -51,7 +51,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void Add(string name, AttributeMetadata value)
         {
-            Dictionary.Add(name.ToLower(CultureInfo.InvariantCulture), value);
+            Dictionary.Add(name.ToLowerInvariant(), value);
 
             AttributeNames.Add(name);
             Values.Add(value);

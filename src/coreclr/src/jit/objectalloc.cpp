@@ -510,8 +510,10 @@ unsigned int ObjectAllocator::MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* a
     const int unsafeValueClsCheck = true;
     comp->lvaSetStruct(lclNum, allocObj->gtAllocObjClsHnd, unsafeValueClsCheck);
 
-    // Initialize the object memory if necessary
-    if (comp->fgStructTempNeedsExplicitZeroInit(comp->lvaTable + lclNum, block))
+    // Initialize the object memory if necessary.
+    bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+    bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
+    if (comp->fgVarNeedsExplicitZeroInit(comp->lvaGetDesc(lclNum), bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
         // STMTx (IL 0x... ???)

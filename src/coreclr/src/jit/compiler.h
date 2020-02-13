@@ -2447,7 +2447,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTree* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
+    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -4542,8 +4542,8 @@ public:
 
     unsigned fgSsaPassesCompleted; // Number of times fgSsaBuild has been run.
 
-    // Returns "true" if a struct temp of the given type requires needs zero init in this block
-    inline bool fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block);
+    // Returns "true" if the variable needs explicit zero initialization.
+    inline bool fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn);
 
     // The value numbers for this compilation.
     ValueNumStore* vnStore;
@@ -6326,14 +6326,15 @@ public:
         }
     };
 
-#define OMF_HAS_NEWARRAY 0x00000001      // Method contains 'new' of an array
-#define OMF_HAS_NEWOBJ 0x00000002        // Method contains 'new' of an object type.
-#define OMF_HAS_ARRAYREF 0x00000004      // Method contains array element loads or stores.
-#define OMF_HAS_VTABLEREF 0x00000008     // Method contains method table reference.
-#define OMF_HAS_NULLCHECK 0x00000010     // Method contains null check.
-#define OMF_HAS_FATPOINTER 0x00000020    // Method contains call, that needs fat pointer transformation.
-#define OMF_HAS_OBJSTACKALLOC 0x00000040 // Method contains an object allocated on the stack.
-#define OMF_HAS_GUARDEDDEVIRT 0x00000080 // Method contains guarded devirtualization candidate
+#define OMF_HAS_NEWARRAY 0x00000001         // Method contains 'new' of an array
+#define OMF_HAS_NEWOBJ 0x00000002           // Method contains 'new' of an object type.
+#define OMF_HAS_ARRAYREF 0x00000004         // Method contains array element loads or stores.
+#define OMF_HAS_VTABLEREF 0x00000008        // Method contains method table reference.
+#define OMF_HAS_NULLCHECK 0x00000010        // Method contains null check.
+#define OMF_HAS_FATPOINTER 0x00000020       // Method contains call, that needs fat pointer transformation.
+#define OMF_HAS_OBJSTACKALLOC 0x00000040    // Method contains an object allocated on the stack.
+#define OMF_HAS_GUARDEDDEVIRT 0x00000080    // Method contains guarded devirtualization candidate
+#define OMF_HAS_EXPRUNTIMELOOKUP 0x00000100 // Method contains a runtime lookup to an expandable dictionary.
 
     bool doesMethodHaveFatPointer()
     {
@@ -6372,6 +6373,23 @@ public:
                                              CORINFO_CLASS_HANDLE  classHandle,
                                              unsigned              methodAttr,
                                              unsigned              classAttr);
+
+    bool doesMethodHaveExpRuntimeLookup()
+    {
+        return (optMethodFlags & OMF_HAS_EXPRUNTIMELOOKUP) != 0;
+    }
+
+    void setMethodHasExpRuntimeLookup()
+    {
+        optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
+    }
+
+    void clearMethodHasExpRuntimeLookup()
+    {
+        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
+    }
+
+    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     unsigned optMethodFlags;
 

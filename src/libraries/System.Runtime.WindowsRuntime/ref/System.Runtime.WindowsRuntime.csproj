@@ -11,7 +11,7 @@
      -->
     <NoWarn>$(NoWarn);1698</NoWarn>
     <TargetFrameworks>netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.WindowsRuntime.cs" />

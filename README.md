@@ -38,7 +38,7 @@ This repo should contain issues that are tied to the runtime, the class librarie
 For other issues, please use the following repos:
 
 - For overall .NET Core SDK issues, file in the [dotnet/toolset](https://github.com/dotnet/toolset) repo
-- For ASP.NET issues, file in the [aspnet/aspnetcore](http://github.com/aspnet/aspnetcore) repo.
+- For ASP.NET issues, file in the [dotnet/aspnetcore](https://github.com/dotnet/aspnetcore) repo.
 
 ## Useful Links
 
@@ -54,7 +54,7 @@ For other issues, please use the following repos:
 There are many .NET related projects on GitHub.
 
 - [.NET home repo](https://github.com/Microsoft/dotnet) - links to 100s of .NET projects, from Microsoft and the community.
-- [ASP.NET Core home](https://github.com/aspnet/home) - the best place to start learning about ASP.NET Core.
+- [ASP.NET Core home](https://docs.microsoft.com/aspnet/core/?view=aspnetcore-3.0) - the best place to start learning about ASP.NET Core.
 
 This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
 

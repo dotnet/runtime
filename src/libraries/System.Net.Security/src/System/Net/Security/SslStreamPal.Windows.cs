@@ -46,17 +46,19 @@ namespace System.Net.Security
             return Interop.Sec_Application_Protocols.ToByteArray(protocols);
         }
 
-        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, ReadOnlySpan<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
-            ArraySegment<byte> input = inputBuffer != null ? new ArraySegment<byte>(inputBuffer, offset, count) : default;
 
-            ThreeSecurityBuffers threeSecurityBuffers = default;
-            SecurityBuffer? incomingSecurity = input.Array != null ?
-                new SecurityBuffer(input.Array, input.Offset, input.Count, SecurityBufferType.SECBUFFER_TOKEN) :
-                (SecurityBuffer?)null;
-            Span<SecurityBuffer> inputBuffers = MemoryMarshal.CreateSpan(ref threeSecurityBuffers._item0, 3);
-            GetIncomingSecurityBuffers(sslAuthenticationOptions, in incomingSecurity, ref inputBuffers);
+            InputSecurityBuffers inputBuffers = default;
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
+
+            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -74,17 +76,18 @@ namespace System.Net.Security
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, byte[] inputBuffer, int offset, int count, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+        public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credentialsHandle, ref SafeDeleteSslContext context, string targetName, ReadOnlySpan<byte> inputBuffer, ref byte[] outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Interop.SspiCli.ContextFlags unusedAttributes = default;
-            ArraySegment<byte> input = inputBuffer != null ? new ArraySegment<byte>(inputBuffer, offset, count) : default;
 
-            ThreeSecurityBuffers threeSecurityBuffers = default;
-            SecurityBuffer? incomingSecurity = input.Array != null ?
-                new SecurityBuffer(input.Array, input.Offset, input.Count, SecurityBufferType.SECBUFFER_TOKEN) :
-                (SecurityBuffer?)null;
-            Span<SecurityBuffer> inputBuffers = MemoryMarshal.CreateSpan(ref threeSecurityBuffers._item0, 3);
-            GetIncomingSecurityBuffers(sslAuthenticationOptions, in incomingSecurity, ref inputBuffers);
+            InputSecurityBuffers inputBuffers = default;
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
+            inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
+            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            {
+                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
+            }
 
             var resultBuffer = new SecurityBuffer(outputBuffer, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -101,45 +104,6 @@ namespace System.Net.Security
 
             outputBuffer = resultBuffer.token;
             return SecurityStatusAdapterPal.GetSecurityStatusPalFromNativeInt(errorCode);
-        }
-
-        private static void GetIncomingSecurityBuffers(SslAuthenticationOptions options, in SecurityBuffer? incomingSecurity, ref Span<SecurityBuffer> incomingSecurityBuffers)
-        {
-            SecurityBuffer? alpnBuffer = null;
-
-            if (options.ApplicationProtocols != null && options.ApplicationProtocols.Count != 0)
-            {
-                byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(options.ApplicationProtocols);
-                alpnBuffer = new SecurityBuffer(alpnBytes, 0, alpnBytes.Length, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS);
-            }
-
-            if (incomingSecurity != null)
-            {
-                if (alpnBuffer != null)
-                {
-                    Debug.Assert(incomingSecurityBuffers.Length >= 3);
-                    incomingSecurityBuffers[0] = incomingSecurity.GetValueOrDefault();
-                    incomingSecurityBuffers[1] = new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY);
-                    incomingSecurityBuffers[2] = alpnBuffer.GetValueOrDefault();
-                    incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 3);
-                }
-                else
-                {
-                    Debug.Assert(incomingSecurityBuffers.Length >= 2);
-                    incomingSecurityBuffers[0] = incomingSecurity.GetValueOrDefault();
-                    incomingSecurityBuffers[1] = new SecurityBuffer(null, 0, 0, SecurityBufferType.SECBUFFER_EMPTY);
-                    incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 2);
-                }
-            }
-            else if (alpnBuffer != null)
-            {
-                incomingSecurityBuffers[0] = alpnBuffer.GetValueOrDefault();
-                incomingSecurityBuffers = incomingSecurityBuffers.Slice(0, 1);
-            }
-            else
-            {
-                incomingSecurityBuffers = default;
-            }
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy, bool isServer)

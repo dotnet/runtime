@@ -21,11 +21,13 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task BasicTest()
         {
+            using QuicListener listener = CreateQuicListener();
+
             for (int i = 0; i < 100; i++)
             {
                 Task listenTask = Task.Run(async () =>
                 {
-                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
 
                     byte[] buffer = new byte[s_data.Length];
@@ -42,7 +44,7 @@ namespace System.Net.Quic.Tests
 
                 Task clientTask = Task.Run(async () =>
                 {
-                    using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
                     await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -66,12 +68,14 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleReadsAndWrites()
         {
+            using QuicListener listener = CreateQuicListener();
+
             for (int j = 0; j < 100; j++)
             {
                 Task listenTask = Task.Run(async () =>
                 {
                     // Connection isn't being accepted, interesting.
-                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
                     byte[] buffer = new byte[s_data.Length];
 
@@ -97,7 +101,7 @@ namespace System.Net.Quic.Tests
 
                 Task clientTask = Task.Run(async () =>
                 {
-                    using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
                     await connection.ConnectAsync();
                     await using QuicStream stream = connection.OpenBidirectionalStream();
 
@@ -131,10 +135,12 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task MultipleStreamsOnSingleConnection()
         {
+            using QuicListener listener = CreateQuicListener();
+
             Task listenTask = Task.Run(async () =>
             {
                 {
-                    using QuicConnection connection = await DefaultListener.AcceptConnectionAsync();
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
                     await using QuicStream stream = await connection.AcceptStreamAsync();
                     await using QuicStream stream2 = await connection.AcceptStreamAsync();
 
@@ -173,7 +179,7 @@ namespace System.Net.Quic.Tests
 
             Task clientTask = Task.Run(async () =>
             {
-                using QuicConnection connection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+                using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
                 await connection.ConnectAsync();
                 await using QuicStream stream = connection.OpenBidirectionalStream();
                 await using QuicStream stream2 = connection.OpenBidirectionalStream();
@@ -208,23 +214,6 @@ namespace System.Net.Quic.Tests
             });
 
             await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
-        }
-
-        [Fact]
-        public async Task AbortiveConnectionFromClient()
-        {
-            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
-
-            ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
-            await clientTask;
-            // Close connection on client, verifying server connection is aborted.
-            await clientConnection.CloseAsync(errorCode: 0);
-            QuicStream stream = await serverConnection.AcceptStreamAsync();
-
-            // Providers are alaways wrapped right now by a QuicStream. All fields are null here.
-            // TODO make sure this returns null.
-            Assert.Throws<NullReferenceException>(() => stream.CanRead);
         }
 
         [Fact]
@@ -268,10 +257,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task UnidirectionalAndBidirectionalStreamCountsWork()
         {
-            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+            using QuicListener listener = CreateQuicListener();
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
             Assert.Equal(100, serverConnection.GetRemoteAvailableBidirectionalStreamCount());
             Assert.Equal(100, serverConnection.GetRemoteAvailableUnidirectionalStreamCount());
@@ -280,18 +270,20 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task UnidirectionalAndBidirectionalChangeValues()
         {
+            using QuicListener listener = CreateQuicListener();
+
             QuicClientConnectionOptions options = new QuicClientConnectionOptions()
             {
                 MaxBidirectionalStreams = 10,
                 MaxUnidirectionalStreams = 20,
-                RemoteEndPoint = DefaultListener.ListenEndPoint,
+                RemoteEndPoint = listener.ListenEndPoint,
                 ClientAuthenticationOptions = GetSslClientAuthenticationOptions()
             };
 
             using QuicConnection clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, options);
 
             ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
             Assert.Equal(20, clientConnection.GetRemoteAvailableUnidirectionalStreamCount());
             Assert.Equal(10, clientConnection.GetRemoteAvailableBidirectionalStreamCount());
@@ -302,10 +294,11 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task CallDifferentWriteMethodsWorks()
         {
-            using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
+            using QuicListener listener = CreateQuicListener();
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
             ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
             await clientTask;
 
             ReadOnlyMemory<byte> helloWorld = Encoding.ASCII.GetBytes("Hello world!");
@@ -328,67 +321,18 @@ namespace System.Net.Quic.Tests
             Assert.Equal(24, res);
         }
 
-        [Theory]
-        [MemberData(nameof(QuicStream_ReadWrite_Random_Success_Data))]
-        public async Task QuicStream_ReadWrite_Random_Success(int readSize, int writeSize)
+        [Fact]
+        public async Task GetStreamIdWithoutStartWorks()
         {
-            byte[] testBuffer = new byte[8192];
-            new Random().NextBytes(testBuffer);
+            using QuicListener listener = CreateQuicListener();
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
 
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
 
-            await Task.WhenAll(DoWrite(), DoRead());
-
-            async Task DoWrite()
-            {
-                using QuicConnection clientConnection = CreateQuicConnection(DefaultListener.ListenEndPoint);
-                await clientConnection.ConnectAsync();
-
-                await using QuicStream clientStream = clientConnection.OpenUnidirectionalStream();
-
-                ReadOnlyMemory<byte> sendBuffer = testBuffer;
-                while (sendBuffer.Length != 0)
-                {
-                    ReadOnlyMemory<byte> chunk = sendBuffer.Slice(0, Math.Min(sendBuffer.Length, writeSize));
-                    await clientStream.WriteAsync(chunk);
-                    sendBuffer = sendBuffer.Slice(chunk.Length);
-                }
-
-                clientStream.Shutdown();
-                await clientStream.ShutdownWriteCompleted();
-            }
-
-            async Task DoRead()
-            {
-                using QuicConnection serverConnection = await DefaultListener.AcceptConnectionAsync();
-                await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
-
-                byte[] receiveBuffer = new byte[testBuffer.Length];
-                int totalBytesRead = 0;
-
-                while (totalBytesRead != receiveBuffer.Length)
-                {
-                    int bytesRead = await serverStream.ReadAsync(receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize)));
-
-                    if (bytesRead == 0)
-                    {
-                        break;
-                    }
-
-                    totalBytesRead += bytesRead;
-                }
-
-                Assert.True(receiveBuffer.AsSpan().SequenceEqual(testBuffer));
-            }
-        }
-
-        public static IEnumerable<object[]> QuicStream_ReadWrite_Random_Success_Data()
-        {
-            IEnumerable<int> sizes = Enumerable.Range(1, 8).Append(2048).Append(8192);
-
-            return
-                from readSize in sizes
-                from writeSize in sizes
-                select new object[] { readSize, writeSize };
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+            Assert.Equal(0, clientStream.StreamId);
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)

@@ -108,6 +108,14 @@ MONO_KEYWORD_THREAD MonoDomain         *mono_tls_domain MONO_TLS_FAST;
 MONO_KEYWORD_THREAD SgenThreadInfo     *mono_tls_sgen_thread_info MONO_TLS_FAST;
 MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
 
+#elif defined(DISABLE_THREADS)
+
+MonoInternalThread *mono_tls_thread;
+MonoJitTlsData     *mono_tls_jit_tls;
+MonoDomain         *mono_tls_domain;
+SgenThreadInfo     *mono_tls_sgen_thread_info;
+MonoLMF           **mono_tls_lmf_addr;
+
 #else
 
 #if defined(TARGET_AMD64) && (defined(TARGET_MACH) || defined(HOST_WIN32))
@@ -133,6 +141,7 @@ mono_tls_init_gc_keys (void)
 {
 #ifdef MONO_KEYWORD_THREAD
 	MONO_THREAD_VAR_OFFSET (mono_tls_sgen_thread_info, mono_tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
+#elif defined(DISABLE_THREADS)
 #else
 	mono_native_tls_alloc (&mono_tls_key_sgen_thread_info, NULL);
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_sgen_thread_info, mono_tls_offsets [TLS_KEY_SGEN_THREAD_INFO]);
@@ -147,6 +156,7 @@ mono_tls_init_runtime_keys (void)
 	MONO_THREAD_VAR_OFFSET (mono_tls_jit_tls, mono_tls_offsets [TLS_KEY_JIT_TLS]);
 	MONO_THREAD_VAR_OFFSET (mono_tls_domain, mono_tls_offsets [TLS_KEY_DOMAIN]);
 	MONO_THREAD_VAR_OFFSET (mono_tls_lmf_addr, mono_tls_offsets [TLS_KEY_LMF_ADDR]);
+#elif defined(DISABLE_THREADS)
 #else
 	mono_native_tls_alloc (&mono_tls_key_thread, NULL);
 	MONO_THREAD_VAR_OFFSET (mono_tls_key_thread, mono_tls_offsets [TLS_KEY_THREAD]);
@@ -162,7 +172,9 @@ mono_tls_init_runtime_keys (void)
 void
 mono_tls_free_keys (void)
 {
-#ifndef MONO_KEYWORD_THREAD
+#ifdef MONO_KEYWORD_THREAD
+#elif defined(DISABLE_THREADS)
+#else
 	mono_native_tls_free (mono_tls_key_thread);
 	mono_native_tls_free (mono_tls_key_jit_tls);
 	mono_native_tls_free (mono_tls_key_domain);

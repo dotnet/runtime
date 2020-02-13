@@ -37,7 +37,7 @@ namespace WeakReferenceTest
 
 		Random rand = new Random(seed);
 
-		bool alive;
+		volatile bool alive;
 		Thread thread;
 
 		public void Start()

@@ -5670,11 +5670,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
-GenTree* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
+GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
 {
     compQmarkUsed = true;
     cond->gtFlags |= GTF_RELOP_QMARK;
-    GenTree* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
+    GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
 #ifdef DEBUG
     if (compQmarkRationalized)
     {
@@ -16869,6 +16869,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_OBJ:
                 structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
                 break;
+            case GT_BLK:
+                structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
+                break;
             case GT_CALL:
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
@@ -16943,6 +16946,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                                     assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
                                 }
                             }
+                        }
+                        else if (addr->OperGet() == GT_LCL_VAR)
+                        {
+                            structHnd = gtGetStructHandleIfPresent(addr);
                         }
                     }
                 }

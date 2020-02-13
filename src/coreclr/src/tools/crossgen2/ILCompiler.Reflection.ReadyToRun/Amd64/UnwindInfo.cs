@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -236,8 +237,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                         code.NextFrameOffset = (int)offset * 16;
                         if ((UnwindCodeArray[i].FrameOffset & 0xF0000000) != 0)
                         {
-                            // TODO (refactoring) - what should we do?
-                            // R2RDump.WriteWarning("Illegal unwindInfo unscaled offset: too large");
+                            Console.WriteLine("Warning: Illegal unwindInfo unscaled offset: too large");
                         }
                     }
                     break;

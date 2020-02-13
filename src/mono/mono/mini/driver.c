@@ -200,7 +200,9 @@ static gboolean
 parse_debug_options (const char* p)
 {
 	MonoDebugOptions *opt = mini_get_debug_options ();
+#ifdef ENABLE_NETCORE
 	opt->enabled = TRUE;
+#endif
 
 	do {
 		if (!*p) {
