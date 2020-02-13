@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
@@ -328,58 +329,19 @@ namespace System
             [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr gnu_get_libc_version();
 
-            [DllImport("System.Globalization.Native", SetLastError = true)]
-            public static extern int GlobalizationNative_GetICUVersion();
-
-            delegate void GetICUVersionDelegate(IntPtr ptr);
-
             public unsafe static int GetICUVersion()
             {
-#if NETCOREAPP
-                if (PlatformDetection.IsMonoRuntime)
+                Type interopGlobalization = Type.GetType("Interop+Globalization");
+                if (interopGlobalization != null)
                 {
-                    return GlobalizationNative_GetICUVersion();
+                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                    if (methodInfo != null)
+                    {
+                        return (int)methodInfo.Invoke(null, new object[] { });
+                    }
                 }
-                else
-                {
-                    string moduleName = null;
-                    foreach (System.Diagnostics.ProcessModule m in System.Diagnostics.Process.GetCurrentProcess().Modules)
-                    {
-                        if (m.ModuleName.StartsWith("libicuuc.", StringComparison.OrdinalIgnoreCase))
-                        {
-                            moduleName = m.ModuleName;
-                            break;
-                        }
-                    }
 
-                    if (moduleName == null)
-                    {
-                        throw new InvalidOperationException("Could not find ICU, please install it.");
-                    }
-
-                    string functionName = "u_getVersion";
-                    string[] splitVersion = moduleName.Split(".");
-                    if (splitVersion.Length >= 3)
-                    {
-                        functionName += $"_{splitVersion[2]}";
-                    }
-
-                    IntPtr library = NativeLibrary.Load(moduleName);
-
-                    if(NativeLibrary.TryGetExport(library, functionName, out IntPtr functionPointer))
-                    {
-                        var function = Marshal.GetDelegateForFunctionPointer<GetICUVersionDelegate>(functionPointer);
-
-                        int version = 0;
-                        function(new IntPtr(&version));
-                        return version;
-                    }
-
-                    throw new InvalidOperationException($"Could not call native function: {functionName} in library: {moduleName}");
-                }
-#else
-                return 0; // Full Framework, doesn't matter what we return.
-#endif // NETCOREAPP
+                throw new Exception("Failed to find method Interop.Globalization.GetICUVersion.");
             }
         }
     }

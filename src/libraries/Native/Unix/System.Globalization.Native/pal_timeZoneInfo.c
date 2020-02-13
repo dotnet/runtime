@@ -7,6 +7,8 @@
 #include <unistd.h>
 
 #include "pal_timeZoneInfo.h"
+#include "pal_errors_internal.h"
+#include "pal_locale_internal.h"
 
 /*
 Gets the localized display name for the specified time zone.

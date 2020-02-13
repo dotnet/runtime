@@ -1,11 +1,12 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(GLOBALIZATION_NATIVE_DIR ${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/System.Globalization.Native)
 
+# Suppress exporting of the PAL APIs
+add_definitions(-DPALEXPORT=)
+
 if(CLR_CMAKE_HOST_UNIX AND NOT CLR_CROSS_COMPONENTS_BUILD)
     include_directories("${CLR_REPO_ROOT_DIR}/src/libraries/Native/Unix/Common")
     include_directories("${GLOBALIZATION_NATIVE_DIR}")
-
-    add_definitions(-DFEATURE_GLOBALIZATION)
 
     add_subdirectory(${GLOBALIZATION_NATIVE_DIR} System.Globalization.Native)
 endif()

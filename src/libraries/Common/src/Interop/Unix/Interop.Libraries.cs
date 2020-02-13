@@ -15,10 +15,6 @@ internal static partial class Interop
         internal const string CompressionNative = "System.IO.Compression.Native";
         internal const string IOPortsNative = "System.IO.Ports.Native";
         internal const string Libdl = "libdl";
-#if CORECLR
-        internal const string GlobalizationNative = RuntimeHelpers.QCall;
-#else
         internal const string GlobalizationNative = "System.Globalization.Native";
-#endif
     }
 }

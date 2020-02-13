@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "pal_localeStringData.h"
+#include "pal_locale_internal.h"
 
 /*
 Function:

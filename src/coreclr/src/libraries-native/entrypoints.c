@@ -6,7 +6,7 @@
 #define __LIB_NATIVE_ENTRYPOINTS
 #endif
 
-#ifdef FEATURE_GLOBALIZATION
+#ifdef TARGET_UNIX
 #include "pal_calendarData.h"
 #include "pal_casing.h"
 #include "pal_collation.h"
@@ -17,27 +17,15 @@
 #include "pal_idna.h"
 #include "pal_normalization.h"
 #include "pal_timeZoneInfo.h"
-#endif // FEATURE_GLOBALIZATION
+#endif // TARGET_UNIX
 
-#ifndef BYTE
-typedef unsigned char BYTE;
-#endif
-
-#ifndef LPVOID
-typedef void *LPVOID;
-#endif
-
-#define FCFuncStart(name) extern const LPVOID name[]; const LPVOID name[] = {
-#define FCFuncEnd() (BYTE*)0x01 /* FCFuncFlag_EndOfArray */ };
+#define FCFuncStart(name) extern const void* name[]; const void* name[] = {
+#define FCFuncEnd() (void*)0x01 /* FCFuncFlag_EndOfArray */ };
 
 #define QCFuncElement(name,impl) \
-    (BYTE*)0x8 /* FCFuncFlag_QCall */, (LPVOID)(impl), (LPVOID)name,
+    (void*)0x8 /* FCFuncFlag_QCall */, (void*)(impl), (void*)name,
 
-#if defined(__cplusplus)
-extern "C" {
-#endif // defined(__cplusplus)
-
-#ifdef FEATURE_GLOBALIZATION
+#ifdef TARGET_UNIX
 FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ChangeCase", GlobalizationNative_ChangeCase)
     QCFuncElement("ChangeCaseInvariant", GlobalizationNative_ChangeCaseInvariant)
@@ -50,6 +38,7 @@ FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("GetCalendarInfo", GlobalizationNative_GetCalendarInfo)
     QCFuncElement("GetCalendars", GlobalizationNative_GetCalendars)
     QCFuncElement("GetDefaultLocaleName", GlobalizationNative_GetDefaultLocaleName)
+    QCFuncElement("GetICUVersion", GlobalizationNative_GetICUVersion)
     QCFuncElement("GetJapaneseEraStartDate", GlobalizationNative_GetJapaneseEraStartDate)
     QCFuncElement("GetLatestJapaneseEra", GlobalizationNative_GetLatestJapaneseEra)
     QCFuncElement("GetLocaleInfoGroupingSizes", GlobalizationNative_GetLocaleInfoGroupingSizes)
@@ -73,8 +62,4 @@ FCFuncStart(gPalGlobalizationNative)
     QCFuncElement("ToAscii", GlobalizationNative_ToAscii)
     QCFuncElement("ToUnicode", GlobalizationNative_ToUnicode)
 FCFuncEnd()
-#endif // FEATURE_GLOBALIZATION
-
-#if defined(__cplusplus)
-}
-#endif // defined(__cplusplus)
+#endif // TARGET_UNIX

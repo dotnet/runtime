@@ -18,31 +18,3 @@ typedef enum
     InsufficentBuffer = 2,
     OutOfMemory = 3
 } ResultCode;
-
-// if defined we're building the qcalls entrypoints which don't include ICU headers
-#ifndef __LIB_NATIVE_ENTRYPOINTS
-
-/*
-Converts a UErrorCode to a ResultCode.
-*/
-static ResultCode GetResultCode(UErrorCode err)
-{
-    if (err == U_BUFFER_OVERFLOW_ERROR || err == U_STRING_NOT_TERMINATED_WARNING)
-    {
-        return InsufficentBuffer;
-    }
-
-    if (err == U_MEMORY_ALLOCATION_ERROR)
-    {
-        return OutOfMemory;
-    }
-
-    if (U_SUCCESS(err))
-    {
-        return Success;
-    }
-
-    return UnknownError;
-}
-
-#endif // ifndef __LIB_NATIVE_ENTRYPOINTS
