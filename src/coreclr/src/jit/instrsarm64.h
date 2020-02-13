@@ -1311,8 +1311,14 @@ INST1(sabd,    "sabd",   0, 0, IF_DV_3A,  0x0E207400)
 INST1(smax,    "smax",   0, 0, IF_DV_3A,  0x0E206400)
                                    //  smax    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 011001nnnnnddddd   0E20 6400   Vd,Vn,Vm  (vector)
 
+INST1(smaxp,   "smaxp",  0, 0, IF_DV_3A,  0x0E20A400)
+                                   //  smaxp   Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 101001nnnnnddddd   0E20 A400   Vd,Vn,Vm  (vector)
+
 INST1(smin,    "smin",   0, 0, IF_DV_3A,  0x0E206C00)
                                    //  smax    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 011011nnnnnddddd   0E20 6C00   Vd,Vn,Vm  (vector)
+
+INST1(sminp,   "sminp",  0, 0, IF_DV_3A,  0x0E20AC00)
+                                   //  smax    Vd,Vn,Vm             DV_3A  0Q001110XX1mmmmm 101011nnnnnddddd   0E20 AC00   Vd,Vn,Vm  (vector)
 
 INST1(uaba,    "uaba",   0, 0, IF_DV_3A,  0x2E207C00)
                                    //  uaba    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 011111nnnnnddddd   2E20 7C00   Vd,Vn,Vm  (vector)
@@ -1323,8 +1329,14 @@ INST1(uabd,    "uabd",   0, 0, IF_DV_3A,  0x2E207400)
 INST1(umax,    "umax",   0, 0, IF_DV_3A,  0x2E206400)
                                    //  umax    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 011001nnnnnddddd   2E20 6400   Vd,Vn,Vm  (vector)
 
+INST1(umaxp,   "umaxp",  0, 0, IF_DV_3A,  0x2E20A400)
+                                   //  umaxp   Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 101001nnnnnddddd   2E20 A400   Vd,Vn,Vm  (vector)
+
 INST1(umin,    "umin",   0, 0, IF_DV_3A,  0x2E206C00)
                                    //  umin    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 011011nnnnnddddd   2E20 6C00   Vd,Vn,Vm  (vector)
+
+INST1(uminp,   "uminp",  0, 0, IF_DV_3A,  0x2E20AC00)
+                                   //  umin    Vd,Vn,Vm             DV_3A  0Q101110XX1mmmmm 101011nnnnnddddd   2E20 AC00   Vd,Vn,Vm  (vector)
 
 INST1(fcvtl,   "fcvtl",  0, 0, IF_DV_2G,  0x0E217800)
                                    //  fcvtl   Vd,Vn                DV_2G  000011100X100001 011110nnnnnddddd   0E21 7800   Vd,Vn    (scalar)

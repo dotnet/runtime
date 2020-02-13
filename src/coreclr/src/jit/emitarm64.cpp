@@ -5345,11 +5345,15 @@ void emitter::emitIns_R_R_R(
         case INS_saba:
         case INS_sabd:
         case INS_smax:
+        case INS_smaxp:
         case INS_smin:
+        case INS_sminp:
         case INS_uaba:
         case INS_uabd:
         case INS_umax:
+        case INS_umaxp:
         case INS_umin:
+        case INS_uminp:
             assert(elemsize != EA_8BYTE); // can't use 2D or 1D
             __fallthrough;
 
@@ -13044,7 +13048,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DV_3A: // (vector)
             // add, sub, mul, mla, mls, cmeq, cmge, cmgt, cmhi, cmhs, ctst,
-            // pmul, saba, uaba, sabd, uabd, umin, umax, smin, smax,
+            // pmul, saba, uaba, sabd, uabd, umin, uminp, umax, umaxp, smin, sminp, smax, smaxp
             switch (ins)
             {
                 case INS_add:
@@ -13054,10 +13058,14 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_cmgt:
                 case INS_cmhi:
                 case INS_cmhs:
-                case INS_umin:
-                case INS_umax:
-                case INS_smin:
                 case INS_smax:
+                case INS_smaxp:
+                case INS_smin:
+                case INS_sminp:
+                case INS_umax:
+                case INS_umaxp:
+                case INS_umin:
+                case INS_uminp:
                 case INS_uzp1:
                 case INS_uzp2:
                 case INS_zip1:
