@@ -410,15 +410,41 @@ namespace System.Data.OleDb
             }
             _dbBindings = bindings;
         }
-
-        private void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
+        private static readonly bool s_runningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
+        private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];
             for (int i = 0; i < ordinals.Length; ++i)
             {
                 ordinals[i] = (IntPtr)(i + 1);
             }
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, bindInfo);
+
+            OleDbHResult hr;
+
+            if (s_runningOnX86)
+            {
+                tagDBPARAMBINDINFO_x86[] bindInfo_x86 = new tagDBPARAMBINDINFO_x86[bindInfo.Length];
+                for (int i = 0; i < bindInfo.Length; i++)
+                {
+                    bindInfo_x86[i].pwszDataSourceType = bindInfo[i].pwszDataSourceType;
+                    bindInfo_x86[i].pwszName = bindInfo[i].pwszName;
+                    bindInfo_x86[i].ulParamSize = bindInfo[i].ulParamSize;
+                    bindInfo_x86[i].dwFlags = bindInfo[i].dwFlags;
+                    bindInfo_x86[i].bPrecision = bindInfo[i].bPrecision;
+                    bindInfo_x86[i].bScale = bindInfo[i].bScale;
+                }
+                fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
+            else
+            {
+                fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
+                {
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
+                }
+            }
 
             if (hr < 0)
             {
