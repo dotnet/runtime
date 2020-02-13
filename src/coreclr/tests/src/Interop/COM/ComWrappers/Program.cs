@@ -5,6 +5,7 @@
 namespace ComWrappersTests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
@@ -24,7 +25,12 @@ namespace ComWrappersTests
 
         class Test : ITest
         {
+            public static int InstanceCount = 0;
+
             private int value = -1;
+            public Test() { InstanceCount++; }
+            ~Test() { InstanceCount--; }
+
             public void SetValue(int i) => this.value = i;
             public int GetValue() => this.value;
         }
@@ -68,6 +74,9 @@ namespace ComWrappersTests
         {
             [DllImport(nameof(MockReferenceTrackerRuntime))]
             extern public static IntPtr CreateTrackerObject();
+
+            [DllImport(nameof(MockReferenceTrackerRuntime))]
+            extern public static void ReleaseAllTrackerObjects();
         }
 
         [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
@@ -227,6 +236,56 @@ namespace ComWrappersTests
             Assert.AreEqual(count, 0);
         }
 
+        static void ValidateRuntimeTrackerScenario()
+        {
+            Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
+
+            var cw = new MyComWrappers();
+
+            // Get an object from a tracker runtime.
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            // Create a managed wrapper for the native object.
+            var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+
+            var testWrapperIds = new List<int>();
+            for (int i = 0; i < 1000; ++i)
+            {
+                // Create a native wrapper for the managed object.
+                IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
+
+                // Pass the managed object to the native object.
+                int id = trackerObj.AddObjectRef(testWrapper);
+
+                // Retain the managed object wrapper ptr.
+                testWrapperIds.Add(id);
+            }
+
+            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+
+            Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);
+
+            // Remove the managed object ref from the native object.
+            foreach (int id in testWrapperIds)
+            {
+                trackerObj.DropObjectRef(id);
+            }
+
+            testWrapperIds.Clear();
+
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+            GC.Collect();
+        }
+
         static void ValidateIUnknownImpls()
             => MyComWrappers.ValidateIUnknownImpls();
 
@@ -256,6 +315,7 @@ namespace ComWrappersTests
             try
             {
                 ValidateComInterfaceCreation();
+                ValidateRuntimeTrackerScenario();
                 ValidateIUnknownImpls();
                 ValidateRegisterForReferenceTrackerHost();
             }

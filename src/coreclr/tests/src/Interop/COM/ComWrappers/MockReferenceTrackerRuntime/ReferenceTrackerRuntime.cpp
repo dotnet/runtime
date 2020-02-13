@@ -5,6 +5,7 @@
 #include <xplatform.h>
 #include <ComHelpers.h>
 #include <unordered_map>
+#include <list>
 #include <atlbase.h>
 
 namespace API
@@ -60,66 +61,6 @@ namespace API
 
 namespace
 {
-    class TrackerRuntimeManagerImpl : public API::IReferenceTrackerManager
-    {
-        CComPtr<API::IReferenceTrackerHost> runtimeServices;
-    public:
-        STDMETHOD(ReferenceTrackingStarted)()
-        {
-            // [TODO]
-            return S_OK;
-        }
-
-        STDMETHOD(FindTrackerTargetsCompleted)(_In_ BOOL bWalkFailed)
-        {
-            // [TODO]
-            return S_OK;
-        }
-
-        STDMETHOD(ReferenceTrackingCompleted)()
-        {
-            // [TODO]
-            return S_OK;
-        }
-
-        STDMETHOD(SetReferenceTrackerHost)(_In_ API::IReferenceTrackerHost* pHostServices)
-        {
-            assert(pHostServices != nullptr);
-            return pHostServices->QueryInterface(&runtimeServices);
-        }
-
-        // Lifetime maintained by stack - we don't care about ref counts
-        STDMETHOD_(ULONG, AddRef)() { return 1; }
-        STDMETHOD_(ULONG, Release)() { return 1; }
-
-        STDMETHOD(QueryInterface)(
-            /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
-        {
-            if (ppvObject == nullptr)
-                return E_POINTER;
-
-            if (IsEqualIID(riid, __uuidof(API::IReferenceTrackerManager)))
-            {
-                *ppvObject = static_cast<API::IReferenceTrackerManager*>(this);
-            }
-            else if (IsEqualIID(riid, IID_IUnknown))
-            {
-                *ppvObject = static_cast<IUnknown*>(this);
-            }
-            else
-            {
-                *ppvObject = nullptr;
-                return E_NOINTERFACE;
-            }
-
-            AddRef();
-            return S_OK;
-        }
-    };
-
-    TrackerRuntimeManagerImpl TrackerRuntimeManager;
-
     // Testing types
     struct DECLSPEC_UUID("447BB9ED-DA48-4ABC-8963-5BB5C3E0AA09") ITest : public IUnknown
     {
@@ -142,6 +83,31 @@ namespace
 
         TrackerObject(size_t id) : _id{ id }, _trackerSourceCount{ 0 }, _connected{ false }, _elementId{ 1 }
         { }
+
+        HRESULT ToggleTargets(_In_ bool shouldPeg)
+        {
+            HRESULT hr;
+
+            auto curr = std::begin(_elements);
+            while (curr != std::end(_elements))
+            {
+                CComPtr<API::IReferenceTrackerTarget> mowMaybe;
+                if (S_OK == curr->second->QueryInterface(&mowMaybe))
+                {
+                    if (shouldPeg)
+                    {
+                        RETURN_IF_FAILED(mowMaybe->Peg());
+                    }
+                    else
+                    {
+                        RETURN_IF_FAILED(mowMaybe->Unpeg());
+                    }
+                }
+                ++curr;
+            }
+
+            return S_OK;
+        }
 
         STDMETHOD(AddObjectRef)(_In_ IUnknown* c, _Out_ int* id)
         {
@@ -202,6 +168,92 @@ namespace
         DEFINE_REF_COUNTING()
     };
 
+    std::atomic<size_t> CurrentObjectId{};
+
+    class TrackerRuntimeManagerImpl : public API::IReferenceTrackerManager
+    {
+        CComPtr<API::IReferenceTrackerHost> _runtimeServices;
+        std::list<CComPtr<TrackerObject>> _objects;
+
+    public:
+        void RecordObject(_In_ TrackerObject* obj)
+        {
+            _objects.push_back(CComPtr<TrackerObject>{ obj });
+
+            if (_runtimeServices != nullptr)
+                _runtimeServices->AddMemoryPressure(sizeof(TrackerObject));
+        }
+
+        void ReleaseObjects()
+        {
+            size_t count = _objects.size();
+            _objects.clear();
+            if (_runtimeServices != nullptr)
+                _runtimeServices->RemoveMemoryPressure(sizeof(TrackerObject) * count);
+        }
+
+    public: // IReferenceTrackerManager
+        STDMETHOD(ReferenceTrackingStarted)()
+        {
+            // Unpeg all instances
+            for (auto& i : _objects)
+                i->ToggleTargets(/* should peg */ false);
+
+            return S_OK;
+        }
+
+        STDMETHOD(FindTrackerTargetsCompleted)(_In_ BOOL bWalkFailed)
+        {
+            // Verify and ensure all connected types are pegged
+            for (auto& i : _objects)
+                i->ToggleTargets(/* should peg */ true);
+
+            return S_OK;
+        }
+
+        STDMETHOD(ReferenceTrackingCompleted)()
+        {
+            return S_OK;
+        }
+
+        STDMETHOD(SetReferenceTrackerHost)(_In_ API::IReferenceTrackerHost* pHostServices)
+        {
+            assert(pHostServices != nullptr);
+            return pHostServices->QueryInterface(&_runtimeServices);
+        }
+
+        // Lifetime maintained by stack - we don't care about ref counts
+        STDMETHOD_(ULONG, AddRef)() { return 1; }
+        STDMETHOD_(ULONG, Release)() { return 1; }
+
+        STDMETHOD(QueryInterface)(
+            /* [in] */ REFIID riid,
+            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+        {
+            if (ppvObject == nullptr)
+                return E_POINTER;
+
+            if (IsEqualIID(riid, __uuidof(API::IReferenceTrackerManager)))
+            {
+                *ppvObject = static_cast<API::IReferenceTrackerManager*>(this);
+            }
+            else if (IsEqualIID(riid, IID_IUnknown))
+            {
+                *ppvObject = static_cast<IUnknown*>(this);
+            }
+            else
+            {
+                *ppvObject = nullptr;
+                return E_NOINTERFACE;
+            }
+
+            AddRef();
+            return S_OK;
+        }
+    };
+
+    TrackerRuntimeManagerImpl TrackerRuntimeManager;
+
     HRESULT STDMETHODCALLTYPE TrackerObject::ConnectFromTrackerSource()
     {
         _connected = true;
@@ -219,7 +271,7 @@ namespace
         assert(pCallback != nullptr);
 
         CComPtr<API::IReferenceTrackerTarget> mowMaybe;
-        for (auto &e : _elements)
+        for (auto& e : _elements)
         {
             if (S_OK == e.second->QueryInterface(&mowMaybe))
             {
@@ -256,12 +308,19 @@ namespace
         /* Not used by runtime */
         return E_NOTIMPL;
     }
-
-    std::atomic<size_t> CurrentObjectId{};
 }
 
 // Create external object
 extern "C" DLL_EXPORT ITrackerObject* STDMETHODCALLTYPE CreateTrackerObject()
 {
-    return new TrackerObject{ CurrentObjectId++ };
+    auto obj = new TrackerObject{ CurrentObjectId++ };
+
+    TrackerRuntimeManager.RecordObject(obj);
+
+    return obj;
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReleaseAllTrackerObjects()
+{
+    TrackerRuntimeManager.ReleaseObjects();
 }
