@@ -939,16 +939,16 @@ namespace System
             Interop.Kernel32.SMALL_RECT srWindow = csbi.srWindow;
 
             // Check for arithmetic underflows & overflows.
-            int newRight = left + srWindow.Right - srWindow.Left + 1;
-            if (left < 0 || newRight > csbi.dwSize.X || newRight < 0)
+            int newRight = left + srWindow.Right - srWindow.Left;
+            if (left < 0 || newRight > csbi.dwSize.X - 1 || newRight < left)
                 throw new ArgumentOutOfRangeException(nameof(left), left, SR.ArgumentOutOfRange_ConsoleWindowPos);
-            int newBottom = top + srWindow.Bottom - srWindow.Top + 1;
-            if (top < 0 || newBottom > csbi.dwSize.Y || newBottom < 0)
+            int newBottom = top + srWindow.Bottom - srWindow.Top;
+            if (top < 0 || newBottom > csbi.dwSize.Y - 1 || newBottom < top)
                 throw new ArgumentOutOfRangeException(nameof(top), top, SR.ArgumentOutOfRange_ConsoleWindowPos);
 
             // Preserve the size, but move the position.
-            srWindow.Bottom -= (short)(srWindow.Top - top);
-            srWindow.Right -= (short)(srWindow.Left - left);
+            srWindow.Bottom = (short)newBottom;
+            srWindow.Right = (short)newRight;
             srWindow.Left = (short)left;
             srWindow.Top = (short)top;
 
