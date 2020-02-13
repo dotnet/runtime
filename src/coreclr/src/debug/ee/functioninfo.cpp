@@ -1035,7 +1035,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
             pEntry < (pMap + cMap - 1);
             pEntry++)
         {
-            _ASSERTE(pEntry->nativeOffset <= (pEntry+1)->nativeOffset);
+            _ASSERTE(pEntry->offset.nativeOffset <= (pEntry+1)->offset.nativeOffset);
         }
     }
 #endif //_DEBUG
@@ -1093,13 +1093,13 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         _ASSERTE(m >= m_sequenceMap);
         _ASSERTE(m < m_sequenceMap + m_sequenceMapCount);
 
-        ilLast = max((int)ilLast, (int)pMapEntry->ilOffset);
+        ilLast = max((int)ilLast, (int)pMapEntry->offset.ilOffset);
 
         // Simply copy everything over, since we translate to
         // CorDebugMappingResults immediately prior to handing
         // back to user...
-        m->nativeStartOffset    = pMapEntry->nativeOffset;
-        m->ilOffset             = pMapEntry->ilOffset;
+        m->nativeStartOffset    = pMapEntry->offset.nativeOffset;
+        m->ilOffset             = pMapEntry->offset.ilOffset;
         m->source               = pMapEntry->source;
 
         // Keep in mind that if we have an instrumented code translation
@@ -1116,7 +1116,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
         if (!mapping.IsNull())
         {
             int ilThisOld = m_methodInfo->TranslateToInstIL(&mapping,
-                                                            pMapEntry->ilOffset,
+                                                            pMapEntry->offset.ilOffset,
                                                             bInstrumentedToOriginal);
 
             if (ilThisOld == ilPrevOld)

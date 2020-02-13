@@ -251,11 +251,11 @@ void DoBounds(
     {
         ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
 
-        trans.DoEncodedDeltaU32(pBound->nativeOffset, dwLastNativeOffset);
-        dwLastNativeOffset = pBound->nativeOffset;
+        trans.DoEncodedDeltaU32(pBound->offset.nativeOffset, dwLastNativeOffset);
+        dwLastNativeOffset = pBound->offset.nativeOffset;
 
 
-        trans.DoEncodedAdjustedU32(pBound->ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
+        trans.DoEncodedAdjustedU32(pBound->offset.ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
 
         trans.DoEncodedSourceType(pBound->source);
 

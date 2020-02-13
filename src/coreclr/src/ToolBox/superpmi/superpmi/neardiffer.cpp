@@ -1004,16 +1004,16 @@ bool NearDiffer::compareBoundaries(MethodContext* mc, CompileResult* cr1, Compil
 
     for (unsigned int i = 0; i < cMap_1; i++)
     {
-        if (map_1[i].ilOffset != map_2[i].ilOffset)
+        if (map_1[i].offset.ilOffset != map_2[i].offset.ilOffset)
         {
-            LogVerbose("compareBoundaries found non-matching ilOffset %u %u for map: %u", map_1[i].ilOffset,
-                       map_2[i].ilOffset, i);
+            LogVerbose("compareBoundaries found non-matching ilOffset %u %u for map: %u", map_1[i].offset.ilOffset,
+                       map_2[i].offset.ilOffset, i);
             return false;
         }
-        if (map_1[i].nativeOffset != map_2[i].nativeOffset)
+        if (map_1[i].offset.nativeOffset != map_2[i].offset.nativeOffset)
         {
-            LogVerbose("compareBoundaries found non-matching nativeOffset %u %u for map: %u", map_1[i].nativeOffset,
-                       map_2[i].nativeOffset, i);
+            LogVerbose("compareBoundaries found non-matching nativeOffset %u %u for map: %u", map_1[i].offset.nativeOffset,
+                       map_2[i].offset.nativeOffset, i);
             return false;
         }
         if (map_1[i].source != map_2[i].source)

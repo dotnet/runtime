@@ -46,14 +46,27 @@ public:
         STACK_EMPTY                = 0x02, // The stack is empty here
         CALL_SITE                  = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN  = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION           = 0x10  // The actual instruction of a call.
-
+        CALL_INSTRUCTION           = 0x10, // The actual instruction of a call.
+        INLINE_OPEN                = 0x20, // Beginning of an inline method
+        INLINE_CLOSE               = 0x30 // ending of an inline method
     };
 
-    struct OffsetMapping
+    struct Method
+    {
+        CORINFO_METHOD_INFO* method;
+    };
+    struct Offset
     {
         DWORD           nativeOffset;
         DWORD           ilOffset;
+    };
+    struct OffsetMapping
+    {
+        union
+        {
+            Method method;
+            Offset offset;
+        };
         SourceTypes     source; // The debugger needs this so that
                                 // we don't put Edit and Continue breakpoints where
                                 // the stack isn't empty.  We can put regular breakpoints

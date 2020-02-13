@@ -252,7 +252,7 @@ void CompileResult::dmpSetBoundaries(DWORD key, const Agnostic_SetBoundaries& va
     {
         if (i != 0)
             printf(", ");
-        printf("%u %u %u", om[i].ilOffset, om[i].nativeOffset, om[i].source);
+        printf("%u %u %u", om[i].offset.ilOffset, om[i].offset.nativeOffset, om[i].source);
     }
     printf("}");
     SetBoundaries->Unlock();

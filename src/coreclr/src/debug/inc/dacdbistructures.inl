@@ -399,8 +399,8 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
     const DWORD call_inst = (DWORD)ICorDebugInfo::CALL_INSTRUCTION;
     for (i = 0; i < m_map.Count(); i++)
     {
-        m_map[i].ilOffset = mapCopy[i].ilOffset;
-        m_map[i].nativeStartOffset = mapCopy[i].nativeOffset;
+        m_map[i].ilOffset = mapCopy[i].offset.ilOffset;
+        m_map[i].nativeStartOffset = mapCopy[i].offset.nativeOffset;
 
         if (i < m_map.Count() - 1)
         {
@@ -409,7 +409,7 @@ void SequencePoints::CopyAndSortSequencePoints(const ICorDebugInfo::OffsetMappin
             while ((mapCopy[j].source & call_inst) == call_inst && j < m_map.Count()-1)
                 j++;
 
-            m_map[i].nativeEndOffset = mapCopy[j].nativeOffset;
+            m_map[i].nativeEndOffset = mapCopy[j].offset.nativeOffset;
         }
 
         m_map[i].source = mapCopy[i].source;
