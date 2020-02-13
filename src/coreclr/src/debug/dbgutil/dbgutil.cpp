@@ -17,6 +17,12 @@
 #include <assert.h>
 #include <stdio.h>
 
+#ifdef TARGET_UNIX
+#define _wcslen     PAL_wcslen
+#else
+#define _wcslen     wcslen
+#endif
+
 // Returns the RVA of the resource section for the module specified by the given data target and module base.
 // Returns failure if the module doesn't have a resource section.
 //
@@ -315,7 +321,7 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     DWORD* pNextLevelRva)
 {
     HRESULT hr = S_OK;
-    DWORD nameLength = (DWORD)wcslen(pwzName);
+    DWORD nameLength = (DWORD)_wcslen(pwzName);
     WCHAR entryName[50];
     assert(nameLength < 50);     // this implementation won't support matching a name longer
     // than 50 characters. We only look up the hard coded name
