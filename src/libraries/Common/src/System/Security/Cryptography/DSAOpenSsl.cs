@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
         public sealed partial class DSAOpenSsl : DSA
         {
             private const int BitsPerByte = 8;
-            private Lazy<SafeDsaHandle> _key = null!;
+            private Lazy<SafeDsaHandle> _key;
 
             public DSAOpenSsl()
                 : this(2048)
