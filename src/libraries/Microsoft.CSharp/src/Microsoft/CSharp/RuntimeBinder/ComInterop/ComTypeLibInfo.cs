@@ -1,20 +1,19 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
-
-using System.Linq.Expressions;
 
 using System;
 using System.Dynamic;
+using System.Linq.Expressions;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
-    internal sealed class ComTypeLibInfo : IDynamicMetaObjectProvider  {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal sealed class ComTypeLibInfo : IDynamicMetaObjectProvider
+    {
         private readonly ComTypeLibDesc _typeLibDesc;
 
-        internal ComTypeLibInfo(ComTypeLibDesc typeLibDesc) {
+        internal ComTypeLibInfo(ComTypeLibDesc typeLibDesc)
+        {
             _typeLibDesc = typeLibDesc;
         }
 
@@ -29,14 +28,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         public ComTypeLibDesc TypeLibDesc => _typeLibDesc;
 
         // TODO: internal
-        public string[] GetMemberNames() {
+        public string[] GetMemberNames()
+        {
             return new string[] { Name, "Guid", "Name", "VersionMajor", "VersionMinor" };
         }
 
-        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {
+        DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
+        {
             return new TypeLibInfoMetaObject(parameter, this);
         }
     }
 }
-
-#endif

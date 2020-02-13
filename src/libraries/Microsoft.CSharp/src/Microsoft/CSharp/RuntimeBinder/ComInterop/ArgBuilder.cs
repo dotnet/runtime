@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
 
 using System.Linq.Expressions;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     /// <summary>
     /// ArgBuilder provides an argument value used by the MethodBinder.  One ArgBuilder exists for each
     /// physical parameter defined on a method.
     ///
     /// Contrast this with ParameterWrapper which represents the logical argument passed to the method.
     /// </summary>
-    internal abstract class ArgBuilder {
+    internal abstract class ArgBuilder
+    {
         /// <summary>
         /// Provides the Expression which provides the value to be passed to the argument.
         /// </summary>
@@ -23,7 +23,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// Provides the Expression which provides the value to be passed to the argument.
         /// This method is called when result is intended to be used ByRef.
         /// </summary>
-        internal virtual Expression MarshalToRef(Expression parameter) {
+        internal virtual Expression MarshalToRef(Expression parameter)
+        {
             return Marshal(parameter);
         }
 
@@ -31,10 +32,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// Provides an Expression which will update the provided value after a call to the method.
         /// May return null if no update is required.
         /// </summary>
-        internal virtual Expression UnmarshalFromRef(Expression newValue) {
+        internal virtual Expression UnmarshalFromRef(Expression newValue)
+        {
             return newValue;
         }
     }
 }
-
-#endif

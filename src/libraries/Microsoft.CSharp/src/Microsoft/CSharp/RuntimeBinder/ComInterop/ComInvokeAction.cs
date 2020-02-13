@@ -1,36 +1,40 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_COM
-
-using System.Linq.Expressions;
-
 using System;
-using System.Dynamic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Dynamic;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     /// <summary>
     /// Invokes the object. If it falls back, just produce an error.
     /// </summary>
-    internal sealed class ComInvokeAction : InvokeBinder {
+    internal sealed class ComInvokeAction : InvokeBinder
+    {
         internal ComInvokeAction(CallInfo callInfo)
-            : base(callInfo) {
+            : base(callInfo)
+        {
         }
 
-        public override int GetHashCode() {
+        public override int GetHashCode()
+        {
             return base.GetHashCode();
         }
 
-        public override bool Equals(object obj) {
+        public override bool Equals(object obj)
+        {
             return base.Equals(obj as ComInvokeAction);
         }
 
-        public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion) {
-            if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res)) {
+        public override DynamicMetaObject FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion)
+        {
+            if (ComBinder.TryBindInvoke(this, target, args, out DynamicMetaObject res))
+            {
                 return res;
             }
 
@@ -50,11 +54,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// Splats the arguments to another nested dynamic site, which does the
     /// real invocation of the IDynamicMetaObjectProvider.
     /// </summary>
-    internal sealed class SplatInvokeBinder : CallSiteBinder {
-        internal static readonly SplatInvokeBinder Instance = new SplatInvokeBinder();
+    internal sealed class SplatInvokeBinder : CallSiteBinder
+    {
+        internal static readonly SplatInvokeBinder s_instance = new SplatInvokeBinder();
 
         // Just splat the args and dispatch through a nested site
-        public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel) {
+        public override Expression Bind(object[] args, ReadOnlyCollection<ParameterExpression> parameters, LabelTarget returnLabel)
+        {
             Debug.Assert(args.Length == 2);
 
             int count = ((object[])args[1]).Length;
@@ -65,7 +71,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             nestedArgs.Add(parameters[0]);
             delegateArgs[0] = typeof(CallSite);
             delegateArgs[1] = typeof(object);
-            for (int i = 0; i < count; i++) {
+            for (int i = 0; i < count; i++)
+            {
                 nestedArgs.Add(Expression.ArrayAccess(array, Expression.Constant(i)));
                 delegateArgs[i + 2] = typeof(object).MakeByRefType();
             }
@@ -85,5 +92,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

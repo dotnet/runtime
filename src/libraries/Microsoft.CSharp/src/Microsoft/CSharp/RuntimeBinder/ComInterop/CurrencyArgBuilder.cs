@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-#if FEATURE_COM
 #pragma warning disable 612, 618
 using System.Linq.Expressions;
 
@@ -11,14 +9,18 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-    internal sealed class CurrencyArgBuilder : SimpleArgBuilder {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal sealed class CurrencyArgBuilder : SimpleArgBuilder
+    {
         internal CurrencyArgBuilder(Type parameterType)
-            : base(parameterType) {
+            : base(parameterType)
+        {
             Debug.Assert(parameterType == typeof(CurrencyWrapper));
         }
 
-        internal override Expression Marshal(Expression parameter) {
+        internal override Expression Marshal(Expression parameter)
+        {
             // parameter.WrappedObject
             return Expression.Property(
                 Helpers.Convert(base.Marshal(parameter), typeof(CurrencyWrapper)),
@@ -26,7 +28,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             );
         }
 
-        internal override Expression MarshalToRef(Expression parameter) {
+        internal override Expression MarshalToRef(Expression parameter)
+        {
             // Decimal.ToOACurrency(parameter.WrappedObject)
             return Expression.Call(
                 typeof(decimal).GetMethod("ToOACurrency"),
@@ -34,7 +37,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             );
         }
 
-        internal override Expression UnmarshalFromRef(Expression value) {
+        internal override Expression UnmarshalFromRef(Expression value)
+        {
             // Decimal.FromOACurrency(value)
             return base.UnmarshalFromRef(
                 Expression.New(
@@ -48,5 +52,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

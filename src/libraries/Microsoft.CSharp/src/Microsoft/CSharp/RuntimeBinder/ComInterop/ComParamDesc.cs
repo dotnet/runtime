@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
 
 using System;
 using System.Runtime.InteropServices.ComTypes;
@@ -10,12 +8,13 @@ using System.Text;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using VarEnum = System.Runtime.InteropServices.VarEnum;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     /// <summary>
     /// The parameter description of a method defined in a type library
     /// </summary>
-    internal class ComParamDesc {
+    internal class ComParamDesc
+    {
         #region private fields
 
         private readonly bool _isOut; // is an output parameter?
@@ -34,13 +33,15 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <summary>
         /// Creates a representation for the paramter of a COM method
         /// </summary>
-        internal ComParamDesc(ref ELEMDESC elemDesc, string name) {
+        internal ComParamDesc(ref ELEMDESC elemDesc, string name)
+        {
             // Ensure _defaultValue is set to DBNull.Value regardless of whether or not the
             // default value is extracted from the parameter description.  Failure to do so
             // yields a runtime exception in the ToString() function.
             _defaultValue = DBNull.Value;
 
-            if (!string.IsNullOrEmpty(name)) {
+            if (!string.IsNullOrEmpty(name))
+            {
                 // This is a parameter, not a return value
                 _isOut = (elemDesc.desc.paramdesc.wParamFlags & PARAMFLAG.PARAMFLAG_FOUT) != 0;
                 _isOpt = (elemDesc.desc.paramdesc.wParamFlags & PARAMFLAG.PARAMFLAG_FOPT) != 0;
@@ -51,12 +52,18 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             _name = name;
             _vt = (VarEnum)elemDesc.tdesc.vt;
             TYPEDESC typeDesc = elemDesc.tdesc;
-            while (true) {
-                if (_vt == VarEnum.VT_PTR) {
+            while (true)
+            {
+                if (_vt == VarEnum.VT_PTR)
+                {
                     _byRef = true;
-                } else if (_vt == VarEnum.VT_ARRAY) {
+                }
+                else if (_vt == VarEnum.VT_ARRAY)
+                {
                     _isArray = true;
-                } else {
+                }
+                else
+                {
                     break;
                 }
 
@@ -66,7 +73,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             }
 
             VarEnum vtWithoutByref = _vt;
-            if ((_vt & VarEnum.VT_BYREF) != 0) {
+            if ((_vt & VarEnum.VT_BYREF) != 0)
+            {
                 vtWithoutByref = (_vt & ~VarEnum.VT_BYREF);
                 _byRef = true;
             }
@@ -79,7 +87,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// TODO: Return values should be represented by a different type
         /// </summary>
         internal ComParamDesc(ref ELEMDESC elemDesc)
-            : this(ref elemDesc, string.Empty) {
+            : this(ref elemDesc, string.Empty)
+        {
         }
 
         //internal struct PARAMDESCEX {
@@ -105,10 +114,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         //    }
         //}
 
-        private static Type GetTypeForVarEnum(VarEnum vt) {
+        private static Type GetTypeForVarEnum(VarEnum vt)
+        {
             Type type;
 
-            switch (vt) {
+            switch (vt)
+            {
                 // VarEnums which can be used in VARIANTs, but which cannot occur in a TYPEDESC
                 case VarEnum.VT_EMPTY:
                 case VarEnum.VT_NULL:
@@ -160,30 +171,36 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return type;
         }
 
-        public override string ToString() {
+        public override string ToString()
+        {
             StringBuilder result = new StringBuilder();
-            if (_isOpt) {
+            if (_isOpt)
+            {
                 result.Append("[Optional] ");
             }
 
-            if (_isOut) {
+            if (_isOut)
+            {
                 result.Append("[out]");
             }
 
             result.Append(_type.Name);
 
-            if (_isArray) {
+            if (_isArray)
+            {
                 result.Append("[]");
             }
 
-            if (_byRef) {
+            if (_byRef)
+            {
                 result.Append("&");
             }
 
             result.Append(" ");
             result.Append(_name);
 
-            if (_defaultValue != DBNull.Value) {
+            if (_defaultValue != DBNull.Value)
+            {
                 result.Append("=");
                 result.Append(_defaultValue);
             }
@@ -195,24 +212,30 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         #region properties
 
-        public bool IsOut {
+        public bool IsOut
+        {
             get { return _isOut; }
         }
 
-        public bool IsOptional {
+        public bool IsOptional
+        {
             get { return _isOpt; }
         }
 
-        public bool ByReference {
+        public bool ByReference
+        {
             get { return _byRef; }
         }
 
-        public bool IsArray {
+        public bool IsArray
+        {
             get { return _isArray; }
         }
 
-        public Type ParameterType {
-            get {
+        public Type ParameterType
+        {
+            get
+            {
                 return _type;
             }
         }
@@ -220,8 +243,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <summary>
         /// DBNull.Value if there is no default value
         /// </summary>
-        internal object DefaultValue {
-            get {
+        internal object DefaultValue
+        {
+            get
+            {
                 return _defaultValue;
             }
         }
@@ -229,5 +254,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         #endregion
     }
 }
-
-#endif

@@ -1,37 +1,39 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
-using System.Linq.Expressions;
 
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     [StructLayout(LayoutKind.Sequential)]
-    internal struct VariantArray1 {
+    internal struct VariantArray1
+    {
         public Variant Element0;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct VariantArray2 {
+    internal struct VariantArray2
+    {
         public Variant Element0, Element1;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct VariantArray4 {
+    internal struct VariantArray4
+    {
         public Variant Element0, Element1, Element2, Element3;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct VariantArray8 {
+    internal struct VariantArray8
+    {
         public Variant Element0, Element1, Element2, Element3, Element4, Element5, Element6, Element7;
     }
 
@@ -42,16 +44,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     // We use this because we don't have stackalloc or pinning in Expression
     // Trees, so we can't create an array of Variants directly.
     //
-    internal static class VariantArray {
+    internal static class VariantArray
+    {
         // Don't need a dictionary for this, it will have very few elements
         // (guarenteed less than 28, in practice 0-2)
-        private static readonly List<Type> _generatedTypes = new List<Type>(0);
+        private static readonly List<Type> s_generatedTypes = new List<Type>(0);
 
-        internal static MemberExpression GetStructField(ParameterExpression variantArray, int field) {
+        internal static MemberExpression GetStructField(ParameterExpression variantArray, int field)
+        {
             return Expression.Field(variantArray, "Element" + field);
         }
 
-        internal static Type GetStructType(int args) {
+        internal static Type GetStructType(int args)
+        {
             Debug.Assert(args >= 0);
             if (args <= 1) return typeof(VariantArray1);
             if (args <= 2) return typeof(VariantArray2);
@@ -59,36 +64,40 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             if (args <= 8) return typeof(VariantArray8);
 
             int size = 1;
-            while (args > size) {
+            while (args > size)
+            {
                 size *= 2;
             }
 
-            lock (_generatedTypes) {
+            lock (s_generatedTypes)
+            {
                 // See if we can find an existing type
-                foreach (Type t in _generatedTypes) {
+                foreach (Type t in s_generatedTypes)
+                {
                     int arity = int.Parse(t.Name.Substring("VariantArray".Length), CultureInfo.InvariantCulture);
-                    if (size == arity) {
+                    if (size == arity)
+                    {
                         return t;
                     }
                 }
 
                 // Else generate a new type
-                Type type = CreateCustomType(size).MakeGenericType(new Type[]{typeof(Variant)});
-                _generatedTypes.Add(type);
+                Type type = CreateCustomType(size).MakeGenericType(new Type[] { typeof(Variant) });
+                s_generatedTypes.Add(type);
                 return type;
             }
         }
 
-        private static Type CreateCustomType(int size) {
-            var attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
+        private static Type CreateCustomType(int size)
+        {
+            TypeAttributes attrs = TypeAttributes.NotPublic | TypeAttributes.SequentialLayout;
             TypeBuilder type = UnsafeMethods.DynamicModule.DefineType("VariantArray" + size, attrs, typeof(ValueType));
-            var T = type.DefineGenericParameters(new string[] { "T" })[0];
-            for (int i = 0; i < size; i++) {
+            GenericTypeParameterBuilder T = type.DefineGenericParameters(new string[] { "T" })[0];
+            for (int i = 0; i < size; i++)
+            {
                 type.DefineField("Element" + i, T, FieldAttributes.Public);
             }
             return type.CreateType();
         }
     }
 }
-
-#endif

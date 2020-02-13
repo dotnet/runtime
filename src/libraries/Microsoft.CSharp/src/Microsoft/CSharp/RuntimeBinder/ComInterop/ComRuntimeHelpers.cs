@@ -1,31 +1,32 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
 
 using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
-using System.Linq;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
-    internal static class ComRuntimeHelpers {
-
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal static class ComRuntimeHelpers
+    {
         [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "1#")]
-        public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message) {
-            if (ComHresults.IsSuccess(hresult)) {
+        public static void CheckThrowException(int hresult, ref ExcepInfo excepInfo, uint argErr, string message)
+        {
+            if (ComHresults.IsSuccess(hresult))
+            {
                 return;
             }
 
-            switch (hresult) {
+            switch (hresult)
+            {
                 case ComHresults.DISP_E_BADPARAMCOUNT:
                     // The number of elements provided to DISPPARAMS is different from the number of arguments
                     // accepted by the method or property.
@@ -80,22 +81,26 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             Marshal.ThrowExceptionForHR(hresult);
         }
 
-        internal static void GetInfoFromType(ComTypes.ITypeInfo typeInfo, out string name, out string documentation) {
+        internal static void GetInfoFromType(ComTypes.ITypeInfo typeInfo, out string name, out string documentation)
+        {
             typeInfo.GetDocumentation(-1, out name, out documentation, out int _, out string _);
         }
 
-        internal static string GetNameOfMethod(ComTypes.ITypeInfo typeInfo, int memid) {
+        internal static string GetNameOfMethod(ComTypes.ITypeInfo typeInfo, int memid)
+        {
             string[] rgNames = new string[1];
             typeInfo.GetNames(memid, rgNames, 1, out int _);
             return rgNames[0];
         }
 
-        internal static string GetNameOfLib(ComTypes.ITypeLib typeLib) {
+        internal static string GetNameOfLib(ComTypes.ITypeLib typeLib)
+        {
             typeLib.GetDocumentation(-1, out string name, out string _, out int _, out string _);
             return name;
         }
 
-        internal static string GetNameOfType(ComTypes.ITypeInfo typeInfo) {
+        internal static string GetNameOfType(ComTypes.ITypeInfo typeInfo)
+        {
             GetInfoFromType(typeInfo, out string name, out string _);
 
             return name;
@@ -110,32 +115,39 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// Some COM objects do intend to expose typeinfo, but may not be able to do so if the type-library is not properly
         /// registered. This will be considered as acceptable or as an error condition depending on throwIfMissingExpectedTypeInfo</param>
         /// <returns></returns>
-        internal static ComTypes.ITypeInfo GetITypeInfoFromIDispatch(IDispatch dispatch, bool throwIfMissingExpectedTypeInfo) {
+        internal static ComTypes.ITypeInfo GetITypeInfoFromIDispatch(IDispatch dispatch, bool throwIfMissingExpectedTypeInfo)
+        {
             int hresult = dispatch.TryGetTypeInfoCount(out uint typeCount);
             Marshal.ThrowExceptionForHR(hresult);
             Debug.Assert(typeCount <= 1);
-            if (typeCount == 0) {
+            if (typeCount == 0)
+            {
                 return null;
             }
 
-            IntPtr typeInfoPtr = IntPtr.Zero;
-
+            IntPtr typeInfoPtr;
             hresult = dispatch.TryGetTypeInfo(0, 0, out typeInfoPtr);
-            if (!ComHresults.IsSuccess(hresult)) {
+            if (!ComHresults.IsSuccess(hresult))
+            {
                 CheckIfMissingTypeInfoIsExpected(hresult, throwIfMissingExpectedTypeInfo);
                 return null;
             }
-            if (typeInfoPtr == IntPtr.Zero) { // be defensive against components that return IntPtr.Zero
-                if (throwIfMissingExpectedTypeInfo) {
+            if (typeInfoPtr == IntPtr.Zero)
+            { // be defensive against components that return IntPtr.Zero
+                if (throwIfMissingExpectedTypeInfo)
+                {
                     Marshal.ThrowExceptionForHR(ComHresults.E_FAIL);
                 }
                 return null;
             }
 
             ComTypes.ITypeInfo typeInfo = null;
-            try {
+            try
+            {
                 typeInfo = Marshal.GetObjectForIUnknown(typeInfoPtr) as ComTypes.ITypeInfo;
-            } finally {
+            }
+            finally
+            {
                 Marshal.Release(typeInfoPtr);
             }
 
@@ -151,12 +163,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// However, if accessing the typeinfo is failing in a transient way, we might want to throw
         /// an exception so that we will eagerly predictably indicate the problem.
         /// </summary>
-        private static void CheckIfMissingTypeInfoIsExpected(int hresult, bool throwIfMissingExpectedTypeInfo) {
+        private static void CheckIfMissingTypeInfoIsExpected(int hresult, bool throwIfMissingExpectedTypeInfo)
+        {
             Debug.Assert(!ComHresults.IsSuccess(hresult));
 
             // Word.Basic always returns this because of an incorrect implementation of IDispatch.GetTypeInfo
             // Any implementation that returns E_NOINTERFACE is likely to do so in all environments
-            if (hresult == ComHresults.E_NOINTERFACE) {
+            if (hresult == ComHresults.E_NOINTERFACE)
+            {
                 return;
             }
 
@@ -165,53 +179,67 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // can investigate the scenarios to ensure that there is no bug in our own code.
             Debug.Assert(hresult == ComHresults.TYPE_E_LIBNOTREGISTERED);
 
-            if (throwIfMissingExpectedTypeInfo) {
+            if (throwIfMissingExpectedTypeInfo)
+            {
                 Marshal.ThrowExceptionForHR(hresult);
             }
         }
 
         [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
-        internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo) {
-            IntPtr pAttrs = IntPtr.Zero;
+        internal static ComTypes.TYPEATTR GetTypeAttrForTypeInfo(ComTypes.ITypeInfo typeInfo)
+        {
+            IntPtr pAttrs;
             typeInfo.GetTypeAttr(out pAttrs);
 
             // GetTypeAttr should never return null, this is just to be safe
-            if (pAttrs == IntPtr.Zero) {
+            if (pAttrs == IntPtr.Zero)
+            {
                 throw Error.CannotRetrieveTypeInformation();
             }
 
-            try {
+            try
+            {
                 return (ComTypes.TYPEATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPEATTR));
-            } finally {
+            }
+            finally
+            {
                 typeInfo.ReleaseTypeAttr(pAttrs);
             }
         }
 
         [SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
-        internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib) {
-            IntPtr pAttrs = IntPtr.Zero;
+        internal static ComTypes.TYPELIBATTR GetTypeAttrForTypeLib(ComTypes.ITypeLib typeLib)
+        {
+            IntPtr pAttrs;
             typeLib.GetLibAttr(out pAttrs);
 
             // GetTypeAttr should never return null, this is just to be safe
-            if (pAttrs == IntPtr.Zero) {
+            if (pAttrs == IntPtr.Zero)
+            {
                 throw Error.CannotRetrieveTypeInformation();
             }
 
-            try {
+            try
+            {
                 return (ComTypes.TYPELIBATTR)Marshal.PtrToStructure(pAttrs, typeof(ComTypes.TYPELIBATTR));
-            } finally {
+            }
+            finally
+            {
                 typeLib.ReleaseTLibAttr(pAttrs);
             }
         }
 
-        public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid) {
+        public static BoundDispEvent CreateComEvent(object rcw, Guid sourceIid, int dispid)
+        {
             return new BoundDispEvent(rcw, sourceIid, dispid);
         }
 
-        public static DispCallable CreateDispCallable(IDispatchComObject dispatch, ComMethodDesc method) {
+        public static DispCallable CreateDispCallable(IDispatchComObject dispatch, ComMethodDesc method)
+        {
             return new DispCallable(dispatch, method.Name, method.DispId);
         }
-        internal static MethodInfo GetGetIDispatchForObjectMethod() {
+        internal static MethodInfo GetGetIDispatchForObjectMethod()
+        {
 #if !NETCOREAPP
             return typeof(Marshal).GetMethod("GetIDispatchForObject");
 #else
@@ -227,7 +255,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// and other problems.
     /// </summary>
     ///
-    internal static class UnsafeMethods {
+    internal static class UnsafeMethods
+    {
         [System.Runtime.Versioning.ResourceExposure(System.Runtime.Versioning.ResourceScope.None)]
         [System.Runtime.Versioning.ResourceConsumption(System.Runtime.Versioning.ResourceScope.Process, System.Runtime.Versioning.ResourceScope.Process)]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")] // TODO: fix
@@ -240,7 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         [DllImport("oleaut32.dll", PreserveSig = false)]
         internal static extern ComTypes.ITypeLib LoadRegTypeLib(ref Guid clsid, short majorVersion, short minorVersion, int lcid);
 
-            #region public members
+        #region public members
 
         private static readonly MethodInfo _ConvertByrefToPtr = Create_ConvertByrefToPtr();
 
@@ -248,11 +277,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         private static readonly ConvertByrefToPtrDelegate<Variant> _ConvertVariantByrefToPtr = (ConvertByrefToPtrDelegate<Variant>)Delegate.CreateDelegate(typeof(ConvertByrefToPtrDelegate<Variant>), _ConvertByrefToPtr.MakeGenericMethod(typeof(Variant)));
 
-        private static MethodInfo Create_ConvertByrefToPtr() {
+        private static MethodInfo Create_ConvertByrefToPtr()
+        {
             // We dont use AssemblyGen.DefineMethod since that can create a anonymously-hosted DynamicMethod which cannot contain unverifiable code.
             var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ComSnippets"), AssemblyBuilderAccess.Run);
-            var moduleBuilder = assemblyBuilder.DefineDynamicModule("ComSnippets");
-            var type = moduleBuilder.DefineType("Type$ConvertByrefToPtr", TypeAttributes.Public);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("ComSnippets");
+            TypeBuilder type = moduleBuilder.DefineType("Type$ConvertByrefToPtr", TypeAttributes.Public);
 
             Type[] paramTypes = new Type[] { typeof(Variant).MakeByRefType() };
             MethodBuilder mb = type.DefineMethod("ConvertByrefToPtr", MethodAttributes.Public | MethodAttributes.Static, typeof(IntPtr), paramTypes);
@@ -335,22 +365,26 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         [SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         public static IntPtr ConvertVariantByrefToPtr(ref Variant value) { return _ConvertVariantByrefToPtr(ref value); }
 
-        internal static Variant GetVariantForObject(object obj) {
-            Variant variant = default(Variant);
-            if (obj == null) {
+        internal static Variant GetVariantForObject(object obj)
+        {
+            Variant variant = default;
+            if (obj == null)
+            {
                 return variant;
             }
             InitVariantForObject(obj, ref variant);
             return variant;
         }
 
-        internal static void InitVariantForObject(object obj, ref Variant variant) {
+        internal static void InitVariantForObject(object obj, ref Variant variant)
+        {
             Debug.Assert(obj != null);
 
             // GetNativeVariantForObject is very expensive for values that marshal as VT_DISPATCH
             // also is is extremely common scenario when object at hand is an RCW.
             // Therefore we are going to test for IDispatch before defaulting to GetNativeVariantForObject.
-            if (obj is IDispatch disp) {
+            if (obj is IDispatch)
+            {
                 variant.AsDispatch = obj;
                 return;
             }
@@ -359,19 +393,23 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         [Obsolete("do not use this method", true)]
-        public static object GetObjectForVariant(Variant variant) {
+        public static object GetObjectForVariant(Variant variant)
+        {
             IntPtr ptr = UnsafeMethods.ConvertVariantByrefToPtr(ref variant);
             return System.Runtime.InteropServices.Marshal.GetObjectForNativeVariant(ptr);
         }
 
         [Obsolete("do not use this method", true)]
-        public static int IUnknownRelease(IntPtr interfacePointer) {
-            return _IUnknownRelease(interfacePointer);
+        public static int IUnknownRelease(IntPtr interfacePointer)
+        {
+            return s_iUnknownRelease(interfacePointer);
         }
 
         [Obsolete("do not use this method", true)]
-        public static void IUnknownReleaseNotZero(IntPtr interfacePointer) {
-            if (interfacePointer != IntPtr.Zero) {
+        public static void IUnknownReleaseNotZero(IntPtr interfacePointer)
+        {
+            if (interfacePointer != IntPtr.Zero)
+            {
                 IUnknownRelease(interfacePointer);
             }
         }
@@ -386,9 +424,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             out Variant result,
             out ExcepInfo excepInfo,
             out uint argErr
-        ) {
+        )
+        {
 
-            int hresult = _IDispatchInvoke(
+            int hresult = s_iDispatchInvoke(
                 dispatchPointer,
                 memberDispId,
                 flags,
@@ -400,7 +439,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
             if (hresult == ComHresults.DISP_E_MEMBERNOTFOUND
                 && (flags & ComTypes.INVOKEKIND.INVOKE_FUNC) != 0
-                && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0) {
+                && (flags & (ComTypes.INVOKEKIND.INVOKE_PROPERTYPUT | ComTypes.INVOKEKIND.INVOKE_PROPERTYPUTREF)) == 0)
+            {
 
                 // Re-invoke with no result argument to accomodate Word
                 hresult = _IDispatchInvokeNoResult(
@@ -416,16 +456,19 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         [Obsolete("do not use this method", true)]
-        public static IntPtr GetIdsOfNamedParameters(IDispatch dispatch, string[] names, int methodDispId, out GCHandle pinningHandle) {
+        public static IntPtr GetIdsOfNamedParameters(IDispatch dispatch, string[] names, int methodDispId, out GCHandle pinningHandle)
+        {
             pinningHandle = GCHandle.Alloc(null, GCHandleType.Pinned);
             int[] dispIds = new int[names.Length];
             Guid empty = Guid.Empty;
             int hresult = dispatch.TryGetIDsOfNames(ref empty, names, (uint)names.Length, 0, dispIds);
-            if (hresult < 0) {
+            if (hresult < 0)
+            {
                 Marshal.ThrowExceptionForHR(hresult);
             }
 
-            if (methodDispId != dispIds[0]) {
+            if (methodDispId != dispIds[0])
+            {
                 throw Error.GetIDsOfNamesInvalid(names[0]);
             }
 
@@ -440,13 +483,16 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         #region non-public members
 
         [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline")]
-        static UnsafeMethods() {
+        static UnsafeMethods()
+        {
         }
 
-        private static void EmitLoadArg(ILGenerator il, int index) {
+        private static void EmitLoadArg(ILGenerator il, int index)
+        {
             Requires.Condition(index >= 0, nameof(index));
 
-            switch (index) {
+            switch (index)
+            {
                 case 0:
                     il.Emit(OpCodes.Ldarg_0);
                     break;
@@ -460,9 +506,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                     il.Emit(OpCodes.Ldarg_3);
                     break;
                 default:
-                    if (index <= byte.MaxValue) {
+                    if (index <= byte.MaxValue)
+                    {
                         il.Emit(OpCodes.Ldarg_S, (byte)index);
-                    } else {
+                    }
+                    else
+                    {
                         il.Emit(OpCodes.Ldarg, index);
                     }
                     break;
@@ -475,28 +524,35 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// allowed "value"  to be a pinned object.
         /// </summary>
         [Conditional("DEBUG")]
-        public static void AssertByrefPointsToStack(IntPtr ptr) {
-            if (Marshal.ReadInt32(ptr) == _dummyMarker) {
+        public static void AssertByrefPointsToStack(IntPtr ptr)
+        {
+            if (Marshal.ReadInt32(ptr) == DummyMarker)
+            {
                 // Prevent recursion
                 return;
             }
-            int dummy = _dummyMarker;
+            int dummy = DummyMarker;
             IntPtr ptrToLocal = ConvertInt32ByrefToPtr(ref dummy);
             Debug.Assert(ptrToLocal.ToInt64() < ptr.ToInt64());
             Debug.Assert((ptr.ToInt64() - ptrToLocal.ToInt64()) < (16 * 1024));
         }
 
-        private static readonly object _lock = new object();
-        private static ModuleBuilder _dynamicModule;
+        private static readonly object s_lock = new object();
+        private static ModuleBuilder s_dynamicModule;
 
-        internal static ModuleBuilder DynamicModule {
-            get {
-                if (_dynamicModule != null) {
-                    return _dynamicModule;
+        internal static ModuleBuilder DynamicModule
+        {
+            get
+            {
+                if (s_dynamicModule != null)
+                {
+                    return s_dynamicModule;
                 }
-                lock (_lock) {
-                    if (_dynamicModule == null) {
-                        var attributes = new[] {
+                lock (s_lock)
+                {
+                    if (s_dynamicModule == null)
+                    {
+                        var attributes = new CustomAttributeBuilder[] {
                             new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Array.Empty<Type>()), Array.Empty<object>())
                         };
 
@@ -505,14 +561,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 #if !NETCOREAPP
                         assembly.DefineVersionInfoResource();
 #endif
-                        _dynamicModule = assembly.DefineDynamicModule(name);
+                        s_dynamicModule = assembly.DefineDynamicModule(name);
                     }
-                    return _dynamicModule;
+                    return s_dynamicModule;
                 }
             }
         }
 
-        private const int _dummyMarker = 0x10101010;
+        private const int DummyMarker = 0x10101010;
 
         /// <summary>
         /// We will emit an indirect call to an unmanaged function pointer from the vtable of the given interface pointer.
@@ -520,9 +576,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// the JIT-compiler to do pinvoke-stub-inlining and calling the pinvoke target directly.
         /// </summary>
         private delegate int IUnknownReleaseDelegate(IntPtr interfacePointer);
-        private static readonly IUnknownReleaseDelegate _IUnknownRelease = Create_IUnknownRelease();
+        private static readonly IUnknownReleaseDelegate s_iUnknownRelease = Create_IUnknownRelease();
 
-        private static IUnknownReleaseDelegate Create_IUnknownRelease() {
+        private static IUnknownReleaseDelegate Create_IUnknownRelease()
+        {
             DynamicMethod dm = new DynamicMethod("IUnknownRelease", typeof(int), new Type[] { typeof(IntPtr) }, DynamicModule);
 
             ILGenerator method = dm.GetILGenerator();
@@ -546,12 +603,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return (IUnknownReleaseDelegate)dm.CreateDelegate(typeof(IUnknownReleaseDelegate));
         }
 
-        internal static readonly IntPtr NullInterfaceId = GetNullInterfaceId();
+        internal static readonly IntPtr s_nullInterfaceId = GetNullInterfaceId();
 
-        private static IntPtr GetNullInterfaceId() {
+        private static IntPtr GetNullInterfaceId()
+        {
             int size = Marshal.SizeOf(Guid.Empty);
             IntPtr ptr = Marshal.AllocHGlobal(size);
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size; i++)
+            {
                 Marshal.WriteByte(ptr, i, 0);
             }
             return ptr;
@@ -576,23 +635,29 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             out uint argErr
         );
 
-        private static readonly IDispatchInvokeDelegate _IDispatchInvoke = Create_IDispatchInvoke(true);
-        private static IDispatchInvokeDelegate _IDispatchInvokeNoResultImpl;
+        private static readonly IDispatchInvokeDelegate s_iDispatchInvoke = Create_IDispatchInvoke(true);
+        private static IDispatchInvokeDelegate s_iDispatchInvokeNoResultImpl;
 
-        private static IDispatchInvokeDelegate _IDispatchInvokeNoResult {
-            get {
-                if (_IDispatchInvokeNoResultImpl == null) {
-                    lock (_IDispatchInvoke) {
-                        if (_IDispatchInvokeNoResultImpl == null) {
-                            _IDispatchInvokeNoResultImpl = Create_IDispatchInvoke(false);
+        private static IDispatchInvokeDelegate _IDispatchInvokeNoResult
+        {
+            get
+            {
+                if (s_iDispatchInvokeNoResultImpl == null)
+                {
+                    lock (s_iDispatchInvoke)
+                    {
+                        if (s_iDispatchInvokeNoResultImpl == null)
+                        {
+                            s_iDispatchInvokeNoResultImpl = Create_IDispatchInvoke(false);
                         }
                     }
                 }
-                return _IDispatchInvokeNoResultImpl;
+                return s_iDispatchInvokeNoResultImpl;
             }
         }
 
-        private static IDispatchInvokeDelegate Create_IDispatchInvoke(bool returnResult) {
+        private static IDispatchInvokeDelegate Create_IDispatchInvoke(bool returnResult)
+        {
             const int dispatchPointerIndex = 0;
             const int memberDispIdIndex = 1;
             const int flagsIndex = 2;
@@ -623,10 +688,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             // burn the address of our empty IID in directly.  This is never freed, relocated, etc...
             // Note passing this as a Guid directly results in a ~30% perf hit for IDispatch invokes so
             // we also pass it directly as an IntPtr instead.
-            if (IntPtr.Size == 4) {
-                method.Emit(OpCodes.Ldc_I4, UnsafeMethods.NullInterfaceId.ToInt32()); // riid
-            } else {
-                method.Emit(OpCodes.Ldc_I8, UnsafeMethods.NullInterfaceId.ToInt64()); // riid
+            if (IntPtr.Size == 4)
+            {
+                method.Emit(OpCodes.Ldc_I4, UnsafeMethods.s_nullInterfaceId.ToInt32()); // riid
+            }
+            else
+            {
+                method.Emit(OpCodes.Ldc_I8, UnsafeMethods.s_nullInterfaceId.ToInt64()); // riid
             }
             method.Emit(OpCodes.Conv_I);
 
@@ -635,9 +703,12 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
             EmitLoadArg(method, dispParamsIndex);
 
-            if (returnResult) {
+            if (returnResult)
+            {
                 EmitLoadArg(method, resultIndex);
-            } else {
+            }
+            else
+            {
                 method.Emit(OpCodes.Ldsfld, typeof(IntPtr).GetField("Zero"));
             }
             EmitLoadArg(method, exceptInfoIndex);
@@ -668,16 +739,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return (IDispatchInvokeDelegate)dm.CreateDelegate(typeof(IDispatchInvokeDelegate));
         }
 
-#endregion
+        #endregion
     }
 
-
-    internal static class NativeMethods {
+    internal static class NativeMethods
+    {
         [System.Runtime.Versioning.ResourceExposure(System.Runtime.Versioning.ResourceScope.None)]
         [System.Runtime.Versioning.ResourceConsumption(System.Runtime.Versioning.ResourceScope.Process, System.Runtime.Versioning.ResourceScope.Process)]
         [DllImport("oleaut32.dll", PreserveSig = false)]
         internal static extern void VariantClear(IntPtr variant);
     }
 }
-
-#endif

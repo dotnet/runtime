@@ -1,15 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
-using System.Linq.Expressions;
 
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq.Expressions;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     internal class TypeLibMetaObject : DynamicMetaObject {
         private readonly ComTypeLibDesc _lib;
 
@@ -53,7 +51,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
-            var result = TryBindGetMember(binder.Name);
+            DynamicMetaObject result = TryBindGetMember(binder.Name);
             if (result != null) {
                 return binder.FallbackInvoke(result, args, null);
             }
@@ -66,5 +64,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

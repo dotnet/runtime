@@ -1,20 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
 
 using System;
 using System.Dynamic;
 using System.Linq.Expressions;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-    internal sealed class BoundDispEvent : DynamicObject {
-        private object _rcw;
-        private Guid _sourceIid;
-        private int _dispid;
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal sealed class BoundDispEvent : DynamicObject
+    {
+        private readonly object _rcw;
+        private readonly Guid _sourceIid;
+        private readonly int _dispid;
 
-        internal BoundDispEvent(object rcw, Guid sourceIid, int dispid) {
+        internal BoundDispEvent(object rcw, Guid sourceIid, int dispid)
+        {
             _rcw = rcw;
             _sourceIid = sourceIid;
             _dispid = dispid;
@@ -27,13 +28,16 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <param name="handler">The handler for the operation.</param>
         /// <param name="result">The result of the operation.</param>
         /// <returns>true if the operation is complete, false if the call site should determine behavior.</returns>
-        public override bool TryBinaryOperation(BinaryOperationBinder binder, object handler, out object result) {
-            if (binder.Operation == ExpressionType.AddAssign) {
+        public override bool TryBinaryOperation(BinaryOperationBinder binder, object handler, out object result)
+        {
+            if (binder.Operation == ExpressionType.AddAssign)
+            {
                 result = InPlaceAdd(handler);
                 return true;
             }
 
-            if (binder.Operation == ExpressionType.SubtractAssign) {
+            if (binder.Operation == ExpressionType.SubtractAssign)
+            {
                 result = InPlaceSubtract(handler);
                 return true;
             }
@@ -42,16 +46,20 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return false;
         }
 
-        private static void VerifyHandler(object handler) {
-            if (handler is Delegate && handler.GetType() != typeof(Delegate)) {
+        private static void VerifyHandler(object handler)
+        {
+            if (handler is Delegate && handler.GetType() != typeof(Delegate))
+            {
                 return; // delegate
             }
 
-            if (handler is IDynamicMetaObjectProvider) {
+            if (handler is IDynamicMetaObjectProvider)
+            {
                 return; // IDMOP
             }
 
-            if (handler is DispCallable) {
+            if (handler is DispCallable)
+            {
                 return;
             }
 
@@ -63,7 +71,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// </summary>
         /// <param name="handler">The handler to be added.</param>
         /// <returns>The original event with handler added.</returns>
-        private object InPlaceAdd(object handler) {
+        private object InPlaceAdd(object handler)
+        {
             Requires.NotNull(handler, nameof(handler));
             VerifyHandler(handler);
 
@@ -77,7 +86,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// </summary>
         /// <param name="handler">The handler to be removed.</param>
         /// <returns>The original event with handler removed.</returns>
-        private object InPlaceSubtract(object handler) {
+        private object InPlaceSubtract(object handler)
+        {
             Requires.NotNull(handler, nameof(handler));
             VerifyHandler(handler);
 
@@ -88,5 +98,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

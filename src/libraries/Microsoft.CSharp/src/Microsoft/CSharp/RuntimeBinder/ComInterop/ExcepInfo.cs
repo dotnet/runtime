@@ -1,23 +1,21 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
-#pragma warning disable 414 // msc: unused private field
 
 using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
     /// <summary>
     /// This is similar to ComTypes.EXCEPINFO, but lets us do our own custom marshaling
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    internal struct ExcepInfo {
+    internal struct ExcepInfo
+    {
         private short wCode;
         private short wReserved;
         private IntPtr bstrSource;
@@ -30,13 +28,16 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
 #if DEBUG
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2207:InitializeValueTypeStaticFieldsInline")]
-        static ExcepInfo() {
+        static ExcepInfo()
+        {
             Debug.Assert(Marshal.SizeOf(typeof(ExcepInfo)) == Marshal.SizeOf(typeof(ComTypes.EXCEPINFO)));
         }
 #endif
 
-        private static string ConvertAndFreeBstr(ref IntPtr bstr) {
-            if (bstr == IntPtr.Zero) {
+        private static string ConvertAndFreeBstr(ref IntPtr bstr)
+        {
+            if (bstr == IntPtr.Zero)
+            {
                 return null;
             }
 
@@ -46,7 +47,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return result;
         }
 
-        internal void Dummy() {
+        internal void Dummy()
+        {
             wCode = 0;
             wReserved = 0; wReserved++;
             bstrSource = IntPtr.Zero;
@@ -61,7 +63,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
-        internal Exception GetException() {
+        internal Exception GetException()
+        {
             Debug.Assert(pfnDeferredFillIn == IntPtr.Zero);
 #if DEBUG
             System.Diagnostics.Debug.Assert(wReserved != -1);
@@ -72,15 +75,20 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             Exception exception = Marshal.GetExceptionForHR(errorCode);
 
             string message = ConvertAndFreeBstr(ref bstrDescription);
-            if (message != null) {
+            if (message != null)
+            {
                 // If we have a custom message, create a new Exception object with the message set correctly.
                 // We need to create a new object because "exception.Message" is a read-only property.
-                if (exception is COMException) {
+                if (exception is COMException)
+                {
                     exception = new COMException(message, errorCode);
-                } else {
+                }
+                else
+                {
                     Type exceptionType = exception.GetType();
                     ConstructorInfo ctor = exceptionType.GetConstructor(new Type[] { typeof(string) });
-                    if (ctor != null) {
+                    if (ctor != null)
+                    {
                         exception = (Exception)ctor.Invoke(new object[] { message });
                     }
                 }
@@ -89,7 +97,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             exception.Source = ConvertAndFreeBstr(ref bstrSource);
 
             string helpLink = ConvertAndFreeBstr(ref bstrHelpFile);
-            if (helpLink != null && dwHelpContext != 0) {
+            if (helpLink != null && dwHelpContext != 0)
+            {
                 helpLink += "#" + dwHelpContext;
             }
             exception.HelpLink = helpLink;
@@ -98,5 +107,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

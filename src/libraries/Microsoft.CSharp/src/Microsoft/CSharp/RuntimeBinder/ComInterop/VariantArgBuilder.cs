@@ -1,32 +1,33 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_COM
 #pragma warning disable 612, 618
-using System.Linq.Expressions;
-
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Diagnostics;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-    internal class VariantArgBuilder : SimpleArgBuilder {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal class VariantArgBuilder : SimpleArgBuilder
+    {
         private readonly bool _isWrapper;
 
         internal VariantArgBuilder(Type parameterType)
-            : base(parameterType) {
+            : base(parameterType)
+        {
 
             _isWrapper = parameterType == typeof(VariantWrapper);
         }
 
-        internal override Expression Marshal(Expression parameter) {
+        internal override Expression Marshal(Expression parameter)
+        {
             parameter = base.Marshal(parameter);
 
             // parameter.WrappedObject
-            if (_isWrapper) {
+            if (_isWrapper)
+            {
                 parameter = Expression.Property(
                     Helpers.Convert(parameter, typeof(VariantWrapper)),
                     typeof(VariantWrapper).GetProperty("WrappedObject")
@@ -36,7 +37,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return Helpers.Convert(parameter, typeof(object));
         }
 
-        internal override Expression MarshalToRef(Expression parameter) {
+        internal override Expression MarshalToRef(Expression parameter)
+        {
             parameter = Marshal(parameter);
 
             // parameter == UnsafeMethods.GetVariantForObject(parameter);
@@ -46,8 +48,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             );
         }
 
-
-        internal override Expression UnmarshalFromRef(Expression value) {
+        internal override Expression UnmarshalFromRef(Expression value)
+        {
             // value == IntPtr.Zero ? null : Marshal.GetObjectForNativeVariant(value);
 
             Expression unmarshal = Expression.Call(
@@ -55,7 +57,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 value
             );
 
-            if (_isWrapper) {
+            if (_isWrapper)
+            {
                 unmarshal = Expression.New(
                     typeof(VariantWrapper).GetConstructor(new Type[] { typeof(object) }),
                     unmarshal
@@ -66,5 +69,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

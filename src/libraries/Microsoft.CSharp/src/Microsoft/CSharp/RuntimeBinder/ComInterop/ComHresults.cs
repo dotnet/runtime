@@ -1,13 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_COM
-
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
-    internal static class ComHresults {
-
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal static class ComHresults
+    {
         internal const int S_OK = 0;
 
         internal const int CONNECT_E_NOCONNECTION = unchecked((int)0x80040200);
@@ -33,10 +31,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         internal const int TYPE_E_LIBNOTREGISTERED = unchecked((int)0x8002801D);
 
-        internal static bool IsSuccess(int hresult) {
+        internal static bool IsSuccess(int hresult)
+        {
             return hresult >= 0;
         }
     }
 }
-
-#endif

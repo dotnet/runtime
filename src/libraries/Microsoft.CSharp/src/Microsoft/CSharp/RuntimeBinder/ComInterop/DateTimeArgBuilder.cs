@@ -1,25 +1,23 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-#if FEATURE_COM
+using System;
+using System.Diagnostics;
 using System.Linq.Expressions;
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-    internal sealed class DateTimeArgBuilder : SimpleArgBuilder {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal sealed class DateTimeArgBuilder : SimpleArgBuilder
+    {
         internal DateTimeArgBuilder(Type parameterType)
-            : base(parameterType) {
+            : base(parameterType)
+        {
             Debug.Assert(parameterType == typeof(DateTime));
         }
 
-        internal override Expression MarshalToRef(Expression parameter) {
+        internal override Expression MarshalToRef(Expression parameter)
+        {
             // parameter.ToOADate()
             return Expression.Call(
                 Marshal(parameter),
@@ -27,7 +25,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             );
         }
 
-        internal override Expression UnmarshalFromRef(Expression value) {
+        internal override Expression UnmarshalFromRef(Expression value)
+        {
             // DateTime.FromOADate(value)
             return base.UnmarshalFromRef(
                 Expression.Call(
@@ -38,5 +37,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

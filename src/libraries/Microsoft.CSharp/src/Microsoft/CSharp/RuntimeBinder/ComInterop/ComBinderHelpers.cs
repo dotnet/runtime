@@ -1,8 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if FEATURE_COM
 #pragma warning disable 612, 618
 
 using System;
@@ -12,10 +11,12 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-    internal static class ComBinderHelpers {
-
-        internal static bool PreferPut(Type type, bool holdsNull) {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal static class ComBinderHelpers
+    {
+        internal static bool PreferPut(Type type, bool holdsNull)
+        {
             Debug.Assert(type != null);
 
             if (type.IsValueType || type.IsArray) return true;
@@ -24,7 +25,8 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 type == typeof(DBNull) ||
                 holdsNull ||
                 type == typeof(System.Reflection.Missing) ||
-                type == typeof(CurrencyWrapper)) {
+                type == typeof(CurrencyWrapper))
+            {
 
                 return true;
             }
@@ -32,35 +34,43 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return false;
         }
 
-        internal static bool IsByRef(DynamicMetaObject mo) {
+        internal static bool IsByRef(DynamicMetaObject mo)
+        {
             return mo.Expression is ParameterExpression pe && pe.IsByRef;
         }
 
-        internal static bool IsStrongBoxArg(DynamicMetaObject o) {
+        internal static bool IsStrongBoxArg(DynamicMetaObject o)
+        {
             Type t = o.LimitType;
             return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(StrongBox<>);
         }
 
         // this helper prepares arguments for COM binding by transforming ByVal StongBox arguments
         // into ByRef expressions that represent the argument's Value fields.
-        internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args) {
+        internal static bool[] ProcessArgumentsForCom(ref DynamicMetaObject[] args)
+        {
             Debug.Assert(args != null);
 
             DynamicMetaObject[] newArgs = new DynamicMetaObject[args.Length];
             bool[] isByRefArg = new bool[args.Length];
 
-            for (int i = 0; i < args.Length; i++) {
+            for (int i = 0; i < args.Length; i++)
+            {
                 DynamicMetaObject curArgument = args[i];
 
                 // set new arg infos to their original values or set default ones
                 // we will do this fixup early so that we can assume we always have
                 // arginfos in COM binder.
-                if (IsByRef(curArgument)) {
+                if (IsByRef(curArgument))
+                {
                     newArgs[i] = curArgument;
                     isByRefArg[i] = true;
-                } else {
-                    if (IsStrongBoxArg(curArgument)) {
-                        var restrictions = curArgument.Restrictions.Merge(
+                }
+                else
+                {
+                    if (IsStrongBoxArg(curArgument))
+                    {
+                        BindingRestrictions restrictions = curArgument.Restrictions.Merge(
                             GetTypeRestrictionForDynamicMetaObject(curArgument)
                         );
 
@@ -83,7 +93,9 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                         );
 
                         isByRefArg[i] = true;
-                    } else {
+                    }
+                    else
+                    {
                         newArgs[i] = curArgument;
                         isByRefArg[i] = false;
                     }
@@ -94,8 +106,10 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return isByRefArg;
         }
 
-        internal static BindingRestrictions GetTypeRestrictionForDynamicMetaObject(DynamicMetaObject obj) {
-            if (obj.Value == null && obj.HasValue) {
+        internal static BindingRestrictions GetTypeRestrictionForDynamicMetaObject(DynamicMetaObject obj)
+        {
+            if (obj.Value == null && obj.HasValue)
+            {
                 //If the meta object holds a null value, create an instance restriction for checking null
                 return BindingRestrictions.GetInstanceRestriction(obj.Expression, null);
             }
@@ -103,5 +117,3 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
     }
 }
-
-#endif

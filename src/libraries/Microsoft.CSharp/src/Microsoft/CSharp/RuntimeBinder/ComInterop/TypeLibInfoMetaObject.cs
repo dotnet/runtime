@@ -1,33 +1,37 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the Apache 2.0 License.
+// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
-#if FEATURE_COM
-using System.Linq.Expressions;
 
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Linq.Expressions;
 
-namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
-
-    internal sealed class TypeLibInfoMetaObject : DynamicMetaObject {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop
+{
+    internal sealed class TypeLibInfoMetaObject : DynamicMetaObject
+    {
         private readonly ComTypeLibInfo _info;
 
         internal TypeLibInfoMetaObject(Expression expression, ComTypeLibInfo info)
-            : base(expression, BindingRestrictions.Empty, info) {
+            : base(expression, BindingRestrictions.Empty, info)
+        {
             _info = info;
         }
 
-        public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
+        public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
+        {
             Requires.NotNull(binder, nameof(binder));
             string name = binder.Name;
 
-            if (name == _info.Name) {
+            if (name == _info.Name)
+            {
                 name = "TypeLibDesc";
-            } else if (name != "Guid" &&
-                name != "Name" &&
-                name != "VersionMajor" &&
-                name != "VersionMinor") {
+            }
+            else if (name != "Guid" &&
+              name != "Name" &&
+              name != "VersionMajor" &&
+              name != "VersionMinor")
+            {
 
                 return binder.FallbackGetMember(this);
             }
@@ -44,14 +48,14 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             );
         }
 
-        public override IEnumerable<string> GetDynamicMemberNames() {
+        public override IEnumerable<string> GetDynamicMemberNames()
+        {
             return _info.GetMemberNames();
         }
 
-        private BindingRestrictions ComTypeLibInfoRestrictions(params DynamicMetaObject[] args) {
+        private BindingRestrictions ComTypeLibInfoRestrictions(params DynamicMetaObject[] args)
+        {
             return BindingRestrictions.Combine(args).Merge(BindingRestrictions.GetTypeRestriction(Expression, typeof(ComTypeLibInfo)));
         }
     }
 }
-
-#endif
