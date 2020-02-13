@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Threading.Tasks
 {
     /// <summary>
@@ -25,7 +26,7 @@ namespace System.Threading.Tasks
         public async ValueTask<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
-            using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s).OnCancellation(), this))
+            using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSourceWithCancellation<T>)s!).OnCancellation(), this))
             {
                 return await Task.ConfigureAwait(false);
             }

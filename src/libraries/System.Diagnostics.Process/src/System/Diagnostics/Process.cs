@@ -1426,9 +1426,9 @@ namespace System.Diagnostics
                 throw;
             }
 
-            var tcs = new TaskCompletionSourceWithCancellation<object>();
+            var tcs = new TaskCompletionSourceWithCancellation<bool>();
 
-            EventHandler handler = (s, e) => tcs.TrySetResult(null);
+            EventHandler handler = (s, e) => tcs.TrySetResult(true);
             Exited += handler;
 
             try
