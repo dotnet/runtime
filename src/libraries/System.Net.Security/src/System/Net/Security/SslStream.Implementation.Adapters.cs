@@ -12,6 +12,7 @@ namespace System.Net.Security
         private interface ISslIOAdapter
         {
             ValueTask<int> ReadAsync(byte[] buffer, int offset, int count);
+            ValueTask<int> ReadAsync(Memory<byte> buffer);
             ValueTask<int> ReadLockAsync(Memory<byte> buffer);
             Task WriteLockAsync();
             ValueTask WriteAsync(byte[] buffer, int offset, int count);
@@ -30,6 +31,7 @@ namespace System.Net.Security
             }
 
             public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.ReadAsync(new Memory<byte>(buffer, offset, count), _cancellationToken);
+            public ValueTask<int> ReadAsync(Memory<byte> buffer) => _sslStream.InnerStream.ReadAsync(buffer, _cancellationToken);
 
             public ValueTask<int> ReadLockAsync(Memory<byte> buffer) => _sslStream.CheckEnqueueReadAsync(buffer);
 
@@ -47,6 +49,7 @@ namespace System.Net.Security
             public SyncSslIOAdapter(SslStream sslStream) => _sslStream = sslStream;
 
             public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => new ValueTask<int>(_sslStream.InnerStream.Read(buffer, offset, count));
+            public ValueTask<int> ReadAsync(Memory<byte> buffer) => new ValueTask<int>(_sslStream.InnerStream.Read(buffer.Span));
 
             public ValueTask<int> ReadLockAsync(Memory<byte> buffer) => new ValueTask<int>(_sslStream.CheckEnqueueRead(buffer));
 
