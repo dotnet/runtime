@@ -6,46 +6,36 @@
 #include <clrdata.h>
 #include <cor.h>
 #include <cordebug.h>
-#include <arrayholder.h>
-#include <elf.h>
-#include <link.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <elf.h>
+#include <link.h>
 #include <string>
 #include <vector>
 
-#if defined(__i386) || defined(__ARM_EABI__)
-#define PRIx PRIx32
-#define PRIu PRIu32
-#define PRId PRId32
-#define PRIA "08"
-#define PRIxA PRIA PRIx
-#elif defined(__x86_64__) || defined(__aarch64__)
+#if TARGET_64BIT
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
 #define PRIA "016"
 #define PRIxA PRIA PRIx
+#define TARGET_WORDSIZE 64
+#else
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
+#define PRIxA PRIA PRIx
+#define TARGET_WORDSIZE 32
 #endif
 
 #ifndef ElfW
-#define __ELF_NATIVE_CLASS __WORDSIZE
-
 /* We use this macro to refer to ELF types independent of the native wordsize.
    `ElfW(TYPE)' is used in place of `Elf32_TYPE' or `Elf64_TYPE'.  */
-#define ElfW(type)      _ElfW (Elf, __ELF_NATIVE_CLASS, type)
+#define ElfW(type)      _ElfW (Elf, TARGET_WORDSIZE, type)
 #define _ElfW(e,w,t)    _ElfW_1 (e, w, _##t)
 #define _ElfW_1(e,w,t)  e##w##t
 #endif
-
-#define Elf_Ehdr   ElfW(Ehdr)
-#define Elf_Phdr   ElfW(Phdr)
-#define Elf_Shdr   ElfW(Shdr)
-#define Elf_Nhdr   ElfW(Nhdr)
-#define Elf_Dyn    ElfW(Dyn)
-#define Elf_Sym    ElfW(Sym)
-
-#define TRACE(args...)
 
 typedef struct {
     int32_t BucketCount;
@@ -57,8 +47,6 @@ typedef struct {
 class ElfReader
 {
 private:
-    uint64_t m_baseAddress;
-
     void* m_rdebugAddr;                     // DT_DEBUG
     void* m_gnuHashTableAddr;               // DT_GNU_HASH
     void* m_stringTableAddr;                // DT_STRTAB
@@ -70,18 +58,25 @@ private:
     void* m_chainsAddress;
 
 public:
-    ElfReader(uint64_t baseAddress);
+    ElfReader();
     virtual ~ElfReader();
-    bool PopulateELFInfo();
-    bool TryLookupSymbol(std::string symbolName, uint64_t* symbolAddress);
+    bool PopulateELFInfo(uint64_t baseAddress);
+    bool PopulateELFInfo(ElfW(Phdr)* phdrAddr, int phnum);
+    bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
+    bool EnumerateLinkMapEntries();
+    bool EnumerateProgramHeaders(uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
+    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
 
 private:
-    bool GetSymbol(int32_t index, Elf_Sym* symbol);
+    bool GetSymbol(int32_t index, ElfW(Sym)* symbol);
     bool InitializeGnuHashTable();
     bool GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes);
-    uint Hash(const std::string& symbolName);
+    uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
     bool GetStringAtIndex(int index, std::string& result);
-    bool EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, Elf_Dyn** pdynamicAddr);
+    bool EnumerateDynamicEntries(ElfW(Dyn)* dynamicAddr);
+    virtual void ForEachModule(uint64_t baseAddress, std::string& moduleName) { };
+    virtual void ForEachProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;
+    virtual void Trace(const char* format, ...) { };
 };

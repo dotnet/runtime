@@ -3,21 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 #include "elfreader.h"
+#include <arrayholder.h>
 
-class ElfReaderTarget : public ElfReader
+#define Elf_Ehdr   ElfW(Ehdr)
+#define Elf_Phdr   ElfW(Phdr)
+#define Elf_Shdr   ElfW(Shdr)
+#define Elf_Nhdr   ElfW(Nhdr)
+#define Elf_Dyn    ElfW(Dyn)
+#define Elf_Sym    ElfW(Sym)
+
+#ifdef HOST_UNIX
+#define TRACE(args...) Trace(args)
+#else
+#define TRACE(args, ...)
+#endif
+
+#ifndef HOST_WINDOWS
+static const char ElfMagic[] = { 0x7f, 'E', 'L', 'F', '\0' };
+#endif
+
+class ElfReaderExport: public ElfReader
 {
 private:
     ICorDebugDataTarget* m_dataTarget;
 
 public:
-    ElfReaderTarget(ICorDebugDataTarget* dataTarget, uint64_t baseAddress) :
-        ElfReader(baseAddress),
+    ElfReaderExport(ICorDebugDataTarget* dataTarget) :
         m_dataTarget(dataTarget)
     {
         dataTarget->AddRef();
     }
 
-    virtual ~ElfReaderTarget()
+    virtual ~ElfReaderExport()
     {
         m_dataTarget->Release();
     }
@@ -26,7 +43,7 @@ private:
     virtual bool ReadMemory(void* address, void* buffer, size_t size)
     {
         uint32_t read = 0;
-        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), size, &read));
+        return SUCCEEDED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), (uint32_t)size, &read));
     }
 };
 
@@ -36,10 +53,15 @@ private:
 bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
-    ElfReader* reader = new ElfReaderTarget(dataTarget, baseAddress);
-    if (reader->PopulateELFInfo())
+    ElfReader* reader = new ElfReaderExport(dataTarget);
+    if (reader->PopulateELFInfo(baseAddress))
     {
-        return reader->TryLookupSymbol(symbolName, symbolAddress);
+        uint64_t symbolOffset;
+        if (reader->TryLookupSymbol(symbolName, &symbolOffset))
+        {
+            *symbolAddress = baseAddress + symbolOffset;
+            return true;
+        }
     }
     *symbolAddress = 0;
     return false;
@@ -49,8 +71,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 // ELF reader constructor/destructor
 //
 
-ElfReader::ElfReader(uint64_t baseAddress) :
-    m_baseAddress(baseAddress)
+ElfReader::ElfReader()
 {
 }
 
@@ -61,38 +82,46 @@ ElfReader::~ElfReader()
     }
 }
 
-static const char ElfMagic[] = { 0x7f, 'E', 'L', 'F', '\0' };
-
 //
-// Initialize the ELF reader
+// Initialize the ELF reader from a module the base address
 //
 bool
-ElfReader::PopulateELFInfo()
+ElfReader::PopulateELFInfo(uint64_t baseAddress)
 {
-    Elf_Ehdr ehdr;
-    if (!ReadMemory((void*)m_baseAddress, &ehdr, sizeof(ehdr))) {
-        TRACE("ERROR: ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)m_baseAddress, sizeof(ehdr));
-        return false;
-    }
-    if (memcmp(ehdr.e_ident, ElfMagic, strlen(ElfMagic)) != 0) {
-        TRACE("ERROR: invalid elf header signature\n");
-        return false;
-    }
-    Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(m_baseAddress + ehdr.e_phoff);
-    int phnum = ehdr.e_phnum;
-
-    if (phnum <= 0 || phdrAddr == nullptr) {
-        return false;
-    }
+    TRACE("PopulateELFInfo: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
 
-    TRACE("PopulateELFInfo: base %" PRIA PRIx64 " phdr %p phnum %d\n", m_baseAddress, phdrAddr, phnum);
-
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(phdrAddr, phnum, &dynamicAddr)) {
+    if (!EnumerateProgramHeaders(baseAddress, &dynamicAddr)) {
         return false;
     }
+    return EnumerateDynamicEntries(dynamicAddr);
+}
 
+//
+// Initialize the ELF reader from the root program header
+//
+bool
+ElfReader::PopulateELFInfo(Elf_Phdr* phdrAddr, int phnum)
+{
+    TRACE("PopulateELFInfo: phdr %p phnum %d\n", phdrAddr, phnum);
+
+    if (phdrAddr == nullptr || phnum <= 0) {
+        return false;
+    }
+    uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
+    Elf_Dyn* dynamicAddr = nullptr;
+
+    // Enumerate program headers searching for the PT_DYNAMIC header, etc.
+    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &dynamicAddr)) {
+        return false;
+    }
+    return EnumerateDynamicEntries(dynamicAddr);
+}
+
+bool
+ElfReader::EnumerateDynamicEntries(Elf_Dyn* dynamicAddr)
+{
     if (dynamicAddr == nullptr) {
         return false;
     }
@@ -144,7 +173,7 @@ ElfReader::PopulateELFInfo()
 //
 
 bool
-ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolAddress)
+ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset)
 {
     std::vector<int32_t> symbolIndexes;
     if (GetPossibleSymbolIndex(symbolName, symbolIndexes)) {
@@ -158,8 +187,8 @@ ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolAddress)
                 {
                     if (symbolName.compare(possibleName) == 0)
                     {
-                        *symbolAddress = m_baseAddress + symbol.st_value;
-                        TRACE("TryLookupSymbol found '%s' at %" PRIxA "\n", symbolName.c_str(), *symbolAddress);
+                        *symbolOffset = symbol.st_value;
+                        TRACE("TryLookupSymbol found '%s' at offset %" PRIxA "\n", symbolName.c_str(), *symbolOffset);
                         return true;
                     }
                 }
@@ -167,7 +196,7 @@ ElfReader::TryLookupSymbol(std::string symbolName, uint64_t* symbolAddress)
         }
     }
     TRACE("TryLookupSymbol '%s' not found\n", symbolName.c_str());
-    *symbolAddress = 0;
+    *symbolOffset = 0;
     return false;
 }
 
@@ -192,6 +221,10 @@ ElfReader::InitializeGnuHashTable()
         TRACE("ERROR: InitializeGnuHashTable hashtable ReadMemory(%p) FAILED\n", m_gnuHashTableAddr);
         return false;
     }
+    if (m_hashTable.BucketCount <= 0 || m_hashTable.SymbolOffset == 0) {
+        TRACE("ERROR: InitializeGnuHashTable invalid BucketCount or SymbolOffset\n");
+        return false;
+    }
     m_buckets = new (std::nothrow) int32_t[m_hashTable.BucketCount];
     if (m_buckets == nullptr) {
         return false;
@@ -208,7 +241,7 @@ ElfReader::InitializeGnuHashTable()
 bool
 ElfReader::GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int32_t>& symbolIndexes)
 {
-    uint hash = Hash(symbolName);
+    uint32_t hash = Hash(symbolName);
     int i = m_buckets[hash % m_hashTable.BucketCount] - m_hashTable.SymbolOffset;
     TRACE("GetPossibleSymbolIndex hash %08x index: %d BucketCount %d SymbolOffset %08x\n", hash, i, m_hashTable.BucketCount, m_hashTable.SymbolOffset);
     for (;; i++)
@@ -230,10 +263,10 @@ ElfReader::GetPossibleSymbolIndex(const std::string& symbolName, std::vector<int
     return true;
 }
 
-uint
+uint32_t
 ElfReader::Hash(const std::string& symbolName)
 {
-    uint h = 5381;
+    uint32_t h = 5381;
     for (int i = 0; i < symbolName.length(); i++)
     {
         h = (h << 5) + h + symbolName[i];
@@ -276,12 +309,94 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
 }
 
 //
+// Enumerate through the dynamic debug link map entries
+//
+bool
+ElfReader::EnumerateLinkMapEntries()
+{
+    struct r_debug* rdebugAddr = reinterpret_cast<struct r_debug*>(m_rdebugAddr);
+    TRACE("DSO: rdebugAddr %p\n", rdebugAddr);
+
+    struct r_debug debugEntry;
+    if (!ReadMemory(rdebugAddr, &debugEntry, sizeof(debugEntry))) {
+        TRACE("ERROR: ReadMemory(%p, %" PRIx ") r_debug FAILED\n", rdebugAddr, sizeof(debugEntry));
+        return false;
+    }
+
+    // Add the DSO link_map entries
+    for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;) {
+        struct link_map map;
+        if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
+            TRACE("ERROR: ReadMemory(%p, %" PRIx ") link_map FAILED\n", linkMapAddr, sizeof(map));
+            return false;
+        }
+        // Read the module's name and make sure the memory is added to the core dump
+        std::string moduleName;
+        int i = 0;
+        if (map.l_name != nullptr) {
+            for (; i < PATH_MAX; i++)
+            {
+                char ch;
+                if (!ReadMemory(map.l_name + i, &ch, sizeof(ch))) {
+                    TRACE("DSO: ReadMemory link_map name %p + %d FAILED\n", map.l_name, i);
+                    break;
+                }
+                if (ch == '\0') {
+                    break;
+                }
+                moduleName.append(1, ch);
+            }
+        }
+        TRACE("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName.c_str());
+
+        // Call the derived class for each module
+        ForEachModule(map.l_addr, moduleName);
+
+        linkMapAddr = map.l_next;
+    }
+
+    return true;
+}
+
+bool
+ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
+{
+    Elf_Ehdr ehdr;
+    if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
+        TRACE("ERROR: EnumerateProgramHeaders ReadMemory(%p, %" PRIx ") ehdr FAILED\n", (void*)baseAddress, sizeof(ehdr));
+        return false;
+    }
+    if (memcmp(ehdr.e_ident, ElfMagic, strlen(ElfMagic)) != 0) {
+        TRACE("ERROR: EnumerateProgramHeaders Invalid elf header signature\n");
+        return false;
+    }
+    int phnum = ehdr.e_phnum;
+    if (ehdr.e_phoff == 0 || phnum <= 0) {
+        return false;
+    }
+    TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
+        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
+
+    _ASSERTE(phnum != PN_XNUM);
+    _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
+#ifdef TARGET_64BIT
+    _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
+#else
+    _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS32);
+#endif
+    _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
+
+    Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
+    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, pdynamicAddr);
+}
+
+//
 // Enumerate and find the dynamic program header entry
 //
 bool
-ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
 {
-    uint64_t loadbias = m_baseAddress;
+    uint64_t loadbias = baseAddress;
 
     for (int i = 0; i < phnum; i++)
     {
@@ -314,20 +429,75 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, Elf_Dyn** pdyn
                 *pdynamicAddr = reinterpret_cast<Elf_Dyn*>(loadbias + ph.p_vaddr);
             }
             break;
-
-        case PT_NOTE:
-        case PT_GNU_EH_FRAME:
-            if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
-                // loadbias + ph.p_vaddr, ph.p_memsz
-            }
-            break;
-
-        case PT_LOAD:
-            // start: loadbias + ph.p_vaddr;
-            // end:   loadbias + ph.p_vaddr + ph.p_memsz;
-            break;
         }
+
+        // Give any derived classes a chance at the program header
+        ForEachProgramHeader(loadbias, baseAddress, &ph);
     }
 
     return true;
 }
+
+#ifdef HOST_WINDOWS
+
+/* ELF 32bit header */
+Elf32_Ehdr::Elf32_Ehdr()
+{
+    e_ident[EI_MAG0] = ElfMagic[0];
+    e_ident[EI_MAG1] = ElfMagic[1];
+    e_ident[EI_MAG2] = ElfMagic[2];
+    e_ident[EI_MAG3] = ElfMagic[3];
+    e_ident[EI_CLASS] = ELFCLASS32;
+    e_ident[EI_DATA] = ELFDATA2LSB;
+    e_ident[EI_VERSION] = EV_CURRENT;
+    e_ident[EI_OSABI] = ELFOSABI_NONE;
+    e_ident[EI_ABIVERSION] = 0;
+    for (int i = EI_PAD; i < EI_NIDENT; ++i) {
+        e_ident[i] = 0;
+    }
+    e_type = ET_REL;
+#if defined(TARGET_X86)
+    e_machine = EM_386;
+#elif defined(TARGET_ARM)
+    e_machine = EM_ARM;
+#endif
+    e_flags = 0;
+    e_version = 1;
+    e_entry = 0;
+    e_phoff = 0;
+    e_ehsize = sizeof(Elf32_Ehdr);
+    e_phentsize = 0;
+    e_phnum = 0;
+}
+
+/* ELF 64bit header */
+Elf64_Ehdr::Elf64_Ehdr()
+{
+    e_ident[EI_MAG0] = ElfMagic[0];
+    e_ident[EI_MAG1] = ElfMagic[1];
+    e_ident[EI_MAG2] = ElfMagic[2];
+    e_ident[EI_MAG3] = ElfMagic[3];
+    e_ident[EI_CLASS] = ELFCLASS64;
+    e_ident[EI_DATA] = ELFDATA2LSB;
+    e_ident[EI_VERSION] = EV_CURRENT;
+    e_ident[EI_OSABI] = ELFOSABI_NONE;
+    e_ident[EI_ABIVERSION] = 0;
+    for (int i = EI_PAD; i < EI_NIDENT; ++i) {
+        e_ident[i] = 0;
+    }
+    e_type = ET_REL;
+#if defined(TARGET_AMD64)
+    e_machine = EM_X86_64;
+#elif defined(TARGET_ARM64)
+    e_machine = EM_AARCH64;
+#endif
+    e_flags = 0;
+    e_version = 1;
+    e_entry = 0;
+    e_phoff = 0;
+    e_ehsize = sizeof(Elf64_Ehdr);
+    e_phentsize = 0;
+    e_phnum = 0;
+}
+
+#endif // HOST_WINDOWS
