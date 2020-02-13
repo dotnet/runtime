@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -871,7 +872,7 @@ namespace Internal.NativeCrypto
         //    The returned value in ohRetEncryptedKey is byte-reversed from the version CAPI gives us.  This is for
         //    compatibility with previous releases of the CLR and other RSA implementations.
         //
-        internal static void EncryptKey(SafeKeyHandle safeKeyHandle, byte[] pbKey, int cbKey, bool foep, ref byte[] pbEncryptedKey)
+        internal static void EncryptKey(SafeKeyHandle safeKeyHandle, byte[] pbKey, int cbKey, bool foep, [NotNull] ref byte[]? pbEncryptedKey)
         {
             VerifyValidHandle(safeKeyHandle);
             Debug.Assert(pbKey != null, "pbKey is null");
@@ -1254,7 +1255,7 @@ namespace Internal.NativeCrypto
             int dwFlags,
             byte[] IV_Out,
             int cbIV_In,
-            ref byte[] pbKey)
+            [NotNull] ref byte[]? pbKey)
         {
             VerifyValidHandle(hProv);
 
@@ -1283,7 +1284,7 @@ namespace Internal.NativeCrypto
                 }
 
                 // Get the key contents
-                byte[] rgbKey = null!;
+                byte[]? rgbKey = null;
                 int cbKey = 0;
                 UnloadKey(hProv, hKey, ref rgbKey, ref cbKey);
 
@@ -1323,7 +1324,7 @@ namespace Internal.NativeCrypto
 
         // Helper method used by DeriveKey (above) to return the key contents.
         // WARNING: This function side-effects its first argument (hProv)
-        private static void UnloadKey(SafeProvHandle hProv, SafeKeyHandle hKey, ref byte[] key_out, ref int cb_out)
+        private static void UnloadKey(SafeProvHandle hProv, SafeKeyHandle hKey, [NotNull] ref byte[]? key_out, ref int cb_out)
         {
             SafeKeyHandle? hPubKey = null;
             try

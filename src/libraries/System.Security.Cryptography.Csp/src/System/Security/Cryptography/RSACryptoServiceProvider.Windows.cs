@@ -336,7 +336,7 @@ namespace System.Security.Cryptography
                 }
             }
 
-            byte[] encryptedKey = null!;
+            byte[]? encryptedKey = null;
             CapiHelper.EncryptKey(SafeKeyHandle, rgb, rgb.Length, fOAEP, ref encryptedKey);
             return encryptedKey;
         }

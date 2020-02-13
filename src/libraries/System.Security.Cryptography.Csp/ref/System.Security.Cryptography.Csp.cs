@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, System.Security.Cryptography.CspParameters? cspParams) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) { }
         public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, System.Security.Cryptography.CspParameters? cspParams) { }
-        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute] public string? HashName { get { throw null; } set { } }
+        public string HashName { get { throw null; } set { } }
         public int IterationCount { get { throw null; } set { } }
         public byte[]? Salt { get { throw null; } set { } }
         public byte[] CryptDeriveKey(string? algname, string? alghashname, int keySize, byte[] rgbIV) { throw null; }

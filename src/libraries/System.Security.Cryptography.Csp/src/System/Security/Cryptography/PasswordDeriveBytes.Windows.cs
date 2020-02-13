@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
             if (rgbIV == null)
                 throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_InvalidIV);
 
-            byte[] key = null!;
+            byte[]? key = null;
             CapiHelper.DeriveKey(ProvHandle, algid, algidhash, _password, _password.Length, keySize << 16, rgbIV, rgbIV.Length, ref key);
             return key;
         }
