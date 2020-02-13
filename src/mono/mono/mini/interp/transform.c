@@ -3298,7 +3298,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (name);
 		}
 
-		if (header->num_locals && header->init_locals)
+		/*
+		 * We initialize the locals regardless of the presence of the init_locals
+		 * flag. Locals holding references need to be zeroed so we don't risk
+		 * crashing the GC if they end up being stored in an object.
+		 *
+		 * FIXME
+		 * Track values of locals over multiple basic blocks. This would enable
+		 * us to kill the MINT_INITLOCALS instruction if all locals are initialized
+		 * before use. We also don't need this instruction if the init locals flag
+		 * is not set and there are no locals holding references.
+		 */
+		if (header->num_locals)
 			interp_add_ins (td, MINT_INITLOCALS);
 
 		guint16 enter_profiling = 0;
