@@ -44,6 +44,8 @@ namespace System.Data.OleDb
         private int _changeID;
         private int _lastChangeID;
 
+        private static readonly bool s_runningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
+
         public OleDbCommand() : base()
         {
             GC.SuppressFinalize(this);
@@ -410,7 +412,7 @@ namespace System.Data.OleDb
             }
             _dbBindings = bindings;
         }
-        private static readonly bool s_runningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
+
         private unsafe void ApplyParameterBindings(UnsafeNativeMethods.ICommandWithParameters commandWithParameters, tagDBPARAMBINDINFO[] bindInfo)
         {
             IntPtr[] ordinals = new IntPtr[bindInfo.Length];

@@ -48,7 +48,7 @@ namespace System.Data.OleDb
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("tagDBPARAMBINDINFO").Append(Environment.NewLine);
+            builder.Append("tagDBPARAMBINDINFO_x86").Append(Environment.NewLine);
             if (IntPtr.Zero != pwszDataSourceType)
             {
                 builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
