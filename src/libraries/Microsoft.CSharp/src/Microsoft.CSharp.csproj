@@ -2,11 +2,11 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
-    <EnableComBinder>true</EnableComBinder>
-    <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);FEATURE_COM</DefineConstants>
+    <EnableComBinder Condition="'$(TargetsWindows)'=='true'">true</EnableComBinder>
+    <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
