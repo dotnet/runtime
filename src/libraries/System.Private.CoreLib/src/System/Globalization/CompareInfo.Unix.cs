@@ -836,7 +836,7 @@ namespace System.Globalization
                 }
             }
 
-            return new SortKey(Name, source, options, keyData);
+            return new SortKey(this, source, options, keyData);
         }
 
         private static unsafe bool IsSortable(char *text, int length)
