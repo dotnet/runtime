@@ -39,7 +39,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
-        [ActiveIssue("https://github.com/mono/mono/issues/15161", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15161", TestRuntimes.Mono)]
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
@@ -190,7 +190,7 @@ namespace System.Threading.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
-        [ActiveIssue("https://github.com/mono/mono/issues/15160", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15160", TestRuntimes.Mono)]
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {

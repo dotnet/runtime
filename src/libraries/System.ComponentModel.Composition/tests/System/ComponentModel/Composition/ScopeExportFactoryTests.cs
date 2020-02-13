@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeExportFactoryTests
     {
         public interface IFooContract
@@ -270,7 +270,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeExportFactoryWithPublicSurface
     {
         [Export] public class ClassA { }
@@ -313,7 +313,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeFactoryAutoResolveFromAncestorScope
     {
         [Export] public class Root { }
@@ -371,7 +371,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class DeeplyNestedCatalog
     {
         [Export]
@@ -450,7 +450,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class LocalSharedNonLocalInSameContainer
     {
         [Export]
@@ -547,7 +547,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeBridgingAdaptersConstructorInjection
     {
         [Export]
@@ -636,7 +636,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class ScopeBridgingAdaptersImportExportProperty
     {
         [Export]
@@ -720,7 +720,7 @@ namespace System.ComponentModel.Composition
         }
     }
 
-    [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class SelfExportFromExportFactory
     {
         [Export]

@@ -100,7 +100,7 @@ namespace System.Linq.Expressions.Tests
                 .DefineType("TestType");
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14920", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14920", TestRuntimes.Mono)]
         public void NoAccessorIndexedProperty()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14927", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertyGetReturnsWrongType()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();
@@ -328,7 +328,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14927", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14927", TestRuntimes.Mono)]
         public void IndexedPropertySetterValueTypeNotMatchPropertyType()
         {
             TypeBuilder typeBuild = GetTestTypeBuilder();

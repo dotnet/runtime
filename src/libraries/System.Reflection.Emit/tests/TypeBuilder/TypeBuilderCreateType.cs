@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(TypeAttributes.ClassSemanticsMask)]
         [InlineData(TypeAttributes.HasSecurity)]
         [InlineData(TypeAttributes.LayoutMask)]

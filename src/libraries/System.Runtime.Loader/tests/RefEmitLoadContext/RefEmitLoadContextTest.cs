@@ -69,7 +69,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
         public static void LoadRefEmitAssembly()
         {
             Init();

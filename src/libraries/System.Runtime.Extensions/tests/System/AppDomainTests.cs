@@ -167,7 +167,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void FirstChanceException_Called()
         {
             RemoteExecutor.Invoke(() => {
@@ -607,7 +607,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void AssemblyResolve_IsNotCalledForCoreLibResources()
         {
             RemoteExecutor.Invoke(() =>
@@ -670,7 +670,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void ResourceResolve()
         {
             RemoteExecutor.Invoke(() => {
@@ -910,7 +910,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16246", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16246", TestRuntimes.Mono)]
         public void AssemblyResolve_FirstChanceException()
         {
             RemoteExecutor.Invoke(() => {

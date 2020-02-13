@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15113", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15113", TestRuntimes.Mono)]
         [MemberData(nameof(GetUninitializedObject_NotSupportedType_TestData))]
         public void GetUninitializedObject_NotSupportedType_ThrowsArgumentException(Type type)
         {
@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15111", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15111", TestRuntimes.Mono)]
         [MemberData(nameof(GetUninitializedObject_OpenGenericClass_TestData))]
         public void GetUninitializedObject_OpenGenericClass_ThrowsMemberAccessException(Type type)
         {
@@ -237,7 +237,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15114", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15114", TestRuntimes.Mono)]
         public void GetUninitializedObject_StaticConstructorThrows_ThrowsTypeInitializationException()
         {
             TypeInitializationException ex = Assert.Throws<TypeInitializationException>(() => FormatterServices.GetUninitializedObject(typeof(StaticConstructorThrows)));

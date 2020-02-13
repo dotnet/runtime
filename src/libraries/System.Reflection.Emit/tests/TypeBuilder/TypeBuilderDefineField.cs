@@ -33,7 +33,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(TestData))]
         public void DefineField(string name, Type fieldType, FieldAttributes attributes, FieldAttributes expectedAttributes)
         {
@@ -113,7 +113,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData((FieldAttributes)(-1), (FieldAttributes)(-38145))]
         [InlineData(FieldAttributes.FieldAccessMask, FieldAttributes.FieldAccessMask)]
         [InlineData((FieldAttributes)int.MaxValue, (FieldAttributes)2147445503)]
@@ -127,7 +127,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void DefineField_DynamicFieldTypeNotCreated_ThrowsTypeLoadException()
         {
             ModuleBuilder module = Helpers.DynamicModule();

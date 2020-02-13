@@ -33,7 +33,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15316", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15316", TestRuntimes.Mono)]
         public void Invoke_1DArrayConstructor()
         {
             Type type = Type.GetType("System.Char[*]");
@@ -221,7 +221,7 @@ namespace System.Reflection.Tests
             }
         }
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15318", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15318", TestRuntimes.Mono)]
         public void Invoke_LargeDimensionalArrayConstructor()
         {
             Type type = Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]");

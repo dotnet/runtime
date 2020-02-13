@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderDefineDefaultConstructor
     {
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(MethodAttributes.Public)]
         [InlineData(MethodAttributes.Static)]
         [InlineData(MethodAttributes.Family)]

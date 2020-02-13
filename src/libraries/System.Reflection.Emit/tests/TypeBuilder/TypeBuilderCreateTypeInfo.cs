@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData(TypeAttributes.ClassSemanticsMask, typeof(InvalidOperationException))]
         [InlineData(TypeAttributes.HasSecurity, typeof(ArgumentException))]
         [InlineData(TypeAttributes.LayoutMask, typeof(ArgumentException))]

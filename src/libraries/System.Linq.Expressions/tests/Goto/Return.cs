@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue("https://github.com/mono/mono/issues/14919", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
         public void TailCallThenReturn(bool useInterpreter)
         {
             LabelTarget target = Expression.Label();

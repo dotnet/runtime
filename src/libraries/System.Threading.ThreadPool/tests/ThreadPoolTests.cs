@@ -89,7 +89,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15164", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
 
         public static void SetMinMaxThreadsTest()
         {
@@ -151,7 +151,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32020", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32020", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             int minw, minc, maxw, maxc;

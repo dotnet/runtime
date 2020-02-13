@@ -34,7 +34,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15112", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15112", TestRuntimes.Mono)]
         public static void BlockReflectionDodging()
         {
             // Ensure that the deserialization tracker cannot be called by reflection.

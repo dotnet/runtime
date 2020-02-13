@@ -175,7 +175,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void CustomExportedDelegate_ShouldWork()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(

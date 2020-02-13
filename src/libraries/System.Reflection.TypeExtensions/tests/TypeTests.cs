@@ -329,7 +329,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15320", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15320", TestRuntimes.Mono)]
         [MemberData(nameof(GetMethods_TestData))]
         public void GetMethods(Type type, BindingFlags bindingAttributes, string[] expectedNames)
         {

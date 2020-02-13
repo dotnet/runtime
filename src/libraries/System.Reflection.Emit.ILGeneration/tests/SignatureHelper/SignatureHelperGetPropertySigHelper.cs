@@ -10,7 +10,7 @@ namespace System.Reflection.Emit.Tests
     public class SignatureHelperGetPropertySigHelper
     {
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(typeof(string), new Type[] { typeof(Delegate), typeof(int) }, 6)]
         [InlineData(typeof(Type), new Type[] { typeof(char), typeof(object) }, 6)]
         public void GetPropertySigHelper_Module_Type_TypeArray(Type returnType, Type[] parameterTypes, int expectedLength)
@@ -21,7 +21,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetPropertySigHelper_Module_Type_TypeArray_NullModule_DoesNotThrow()
         {
             SignatureHelper helper = SignatureHelper.GetPropertySigHelper(null, typeof(string), new Type[] { typeof(string), typeof(int) });
@@ -29,7 +29,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetPropertySigHelper_Module_Type_TypeArray_NullObjectInParameterTypes_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [MemberData(nameof(GetPropertySigHelper_TestData))]
         public void GetProperySigHelper_Module_Type_TypeArray_TypeArray_TypeArrayArray_TypeArrayArray(Type[] types, int expectedLength)
         {
@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetPropertySigHelper_NullModule_ThrowsNullReferenceException()
         {
             Type[] types = new Type[] { typeof(short), typeof(bool) };
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetPropertySigHelper_NullTypeInParameterTypes_ThrowsArgumentNullException()
         {
             Type[] types = new Type[] { typeof(short), null };

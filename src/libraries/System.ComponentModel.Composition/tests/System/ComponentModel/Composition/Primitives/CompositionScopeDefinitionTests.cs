@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Constructor_PublicSurface()
         {
             var catalog = new TypeCatalog(typeof(FooImpl), typeof(FooImpl2), typeof(FooImpl2));
@@ -153,7 +153,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void GetExports_DelegateToCatalog()
         {
             var parts = new TypeCatalog(typeof(FooImpl), typeof(FooImpl2), typeof(FooImpl2)).Parts;
@@ -216,7 +216,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void Dispose()
         {
             var parts = new TypeCatalog(typeof(FooImpl), typeof(FooImpl2), typeof(FooImpl2)).Parts;
@@ -253,7 +253,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void SimpleComposition()
         {
             var catalog = new TypeCatalog(typeof(FooImpl), typeof(FooImpl2), typeof(FooImpl2));

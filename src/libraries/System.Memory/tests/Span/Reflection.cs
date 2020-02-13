@@ -66,7 +66,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14993", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14993", TestRuntimes.Mono)]
         public static void Span_Constructor()
         {
             Type type = typeof(Span<int>);
@@ -103,7 +103,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void Span_InstanceMethod()
         {
             Type type = typeof(Span<int>);
@@ -113,7 +113,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14993", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14993", TestRuntimes.Mono)]
         public static void ReadOnlySpan_Constructor()
         {
             Type type = typeof(ReadOnlySpan<int>);
@@ -150,7 +150,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void ReadOnlySpan_InstanceMethod()
         {
             Type type = typeof(ReadOnlySpan<int>);
@@ -160,7 +160,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14998", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14998", TestRuntimes.Mono)]
         public static void Memory_PropertyReturningSpan()
         {
             Type type = typeof(Memory<int>);
@@ -170,7 +170,7 @@ namespace System.SpanTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/14962", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/14962", TestRuntimes.Mono)]
         public static void ReadOnlyMemory_PropertyReturningReadOnlySpan()
         {
             Type type = typeof(ReadOnlyMemory<int>);

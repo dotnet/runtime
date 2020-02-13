@@ -1212,7 +1212,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2084", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2084", TestRuntimes.Mono)]
         public static void LongContinuationChain_ContinueWith_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;

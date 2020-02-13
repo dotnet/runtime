@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
 
         // Verify implemented interfaces
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/18294", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/18294", TestRuntimes.Mono)]
         public static void TestInterFaces4()
         {
             VerifyInterfaces(typeof(D1).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });
@@ -40,7 +40,7 @@ namespace System.Reflection.Tests
 
         // Verify implemented interfaces
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/18294", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/18294", TestRuntimes.Mono)]
         public static void TestInterFaces5()
         {
             VerifyInterfaces(typeof(D2<>).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });
@@ -48,7 +48,7 @@ namespace System.Reflection.Tests
 
         // Verify implemented interfaces
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/18294", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/18294", TestRuntimes.Mono)]
         public static void TestInterFaces6()
         {
             VerifyInterfaces(typeof(D2<int>).Project(), new Type[] { typeof(ImI1).Project(), typeof(I0).Project(), typeof(I21).Project() });

@@ -9,7 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class SignatureHelperGetMethodSigHelper
     {
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(CallingConventions.Any, typeof(int))]
         [InlineData(CallingConventions.ExplicitThis, typeof(string))]
         [InlineData(CallingConventions.HasThis, typeof(string))]
@@ -22,7 +22,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         [InlineData(CallingConventions.Any, typeof(int))]
         [InlineData(CallingConventions.ExplicitThis, typeof(string))]
         [InlineData(CallingConventions.HasThis, typeof(string))]
@@ -39,7 +39,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetMethodSigHelper_Module_Type_TypeArray()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2383", TestRuntimes.Mono)]
         public void GetMethodSigHelper_Module_Type_TypeArray_NullObjectInParameterType_ThrowsArgumentNullException()
         {
             ModuleBuilder module = Helpers.DynamicModule();

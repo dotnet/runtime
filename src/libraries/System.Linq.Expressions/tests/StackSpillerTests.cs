@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Linq.Expressions.Tests
 {
-    [ActiveIssue("https://github.com/mono/mono/issues/14919", TargetFrameworkMonikers.Mono)]
+    [ActiveIssue("https://github.com/mono/mono/issues/14919", TestRuntimes.Mono)]
     public static class StackSpillerTests
     {
         [Fact]

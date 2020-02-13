@@ -481,7 +481,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15340", TargetFrameworkMonikers.Mono)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15340", TestRuntimes.Mono)]
         public static void TestExplicitOffsetPseudoCustomAttribute()
         {
             Type t = typeof(ExplicitFieldOffsets).Project();
