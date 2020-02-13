@@ -222,5 +222,65 @@ namespace System.Text.Json.Serialization.Tests
             obj = JsonSerializer.Deserialize<ClassThatCanBeNullDependingOnContent>(@"{""MyInt"":0}");
             Assert.Null(obj);
         }
+
+        private class JsonTestStructConverter : JsonConverter<TestStruct>
+        {
+            public override TestStruct Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return new TestStruct
+                {
+                    InnerValue = reader.GetInt32()
+                };
+            }
+
+            public override void Write(Utf8JsonWriter writer, TestStruct value, JsonSerializerOptions options)
+            {
+                writer.WriteNumberValue(value.InnerValue);
+            }
+        }
+
+        private struct TestStruct
+        {
+            public int InnerValue { get; set; }
+        }
+
+        private class TestStructClass
+        {
+            [JsonConverter(typeof(JsonTestStructConverter))]
+            public TestStruct? MyStruct { get; set; }
+        }
+
+        [Fact]
+        public static void NullableCustomValueType()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new JsonTestStructConverter());
+
+            {
+                TestStruct myStruct = JsonSerializer.Deserialize<TestStruct>("1", options);
+                Assert.Equal(1, myStruct.InnerValue);
+            }
+
+            {
+                TestStruct? myStruct = JsonSerializer.Deserialize<TestStruct?>("null", options);
+                Assert.False(myStruct.HasValue);
+            }
+
+            {
+                TestStruct? myStruct = JsonSerializer.Deserialize<TestStruct?>("1", options);
+                Assert.Equal(1, myStruct.Value.InnerValue);
+            }
+
+            {
+                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>(@"{""MyStruct"":null}");
+                Assert.False(myStructClass.MyStruct.HasValue);
+            }
+
+            {
+                TestStructClass myStructClass = JsonSerializer.Deserialize<TestStructClass>(@"{""MyStruct"":1}");
+                Assert.True(myStructClass.MyStruct.HasValue);
+                Assert.Equal(1, myStructClass.MyStruct.Value.InnerValue);
+            }
+        }
     }
 }

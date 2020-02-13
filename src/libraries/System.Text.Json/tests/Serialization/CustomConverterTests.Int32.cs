@@ -76,6 +76,13 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":1}");
+                Assert.True(myIntClass.MyInt.HasValue);
+                Assert.Equal(1, myIntClass.MyInt.Value);
+            }
+
+            {
+                Int32Class myIntClass = JsonSerializer.Deserialize<Int32Class>(@"{""MyInt"":""1""}");
+                Assert.True(myIntClass.MyInt.HasValue);
                 Assert.Equal(1, myIntClass.MyInt.Value);
             }
         }
