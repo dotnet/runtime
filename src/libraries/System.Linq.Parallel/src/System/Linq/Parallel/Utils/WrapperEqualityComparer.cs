@@ -44,7 +44,7 @@ namespace System.Linq.Parallel
         {
             Debug.Assert(_comparer != null);
             T value = x.Value;
-            return value is null ? 0 : _comparer.GetHashCode(value);
+            return value == null ? 0 : _comparer.GetHashCode(value);
         }
     }
 }

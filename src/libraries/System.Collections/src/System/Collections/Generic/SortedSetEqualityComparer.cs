@@ -37,9 +37,9 @@ namespace System.Collections.Generic
             {
                 foreach (T t in obj)
                 {
-                    if (t is object)
+                    if (t != null)
                     {
-                        hashCode = hashCode ^ (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
+                        hashCode ^= (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
                     }
                 }
             }

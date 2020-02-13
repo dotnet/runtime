@@ -30,9 +30,9 @@ namespace System.Collections.Generic
             {
                 foreach (T t in obj)
                 {
-                    if (t is object)
+                    if (t != null)
                     {
-                        hashCode = hashCode ^ (_comparer.GetHashCode(t) & 0x7FFFFFFF);
+                        hashCode ^= (_comparer.GetHashCode(t) & 0x7FFFFFFF);
                     }
                 }
             } // else returns hashcode of 0 for null hashsets

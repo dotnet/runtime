@@ -151,7 +151,7 @@ namespace Microsoft.Internal.Collections
         {
             if (second == null)
             {
-                Debug.Assert(value is object);
+                Debug.Assert(value != null);
                 source = source.FastAppendToListAllowNulls(value);
             }
             else
