@@ -217,9 +217,12 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessConstructor>(@"{""Name"":""Name!""}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessConstructor>(@"{""Name"":""Name!""}"));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessConstructor>(@"[""foo"", 1, false]"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessCtor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessCtor>(@"[""foo"", 1, false]"));
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<GenericClassWithProtectedInternalCtor<string>>("{\"Result\":null}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcreteDerivedClassWithNoPublicDefaultCtor>("{\"ErrorString\":\"oops\"}"));
         }
 
         public class PublicParameterizedConstructorTestClass
@@ -239,50 +242,50 @@ namespace System.Text.Json.Serialization.Tests
             public static PublicParameterizedConstructorTestClass Instance { get; } = new PublicParameterizedConstructorTestClass(42);
         }
 
-        public class ClassWithInternalParameterlessConstructor
+        public class ClassWithInternalParameterlessCtor
         {
-            internal ClassWithInternalParameterlessConstructor()
+            internal ClassWithInternalParameterlessCtor()
             {
                 throw new InvalidOperationException();
             }
 
-            private ClassWithInternalParameterlessConstructor(string name)
+            private ClassWithInternalParameterlessCtor(string name)
             {
                 Name = name;
             }
 
             public string Name { get; set; }
 
-            public static ClassWithInternalParameterlessConstructor Instance { get; } = new ClassWithInternalParameterlessConstructor("InstancePropertyInternal");
+            public static ClassWithInternalParameterlessCtor Instance { get; } = new ClassWithInternalParameterlessCtor("InstancePropertyInternal");
         }
 
-        public class ClassWithPrivateParameterlessConstructor
+        public class ClassWithPrivateParameterlessCtor
         {
-            private ClassWithPrivateParameterlessConstructor()
+            private ClassWithPrivateParameterlessCtor()
             {
                 throw new InvalidOperationException();
             }
 
-            private ClassWithPrivateParameterlessConstructor(string name)
+            private ClassWithPrivateParameterlessCtor(string name)
             {
                 Name = name;
             }
 
             public string Name { get; set; }
 
-            public static ClassWithPrivateParameterlessConstructor Instance { get; } = new ClassWithPrivateParameterlessConstructor("InstancePropertyPrivate");
+            public static ClassWithPrivateParameterlessCtor Instance { get; } = new ClassWithPrivateParameterlessCtor("InstancePropertyPrivate");
         }
 
-        public class CollectionWithoutPublicParameterlessConstructor : IList
+        public class CollectionWithoutPublicParameterlessCtor : IList
         {
             private readonly List<object> _list;
 
-            internal CollectionWithoutPublicParameterlessConstructor()
+            internal CollectionWithoutPublicParameterlessCtor()
             {
                 throw new InvalidOperationException();
             }
 
-            public CollectionWithoutPublicParameterlessConstructor(List<object> list)
+            public CollectionWithoutPublicParameterlessCtor(List<object> list)
             {
                 _list = list;
             }
@@ -342,6 +345,30 @@ namespace System.Text.Json.Serialization.Tests
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public class GenericClassWithProtectedInternalCtor<T>
+        {
+            public T Result { get; set; }
+
+            protected internal GenericClassWithProtectedInternalCtor()
+            {
+                Result = default;
+            }
+        }
+
+        public sealed class ConcreteDerivedClassWithNoPublicDefaultCtor : GenericClassWithProtectedInternalCtor<string>
+        {
+            public string ErrorString { get; set; }
+
+            private ConcreteDerivedClassWithNoPublicDefaultCtor(string error)
+            {
+                ErrorString = error;
+            }
+
+            public static ConcreteDerivedClassWithNoPublicDefaultCtor Ok() => new ConcreteDerivedClassWithNoPublicDefaultCtor("ok");
+            public static GenericClassWithProtectedInternalCtor<T> Ok<T>() => new GenericClassWithProtectedInternalCtor<T>();
+            public static ConcreteDerivedClassWithNoPublicDefaultCtor Error(string error) => new ConcreteDerivedClassWithNoPublicDefaultCtor(error);
         }
 
         [Fact]
@@ -521,7 +548,7 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, int> ParsedDictionary { get; set; }
 
             public IList<int> AnotherSkippedList { get; }
-            public IDictionary<string, string> AnotherSkippedDictionary2 { get; }           
+            public IDictionary<string, string> AnotherSkippedDictionary2 { get; }
             public IDictionary<string, string> SkippedDictionaryNotInJson { get; }
             public SimpleTestClass AnotherSkippedClass { get; }
 

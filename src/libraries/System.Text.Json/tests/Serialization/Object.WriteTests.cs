@@ -82,14 +82,23 @@ namespace System.Text.Json.Serialization.Tests
             PublicParameterizedConstructorTestClass paramterless = PublicParameterizedConstructorTestClass.Instance;
             Assert.Equal("{\"Name\":\"42\"}", JsonSerializer.Serialize(paramterless));
 
-            ClassWithInternalParameterlessConstructor internalObj = ClassWithInternalParameterlessConstructor.Instance;
+            ClassWithInternalParameterlessCtor internalObj = ClassWithInternalParameterlessCtor.Instance;
             Assert.Equal("{\"Name\":\"InstancePropertyInternal\"}", JsonSerializer.Serialize(internalObj));
 
-            ClassWithPrivateParameterlessConstructor privateObj = ClassWithPrivateParameterlessConstructor.Instance;
+            ClassWithPrivateParameterlessCtor privateObj = ClassWithPrivateParameterlessCtor.Instance;
             Assert.Equal("{\"Name\":\"InstancePropertyPrivate\"}", JsonSerializer.Serialize(privateObj));
 
-            var list = new CollectionWithoutPublicParameterlessConstructor(new List<object> { 1, "foo", false });
+            var list = new CollectionWithoutPublicParameterlessCtor(new List<object> { 1, "foo", false });
             Assert.Equal("[1,\"foo\",false]", JsonSerializer.Serialize(list));
+
+            var envelopeList = new List<object>()
+            {
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Error("oops"),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok<string>(),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok<int>(),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok()
+            };
+            Assert.Equal("[{\"ErrorString\":\"oops\",\"Result\":null},{\"Result\":null},{\"Result\":0},{\"ErrorString\":\"ok\",\"Result\":null}]", JsonSerializer.Serialize(envelopeList));
         }
 
         [Fact]
