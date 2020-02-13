@@ -212,8 +212,8 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private async Task ReplyOnReAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, byte[] buffer)
-            where TReadAdapter : ISslIOAdapter
+        private async Task ReplyOnReAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, byte[] buffer)
+            where TIOAdapter : ISslIOAdapter
         {
             lock (SyncLock)
             {
@@ -221,20 +221,20 @@ namespace System.Net.Security
                 _lockReadState = LockHandshake;
             }
 
-            await ForceAuthenticationAsync(adapter, false, buffer).ConfigureAwait(false);
+            await ForceAuthenticationAsync(adapter, receiveFirst: false, buffer).ConfigureAwait(false);
             FinishHandshakeRead(LockNone);
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TReadAdapter>(TReadAdapter adapter, bool receiveFirst, byte[] reAuthenticationData, bool isApm = false)
-             where TReadAdapter : ISslIOAdapter
+        private async Task ForceAuthenticationAsync<TIOAdapter>(TIOAdapter adapter, bool receiveFirst, byte[] reAuthenticationData, bool isApm = false)
+             where TIOAdapter : ISslIOAdapter
         {
             _framing = Framing.Unknown;
             ProtocolToken message;
 
             if (reAuthenticationData == null)
             {
-                // prevent nesting ionly when authentication functions are called explicitly. e.g. handle renegotiation tansparently.
+                // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation tansparently.
                 if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
                 {
                     throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, isApm ? "BeginAuthenticate" : "Authenticate", "authenticate"));
@@ -300,8 +300,8 @@ namespace System.Net.Security
 
         }
 
-        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TReadAdapter>(TReadAdapter adapter)
-                 where TReadAdapter : ISslIOAdapter
+        private async ValueTask<ProtocolToken> ReceiveBlobAsync<TIOAdapter>(TIOAdapter adapter)
+                 where TIOAdapter : ISslIOAdapter
         {
             ResetReadBuffer();
             int readBytes = await FillBufferAsync(adapter, SecureChannel.ReadHeaderSize).ConfigureAwait(false);
@@ -554,8 +554,8 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask WriteAsyncChunked<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslIOAdapter
+        private async ValueTask WriteAsyncChunked<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+            where TIOAdapter : struct, ISslIOAdapter
         {
             do
             {
@@ -565,8 +565,8 @@ namespace System.Net.Security
             } while (buffer.Length != 0);
         }
 
-        private ValueTask WriteSingleChunk<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslIOAdapter
+        private ValueTask WriteSingleChunk<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+            where TIOAdapter : struct, ISslIOAdapter
         {
             // Request a write IO slot.
             Task ioSlot = writeAdapter.WriteLockAsync();
@@ -601,7 +601,7 @@ namespace System.Net.Security
                 return CompleteAsync(t, rentedBuffer);
             }
 
-            async ValueTask WaitForWriteIOSlot(TWriteAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
+            async ValueTask WaitForWriteIOSlot(TIOAdapter wAdapter, Task lockTask, ReadOnlyMemory<byte> buff)
             {
                 await lockTask.ConfigureAwait(false);
                 await WriteSingleChunk(wAdapter, buff).ConfigureAwait(false);
@@ -776,8 +776,8 @@ namespace System.Net.Security
             }
         }
 
-        private ValueTask<int> FillBufferAsync<TReadAdapter>(TReadAdapter adapter, int minSize)
-            where TReadAdapter : ISslIOAdapter
+        private ValueTask<int> FillBufferAsync<TIOAdapter>(TIOAdapter adapter, int minSize)
+            where TIOAdapter : ISslIOAdapter
         {
             if (_internalBufferCount >= minSize)
             {
@@ -809,7 +809,7 @@ namespace System.Net.Security
 
             return new ValueTask<int>(minSize);
 
-            async ValueTask<int> InternalFillBufferAsync(TReadAdapter adap, ValueTask<int> task, int min, int initial)
+            async ValueTask<int> InternalFillBufferAsync(TIOAdapter adap, ValueTask<int> task, int min, int initial)
             {
                 while (true)
                 {
@@ -835,8 +835,8 @@ namespace System.Net.Security
             }
         }
 
-        private async ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, ISslIOAdapter
+        private async ValueTask WriteAsyncInternal<TIOAdapter>(TIOAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+            where TIOAdapter : struct, ISslIOAdapter
         {
             ThrowIfExceptionalOrNotAuthenticatedOrShutdown();
 
