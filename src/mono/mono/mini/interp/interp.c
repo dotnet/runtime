@@ -302,14 +302,6 @@ static gboolean interp_init_done = FALSE;
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
 
 static MONO_NEVER_INLINE void
-interp_exec_method_newobj_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
-// This function makes WebAsssembly stacks clearer, so you can see which recursion
-// is occuring, in the absence of line numbers in the debugger.
-{
-	interp_exec_method_full (frame, context, NULL, error);
-}
-
-static MONO_NEVER_INLINE void
 interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
 // This function makes WebAsssembly stacks clearer, so you can see which recursion
 // is occuring, in the absence of line numbers in the debugger.
@@ -3453,30 +3445,33 @@ g_error_xsx (const char *format, int x1, const char *s, int x2)
 }
 #endif
 
-static MONO_ALWAYS_INLINE void
+static MONO_ALWAYS_INLINE gboolean
 method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing, MonoException **out_ex)
 {
+	gboolean slow = FALSE;
+
 #if DEBUG_INTERP
 	debug_enter (frame, out_tracing);
 #endif
 
 	*out_ex = NULL;
 	if (!G_UNLIKELY (frame->imethod->transformed)) {
+		slow = TRUE;
 #if DEBUG_INTERP
 		char *mn = mono_method_full_name (frame->imethod->method, TRUE);
 		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
-
 		frame->ip = NULL;
 		MonoException *ex = do_transform_method (frame, context);
 		if (ex) {
 			*out_ex = ex;
-			return;
+			return slow;
 		}
 	}
 
 	alloc_stack_data (context, frame, frame->imethod->alloca_size);
+	return slow;
 }
 
 /* Save the state of the interpeter main loop into FRAME */
@@ -3546,15 +3541,18 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	debug_enter (frame, &tracing);
 #endif
 
+	MonoException *ex;
+
+	// FIXME Use method_entry here. But it assumes clause_args == NULL.
+
 	if (!frame->imethod->transformed) {
 #if DEBUG_INTERP
 		char *mn = mono_method_full_name (frame->imethod->method, TRUE);
 		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
-
 		frame->ip = NULL;
-		MonoException *ex = do_transform_method (frame, context);
+		ex = do_transform_method (frame, context);
 		if (ex)
 			THROW_EX (ex, NULL);
 		EXCEPTION_CHECKPOINT;
@@ -3811,27 +3809,16 @@ main_loop:
 			/* Non-recursive call */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+			frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
 
-			if (G_UNLIKELY (!imethod->transformed)) {
-				MonoException *ex;
-				gboolean tracing;
+			gboolean tracing;
 
-				method_entry (context, child_frame, &tracing, &ex);
-				if (G_UNLIKELY (ex)) {
-					frame = child_frame;
-					frame->ip = NULL;
+			if (method_entry (context, frame, &tracing, &ex)) {
+				if (ex)
 					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-			} else {
-				alloc_stack_data (context, child_frame, imethod->alloca_size);
-#if DEBUG_INTERP
-				debug_enter (child_frame, &tracing);
-#endif
+				EXCEPTION_CHECKPOINT;
 			}
 
-			frame = child_frame;
 			clause_args = NULL;
 			INIT_INTERP_STATE (frame, clause_args);
 
@@ -3935,24 +3922,16 @@ main_loop:
 				SAVE_INTERP_STATE (frame);
 
 				// FIXME &retval looks wrong
-				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+				frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
 
-				if (G_UNLIKELY (!imethod->transformed)) {
-					MonoException *ex;
-					gboolean tracing;
+				gboolean tracing;
 
-					method_entry (context, child_frame, &tracing, &ex);
-					if (G_UNLIKELY (ex)) {
-						frame = child_frame;
-						frame->ip = NULL;
+				if (method_entry (context, frame, &tracing, &ex)) {
+					if (ex)
 						THROW_EX (ex, NULL);
-						EXCEPTION_CHECKPOINT;
-					}
-				} else {
-					alloc_stack_data (context, child_frame, imethod->alloca_size);
+					EXCEPTION_CHECKPOINT;
 				}
 
-				frame = child_frame;
 				clause_args = NULL;
 				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
@@ -3982,7 +3961,7 @@ main_loop:
 			frame->ip = ip;
 
 			// Retval must be set unconditionally due to MINT_ARGLIST.
-			// is_void further guides exit_frame.
+			// is_void guides exit_frame instead of retval nullness.
 			retval = sp;
 			is_void = csig->ret->type == MONO_TYPE_VOID;
 
@@ -4042,28 +4021,16 @@ call:;
 			 */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
+			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
-			if (G_UNLIKELY (!cmethod->transformed)) {
-				MonoException *ex;
-				gboolean tracing;
+			gboolean tracing;
 
-				method_entry (context, child_frame, &tracing, &ex);
-
-				if (G_UNLIKELY (ex)) {
-					frame = child_frame;
-					frame->ip = NULL;
+			if (method_entry (context, frame, &tracing, &ex)) {
+				if (ex)
 					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-			} else {
-				alloc_stack_data (context, child_frame, cmethod->alloca_size);
-#if DEBUG_INTERP
-				debug_enter (child_frame, &tracing);
-#endif
+				EXCEPTION_CHECKPOINT;
 			}
 
-			frame = child_frame;
 			clause_args = NULL;
 			INIT_INTERP_STATE (frame, clause_args);
 
@@ -5133,9 +5100,10 @@ call:;
 
 			param_count = ip [2];
 
-			if (param_count) {
+			// Make room for two copies of o -- this parameter and return value.
+			if (param_count || !is_inlined) {
 				sp -= param_count;
-				memmove (sp + 1 + is_inlined, sp, param_count * sizeof (stackval));
+				memmove (sp + 2, sp, param_count * sizeof (stackval));
 			}
 
 			OBJREF (o) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
@@ -5144,24 +5112,21 @@ call:;
 				goto throw_error_label;
 			}
 
+			// Store o next to and before the parameters on the stack so GC will see it,
+			// and where it is needed when the call returns.
 			sp [0].data.o = o;
+			sp [1].data.o = o;
+			ip += 4;
 			if (is_inlined) {
-				sp [1].data.o = o;
 				sp += param_count + 2;
 			} else {
-				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
-				frame->ip = ip;
-
-				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
-
-				// FIXME Remove recursion.
-				interp_exec_method_newobj_fast (child_frame, context, error);
-
-				CHECK_RESUME_STATE (context);
-				sp [0].data.o = o;
-				sp++;
+				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
+				frame->ip = ip - 4;
+				is_void = TRUE;
+				retval = NULL;
+				++sp; // Point sp at this, after return value.
+				goto call;
 			}
-			ip += 4;
 
 			MINT_IN_BREAK;
 		}
@@ -7180,7 +7145,7 @@ exit_frame:
 
 		CHECK_RESUME_STATE (context);
 
-		if (retval && !is_void) {
+		if (!is_void) {
 			*sp = *retval;
 			sp ++;
 		}

@@ -4517,7 +4517,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 								break;
 							}
 						}
-						// If inlining failed we need to restore the stack
+						// If inlining failed, restore the stack.
+						// At runtime, interp.c newobj_fast uses an extra stack element
+						// after the parameters to store `o` across the non-recursive call
+						// where GC will see it.
+						// move_stack with the last parameter negative does not reduce max_stack.
 						move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
 						// Set the method to be executed as part of newobj instruction
 						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
