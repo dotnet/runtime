@@ -307,12 +307,9 @@ namespace System.Runtime.InteropServices
         {
             TManager? localManager; // Use register for null comparison rather than byref
             manager = localManager = memory.GetObjectStartLength(out _, out _) as TManager;
-            if (localManager != null)
-            {
-                Debug.Assert(manager != null);
-                return true;
-            }
-            return false;
+#pragma warning disable 8762 // "Parameter 'manager' may not have a null value when exiting with 'true'."
+            return localManager != null;
+#pragma warning restore 8762
         }
 
         /// <summary>
@@ -340,8 +337,9 @@ namespace System.Runtime.InteropServices
                 length = default;
                 return false;
             }
-            Debug.Assert(manager != null);
+#pragma warning disable 8762 // "Parameter 'manager' may not have a null value when exiting with 'true'."
             return true;
+#pragma warning restore 8762
         }
 
         /// <summary>
