@@ -17,19 +17,12 @@ Since each layer (and other probing locations) can contain the same assembly by 
 #### Probe Ordering
 The probing locations consists of:
 1.  Serving Location
-1.  Shared Store
-1.  Framework directory(s) from higher to lower
 1.  App directory
-1.  Additional locations specified in runtimeconfig.dev.json file
+1.  Framework directory(s) from higher to lower
+1.  Shared Store
+1.  Additional locations specified in `runtimeconfig.dev.json` or via `--additionalprobingpath` file
 
-For example, here's the probing order on Windows when running a non-published folder (in order to get additional locations from the app.runtimeconfig.dev.json file)
-* `C:\\Program Files (x86)\\coreservicing\\x64`
-*	`C:\\Program Files (x86)\\coreservicing\\pkgs`
-*	`C:\\Program files\\dotnet\\shared\\Microsoft.NETCore.App\\2.0.0`
-*	(app location)
-*	`C:\\Users\\<user>\\.nuget\\packages`
-	`C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback`
-*	`C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder`
+Detailed description of the exact probe locations is described in [host-probing](host-probing.md).
 
 Once a deps.json entry has been found in a probe location, no further probes are performed for that entry.
 
