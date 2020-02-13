@@ -430,7 +430,7 @@ namespace System.Data.OleDb
                 {
                     fixed (tagDBPARAMBINDINFO* p = &bindInfo[i])
                     {
-                        bindInfo_x86[i] = (tagDBPARAMBINDINFO_x86)Marshal.PtrToStructure((IntPtr)p, typeof(tagDBPARAMBINDINFO_x86));
+                        bindInfo_x86[i] = *(tagDBPARAMBINDINFO_x86*)p;
                     }
                 }
                 fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
