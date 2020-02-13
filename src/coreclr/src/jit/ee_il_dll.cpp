@@ -933,6 +933,20 @@ void Compiler::eeSetLIcount(unsigned count)
     }
 }
 
+void Compiler::eeSetLIinfoMethod(
+    unsigned which, CORINFO_METHOD_INFO* methodDsc, bool opening)
+{
+    assert(opts.compDbgInfo);
+    assert(eeBoundariesCount > 0);
+    assert(which < eeBoundariesCount);
+
+    if (eeBoundaries != nullptr)
+    {
+        eeBoundaries[which].method.methodDsc    = methodDsc;
+        eeBoundaries[which].sourceReason = opening ? ICorDebugInfo::INLINE_OPEN : ICorDebugInfo::INLINE_CLOSE;
+    }
+}
+
 void Compiler::eeSetLIinfo(
     unsigned which, UNATIVE_OFFSET nativeOffset, IL_OFFSET ilOffset, bool stkEmpty, bool callInstruction)
 {
@@ -942,8 +956,8 @@ void Compiler::eeSetLIinfo(
 
     if (eeBoundaries != nullptr)
     {
-        eeBoundaries[which].nativeIP     = nativeOffset;
-        eeBoundaries[which].ilOffset     = ilOffset;
+        eeBoundaries[which].offset.nativeIP     = nativeOffset;
+        eeBoundaries[which].offset.ilOffset     = ilOffset;
         eeBoundaries[which].sourceReason = stkEmpty ? ICorDebugInfo::STACK_EMPTY : 0;
         eeBoundaries[which].sourceReason |= callInstruction ? ICorDebugInfo::CALL_INSTRUCTION : 0;
     }
@@ -996,9 +1010,9 @@ void Compiler::eeDispLineInfo(const boundariesDsc* line)
 {
     printf("IL offs ");
 
-    eeDispILOffs(line->ilOffset);
+    eeDispILOffs(line->offset.ilOffset);
 
-    printf(" : 0x%08X", line->nativeIP);
+    printf(" : 0x%08X", line->offset.nativeIP);
     if (line->sourceReason != 0)
     {
         // It seems like it should probably never be zero since ICorDebugInfo::SOURCE_TYPE_INVALID is zero.

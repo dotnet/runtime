@@ -965,4 +965,6 @@ private:
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 };
 
+typedef jitstd::list<InlineContext *> ContextList;
+
 #endif // _INLINE_H_

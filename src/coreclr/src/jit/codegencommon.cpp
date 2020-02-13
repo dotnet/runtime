@@ -10460,6 +10460,57 @@ void CodeGen::genIPmappingListDisp()
 
 #endif // DEBUG
 
+void CodeGen::genIPmappingAddBoundary(InlineContext *context, IL_OFFSETX offsx, bool label, bool isOpening)
+{
+    assert(context != nullptr);
+
+    Compiler::IPmappingDsc* aux = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
+    // TODO: maybe not everything is required
+    aux->ipmdNativeLoc.CaptureLocation(GetEmitter()); // Just to keep them sorted increasing order by native offset
+    aux->ipmdILoffsx       = offsx; // Probably we should create a new kind of BAD_OFFSET or BAD_MAPPING which don't break later with existing asserts
+    aux->ipmdIsLabel       = label;
+    aux->ipmdInlineContext = context->IsRoot() ? nullptr : context;
+    aux->ipmdNext          = nullptr;
+    aux->isMethodBoundary  = true;
+
+    if (compiler->genIPmappingList != nullptr)
+    {
+        compiler->genIPmappingList = aux;
+        compiler->genIPmappingLast = aux;
+    }
+    else
+    {
+        compiler->genIPmappingLast->ipmdNext = aux;
+        compiler->genIPmappingLast = aux;
+    }
+
+#ifdef DEBUG
+    if (compiler->verbose)
+    {
+        JITDUMP("genIPmappingAdd Boundary ");
+        if (isOpening)
+        {
+            JITDUMP("opening");
+        }
+        else
+        {
+            JITDUMP("closing");
+        }
+        genIPmappingDisp(unsigned(-1), aux);
+    }
+#endif
+}
+
+void CodeGen::genIPmappingAddBoundaries(ContextList &contexts, IL_OFFSETX offsx, bool label, bool isOpening)
+{
+    while (!contexts.empty())
+    {
+        InlineContext* context = contexts.front();
+        contexts.pop_front();
+        genIPmappingAddBoundary(context, offsx, label, isOpening);
+    }
+}
+
 /*****************************************************************************
  *
  *  Append an IPmappingDsc struct to the list that we're maintaining
@@ -10508,48 +10559,62 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel, InlineContext* inl
             }
             break;
     }
+    // Find which IPMappingDsc are needed to describe the new call stack
+    // This means closing open method boundaries until a point (at most actual method being jitted)
+    // and opening method boundaries until actual the one of the offset we are adding to IPMappingDsc
+    Compiler::IPmappingDsc* lastMapping  = compiler->genIPmappingLast;
+    InlineContext* prevInlineContext = lastMapping != nullptr ? lastMapping->ipmdInlineContext : nullptr;
+    if (inlineContext != nullptr && inlineContext != prevInlineContext)
+    {
+        ContextList prevPathToMain(compiler->getAllocator(CMK_DebugInfo));
+        for (InlineContext* it = prevInlineContext; it != nullptr; it = it->GetParent())
+        {
+            prevPathToMain.push_back(it);
+        }
 
-    /* Create a mapping entry and append it to the list */
+        ContextList newPathToMain(compiler->getAllocator(CMK_DebugInfo));
+        for (InlineContext* it = inlineContext; it != nullptr; it = it->GetParent())
+        {
+            newPathToMain.push_front(it);    
+        }
 
-    Compiler::IPmappingDsc* lastMapping  = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
-    Compiler::IPmappingDsc* firstMapping = lastMapping;
+        while (!prevPathToMain.empty() && !newPathToMain.empty() && prevPathToMain.back() == newPathToMain.front())
+        {
+            prevPathToMain.pop_back();
+            newPathToMain.pop_front();
+        }
+
+        genIPmappingAddBoundaries(prevPathToMain, offsx, isLabel, false);// Create as many closing method boundaries as needed
+        genIPmappingAddBoundaries(newPathToMain, offsx, isLabel, true); // Create as many opening method boundaries as needed
+    }
+
+    lastMapping  = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
     lastMapping->ipmdNativeLoc.CaptureLocation(GetEmitter());
     lastMapping->ipmdILoffsx       = offsx;
     lastMapping->ipmdIsLabel       = isLabel;
     lastMapping->ipmdInlineContext = inlineContext;
     lastMapping->ipmdNext          = nullptr;
-
-    /* Add an IPMappingDsc per each inline context from root */
-    if (inlineContext != nullptr)
-    {
-        for (InlineContext *it = inlineContext, *parent = inlineContext->GetParent(); parent != nullptr;
-             it = parent, parent = parent->GetParent())
-        {
-            Compiler::IPmappingDsc* aux = compiler->getAllocator(CMK_DebugInfo).allocate<Compiler::IPmappingDsc>(1);
-            aux->ipmdNativeLoc.CaptureLocation(GetEmitter());
-            aux->ipmdILoffsx       = it->GetOffset();
-            aux->ipmdIsLabel       = isLabel;
-            aux->ipmdInlineContext = parent->IsRoot() ? nullptr : parent;
-            aux->ipmdNext          = firstMapping;
-            firstMapping           = aux;
-        }
-    }
+    lastMapping->isMethodBoundary  = false;
 
     if (compiler->genIPmappingList != nullptr)
     {
         assert(compiler->genIPmappingLast != nullptr);
         assert(compiler->genIPmappingLast->ipmdNext == nullptr);
-        compiler->genIPmappingLast->ipmdNext = firstMapping;
+        compiler->genIPmappingLast->ipmdNext = lastMapping;
     }
     else
     {
         assert(compiler->genIPmappingLast == nullptr);
-        compiler->genIPmappingList = firstMapping;
+        compiler->genIPmappingList = lastMapping;
     }
 
     compiler->genIPmappingLast = lastMapping;
+#ifdef DEBUG
+    Compiler::IPmappingDsc* firstMapping = compiler->genIPmappingLast;
+#endif
 
 #ifdef DEBUG
+    firstMapping = firstMapping->ipmdNext;
     if (compiler->verbose)
     {
         for (; firstMapping != nullptr; firstMapping = firstMapping->ipmdNext)

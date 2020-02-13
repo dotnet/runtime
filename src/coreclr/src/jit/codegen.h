@@ -549,6 +549,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingListDisp();
 #endif // DEBUG
 
+    void genIPmappingAddBoundary(InlineContext *inlineContext, IL_OFFSETX offsx, bool label, bool isOpening);
+    void genIPmappingAddBoundaries(ContextList &contexts, IL_OFFSETX offsx, bool label, bool isOpening);
     void genIPmappingAdd(IL_OFFSETX offset, bool isLabel, InlineContext* inlineContext);
     void genIPmappingAddToFront(IL_OFFSETX offset);
     void genIPmappingGen();
