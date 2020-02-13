@@ -4261,6 +4261,7 @@ void Compiler::fgOptWhileLoop(BasicBlock* block)
     if (opts.compDbgInfo)
     {
         copyOfCondStmt->SetILOffsetX(condStmt->GetILOffsetX());
+        copyOfCondStmt->SetInlineContext(condStmt->GetInlineContext());
     }
 
     // Flag the block that received the copy as potentially having an array/vtable

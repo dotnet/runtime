@@ -3858,6 +3858,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
 
             // Set the GC_POLL statement to have the same IL offset at the subsequent one.
             newStmt->SetILOffsetX(stmt->GetILOffsetX());
+            newStmt->SetInlineContext(stmt->GetInlineContext());
             fgInsertStmtBefore(block, stmt, newStmt);
         }
         else if (block->bbJumpKind == BBJ_ALWAYS)
@@ -3892,6 +3893,7 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block, Statement*
             {
                 // Is it possible for gtNextStmt to be NULL?
                 newStmt->SetILOffsetX(nextStmt->GetILOffsetX());
+                newStmt->SetInlineContext(nextStmt->GetInlineContext());
             }
         }
 
