@@ -504,12 +504,15 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
 
                 hashDsc->csdStructHndMismatch = false;
 
-                // When we have a GT_IND node we don't have a reliable struct handle
-                // and gtGetStructHandleIfPresent will return a guess that can be wrong
-                //
-                if (hashDsc->csdTree->OperGet() != GT_IND)
+                if (varTypeIsStruct(tree->gtType))
                 {
-                    hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                    // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                    // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                    //
+                    if ((hashDsc->csdTree->OperGet() != GT_IND) || !varTypeIsSIMD(tree))
+                    {
+                        hashDsc->csdStructHnd = gtGetStructHandleIfPresent(hashDsc->csdTree);
+                    }
                 }
             }
 
@@ -527,31 +530,34 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             hashDsc->csdTreeLast->tslNext = newElem;
             hashDsc->csdTreeLast          = newElem;
 
-            // When we have a GT_IND node we don't have a reliable struct handle
-            // and gtGetStructHandleIfPresent will return a guess that can be wrong
-            //
-            if (newElem->tslTree->OperGet() != GT_IND)
+            if (varTypeIsStruct(newElem->tslTree->gtType))
             {
-                CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
-                if (newElemStructHnd != NO_CLASS_HANDLE)
+                // When we have a GT_IND node with a SIMD type then we don't have a reliable
+                // struct handle and gtGetStructHandleIfPresent returns a guess that can be wrong
+                //
+                if ((newElem->tslTree->OperGet() != GT_IND) || !varTypeIsSIMD(newElem->tslTree))
                 {
-                    if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
+                    CORINFO_CLASS_HANDLE newElemStructHnd = gtGetStructHandleIfPresent(newElem->tslTree);
+                    if (newElemStructHnd != NO_CLASS_HANDLE)
                     {
-                        // The previous node(s) were GT_IND's and didn't carry the struct handle info
-                        // The current node does have the struct handle info, so record it now
-                        //
-                        hashDsc->csdStructHnd = newElemStructHnd;
-                    }
-                    else if (newElemStructHnd != hashDsc->csdStructHnd)
-                    {
-                        hashDsc->csdStructHndMismatch = true;
-#ifdef DEBUG
-                        if (verbose)
+                        if (hashDsc->csdStructHnd == NO_CLASS_HANDLE)
                         {
-                            printf("Abandoned - CSE candidate has mismatching struct handles!\n");
-                            printTreeID(newElem->tslTree);
+                            // The previous node(s) were GT_IND's and didn't carry the struct handle info
+                            // The current node does have the struct handle info, so record it now
+                            //
+                            hashDsc->csdStructHnd = newElemStructHnd;
                         }
+                        else if (newElemStructHnd != hashDsc->csdStructHnd)
+                        {
+                            hashDsc->csdStructHndMismatch = true;
+#ifdef DEBUG
+                            if (verbose)
+                            {
+                                printf("Abandoned - CSE candidate has mismatching struct handles!\n");
+                                printTreeID(newElem->tslTree);
+                            }
 #endif // DEBUG
+                        }
                     }
                 }
             }
@@ -3026,6 +3032,7 @@ public:
             if (dsc->csdStructHndMismatch)
             {
                 JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
+                assert(!"Mismatched Struct Handle");
                 continue;
             }
 
