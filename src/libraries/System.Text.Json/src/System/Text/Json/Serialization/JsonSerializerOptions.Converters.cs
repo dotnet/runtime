@@ -218,7 +218,7 @@ namespace System.Text.Json
             if (!converter.CanConvert(typeToConvert))
             {
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);
-                if (underlyingType != null)
+                if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
                     // Allow nullable handling to forward to the underlying type's converter.
                     return JsonValueConverterNullableFactory.CreateValueConverter(underlyingType, converter);

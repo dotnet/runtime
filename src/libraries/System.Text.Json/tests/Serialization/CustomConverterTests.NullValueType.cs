@@ -250,6 +250,13 @@ namespace System.Text.Json.Serialization.Tests
             public TestStruct? MyStruct { get; set; }
         }
 
+        private class TestStructInvalidClass
+        {
+            // Note: JsonTestStructConverter does not convert int, this is for negative testing.
+            [JsonConverter(typeof(JsonTestStructConverter))]
+            public int? MyInt { get; set; }
+        }
+
         [Fact]
         public static void NullableCustomValueType()
         {
@@ -281,6 +288,13 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.True(myStructClass.MyStruct.HasValue);
                 Assert.Equal(1, myStructClass.MyStruct.Value.InnerValue);
             }
+        }
+
+        [Fact]
+        public static void NullableCustomValueTypeNegativeTest()
+        {
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":null}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<TestStructInvalidClass>(@"{""MyInt"":1}"));
         }
     }
 }
