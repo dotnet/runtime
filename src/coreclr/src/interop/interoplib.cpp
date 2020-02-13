@@ -4,6 +4,7 @@
 
 #include "platform.h"
 #include <interoplib.h>
+#include <interoplibimports.h>
 
 #include "comwrappers.h"
 
@@ -24,7 +25,7 @@ namespace InteropLib
             _In_ OBJECTHANDLE instance,
             _In_ INT32 vtableCount,
             _In_ void* vtablesRaw,
-            _In_ INT32 flagsRaw,
+            _In_ enum CreateComInterfaceFlags flags,
             _Outptr_ IUnknown** wrapper) noexcept
         {
             _ASSERTE(instance != nullptr && wrapper != nullptr);
@@ -36,8 +37,7 @@ namespace InteropLib
 
             HRESULT hr;
 
-            // Convert inputs to appropriate types.
-            auto flags = static_cast<CreateComInterfaceFlags>(flagsRaw);
+            // Convert input to appropriate types.
             auto vtables = static_cast<ABI::ComInterfaceEntry*>(vtablesRaw);
 
             ManagedObjectWrapper* mow;
@@ -59,7 +59,7 @@ namespace InteropLib
 
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
-            _In_ INT32 flagsRaw,
+            _In_ enum CreateObjectFlags flags,
             _In_ size_t contextSize,
             _Out_ ExternalWrapperResult* result) noexcept
         {
@@ -70,9 +70,6 @@ namespace InteropLib
             // Attempt to create an agile reference first.
             ComHolder<IAgileReference> reference;
             RETURN_IF_FAILED(CreateAgileReference(external, &reference));
-
-            // Convert input to appropriate type.
-            auto flags = static_cast<CreateObjectFlags>(flagsRaw);
 
             NativeObjectWrapperContext* wrapperContext;
             RETURN_IF_FAILED(NativeObjectWrapperContext::Create(external, flags, contextSize, &wrapperContext));
@@ -122,24 +119,20 @@ namespace InteropLib
             ManagedObjectWrapper::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
         }
 
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_opt_ OBJECTHANDLE handle) noexcept
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
         {
             ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
-            if (wrapper == nullptr)
+            if (wrapper == nullptr || handle == nullptr)
                 return E_INVALIDARG;
 
             ULONG count = wrapper->AddRef();
             if (count == 1)
             {
-                // No object handle was supplied so reactivation isn't possible.
-                if (handle == nullptr)
-                {
-                    wrapper->Release();
-                    return E_HANDLE;
-                }
-
                 ::InterlockedExchangePointer(&wrapper->Target, handle);
-                return S_FALSE;
+            }
+            else
+            {
+                InteropLibImports::DeleteObjectInstanceHandle(handle);
             }
 
             return S_OK;

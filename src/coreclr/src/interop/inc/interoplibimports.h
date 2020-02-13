@@ -69,8 +69,8 @@ namespace InteropLibImports
     // external object.
     HRESULT GetOrCreateTrackerTargetForExternal(
         _In_ IUnknown* externalComObject,
-        _In_ INT32 externalObjectFlags,
-        _In_ INT32 trackerTargetFlags,
+        _In_ InteropLib::Com::CreateObjectFlags externalObjectFlags,
+        _In_ InteropLib::Com::CreateComInterfaceFlags trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept;
 }
 

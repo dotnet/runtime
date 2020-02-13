@@ -14,6 +14,9 @@
 
 #include "interoplibinterface.h"
 
+using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
+using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
+
 namespace
 {
     // This class is used to track the external object within the runtime.
@@ -468,7 +471,7 @@ namespace
     void* GetOrCreateComInterfaceForObjectInternal(
         _In_opt_ OBJECTREF impl,
         _In_ OBJECTREF instance,
-        _In_ INT32 flags)
+        _In_ CreateComInterfaceFlags flags)
     {
         CONTRACT(void*)
         {
@@ -517,7 +520,12 @@ namespace
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
                 // Call the InteropLib and create the associated managed object wrapper.
-                hr = InteropLib::Com::CreateWrapperForObject(instHandle, vtableCount, vtables, flags, &newWrapper);
+                hr = InteropLib::Com::CreateWrapperForObject(
+                    instHandle,
+                    vtableCount,
+                    vtables,
+                    flags,
+                    &newWrapper);
                 if (FAILED(hr))
                 {
                     DestroyHandleCommon(instHandle, InstanceHandleType);
@@ -552,13 +560,9 @@ namespace
         {
             _ASSERTE(wrapper != NULL);
             // It is possible the supplied wrapper is no longer valid. If so, reactivate the
-            // wrapper with the object instance's new handle. If this reactivation
-            // wasn't needed, delete the handle.
+            // wrapper with the object instance's new handle.
             OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
             hr = InteropLib::Com::EnsureActiveWrapperAndAddRef(static_cast<IUnknown *>(wrapper), instHandle);
-            if (hr != S_OK)
-                DestroyHandleCommon(instHandle, InstanceHandleType);
-
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
         }
@@ -571,7 +575,7 @@ namespace
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
         _In_opt_ OBJECTREF impl,
         _In_ IUnknown* identity,
-        _In_ INT32 flags)
+        _In_ CreateObjectFlags flags)
     {
         CONTRACT(OBJECTREF)
         {
@@ -597,6 +601,9 @@ namespace
 
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
 
+        // Check if the cache should be queried.
+        bool ignoreCache = !!(flags & CreateObjectFlags::CreateObjectFlags_IgnoreCache);
+        if (!ignoreCache)
         {
             // Query the external object cache
             ExtObjCxtCache::LockHolder lock(cache);
@@ -635,14 +642,19 @@ namespace
                 gc.objRef->GetSyncBlockIndex(),
                 flags);
 
-            // Attempt to insert the new context into the cache.
+            if (ignoreCache)
             {
+                extObjCxt = resultHolder.GetContext();
+            }
+            else
+            {
+                // Attempt to insert the new context into the cache.
                 ExtObjCxtCache::LockHolder lock(cache);
                 extObjCxt = cache->FindOrAdd(identity, resultHolder.GetContext());
             }
 
             // If the returned context matches the new context it means the
-            // new context was inserted.
+            // new context was inserted or the cache is being ignored.
             if (extObjCxt == resultHolder.GetContext())
             {
                 // Update the object's SyncBlock with a handle to the context for runtime cleanup.
@@ -862,8 +874,8 @@ namespace InteropLibImports
 
     HRESULT GetOrCreateTrackerTargetForExternal(
         _In_ IUnknown* externalComObject,
-        _In_ INT32 externalObjectFlags,
-        _In_ INT32 trackerTargetFlags,
+        _In_ CreateObjectFlags externalObjectFlags,
+        _In_ CreateComInterfaceFlags trackerTargetFlags,
         _Outptr_ void** trackerTarget) noexcept
     {
         CONTRACTL
@@ -1010,7 +1022,7 @@ void* QCALLTYPE ComWrappersNative::GetOrCreateComInterfaceForObject(
         wrapper = GetOrCreateComInterfaceForObjectInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             ObjectToOBJECTREF(*instance.m_ppObject),
-            flags);
+            (CreateComInterfaceFlags)flags);
     }
 
     END_QCALL;
@@ -1046,7 +1058,7 @@ void QCALLTYPE ComWrappersNative::GetOrCreateObjectForComInstance(
         OBJECTREF newObj = GetOrCreateObjectForComInstanceInternal(
             ObjectToOBJECTREF(*comWrappersImpl.m_ppObject),
             identity,
-            flags);
+            (CreateObjectFlags)flags);
 
         // Set the return value
         retValue.Set(newObj);

@@ -217,11 +217,21 @@ namespace
 namespace
 {
     const int32_t TrackerRefShift = 32;
-    constexpr ULONGLONG TrackerRefCounter = ULONGLONG{ 1 } << TrackerRefShift;
+    const ULONGLONG TrackerRefCounter = ULONGLONG{ 1 } << TrackerRefShift;
+    const ULONGLONG ComRefCounter     = ULONGLONG{ 1 };
+    const ULONGLONG TrackerRefZero      = 0x0000000080000000;
+    const ULONGLONG TrackerRefCountMask = 0xffffffff00000000;
+    const ULONGLONG ComRefCountMask     = 0x000000007fffffff;
+    const ULONGLONG RefCountMask        = 0xffffffff7fffffff;
 
     constexpr ULONG GetTrackerCount(_In_ ULONGLONG c)
     {
-        return static_cast<ULONG>(c >> TrackerRefShift);
+        return static_cast<ULONG>((c & TrackerRefCountMask) >> TrackerRefShift);
+    }
+
+    constexpr ULONG GetComCount(_In_ ULONGLONG c)
+    {
+        return static_cast<ULONG>(c & ComRefCountMask);
     }
 
     ULONG STDMETHODCALLTYPE TrackerTarget_AddRefFromReferenceTracker(_In_ ABI::ComInterfaceDispatch* disp)
@@ -229,7 +239,7 @@ namespace
         _ASSERTE(disp != nullptr && disp->vtable != nullptr);
 
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlags::TrackerSupport));
+        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlagsEx::TrackerSupport));
 
         return wrapper->AddRefFromReferenceTracker();
     }
@@ -239,7 +249,7 @@ namespace
         _ASSERTE(disp != nullptr && disp->vtable != nullptr);
 
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlags::TrackerSupport));
+        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlagsEx::TrackerSupport));
 
         return wrapper->ReleaseFromReferenceTracker();
     }
@@ -249,7 +259,7 @@ namespace
         _ASSERTE(disp != nullptr && disp->vtable != nullptr);
 
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlags::TrackerSupport));
+        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlagsEx::TrackerSupport));
 
         return wrapper->Peg();
     }
@@ -259,7 +269,7 @@ namespace
         _ASSERTE(disp != nullptr && disp->vtable != nullptr);
 
         ManagedObjectWrapper* wrapper = ABI::ToManagedObjectWrapper(disp);
-        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlags::TrackerSupport));
+        _ASSERTE(wrapper->IsSet(CreateComInterfaceFlagsEx::TrackerSupport));
 
         return wrapper->Unpeg();
     }
@@ -312,7 +322,7 @@ ManagedObjectWrapper* ManagedObjectWrapper::MapFromIUnknown(_In_ IUnknown* pUnk)
 }
 
 HRESULT ManagedObjectWrapper::Create(
-    _In_ CreateComInterfaceFlags flags,
+    _In_ InteropLib::Com::CreateComInterfaceFlags flagsRaw,
     _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t userDefinedCount,
     _In_ ABI::ComInterfaceEntry* userDefined,
@@ -320,12 +330,15 @@ HRESULT ManagedObjectWrapper::Create(
 {
     _ASSERTE(objectHandle != nullptr && mow != nullptr);
 
+    auto flags = static_cast<CreateComInterfaceFlagsEx>(flagsRaw);
+    _ASSERTE((flags & CreateComInterfaceFlagsEx::InternalMask) == CreateComInterfaceFlagsEx::None);
+
     // Maximum number of runtime supplied vtables.
     ABI::ComInterfaceEntry runtimeDefinedLocal[4];
     int32_t runtimeDefinedCount = 0;
 
     // Check if the caller will provide the IUnknown table.
-    if ((flags & CreateComInterfaceFlags::CallerDefinedIUnknown) == CreateComInterfaceFlags::None)
+    if ((flags & CreateComInterfaceFlagsEx::CallerDefinedIUnknown) == CreateComInterfaceFlagsEx::None)
     {
         ABI::ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IUnknown);
@@ -333,7 +346,7 @@ HRESULT ManagedObjectWrapper::Create(
     }
 
     // Check if the caller wants tracker support.
-    if ((flags & CreateComInterfaceFlags::TrackerSupport) == CreateComInterfaceFlags::TrackerSupport)
+    if ((flags & CreateComInterfaceFlagsEx::TrackerSupport) == CreateComInterfaceFlagsEx::TrackerSupport)
     {
         ABI::ComInterfaceEntry& curr = runtimeDefinedLocal[runtimeDefinedCount++];
         curr.IID = __uuidof(IReferenceTrackerTarget);
@@ -407,7 +420,7 @@ void ManagedObjectWrapper::Destroy(_In_ ManagedObjectWrapper* wrapper)
 }
 
 ManagedObjectWrapper::ManagedObjectWrapper(
-    _In_ CreateComInterfaceFlags flags,
+    _In_ CreateComInterfaceFlagsEx flags,
     _In_ OBJECTHANDLE objectHandle,
     _In_ int32_t runtimeDefinedCount,
     _In_ const ABI::ComInterfaceEntry* runtimeDefined,
@@ -432,6 +445,45 @@ ManagedObjectWrapper::~ManagedObjectWrapper()
     // If the target isn't null, then a managed object
     // is going to leak.
     _ASSERTE(Target == nullptr);
+}
+
+ULONGLONG ManagedObjectWrapper::UniversalRelease(_In_ ULONGLONG dec)
+{
+    OBJECTHANDLE local = Target;
+
+    LONGLONG refCount;
+    if (dec == ComRefCounter)
+    {
+        _ASSERTE(dec == 1);
+        refCount = ::InterlockedDecrement64(&_refCount);
+    }
+    else
+    {
+        _ASSERTE(dec == TrackerRefCounter);
+        LONGLONG prev;
+        do
+        {
+            prev = _refCount;
+            refCount = prev - dec;
+        } while (::InterlockedCompareExchange64(&_refCount, refCount, prev) != prev);
+    }
+
+    // It is possible that a target wasn't set during an
+    // attempt to reactive the wrapper.
+    if ((RefCountMask & refCount) == 0 && local != nullptr)
+    {
+        _ASSERTE(!IsSet(CreateComInterfaceFlagsEx::IsPegged));
+        _ASSERTE(refCount == TrackerRefZero || refCount == 0);
+
+        // Attempt to reset the target if its current value is the same.
+        // It is possible the wrapper is in the middle of being reactivated.
+        (void)TrySetObjectHandle(nullptr, local);
+
+        // Tell the runtime to delete the managed object instance handle.
+        InteropLibImports::DeleteObjectInstanceHandle(local);
+    }
+
+    return refCount;
 }
 
 void* ManagedObjectWrapper::As(_In_ REFIID riid)
@@ -461,9 +513,21 @@ bool ManagedObjectWrapper::TrySetObjectHandle(_In_ OBJECTHANDLE objectHandle, _I
     return (::InterlockedCompareExchangePointer(&Target, objectHandle, current) == current);
 }
 
-bool ManagedObjectWrapper::IsSet(_In_ CreateComInterfaceFlags flag) const
+bool ManagedObjectWrapper::IsSet(_In_ CreateComInterfaceFlagsEx flag) const
 {
-    return (_flags & flag) != CreateComInterfaceFlags::None;
+    return (_flags & flag) != CreateComInterfaceFlagsEx::None;
+}
+
+void ManagedObjectWrapper::SetFlag(_In_ CreateComInterfaceFlagsEx flag)
+{
+    LONG setMask = (LONG)flag;
+    ::InterlockedOr((LONG*)&_flags, setMask);
+}
+
+void ManagedObjectWrapper::ResetFlag(_In_ CreateComInterfaceFlagsEx flag)
+{
+    LONG resetMask = (LONG)~flag;
+    ::InterlockedAnd((LONG*)&_flags, resetMask);
 }
 
 ULONG ManagedObjectWrapper::AddRefFromReferenceTracker()
@@ -481,27 +545,19 @@ ULONG ManagedObjectWrapper::AddRefFromReferenceTracker()
 
 ULONG ManagedObjectWrapper::ReleaseFromReferenceTracker()
 {
-    LONGLONG prev;
-    LONGLONG curr;
-    do
-    {
-        prev = _refCount;
-        curr = prev - TrackerRefCounter;
-    } while (::InterlockedCompareExchange64(&_refCount, curr, prev) != prev);
-
-    return GetTrackerCount(curr);
+    return GetTrackerCount(UniversalRelease(TrackerRefCounter));
 }
 
 HRESULT ManagedObjectWrapper::Peg()
 {
-    // [TODO]
-    return E_NOTIMPL;
+    SetFlag(CreateComInterfaceFlagsEx::IsPegged);
+    return S_OK;
 }
 
 HRESULT ManagedObjectWrapper::Unpeg()
 {
-    // [TODO]
-    return E_NOTIMPL;
+    ResetFlag(CreateComInterfaceFlagsEx::IsPegged);
+    return S_OK;
 }
 
 HRESULT ManagedObjectWrapper::QueryInterface(
@@ -522,27 +578,12 @@ HRESULT ManagedObjectWrapper::QueryInterface(
 
 ULONG ManagedObjectWrapper::AddRef(void)
 {
-    return (ULONG)::InterlockedIncrement64(&_refCount);
+    return GetComCount(::InterlockedIncrement64(&_refCount));
 }
 
 ULONG ManagedObjectWrapper::Release(void)
 {
-    OBJECTHANDLE local = Target;
-    ULONG refCount = (ULONG)::InterlockedDecrement64(&_refCount);
-
-    // It is possible that a target wasn't set during an
-    // attempt to reactive the wrapper.
-    if (refCount == 0 && local != nullptr)
-    {
-        // Attempt to reset the target if its current value is the same.
-        // It is possible the wrapper is in the middle of being reactivated.
-        (void)TrySetObjectHandle(nullptr, local);
-
-        // Tell the runtime to delete the managed object instance handle.
-        InteropLibImports::DeleteObjectInstanceHandle(local);
-    }
-
-    return refCount;
+    return GetComCount(UniversalRelease(ComRefCounter));
 }
 
 namespace
@@ -569,7 +610,7 @@ NativeObjectWrapperContext* NativeObjectWrapperContext::MapFromRuntimeContext(_I
 
 HRESULT NativeObjectWrapperContext::Create(
     _In_ IUnknown* external,
-    _In_ CreateObjectFlags flags,
+    _In_ InteropLib::Com::CreateObjectFlags flags,
     _In_ size_t runtimeContextSize,
     _Outptr_ NativeObjectWrapperContext** context)
 {
@@ -578,7 +619,7 @@ HRESULT NativeObjectWrapperContext::Create(
     HRESULT hr;
 
     ComHolder<IReferenceTracker> trackerObject;
-    if ((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject)
+    if (flags & InteropLib::Com::CreateObjectFlags_TrackerObject)
     {
         hr = external->QueryInterface(&trackerObject);
         if (SUCCEEDED(hr))
@@ -600,7 +641,7 @@ HRESULT NativeObjectWrapperContext::Create(
     if (trackerObject != nullptr)
     {
         // Inform the tracker object manager
-        _ASSERTE((flags & CreateObjectFlags::TrackerObject) == CreateObjectFlags::TrackerObject);
+        _ASSERTE(flags & InteropLib::Com::CreateObjectFlags_TrackerObject);
         hr = TrackerObjectManager::AfterWrapperCreated(trackerObject);
         if (FAILED(hr))
         {

@@ -9,24 +9,19 @@
 #include <interoplib.h>
 #include "referencetrackertypes.h"
 
-enum class CreateComInterfaceFlags
+enum class CreateComInterfaceFlagsEx : LONG
 {
-    None = 0,
-    CallerDefinedIUnknown = 1,
-    TrackerSupport = 2,
+    None = InteropLib::Com::CreateComInterfaceFlags_None,
+    CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
+    TrackerSupport = InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
+
+    // Highest bit is reserved for internal usage
+    IsPegged = 1 << 31,
+
+    InternalMask = IsPegged,
 };
 
-DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlags);
-
-enum class CreateObjectFlags
-{
-    None = 0,
-    TrackerObject = 1,
-    IgnoreCache = 2,
-};
-
-DEFINE_ENUM_FLAG_OPERATORS(CreateObjectFlags);
-
+DEFINE_ENUM_FLAG_OPERATORS(CreateComInterfaceFlagsEx);
 
 // Forward declarations
 namespace ABI
@@ -39,7 +34,7 @@ namespace ABI
 class ManagedObjectWrapper
 {
 public:
-    InteropLib::OBJECTHANDLE Target;
+    Volatile<InteropLib::OBJECTHANDLE> Target;
 
 private:
     const int32_t _runtimeDefinedCount;
@@ -49,7 +44,7 @@ private:
     ABI::ComInterfaceDispatch* _dispatches;
 
     LONGLONG _refCount;
-    const CreateComInterfaceFlags _flags;
+    Volatile<CreateComInterfaceFlagsEx> _flags;
 
 public: // static
     // Get the implementation for IUnknown.
@@ -64,7 +59,7 @@ public: // static
 
     // Create a ManagedObjectWrapper instance
     static HRESULT Create(
-        _In_ CreateComInterfaceFlags flags,
+        _In_ InteropLib::Com::CreateComInterfaceFlags flags,
         _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t userDefinedCount,
         _In_ ABI::ComInterfaceEntry* userDefined,
@@ -75,7 +70,7 @@ public: // static
 
 private:
     ManagedObjectWrapper(
-        _In_ CreateComInterfaceFlags flags,
+        _In_ CreateComInterfaceFlagsEx flags,
         _In_ InteropLib::OBJECTHANDLE objectHandle,
         _In_ int32_t runtimeDefinedCount,
         _In_ const ABI::ComInterfaceEntry* runtimeDefined,
@@ -85,12 +80,18 @@ private:
 
     ~ManagedObjectWrapper();
 
+    // Represents a single implementation of how to release
+    // the wrapper. Supplied with a decrementing value.
+    ULONGLONG UniversalRelease(_In_ ULONGLONG dec);
+
 public:
 
     void* As(_In_ REFIID riid);
     // Attempt to set the target object handle based on an assumed current value.
     bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
-    bool IsSet(_In_ CreateComInterfaceFlags flag) const;
+    bool IsSet(_In_ CreateComInterfaceFlagsEx flag) const;
+    void SetFlag(_In_ CreateComInterfaceFlagsEx flag);
+    void ResetFlag(_In_ CreateComInterfaceFlagsEx flag);
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();
@@ -127,7 +128,7 @@ public: // static
     // Create a NativeObjectWrapperContext instance
     static HRESULT NativeObjectWrapperContext::Create(
         _In_ IUnknown* external,
-        _In_ CreateObjectFlags flags,
+        _In_ InteropLib::Com::CreateObjectFlags flags,
         _In_ size_t runtimeContextSize,
         _Outptr_ NativeObjectWrapperContext** context);
 

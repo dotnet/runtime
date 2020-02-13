@@ -127,8 +127,8 @@ namespace
         ComHolder<IUnknown> target;
         RETURN_IF_FAILED(InteropLibImports::GetOrCreateTrackerTargetForExternal(
             identity,
-            (INT32)CreateObjectFlags::TrackerObject,
-            (INT32)CreateComInterfaceFlags::TrackerSupport,
+            InteropLib::Com::CreateObjectFlags_TrackerObject,
+            InteropLib::Com::CreateComInterfaceFlags_TrackerSupport,
             (void**)&target));
 
         return target->QueryInterface(IID_IReferenceTrackerTarget, (void**)ppNewReference);

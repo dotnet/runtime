@@ -25,12 +25,20 @@ namespace InteropLib
 
     namespace Com
     {
+        // See CreateComInterfaceFlags in ComWrappers.cs
+        enum CreateComInterfaceFlags
+        {
+            CreateComInterfaceFlags_None = 0,
+            CreateComInterfaceFlags_CallerDefinedIUnknown = 1,
+            CreateComInterfaceFlags_TrackerSupport = 2,
+        };
+
         // Create an IUnknown instance that represents the supplied managed object instance.
         HRESULT CreateWrapperForObject(
             _In_ OBJECTHANDLE instance,
             _In_ INT32 vtableCount,
             _In_ void* vtables,
-            _In_ INT32 flags,
+            _In_ enum CreateComInterfaceFlags flags,
             _Outptr_ IUnknown** wrapper) noexcept;
 
         // Destroy the supplied wrapper
@@ -44,9 +52,17 @@ namespace InteropLib
             // IAgileReference instance.
             IUnknown* AgileRef;
 
-            // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/ for
-            // details.
+            // See https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
+            // for details.
             bool FromTrackerRuntime;
+        };
+
+        // See CreateObjectFlags in ComWrappers.cs
+        enum CreateObjectFlags
+        {
+            CreateObjectFlags_None = 0,
+            CreateObjectFlags_TrackerObject = 1,
+            CreateObjectFlags_IgnoreCache = 2,
         };
 
         // Allocate a wrapper context for an external object.
@@ -54,7 +70,7 @@ namespace InteropLib
         // request in order to bring the object into the runtime.
         HRESULT CreateWrapperForExternal(
             _In_ IUnknown* external,
-            _In_ INT32 flags,
+            _In_ enum CreateObjectFlags flags,
             _In_ size_t contextSize,
             _Out_ ExternalWrapperResult* result) noexcept;
 
@@ -71,10 +87,7 @@ namespace InteropLib
             _Out_ void** fpRelease) noexcept;
 
         // Ensure the wrapper is active and take an AddRef.
-        // S_OK     - the wrapper is active and the OBJECTHANDLE wasn't needed.
-        // S_FALSE  - the wrapper was inactive and the OBJECTHANDLE argument was used.
-        // E_HANDLE - the supplied wrapper is inactive and an OBJECTHANDLE wasn't supplied.
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_opt_ OBJECTHANDLE handle) noexcept;
+        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapper, _In_ OBJECTHANDLE handle) noexcept;
 
         // Begin the reference tracking process on external COM objects.
         // This should only be called during a runtime's GC phase.
