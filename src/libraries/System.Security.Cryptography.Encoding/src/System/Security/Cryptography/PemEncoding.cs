@@ -6,9 +6,10 @@ namespace System.Security.Cryptography
 {
     public static class PemEncoding
     {
-        private const string s_Preeb = "-----BEGIN ";
-        private const string s_Posteb = "-----END ";
-        private const string s_Ending = "-----";
+        private const string Preeb = "-----BEGIN ";
+        private const string Posteb = "-----END ";
+        private const string Ending = "-----";
+        private const int EncodedLineLength = 64;
 
         public static PemFields Find(ReadOnlySpan<char> pemData)
         {
@@ -24,7 +25,7 @@ namespace System.Security.Cryptography
             // Check for the minimum possible encoded length of a PEM structure
             // and exit early if there is no way the input could contain a well-formed
             // PEM.
-            if (pemData.Length < s_Preeb.Length + s_Ending.Length * 2 + s_Posteb.Length)
+            if (pemData.Length < Preeb.Length + Ending.Length * 2 + Posteb.Length)
             {
                 fields = default;
                 return false;
@@ -34,7 +35,7 @@ namespace System.Security.Cryptography
             while (TryReadNextLine(pemData, ref preebLinePosition, out Range lineRange))
             {
                 ReadOnlySpan<char> line = pemData[lineRange];
-                int preebIndex = line.IndexOf(s_Preeb);
+                int preebIndex = line.IndexOf(Preeb);
 
                 if (preebIndex == -1 ||
                     (preebIndex > 0 && !line[..preebIndex].IsWhiteSpace())) // can only be preceeded by whitespace
@@ -42,7 +43,7 @@ namespace System.Security.Cryptography
                     continue;
                 }
 
-                int preebEndingIndex = line[(preebIndex + s_Preeb.Length)..].IndexOf(s_Ending);
+                int preebEndingIndex = line[(preebIndex + Preeb.Length)..].IndexOf(Ending);
 
                 if (preebEndingIndex == -1)
                 {
@@ -51,7 +52,7 @@ namespace System.Security.Cryptography
 
                 (int preebOffset, _) = lineRange.GetOffsetAndLength(pemData.Length);
                 int preebStartIndex = preebOffset + preebIndex;
-                int startLabelIndex = preebStartIndex + s_Preeb.Length;
+                int startLabelIndex = preebStartIndex + Preeb.Length;
                 int endLabelIndex = startLabelIndex + preebEndingIndex;
                 Range labelRange = startLabelIndex..endLabelIndex;
                 ReadOnlySpan<char> label = pemData[labelRange];
@@ -61,7 +62,7 @@ namespace System.Security.Cryptography
                     continue;
                 }
 
-                ReadOnlySpan<char> posteb = string.Concat(s_Posteb, label, s_Ending);
+                ReadOnlySpan<char> posteb = string.Concat(Posteb, label, Ending);
                 Range postebLineRange = lineRange;
                 int postebLinePosition = preebLinePosition;
 
@@ -82,7 +83,7 @@ namespace System.Security.Cryptography
                     (int postebOffset, _) = postebLineRange.GetOffsetAndLength(pemData.Length);
                     int postebEndIndex = postebOffset + postebIndex + posteb.Length;
                     Range location = preebStartIndex..postebEndIndex;
-                    Range content = (endLabelIndex + s_Ending.Length)..(postebOffset + postebIndex);
+                    Range content = (endLabelIndex + Ending.Length)..(postebOffset + postebIndex);
 
                     if (!postebLine[(postebIndex + posteb.Length)..].IsWhiteSpace())
                     {
@@ -208,11 +209,54 @@ namespace System.Security.Cryptography
             }
         }
 
-        public static int GetEncodedSize(int labelLength, int dataLength) =>
-            throw new System.NotImplementedException();
+        public static int GetEncodedSize(int labelLength, int dataLength)
+        {
+            // The largest possible label is MaxLabelSize - when included in the posteb
+            // and preeb lines new lines, assuming the base64 content is empty.
+            //     -----BEGIN {char * MaxLabelSize}-----\n
+            //     -----END {char * MaxLabelSize}-----
+            const int MaxLabelSize = 1_073_741_808;
 
-        public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten) =>
-            throw new System.NotImplementedException();
+            // The largest possible binary value to fit in a padded base64 string
+            // is 1,610,612,733 bytes. RFC 7468 states:
+            //   Generators MUST wrap the base64-encoded lines so that each line
+            //   consists of exactly 64 characters except for the final line
+            // We need to account for new line characters, every 64 characters.
+            // This works out to 1,585,834,053 maximum bytes in data when wrapping
+            // is accounted for assuming an empty label.
+            const int MaxDataLength = 1_585_834_053;
+
+            if (labelLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            if (dataLength < 0)
+                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.ArgumentOutOfRange_NeedPositiveNumber);
+            if (labelLength > MaxLabelSize)
+                throw new ArgumentOutOfRangeException(nameof(labelLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
+            if (dataLength > MaxDataLength)
+                throw new ArgumentOutOfRangeException(nameof(dataLength), SR.Argument_PemEncoding_EncodedSizeTooLarge);
+
+            int preebLength = Preeb.Length + labelLength + Ending.Length;
+            int postebLength = Posteb.Length + labelLength + Ending.Length;
+            int totalEncapLength = preebLength + postebLength + 1; //Add one for newline after preeb
+
+            // dataLength is already known to not overflow here
+            int encodedDataLength = ((dataLength + 2) / 3) << 2;
+            int lineCount = Math.DivRem(encodedDataLength, EncodedLineLength, out int remainder);
+            lineCount += ((remainder >> 31) - (-remainder >> 31)); //Increment lineCount if remainder is positive.
+            int encodedDataLengthWithBreaks = encodedDataLength + lineCount;
+
+            if (int.MaxValue - encodedDataLengthWithBreaks < totalEncapLength)
+                throw new ArgumentException(SR.Argument_PemEncoding_EncodedSizeTooLarge);
+
+            return encodedDataLengthWithBreaks + totalEncapLength;
+        }
+
+        public static bool TryWrite(ReadOnlySpan<char> label, ReadOnlySpan<byte> data, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = 0;
+            return false;
+        }
+
         public static char[] Write(ReadOnlySpan<char> label, ReadOnlySpan<byte> data) =>
              throw new System.NotImplementedException();
     }

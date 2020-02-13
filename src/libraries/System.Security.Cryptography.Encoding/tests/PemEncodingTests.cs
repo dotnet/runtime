@@ -308,5 +308,68 @@ Zm9v
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST";
             Assert.False(PemEncoding.TryFind(content, out _));
         }
+
+        [Fact]
+        public static void GetEncodedSize_Empty()
+        {
+            int size = PemEncoding.GetEncodedSize(labelLength: 0, dataLength: 0);
+            Assert.Equal(31, size);
+        }
+
+        [Theory]
+        [InlineData(1, 0, 33)]
+        [InlineData(1, 1, 38)]
+        [InlineData(16, 2048, 2838)]
+        public static void GetEncodedSize_Simple(int labelLength, int dataLength, int expectedSize)
+        {
+            int size = PemEncoding.GetEncodedSize(labelLength, dataLength);
+            Assert.Equal(expectedSize, size);
+        }
+
+        [Theory]
+        [InlineData(1_073_741_808, 0, int.MaxValue)]
+        [InlineData(1_073_741_805, 1, int.MaxValue - 1)]
+        [InlineData(0, 1_585_834_053, int.MaxValue - 2)]
+        [InlineData(1, 1_585_834_053, int.MaxValue)]
+        public static void GetEncodedSize_Boundaries(int labelLength, int dataLength, int expectedSize)
+        {
+            int size = PemEncoding.GetEncodedSize(labelLength, dataLength);
+            Assert.Equal(expectedSize, size);
+        }
+
+        [Fact]
+        public static void GetEncodedSize_LabelLength_Overflow()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("labelLength",
+                () => PemEncoding.GetEncodedSize(labelLength: 1_073_741_809, dataLength: 0));
+        }
+
+        [Fact]
+        public static void GetEncodedSize_DataLength_Overflow()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dataLength",
+                () => PemEncoding.GetEncodedSize(labelLength: 0, dataLength: 1_585_834_054));
+        }
+
+        [Fact]
+        public static void GetEncodedSize_Combined_Overflow()
+        {
+            Assert.Throws<ArgumentException>(
+                () => PemEncoding.GetEncodedSize(labelLength: 2, dataLength: 1_585_834_052));
+        }
+
+        [Fact]
+        public static void GetEncodedSize_DataLength_Negative()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dataLength",
+                () => PemEncoding.GetEncodedSize(labelLength: 0, dataLength: -1));
+        }
+
+        [Fact]
+        public static void GetEncodedSize_LabelLength_Negative()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("labelLength",
+                () => PemEncoding.GetEncodedSize(labelLength: -1, dataLength: 0));
+        }
     }
 }
