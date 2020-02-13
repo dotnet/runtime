@@ -187,9 +187,6 @@ namespace System.Threading
         [Intrinsic]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? =>
             Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
         #endregion
 
         #region Add

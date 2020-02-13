@@ -1648,22 +1648,6 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, IN
 }
 FCIMPLEND
 
-FCIMPL4(INT32, COMInterlocked::CompareExchangeReliableResult, INT32* location, INT32 value, INT32 comparand, CLR_BOOL* succeeded)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT32 result = FastInterlockCompareExchange((LONG*)location, value, comparand);
-    if (result == comparand)
-        *succeeded = true;
-
-    return result;
-}
-FCIMPLEND
-
 FCIMPL3_IVV(INT64, COMInterlocked::CompareExchange64, INT64* location, INT64 value, INT64 comparand)
 {
     FCALL_CONTRACT;
