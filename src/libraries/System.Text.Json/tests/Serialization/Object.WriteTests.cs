@@ -77,6 +77,22 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteObjectWorks_ReferenceTypeMissingPublicParameterlessConstructor()
+        {
+            PublicParameterizedConstructorTestClass paramterless = PublicParameterizedConstructorTestClass.Instance;
+            Assert.Equal("{\"Name\":\"42\"}", JsonSerializer.Serialize(paramterless));
+
+            ClassWithInternalParameterlessConstructor internalObj = ClassWithInternalParameterlessConstructor.Instance;
+            Assert.Equal("{\"Name\":\"InstancePropertyInternal\"}", JsonSerializer.Serialize(internalObj));
+
+            ClassWithPrivateParameterlessConstructor privateObj = ClassWithPrivateParameterlessConstructor.Instance;
+            Assert.Equal("{\"Name\":\"InstancePropertyPrivate\"}", JsonSerializer.Serialize(privateObj));
+
+            var list = new CollectionWithoutPublicParameterlessConstructor(new List<object> { 1, "foo", false });
+            Assert.Equal("[1,\"foo\",false]", JsonSerializer.Serialize(list));
+        }
+
+        [Fact]
         public static void WritePolymorhicSimple()
         {
             string json = JsonSerializer.Serialize(new { Prop = (object)new[] { 0 } });

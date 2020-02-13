@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
@@ -213,21 +214,133 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadObjectFail_ReferenceTypeMissingParameterlessConstructor()
+        public static void ReadObjectFail_ReferenceTypeMissingPublicParameterlessConstructor()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithInternalParameterlessConstructor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ClassWithPrivateParameterlessConstructor>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<CollectionWithoutPublicParameterlessConstructor>(@"[""foo"", 1, false]"));
         }
 
-        class PublicParameterizedConstructorTestClass
+        public class PublicParameterizedConstructorTestClass
         {
-            private readonly string _name;
             public PublicParameterizedConstructorTestClass(string name)
             {
-                _name = name;
+                throw new InvalidOperationException();
             }
-            public string Name
+
+            private PublicParameterizedConstructorTestClass(int internalId)
             {
-                get { return _name; }
+                Name = internalId.ToString();
+            }
+
+            public string Name { get; }
+
+            public static PublicParameterizedConstructorTestClass Instance { get; } = new PublicParameterizedConstructorTestClass(42);
+        }
+
+        public class ClassWithInternalParameterlessConstructor
+        {
+            internal ClassWithInternalParameterlessConstructor()
+            {
+                throw new InvalidOperationException();
+            }
+
+            private ClassWithInternalParameterlessConstructor(string name)
+            {
+                Name = name;
+            }
+
+            public string Name { get; set; }
+
+            public static ClassWithInternalParameterlessConstructor Instance { get; } = new ClassWithInternalParameterlessConstructor("InstancePropertyInternal");
+        }
+
+        public class ClassWithPrivateParameterlessConstructor
+        {
+            private ClassWithPrivateParameterlessConstructor()
+            {
+                throw new InvalidOperationException();
+            }
+
+            private ClassWithPrivateParameterlessConstructor(string name)
+            {
+                Name = name;
+            }
+
+            public string Name { get; set; }
+
+            public static ClassWithPrivateParameterlessConstructor Instance { get; } = new ClassWithPrivateParameterlessConstructor("InstancePropertyPrivate");
+        }
+
+        public class CollectionWithoutPublicParameterlessConstructor : IList
+        {
+            private readonly List<object> _list;
+
+            internal CollectionWithoutPublicParameterlessConstructor()
+            {
+                throw new InvalidOperationException();
+            }
+
+            public CollectionWithoutPublicParameterlessConstructor(List<object> list)
+            {
+                _list = list;
+            }
+
+            public object this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public bool IsFixedSize => throw new NotImplementedException();
+
+            public bool IsReadOnly => false;
+
+            public int Count => _list.Count;
+
+            public bool IsSynchronized => throw new NotImplementedException();
+
+            public object SyncRoot => throw new NotImplementedException();
+
+            public int Add(object value)
+            {
+                int pos = _list.Count;
+                _list.Add(value);
+                return pos;
+            }
+
+            public void Clear()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Contains(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerator GetEnumerator() => _list.GetEnumerator();
+
+            public int IndexOf(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Insert(int index, object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void Remove(object value)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void RemoveAt(int index)
+            {
+                throw new NotImplementedException();
             }
         }
 
