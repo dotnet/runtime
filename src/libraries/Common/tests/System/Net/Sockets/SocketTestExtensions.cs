@@ -56,8 +56,6 @@ namespace System.Net.Sockets.Tests
         // Useful to speed up "can not connect" assertions on Windows
         public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
         {
-            // To avoid race conditions, ManualResetEventSlim is left undisposed,
-            // letting SafeHandle's finalizer do the cleanup work, if needed
             var mre = new ManualResetEventSlim(false);
             using var sea = new SocketAsyncEventArgs()
             {
@@ -70,10 +68,14 @@ namespace System.Net.Sockets.Tests
             bool pending = socket.ConnectAsync(sea);
             if (!pending || mre.Wait(millisecondsTimeout))
             {
+                mre.Dispose();
                 return sea.SocketError == SocketError.Success;
             }
 
             Socket.CancelConnectAsync(sea); // this will close the socket!
+
+            // In case of time-out, ManualResetEventSlim is left undisposed to avoid race conditions,
+            // letting SafeHandle's finalizer to do the cleanup.
             return false;
         }
     }
