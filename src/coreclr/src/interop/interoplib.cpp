@@ -6,7 +6,9 @@
 #include <interoplib.h>
 #include <interoplibimports.h>
 
-#include "comwrappers.h"
+#ifdef FEATURE_COMWRAPPERS
+#include "comwrappers.hpp"
+#endif // FEATURE_COMWRAPPERS
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
@@ -15,8 +17,12 @@ namespace InteropLib
 {
     void Shutdown() noexcept
     {
+#ifdef FEATURE_COMWRAPPERS
         TrackerObjectManager::OnShutdown();
+#endif // FEATURE_COMWRAPPERS
     }
+
+#ifdef FEATURE_COMWRAPPERS
 
     // Exposed COM related API
     namespace Com
@@ -163,4 +169,6 @@ namespace InteropLib
             return TrackerObjectManager::EndReferenceTracking();
         }
     }
+
+#endif // FEATURE_COMWRAPPERS
 }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "comwrappers.h"
+#include "comwrappers.hpp"
 #include <interoplibimports.h>
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;

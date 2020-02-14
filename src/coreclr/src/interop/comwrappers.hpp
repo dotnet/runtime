@@ -7,7 +7,7 @@
 
 #include "platform.h"
 #include <interoplib.h>
-#include "referencetrackertypes.h"
+#include "referencetrackertypes.hpp"
 
 enum class CreateComInterfaceFlagsEx : int32_t
 {

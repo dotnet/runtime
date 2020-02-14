@@ -5,7 +5,7 @@
 // Runtime headers
 #include <winwrap.h>
 
-#include "comwrappers.h"
+#include "comwrappers.hpp"
 
 // Forward declare the Win32 API.
 enum AgileReferenceOptions

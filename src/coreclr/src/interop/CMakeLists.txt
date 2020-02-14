@@ -24,9 +24,9 @@ if (WIN32)
         ${INTEROP_HEADERS}
         agilereferences.cpp
         comwrappers.cpp
-        comwrappers.h
+        comwrappers.hpp
         trackerobjectmanager.cpp
-        referencetrackertypes.h)
+        referencetrackertypes.hpp)
 endif(WIN32)
 
 convert_to_absolute_path(INTEROP_SOURCES ${INTEROP_SOURCES})

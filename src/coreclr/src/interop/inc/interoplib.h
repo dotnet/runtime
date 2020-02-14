@@ -21,8 +21,6 @@ namespace InteropLib
     // Clean up the interop library.
     void Shutdown() noexcept;
 
-#ifdef _WIN32
-
     namespace Com
     {
         // See CreateComInterfaceFlags in ComWrappers.cs
@@ -100,8 +98,6 @@ namespace InteropLib
         // This should only be called during a runtime's GC phase.
         HRESULT EndExternalObjectReferenceTracking() noexcept;
     }
-
-#endif // _WIN32
 }
 
 #endif // _INTEROP_INC_INTEROPLIB_H_

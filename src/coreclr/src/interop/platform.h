@@ -5,9 +5,9 @@
 #ifndef _INTEROP_PLATFORM_H_
 #define _INTEROP_PLATFORM_H_
 
-#include <cassert>
-#include <cstdint>
-#include <cstring>
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
 
 #ifndef _ASSERTE
 #define _ASSERTE(x) assert((x))
@@ -20,6 +20,8 @@
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return hr; } }
 #define RETURN_VOID_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { _ASSERTE(false && #exp); return; } }
+
+#define FEATURE_COMWRAPPERS
 
 #endif // _WIN32
 
