@@ -28,5 +28,24 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
             return Expression.Convert(expression, type);
         }
     }
+
+    internal static class Requires
+    {
+        internal static void NotNull(object value, string paramName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+        }
+
+        internal static void Condition(bool precondition, string paramName)
+        {
+            if (!precondition)
+            {
+                throw new ArgumentException(paramName);
+            }
+        }
+    }
 }
 #endif

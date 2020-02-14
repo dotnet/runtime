@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             string name = binder.Name;
 
             if (name == _info.Name) {

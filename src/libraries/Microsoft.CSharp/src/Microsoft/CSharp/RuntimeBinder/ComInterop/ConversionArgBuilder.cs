@@ -24,7 +24,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
         internal override Expression MarshalToRef(Expression parameter) {
             //we are not supporting conversion InOut
-            throw Assert.Unreachable;
+            throw new NotSupportedException();
         }
     }
 }

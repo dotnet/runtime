@@ -24,27 +24,27 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackGetIndex(UnwrapSelf(), indexes);
         }
 
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackSetIndex(UnwrapSelf(), indexes, value);
         }
 
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackGetMember(UnwrapSelf());
         }
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackInvokeMember(UnwrapSelf(), args);
         }
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.FallbackSetMember(UnwrapSelf(), value);
         }
 

@@ -11,7 +11,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Security.Permissions;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 using System.Linq;
 
@@ -445,7 +444,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         private static void EmitLoadArg(ILGenerator il, int index) {
-            ContractUtils.Requires(index >= 0, nameof(index));
+            Requires.Condition(index >= 0, nameof(index));
 
             switch (index) {
                 case 0:
@@ -498,12 +497,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 lock (_lock) {
                     if (_dynamicModule == null) {
                         var attributes = new[] {
-                            new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Array.Empty<Type>()), Array.Empty<object>()),
-                            //PermissionSet(SecurityAction.Demand, Unrestricted = true)
-                            new CustomAttributeBuilder(typeof(PermissionSetAttribute).GetConstructor(new Type[]{typeof(SecurityAction)}),
-                                new object[]{SecurityAction.Demand},
-                                new PropertyInfo[]{typeof(PermissionSetAttribute).GetProperty("Unrestricted")},
-                                new object[] {true})
+                            new CustomAttributeBuilder(typeof(UnverifiableCodeAttribute).GetConstructor(Array.Empty<Type>()), Array.Empty<object>())
                         };
 
                         string name = typeof(VariantArray).Namespace + ".DynamicAssembly";

@@ -18,32 +18,32 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(args.AddFirst(WrapSelf()));
         }
 
         public override DynamicMetaObject BindInvoke(InvokeBinder binder, DynamicMetaObject[] args) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(args.AddFirst(WrapSelf()));
         }
 
         public override DynamicMetaObject BindGetMember(GetMemberBinder binder) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(WrapSelf());
         }
 
         public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(WrapSelf(), value);
         }
 
         public override DynamicMetaObject BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(WrapSelf(), indexes);
         }
 
         public override DynamicMetaObject BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value) {
-            ContractUtils.RequiresNotNull(binder, nameof(binder));
+            Requires.NotNull(binder, nameof(binder));
             return binder.Defer(WrapSelf(), indexes.AddLast(value));
         }
 

@@ -285,7 +285,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                 case TypeCode.String: AsBstr = value.ToString(ci); break;
 
                 default:
-                    throw Assert.Unreachable;
+                    throw new NotSupportedException();
             }
         }
 
