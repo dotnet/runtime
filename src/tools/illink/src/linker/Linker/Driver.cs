@@ -365,6 +365,7 @@ namespace Mono.Linker {
 
 							continue;
 						case "o":
+						case "out":
 							if (!GetStringParam (token, l => context.OutputDirectory = l))
 								return false;
 
