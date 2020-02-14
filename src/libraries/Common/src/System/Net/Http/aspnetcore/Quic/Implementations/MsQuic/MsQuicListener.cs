@@ -170,9 +170,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                         return MsQuicStatusCodes.InternalError;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine(ex.Message);
+                // Console.WriteLine(ex.Message);
                 return MsQuicStatusCodes.InternalError;
             }
         }
