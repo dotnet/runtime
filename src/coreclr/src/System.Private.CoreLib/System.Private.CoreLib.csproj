@@ -438,30 +438,6 @@
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 
   <!-- Setup eventing file generation -->
-  <Target Name="FindPythonWindows"
-          Condition="$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
-          Returns="$(PYTHON)">
-    <PropertyGroup>
-      <_PythonLocationScript>-c "import sys; sys.stdout.write(sys.executable)"</_PythonLocationScript>
-    </PropertyGroup>
-    <Exec Command="py -3 $(_PythonLocationScript) || py -2 $(_PythonLocationScript) || python3 $(_PythonLocationScript) || python2 $(_PythonLocationScript) || python $(_PythonLocationScript)"
-          StandardOutputImportance="Low"
-          EchoOff="true"
-          ConsoleToMsBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
-    </Exec>
-  </Target>
-  <Target Name="FindPythonUnix"
-          Condition="!$([MSBuild]::IsOSPlatform(Windows)) and '$(PYTHON)' == ''"
-          Returns="$(PYTHON)">
-    <Exec Command="command -v python3 || command -v python2 || command -v python || command -v py"
-          StandardOutputImportance="Low"
-          EchoOff="true"
-          ConsoleToMsBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="PYTHON" />
-    </Exec>
-  </Target>
-
   <ItemGroup>
     <EventingGenerationScript Include="$(CoreClrProjectRoot)/src/scripts/genRuntimeEventSources.py" />
     <EventManifestFile Include="$(CoreClrProjectRoot)/src/vm/ClrEtwAll.man" />
@@ -474,7 +450,7 @@
   <Target Name="GenerateEventingFiles"
           Inputs="@(EventingGenerationScript);@(EventManifestFile)"
           Outputs="@(EventingSourceFile)"
-          DependsOnTargets="FindPythonWindows;FindPythonUnix"
+          DependsOnTargets="FindPython"
           BeforeTargets="BeforeCompile">
 
     <Error Condition="'$(PYTHON)' == ''" Text="Unable to locate Python. NativeRuntimeEventSource.cs cannot be generated without Python installed on the machine. Either install Python in your path or point to it with the PYTHON environment variable." />
