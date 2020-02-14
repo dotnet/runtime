@@ -15,6 +15,7 @@
 typedef struct {
 	int assembly_count;
 	char **basenames; /* Foo.dll */
+	int *basename_lens;
 	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
 } MonoCoreTrustedPlatformAssemblies;
 
@@ -68,10 +69,13 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->assembly_count = asm_count;
 	a->assembly_filepaths = parts;
 	a->basenames = g_new0 (char*, asm_count + 1);
+	a->basename_lens = g_new0 (int, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
-		a->basenames[i] = g_path_get_basename (a->assembly_filepaths [i]);
+		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
+		a->basename_lens [i] = strlen (a->basenames [i]);
 	}
 	a->basenames [asm_count] = NULL;
+	a->basename_lens [asm_count] = 0;
 
 	trusted_platform_assemblies = a;
 	return TRUE;
@@ -116,9 +120,10 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	MonoAssemblyLoadContext *default_alc = mono_domain_default_alc (mono_alc_domain (alc));
 
 	basename = g_strconcat (aname->name, ".dll", (const char*)NULL); /* TODO: make sure CoreCLR never needs to load .exe files */
+	size_t basename_len = strlen (basename);
 
 	for (int i = 0; i < a->assembly_count; ++i) {
-		if (!strcmp (basename, a->basenames [i])) {
+		if (basename_len == a->basename_lens [i] && !strncmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
 			req.request.predicate = predicate;
