@@ -29,22 +29,22 @@ namespace Microsoft.VisualBasic
     {
         public Collection() { }
         public int Count { get { throw null; } }
-        public object this[int Index] { get { throw null; } }
+        public object? this[int Index] { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        public object this[object Index] { get { throw null; } }
-        public object this[string Key] { get { throw null; } }
+        public object? this[object Index] { get { throw null; } }
+        public object? this[string Key] { get { throw null; } }
         int System.Collections.ICollection.Count { get { throw null; } }
         bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IList.IsFixedSize { get { throw null; } }
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
+        object? System.Collections.IList.this[int index] { get { throw null; } set { } }
         public void Add(object? Item, string? Key = null, object? Before = null, object? After = null) { }
         public void Clear() { }
         public bool Contains(string Key) { throw null; }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
         public void Remove(int Index) { }
-        public void Remove(string? Key) { }
+        public void Remove(string Key) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         int System.Collections.IList.Add(object? value) { throw null; }
@@ -59,10 +59,10 @@ namespace Microsoft.VisualBasic
     public sealed partial class ComClassAttribute : System.Attribute
     {
         public ComClassAttribute() { }
-        public ComClassAttribute(string _ClassID) { }
-        public ComClassAttribute(string _ClassID, string _InterfaceID) { }
-        public ComClassAttribute(string _ClassID, string _InterfaceID, string _EventId) { }
-        public string ClassID { get { throw null; } }
+        public ComClassAttribute(string? _ClassID) { }
+        public ComClassAttribute(string? _ClassID, string? _InterfaceID) { }
+        public ComClassAttribute(string? _ClassID, string? _InterfaceID, string? _EventId) { }
+        public string? ClassID { get { throw null; } }
         public string? EventID { get { throw null; } }
         public string? InterfaceID { get { throw null; } }
         public bool InterfaceShadows { get { throw null; } set { } }
@@ -139,7 +139,7 @@ namespace Microsoft.VisualBasic
         public const Microsoft.VisualBasic.AppWinStyle vbNormalNoFocus = Microsoft.VisualBasic.AppWinStyle.NormalNoFocus;
         public const Microsoft.VisualBasic.VariantType vbNull = Microsoft.VisualBasic.VariantType.Null;
         public const string vbNullChar = "\0";
-        public const string vbNullString = null;
+        public const string? vbNullString = null;
         public const Microsoft.VisualBasic.VariantType vbObject = Microsoft.VisualBasic.VariantType.Object;
         public const int vbObjectError = -2147221504;
         public const Microsoft.VisualBasic.MsgBoxResult vbOK = Microsoft.VisualBasic.MsgBoxResult.Ok;
@@ -314,7 +314,7 @@ namespace Microsoft.VisualBasic
         public int Number { get { throw null; } set { } }
         public string Source { get { throw null; } set { } }
         public void Clear() { }
-        public System.Exception GetException() { throw null; }
+        public System.Exception? GetException() { throw null; }
         public void Raise(int Number, object? Source = null, object? Description = null, object? HelpFile = null, object? HelpContext = null) { }
     }
     [System.FlagsAttribute]
@@ -475,11 +475,11 @@ namespace Microsoft.VisualBasic
         public static int LBound(System.Array Array, int Rank = 1) { throw null; }
         public static int QBColor(int Color) { throw null; }
         public static int RGB(int Red, int Green, int Blue) { throw null; }
-        public static string SystemTypeName(string? VbName) { throw null; }
+        public static string? SystemTypeName(string? VbName) { throw null; }
         public static string TypeName(object? VarName) { throw null; }
         public static int UBound(System.Array Array, int Rank = 1) { throw null; }
         public static Microsoft.VisualBasic.VariantType VarType(object? VarName) { throw null; }
-        public static string VbTypeName(string? UrtName) { throw null; }
+        public static string? VbTypeName(string? UrtName) { throw null; }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Interaction
@@ -489,18 +489,18 @@ namespace Microsoft.VisualBasic
         public static void AppActivate(string Title) { }
         public static void Beep() { }
         public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
-        public static object? Choose(double Index, params object[] Choice) { throw null; }
+        public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
         public static object CreateObject(string ProgId, string? ServerName = "") { throw null; }
         public static void DeleteSetting(string AppName, string? Section = null, string? Key = null) { }
-        public static string Environ(string Expression) { throw null; }
+        public static string Environ(string? Expression) { throw null; }
         public static string Environ(int Expression) { throw null; }
-        public static string[,] GetAllSettings(string AppName, string Section) { throw null; }
+        public static string[,]? GetAllSettings(string AppName, string Section) { throw null; }
         public static object? GetObject(string? PathName = null, string? Class = null) { throw null; }
         public static string? GetSetting(string AppName, string Section, string Key, string? Default = "") { throw null; }
         public static object? IIf(bool Expression, object? TruePart, object? FalsePart) { throw null; }
         public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
-        public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object Title = null) { throw null; }
+        public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object? Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
         public static void SaveSetting(string AppName, string Section, string Key, string Setting) { }
         public static int Shell(string PathName, AppWinStyle Style = AppWinStyle.MinimizedFocus, bool Wait = false, int Timeout = -1) { throw null; }
@@ -598,8 +598,8 @@ namespace Microsoft.VisualBasic
         public static int InStr(int StartPos, string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static int InStr(string? String1, string? String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static int InStrRev(string? StringCheck, string? StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
-        public static string Join(object?[] SourceArray, string? Delimiter = " ") { throw null; }
-        public static string Join(string?[] SourceArray, string? Delimiter = " ") { throw null; }
+        public static string? Join(object?[] SourceArray, string? Delimiter = " ") { throw null; }
+        public static string? Join(string?[] SourceArray, string? Delimiter = " ") { throw null; }
         public static char LCase(char Value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
         public static string? LCase(string? Value) { throw null; }
@@ -626,9 +626,9 @@ namespace Microsoft.VisualBasic
         public static int Len(ulong Expression) { throw null; }
         public static string LSet(string? Source, int Length) { throw null; }
         public static string LTrim(string? str) { throw null; }
-        public static string Mid(string? str, int Start) { throw null; }
+        public static string? Mid(string? str, int Start) { throw null; }
         public static string Mid(string? str, int Start, int Length) { throw null; }
-        public static string Replace(string? Expression, string? Find, string? Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        public static string? Replace(string? Expression, string? Find, string? Replacement, int Start = 1, int Count = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static string Right(string? str, int Length) { throw null; }
         public static string RSet(string? Source, int Length) { throw null; }
         public static string RTrim(string? str) { throw null; }
@@ -792,15 +792,15 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static string ToString(char Value) { throw null; }
         public static string ToString(System.DateTime Value) { throw null; }
         public static string ToString(decimal Value) { throw null; }
-        public static string ToString(decimal Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(decimal Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string ToString(double Value) { throw null; }
-        public static string ToString(double Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(double Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string ToString(short Value) { throw null; }
         public static string ToString(int Value) { throw null; }
         public static string ToString(long Value) { throw null; }
         public static string? ToString(object? Value) { throw null; }
         public static string ToString(float Value) { throw null; }
-        public static string ToString(float Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string ToString(float Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static string ToString(uint Value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -824,7 +824,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal DateType() { }
         public static System.DateTime FromObject(object? Value) { throw null; }
         public static System.DateTime FromString(string? Value) { throw null; }
-        public static System.DateTime FromString(string? Value, System.Globalization.CultureInfo culture) { throw null; }
+        public static System.DateTime FromString(string? Value, System.Globalization.CultureInfo? culture) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DecimalType
@@ -832,10 +832,10 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal DecimalType() { }
         public static decimal FromBoolean(bool Value) { throw null; }
         public static decimal FromObject(object? Value) { throw null; }
-        public static decimal FromObject(object? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static decimal FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static decimal FromString(string? Value) { throw null; }
-        public static decimal FromString(string? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
-        public static decimal Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static decimal FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
+        public static decimal Parse(string Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -848,11 +848,11 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal DoubleType() { }
         public static double FromObject(object? Value) { throw null; }
-        public static double FromObject(object? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static double FromString(string? Value) { throw null; }
-        public static double FromString(string? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static double Parse(string Value) { throw null; }
-        public static double Parse(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static double Parse(string Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IncompleteInitialization : System.Exception
@@ -875,10 +875,10 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static void LateCall(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static object LateGet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
+        public static object? LateGet(object? o, System.Type? objType, string name, object?[]? args, string?[]? paramnames, bool[]? CopyBack) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
-        public static object LateIndexGet(object o, object?[]? args, string?[]? paramnames) { throw null; }
+        public static object? LateIndexGet(object o, object?[]? args, string?[]? paramnames) { throw null; }
         [System.Diagnostics.DebuggerHiddenAttribute]
         [System.Diagnostics.DebuggerStepThroughAttribute]
         public static void LateIndexSet(object o, object?[] args, string?[]? paramnames) { }
@@ -934,7 +934,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("do not use this method", true)]
         public static void FallbackSetComplex(object Instance, string MemberName, object[] Arguments, bool OptimisticSet, bool RValueBase) { }
-        public static object? LateCall(object? Instance, System.Type? Type, string MemberName, object?[] Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack, bool IgnoreReturn) { throw null; }
+        public static object? LateCall(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static object? LateCallInvokeDefault(object? Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
         public static object? LateGet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type?[]? TypeArguments, bool[]? CopyBack) { throw null; }
@@ -942,10 +942,10 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object? LateGetInvokeDefault(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool ReportErrors) { throw null; }
         public static object? LateIndexGet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { throw null; }
         public static void LateIndexSet(object Instance, object?[]? Arguments, string?[]? ArgumentNames) { }
-        public static void LateIndexSetComplex(object Instance, object?[] Arguments, string?[]? ArgumentNames, bool OptimisticSet, bool RValueBase) { }
-        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[] Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments) { }
-        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[] Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
-        public static void LateSetComplex(object? Instance, System.Type? Type, string MemberName, object?[] Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase) { }
+        public static void LateIndexSetComplex(object Instance, object?[]? Arguments, string?[]? ArgumentNames, bool OptimisticSet, bool RValueBase) { }
+        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments) { }
+        public static void LateSet(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase, Microsoft.VisualBasic.CallType CallType) { }
+        public static void LateSetComplex(object? Instance, System.Type? Type, string MemberName, object?[]? Arguments, string?[]? ArgumentNames, System.Type[]? TypeArguments, bool OptimisticSet, bool RValueBase) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ObjectFlowControl
@@ -967,26 +967,26 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class ObjectType
     {
         public ObjectType() { }
-        public static object? AddObj(object? o1, object? o2) { throw null; }
-        public static object? BitAndObj(object? obj1, object? obj2) { throw null; }
-        public static object? BitOrObj(object? obj1, object? obj2) { throw null; }
-        public static object? BitXorObj(object? obj1, object? obj2) { throw null; }
-        public static object? DivObj(object? o1, object? o2) { throw null; }
-        public static object? GetObjectValuePrimitive(object? o) { throw null; }
-        public static object? IDivObj(object? o1, object? o2) { throw null; }
+        public static object AddObj(object? o1, object? o2) { throw null; }
+        public static object BitAndObj(object? obj1, object? obj2) { throw null; }
+        public static object BitOrObj(object? obj1, object? obj2) { throw null; }
+        public static object BitXorObj(object? obj1, object? obj2) { throw null; }
+        public static object DivObj(object? o1, object? o2) { throw null; }
+        public static object GetObjectValuePrimitive(object? o) { throw null; }
+        public static object IDivObj(object? o1, object? o2) { throw null; }
         public static bool LikeObj(object? vLeft, object? vRight, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
-        public static object? ModObj(object? o1, object?o2) { throw null; }
-        public static object? MulObj(object? o1, object? o2) { throw null; }
-        public static object? NegObj(object? obj) { throw null; }
-        public static object? NotObj(object? obj) { throw null; }
+        public static object ModObj(object? o1, object?o2) { throw null; }
+        public static object MulObj(object? o1, object? o2) { throw null; }
+        public static object NegObj(object? obj) { throw null; }
+        public static object NotObj(object? obj) { throw null; }
         public static int ObjTst(object? o1, object? o2, bool TextCompare) { throw null; }
-        public static object? PlusObj(object? obj) { throw null; }
-        public static object? PowObj(object? obj1, object? obj2) { throw null; }
-        public static object? ShiftLeftObj(object? o1, int amount) { throw null; }
-        public static object? ShiftRightObj(object? o1, int amount) { throw null; }
-        public static object? StrCatObj(object? vLeft, object? vRight) { throw null; }
-        public static object? SubObj(object? o1, object? o2) { throw null; }
-        public static object? XorObj(object? obj1, object? obj2) { throw null; }
+        public static object PlusObj(object? obj) { throw null; }
+        public static object PowObj(object? obj1, object? obj2) { throw null; }
+        public static object ShiftLeftObj(object? o1, int amount) { throw null; }
+        public static object ShiftRightObj(object? o1, int amount) { throw null; }
+        public static object StrCatObj(object? vLeft, object? vRight) { throw null; }
+        public static object SubObj(object? o1, object? o2) { throw null; }
+        public static object XorObj(object? obj1, object? obj2) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Operators
@@ -1058,9 +1058,9 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal SingleType() { }
         public static float FromObject(object? Value) { throw null; }
-        public static float FromObject(object? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static float FromObject(object? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static float FromString(string? Value) { throw null; }
-        public static float FromString(string? Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static float FromString(string? Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1083,16 +1083,16 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static string FromChar(char Value) { throw null; }
         public static string FromDate(System.DateTime Value) { throw null; }
         public static string FromDecimal(decimal Value) { throw null; }
-        public static string FromDecimal(decimal Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string FromDecimal(decimal Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string FromDouble(double Value) { throw null; }
-        public static string FromDouble(double Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string FromDouble(double Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static string FromInteger(int Value) { throw null; }
         public static string FromLong(long Value) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
         public static string? FromObject(object? Value) { throw null; }
         public static string FromShort(short Value) { throw null; }
         public static string FromSingle(float Value) { throw null; }
-        public static string FromSingle(float Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static string FromSingle(float Value, System.Globalization.NumberFormatInfo? NumberFormat) { throw null; }
         public static void MidStmtStr(ref string? sDest, int StartPosition, int MaxInsertLength, string sInsert) { }
         public static int StrCmp(string? sLeft, string? sRight, bool TextCompare) { throw null; }
         public static bool StrLike(string? Source, string? Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
@@ -1134,7 +1134,7 @@ namespace Microsoft.VisualBasic.FileIO
         public FileSystem() { }
         public static string CurrentDirectory { get { throw null; } set { } }
         public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
-        public static string CombinePath(string? baseDirectory, string? relativePath) { throw null; }
+        public static string CombinePath(string baseDirectory, string? relativePath) { throw null; }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
@@ -1194,7 +1194,7 @@ namespace Microsoft.VisualBasic.FileIO
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected MalformedLineException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MalformedLineException(string? message) { }
-        public MalformedLineException(string? message, System.Exception innerException) { }
+        public MalformedLineException(string? message, System.Exception? innerException) { }
         public MalformedLineException(string? message, long lineNumber) { }
         public MalformedLineException(string? message, long lineNumber, System.Exception? innerException) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Always)]
@@ -1236,8 +1236,8 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
-        public string[] CommentTokens { get { throw null; } set { } }
-        public string[] Delimiters { get { throw null; } set { } }
+        public string[]? CommentTokens { get { throw null; } set { } }
+        public string[]? Delimiters { get { throw null; } set { } }
         public bool EndOfData { get { throw null; } }
         public string ErrorLine { get { throw null; } }
         public long ErrorLineNumber { get { throw null; } }
@@ -1252,14 +1252,14 @@ namespace Microsoft.VisualBasic.FileIO
         public void Close() { }
         protected virtual void Dispose(bool disposing) { }
         ~TextFieldParser() { }
-        public string PeekChars(int numberOfChars) { throw null; }
+        public string? PeekChars(int numberOfChars) { throw null; }
         public string[]? ReadFields() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public string? ReadLine() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public string? ReadToEnd() { throw null; }
-        public void SetDelimiters(params string[] delimiters) { }
-        public void SetFieldWidths(params int[] fieldWidths) { }
+        public void SetDelimiters(params string[]? delimiters) { }
+        public void SetFieldWidths(params int[]? fieldWidths) { }
         void System.IDisposable.Dispose() { }
     }
     public enum UICancelOption
