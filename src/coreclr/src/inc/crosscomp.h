@@ -118,30 +118,6 @@ typedef struct _T_RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
 } T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
-
-#if defined(HOST_X86)
-//
-// Define unwind history table structure.
-//
-
-#define UNWIND_HISTORY_TABLE_SIZE 12
-
-typedef struct _UNWIND_HISTORY_TABLE_ENTRY {
-    DWORD ImageBase;
-    PT_RUNTIME_FUNCTION FunctionEntry;
-} UNWIND_HISTORY_TABLE_ENTRY, *PUNWIND_HISTORY_TABLE_ENTRY;
-
-typedef struct _UNWIND_HISTORY_TABLE {
-    DWORD Count;
-    BYTE  LocalHint;
-    BYTE  GlobalHint;
-    BYTE  Search;
-    BYTE  Once;
-    DWORD LowAddress;
-    DWORD HighAddress;
-    UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
-} UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
-#endif // HOST_X86
 #else // HOST_WINDOWS
 #define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
 #define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
@@ -194,7 +170,7 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PT_CONTEXT ContextRecord;
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
-    PUNWIND_HISTORY_TABLE HistoryTable;
+    PVOID HistoryTable;
     ULONG ScopeIndex;
     BOOLEAN ControlPcIsUnwound;
     PUCHAR NonVolatileRegisters;
@@ -332,7 +308,7 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PCONTEXT ContextRecord;
     PEXCEPTION_ROUTINE LanguageHandler;
     PVOID HandlerData;
-    PUNWIND_HISTORY_TABLE HistoryTable;
+    PVOID HistoryTable;
     DWORD ScopeIndex;
     BOOLEAN ControlPcIsUnwound;
     PBYTE  NonVolatileRegisters;

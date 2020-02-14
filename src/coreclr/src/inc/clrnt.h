@@ -945,7 +945,7 @@ RtlUnwindEx (
     __in_opt PEXCEPTION_RECORD ExceptionRecord,
     __in PVOID ReturnValue,
     __in PT_CONTEXT ContextRecord,
-    __in_opt PUNWIND_HISTORY_TABLE HistoryTable
+    __in_opt PVOID HistoryTable
     );
 
 EXTERN_C
