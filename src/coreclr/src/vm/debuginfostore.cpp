@@ -247,17 +247,35 @@ void DoBounds(
 
     // Loop through and transfer each Entry in the Mapping.
     DWORD dwLastNativeOffset = 0;
+    //DWORD dwLastMethodDsc = 0;
     for(DWORD i = 0; i < cMap; i++)
     {
         ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
 
-        trans.DoEncodedDeltaU32(pBound->offset.nativeOffset, dwLastNativeOffset);
-        dwLastNativeOffset = pBound->offset.nativeOffset;
-
-
-        trans.DoEncodedAdjustedU32(pBound->offset.ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
-
         trans.DoEncodedSourceType(pBound->source);
+
+        if ((pBound->source & (ICorDebugInfo::SourceTypes::INLINE_OPEN | ICorDebugInfo::SourceTypes::INLINE_CLOSE)) != 0)
+        {
+            // Brian: actually have no idea if method/module token are created in natural ascending order 0,1,...N
+            // but I am using a pointer to a CORINFO_METHOD_HANDLE so sure its not doing that
+            //trans.DoEncodedDeltaU32(pBound->method.method, dwLastMethodDsc);
+            //dwLastMethodDsc = pBound->method.method;
+            DWORD ldw = pBound->method.method & 0xFFFFFFFF;
+            DWORD hdw = (pBound->method.method >> 32) & 0xFFFFFFFF;
+            trans.DoEncodedU32(ldw);
+            trans.DoEncodedU32(hdw);
+            UINT64 hdw64 = 0L;
+            hdw64 = ((UINT64)hdw) << 32;
+            hdw64 += ldw;
+            pBound->method.method = hdw64;
+        }
+        else
+        {
+            trans.DoEncodedDeltaU32(pBound->offset.nativeOffset, dwLastNativeOffset);
+            dwLastNativeOffset = pBound->offset.nativeOffset;
+            trans.DoEncodedAdjustedU32(pBound->offset.ilOffset, (DWORD) ICorDebugInfo::MAX_MAPPING_VALUE);
+        }
+        
 
         trans.DoCookie(0xA);
     }
