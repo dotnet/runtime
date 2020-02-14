@@ -2878,7 +2878,7 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
     // Dictionary size checks skipped by default, unless we decide otherwise
-    pResult->sizeOffset = CORINFO_SKIPSIZECHECK;
+    pResult->sizeOffset = CORINFO_NO_SIZE_CHECK;
     pResult->indirections = CORINFO_USEHELPER;
 
     DWORD numGenericArgs = 0;

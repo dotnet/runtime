@@ -3021,7 +3021,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     pResult->indirectSecondOffset = 0;
 
     // Dictionary size checks skipped by default, unless we decide otherwise
-    pResult->sizeOffset = CORINFO_SKIPSIZECHECK;
+    pResult->sizeOffset = CORINFO_NO_SIZE_CHECK;
 
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;

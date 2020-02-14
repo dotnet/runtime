@@ -1176,7 +1176,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         for (WORD i = 0; i < pLookup->indirections; i++)
             indirectionsSize += (pLookup->offsets[i] >= 0x80 ? 7 : 4);
 
-        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 1) + (pLookup->sizeOffset != CORINFO_SKIPSIZECHECK ? 13 : 0);
+        int codeSize = indirectionsSize + (pLookup->testForNull ? 21 : 1) + (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK ? 13 : 0);
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
@@ -1184,7 +1184,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_SKIPSIZECHECK)
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 _ASSERTE(pLookup->testForNull && i > 0);
 
@@ -1246,7 +1246,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
-            _ASSERTE(pLookup->sizeOffset == CORINFO_SKIPSIZECHECK);
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
 
             // No fixups needed for R2R
             *p++ = 0xC3;    // ret

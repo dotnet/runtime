@@ -2139,7 +2139,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
     {
         int indirectionsCodeSize = 0;
         int indirectionsDataSize = 0;
-        if (pLookup->sizeOffset != CORINFO_SKIPSIZECHECK)
+        if (pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
             indirectionsCodeSize += (pLookup->sizeOffset > 32760 ? 8 : 4);
             indirectionsDataSize += (pLookup->sizeOffset > 32760 ? 4 : 0);
@@ -2170,7 +2170,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 
         BEGIN_DYNAMIC_HELPER_EMIT(codeSize);
 
-        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_SKIPSIZECHECK)
+        if (pLookup->testForNull || pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
         {
             // mov x9, x0
             *(DWORD*)p = 0x91000009;
@@ -2183,7 +2183,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         uint dataOffset = codeSize - indirectionsDataSize - (pLookup->testForNull ? 4 : 0);
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_SKIPSIZECHECK)
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 _ASSERTE(pLookup->testForNull && i > 0);
 
@@ -2244,7 +2244,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // No null test required
         if (!pLookup->testForNull)
         {
-            _ASSERTE(pLookup->sizeOffset == CORINFO_SKIPSIZECHECK);
+            _ASSERTE(pLookup->sizeOffset == CORINFO_NO_SIZE_CHECK);
 
             // ret lr
             *(DWORD*)p = 0xd65f03c0;
@@ -2275,7 +2275,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
         // datalabel:
         for (WORD i = 0; i < pLookup->indirections; i++)
         {
-            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_SKIPSIZECHECK && pLookup->sizeOffset > 32760)
+            if (i == pLookup->indirections - 1 && pLookup->sizeOffset != CORINFO_NO_SIZE_CHECK && pLookup->sizeOffset > 32760)
             {
                 *(UINT32*)p = (UINT32)pLookup->sizeOffset;
                 p += 4;
