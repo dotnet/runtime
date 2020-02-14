@@ -804,7 +804,7 @@ namespace System.Drawing.Tests
         }
 
         // This test causes an AV on Linux
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHicon_InvalidHandle_ThrowsArgumentException()
         {
@@ -1150,7 +1150,7 @@ namespace System.Drawing.Tests
         }
 
         // This test causes an AV on Unix
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40224", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(LockBits_NotUnix_TestData))]
         public void LockBits_Invoke_Success_NotUnix(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
