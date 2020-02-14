@@ -25,7 +25,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        public SafePasswordHandle(SecureString password)
+        public SafePasswordHandle(SecureString? password)
             : base(ownsHandle: true)
         {
             if (password != null)

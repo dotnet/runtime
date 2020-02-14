@@ -60,18 +60,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public X509Certificate(byte[] rawData, string password)
+        public X509Certificate(byte[] rawData, string? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(byte[] rawData, SecureString password)
+        public X509Certificate(byte[] rawData, SecureString? password)
             : this(rawData, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
 
-        public X509Certificate(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             if (rawData == null || rawData.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(rawData));
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(string fileName, SecureString password)
+        public X509Certificate(string fileName, SecureString? password)
             : this(fileName, password, X509KeyStorageFlags.DefaultKeySet)
         {
         }
@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public X509Certificate(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags) : this()
+        public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
         {
             if (fileName == null)
                 throw new ArgumentNullException(nameof(fileName));
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual byte[]? Export(X509ContentType contentType, SecureString password)
+        public virtual byte[]? Export(X509ContentType contentType, SecureString? password)
         {
             VerifyContentType(contentType);
 
@@ -533,13 +533,13 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        public virtual void Import(byte[] rawData, string password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual void Import(byte[] rawData, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(byte[] rawData, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
@@ -549,13 +549,13 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
-        public virtual void Import(string fileName, string password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
 
         [System.CLSCompliantAttribute(false)]
-        public virtual void Import(string fileName, SecureString password, X509KeyStorageFlags keyStorageFlags)
+        public virtual void Import(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags)
         {
             throw new PlatformNotSupportedException(SR.NotSupported_ImmutableX509Certificate);
         }
