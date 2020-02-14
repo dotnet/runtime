@@ -255,6 +255,11 @@ BOOL isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
                       unsigned              metaTOK /* IN  */
                       );
 
+LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                         unsigned              metaTOK, /* IN  */
+                         int*                  length   /* OUT */
+                         );
+
 BOOL shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope);
 
 /**********************************************************************************/
