@@ -989,7 +989,7 @@ namespace System.Xml.Serialization
                 StringBuilder typeName = new StringBuilder();
                 StringBuilder ns = new StringBuilder();
                 string name = t.Name;
-                int arity = name.IndexOf("`", StringComparison.Ordinal);
+                int arity = name.IndexOf('`');
                 if (arity >= 0)
                 {
                     name = name.Substring(0, arity);

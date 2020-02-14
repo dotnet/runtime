@@ -140,6 +140,13 @@ namespace System.Tests
             Assert.Equal(expected, new decimal(value));
         }
 
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public void Ctor_IntSpan(int[] value, decimal expected)
+        {
+            Assert.Equal(expected, new decimal(value.AsSpan()));
+        }
+
         [Fact]
         public void Ctor_NullBits_ThrowsArgumentNullException()
         {
@@ -155,6 +162,7 @@ namespace System.Tests
         public void Ctor_InvalidBits_ThrowsArgumentException(int[] bits)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits));
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits.AsSpan()));
         }
 
         [Theory]
@@ -617,6 +625,54 @@ namespace System.Tests
             decimal newValue = new decimal(bits[0], bits[1], bits[2], sign, scale);
 
             Assert.Equal(input, newValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void GetBitsSpan(decimal input, int[] expected)
+        {
+            Span<int> bits = new int[4];
+            int bitsWritten = decimal.GetBits(input, bits);
+
+            Assert.Equal(4, bitsWritten);
+            Assert.Equal(expected, bits.ToArray());
+
+            bool sign = (bits[3] & 0x80000000) != 0;
+            byte scale = (byte)((bits[3] >> 16) & 0x7F);
+            decimal newValue = new decimal(bits[0], bits[1], bits[2], sign, scale);
+
+            Assert.Equal(input, newValue);
+        }
+
+        [Fact]
+        public static void GetBitsSpan_TooShort_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("destination", () => decimal.GetBits(123, new int[3]));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBits_TestData))]
+        public static void TryGetBits(decimal input, int[] expected)
+        {
+            Span<int> bits;
+            int valuesWritten;
+
+            bits = new int[3] { 42, 43, 44 };
+            Assert.False(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(0, valuesWritten);
+            Assert.Equal(new int[3] { 42, 43, 44 }, bits.ToArray());
+
+            bits = new int[4];
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.ToArray());
+
+            bits = new int[5];
+            bits[4] = 42;
+            Assert.True(decimal.TryGetBits(input, bits, out valuesWritten));
+            Assert.Equal(4, valuesWritten);
+            Assert.Equal(expected, bits.Slice(0, 4).ToArray());
+            Assert.Equal(42, bits[4]);
         }
 
         [Fact]

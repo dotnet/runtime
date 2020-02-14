@@ -10,7 +10,16 @@
     <PlatformTargets Condition="'$(ArchGroup)' != ''">$(ArchGroup)</PlatformTargets>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <OutputPath>$(BinDir)/crossgen2</OutputPath>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
+
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />

@@ -9,34 +9,6 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static void GetRuntimeClassInfo(object? value, ref JsonClassInfo jsonClassInfo, JsonSerializerOptions options)
-        {
-            if (value != null)
-            {
-                Type runtimeType = value.GetType();
-
-                // Nothing to do for typeof(object)
-                if (runtimeType != typeof(object))
-                {
-                    jsonClassInfo = options.GetOrAddClass(runtimeType);
-                }
-            }
-        }
-
-        private static void GetRuntimePropertyInfo(object? value, JsonClassInfo jsonClassInfo, ref JsonPropertyInfo jsonPropertyInfo, JsonSerializerOptions options)
-        {
-            if (value != null)
-            {
-                Type runtimeType = value.GetType();
-
-                // Nothing to do for typeof(object)
-                if (runtimeType != typeof(object))
-                {
-                    jsonPropertyInfo = jsonClassInfo.GetOrAddPolymorphicProperty(jsonPropertyInfo, runtimeType, options);
-                }
-            }
-        }
-
         private static void VerifyValueAndType(object? value, Type type)
         {
             if (type == null)
@@ -129,42 +101,11 @@ namespace System.Text.Json
                 }
 
                 WriteStack state = default;
-                if (options.ReferenceHandling.ShouldWritePreservedReferences())
-                {
-                    state.ReferenceResolver = new DefaultReferenceResolver(writing: true);
-                }
-                Debug.Assert(type != null);
-                state.Current.Initialize(type, options);
-                state.Current.CurrentValue = value;
-
-                Write(writer, writer.CurrentDepth, flushThreshold: -1, options, ref state);
+                state.InitializeRoot(type!, options, supportContinuation: false);
+                WriteCore(writer, value, options, ref state, state.Current.JsonClassInfo!.PolicyProperty!.ConverterBase);
             }
 
             writer.Flush();
-        }
-
-        private static bool WriteReference(ref WriteStack state, Utf8JsonWriter writer, JsonSerializerOptions options, ClassType classType, object currentValue)
-        {
-            // Avoid emitting metadata for value types.
-            Type currentType = state.Current.JsonPropertyInfo?.DeclaredPropertyType ?? state.Current.JsonClassInfo!.Type;
-            if (currentType.IsValueType)
-            {
-                // Value type, fallback on regular Write method.
-                state.Current.WriteObjectOrArrayStart(classType, writer, options);
-                return false;
-            }
-
-            if (state.ReferenceResolver.TryGetOrAddReferenceOnSerialize(currentValue, out string referenceId))
-            {
-                // Object written before, write { "$ref": "#" } and jump to the next property/element.
-                state.Current.WriteReferenceObject(writer, options, referenceId);
-                return true;
-            }
-
-            // New object reference, write start and append $id.
-            // OR New array reference, write as object and append $id and $values; at the end writes EndObject token using WriteWrappingBraceOnEndCollection.
-            state.Current.WritePreservedObjectOrArrayStart(classType, writer, options, referenceId);
-            return false;
         }
     }
 }

@@ -129,9 +129,11 @@ namespace System.Net.Security.Tests
             listener.Stop();
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         [OuterLoop] // Test hits external azure server.
-        public async Task SslStream_NetworkStream_Renegotiation_Succeeds()
+        public async Task SslStream_NetworkStream_Renegotiation_Succeeds(bool useSync)
         {
             int validationCount = 0;
 
@@ -156,10 +158,17 @@ namespace System.Net.Security.Tests
 
                 // Issue request that triggers regotiation from server.
                 byte[] message = Encoding.UTF8.GetBytes("GET /EchoClientCertificate.ashx HTTP/1.1\r\nHost: corefx-net-tls.azurewebsites.net\r\n\r\n");
-                await ssl.WriteAsync(message, 0, message.Length);
+                if (useSync)
+                {
+                    ssl.Write(message, 0, message.Length);
+                }
+                else
+                {
+                    await ssl.WriteAsync(message, 0, message.Length);
+                }
 
                 // Initiate Read operation, that results in starting renegotiation as per server response to the above request.
-                int bytesRead = await ssl.ReadAsync(message, 0, message.Length);
+                int bytesRead = useSync ? ssl.Read(message, 0, message.Length) : await ssl.ReadAsync(message, 0, message.Length);
 
                 // renegotiation will trigger validation callback again.
                 Assert.InRange(validationCount, 2, int.MaxValue);

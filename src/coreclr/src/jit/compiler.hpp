@@ -4106,26 +4106,59 @@ inline void Compiler::CLR_API_Leave(API_ICorJitInfo_Names ename)
 #endif // MEASURE_CLRAPI_CALLS
 
 //------------------------------------------------------------------------------
-// fgStructTempNeedsExplicitZeroInit : Check whether temp struct needs
-//                                     explicit zero initialization in this basic block.
+// fgVarNeedsExplicitZeroInit : Check whether the variable needs an explicit zero initialization.
 //
 // Arguments:
-//    varDsc -           struct local var description
-//    block  -           basic block to check
+//    varDsc     -       local var description
+//    bbInALoop  -       true if the basic block may be in a loop
+//    bbIsReturn -       true if the basic block always returns
 //
 // Returns:
-//             true if the struct temp needs explicit zero-initialization in this basic block;
+//             true if the var needs explicit zero-initialization in this basic block;
 //             false otherwise
 //
 // Notes:
-//     If compInitMem is true, structs with GC pointer fields and long-lifetime structs
-//     are fully zero-initialized in the prologue. Therefore, we don't need to insert
-//     zero-initialization in this block if it is not in a loop.
+//     If the variable is not being initialized in a loop, we can avoid explicit zero initialization if
+//      - the variable is a gc pointer, or
+//      - the variable is a struct with gc pointer fields and either all fields are gc pointer fields
+//           or the struct is big enough to guarantee block initialization, or
+//      - compInitMem is set and the variable has a long lifetime or has gc fields.
+//     In these cases we will insert zero-initialization in the prolog if necessary.
 
-bool Compiler::fgStructTempNeedsExplicitZeroInit(LclVarDsc* varDsc, BasicBlock* block)
+bool Compiler::fgVarNeedsExplicitZeroInit(LclVarDsc* varDsc, bool bbInALoop, bool bbIsReturn)
 {
-    return !info.compInitMem || ((block->bbFlags & BBF_BACKWARD_JUMP) != 0) ||
-           (!varDsc->HasGCPtr() && varDsc->lvIsTemp);
+    if (bbInALoop && !bbIsReturn)
+    {
+        return true;
+    }
+
+    if (varTypeIsGC(varDsc->lvType))
+    {
+        return false;
+    }
+
+    if ((varDsc->lvType == TYP_STRUCT) && varDsc->HasGCPtr())
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout->GetSlotCount() == layout->GetGCPtrCount())
+        {
+            return false;
+        }
+
+// Below conditions guarantee block initialization, which will initialize
+// all struct fields. If the logic for block initialization in CodeGen::genCheckUseBlockInit()
+// changes, these conditions need to be updated.
+#ifdef TARGET_64BIT
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 8)
+#else
+        if (roundUp(varDsc->lvSize(), TARGET_POINTER_SIZE) / sizeof(int) > 4)
+#endif
+        {
+            return false;
+        }
+    }
+
+    return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
 }
 
 /*****************************************************************************/

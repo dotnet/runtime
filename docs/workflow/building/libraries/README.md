@@ -24,7 +24,7 @@ cd tests
 
 :: Then inner loop build / test
 :: (If using Visual Studio, you might run tests inside it instead)
-pushd ..\src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
+pushd ..\src & dotnet build & popd & dotnet build /t:buildandtest
 ```
 
 The instructions for Linux and macOS are essentially the same:
@@ -46,7 +46,7 @@ cd src/libraries/System.Text.RegularExpressions
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet msbuild & popd & dotnet msbuild /t:buildandtest
+pushd ../src & dotnet build & popd & dotnet build /t:buildandtest
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
@@ -77,7 +77,7 @@ The libraries build has two logical components, the native build which produces 
 
 The build configurations are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
-- `-framework|-f` identifies the target framework for the build. It defaults to latest `netcoreapp` but possible values include `netcoreapp` (Which will map to latest netcoreapp) or `net472`. (msbuild property `TargetGroup`)
+- `-framework|-f` identifies the target framework for the build. Possible values include `netcoreapp5.0` (currently the latest .NET Core version) or `net472`. (msbuild property `TargetFramework`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `ConfigurationGroup`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
@@ -101,8 +101,8 @@ By default build only builds the product libraries and none of the tests. If you
 
 - Building for different target frameworks (restore and build are implicit again as no action is passed in)
 ```bash
-./build.sh -subsetCategory libraries -framework netcoreapp
-./build.sh -subsetCategory libraries -framework netfx
+./build.sh -subsetCategory libraries -framework netcoreapp5.0
+./build.sh -subsetCategory libraries -framework net472
 ```
 
 - Build only managed components and skip the native build
@@ -154,40 +154,34 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 - All the options listed above like framework and configuration are also supported (note they must be after the directory)
 ```bash
- ./build.sh -subsetCategory libraries System.Collections -f netfx -c Release
+ ./build.sh -subsetCategory libraries System.Collections -f net472 -c Release
 ```
 
-As an alternative, once you are iterating on specific libraries, you can either use `dotnet msbuild` (not `dotnet build` -- that will run a restore as well) or `msbuild`, depending on which is in your path. As `dotnet msbuild` works on both Unix and Windows we will use it throughout this guide.
+As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.
 
 Under the src directory is a set of directories, each of which represents a particular assembly in CoreFX. See Library Project Guidelines section under [project-guidelines](../../../coding-guidelines/project-guidelines.md) for more details about the structure.
 
 For example the src\libraries\System.Diagnostics.DiagnosticSource directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
-You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet msbuild`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[BuildConfiguration]`.
+You can build the DLL for System.Diagnostics.DiagnosticSource.dll by going to the `src\libraries\System.Diagnostics.DiagnosticsSource\src` directory and typing `dotnet build`. The DLL ends up in `artifacts\bin\AnyOS.AnyCPU.Debug\System.Diagnostics.DiagnosticSource` as well as `artifacts\bin\runtime\[BuildConfiguration]`.
 
 You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
-`src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet msbuild`.
+`src\libraries\System.Diagnostics.DiagnosticSource\tests` and typing `dotnet build`.
 
-Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `dotnet msbuild` in that directory.
+Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `dotnet build` in that directory.
 
 For libraries that have multiple build configurations the configurations will be listed in the `<BuildConfigurations>` property group, commonly found in a configurations.props file next to the csproj. When building the csproj for a configuration the most compatible one in the list will be chosen and set for the build. For more information about `BuildConfigurations` see [project-guidelines](../../../coding-guidelines/project-guidelines.md).
 
 **Examples**
 
-- Build project for Linux for netcoreapp
+- Build project for Linux for .NET Core
 ```
-dotnet msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
+dotnet build System.Net.NetworkInformation.csproj /p:OSGroup=Linux
 ```
 
 - Build release version of library
 ```
-dotnet msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
-```
-
-To build for all supported configurations you can use the `BuildAll` and `RebuildAll` targets:
-
-```
-dotnet msbuild System.Net.NetworkInformation.csproj /t:RebuildAll
+dotnet build -c Release System.Net.NetworkInformation.csproj
 ```
 
 ### Building all for other OSes
@@ -200,11 +194,11 @@ Note that you cannot generally build native components for another OS but you ca
 ### Building in Release or Debug
 
 By default, building from the root or within a project will build the libraries in Debug mode.
-One can build in Debug or Release mode from the root by doing `./build.sh -subsetCategory libraries  -c Release` or `./build.sh -subsetCategory libraries -c Debug` or when building a project by specifying `/p:ConfigurationGroup=[Debug|Release]` after the `dotnet msbuild` command.
+One can build in Debug or Release mode from the root by doing `./build.sh -subsetCategory libraries  -c Release` or `./build.sh -subsetCategory libraries -c Debug` or when building a project by specifying `-c Debug/Release` after the `dotnet build` command.
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet msbuild` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `./build.sh -subsetCategory libraries -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet build` command.
 
 ## Working in Visual Studio
 

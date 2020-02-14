@@ -883,6 +883,7 @@ namespace System
         public Decimal(int value) { throw null; }
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) { throw null; }
         public Decimal(int[] bits) { throw null; }
+        public Decimal(System.ReadOnlySpan<int> bits) { throw null; }
         public Decimal(long value) { throw null; }
         public Decimal(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -901,6 +902,7 @@ namespace System
         public static System.Decimal Floor(System.Decimal d) { throw null; }
         public static System.Decimal FromOACurrency(long cy) { throw null; }
         public static int[] GetBits(System.Decimal d) { throw null; }
+        public static int GetBits(System.Decimal d, System.Span<int> destination) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Decimal Multiply(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -998,6 +1000,7 @@ namespace System
         public static ulong ToUInt64(System.Decimal d) { throw null; }
         public static System.Decimal Truncate(System.Decimal d) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryGetBits(System.Decimal d, System.Span<int> destination, out int valuesWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Decimal result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Decimal result) { throw null; }
         public static bool TryParse(string? s, out System.Decimal result) { throw null; }

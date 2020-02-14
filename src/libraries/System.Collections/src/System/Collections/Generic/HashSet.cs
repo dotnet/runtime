@@ -266,7 +266,7 @@ namespace System.Collections.Generic
                 {
                     int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                    if (default(T) != null)
+                    if (typeof(T).IsValueType)
                     {
                         // see note at "HashSet" level describing why "- 1" appears in for loop
                         for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)
@@ -368,7 +368,7 @@ namespace System.Collections.Generic
                     hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
                     bucket = hashCode % _buckets!.Length;
 
-                    if (default(T) != null)
+                    if (typeof(T).IsValueType)
                     {
                         for (i = _buckets[bucket] - 1; i >= 0; last = i, i = slots[i].next)
                         {
@@ -1341,7 +1341,7 @@ namespace System.Collections.Generic
                 hashCode = value == null ? 0 : InternalGetHashCode(value.GetHashCode());
                 bucket = hashCode % _buckets!.Length;
 
-                if (default(T) != null)
+                if (typeof(T).IsValueType)
                 {
                     for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
                     {
@@ -1577,7 +1577,7 @@ namespace System.Collections.Generic
             {
                 int hashCode = item == null ? 0 : InternalGetHashCode(item.GetHashCode());
 
-                if (default(T) != null)
+                if (typeof(T).IsValueType)
                 {
                     // see note at "HashSet" level describing why "- 1" appears in for loop
                     for (int i = buckets[hashCode % buckets.Length] - 1; i >= 0; i = slots[i].next)

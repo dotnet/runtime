@@ -885,7 +885,7 @@ namespace System.Net
                     while (e.MoveNext())
                     {
                         string path = (string)e.Key;
-                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path)))
+                        if (uri.AbsolutePath.StartsWith(CookieParser.CheckQuoted(path), StringComparison.Ordinal))
                         {
                             CookieCollection cc = (CookieCollection)e.Value;
                             cc.TimeStamp(CookieCollection.Stamp.Set);

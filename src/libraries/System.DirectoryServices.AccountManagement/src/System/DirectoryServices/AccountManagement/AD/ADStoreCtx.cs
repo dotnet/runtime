@@ -172,7 +172,7 @@ namespace System.DirectoryServices.AccountManagement
                 // It's probably a property that requires custom handling, such as IdentityClaim.
                 if (fromLdap != null)
                 {
-                    string ldapAttributeLower = ldapAttribute.ToLower(CultureInfo.InvariantCulture);
+                    string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
                     if (mappingTableByLDAP[ldapAttributeLower] == null)
                         mappingTableByLDAP[ldapAttributeLower] = new ArrayList();

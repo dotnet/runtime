@@ -5,7 +5,7 @@
     <NoWarn>$(NoWarn);0649</NoWarn>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.DirectoryServices_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
     <TargetFrameworks>netstandard2.0;netcoreapp2.0-Windows_NT;$(NetCoreAppCurrent)-Windows_NT;_$(NetFrameworkCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\DirectoryServices\ExternDll.cs" />

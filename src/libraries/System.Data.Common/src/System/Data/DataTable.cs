@@ -3711,9 +3711,9 @@ namespace System.Data
                     }
 
                     // handle brackets.
-                    if (current.StartsWith("[", StringComparison.Ordinal))
+                    if (current.StartsWith('['))
                     {
-                        if (current.EndsWith("]", StringComparison.Ordinal))
+                        if (current.EndsWith(']'))
                         {
                             current = current.Substring(1, current.Length - 2);
                         }

@@ -95,4 +95,8 @@ namespace System.Net.Quic
         public QuicStreamAbortedException(string message, long errorCode) : base(message) { }
         public long ErrorCode { get; }
     }
+    public class QuicOperationAbortedException : QuicException
+    {
+        public QuicOperationAbortedException(string message) : base(message) { }
+    }
 }

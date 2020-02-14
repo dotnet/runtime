@@ -17,22 +17,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ModuleToken _methodToken;
 
-        private readonly SignatureContext _signatureContext;
-
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
-            ModuleToken methodToken,
-            SignatureContext signatureContext)
+            ModuleToken methodToken)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
             _methodToken = methodToken;
-            _signatureContext = signatureContext;
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
-            signatureContext.Resolver.CompilerContext.EnsureLoadableType(delegateType);
-            signatureContext.Resolver.CompilerContext.EnsureLoadableMethod(targetMethod.Method);
+            CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)delegateType.Context;
+            compilerContext.EnsureLoadableType(delegateType);
+            compilerContext.EnsureLoadableMethod(targetMethod.Method);
         }
 
         public override int ClassCode => 99885741;
@@ -44,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, _signatureContext);
+                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
                     new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
@@ -93,11 +90,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = _methodToken.CompareTo(otherNode._methodToken);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return _methodToken.CompareTo(otherNode._methodToken);
         }
     }
 }
