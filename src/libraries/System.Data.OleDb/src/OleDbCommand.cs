@@ -419,7 +419,7 @@ namespace System.Data.OleDb
                 ordinals[i] = (IntPtr)(i + 1);
             }
 
-            IntPtr bindingPtr;
+            OleDbHResult hr;
 
             if (ODB.IsRunningOnX86)
             {
@@ -433,18 +433,16 @@ namespace System.Data.OleDb
                 }
                 fixed (tagDBPARAMBINDINFO_x86* p = &bindInfo_x86[0])
                 {
-                    bindingPtr = (IntPtr)p;
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
                 }
             }
             else
             {
                 fixed (tagDBPARAMBINDINFO* p = &bindInfo[0])
                 {
-                    bindingPtr = (IntPtr)p;
+                    hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)p);
                 }
             }
-
-            OleDbHResult hr = commandWithParameters.SetParameterInfo((IntPtr)bindInfo.Length, ordinals, (IntPtr)bindingPtr);
 
             if (hr < 0)
             {
