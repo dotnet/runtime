@@ -42,8 +42,8 @@ The order in which each layer's deps.json is processed is:
 1. Read each framework's deps.json (higher to lower) and repeat steps 3-7
 1. Pass the set of assemblies and their paths to the CLR
 
-Note that for an app both its `.deps.json` as well as probing path comes before the framework's `.deps.json`, so the app will usually win. Also because the app will likely reference an OOB package that the framework doesn't (because a framework, at least Microsoft.NETCore.App, has its own metapackage and does not reference OOB packages), the framework probing path never matches up in step 4 for the app's `.deps.json` package\assembly entry, so the "app wins".
+Note that for an app both its `.deps.json` as well as probing path comes before the framework's `.deps.json`, so the app will usually win. Also because the app will likely reference an OOB package that the framework doesn't (because a framework, at least Microsoft.NETCore.App, has its own metapackage and does not reference OOB packages), the framework probing path never matches up in step 6 for the app's `.deps.json` package\assembly entry, so the "app wins".
 
-The reason for only probing paths from equal or lower level framework in step 3 is that a given framework should never have a dependency on a higher-level framework, and is expected to find deps assets in its layer or lower. This is also required so that the given framework can find its asset, and replace the higher-level asset (see next paragraph).
+The reason for only probing paths from equal or lower level framework in step 5 is that a given framework should never have a dependency on a higher-level framework, and is expected to find deps assets in its layer or lower. This is also required so that the given framework can find its asset, and replace the higher-level asset (see next paragraph).
 
 In order to compare Assembly Version and File Version, additional metadata will need to be written to each deps.json file. If this metadata is not present (as in the case of applications published prior to 2.1) then the assembly will be considered older and will not replace any locations that the assembly was previously found at.
