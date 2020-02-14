@@ -7,8 +7,8 @@ typedef struct _LifoSemaphore LifoSemaphore;
 typedef struct _LifoSemaphoreWaitEntry LifoSemaphoreWaitEntry;
 
 struct _LifoSemaphoreWaitEntry {
-	MonoCoopCond condition;
 	int signaled;
+	MonoCoopCond condition;
 	LifoSemaphoreWaitEntry *previous;
 	LifoSemaphoreWaitEntry *next;
 };
