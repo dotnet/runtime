@@ -33,6 +33,7 @@ namespace
             Flags_None = 0,
             Flags_Collected = 1,
             Flags_ReferenceTracker = 2,
+            Flags_InCache = 4,
         };
         DWORD Flags;
 
@@ -639,9 +640,12 @@ namespace
                 COMPlusThrow(kArgumentNullException);
 
             // Construct the new context with the object details.
-            DWORD flags = resultHolder.Result.FromTrackerRuntime
+            DWORD flags = (resultHolder.Result.FromTrackerRuntime
                             ? ExternalObjectContext::Flags_ReferenceTracker
-                            : ExternalObjectContext::Flags_None;
+                            : ExternalObjectContext::Flags_None) |
+                          (ignoreCache
+                            ? ExternalObjectContext::Flags_None
+                            : ExternalObjectContext::Flags_InCache);
             ExternalObjectContext::Construct(
                 resultHolder.GetContext(),
                 identity,
@@ -1139,8 +1143,12 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     _ASSERTE(context->IsActive());
     context->MarkCollected();
 
-    ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
-    cache->Remove(context);
+    // Verify the caller didn't ignore the cache during creation.
+    if (context->IsSet(ExternalObjectContext::Flags_InCache))
+    {
+        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+        cache->Remove(context);
+    }
 }
 
 #endif // FEATURE_COMINTEROP
