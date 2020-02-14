@@ -245,22 +245,21 @@ void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
     _ASSERTE(pModule != NULL);
 
     HASHFIND hf;
-    DebuggerModuleEntry *pDME; pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
 
-    for (pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
+    for (DebuggerModuleEntry *pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
          pDME != NULL;
          pDME = (DebuggerModuleEntry*) FindNextEntry(&hf))
     {
         DebuggerModule *pDM = pDME->module;
-        Module* pRtModInDebugMod = pDM->GetRuntimeModule();
+        Module* pRuntimeModule = pDM->GetRuntimeModule();
 
-        if (pRtModInDebugMod == pModule && pDM->GetAppDomain() == pAppDomain)
+        if ((pRuntimeModule == pModule) && (pDM->GetAppDomain() == pAppDomain))
         {
             LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x AD:0x%x\n",
                 pDM, pModule, pDM->GetDomainFile(), pAppDomain));
-            TRACE_FREE(pDME->module);
+            TRACE_FREE(pDM);
             DeleteInteropSafe(pDM);
-            Delete(HASH(pRtModInDebugMod), (HASHENTRY *) pDME);
+            Delete(HASH(pRuntimeModule), (HASHENTRY *) pDME);
             _ASSERTE(GetModule(pModule, pAppDomain) == NULL);
             return;
         }
