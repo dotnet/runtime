@@ -222,11 +222,15 @@ namespace System.Net.Test.Common
         }
 
         [Fact]
-        public void PortRange_GetDefaultOsDynamicPortRange()
+        public void ConfiguredPortRange_DoesNotOverlapWith_OsDynamicPortRange()
         {
-            var r = PortRange.GetDefaultOsDynamicPortRange();
-            _output.WriteLine("OS Dynamic Port Range: " + r);
-            throw new Exception("OS Dynamic Port Range: " + r);
+            PortRange poolRange = TestPortPool.ConfiguredPortRange;
+            var osRange = PortRange.GetDefaultOsDynamicPortRange();
+            string info = $"TestPortPool port range: {poolRange} | OS Dynamic Port Range: {osRange}";
+            _output.WriteLine(info);
+
+            Assert.False(PortRange.AreOverlappingRanges(poolRange, osRange),
+                $"Overlapping port ranges may prevent correct test execution! {info}" );
         }
 
         [Fact]
