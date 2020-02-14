@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// </summary>
     internal class ComObject : IDynamicMetaObjectProvider {
         internal ComObject(object rcw) {
-            Debug.Assert(Utils.TypeUtils.IsComObject(rcw));
+            Debug.Assert(ComBinder.IsComObject(rcw));
             RuntimeCallableWrapper = rcw;
         }
 
@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <returns></returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         public static ComObject ObjectToComObject(object rcw) {
-            Debug.Assert(Utils.TypeUtils.IsComObject(rcw));
+            Debug.Assert(ComBinder.IsComObject(rcw));
 
             // Marshal.Get/SetComObjectData has a LinkDemand for UnmanagedCode which will turn into
             // a full demand. We could avoid this by making this method SecurityCritical

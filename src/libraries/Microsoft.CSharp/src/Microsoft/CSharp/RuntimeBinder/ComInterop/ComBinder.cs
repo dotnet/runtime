@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 
@@ -26,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <param name="value">The object to test.</param>
         /// <returns>true if the object is a COM object, false otherwise.</returns>
         public static bool IsComObject(object value) {
-            return Utils.TypeUtils.IsComObject(value);
+            return value != null && Marshal.IsComObject(value);
         }
 
         public static bool CanComBind(object value) {
