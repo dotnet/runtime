@@ -12,7 +12,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public class ComTypeClassDesc : ComTypeDesc, IDynamicMetaObjectProvider {
+    internal class ComTypeClassDesc : ComTypeDesc, IDynamicMetaObjectProvider {
         private LinkedList<string> _itfs; // implemented interfaces
         private LinkedList<string> _sourceItfs; // source interfaces supported by this coclass
         private Type _typeObj;

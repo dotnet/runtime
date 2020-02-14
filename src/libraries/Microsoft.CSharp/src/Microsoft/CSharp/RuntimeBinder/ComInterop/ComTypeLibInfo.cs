@@ -11,7 +11,7 @@ using System.Dynamic;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public sealed class ComTypeLibInfo : IDynamicMetaObjectProvider  {
+    internal sealed class ComTypeLibInfo : IDynamicMetaObjectProvider  {
         private readonly ComTypeLibDesc _typeLibDesc;
 
         internal ComTypeLibInfo(ComTypeLibDesc typeLibDesc) {

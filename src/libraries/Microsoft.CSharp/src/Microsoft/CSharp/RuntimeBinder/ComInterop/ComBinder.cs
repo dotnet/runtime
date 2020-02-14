@@ -19,7 +19,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// Provides helper methods to bind COM objects dynamically.
     /// </summary>
-    public static class ComBinder {
+    internal static class ComBinder {
 
         /// <summary>
         /// Determines if an object is a COM object.
@@ -28,10 +28,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <returns>true if the object is a COM object, false otherwise.</returns>
         public static bool IsComObject(object value) {
             return value != null && Marshal.IsComObject(value);
-        }
-
-        public static bool CanComBind(object value) {
-            return IsComObject(value) || value is IPseudoComObject;
         }
 
         /// <summary>
@@ -69,7 +65,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <param name="instance">The target of the dynamic operation. </param>
         /// <param name="result">The new <see cref="DynamicMetaObject"/> representing the result of the binding.</param>
         /// <returns>true if operation was bound successfully; otherwise, false.</returns>
-        public static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
+        internal static bool TryBindGetMember(GetMemberBinder binder, DynamicMetaObject instance, out DynamicMetaObject result) {
             return TryBindGetMember(binder, instance, out result, false);
         }
 

@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// The parameter description of a method defined in a type library
     /// </summary>
-    public class ComParamDesc {
+    internal class ComParamDesc {
         #region private fields
 
         private readonly bool _isOut; // is an output parameter?

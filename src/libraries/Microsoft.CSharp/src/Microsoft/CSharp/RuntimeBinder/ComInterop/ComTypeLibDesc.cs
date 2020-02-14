@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// Cached information from a TLB. Only information that is required is saved. CoClasses are used
     /// for event hookup. Enums are stored for accessing symbolic names from scripts.
     /// </summary>
-    public sealed class ComTypeLibDesc : IDynamicMetaObjectProvider {
+    internal sealed class ComTypeLibDesc : IDynamicMetaObjectProvider {
 
         // typically typelibs contain very small number of coclasses
         // so we will just use the linked list as it performs better

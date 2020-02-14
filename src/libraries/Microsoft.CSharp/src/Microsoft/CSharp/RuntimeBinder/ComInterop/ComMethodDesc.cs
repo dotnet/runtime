@@ -9,7 +9,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public class ComMethodDesc {
+    internal class ComMethodDesc {
 
         private readonly int _memid;  // this is the member id extracted from FUNCDESC.memid
         private readonly string _name;

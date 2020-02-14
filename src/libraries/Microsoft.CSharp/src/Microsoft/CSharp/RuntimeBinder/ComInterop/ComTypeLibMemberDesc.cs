@@ -6,7 +6,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public class ComTypeLibMemberDesc {
+    internal class ComTypeLibMemberDesc {
         internal ComTypeLibMemberDesc(ComType kind) {
             Kind = kind;
         }

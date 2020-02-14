@@ -14,7 +14,7 @@ using ComTypes = System.Runtime.InteropServices.ComTypes;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public sealed class ComTypeEnumDesc : ComTypeDesc, IDynamicMetaObjectProvider {
+    internal sealed class ComTypeEnumDesc : ComTypeDesc, IDynamicMetaObjectProvider {
         private readonly string[] _memberNames;
         private readonly object[] _memberValues;
 

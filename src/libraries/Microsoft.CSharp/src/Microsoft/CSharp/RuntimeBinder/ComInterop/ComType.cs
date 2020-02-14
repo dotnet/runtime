@@ -6,7 +6,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public enum ComType {
+    internal enum ComType {
         Class,
         Enum,
         Interface

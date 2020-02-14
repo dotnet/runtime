@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
-    public class ComTypeDesc : ComTypeLibMemberDesc {
+    internal class ComTypeDesc : ComTypeLibMemberDesc {
         private string _typeName;
         private string _documentation;
         //Hashtable is threadsafe for multiple readers single writer.
