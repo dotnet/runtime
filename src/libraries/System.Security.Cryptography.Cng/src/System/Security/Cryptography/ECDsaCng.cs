@@ -62,7 +62,7 @@ namespace System.Security.Cryptography
             _core.DisposeKey();
         }
 
-        private static bool IsEccAlgorithmGroup(CngAlgorithmGroup algorithmGroup)
+        private static bool IsEccAlgorithmGroup(CngAlgorithmGroup? algorithmGroup)
         {
             // Sometimes, when reading from certificates, ECDSA keys get identified as ECDH.
             // Windows allows the ECDH keys to perform both key exchange (ECDH) and signing (ECDSA),
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography
             return algorithmGroup == CngAlgorithmGroup.ECDsa || algorithmGroup == CngAlgorithmGroup.ECDiffieHellman;
         }
 
-        internal string GetCurveName(out string oidValue)
+        internal string? GetCurveName(out string? oidValue)
         {
             return Key.GetCurveName(out oidValue);
         }

@@ -4,7 +4,7 @@
         System.Json is a library for compat purposes so we want to keep the same identity as it originally shipped with in Silverlight
     -->
     <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
-    <TargetFrameworks>netstandard1.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard1.0</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Json\JsonArray.cs" />

@@ -269,7 +269,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 TextInfo.ToLowerAsciiInvariant(source, destination);
             else
-                CultureInfo.InvariantCulture.TextInfo.ChangeCaseToLower(source, destination);
+                TextInfo.Invariant.ChangeCaseToLower(source, destination);
             return source.Length;
         }
 
@@ -321,7 +321,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 TextInfo.ToUpperAsciiInvariant(source, destination);
             else
-                CultureInfo.InvariantCulture.TextInfo.ChangeCaseToUpper(source, destination);
+                TextInfo.Invariant.ChangeCaseToUpper(source, destination);
             return source.Length;
         }
 

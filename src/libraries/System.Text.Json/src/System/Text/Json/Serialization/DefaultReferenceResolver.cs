@@ -58,16 +58,14 @@ namespace System.Text.Json.Serialization
         /// <returns></returns>
         public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
         {
-            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
+            bool result = _objectToReferenceIdMap!.TryGetValue(value, out referenceId!);
+            if (!result)
             {
                 _referenceCount++;
                 referenceId = _referenceCount.ToString();
                 _objectToReferenceIdMap.Add(value, referenceId);
-
-                return false;
             }
-
-            return true;
+            return result;
         }
 
         /// <summary>

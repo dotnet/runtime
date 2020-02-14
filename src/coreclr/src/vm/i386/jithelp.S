@@ -27,8 +27,8 @@
 //
 // *******************************************************************************
 
-//  The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-//  anything here, you might need to change AdjustContextForWriteBarrier as well
+//  The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+//  anything here, you might need to change AdjustContextForJITHelpers as well
 .macro WriteBarrierHelper rg
 .align 4
 
@@ -80,7 +80,7 @@ PATCH_LABEL JIT_DebugWriteBarrier\rg
 
 #ifdef WRITE_BARRIER_CHECK
     // Test dest here so if it is bad AV would happen before we change register/stack
-    // status. This makes job of AdjustContextForWriteBarrier easier.
+    // status. This makes job of AdjustContextForJITHelpers easier.
     cmp     BYTE PTR [edx], 0
     // ALSO update the shadow GC heap if that is enabled
     // Make ebp into the temporary src register. We need to do this so that we can use ecx
@@ -226,8 +226,8 @@ NESTED_END JIT_CheckedWriteBarrier\rg, _TEXT
 //
 // *******************************************************************************
 //
-//  The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
-//  anything here, you might need to change AdjustContextForWriteBarrier as well
+//  The code here is tightly coupled with AdjustContextForJITHelpers, if you change
+//  anything here, you might need to change AdjustContextForJITHelpers as well
 //
 .macro ByRefWriteBarrierHelper
 .align 4
@@ -253,7 +253,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
 
 #ifdef WRITE_BARRIER_CHECK
     // Test dest here so if it is bad AV would happen before we change register/stack
-    // status. This makes job of AdjustContextForWriteBarrier easier.
+    // status. This makes job of AdjustContextForJITHelpers easier.
     cmp     BYTE PTR [edi], 0
 
     // ALSO update the shadow GC heap if that is enabled

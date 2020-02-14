@@ -1108,6 +1108,12 @@ PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw
 
 # see https://github.com/mono/mono/issues/9739
 PLATFORM_DISABLED_TESTS += verbose.exe
+
+if ENABLE_CXX
+# see https://github.com/mono/mono/issues/18827
+PLATFORM_DISABLED_TESTS += bug-10127.exe
+endif
+
 endif
 
 

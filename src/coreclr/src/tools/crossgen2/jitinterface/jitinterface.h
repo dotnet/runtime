@@ -46,6 +46,7 @@ struct JitInterfaceCallbacks
     int (* canSkipVerification)(void * thisHandle, CorInfoException** ppException, void* module);
     int (* isValidToken)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
     int (* isValidStringRef)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
+    const wchar_t* (* getStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK, int* length);
     int (* shouldEnforceCallvirtRestriction)(void * thisHandle, CorInfoException** ppException, void* scope);
     int (* asCorInfoType)(void * thisHandle, CorInfoException** ppException, void* cls);
     const char* (* getClassName)(void * thisHandle, CorInfoException** ppException, void* cls);
@@ -508,6 +509,15 @@ public:
     {
         CorInfoException* pException = nullptr;
         int _ret = _callbacks->isValidStringRef(_thisHandle, &pException, module, metaTOK);
+        if (pException != nullptr)
+            throw pException;
+        return _ret;
+    }
+
+    virtual const wchar_t* getStringLiteral(void* module, unsigned metaTOK, int* length)
+    {
+        CorInfoException* pException = nullptr;
+        const wchar_t* _ret = _callbacks->getStringLiteral(_thisHandle, &pException, module, metaTOK, length);
         if (pException != nullptr)
             throw pException;
         return _ret;
