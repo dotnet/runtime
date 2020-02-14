@@ -87,11 +87,11 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         }
 
         internal virtual IList<string> GetMemberNames(bool dataOnly) {
-            return new string[0];
+            return Array.Empty<string>();
         }
 
         internal virtual IList<KeyValuePair<string, object>> GetMembers(IEnumerable<string> names) {
-            return new KeyValuePair<string, object>[0];
+            return Array.Empty<KeyValuePair<string, object>>();
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter) {

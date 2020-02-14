@@ -229,7 +229,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         /// <returns>The collection of member names.</returns>
         public static IEnumerable<string> GetDynamicMemberNames(object value) {
             ContractUtils.RequiresNotNull(value, nameof(value));
-            ContractUtils.Requires(IsComObject(value), nameof(value), Strings.ComObjectExpected);
+            ContractUtils.Requires(IsComObject(value), nameof(value));
 
             return ComObject.ObjectToComObject(value).GetMemberNames(false);
         }
@@ -243,7 +243,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static IList<string> GetDynamicDataMemberNames(object value) {
             ContractUtils.RequiresNotNull(value, nameof(value));
-            ContractUtils.Requires(IsComObject(value), nameof(value), Strings.ComObjectExpected);
+            ContractUtils.Requires(IsComObject(value), nameof(value));
 
             return ComObject.ObjectToComObject(value).GetMemberNames(true);
         }
@@ -259,7 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static IList<KeyValuePair<string, object>> GetDynamicDataMembers(object value, IEnumerable<string> names) {
             ContractUtils.RequiresNotNull(value, nameof(value));
-            ContractUtils.Requires(IsComObject(value), nameof(value), Strings.ComObjectExpected);
+            ContractUtils.Requires(IsComObject(value), nameof(value));
 
             return ComObject.ObjectToComObject(value).GetMembers(names);
         }

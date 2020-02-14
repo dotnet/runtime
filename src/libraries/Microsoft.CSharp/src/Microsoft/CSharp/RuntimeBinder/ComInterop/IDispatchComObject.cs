@@ -300,7 +300,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
                             BindingFlags.GetProperty,
                             null,
                             RuntimeCallableWrapper,
-                            new object[0],
+                            Array.Empty<object>(),
                             CultureInfo.InvariantCulture
                         );
                         members.Add(new KeyValuePair<string, object>(method.Name, value));

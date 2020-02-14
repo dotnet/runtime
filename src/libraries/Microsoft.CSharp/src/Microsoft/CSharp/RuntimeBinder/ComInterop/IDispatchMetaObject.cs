@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #if FEATURE_COM
+using System;
 using System.Dynamic;
 using System.Linq.Expressions;
 
@@ -84,13 +85,13 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
         private DynamicMetaObject BindGetMember(ComMethodDesc method, bool canReturnCallables) {
             if (method.IsDataMember) {
                 if (method.ParamCount == 0) {
-                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0) , new bool[]{});
+                    return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0), Array.Empty<bool>());
                 }
             }
 
             // ComGetMemberBinder does not expect callables. Try to call always.
             if (!canReturnCallables) {
-                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0), new bool[0]);
+                return BindComInvoke(DynamicMetaObject.EmptyMetaObjects, method, new CallInfo(0), Array.Empty<bool>());
             }
 
             return new DynamicMetaObject(
