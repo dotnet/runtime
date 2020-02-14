@@ -142,6 +142,8 @@ ValueNumFuncDef(BoxNullable, 3, false, false, false)
 ValueNumFuncDef(StrCns, 2, false, true, false)
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
+ValueNumFuncDef(SimdType, 2, false, false, false)  // A value number function to compose a SIMD type
+
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons
 ValueNumFuncDef(LE_UN, 2, false, false, false)
 ValueNumFuncDef(GE_UN, 2, false, false, false)
