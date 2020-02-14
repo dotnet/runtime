@@ -5,6 +5,8 @@
 #include "comwrappers.hpp"
 #include <interoplibimports.h>
 
+#include <new> // placement new
+
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
 using AllocScenario = InteropLibImports::AllocScenario;
 
@@ -81,7 +83,7 @@ namespace ABI
 
 #ifdef _DEBUG
             // Poison unused portions of the section.
-            std::memset(section, 0xff, sizeof(void*));
+            ::memset(section, 0xff, sizeof(void*));
 #endif
 
             section += sizeof(void*);
@@ -375,7 +377,7 @@ HRESULT ManagedObjectWrapper::Create(
     ABI::ComInterfaceEntry* runtimeDefined = nullptr;
     if (0 < runtimeDefinedCount)
     {
-        std::memcpy(runtimeDefinedOffset, runtimeDefinedLocal, totalRuntimeDefinedSize);
+        ::memcpy(runtimeDefinedOffset, runtimeDefinedLocal, totalRuntimeDefinedSize);
         runtimeDefined = reinterpret_cast<ABI::ComInterfaceEntry*>(runtimeDefinedOffset);
     }
 
@@ -646,7 +648,7 @@ HRESULT NativeObjectWrapperContext::Create(
     void* runtimeContext = cxtMem + sizeof(NativeObjectWrapperContext);
 
     // Contract specifically requires zeroing out runtime context.
-    std::memset(runtimeContext, 0, runtimeContextSize);
+    ::memset(runtimeContext, 0, runtimeContextSize);
 
     NativeObjectWrapperContext* contextLocal = new (cxtMem) NativeObjectWrapperContext{ runtimeContext, trackerObject };
 
