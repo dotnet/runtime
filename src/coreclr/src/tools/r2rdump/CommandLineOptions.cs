@@ -28,6 +28,7 @@ namespace R2RDump
             command.AddOption(new Option(new[] { "--sectionContents", "--sc" }, "Dump section contents", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--entrypoints", "-e" }, "Dump list of method / instance entrypoints in the R2R file", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--normalize", "-n" }, "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)", new Argument<bool>()));
+            command.AddOption(new Option(new[] { "--hide-transitions", "--ht" }, "Don't include GC transitions in disassembly output", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--verbose", "-v" }, "Dump disassembly, unwindInfo, gcInfo and sectionContents", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--diff" }, "Compare two R2R images", new Argument<bool>()));
             command.AddOption(new Option(new[] { "--diff-hide-same-disasm" }, "In matching method diff dump, hide functions with identical disassembly", new Argument<bool>()));

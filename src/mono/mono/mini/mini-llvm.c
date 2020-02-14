@@ -3407,12 +3407,9 @@ emit_init_method (EmitContext *ctx)
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, FALSE);
 	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "is_inited");
 
-	//WASM doesn't support the "llvm.expect.i8" intrinsic
-#ifndef TARGET_WASM
 	args [0] = inited_var;
 	args [1] = LLVMConstInt (LLVMInt8Type (), 1, FALSE);
 	inited_var = LLVMBuildCall (ctx->builder, get_intrins (ctx, INTRINS_EXPECT_I8), args, 2, "");
-#endif
 
 	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
 

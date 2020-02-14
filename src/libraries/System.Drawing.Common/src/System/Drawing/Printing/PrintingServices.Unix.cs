@@ -411,7 +411,7 @@ namespace System.Drawing.Printing
             if (string.IsNullOrEmpty(resolution))
                 return null;
 
-            int dpiIndex = resolution.IndexOf("dpi");
+            int dpiIndex = resolution.IndexOf("dpi", StringComparison.Ordinal);
             if (dpiIndex == -1)
             {
                 // Resolution is "Unknown" or unparsable

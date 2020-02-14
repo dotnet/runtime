@@ -52,7 +52,7 @@ namespace System.Diagnostics
                     _needIndent = false;
                 }
                 WriteCore(message);
-                if (message.EndsWith(Environment.NewLineConst))
+                if (message.EndsWith(Environment.NewLineConst, StringComparison.Ordinal))
                 {
                     _needIndent = true;
                 }

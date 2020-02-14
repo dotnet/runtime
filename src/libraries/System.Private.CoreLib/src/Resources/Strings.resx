@@ -263,7 +263,7 @@
     <value>Combination of arguments to the DateTime constructor is out of the legal range.</value>
   </data>
   <data name="Arg_DecBitCtor" xml:space="preserve">
-    <value>Decimal byte array constructor requires an array of length four containing valid decimal bytes.</value>
+    <value>Decimal constructor requires an array or span of four valid decimal bytes.</value>
   </data>
   <data name="Arg_DirectoryNotFoundException" xml:space="preserve">
     <value>Attempted to access a path that is not on the disk.</value>

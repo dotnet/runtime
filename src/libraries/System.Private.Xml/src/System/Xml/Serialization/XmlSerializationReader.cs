@@ -1421,7 +1421,7 @@ namespace System.Xml.Serialization
             if (!_soap12)
             {
                 // soap 1.1 href starts with '#'; soap 1.2 ref does not
-                if (!href.StartsWith("#", StringComparison.Ordinal)) throw new InvalidOperationException(SR.Format(SR.XmlMissingHref, href));
+                if (!href.StartsWith('#')) throw new InvalidOperationException(SR.Format(SR.XmlMissingHref, href));
                 fixupReference = href.Substring(1);
             }
             else

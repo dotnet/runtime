@@ -19,15 +19,13 @@ void extractor_t::determine_extraction_dir()
 {
     if (!pal::getenv(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR"), &m_extraction_dir))
     {
-        if (!pal::get_temp_directory(m_extraction_dir))
+        if (!pal::get_default_bundle_extraction_base_dir(m_extraction_dir))
         {
             trace::error(_X("Failure processing application bundle."));
             trace::error(_X("Failed to determine location for extracting embedded files."));
-            trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and temp-directory doesn't exist or is not readable/writable."));
+            trace::error(_X("DOTNET_BUNDLE_EXTRACT_BASE_DIR is not set, and a read-write temp-directory couldn't be created."));
             throw StatusCode::BundleExtractionFailure;
         }
-
-        append_path(&m_extraction_dir, _X(".net"));
     }
 
     pal::string_t host_name = strip_executable_ext(get_filename(m_bundle_path));

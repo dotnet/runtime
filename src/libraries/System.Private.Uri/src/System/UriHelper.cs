@@ -10,12 +10,6 @@ namespace System
 {
     internal static class UriHelper
     {
-        internal static ReadOnlySpan<byte> HexUpperChars => new byte[16]
-        {
-            (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5', (byte)'6', (byte)'7',
-            (byte)'8', (byte)'9', (byte)'A', (byte)'B', (byte)'C', (byte)'D', (byte)'E', (byte)'F'
-        };
-
         internal static readonly Encoding s_noFallbackCharUTF8 = Encoding.GetEncoding(
             Encoding.UTF8.CodePage, new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
 
@@ -250,8 +244,7 @@ namespace System
                     foreach (byte b in utf8Bytes.Slice(0, bytesWritten))
                     {
                         vsb.Append('%');
-                        vsb.Append((char)HexUpperChars[(b & 0xf0) >> 4]);
-                        vsb.Append((char)HexUpperChars[b & 0xf]);
+                        HexConverter.ToCharsBuffer(b, vsb.AppendSpan(2), 0, HexConverter.Casing.Upper);
                     }
                     continue;
                 }
@@ -293,8 +286,7 @@ namespace System
 
                 // Otherwise, append the escaped character.
                 vsb.Append('%');
-                vsb.Append((char)HexUpperChars[(value & 0xf0) >> 4]);
-                vsb.Append((char)HexUpperChars[value & 0xf]);
+                HexConverter.ToCharsBuffer(value, vsb.AppendSpan(2), 0, HexConverter.Casing.Upper);
             }
         }
 
@@ -484,7 +476,7 @@ namespace System
                         if (escapeReserved)
                         {
                             //escape that char
-                            EscapeAsciiChar(pStr[next], ref dest);
+                            EscapeAsciiChar((byte)pStr[next], ref dest);
                             escapeReserved = false;
                             start = ++next;
                             continue;
@@ -597,7 +589,7 @@ namespace System
                         // Escape any invalid bytes that were before this character
                         while (bytes[count] != encodedBytes[0])
                         {
-                            EscapeAsciiChar((char)bytes[count++], ref dest);
+                            EscapeAsciiChar(bytes[count++], ref dest);
                         }
 
                         // check if all bytes match
@@ -622,7 +614,7 @@ namespace System
                                     // need to keep chars not allowed as escaped
                                     for (int l = 0; l < encodedBytes.Length; ++l)
                                     {
-                                        EscapeAsciiChar((char)encodedBytes[l], ref dest);
+                                        EscapeAsciiChar(encodedBytes[l], ref dest);
                                     }
                                 }
                                 else
@@ -653,7 +645,7 @@ namespace System
                             // copy bytes till place where bytes don't match
                             for (int l = 0; l < k; ++l)
                             {
-                                EscapeAsciiChar((char)bytes[count++], ref dest);
+                                EscapeAsciiChar(bytes[count++], ref dest);
                             }
                         }
                     }
@@ -665,15 +657,14 @@ namespace System
             // Include any trailing invalid sequences
             while (count < byteCount)
             {
-                EscapeAsciiChar((char)bytes[count++], ref dest);
+                EscapeAsciiChar(bytes[count++], ref dest);
             }
         }
 
-        internal static void EscapeAsciiChar(char ch, ref ValueStringBuilder to)
+        internal static void EscapeAsciiChar(byte b, ref ValueStringBuilder to)
         {
             to.Append('%');
-            to.Append((char)HexUpperChars[(ch & 0xf0) >> 4]);
-            to.Append((char)HexUpperChars[ch & 0xf]);
+            HexConverter.ToCharsBuffer(b, to.AppendSpan(2), 0, HexConverter.Casing.Upper);
         }
 
         internal static char EscapedAscii(char digit, char next)
