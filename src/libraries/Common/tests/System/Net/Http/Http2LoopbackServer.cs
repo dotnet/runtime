@@ -237,9 +237,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override bool IsHttp11 => false;
-        public override bool IsHttp2 => true;
-        public override bool IsHttp3 => false;
+        public override Version Version => HttpVersion.Version20;
     }
 
     public enum ProtocolErrors
