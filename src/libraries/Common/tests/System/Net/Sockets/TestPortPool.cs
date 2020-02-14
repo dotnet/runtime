@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Runtime.CompilerServices;
@@ -40,11 +41,10 @@ namespace System.Net.Sockets.Tests
     {
         internal const int ThrowExhaustedAfter = 10;
 
-        private static readonly int MinPort =
-            System.Net.Test.Common.Configuration.Sockets.TestPoolPortRange.Min;
-        private static readonly int MaxPort =
-            System.Net.Test.Common.Configuration.Sockets.TestPoolPortRange.Max;
-        private static readonly int PortRangeLength = MaxPort - MinPort;
+        public static PortRange ConfiguredPortRange = new PortRange(
+            System.Net.Test.Common.Configuration.Sockets.TestPoolPortRange.Min,
+            System.Net.Test.Common.Configuration.Sockets.TestPoolPortRange.Max);
+
 
         private static readonly ConcurrentDictionary<int, int> s_usedPorts = GetAllPortsUsedBySystem();
         private static int s_counter = int.MinValue;
@@ -56,9 +56,8 @@ namespace System.Net.Sockets.Tests
                 // Although race may occur theoretically because the following code block is not atomic,
                 // it requires the s_counter to move at least PortRangeLength steps between Increment and TryAdd,
                 // which is very unlikely considering the actual port range and the low number of tests utilizing TestPortPool
-
                 long portLong = (long)Interlocked.Increment(ref s_counter) - int.MinValue;
-                portLong = (portLong % PortRangeLength) + MinPort;
+                portLong = (portLong % ConfiguredPortRange.Length) + ConfiguredPortRange.Min;
                 int port = (int)portLong;
 
                 if (s_usedPorts.TryAdd(port, 0))
@@ -117,7 +116,7 @@ namespace System.Net.Sockets.Tests
 
             ConcurrentDictionary<int, int> result = new ConcurrentDictionary<int, int>();
 
-            for (int port = MinPort; port < MaxPort; port++)
+            for (int port = ConfiguredPortRange.Min; port < ConfiguredPortRange.Max; port++)
             {
                 if (IsPortUsed(port, AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) ||
                     IsPortUsed(port, AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) ||
@@ -129,6 +128,100 @@ namespace System.Net.Sockets.Tests
             }
 
             return result;
+        }
+    }
+
+    internal readonly struct PortRange
+    {
+        public int Min { get; }
+        public int Max { get; }
+
+        public int Length => Max - Min;
+
+        public PortRange(int min, int max)
+        {
+            Min = min;
+            Max = max;
+        }
+
+        public override string ToString() => $"({Min} .. {Max})";
+
+        public static bool AreOverlappingRanges(in PortRange a, in PortRange b)
+        {
+            return a.Min < b.Min ? a.Max > b.Min : b.Max > a.Min;
+        }
+
+        public static PortRange GetDefaultOsDynamicPortRange()
+        {
+            if (PlatformDetection.IsWindows)
+            {
+                // For TestPortPool functionality, we need to take the intersection of 4 intervals:
+                PortRange ipv4Tcp = ParseCmdletOutputWindows(RunCmldet("netsh", "int ipv4 show dynamicport tcp"));
+                PortRange ipv4Udp = ParseCmdletOutputWindows(RunCmldet("netsh", "int ipv4 show dynamicport udp"));
+                PortRange ipv6Tcp = ParseCmdletOutputWindows(RunCmldet("netsh", "int ipv6 show dynamicport tcp"));
+                PortRange ipv6Udp = ParseCmdletOutputWindows(RunCmldet("netsh", "int ipv6 show dynamicport udp"));
+
+                int min = Math.Max(ipv4Tcp.Min, Math.Max(ipv4Udp.Min, Math.Max(ipv6Tcp.Min, ipv6Udp.Min)));
+                int max = Math.Min(ipv4Tcp.Max, Math.Min(ipv4Udp.Max, Math.Min(ipv6Tcp.Max, ipv6Udp.Max)));
+                return new PortRange(min, max);
+            }
+
+            if (PlatformDetection.IsOSX)
+            {
+                return ParseCmdletOutputMac(RunCmldet("sysctl", "net.inet.ip.portrange.first net.inet.ip.portrange.last"));
+            }
+
+            return ParseCmdletOutputLinux(RunCmldet("cat", "/proc/sys/net/ipv4/ip_local_port_range"));
+        }
+
+        internal static PortRange ParseCmdletOutputWindows(string cmdOutput)
+        {
+            PortRange temp = ParseCmdletOutputMac(cmdOutput);
+
+            // On Windows, second number is 'Number of Ports'
+            return new PortRange(temp.Min, temp.Min + temp.Max);
+        }
+
+        internal static PortRange ParseCmdletOutputLinux(string cmdOutput)
+        {
+            ReadOnlySpan<char> span = cmdOutput.AsSpan();
+            int firstSpace = span.IndexOf(' ');
+            ReadOnlySpan<char> left = span.Slice(0, firstSpace).Trim();
+            ReadOnlySpan<char> right = span.Slice(firstSpace).Trim();
+            return new PortRange(int.Parse(left), int.Parse(right));
+        }
+
+        internal static PortRange ParseCmdletOutputMac(string cmdOutput)
+        {
+            int semicolon1 = cmdOutput.IndexOf(':', 0);
+            int eol1 = cmdOutput.IndexOf('\n', semicolon1);
+            int semicolon2 = cmdOutput.IndexOf(':', eol1);
+            int eol2 = cmdOutput.IndexOf('\n', semicolon2);
+            if (eol2 < 0) eol2 = cmdOutput.Length;
+
+            int start = ParseImpl(cmdOutput, semicolon1 + 1, eol1);
+            int end = ParseImpl(cmdOutput, semicolon2 + 1, eol2);
+            return new PortRange(start, end);
+        }
+
+        private static string RunCmldet(string cmdlet, string args)
+        {
+            ProcessStartInfo psi = new ProcessStartInfo()
+            {
+                FileName = cmdlet,
+                Arguments = args,
+                RedirectStandardOutput = true
+            };
+
+            using Process process = Process.Start(psi);
+            process.WaitForExit(10000);
+            return process.StandardOutput.ReadToEnd();
+        }
+
+        private static int ParseImpl(string cmdOutput, int start, int end)
+        {
+            ReadOnlySpan<char> span = cmdOutput.AsSpan(start, end - start).Trim();
+            return int.Parse(span);
         }
     }
 }

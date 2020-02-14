@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Sockets.Tests;
@@ -12,7 +13,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Test.Common
 {
@@ -27,6 +30,13 @@ namespace System.Net.Test.Common
         // Port range 25010-25470 is likely unused:
         // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
         private const int FirstUnusedPort = 25010;
+
+        private readonly ITestOutputHelper _output;
+
+        public TestPortPoolTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         private static RemoteInvokeOptions CreateRemoteOptions(string portRangeString)
         {
@@ -209,6 +219,48 @@ namespace System.Net.Test.Common
             }
 
             RemoteExecutor.Invoke(RunTest).Dispose();
+        }
+
+        [Fact]
+        public void PortRange_GetDefaultOsDynamicPortRange()
+        {
+            var r = PortRange.GetDefaultOsDynamicPortRange();
+            _output.WriteLine("OS Dynamic Port Range: " + r);
+            throw new Exception("OS Dynamic Port Range: " + r);
+        }
+
+        [Fact]
+        public void PortRange_ParseCmdOutputWindows()
+        {
+            const string cmdOutput = @"
+Protocol tcp Dynamic Port Range
+---------------------------------
+Start Port      : 49152
+Number of Ports : 16384
+";
+            PortRange range = PortRange.ParseCmdletOutputWindows(cmdOutput);
+            Assert.Equal(49152, range.Min);
+            Assert.Equal(49152 + 16384, range.Max);
+        }
+
+        [Fact]
+        public void PortRange_ParseCmdOutputLinux()
+        {
+            const string cmdOutput = @"32768   60999";
+            PortRange range = PortRange.ParseCmdletOutputLinux(cmdOutput);
+            Assert.Equal(32768, range.Min);
+            Assert.Equal(60999, range.Max);
+        }
+
+        [Fact]
+        public void PortRange_ParseCmdOutputMac()
+        {
+            const string cmdOutput = @"net.inet.ip.portrange.first: 49152
+net.inet.ip.portrange.last: 65535";
+
+            PortRange range = PortRange.ParseCmdletOutputMac(cmdOutput);
+            Assert.Equal(49152, range.Min);
+            Assert.Equal(65535, range.Max);
         }
     }
 }
