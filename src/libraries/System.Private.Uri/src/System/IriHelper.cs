@@ -11,6 +11,7 @@ namespace System
     {
         //
         // Checks if provided non surrogate char lies in iri range
+        // This method implements the ABNF checks per https://tools.ietf.org/html/rfc3987#section-2.2
         //
         internal static bool CheckIriUnicodeRange(char unicode, bool isQuery)
         {
@@ -24,33 +25,23 @@ namespace System
         // Check if highSurr and lowSurr are a surrogate pair then
         // it checks if the combined char is in the range
         // Takes in isQuery because iri restrictions for query are different
+        // This method implements the ABNF checks per https://tools.ietf.org/html/rfc3987#section-2.2
         //
         internal static bool CheckIriUnicodeRange(char highSurr, char lowSurr, out bool isSurrogatePair, bool isQuery)
         {
             Debug.Assert(char.IsHighSurrogate(highSurr));
 
-            if (char.IsLowSurrogate(lowSurr))
+            if (Rune.TryCreate(highSurr, lowSurr, out Rune rune))
             {
                 isSurrogatePair = true;
-                uint utf32 = (uint)char.ConvertToUtf32(highSurr, lowSurr);
 
-                return ((utf32 - 0x10000) <= (0x1FFFD - 0x10000) ||
-                    (utf32 - 0x20000) <= (0x2FFFD - 0x20000) ||
-                    (utf32 - 0x30000) <= (0x3FFFD - 0x30000) ||
-                    (utf32 - 0x40000) <= (0x4FFFD - 0x40000) ||
-                    (utf32 - 0x50000) <= (0x5FFFD - 0x50000) ||
-                    (utf32 - 0x60000) <= (0x6FFFD - 0x60000) ||
-                    (utf32 - 0x70000) <= (0x7FFFD - 0x70000) ||
-                    (utf32 - 0x80000) <= (0x8FFFD - 0x80000) ||
-                    (utf32 - 0x90000) <= (0x9FFFD - 0x90000) ||
-                    (utf32 - 0xA0000) <= (0xAFFFD - 0xA0000) ||
-                    (utf32 - 0xB0000) <= (0xBFFFD - 0xB0000) ||
-                    (utf32 - 0xC0000) <= (0xCFFFD - 0xC0000) ||
-                    (utf32 - 0xD0000) <= (0xDFFFD - 0xD0000) ||
-                    (utf32 - 0xE1000) <= (0xEFFFD - 0xE1000) ||
-                    (isQuery &&
-                        ((utf32 - 0xF0000) <= (0xFFFFD - 0xF0000) ||
-                        (utf32 - 0x100000) <= (0x10FFFD - 0x100000))));
+                // U+xxFFFE..U+xxFFFF is always private use for all planes, so we exclude it.
+                // U+E0000..U+E0FFF is disallowed per the 'ucschar' definition in the ABNF.
+                // U+F0000 and above are only allowed for 'iprivate' per the ABNF (isQuery = true).
+
+                return ((rune.Value & 0xFFFF) < 0xFFFE)
+                    && ((uint)(rune.Value - 0xE0000) >= (0xE1000 - 0xE0000))
+                    && (isQuery || rune.Value < 0xF0000);
             }
 
             isSurrogatePair = false;
