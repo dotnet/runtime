@@ -608,7 +608,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>(T x, T y);
+    public delegate int Comparison<in T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
     {
@@ -4216,10 +4216,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) { }
+        public static void Fail(string? message) => throw null; 
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) { }
+        public static void Fail(string? message, string? detailMessage) => throw null; 
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -7450,9 +7450,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { }
+        public static void Throw(System.Exception source) => throw null; 
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
