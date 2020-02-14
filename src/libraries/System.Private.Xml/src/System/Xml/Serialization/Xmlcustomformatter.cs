@@ -133,7 +133,7 @@ namespace System.Xml.Serialization
                 return FromXmlNmToken(nmTokens);
             else
             {
-                string[] toks = nmTokens.Split(new char[] { ' ' });
+                string[] toks = nmTokens.Split(' ');
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < toks.Length; i++)
                 {

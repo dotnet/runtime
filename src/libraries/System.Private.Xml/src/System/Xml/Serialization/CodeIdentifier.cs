@@ -222,7 +222,7 @@ namespace System.Xml.Serialization
             string ns = t.Namespace;
             if (ns != null && ns.Length > 0)
             {
-                string[] parts = ns.Split(new char[] { '.' });
+                string[] parts = ns.Split('.');
                 for (int i = 0; i < parts.Length; i++)
                 {
                     EscapeKeywords(parts[i], sb);
