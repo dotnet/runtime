@@ -100,7 +100,7 @@ namespace System.Security.Cryptography
                 out byte[]? allocated);
 
             Debug.Assert(ret);
-            Debug.Assert(allocated != null); // on account of allocate parameter being true
+            Debug.Assert(allocated != null); // since `allocate: true`
             return allocated;
         }
 

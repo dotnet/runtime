@@ -104,7 +104,7 @@ namespace Internal.Cryptography
                 if (_cngKey != null)
                 {
                     _cngKey.Dispose();
-                    _cngKey = null;
+                    _cngKey = null!;
                 }
             }
 
@@ -120,7 +120,7 @@ namespace Internal.Cryptography
             }
         }
 
-        private CngKey? _cngKey;
+        private CngKey _cngKey;
         private readonly bool _encrypting;
 
         private static readonly CngProperty s_ECBMode =
