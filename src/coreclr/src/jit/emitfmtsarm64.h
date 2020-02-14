@@ -86,6 +86,7 @@ IF_DEF(EN2M, IS_NONE, NONE) // Instruction has 2 possible encoding types, type M
 IF_DEF(EN2N, IS_NONE, NONE) // Instruction has 2 possible encoding types, type N
 IF_DEF(EN2O, IS_NONE, NONE) // Instruction has 2 possible encoding types, type O
 IF_DEF(EN2P, IS_NONE, NONE) // Instruction has 2 possible encoding types, type P
+IF_DEF(EN2Q, IS_NONE, NONE) // Instruction has 2 possible encoding types, type Q
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -197,6 +198,7 @@ IF_DEF(DV_2O, IS_NONE, NONE) // DV_2O   .Q.......iiiiiii ......nnnnnddddd      V
 IF_DEF(DV_2P, IS_NONE, NONE) // DV_2P   ................ ......nnnnnddddd      Vd Vn      (Vd used as both source and destination)
 IF_DEF(DV_2Q, IS_NONE, NONE) // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp, fminp - scalar)
 IF_DEF(DV_2R, IS_NONE, NONE) // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+IF_DEF(DV_2S, IS_NONE, NONE) // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 
 IF_DEF(DV_3A, IS_NONE, NONE)  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
 IF_DEF(DV_3AI, IS_NONE, NONE) // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector by elem)

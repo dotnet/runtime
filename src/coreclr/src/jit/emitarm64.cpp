@@ -752,6 +752,13 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isVectorRegister(id->idReg2()));
             break;
 
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
+            assert(id->idOpSize() == EA_8BYTE);
+            assert(id->idInsOpt() == INS_OPTS_2D);
+            assert(isVectorRegister(id->idReg1()));
+            assert(isVectorRegister(id->idReg2()));
+            break;
+
         case IF_DV_3A: // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
             assert(isValidVectorDatasize(id->idOpSize()));
             assert(isValidArrangement(id->idOpSize(), id->idInsOpt()));
@@ -920,6 +927,7 @@ bool emitter::emitInsMayWriteToGCReg(instrDesc* id)
         case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
                        // fminp - scalar)
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
 
         case IF_DV_3A:  // DV_3A   .Q......XX.mmmmm ......nnnnnddddd      Vd Vn Vm   (vector)
         case IF_DV_3AI: // DV_3AI  .Q......XXLMmmmm ....H.nnnnnddddd      Vd Vn Vm[] (vector)
@@ -1554,6 +1562,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
     const static insFormat formatEncode2P[2] = {IF_DV_2Q, IF_DV_3B};
+    const static insFormat formatEncode2Q[2] = {IF_DV_2S, IF_DV_3A};
 
     code_t    code           = BAD_CODE;
     insFormat insFmt         = emitInsFormat(ins);
@@ -1995,6 +2004,17 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
             for (index = 0; index < 2; index++)
             {
                 if (fmt == formatEncode2P[index])
+                {
+                    encoding_found = true;
+                    break;
+                }
+            }
+            break;
+
+        case IF_EN2Q:
+            for (index = 0; index < 2; index++)
+            {
+                if (fmt == formatEncode2Q[index])
                 {
                     encoding_found = true;
                     break;
@@ -4342,6 +4362,14 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2R;
             break;
 
+        case INS_addp:
+            assert(size == EA_8BYTE);
+            assert(opt == INS_OPTS_2D);
+            assert(isVectorRegister(reg1));
+            assert(isVectorRegister(reg2));
+            fmt = IF_DV_2S;
+            break;
+
         case INS_fcvt:
             assert(insOptsConvertFloatToFloat(opt));
             assert(isValidVectorFcvtsize(size));
@@ -5357,6 +5385,7 @@ void emitter::emitIns_R_R_R(
             assert(elemsize != EA_8BYTE); // can't use 2D or 1D
             __fallthrough;
 
+        case INS_addp:
         case INS_uzp1:
         case INS_uzp2:
         case INS_zip1:
@@ -10173,6 +10202,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_DV_2L: // DV_2L   ........XX...... ......nnnnnddddd      Vd Vn      (abs, neg - scalar)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
             code |= insEncodeElemsize(elemsize);   // XX
@@ -11781,6 +11811,7 @@ void emitter::emitDispIns(
         case IF_DV_2Q: // DV_2Q   .........X...... ......nnnnnddddd      Sd Vn      (faddp, fmaxnmp, fmaxp, fminnmp,
                        // fminp - scalar)
         case IF_DV_2R: // DV_2R   .Q.......X...... ......nnnnnddddd      Sd Vn      (fmaxnmv, fmaxv, fminnmv, fminv)
+        case IF_DV_2S: // DV_2S   ........XX...... ......nnnnnddddd      Sd Vn      (addp - scalar)
             elemsize = id->idOpSize();
             emitDispReg(id->idReg1(), elemsize, true);
             emitDispVectorReg(id->idReg2(), id->idInsOpt(), false);
@@ -12838,12 +12869,13 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
         case IF_DV_2Q: // faddp, fmaxnmp, fmaxp, fminnmp, fminp (scalar)
         case IF_DV_2R: // fmaxnmv, fmaxv, fminnmv, fminv
+        case IF_DV_2S: // addp (scalar)
             result.insThroughput = PERFSCORE_THROUGHPUT_2X;
             result.insLatency    = PERFSCORE_LATENCY_4C;
             break;
 
         case IF_DV_3B: // fadd, fsub, fdiv, fmul, fmulx, fmla, fmls, fmin, fminnm, fmax, fmaxnm, fabd, fcmXX
-                       // faddp, fmaxnmp, fmaxp, fminnmp, fminp (vector)
+                       // faddp, fmaxnmp, fmaxp, fminnmp, fminp, addp (vector)
             switch (ins)
             {
                 case INS_fmin:
@@ -12864,6 +12896,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 case INS_fmaxp:
                 case INS_fminnmp:
                 case INS_fminp:
+                case INS_addp:
                     if (id->idOpSize() == EA_16BYTE)
                     {
                         // Q-form

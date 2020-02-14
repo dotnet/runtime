@@ -666,6 +666,10 @@ INST2(fminp,   "fminp",  0, 0, IF_EN2P,   0x7EB0F800,  0x2EA0F400)
                                    //  fminp Vd,Vn                  DV_2Q  011111101X110000 111110nnnnnddddd   7EB0 F800   Vd,Vn      (scalar)
                                    //  fminp Vd,Vn,Vm               DV_3B  0Q1011101X1mmmmm 111101nnnnnddddd   2EA0 F400   Vd,Vn,Vm   (vector)
 
+INST2(addp,    "addp",   0, 0, IF_EN2Q,   0x5E31B800,  0x0E20BC00)
+                                   //  addp Vd,Vn                   DV_2S  01011110XX110001 101110nnnnnddddd   5E31 B800   Vd,Vn      (scalar)
+                                   //  addp Vd,Vn,Vm                DV_3A  0Q001110XX1mmmmm 101111nnnnnddddd   0E20 BC00   Vd,Vn,Vm   (vector)
+
 INST1(ldar,    "ldar",   0,LD, IF_LS_2A,  0x88DFFC00)
                                    //  ldar    Rt,[Xn]              LS_2A  1X00100011011111 111111nnnnnttttt   88DF FC00
 
