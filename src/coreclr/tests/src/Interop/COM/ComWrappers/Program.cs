@@ -5,6 +5,7 @@
 namespace ComWrappersTests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Runtime.CompilerServices;
@@ -77,6 +78,9 @@ namespace ComWrappersTests
 
             [DllImport(nameof(MockReferenceTrackerRuntime))]
             extern public static void ReleaseAllTrackerObjects();
+
+            [DllImport(nameof(MockReferenceTrackerRuntime))]
+            extern public static int Trigger_NotifyEndOfReferenceTrackingOnThread();
         }
 
         [Guid("42951130-245C-485E-B60B-4ED4254256F8")]
@@ -147,8 +151,20 @@ namespace ComWrappersTests
             }
         }
 
-        class MyComWrappers : ComWrappers
+        class TestComWrappers : ComWrappers
         {
+            public static readonly TestComWrappers Global = new TestComWrappers();
+
+            public TestComWrappers()
+            {
+                DefaultReleaseObjects = true;
+            }
+
+            public bool DefaultReleaseObjects
+            {
+                get; set;
+            }
+
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
                 Assert.IsTrue(obj is Test);
@@ -191,6 +207,15 @@ namespace ComWrappersTests
                 return new ITrackerObjectWrapper(iTestComObject);
             }
 
+            protected override void ReleaseObjects(IEnumerable objects)
+            {
+                if (DefaultReleaseObjects)
+                {
+                    base.ReleaseObjects(objects);
+                    Assert.Fail("Default implementation should throw exception");
+                }
+            }
+
             public static void ValidateIUnknownImpls()
             {
                 Console.WriteLine($"Running {nameof(ValidateIUnknownImpls)}...");
@@ -209,7 +234,7 @@ namespace ComWrappersTests
 
             var testObj = new Test();
 
-            var wrappers = new MyComWrappers();
+            var wrappers = new TestComWrappers();
 
             // Allocate a wrapper for the object
             IntPtr comWrapper = wrappers.GetOrCreateComInterfaceForObject(testObj, CreateComInterfaceFlags.TrackerSupport);
@@ -240,13 +265,16 @@ namespace ComWrappersTests
         {
             Console.WriteLine($"Running {nameof(ValidateRuntimeTrackerScenario)}...");
 
-            var cw = new MyComWrappers();
+            var cw = new TestComWrappers();
 
             // Get an object from a tracker runtime.
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
 
             // Create a managed wrapper for the native object.
             var trackerObj = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
+
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
 
             var testWrapperIds = new List<int>();
             for (int i = 0; i < 1000; ++i)
@@ -290,7 +318,7 @@ namespace ComWrappersTests
         {
             Console.WriteLine($"Running {nameof(ValidateCreateObjectCachingScenario)}...");
 
-            var cw = new MyComWrappers();
+            var cw = new TestComWrappers();
 
             // Get an object from a tracker runtime.
             IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
@@ -299,18 +327,22 @@ namespace ComWrappersTests
             var trackerObj2 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
             Assert.AreEqual(trackerObj1, trackerObj2);
 
+            // Ownership has been transferred to the wrapper.
+            Marshal.Release(trackerObjRaw);
+
             var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.IgnoreCache);
             Assert.AreNotEqual(trackerObj1, trackerObj3);
         }
 
         static void ValidateIUnknownImpls()
-            => MyComWrappers.ValidateIUnknownImpls();
+            => TestComWrappers.ValidateIUnknownImpls();
 
-        static void ValidateRegisterForReferenceTrackerHost()
+        static void ValidateGlobalInstanceScenarios()
         {
-            Console.WriteLine($"Running {nameof(ValidateRegisterForReferenceTrackerHost)}...");
+            Console.WriteLine($"Running {nameof(ValidateGlobalInstanceScenarios)}...");
+            Console.WriteLine($"Validate RegisterForReferenceTrackerHost()...");
 
-            var wrappers1 = new MyComWrappers();
+            var wrappers1 = TestComWrappers.Global;
             wrappers1.RegisterForReferenceTrackerHost();
 
             Assert.Throws<InvalidOperationException>(
@@ -319,12 +351,120 @@ namespace ComWrappersTests
                     wrappers1.RegisterForReferenceTrackerHost();
                 }, "Should not be able to re-register for ReferenceTrackerHost");
 
-            var wrappers2 = new MyComWrappers();
+            var wrappers2 = new TestComWrappers();
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
                     wrappers2.RegisterForReferenceTrackerHost();
                 }, "Should not be able to reset for ReferenceTrackerHost");
+
+            Console.WriteLine($"Validate NotifyEndOfReferenceTrackingOnThread()...");
+
+            int hr;
+            var cw = TestComWrappers.Global;
+
+            // Trigger the thread lifetime end API and verify the default behavior.
+            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
+            Assert.AreEqual(unchecked((int)0x80004001), hr);
+
+            cw.DefaultReleaseObjects = false;
+            // Trigger the thread lifetime end API and verify the customizable behavior.
+            hr = MockReferenceTrackerRuntime.Trigger_NotifyEndOfReferenceTrackingOnThread();
+            Assert.AreEqual(0, hr);
+
+            // Reset the global wrapper state.
+            cw.DefaultReleaseObjects = true;
+        }
+
+        class BadComWrappers : ComWrappers
+        {
+            public enum FailureMode
+            {
+                ReturnInvalid,
+                ThrowException,
+            }
+
+            public const int ExceptionErrorCode = 0x27;
+
+            public FailureMode ComputeVtablesMode { get; set; }
+            public FailureMode CreateObjectMode { get; set; }
+
+            protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
+            {
+                switch (ComputeVtablesMode)
+                {
+                    case FailureMode.ReturnInvalid:
+                    {
+                        count = -1;
+                        return null;
+                    }
+                    case FailureMode.ThrowException:
+                        throw new Exception() { HResult = ExceptionErrorCode };
+                    default:
+                        Assert.Fail("Invalid failure mode");
+                        throw new Exception("UNREACHABLE");
+                }
+
+            }
+
+            protected override object CreateObject(IntPtr externalComObject, IntPtr agileObj, CreateObjectFlags flags)
+            {
+                switch (CreateObjectMode)
+                {
+                    case FailureMode.ReturnInvalid:
+                        return null;
+                    case FailureMode.ThrowException:
+                        throw new Exception() { HResult = ExceptionErrorCode };
+                    default:
+                        Assert.Fail("Invalid failure mode");
+                        throw new Exception("UNREACHABLE");
+                }
+            }
+        }
+
+        static void ValidateBadComWrapperImpl()
+        {
+            Console.WriteLine($"Running {nameof(ValidateBadComWrapperImpl)}...");
+
+            var wrapper = new BadComWrappers();
+
+            Assert.Throws<ArgumentException>(
+                () =>
+                {
+                    wrapper.ComputeVtablesMode = BadComWrappers.FailureMode.ReturnInvalid;
+                    wrapper.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.None);
+                });
+
+            try
+            {
+                wrapper.ComputeVtablesMode = BadComWrappers.FailureMode.ThrowException;
+                wrapper.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.None);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(BadComWrappers.ExceptionErrorCode, e.HResult);
+            }
+
+            IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
+
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                {
+                    wrapper.CreateObjectMode = BadComWrappers.FailureMode.ReturnInvalid;
+                    wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+                });
+
+            try
+            {
+                wrapper.CreateObjectMode = BadComWrappers.FailureMode.ThrowException;
+                wrapper.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.None);
+            }
+            catch (Exception e)
+            {
+                Assert.AreEqual(BadComWrappers.ExceptionErrorCode, e.HResult);
+            }
+
+            Marshal.Release(trackerObjRaw);
         }
 
         static int Main(string[] doNotUse)
@@ -335,7 +475,11 @@ namespace ComWrappersTests
                 ValidateRuntimeTrackerScenario();
                 ValidateCreateObjectCachingScenario();
                 ValidateIUnknownImpls();
-                ValidateRegisterForReferenceTrackerHost();
+                ValidateBadComWrapperImpl();
+
+                // Perform all global impacting test scenarios last to
+                // avoid polluting non-global tests.
+                ValidateGlobalInstanceScenarios();
             }
             catch (Exception e)
             {
@@ -347,3 +491,4 @@ namespace ComWrappersTests
         }
     }
 }
+

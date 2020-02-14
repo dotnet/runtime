@@ -192,6 +192,14 @@ namespace
                 _runtimeServices->RemoveMemoryPressure(sizeof(TrackerObject) * count);
         }
 
+        HRESULT NotifyEndOfReferenceTrackingOnThread()
+        {
+            if (_runtimeServices != nullptr)
+                return _runtimeServices->NotifyEndOfReferenceTrackingOnThread();
+
+            return S_OK;
+        }
+
     public: // IReferenceTrackerManager
         STDMETHOD(ReferenceTrackingStarted)()
         {
@@ -320,7 +328,13 @@ extern "C" DLL_EXPORT ITrackerObject* STDMETHODCALLTYPE CreateTrackerObject()
     return obj;
 }
 
+// Release the reference on all internally held tracker objects
 extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReleaseAllTrackerObjects()
 {
     TrackerRuntimeManager.ReleaseObjects();
+}
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE Trigger_NotifyEndOfReferenceTrackingOnThread()
+{
+    return TrackerRuntimeManager.NotifyEndOfReferenceTrackingOnThread();
 }
