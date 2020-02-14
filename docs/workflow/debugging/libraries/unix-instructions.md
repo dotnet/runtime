@@ -23,12 +23,7 @@ error: no such file
 
 It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
-- You will find the dump url to download the crash dump file in the test logs, something similar to:
-<pre>
-2017-10-10 21:17:48,020: INFO: proc(54): run_and_log_output: Output: dumplingid:  eefcb1cc36977ccf86f457ee28a33a7b4cc24e13
-2017-10-10 21:17:48,020: INFO: proc(54): run_and_log_output: Output: <b>https://dumpling.azurewebsites.net/api/dumplings/archived/eefcb1cc36977ccf86f457ee28a33a7b4cc24e13</b>
-</pre>
-- The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
+- The crash dump file.
 - On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
 - Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
   - Download the matching Jenkins archive onto your repro machine.
