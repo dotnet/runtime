@@ -162,17 +162,18 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
 
 	for (int i = 0; i < propertyCount; ++i) {
-		if (!strcmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES")) {
+		size_t prop_len = strlen (propertyKeys [i]);
+		if (prop_len == 27 && !strncmp (propertyKeys [i], "TRUSTED_PLATFORM_ASSEMBLIES", 27)) {
 			parse_trusted_platform_assemblies (propertyValues[i]);
-		} else if (!strcmp (propertyKeys [i], "APP_PATHS")) {
+		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (!strcmp (propertyKeys [i], "APP_NI_PATHS")) {
+		} else if (prop_len == 12 && !strncmp (propertyKeys [i], "APP_NI_PATHS", 12)) {
 			app_ni_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (!strcmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS")) {
+		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
-		} else if (!strcmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
+		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
 			native_lib_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (!strcmp (propertyKeys [i], "System.Globalization.Invariant")) {
+		} else if (prop_len == 30 && !strncmp (propertyKeys [i], "System.Globalization.Invariant", 30)) {
 			// TODO: Ideally we should propagate this through AppContext options
 			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues [i], TRUE);
 		} else {
