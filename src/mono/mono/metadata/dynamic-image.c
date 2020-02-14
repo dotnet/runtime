@@ -31,24 +31,24 @@
 
 // The dynamic images list is only needed to support the mempool reference tracking feature in checked-build.
 static GPtrArray *dynamic_images;
-static mono_mutex_t dynamic_images_mutex;
+static MonoCoopMutex dynamic_images_mutex;
 
 static void
 dynamic_images_lock (void)
 {
-	mono_os_mutex_lock (&dynamic_images_mutex);
+	mono_coop_mutex_lock (&dynamic_images_mutex);
 }
 
 static void
 dynamic_images_unlock (void)
 {
-	mono_os_mutex_unlock (&dynamic_images_mutex);
+	mono_coop_mutex_unlock (&dynamic_images_mutex);
 }
 
 void
 mono_dynamic_images_init (void)
 {
-	mono_os_mutex_init (&dynamic_images_mutex);
+	mono_coop_mutex_init (&dynamic_images_mutex);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
