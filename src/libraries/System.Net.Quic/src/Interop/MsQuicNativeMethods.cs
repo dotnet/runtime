@@ -477,5 +477,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal uint Length;
             internal byte* Buffer;
         }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CertFileParams
+        {
+            internal IntPtr CertificateFilePath;
+            internal IntPtr PrivateKeyFilePath;
+        }
     }
 }
