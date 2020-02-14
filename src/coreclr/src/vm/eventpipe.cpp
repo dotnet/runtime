@@ -22,6 +22,7 @@
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
 #include "ceemain.h"
+#include "configuration.h"
 
 #ifdef TARGET_UNIX
 #include "pal.h"
@@ -114,9 +115,15 @@ void EventPipe::EnableViaEnvironmentVariables()
     {
         LPWSTR eventpipeConfig = NULL;
         CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeConfig, &eventpipeConfig);
+        LPCWSTR eventpipeOutputPath = Configuration::GetKnobStringValue(W("EventPipeOutputPath"));
+        uint32_t eventpipeCircularBufferMB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeCircularMB);
+
+        if (eventpipeOutputPath == NULL)
+        {
+            eventpipeOutputPath = W("trace.nettrace");
+        }
         auto configuration = XplatEventLoggerConfiguration();
         auto configToParse = eventpipeConfig;
-        auto t_configToParse = eventpipeConfig;
 
         // TODO: The behavior should be the same as existing code - enable with default provider configuration 
         if (configToParse == nullptr || *configToParse == L'\0')
@@ -127,17 +134,18 @@ void EventPipe::EnableViaEnvironmentVariables()
         // Count how many providers there are to parse
         int cnt = 0;
         static WCHAR comma = W(',');
-        while(t_configToParse != nullptr)
+        while(configToParse != nullptr)
         {
             cnt += 1;
-            auto end = wcschr(t_configToParse, comma);
+            auto end = wcschr(configToParse, comma);
             if (end == nullptr)
             {
                 break;
             }
-            t_configToParse = end + 1;
+            configToParse = end + 1;
         }
 
+        configToParse = eventpipeConfig;
         EventPipeProviderConfiguration* pProviders = new EventPipeProviderConfiguration[cnt]; 
         int i = 0;
 
@@ -170,8 +178,8 @@ void EventPipe::EnableViaEnvironmentVariables()
         }
 
         UINT64 sessionID = EventPipe::Enable(
-            W("mytrace.nettrace"),
-            128,
+            eventpipeOutputPath,
+            eventpipeCircularBufferMB,
             pProviders,
             cnt,
             EventPipeSessionType::File,

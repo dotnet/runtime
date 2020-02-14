@@ -222,31 +222,7 @@ struct ProfilingScanContext;
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
 
-#ifndef FEATURE_REDHAWK
-
-#include "corprof.h"
-
-// g_nClrInstanceId is defined in Utilcode\Util.cpp. The definition goes into Utilcode.lib.
-// This enables both the VM and Utilcode to raise ETW events.
-extern UINT32 g_nClrInstanceId;
-
-#define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
-#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
-#define KEYWORDZERO 0x0
-
-/***************************************/
-/* Tracing levels supported by CLR ETW */
-/***************************************/
-#define MAX_TRACE_LEVEL         6   // Maximum Number of Trace Levels supported
-#define TRACE_LEVEL_FATAL       1   // Abnormal exit or termination
-#define TRACE_LEVEL_ERROR       2   // Severe errors that need logging
-#define TRACE_LEVEL_WARNING     3   // Warnings such as allocation failure
-#define TRACE_LEVEL_INFORMATION 4   // Includes non-error cases such as Entry-Exit
-#define TRACE_LEVEL_VERBOSE     5   // Detailed traces from intermediate steps
-
-#define DEF_LTTNG_KEYWORD_ENABLED 1
-#include "clrproviders.h"
-#include "clrconfig.h"
+#ifdef FEATURE_EVENT_TRACE
 
 class XplatEventLoggerConfiguration
 {
