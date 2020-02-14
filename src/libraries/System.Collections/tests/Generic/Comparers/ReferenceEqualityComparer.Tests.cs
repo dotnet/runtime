@@ -20,12 +20,11 @@ namespace System.Collections.Generic.Tests
         [Fact]
         public void InstanceProperty_ReturnsSingleton()
         {
-            ReferenceEqualityComparer comparer = ReferenceEqualityComparer.Instance;
-            Assert.NotNull(comparer);
+            ReferenceEqualityComparer comparer1 = ReferenceEqualityComparer.Instance;
+            Assert.NotNull(comparer1);
 
-            // use reflection to call property getter and make sure it's the exact same instance
-            object comparerFromReflection = typeof(ReferenceEqualityComparer).GetProperty("Instance").GetValue(null);
-            Assert.Same(comparer, comparerFromReflection);
+            ReferenceEqualityComparer comparer2 = ReferenceEqualityComparer.Instance;
+            Assert.Same(comparer1, comparer2);
         }
 
         [Fact]
