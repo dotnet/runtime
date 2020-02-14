@@ -27,8 +27,6 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
-        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
@@ -125,8 +123,8 @@ namespace System.Net.Http.Headers
             Debug.Assert(destination != null);
 
             destination.Append('%');
-            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
-            destination.Append(s_hexUpperChars[c & 0xf]);
+            destination.Append(HexConverter.ToCharUpper(c >> 4));
+            destination.Append(HexConverter.ToCharUpper(c));
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)

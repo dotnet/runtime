@@ -39,6 +39,7 @@ namespace R2RDump
         public bool SectionContents { get; set; }
         public bool EntryPoints { get; set; }
         public bool Normalize { get; set; }
+        public bool HideTransitions { get; set; }
         public bool Verbose { get; set; }
         public bool Diff { get; set; }
         public bool DiffHideSameDisasm { get; set; }

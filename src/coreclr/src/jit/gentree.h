@@ -3919,6 +3919,7 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_GUARDED                 0x00200000 // GT_CALL -- this call was transformed by guarded devirtualization
 #define GTF_CALL_M_ALLOC_SIDE_EFFECTS      0x00400000 // GT_CALL -- this is a call to an allocator with side effects
 #define GTF_CALL_M_SUPPRESS_GC_TRANSITION  0x00800000 // GT_CALL -- suppress the GC transition (i.e. during a pinvoke) but a separate GC safe point is required.
+#define GTF_CALL_M_EXP_RUNTIME_LOOKUP      0x01000000 // GT_CALL -- this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
 
     // clang-format on
 
@@ -4166,6 +4167,21 @@ struct GenTreeCall final : public GenTree
     void SetIsGuarded()
     {
         gtCallMoreFlags |= GTF_CALL_M_GUARDED;
+    }
+
+    void SetExpRuntimeLookup()
+    {
+        gtFlags |= GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+    }
+
+    void ClearExpRuntimeLookup()
+    {
+        gtFlags &= ~GTF_CALL_M_EXP_RUNTIME_LOOKUP;
+    }
+
+    bool IsExpRuntimeLookup() const
+    {
+        return (gtFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
     }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags
