@@ -1630,6 +1630,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32295", TestRuntimes.Mono)]
         public void GetExportOfTTMetadataView1_TypeAsMetadataViewTypeArgument_IsUsedAsMetadataConstraint()
         {
             var metadata = new Dictionary<string, object>();
