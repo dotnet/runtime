@@ -549,10 +549,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingListDisp();
 #endif // DEBUG
 
-    void genIPmappingAddBoundary(InlineContext *inlineContext, IL_OFFSETX offsx, bool label, bool isOpening);
-    void genIPmappingAddBoundaries(ContextList &contexts, IL_OFFSETX offsx, bool label, bool isOpening);
+    unsigned genIPmappingGenBoundaries(unsigned mappingCnt, ContextList& contexts, UNATIVE_OFFSET nativeOfs, bool isOpening);
     void genIPmappingAdd(IL_OFFSETX offset, bool isLabel, InlineContext* inlineContext);
     void genIPmappingAddToFront(IL_OFFSETX offset);
+    unsigned genIPMappingGenCount();
     void genIPmappingGen();
 
     void genEnsureCodeEmitted(IL_OFFSETX offsx);

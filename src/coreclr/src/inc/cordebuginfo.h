@@ -48,12 +48,12 @@ public:
         NATIVE_END_OFFSET_UNKNOWN  = 0x08, // Indicates a epilog endpoint
         CALL_INSTRUCTION           = 0x10, // The actual instruction of a call.
         INLINE_OPEN                = 0x20, // Beginning of an inline method
-        INLINE_CLOSE               = 0x30 // ending of an inline method
+        INLINE_CLOSE               = 0x40 // ending of an inline method
     };
 
     struct Method
     {
-        CORINFO_METHOD_INFO* method;
+        UINT64 method;
     };
     struct Offset
     {

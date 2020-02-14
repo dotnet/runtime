@@ -7133,7 +7133,7 @@ public:
     // To indicate of which function are we reporint IL
     struct IPMappingMethod
     {
-        CORINFO_METHOD_INFO* methodDsc;
+        UINT64 methodDesc;
     };
 
     struct boundariesDsc
@@ -7147,13 +7147,13 @@ public:
     } * eeBoundaries; // Boundaries to report to EE
 
     void eeSetLIcount(unsigned count);
-    void eeSetLIinfo(unsigned which, UNATIVE_OFFSET offs, unsigned srcIP, bool stkEmpty, bool callInstruction);
-    void eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_INFO* methodDsc, bool opening);
+    void eeSetLIinfo(unsigned which, UNATIVE_OFFSET offs, IL_OFFSET ilOffset, bool stkEmpty, bool callInstruction);
+    void eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_HANDLE* methodDesc, bool opening);
     void eeSetLIdone();
 
 #ifdef DEBUG
     static void eeDispILOffs(IL_OFFSET offs);
-    static void eeDispLineInfo(const boundariesDsc* line);
+    void eeDispLineInfo(const boundariesDsc* line);
     void eeDispLineInfos();
 #endif // DEBUG
 
@@ -7271,7 +7271,6 @@ public:
         IL_OFFSETX     ipmdILoffsx;       // the instr offset
         InlineContext* ipmdInlineContext; // the context from which this ip came from
         bool           ipmdIsLabel;       // Can this code be a branch label?
-        bool           isMethodBoundary;  // Wheter this marks the ending/begining of a different method
     };
 
     // Record the instr offset mapping to the generated code

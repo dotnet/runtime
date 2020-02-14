@@ -933,8 +933,7 @@ void Compiler::eeSetLIcount(unsigned count)
     }
 }
 
-void Compiler::eeSetLIinfoMethod(
-    unsigned which, CORINFO_METHOD_INFO* methodDsc, bool opening)
+void Compiler::eeSetLIinfoMethod(unsigned which, CORINFO_METHOD_HANDLE* methodDesc, bool opening)
 {
     assert(opts.compDbgInfo);
     assert(eeBoundariesCount > 0);
@@ -942,7 +941,7 @@ void Compiler::eeSetLIinfoMethod(
 
     if (eeBoundaries != nullptr)
     {
-        eeBoundaries[which].method.methodDsc    = methodDsc;
+        eeBoundaries[which].method.methodDesc    = ((UINT64) methodDesc);
         eeBoundaries[which].sourceReason = opening ? ICorDebugInfo::INLINE_OPEN : ICorDebugInfo::INLINE_CLOSE;
     }
 }
@@ -1008,11 +1007,18 @@ void Compiler::eeDispILOffs(IL_OFFSET offs)
 /* static */
 void Compiler::eeDispLineInfo(const boundariesDsc* line)
 {
-    printf("IL offs ");
+    if ((line->sourceReason & (ICorDebugInfo::INLINE_CLOSE | ICorDebugInfo::INLINE_OPEN)) != 0)
+    {
+        CORINFO_METHOD_HANDLE* bla = ((CORINFO_METHOD_HANDLE *)line->method.methodDesc);
+        printf("Inline Indicator %s", this->eeGetMethodFullName(*bla));
+    }
+    else
+    {
+        printf("IL offs ");
+        eeDispILOffs(line->offset.ilOffset);
+        printf(" : 0x%08X", line->offset.nativeIP);
+    }
 
-    eeDispILOffs(line->offset.ilOffset);
-
-    printf(" : 0x%08X", line->offset.nativeIP);
     if (line->sourceReason != 0)
     {
         // It seems like it should probably never be zero since ICorDebugInfo::SOURCE_TYPE_INVALID is zero.
@@ -1031,12 +1037,22 @@ void Compiler::eeDispLineInfo(const boundariesDsc* line)
         {
             printf("CALL_SITE ");
         }
+
+        if ((line->sourceReason & ICorDebugInfo::INLINE_OPEN) != 0)
+        {
+            printf("INLINE_OPEN ");
+        }
+
+        if ((line->sourceReason & ICorDebugInfo::INLINE_CLOSE) != 0)
+        {
+            printf("INLINE_CLOSE ");
+        }
         printf(")");
     }
     printf("\n");
 
     // We don't expect to see any other bits.
-    assert((line->sourceReason & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION)) == 0);
+    assert((line->sourceReason & ~(ICorDebugInfo::STACK_EMPTY | ICorDebugInfo::CALL_INSTRUCTION | ICorDebugInfo::INLINE_CLOSE | ICorDebugInfo::INLINE_OPEN)) == 0);
 }
 
 void Compiler::eeDispLineInfos()

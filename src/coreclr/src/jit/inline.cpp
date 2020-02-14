@@ -1218,7 +1218,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Guarded        = originalCall->IsGuarded();
     calleeContext->m_Unboxed        = originalCall->IsUnboxed();
     calleeContext->m_ImportedILSize = inlineInfo->inlineResult->GetImportedILSize();
-
+    // calleeContext->m_MethodDsc      = GetMethod(inlineInfo->fncHandle);
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     InlinePolicy* policy = inlineInfo->inlineResult->GetPolicy();
