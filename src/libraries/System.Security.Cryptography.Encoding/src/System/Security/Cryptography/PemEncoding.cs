@@ -93,7 +93,13 @@ namespace System.Security.Cryptography
                     continue;
                 }
 
-                ReadOnlySpan<char> posteb = string.Concat(Posteb, label, Ending);
+                int postebLength = Posteb.Length + label.Length + Ending.Length;
+                Span<char> postebBuffer = postebLength > 256 ? new char[postebLength] : stackalloc char[256];
+                Posteb.AsSpan().CopyTo(postebBuffer);
+                label.CopyTo(postebBuffer[Posteb.Length..]);
+                Ending.AsSpan().CopyTo(postebBuffer[(Posteb.Length + label.Length)..]);
+                ReadOnlySpan<char> posteb = postebBuffer[..postebLength];
+
                 Range postebLineRange = lineRange;
                 int postebLinePosition = preebLinePosition;
 

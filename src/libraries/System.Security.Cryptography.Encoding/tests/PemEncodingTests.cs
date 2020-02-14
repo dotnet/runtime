@@ -28,6 +28,17 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(3, fields.DecodedDataLength);
         }
 
+        [Fact]
+        public static void Find_LargeLabel()
+        {
+            string label = new string('A', 275);
+            string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
+            PemFields fields = PemEncoding.Find(content);
+            Assert.Equal(label, content[fields.Label]);
+            Assert.Equal(content, content[fields.Location]);
+            Assert.Equal("Zm9v", content[fields.Base64Data]);
+            Assert.Equal(3, fields.DecodedDataLength);
+        }
 
         [Fact]
         public static void TryFind_True_Minimum()
