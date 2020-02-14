@@ -248,7 +248,7 @@ namespace System.Net.Security
 
                 if (!receiveFirst)
                 {
-                    message = _context.NextMessage(reAuthenticationData == null ? default : new ReadOnlySpan<byte>(reAuthenticationData));
+                    message = _context.NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
                         await adapter.WriteAsync(message.Payload, 0, message.Size).ConfigureAwait(false);
@@ -293,10 +293,10 @@ namespace System.Net.Security
             }
             finally
             {
+                _handshakeBuffer.Dispose();
                 if (reAuthenticationData == null)
                 {
                     _nestedAuth = 0;
-                    _handshakeBuffer.Dispose();
                 }
             }
 
@@ -843,7 +843,7 @@ namespace System.Net.Security
             int initialCount = _internalBufferCount;
             do
             {
-                ValueTask<int> t = adapter.ReadAsync(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount);
+                ValueTask<int> t = adapter.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
                 if (!t.IsCompletedSuccessfully)
                 {
                     return InternalFillBufferAsync(adapter, t, minSize, initialCount);
@@ -886,7 +886,7 @@ namespace System.Net.Security
                         return min;
                     }
 
-                    task = adap.ReadAsync(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount);
+                    task = adap.ReadAsync(new Memory<byte>(_internalBuffer, _internalBufferCount, _internalBuffer.Length - _internalBufferCount));
                 }
             }
         }
@@ -1072,7 +1072,7 @@ namespace System.Net.Security
 
             int version = -1;
 
-            if (bytes.Length <= 0)
+            if (bytes.Length == 0)
             {
                 NetEventSource.Fail(this, "Header buffer is not allocated.");
             }
