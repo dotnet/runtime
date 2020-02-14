@@ -263,7 +263,7 @@ namespace System
             {
                 if ((bindingFlags & BindingFlags.IgnoreCase) != 0)
                 {
-                    name = name.ToLower(CultureInfo.InvariantCulture);
+                    name = name.ToLowerInvariant();
                     ignoreCase = true;
                     listType = MemberListType.CaseInsensitive;
                 }
@@ -323,7 +323,7 @@ namespace System
         {
             #region Preconditions
             Contract.Requires(memberInfo != null);
-            Contract.Requires(name == null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLower(CultureInfo.InvariantCulture).Equals(name)));
+            Contract.Requires(name == null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLowerInvariant().Equals(name)));
             #endregion
 
             #region Filter by Public & Private

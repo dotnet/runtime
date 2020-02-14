@@ -32,7 +32,7 @@ public class ProcessParameters
     public string LogPath;
     public int TimeoutMilliseconds;
     public int ExpectedExitCode;
-    public string InputFileName;
+    public IEnumerable<string> InputFileNames;
     public string OutputFileName;
     public long CompilationCostHeuristic;
     public bool CollectJittedMethods;

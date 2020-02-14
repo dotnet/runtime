@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <TargetFrameworks>netstandard2.0;netcoreapp2.1;$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>

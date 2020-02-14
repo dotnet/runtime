@@ -74,6 +74,8 @@ namespace System.Net.Quic
     public class QuicListenerOptions
     {
         public SslServerAuthenticationOptions ServerAuthenticationOptions { get => throw null; set => throw null; }
+        public string CertificateFilePath { get => throw null; set => throw null; }
+        public string PrivateKeyFilePath { get => throw null; set => throw null; }
         public IPEndPoint ListenEndPoint { get => throw null; set => throw null; }
         public int ListenBacklog { get => throw null; set => throw null; }
         public long MaxBidirectionalStreams { get => throw null; set => throw null; }
@@ -94,5 +96,9 @@ namespace System.Net.Quic
     {
         public QuicStreamAbortedException(string message, long errorCode) : base(message) { }
         public long ErrorCode { get; }
+    }
+    public class QuicOperationAbortedException : QuicException
+    {
+        public QuicOperationAbortedException(string message) : base(message) { }
     }
 }

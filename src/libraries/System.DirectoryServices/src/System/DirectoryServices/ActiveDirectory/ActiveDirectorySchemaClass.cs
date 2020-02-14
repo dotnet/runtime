@@ -1091,7 +1091,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             if (values.Count < 1 && mustExist)
@@ -1116,7 +1116,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InitializePropertiesFromSchemaContainer();
 
             Debug.Assert(_propertyValuesFromServer != null);
-            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLower(CultureInfo.InvariantCulture)];
+            ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
             Debug.Assert(values != null);
             return values;

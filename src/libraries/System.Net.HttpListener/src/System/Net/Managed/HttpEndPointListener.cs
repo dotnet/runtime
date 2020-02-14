@@ -194,7 +194,7 @@ namespace System.Net
                     if (p.Host != host || p.Port != port)
                         continue;
 
-                    if (path.StartsWith(ppath) || pathSlash.StartsWith(ppath))
+                    if (path.StartsWith(ppath, StringComparison.Ordinal) || pathSlash.StartsWith(ppath, StringComparison.Ordinal))
                     {
                         bestLength = ppath.Length;
                         bestMatch = localPrefixes[p];
@@ -241,7 +241,7 @@ namespace System.Net
                 if (ppath.Length < bestLength)
                     continue;
 
-                if (path.StartsWith(ppath))
+                if (path.StartsWith(ppath, StringComparison.Ordinal))
                 {
                     bestLength = ppath.Length;
                     bestMatch = p._listener;

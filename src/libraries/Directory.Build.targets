@@ -144,6 +144,8 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
+  <Import Project="$(RepositoryEngineeringDir)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+
   <!-- Import Packaging targets -->
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" />
 
@@ -201,7 +203,7 @@
   </Choose>
   
   <PropertyGroup>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreApp)' == 'true'">true</ExcludeFromPackage>
-    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFramework)' == 'true'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
+    <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 </Project>

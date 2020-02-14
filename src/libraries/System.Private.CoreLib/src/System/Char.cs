@@ -355,7 +355,7 @@ namespace System
         // Converts a character to upper-case for invariant culture.
         public static char ToUpperInvariant(char c)
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToUpper(c);
+            return TextInfo.Invariant.ToUpper(c);
         }
 
         /*===================================ToLower====================================
@@ -384,7 +384,7 @@ namespace System
         // Converts a character to lower-case for invariant culture.
         public static char ToLowerInvariant(char c)
         {
-            return CultureInfo.InvariantCulture.TextInfo.ToLower(c);
+            return TextInfo.Invariant.ToLower(c);
         }
 
         //

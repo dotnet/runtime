@@ -14,7 +14,7 @@ namespace System.IO.Pipes
     public abstract partial class PipeStream : Stream
     {
         internal const bool CheckOperationsRequiresSetHandle = true;
-        internal ThreadPoolBoundHandle _threadPoolBinding;
+        internal ThreadPoolBoundHandle? _threadPoolBinding;
 
         internal static string GetPipePath(string serverName, string pipeName)
         {
@@ -57,7 +57,7 @@ namespace System.IO.Pipes
         private unsafe int ReadCore(Span<byte> buffer)
         {
             int errorCode = 0;
-            int r = ReadFileNative(_handle, buffer, null, out errorCode);
+            int r = ReadFileNative(_handle!, buffer, null, out errorCode);
 
             if (r == -1)
             {
@@ -89,7 +89,7 @@ namespace System.IO.Pipes
             int r;
             unsafe
             {
-                r = ReadFileNative(_handle, buffer.Span, completionSource.Overlapped, out errorCode);
+                r = ReadFileNative(_handle!, buffer.Span, completionSource.Overlapped, out errorCode);
             }
 
             // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
@@ -137,7 +137,7 @@ namespace System.IO.Pipes
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
             int errorCode = 0;
-            int r = WriteFileNative(_handle, buffer, null, out errorCode);
+            int r = WriteFileNative(_handle!, buffer, null, out errorCode);
 
             if (r == -1)
             {
@@ -155,7 +155,7 @@ namespace System.IO.Pipes
             int r;
             unsafe
             {
-                r = WriteFileNative(_handle, buffer.Span, completionSource.Overlapped, out errorCode);
+                r = WriteFileNative(_handle!, buffer.Span, completionSource.Overlapped, out errorCode);
             }
 
             // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative
@@ -188,7 +188,7 @@ namespace System.IO.Pipes
             }
 
             // Block until other end of the pipe has read everything.
-            if (!Interop.Kernel32.FlushFileBuffers(_handle))
+            if (!Interop.Kernel32.FlushFileBuffers(_handle!))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
             }
@@ -205,7 +205,7 @@ namespace System.IO.Pipes
                 if (_isFromExistingHandle)
                 {
                     uint pipeFlags;
-                    if (!Interop.Kernel32.GetNamedPipeInfo(_handle, &pipeFlags, null, null, null))
+                    if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, &pipeFlags, null, null, null))
                     {
                         throw WinIOError(Marshal.GetLastWin32Error());
                     }
@@ -238,7 +238,7 @@ namespace System.IO.Pipes
                 }
 
                 uint inBufferSize;
-                if (!Interop.Kernel32.GetNamedPipeInfo(_handle, null, null, &inBufferSize, null))
+                if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, null, null, &inBufferSize, null))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -268,7 +268,7 @@ namespace System.IO.Pipes
                 {
                     outBufferSize = _outBufferSize;
                 }
-                else if (!Interop.Kernel32.GetNamedPipeInfo(_handle, null, &outBufferSize, null, null))
+                else if (!Interop.Kernel32.GetNamedPipeInfo(_handle!, null, &outBufferSize, null, null))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
@@ -304,7 +304,7 @@ namespace System.IO.Pipes
                 unsafe
                 {
                     int pipeReadType = (int)value << 1;
-                    if (!Interop.Kernel32.SetNamedPipeHandleState(_handle, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
+                    if (!Interop.Kernel32.SetNamedPipeHandleState(_handle!, &pipeReadType, IntPtr.Zero, IntPtr.Zero))
                     {
                         throw WinIOError(Marshal.GetLastWin32Error());
                     }
@@ -404,7 +404,7 @@ namespace System.IO.Pipes
             return secAttrs;
         }
 
-        internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity pipeSecurity, ref GCHandle pinningHandle)
+        internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity? pipeSecurity, ref GCHandle pinningHandle)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
@@ -466,7 +466,7 @@ namespace System.IO.Pipes
                     // For invalid handles, detect the error and mark our handle
                     // as invalid to give slightly better error messages.  Also
                     // help ensure we avoid handle recycling bugs.
-                    _handle.SetHandleAsInvalid();
+                    _handle!.SetHandleAsInvalid();
                     _state = PipeState.Broken;
                     break;
             }

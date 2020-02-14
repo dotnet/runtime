@@ -5,7 +5,7 @@
     <FileAlignment>512</FileAlignment>
     <PackageTargetFramework Condition="'$(TargetFramework)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
     <TargetFrameworks>netstandard1.0;netstandard1.3;netstandard2.0;$(NetCoreAppCurrent)</TargetFrameworks>
-    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

@@ -833,6 +833,12 @@ protected:
     void genLongToIntCast(GenTree* treeNode);
 #endif
 
+    // Generate code for a GT_BITCAST that is not contained.
+    void genCodeForBitCast(GenTreeOp* treeNode);
+
+    // Generate the instruction to move a value between register files
+    void genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg);
+
     struct GenIntCastDesc
     {
         enum CheckKind
@@ -1364,6 +1370,7 @@ public:
     instruction ins_Move_Extend(var_types srcType, bool srcInReg);
 
     instruction ins_Copy(var_types dstType);
+    instruction ins_Copy(regNumber srcReg, var_types dstType);
     instruction ins_CopyIntToFloat(var_types srcType, var_types dstTyp);
     instruction ins_CopyFloatToInt(var_types srcType, var_types dstTyp);
     static instruction ins_FloatStore(var_types type = TYP_DOUBLE);
