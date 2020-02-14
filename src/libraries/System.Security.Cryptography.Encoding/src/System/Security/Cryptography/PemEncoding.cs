@@ -62,6 +62,7 @@ namespace System.Security.Cryptography
                 return false;
             }
 
+            Span<char> postebShortBuffer = stackalloc char[256];
             int preebLinePosition = 0;
             while (TryReadNextLine(pemData, ref preebLinePosition, out Range lineRange))
             {
@@ -94,7 +95,7 @@ namespace System.Security.Cryptography
                 }
 
                 int postebLength = Posteb.Length + label.Length + Ending.Length;
-                Span<char> postebBuffer = postebLength > 256 ? new char[postebLength] : stackalloc char[256];
+                Span<char> postebBuffer = postebLength > 256 ? new char[postebLength] : postebShortBuffer;
                 Posteb.AsSpan().CopyTo(postebBuffer);
                 label.CopyTo(postebBuffer[Posteb.Length..]);
                 Ending.AsSpan().CopyTo(postebBuffer[(Posteb.Length + label.Length)..]);
