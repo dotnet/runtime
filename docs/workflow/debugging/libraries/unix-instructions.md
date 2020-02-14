@@ -24,17 +24,9 @@ error: no such file
 It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
 - The crash dump file.
-- On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
-- Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
-  - Download the matching Jenkins archive onto your repro machine.
-  - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
-- lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9. In order to install lldb 3.9 just run the following commands:
-```
-~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-~$ wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
-~$ sudo apt-get update
-~$ sudo apt-get install lldb-3.9
-```
+- On Linux, there is an utility called `createdump` (see [doc](../../../design/coreclr/botr/xplat-minidump-generation.md "doc")) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.'
+
+There are instructions for installing lldb and SOS [here](https://github.com/dotnet/diagnostics/blob/master/documentation/sos.md).
 
 Once you have everything listed above, you are ready to start debugging. You need to specify an extra parameter to lldb in order for it to correctly resolve the symbols for libcoreclr.so. Use a command like this:
 
