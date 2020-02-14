@@ -1441,7 +1441,8 @@ namespace System
             int maxItems = (numReplaces < count) ? (numReplaces + 1) : count;
             string[] splitStrings = new string[maxItems];
 
-            int currIndex = arrIndex = 0;
+            int currIndex = 0;
+            int arrIndex = 0;
 
             for (int i = 0; i < numReplaces && currIndex < Length; i++)
             {
