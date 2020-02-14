@@ -230,7 +230,7 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
 // This occurs in response to AppDomain unload.
 // Note that this doesn't necessarily mean the EE Module is being unloaded (it may be shared)
 //-----------------------------------------------------------------------------
-void DebuggerModuleTable::RemoveModule(Module* module, AppDomain *pAppDomain)
+void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
 {
     CONTRACTL
     {
@@ -239,12 +239,34 @@ void DebuggerModuleTable::RemoveModule(Module* module, AppDomain *pAppDomain)
     }
     CONTRACTL_END;
 
-    // If this is a domain neutral module, then scan the complete list of DebuggerModules looking
-    // for the one with a matching appdomain id.
-    // Note: we have to make sure to lookup the module with the app domain parameter if the module lives in a shared
-    // assembly or the system assembly. <BUGNUM>Bugs 65943 & 81728.</BUGNUM>
-    _ASSERTE( FALSE );
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM Attempting to remove Module:0x%x AD:0x%x\n", pModule, pAppDomain));
 
+    _ASSERTE(ThreadHoldsLock());
+    _ASSERTE(pModule != NULL);
+
+    HASHFIND hf;
+    DebuggerModuleEntry *pDME; pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
+
+    for (pDME = (DebuggerModuleEntry *) FindFirstEntry(&hf);
+         pDME != NULL;
+         pDME = (DebuggerModuleEntry*) FindNextEntry(&hf))
+    {
+        DebuggerModule *pDM = pDME->module;
+        Module* pRtModInDebugMod = pDM->GetRuntimeModule();
+
+        if (pRtModInDebugMod == pModule && pDM->GetAppDomain() == pAppDomain)
+        {
+            LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x AD:0x%x\n",
+                pDM, pModule, pDM->GetDomainFile(), pAppDomain));
+            TRACE_FREE(pDME->module);
+            DeleteInteropSafe(pDM);
+            Delete(HASH(pRtModInDebugMod), (HASHENTRY *) pDME);
+            _ASSERTE(GetModule(pModule, pAppDomain) == NULL);
+            return;
+        }
+    }
+
+    LOG((LF_CORDB, LL_INFO1000, "DMT::RM  No debugger module found for Module:0x%x AD:0x%x\n", pModule, pAppDomain));
 }
 
 
@@ -337,5 +359,3 @@ DebuggerModule *DebuggerModuleTable::GetNextModule(HASHFIND *info)
     else
         return entry->module;
 }
-
-
