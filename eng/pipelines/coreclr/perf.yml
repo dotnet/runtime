@@ -27,15 +27,22 @@ pr:
     include:
     - master
   paths:
-    exclude: # don't trigger the CI if only a doc file was changed
+    include:
+    - '*'
+    - src/libraries/System.Private.CoreLib/*
+    exclude:
     - docs/*
-    - eng/common/README.md
-    - src/benchmarks/micro/Serializers/README.md
-    - src/benchmarks/micro/README.md
-    - src/benchmarks/real-world/JitBench/README.md
-    - src/benchmarks/real-world/Microsoft.ML.Benchmarks/Input/README.md
-    - src/tools/ResultsComparer/README.md
+    - CODE-OF-CONDUCT.md
+    - CONTRIBUTING.md
+    - LICENSE.TXT
+    - PATENTS.TXT
     - README.md
+    - SECURITY.md
+    - THIRD-PARTY-NOTICES.TXT
+    - src/installer/*
+    - src/libraries/*
+    - eng/pipelines/installer/*
+    - eng/pipelines/libraries/*
 
 jobs:
 #
