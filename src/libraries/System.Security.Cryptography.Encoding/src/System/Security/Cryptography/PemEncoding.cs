@@ -222,7 +222,8 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            int newLineIndex = data[position..].IndexOfAny('\n', '\r');
+            ReadOnlySpan<char> content = data[position..];
+            int newLineIndex = content.IndexOfAny('\n', '\r');
 
             if (newLineIndex == -1)
             {
@@ -230,9 +231,9 @@ namespace System.Security.Cryptography
                 position = -1;
                 return true;
             }
-            else if (data[newLineIndex] == '\r' &&
-                     newLineIndex < data.Length - 1 &&
-                     data[newLineIndex + 1] == '\n')
+            else if (content[newLineIndex] == '\r' &&
+                     newLineIndex < content.Length - 1 &&
+                     content[newLineIndex + 1] == '\n')
             {
                 // We landed at a Windows new line, we should consume both the \r and \n.
                 nextLineContent = position..(position + newLineIndex);
