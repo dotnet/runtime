@@ -1441,12 +1441,11 @@ namespace System
             int maxItems = (numReplaces < count) ? (numReplaces + 1) : count;
             string[] splitStrings = new string[maxItems];
 
-            int currIndex = 0;
-            int arrIndex = 0;
+            int currIndex = arrIndex = 0;
 
             for (int i = 0; i < numReplaces && currIndex < Length; i++)
             {
-                if (sepList[i] - currIndex > 0)
+                if (sepList[i] > currIndex)
                 {
                     splitStrings[arrIndex++] = Substring(currIndex, sepList[i] - currIndex);
                 }
@@ -1779,7 +1778,7 @@ namespace System
             // Trim specified characters.
             if ((trimType & TrimType.Head) != 0)
             {
-                for (start = 0; start < Length; start++)
+                for (; start < Length; start++)
                 {
                     if (!char.IsWhiteSpace(this[start]))
                     {
