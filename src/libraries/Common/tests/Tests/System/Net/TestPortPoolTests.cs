@@ -20,7 +20,7 @@ using Xunit.Abstractions;
 namespace System.Net.Test.Common
 {
     // Tests are relatively long-running, and we do not expect the TestPortPool to be changed frequently
-    [OuterLoop]
+    // [OuterLoop]
     [Collection(nameof(DisableParallelExecution))]
     public class TestPortPoolTests
     {
