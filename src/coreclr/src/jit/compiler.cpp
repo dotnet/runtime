@@ -963,12 +963,19 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
     var_types unused;
-    int       is__m128 = 0;
-    if ((impNormStructType(clsHnd, &unused, &is__m128) == TYP_SIMD16) && (is__m128 == 1))
+    int       vectorRegSizeForReturn = 0;
+    var_types norm_struct_type = impNormStructType(clsHnd, &unused, &vectorRegSizeForReturn);
+    if ((norm_struct_type == TYP_SIMD16) && (vectorRegSizeForReturn == 16))
     {
         // TYP_SIMD16 should be returned in XMM0
         howToReturnStruct = SPK_PrimitiveType;
         useType           = TYP_SIMD16;
+    }
+    else if ((norm_struct_type == TYP_SIMD32) && (vectorRegSizeForReturn == 32))
+    {
+        // TYP_SIMD16 should be returned in YMM0
+        howToReturnStruct = SPK_PrimitiveType;
+        useType           = TYP_SIMD32;
     }
     else
 #endif

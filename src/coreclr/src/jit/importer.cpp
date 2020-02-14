@@ -1524,6 +1524,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 //    structHnd       - The class handle for the struct type of interest.
 //    pSimdBaseType   - (optional, default nullptr) - if non-null, and the struct is a SIMD
 //                      type, set to the SIMD base type
+//    vectorRegSizeForReturn - (options, default nullptr) - if non-null, and the struct is a SIMD
+//                             type, set to the size of vector register used to return (or 0 if the SIMD type is not enregistered on return)
 //
 // Return Value:
 //    The JIT type for the struct (e.g. TYP_STRUCT, or TYP_SIMD*).
@@ -1534,14 +1536,14 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
 //    be modified to one that is handled specially by the JIT, possibly being a candidate
 //    for full enregistration, e.g. TYP_SIMD16.
 
-var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType, int* is__m128)
+var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types* pSimdBaseType, int* vectorRegSizeForReturn)
 {
     assert(structHnd != NO_CLASS_HANDLE);
 
     var_types structType = TYP_STRUCT;
-    if (is__m128)
+    if (vectorRegSizeForReturn)
     {
-        *is__m128 = 0;
+        *vectorRegSizeForReturn = 0;
     }
 
 #ifdef FEATURE_SIMD
@@ -1557,7 +1559,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, var_types*
             if ((originalSize >= minSIMDStructBytes()) && (originalSize <= maxSIMDStructBytes()))
             {
                 unsigned int sizeBytes;
-                var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes, is__m128);
+                var_types    simdBaseType = getBaseTypeAndSizeOfSIMDType(structHnd, &sizeBytes, vectorRegSizeForReturn);
                 if (simdBaseType != TYP_UNKNOWN)
                 {
                     assert(sizeBytes == originalSize);

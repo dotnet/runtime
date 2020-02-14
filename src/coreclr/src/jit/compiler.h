@@ -3796,7 +3796,7 @@ public:
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd,
                                 var_types*           simdBaseType = nullptr,
-                                int*                 is__m128     = nullptr);
+                                int*                 vectorRegSizeForReturn = nullptr);
 
     GenTree* impNormStructVal(GenTree*             structVal,
                               CORINFO_CLASS_HANDLE structHnd,
@@ -7945,7 +7945,7 @@ private:
     // if it is not a SIMD type or is an unsupported base type.
     var_types getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd,
                                            unsigned*            sizeBytes = nullptr,
-                                           int*                 is__m128  = nullptr);
+                                           int*                 vectorRegSizeForReturn  = nullptr);
 
     var_types getBaseTypeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd)
     {
@@ -8934,7 +8934,7 @@ public:
     bool compMethodReturnsSingleRegVector()
     {
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
-        return info.compRetNativeType == TYP_SIMD16;
+        return (info.compRetNativeType == TYP_SIMD16) || (info.compRetNativeType == TYP_SIMD32);
 #else
         return false;
 #endif

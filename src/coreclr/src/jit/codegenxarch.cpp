@@ -167,9 +167,10 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
 #ifdef _TARGET_WINDOWS_
-            // TYP_SIMD16 should be returned in XMM0
+            // TYP_SIMD16 should be returned in XMM0, TYP_SIMD32 should be returned in YMM0
             assert(!varTypeIsStruct(compiler->info.compRetNativeType) ||
-                   compiler->info.compRetNativeType == TYP_SIMD16);
+                   compiler->info.compRetNativeType == TYP_SIMD16 ||
+                   compiler->info.compRetNativeType == TYP_SIMD32);
 #else
             assert(!varTypeIsStruct(compiler->info.compRetNativeType));
 #endif
@@ -1172,7 +1173,7 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     }
 #if defined(UNIX_AMD64_ABI) ||                                                                                         \
     (defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)) // UNIX_AMD64_ABI || _TARGET_AMD64_ && _TARGET_WINDOWS_
-    // TYP_SIMD16 should be returned in XMM0
+    // TYP_SIMD16 should be returned in XMM0, TYP_SIMD32 should be returned in YMM0
     return varTypeIsStruct(treeNode);
 #else // !UNIX_AMD64_ABI && (!_TARGET_AMD64_ || !_TARGET_WINDOWS_)
     assert(!varTypeIsStruct(treeNode));
@@ -1355,7 +1356,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         }
     }
 #elif defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
-    // TYP_SIMD16 should be returned in XMM0
+    // TYP_SIMD16 should be returned in XMM0, TYP_SIMD32 should be returned in YMM0
     genConsumeReg(op1);
 #else
     unreached();
@@ -5519,8 +5520,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     else
     {
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
-        // TYP_SIMD16 should be returned in XMM0
-        assert(call->gtType == TYP_SIMD16 || !varTypeIsStruct(call));
+        // TYP_SIMD16 should be returned in XMM0, TYP_SIMD32 should be returned in YMM0
+        assert(call->gtType == TYP_SIMD16 || call->gtType == TYP_SIMD32 || !varTypeIsStruct(call));
 #else
         assert(!varTypeIsStruct(call));
 #endif

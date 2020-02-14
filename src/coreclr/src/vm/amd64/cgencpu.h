@@ -74,7 +74,7 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #else
 #define ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE 8    // bytes
 #define ENREGISTERED_PARAMTYPE_MAXSIZE          8    // bytes
-#define ENREGISTERED_RETURNTYPE_MAXSIZE         16   // bytes
+#define ENREGISTERED_RETURNTYPE_MAXSIZE         32   // bytes (YMM return)
 #define COM_STUBS_SEPARATE_FP_LOCATIONS
 #define CALLDESCR_REGTYPEMAP                    1
 #endif

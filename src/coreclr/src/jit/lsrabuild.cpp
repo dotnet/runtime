@@ -3271,6 +3271,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     break;
 #if defined(_TARGET_AMD64_) && defined(_TARGET_WINDOWS_)
                 case TYP_SIMD16: // TYP_SIMD16 should be returned in XMM0
+                case TYP_SIMD32: // TYP_SIMD16 should be returned in YMM0
 #endif
                 case TYP_DOUBLE:
                     // We ONLY want the valid double register in the RBM_DOUBLERET mask.

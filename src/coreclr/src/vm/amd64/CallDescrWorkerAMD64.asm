@@ -108,6 +108,8 @@ DoCall:
         je      ReturnsDouble
         cmp     ecx, 16
         je      ReturnsQuad
+        cmp     ecx, 32
+        je      ReturnsYmmQuad
         ; unexpected
         jmp     Epilog
 
@@ -131,6 +133,10 @@ ReturnsDouble:
 
 ReturnsQuad:
         movapd  xmmword ptr [rbx+CallDescrData__returnValue], xmm0
+        jmp     Epilog
+
+ReturnsYmmQuad:
+        vmovapd ymmword ptr [rbx+CallDescrData__returnValue], ymm0
         jmp     Epilog
 
         NESTED_END CallDescrWorkerInternal, _TEXT

@@ -1551,9 +1551,24 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
 #endif
 
 #if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
-            if (thValueType.AsMethodTable()->GetVectorSize() == 16) /* (Andrew Au) Check if it is a Vector128<T> */
+            int vectorSize = thValueType.AsMethodTable()->GetVectorSize();
+            if (vectorSize == 16) /* Check if it is a Vector128<T> or 128 bit Vector<T>. */
             {
-                flags |= 16 << RETURN_FP_SIZE_SHIFT;
+                // If FEATURE_SIMD is disabled, this is a normal 16 byte structure
+                EEJitManager *jitMgr = ExecutionManager::GetEEJitManager();
+                if (jitMgr->LoadJIT())
+                {
+                    CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
+                    if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
+                    {
+                        flags |= 16 << RETURN_FP_SIZE_SHIFT;
+                        break;
+                    }
+                }
+            }
+            if (vectorSize == 32) /* Check if it is a Vector256<T> or 256 bit Vector<T> */
+            {
+                flags |= 32 << RETURN_FP_SIZE_SHIFT;
                 break;
             }
 #endif
