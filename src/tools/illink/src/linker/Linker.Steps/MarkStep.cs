@@ -205,12 +205,6 @@ namespace Mono.Linker.Steps {
 
 		void Process ()
 		{
-			//
-			// This can happen when linker is called on facade with all references skipped
-			//
-			if (QueueIsEmpty ())
-				return;
-
 			while (ProcessPrimaryQueue () || ProcessLazyAttributes () || ProcessLateMarkedAttributes ())
 
 			// deal with [TypeForwardedTo] pseudo-attributes
@@ -677,7 +671,9 @@ namespace Mono.Linker.Steps {
 
 			// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
 			// then surely nothing is using this attribute and there is no need to mark it
-			if (!Annotations.IsMarked (resolvedConstructor.Module) && !Annotations.IsMarked (ca.AttributeType))
+			if (!Annotations.IsMarked (resolvedConstructor.Module) &&
+				!Annotations.IsMarked (ca.AttributeType) &&
+				Annotations.GetAction (resolvedConstructor.Module.Assembly) == AssemblyAction.Link)
 				return false;
 
 			if (ca.Constructor.DeclaringType.Namespace == "System.Diagnostics") {
