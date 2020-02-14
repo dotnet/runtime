@@ -243,10 +243,12 @@ Number of Ports : 16384
             Assert.Equal(49152 + 16384, range.Max);
         }
 
-        [Fact]
-        public void PortRange_ParseCmdOutputLinux()
+        [Theory]
+        [InlineData("32768   60999")]
+        [InlineData("32768   60999\n")]
+        [InlineData("32768\t\t60999\n")]
+        public void PortRange_ParseCmdOutputLinux(string cmdOutput)
         {
-            const string cmdOutput = @"32768   60999";
             PortRange range = PortRange.ParseCmdletOutputLinux(cmdOutput);
             Assert.Equal(32768, range.Min);
             Assert.Equal(60999, range.Max);
@@ -256,8 +258,8 @@ Number of Ports : 16384
         public void PortRange_ParseCmdOutputMac()
         {
             const string cmdOutput = @"net.inet.ip.portrange.first: 49152
-net.inet.ip.portrange.last: 65535";
-
+net.inet.ip.portrange.last: 65535
+";
             PortRange range = PortRange.ParseCmdletOutputMac(cmdOutput);
             Assert.Equal(49152, range.Min);
             Assert.Equal(65535, range.Max);

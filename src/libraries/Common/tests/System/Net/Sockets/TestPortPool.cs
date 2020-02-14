@@ -185,9 +185,10 @@ namespace System.Net.Sockets.Tests
         internal static PortRange ParseCmdletOutputLinux(string cmdOutput)
         {
             ReadOnlySpan<char> span = cmdOutput.AsSpan();
-            int firstSpace = span.IndexOf(' ');
-            ReadOnlySpan<char> left = span.Slice(0, firstSpace).Trim();
-            ReadOnlySpan<char> right = span.Slice(firstSpace).Trim();
+            int firstWhiteSpace = span.IndexOf('\t');
+            if (firstWhiteSpace < 0) firstWhiteSpace = span.IndexOf(' ');
+            ReadOnlySpan<char> left = span.Slice(0, firstWhiteSpace).Trim();
+            ReadOnlySpan<char> right = span.Slice(firstWhiteSpace).Trim();
             return new PortRange(int.Parse(left), int.Parse(right));
         }
 
