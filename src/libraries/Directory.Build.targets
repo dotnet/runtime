@@ -206,4 +206,9 @@
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)' and '$(ExcludeCurrentNetCoreAppFromPackage)' == 'true'">true</ExcludeFromPackage>
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildProjectDirectory)\**\*.cs"
+          Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
+  </ItemGroup>
 </Project>
