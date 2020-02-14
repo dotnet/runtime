@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Internal.TypeSystem;
@@ -9,7 +10,6 @@ using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using Debug = System.Diagnostics.Debug;
-using System;
 
 namespace ILCompiler
 {
@@ -32,8 +32,10 @@ namespace ILCompiler
             bool compileGenericDependenciesFromVersionBubbleModuleSet)
         {
             _compilationModuleSet = new HashSet<EcmaModule>(compilationModuleSet);
-
             _isCompositeBuildMode = isCompositeBuildMode;
+
+            Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
+
             _versionBubbleModuleSet = new HashSet<ModuleDesc>(versionBubbleModuleSet);
             _versionBubbleModuleSet.UnionWith(_compilationModuleSet);
 

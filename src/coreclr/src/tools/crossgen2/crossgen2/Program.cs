@@ -282,6 +282,11 @@ namespace ILCompiler
 
                     List<ModuleDesc> versionBubbleModules = new List<ModuleDesc>(versionBubbleModulesHash);
 
+                    if (!_commandLineOptions.Composite && inputModules.Count != 1)
+                    {
+                        throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
+                    }
+
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
                     if (singleMethod != null)

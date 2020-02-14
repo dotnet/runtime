@@ -25,11 +25,33 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     internal class ReadyToRunObjectWriter
     {
-        // Nodefactory for which ObjectWriter is instantiated for.
+        /// <summary>
+        /// Nodefactory for which ObjectWriter is instantiated for. 
+        /// </summary>
         private readonly NodeFactory _nodeFactory;
+
+        /// <summary>
+        /// Output executable path.
+        /// </summary>
         private readonly string _objectFilePath;
+
+        /// <summary>
+        /// Set to non-null when rewriting MSIL assemblies during composite R2R build;
+        /// we basically publish the input assemblies into the composite build output folder
+        /// using the same ReadyToRunObjectWriter as we're using for emitting the "actual"
+        /// R2R executable, just in this special mode in which we emit a minimal R2R header
+        /// with forwarding information pointing at the composite module with native code.
+        /// </summary>
         private readonly EcmaModule _componentModule;
+
+        /// <summary>
+        /// Nodes to emit into the output executable as collected by the dependency analysis.
+        /// </summary>
         private readonly IEnumerable<DependencyNode> _nodes;
+
+        /// <summary>
+        /// True when the executable generator should output a map file.
+        /// </summary>
         private readonly bool _generateMapFile;
 
 #if DEBUG

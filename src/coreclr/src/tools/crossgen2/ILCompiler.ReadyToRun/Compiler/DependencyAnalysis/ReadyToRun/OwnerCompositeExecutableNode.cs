@@ -8,6 +8,13 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
+    /// <summary>
+    /// R2R header section holding the name of the composite R2R executable with native code
+    /// for this component module. This section gets put into R2R headers emitted when
+    /// rewriting input MSIL into standalone MSIL components of a composite R2R image.
+    /// It is used by the runtime as forwarding information to locate the composite R2R image
+    /// with the native code for a given MSIL assembly.
+    /// </summary>
     internal class OwnerCompositeExecutableNode : HeaderTableNode
     {
         public override ObjectNodeSection Section => ObjectNodeSection.ReadOnlyDataSection;

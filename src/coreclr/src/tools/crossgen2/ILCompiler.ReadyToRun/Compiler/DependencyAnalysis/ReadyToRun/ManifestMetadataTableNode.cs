@@ -77,11 +77,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode)
             {
-                if (_nodeFactory.CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
-                {
-                    throw new InternalCompilerErrorException("Multiple input files specified without the composite flag");
-                }
-                MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.First().MetadataReader;
+                MetadataReader mdReader = _nodeFactory.CompilationModuleGroup.CompilationModuleSet.Single().MetadataReader;
                 _assemblyRefCount = mdReader.GetTableRowCount(TableIndex.AssemblyRef);
                 for (int assemblyRefIndex = 1; assemblyRefIndex <= _assemblyRefCount; assemblyRefIndex++)
                 {

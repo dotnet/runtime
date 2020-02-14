@@ -202,11 +202,7 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                if (CompilationModuleGroup.CompilationModuleSet.Skip(1).Any())
-                {
-                    throw new InternalCompilerErrorException($"Multiple input modules ({CompilationModuleGroup.CompilationModuleSet.Count()}) are only supported in composite R2R build mode");
-                }
-                SignatureContext = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.First(), Resolver);
+                SignatureContext = new SignatureContext(CompilationModuleGroup.CompilationModuleSet.Single(), Resolver);
             }
 
             CreateNodeCaches();

@@ -57,19 +57,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
                     // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
-                    bool enforceOwningType = _factory.CompilationModuleGroup.IsCompositeBuildMode;
                     EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
                     ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
-                    if (!_factory.CompilationModuleGroup.IsCompositeBuildMode && moduleToken.Module != factory.CompilationModuleGroup.CompilationModuleSet.First())
-                    {
-                        enforceOwningType = true;
-                    }
 
                     ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
                     signatureBuilder.EmitMethodSignature(
                         new MethodWithToken(method.Method, moduleToken, constrainedType: null),
                         enforceDefEncoding: true,
-                        enforceOwningType,
+                        enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
                         factory.SignatureContext,
                         isUnboxingStub: false,
                         isInstantiatingStub: false);
