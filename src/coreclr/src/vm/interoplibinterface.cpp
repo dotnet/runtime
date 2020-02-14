@@ -214,7 +214,11 @@ namespace
         bool IsLockHeld()
         {
             WRAPPER_NO_CONTRACT;
+#if _DEBUG
             return (_lock.OwnedByCurrentThread() != FALSE);
+#else
+            return true;
+#endif // !_DEBUG
         }
 
         // Create a managed IEnumerable instance for this collection.
@@ -632,7 +636,7 @@ namespace
                 sizeof(ExternalObjectContext),
                 &resultHolder);
             if (FAILED(hr))
-                COMPlusThrow(hr);
+                COMPlusThrowHR(hr);
 
             // Call the implementation to create an external object wrapper.
             gc.objRef = CallGetObject(&gc.implRef, identity, resultHolder.Result.AgileRef, flags);
