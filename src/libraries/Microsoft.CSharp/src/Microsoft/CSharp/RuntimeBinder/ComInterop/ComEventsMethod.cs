@@ -11,7 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// Part of ComEventHelpers APIs which allow binding
     /// managed delegates to COM's connection point based events.

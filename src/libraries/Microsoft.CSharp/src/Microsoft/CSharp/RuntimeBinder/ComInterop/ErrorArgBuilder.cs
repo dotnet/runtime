@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal class ErrorArgBuilder : SimpleArgBuilder {
         internal ErrorArgBuilder(Type parameterType)
             : base(parameterType) {

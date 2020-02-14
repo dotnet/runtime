@@ -10,7 +10,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     /// <summary>
     /// VariantBuilder handles packaging of arguments into a Variant for a call to IDispatch.Invoke
@@ -43,7 +43,7 @@ namespace Microsoft.Scripting.ComInterop {
                 // paramVariants._elementN.SetAsByrefT(ref temp)
                 Debug.Assert(TempVariable == null);
                 var argExpr = _argBuilder.MarshalToRef(parameter);
-                
+
                 TempVariable = Expression.Variable(argExpr.Type, null);
                 return Expression.Block(
                     Expression.Assign(TempVariable, argExpr),
@@ -57,7 +57,7 @@ namespace Microsoft.Scripting.ComInterop {
 
             Expression argument = _argBuilder.Marshal(parameter);
 
-            // we are forced to special case ConvertibleArgBuilder since it does not have 
+            // we are forced to special case ConvertibleArgBuilder since it does not have
             // a corresponding _targetComType.
             if (_argBuilder is ConvertibleArgBuilder) {
                 return Expression.Call(

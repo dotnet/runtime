@@ -8,8 +8,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System;
 
-namespace Microsoft.Scripting.ComInterop {
-    internal static class CollectionExtensions { 
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
+    internal static class CollectionExtensions {
 
         internal static T[] RemoveFirst<T>(this T[] array) {
             T[] result = new T[array.Length - 1];

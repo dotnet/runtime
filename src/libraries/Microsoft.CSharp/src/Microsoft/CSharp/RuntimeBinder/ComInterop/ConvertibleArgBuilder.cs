@@ -8,9 +8,8 @@ using System.Linq.Expressions;
 
 using System;
 using System.Globalization;
-using Microsoft.Scripting.Utils;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal class ConvertibleArgBuilder : ArgBuilder {
 

@@ -14,9 +14,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 
-using Microsoft.Scripting.Utils;
-
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// The ComObject class wraps a runtime-callable-wrapper and enables it to be used with the Dynamic Language Runtime and the C# dynamic keyword.
     /// </summary>

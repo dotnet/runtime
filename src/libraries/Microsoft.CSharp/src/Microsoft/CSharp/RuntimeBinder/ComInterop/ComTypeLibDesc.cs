@@ -12,11 +12,11 @@ using System.Dynamic;
 using System.Globalization;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     /// <summary>
     /// Cached information from a TLB. Only information that is required is saved. CoClasses are used
-    /// for event hookup. Enums are stored for accessing symbolic names from scripts. 
+    /// for event hookup. Enums are stored for accessing symbolic names from scripts.
     /// </summary>
     public sealed class ComTypeLibDesc : IDynamicMetaObjectProvider {
 
@@ -116,7 +116,7 @@ namespace Microsoft.Scripting.ComInterop {
                 } else if (typeKind == ComTypes.TYPEKIND.TKIND_ENUM) {
                     ComTypeEnumDesc enumDesc = new ComTypeEnumDesc(typeInfo, typeLibDesc);
                     typeLibDesc._enums.Add(enumDesc.TypeName, enumDesc);
-                } 
+                }
                 else if (typeKind == ComTypes.TYPEKIND.TKIND_ALIAS) {
                     ComTypes.TYPEATTR typeAttr = ComRuntimeHelpers.GetTypeAttrForTypeInfo(typeInfo);
                     if (typeAttr.tdescAlias.vt == (short)VarEnum.VT_USERDEFINED) {

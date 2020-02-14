@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// SimpleArgBuilder produces the value produced by the user as the argument value.  It
     /// also tracks information about the original parameter and is used to create extended

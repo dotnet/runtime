@@ -9,10 +9,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// ComEventSinksContainer is just a regular list with a finalizer.
-    /// This list is usually attached as a custom data for RCW object and 
+    /// This list is usually attached as a custom data for RCW object and
     /// is finalized whenever RCW is finalized.
     /// </summary>
     internal class ComEventSinksContainer : List<ComEventSink>, IDisposable {

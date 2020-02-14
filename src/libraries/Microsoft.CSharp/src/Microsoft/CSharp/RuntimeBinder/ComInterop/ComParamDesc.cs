@@ -10,7 +10,7 @@ using System.Text;
 using Marshal = System.Runtime.InteropServices.Marshal;
 using VarEnum = System.Runtime.InteropServices.VarEnum;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     /// <summary>
     /// The parameter description of a method defined in a type library
@@ -35,7 +35,7 @@ namespace Microsoft.Scripting.ComInterop {
         /// Creates a representation for the paramter of a COM method
         /// </summary>
         internal ComParamDesc(ref ELEMDESC elemDesc, string name) {
-            // Ensure _defaultValue is set to DBNull.Value regardless of whether or not the 
+            // Ensure _defaultValue is set to DBNull.Value regardless of whether or not the
             // default value is extracted from the parameter description.  Failure to do so
             // yields a runtime exception in the ToString() function.
             _defaultValue = DBNull.Value;

@@ -9,7 +9,7 @@ using System;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal class DispatchArgBuilder : SimpleArgBuilder {
         private readonly bool _isWrapper;

@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 using System;
 using System.Dynamic;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     interface IPseudoComObject {
         DynamicMetaObject GetMetaObject(Expression expression);
     }

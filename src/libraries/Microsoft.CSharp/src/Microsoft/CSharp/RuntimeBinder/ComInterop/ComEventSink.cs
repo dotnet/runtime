@@ -12,7 +12,7 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// Part of ComEventHelpers APIs which allow binding
     /// managed delegates to COM's connection point based events.
@@ -49,7 +49,7 @@ namespace Microsoft.Scripting.ComInterop {
                     }
 
                     if (sink._iidSourceItf == Guid.Empty) {
-                        // we found a ComEventSink object that 
+                        // we found a ComEventSink object that
                         // was previously disposed. Now we will reuse it.
                         sink.Initialize(rcw, sourceIid);
                         comEventSink = sink;
@@ -102,7 +102,7 @@ namespace Microsoft.Scripting.ComInterop {
             // is a ComEventCallContext object.
             sinkEntry.RemoveDelegates(d => d.Target is SplatCallSite callContext && callContext._callable.Equals(func));
 
-            // If the delegates chain is empty - we can remove 
+            // If the delegates chain is empty - we can remove
             // corresponding ComEvenSinkEntry
             if (sinkEntry.Empty)
                 RemoveMethod(sinkEntry);

@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Dynamic;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal sealed class ComInvokeBinder {
         private readonly ComMethodDesc _methodDesc;
         private readonly Expression _method;        // ComMethodDesc to be called
@@ -40,12 +40,12 @@ namespace Microsoft.Scripting.ComInterop {
         private ParameterExpression _propertyPutDispId;
 
         internal ComInvokeBinder(
-                CallInfo callInfo, 
+                CallInfo callInfo,
                 DynamicMetaObject[] args,
                 bool[] isByRef,
-                BindingRestrictions restrictions, 
-                Expression method, 
-                Expression dispatch, 
+                BindingRestrictions restrictions,
+                Expression method,
+                Expression dispatch,
                 ComMethodDesc methodDesc
                 ) {
 
@@ -137,7 +137,7 @@ namespace Microsoft.Scripting.ComInterop {
         internal DynamicMetaObject Invoke() {
             _keywordArgNames = _callInfo.ArgumentNames.ToArray();
             _totalExplicitArgs = _args.Length;
-            
+
             Type[] marshalArgTypes = new Type[_args.Length];
 
             // We already tested the instance, so no need to test it again

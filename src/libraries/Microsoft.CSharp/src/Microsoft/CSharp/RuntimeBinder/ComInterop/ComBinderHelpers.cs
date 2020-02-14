@@ -12,7 +12,7 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal static class ComBinderHelpers {
 
         internal static bool PreferPut(Type type, bool holdsNull) {

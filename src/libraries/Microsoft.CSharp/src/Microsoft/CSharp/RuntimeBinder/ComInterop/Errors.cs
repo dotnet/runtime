@@ -5,7 +5,7 @@
 #if FEATURE_COM
 using System;
 
-namespace Microsoft.Scripting {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     #region Generated Com Exception Factory
 

@@ -4,7 +4,7 @@
 
 #if FEATURE_COM
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     public enum ComType {
         Class,

@@ -7,10 +7,8 @@ using System.Linq.Expressions;
 
 using System.Collections.Generic;
 using System.Dynamic;
-using Microsoft.Scripting.Utils;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal sealed class TypeLibInfoMetaObject : DynamicMetaObject {
         private readonly ComTypeLibInfo _info;

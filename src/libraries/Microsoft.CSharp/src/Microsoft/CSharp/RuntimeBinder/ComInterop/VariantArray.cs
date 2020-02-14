@@ -13,7 +13,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct VariantArray1 {

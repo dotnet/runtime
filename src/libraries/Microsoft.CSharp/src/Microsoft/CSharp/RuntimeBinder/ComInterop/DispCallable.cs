@@ -9,7 +9,7 @@ using System;
 using System.Dynamic;
 using System.Globalization;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     /// <summary>
     /// This represents a bound dispmember on a IDispatch object.

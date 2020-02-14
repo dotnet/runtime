@@ -8,10 +8,10 @@ using System.Linq.Expressions;
 using System;
 using System.Diagnostics;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     /// <summary>
-    /// ArgBuilder which always produces null.  
+    /// ArgBuilder which always produces null.
     /// </summary>
     internal sealed class NullArgBuilder : ArgBuilder {
         internal NullArgBuilder() { }

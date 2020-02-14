@@ -10,7 +10,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal static class TypeUtils {
         internal const MethodAttributes PublicStatic = MethodAttributes.Public | MethodAttributes.Static;

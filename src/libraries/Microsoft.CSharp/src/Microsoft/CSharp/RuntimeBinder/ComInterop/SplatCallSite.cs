@@ -8,9 +8,8 @@ using System.Linq.Expressions;
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Microsoft.Scripting.Utils;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal sealed class SplatCallSite {
         // Stored callable Delegate or IDynamicMetaObjectProvider.

@@ -6,7 +6,7 @@
 
 using System;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal class ComEventDesc {
         internal Guid sourceIID;
         internal int dispid;

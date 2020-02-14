@@ -9,9 +9,7 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq.Expressions;
 
-using Microsoft.Scripting.Utils;
-
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     // Note: we only need to support the operations used by ComBinder
     internal class ComMetaObject : DynamicMetaObject {

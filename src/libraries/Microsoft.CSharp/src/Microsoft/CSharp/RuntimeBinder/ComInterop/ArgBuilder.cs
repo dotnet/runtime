@@ -6,11 +6,11 @@
 
 using System.Linq.Expressions;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// ArgBuilder provides an argument value used by the MethodBinder.  One ArgBuilder exists for each
-    /// physical parameter defined on a method.  
-    /// 
+    /// physical parameter defined on a method.
+    ///
     /// Contrast this with ParameterWrapper which represents the logical argument passed to the method.
     /// </summary>
     internal abstract class ArgBuilder {

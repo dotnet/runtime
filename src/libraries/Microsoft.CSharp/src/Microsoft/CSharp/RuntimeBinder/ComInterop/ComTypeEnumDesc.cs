@@ -12,7 +12,7 @@ using System.Dynamic;
 using System.Globalization;
 using ComTypes = System.Runtime.InteropServices.ComTypes;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     public sealed class ComTypeEnumDesc : ComTypeDesc, IDynamicMetaObjectProvider {
         private readonly string[] _memberNames;

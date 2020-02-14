@@ -12,7 +12,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal sealed class DateTimeArgBuilder : SimpleArgBuilder {
         internal DateTimeArgBuilder(Type parameterType)
             : base(parameterType) {

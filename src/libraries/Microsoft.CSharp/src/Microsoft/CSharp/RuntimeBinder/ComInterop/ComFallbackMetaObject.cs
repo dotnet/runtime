@@ -9,9 +9,7 @@ using System.Linq.Expressions;
 using System.Dynamic;
 using System.Diagnostics;
 
-using Microsoft.Scripting.Utils;
-
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     //
     // ComFallbackMetaObject just delegates everything to the binder.
     //

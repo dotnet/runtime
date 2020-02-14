@@ -10,12 +10,12 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     public class ComTypeDesc : ComTypeLibMemberDesc {
         private string _typeName;
         private string _documentation;
-        //Hashtable is threadsafe for multiple readers single writer. 
+        //Hashtable is threadsafe for multiple readers single writer.
         //Enumerating and writing is mutually exclusive so require locking.
         private Hashtable _funcs;
         private Hashtable _puts;
@@ -32,7 +32,7 @@ namespace Microsoft.Scripting.ComInterop {
             TypeLib = typeLibDesc;
         }
 
-        
+
         internal static ComTypeDesc FromITypeInfo(ITypeInfo typeInfo, TYPEATTR typeAttr)
         {
             switch (typeAttr.typekind) {

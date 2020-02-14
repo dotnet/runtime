@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal class VariantArgBuilder : SimpleArgBuilder {
         private readonly bool _isWrapper;
 

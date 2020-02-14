@@ -7,9 +7,8 @@ using System.Linq.Expressions;
 
 using System.Collections.Generic;
 using System.Dynamic;
-using AstUtils = Microsoft.Scripting.Ast.Utils;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal class TypeLibMetaObject : DynamicMetaObject {
         private readonly ComTypeLibDesc _lib;

@@ -11,7 +11,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     internal sealed class CurrencyArgBuilder : SimpleArgBuilder {
         internal CurrencyArgBuilder(Type parameterType)
             : base(parameterType) {

@@ -6,9 +6,7 @@
 using System.Dynamic;
 using System.Linq.Expressions;
 
-using Microsoft.Scripting.Utils;
-
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     internal sealed class IDispatchMetaObject : ComFallbackMetaObject {
         private readonly IDispatchComObject _self;

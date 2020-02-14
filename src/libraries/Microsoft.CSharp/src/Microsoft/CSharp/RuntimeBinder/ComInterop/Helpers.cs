@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 
 using System;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
 
     // Miscellaneous helpers that don't belong anywhere else
     internal static class Helpers {

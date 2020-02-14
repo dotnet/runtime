@@ -10,10 +10,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.Scripting.ComInterop;
-using Microsoft.Scripting;
 
-namespace Microsoft.Scripting.ComInterop {
+namespace Microsoft.CSharp.RuntimeBinder.ComInterop {
     /// <summary>
     /// If a managed user type (as opposed to a primitive type or a COM object) is passed as an argument to a COM call, we need
     /// to determine the VarEnum type we will marshal it as. We have the following options:
@@ -22,10 +20,10 @@ namespace Microsoft.Scripting.ComInterop {
     ///     cast would be needed.
     /// 2.	We could marshal it as VT_DISPATCH. Then COM code will be able to access all the APIs in a late-bound manner,
     ///     but old COM components will probably malfunction if they expect a primitive type.
-    /// 3.	We could guess which primitive type is the closest match. This will make COM components be as easily 
+    /// 3.	We could guess which primitive type is the closest match. This will make COM components be as easily
     ///     accessible as .NET methods.
     /// 4.	We could use the type library to check what the expected type is. However, the type library may not be available.
-    /// 
+    ///
     /// VarEnumSelector implements option # 3
     /// </summary>
     internal class VarEnumSelector {
@@ -51,9 +49,9 @@ namespace Microsoft.Scripting.ComInterop {
         /// <summary>
         /// Gets the managed type that an object needs to be coverted to in order for it to be able
         /// to be represented as a Variant.
-        /// 
+        ///
         /// In general, there is a many-to-many mapping between Type and VarEnum. However, this method
-        /// returns a simple mapping that is needed for the current implementation. The reason for the 
+        /// returns a simple mapping that is needed for the current implementation. The reason for the
         /// many-to-many relation is:
         /// 1. Int32 maps to VT_I4 as well as VT_ERROR, and Decimal maps to VT_DECIMAL and VT_CY. However,
         ///    this changes if you throw the wrapper types into the mix.
@@ -299,7 +297,7 @@ namespace Microsoft.Scripting.ComInterop {
 
         private VarEnum GetComType(ref Type argumentType) {
             if (argumentType == typeof(Missing)) {
-                //actual variant type will be VT_ERROR | E_PARAMNOTFOUND 
+                //actual variant type will be VT_ERROR | E_PARAMNOTFOUND
                 return VarEnum.VT_RECORD;
             }
 
@@ -334,7 +332,7 @@ namespace Microsoft.Scripting.ComInterop {
 
             // Many languages require an explicit cast for an enum to be used as the underlying type.
             // However, we want to allow this conversion for COM without requiring an explicit cast
-            // so that enums from interop assemblies can be used as arguments. 
+            // so that enums from interop assemblies can be used as arguments.
             if (argumentType.IsEnum) {
                 argumentType = Enum.GetUnderlyingType(argumentType);
                 return GetComType(ref argumentType);
@@ -381,7 +379,7 @@ namespace Microsoft.Scripting.ComInterop {
 
                 VarEnum elementVarEnum;
                 if (elementType == typeof(object) || elementType == typeof(DBNull)) {
-                    //no meaningful value to pass ByRef. 
+                    //no meaningful value to pass ByRef.
                     //perhaps the calee will replace it with something.
                     //need to pass as a variant reference
                     elementVarEnum = VarEnum.VT_VARIANT;
@@ -401,8 +399,8 @@ namespace Microsoft.Scripting.ComInterop {
 
 
         // This helper is called when we are looking for a ByVal marshalling
-        // In a ByVal case we can take into account conversions or IConvertible if all other 
-        // attempts to find marshalling type failed 
+        // In a ByVal case we can take into account conversions or IConvertible if all other
+        // attempts to find marshalling type failed
         private static ArgBuilder GetByValArgBuilder(Type elementType, ref VarEnum elementVarEnum) {
             // If VT indicates that marshalling type is unknown.
             if (elementVarEnum == VT_DEFAULT) {
