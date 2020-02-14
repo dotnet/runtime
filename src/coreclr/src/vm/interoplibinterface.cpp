@@ -485,7 +485,7 @@ namespace
         HRESULT hr;
 
         SafeComHolder<IUnknown> newWrapper;
-        void* wrapper = NULL;
+        void* wrapperRaw = NULL;
 
         struct
         {
@@ -504,7 +504,7 @@ namespace
         _ASSERTE(syncBlock->IsPrecious());
 
         // Query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+        if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
         {
             // Compute VTables for the new existing COM object using the supplied COM Wrappers implementation.
             //
@@ -515,7 +515,7 @@ namespace
             void* vtables = CallComputeVTables(&gc.implRef, &gc.instRef, flags, &vtableCount);
 
             // Re-query the associated InteropSyncBlockInfo for an existing managed object wrapper.
-            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+            if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
             {
                 OBJECTHANDLE instHandle = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
 
@@ -541,7 +541,7 @@ namespace
 
                     // If the managed object wrapper couldn't be set, then
                     // it should be possible to get the current one.
-                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapper))
+                    if (!interopInfo->TryGetManagedObjectComWrapper(&wrapperRaw))
                     {
                         UNREACHABLE();
                     }
@@ -554,23 +554,29 @@ namespace
         {
             // A new managed object wrapper was created, remove the object from the holder.
             // No AddRef() here since the wrapper should be created with a reference.
-            wrapper = newWrapper.Extract();
+            wrapperRaw = newWrapper.Extract();
         }
         else
         {
-            _ASSERTE(wrapper != NULL);
+            _ASSERTE(wrapperRaw != NULL);
+
             // It is possible the supplied wrapper is no longer valid. If so, reactivate the
             // wrapper using the protected OBJECTREF.
-            hr = InteropLib::Com::EnsureActiveWrapperAndAddRef(
-                static_cast<IUnknown*>(wrapper),
-                static_cast<InteropLib::OBJECTREF_PROTECTED>(&gc.instRef));
+            IUnknown* wrapper = static_cast<IUnknown*>(wrapperRaw);
+            hr = InteropLib::Com::IsActiveWrapper(wrapper);
+            if (hr == S_FALSE)
+            {
+                OBJECTHANDLE h = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
+                hr = InteropLib::Com::ReactivateWrapper(wrapper, static_cast<InteropLib::OBJECTHANDLE>(h));
+            }
+
             if (FAILED(hr))
                 COMPlusThrowHR(hr);
         }
 
         GCPROTECT_END();
 
-        RETURN wrapper;
+        RETURN wrapperRaw;
     }
 
     OBJECTREF GetOrCreateObjectForComInstanceInternal(
@@ -828,32 +834,6 @@ namespace InteropLibImports
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;
-
-        return hr;
-    }
-
-    HRESULT CreateObjectInstanceHandle(
-        _In_ InteropLib::OBJECTREF_PROTECTED objRefProtected,
-        _Out_ InteropLib::OBJECTHANDLE *handle) noexcept
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-            PRECONDITION(objRefProtected != NULL);
-            PRECONDITION(handle != NULL);
-        }
-        CONTRACTL_END;
-
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            OBJECTREF* objRef = static_cast<OBJECTREF*>(objRefProtected);
-            OBJECTHANDLE h = GetAppDomain()->CreateTypedHandle(*objRef, InstanceHandleType);
-            *handle = static_cast<InteropLib::OBJECTHANDLE>(h);
-        }
-        EX_CATCH_HRESULT(hr);
 
         return hr;
     }

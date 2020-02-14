@@ -530,6 +530,18 @@ void ManagedObjectWrapper::ResetFlag(_In_ CreateComInterfaceFlagsEx flag)
     ::InterlockedAnd((LONG*)&_flags, resetMask);
 }
 
+ULONG ManagedObjectWrapper::IsActiveAddRef()
+{
+    ULONG count = GetComCount(::InterlockedIncrement64(&_refCount));
+    if (count == 1)
+    {
+        // Ensure the current target is null.
+        ::InterlockedExchangePointer(&Target, nullptr);
+    }
+
+    return count;
+}
+
 ULONG ManagedObjectWrapper::AddRefFromReferenceTracker()
 {
     LONGLONG prev;

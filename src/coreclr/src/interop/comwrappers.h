@@ -85,13 +85,15 @@ private:
     ULONGLONG UniversalRelease(_In_ ULONGLONG dec);
 
 public:
-
     void* As(_In_ REFIID riid);
     // Attempt to set the target object handle based on an assumed current value.
     bool TrySetObjectHandle(_In_ InteropLib::OBJECTHANDLE objectHandle, _In_ InteropLib::OBJECTHANDLE current = nullptr);
     bool IsSet(_In_ CreateComInterfaceFlagsEx flag) const;
     void SetFlag(_In_ CreateComInterfaceFlagsEx flag);
     void ResetFlag(_In_ CreateComInterfaceFlagsEx flag);
+
+    // Used while validating wrapper is active.
+    ULONG IsActiveAddRef();
 
 public: // IReferenceTrackerTarget
     ULONG AddRefFromReferenceTracker();

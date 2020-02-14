@@ -9,7 +9,6 @@
 #include "comwrappers.h"
 
 using OBJECTHANDLE = InteropLib::OBJECTHANDLE;
-using OBJECTREF_PROTECTED = InteropLib::OBJECTREF_PROTECTED;
 using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace InteropLib
@@ -56,6 +55,40 @@ namespace InteropLib
             _ASSERTE(wrapper != nullptr);
 
             ManagedObjectWrapper::Destroy(wrapper);
+        }
+
+        HRESULT IsActiveWrapper(_In_ IUnknown* wrapperMaybe) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            if (wrapper == nullptr)
+                return E_INVALIDARG;
+
+            ULONG count = wrapper->IsActiveAddRef();
+            if (count == 1 || wrapper->Target == nullptr)
+            {
+                // The wrapper isn't active.
+                (void)wrapper->Release();
+                return S_FALSE;
+            }
+
+            return S_OK;
+        }
+
+        HRESULT ReactivateWrapper(_In_ IUnknown* wrapperMaybe, _In_ OBJECTHANDLE handle) noexcept
+        {
+            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
+            if (wrapper == nullptr || handle == nullptr)
+                return E_INVALIDARG;
+
+            // Take an AddRef() as an indication of ownership.
+            (void)wrapper->AddRef();
+
+            // If setting this object handle fails, then the race
+            // was lost and we will cleanup the handle.
+            if (!wrapper->TrySetObjectHandle(handle))
+                InteropLibImports::DeleteObjectInstanceHandle(handle);
+
+            return S_OK;
         }
 
         HRESULT CreateWrapperForExternal(
@@ -118,29 +151,6 @@ namespace InteropLib
             _Out_ void** fpRelease) noexcept
         {
             ManagedObjectWrapper::GetIUnknownImpl(fpQueryInterface, fpAddRef, fpRelease);
-        }
-
-        HRESULT EnsureActiveWrapperAndAddRef(_In_ IUnknown* wrapperMaybe, _In_ OBJECTREF_PROTECTED objRef) noexcept
-        {
-            ManagedObjectWrapper* wrapper = ManagedObjectWrapper::MapFromIUnknown(wrapperMaybe);
-            if (wrapper == nullptr)
-                return E_INVALIDARG;
-
-            ULONG count = wrapper->AddRef();
-            if (count == 1)
-            {
-                OBJECTHANDLE handle;
-                HRESULT hr = InteropLibImports::CreateObjectInstanceHandle(objRef, &handle);
-                if (FAILED(hr))
-                {
-                    (void)wrapper->Release();
-                    return hr;
-                }
-
-                ::InterlockedExchangePointer(&wrapper->Target, handle);
-            }
-
-            return S_OK;
         }
 
         HRESULT BeginExternalObjectReferenceTracking(_In_ RuntimeCallContext* cxt) noexcept
