@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             KeyReader<TRet> keyReader,
             out int bytesRead,
-            [MaybeNull] out TRet ret)
+            out TRet ret)
         {
             AsnValueReader reader = new AsnValueReader(source.Span, AsnEncodingRules.BER);
             int read = reader.PeekEncodedValue().Length;
