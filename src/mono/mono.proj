@@ -25,12 +25,12 @@
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
       <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <_MonoExtraCFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCFLAGS>
-        <_MonoExtraCXXFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCXXFLAGS>
+        <_MonoExtraCXXFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer -D_GLIBCXX_USE_CXX11_ABI=0</_MonoExtraCXXFLAGS>
         <_MonoConfigureParams>--enable-checked-build=private_types</_MonoConfigureParams>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <_MonoExtraCFLAGS>-O2 -g</_MonoExtraCFLAGS>
-        <_MonoExtraCXXFLAGS>-O2 -g</_MonoExtraCXXFLAGS>
+        <_MonoExtraCXXFLAGS>-O2 -g -D_GLIBCXX_USE_CXX11_ABI=0</_MonoExtraCXXFLAGS>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(TargetArchitecture)' == 'arm64' ">
         <_MonoTuple>aarch64-linux-gnu</_MonoTuple>
