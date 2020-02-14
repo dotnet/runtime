@@ -3690,7 +3690,7 @@ namespace System.Data
             IndexField[] indexDesc = Array.Empty<IndexField>();
             if ((null != sortString) && (0 < sortString.Length))
             {
-                string[] split = sortString.Split(new char[] { ',' });
+                string[] split = sortString.Split(',');
                 indexDesc = new IndexField[split.Length];
 
                 for (int i = 0; i < split.Length; i++)
