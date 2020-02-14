@@ -13,11 +13,6 @@
   <Target Name="GeneratePkgs"
           Condition="'$(OSGroup)' == 'OSX'"
           DependsOnTargets="GetInstallerBrandingNames;InitPkg">
-    <PropertyGroup>
-        <SharedFrameworkInstallerFile Condition="!$(SharedFrameworkInstallerFile.EndsWith('.pkg'))">$(SharedFrameworkInstallerFile).pkg</SharedFrameworkInstallerFile>
-        <SharedHostInstallerFile Condition="!$(SharedHostInstallerFile.EndsWith('.pkg'))">$(SharedHostInstallerFile).pkg</SharedHostInstallerFile>
-        <HostFxrInstallerFile Condition="!$(HostFxrInstallerFile.EndsWith('.pkg'))">$(HostFxrInstallerFile).pkg</HostFxrInstallerFile>
-    </PropertyGroup>
     <ItemGroup>
         <OSXPackages Include="sharedframework">
             <Id>$(SharedFxComponentId)</Id>

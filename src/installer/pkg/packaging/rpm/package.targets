@@ -27,7 +27,6 @@
       <RpmPackageVersion>$(HostPackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <RpmFile>$(SharedHostInstallerFile)</RpmFile>
-      <RpmFile Condition="!$(RpmFile.EndsWith('.rpm'))">$(RpmFile).rpm</RpmFile>
       <ConfigJsonName>dotnet-sharedhost-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -136,7 +135,6 @@
       <RpmPackageVersion>$(HostResolverPackageVersion)</RpmPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <RpmFile>$(HostFxrInstallerFile)</RpmFile>
-      <RpmFile Condition="!$(RpmFile.EndsWith('.rpm'))">$(RpmFile).rpm</RpmFile>
       <ConfigJsonName>dotnet-hostfxr-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -224,7 +222,6 @@
       <RpmPackageVersion>$(RuntimePackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
-      <RpmFile Condition="!$(RpmFile.EndsWith('.rpm'))">$(RpmFile).rpm</RpmFile>
       <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -321,28 +318,116 @@
   <Target Name="GenerateRuntimeDependenciesRpms">
 
     <PropertyGroup>
-      <SharedProperties>rpmPackagingConfigPath=$(rpmPackagingConfigPath);DotnetRuntimeDependenciesPackageInstallerFile=$(DotnetRuntimeDependenciesPackageInstallerFile);OutputRid=$(OutputRid);RuntimeDependenciesRpmPkgName=$(RuntimeDependenciesRpmPkgName);RuntimeDepsRpmPackageVersion=$(RuntimeDepsRpmPackageVersion);RuntimeDepsRpmPackageRelease=$(RuntimeDepsRpmPackageRelease);TemplatesDir=$(TemplatesDir)</SharedProperties>
+      <SharedProperties>
+        rpmPackagingConfigPath=$(rpmPackagingConfigPath);
+        DotnetRuntimeDependenciesPackageInstallerFile=$(DotnetRuntimeDependenciesPackageInstallerFile);
+        OutputRid=$(OutputRid);
+        RuntimeDependenciesRpmPkgName=$(RuntimeDependenciesRpmPkgName);
+        RuntimeDepsRpmPackageVersion=$(RuntimeDepsRpmPackageVersion);
+        RuntimeDepsRpmPackageRelease=$(RuntimeDepsRpmPackageRelease);
+        TemplatesDir=$(TemplatesDir)
+      </SharedProperties>
       <DepsConfigFilePrefix>dotnet-runtime-deps-rpm_config_</DepsConfigFilePrefix>
     </PropertyGroup>
 
-    <!-- non-portable build - add OutputRid to new item list -->
-    <ItemGroup Condition="'$(PortableBuild)' == 'false'">
-      <DepsProjects Include="$(rpmPackagingConfigPath)pack-deps.proj">
+    <!-- non-portable build - build a single dotnet-runtime-deps package using OutputRid -->
+    <ItemGroup Condition="'$(PortableBuild)' != 'true'">
+      <DepsProjects Include="$(MSBuildProjectFullPath)">
         <Properties>DepsRid=$(OutputRid);$(SharedProperties)</Properties>
       </DepsProjects>
     </ItemGroup>
 
-    <!-- portable build - find all config json deps files and add their OutputRid values to new item list -->
-    <!-- iterate thru all items in item list and call pack-deps project -->
+    <!-- portable build - build all dotnet-runtime-deps packages for all targets discovered in config filenames -->
     <ItemGroup Condition="'$(PortableBuild)' == 'true'">
       <ConfigJsonFilenames Include="$(rpmPackagingConfigPath)$(DepsConfigFilePrefix)*.json" />
-      <Rids Include="$([System.Text.RegularExpressions.Regex]::Match(%(ConfigJsonFilenames.Filename),'$(DepsConfigFilePrefix)([A-Za-z0-9_\-\.]+)').Groups[1].Value)" />
-      <DepsProjects Include="$(rpmPackagingConfigPath)pack-deps.proj">
+      <Rids Include="$([System.Text.RegularExpressions.Regex]::Match('%(ConfigJsonFilenames.Filename)', '$(DepsConfigFilePrefix)([A-Za-z0-9_\-\.]+)').Groups[1].Value)" />
+      <DepsProjects Include="$(MSBuildProjectFullPath)">
         <Properties>DepsRid=%(Rids.Identity);$(SharedProperties)</Properties>
       </DepsProjects>
     </ItemGroup>
 
-      <MSBuild Projects="@(DepsProjects)" Targets="GenerateSingleRuntimeDependenciesRpm" />
+    <MSBuild Projects="@(DepsProjects)" Targets="GenerateSingleRuntimeDependenciesRpm" />
+
+  </Target>
+
+  <Target Name="GenerateSingleRuntimeDependenciesRpm">
+    <PropertyGroup>
+      <RpmFile>$([System.String]::Copy('$(DotnetRuntimeDependenciesPackageInstallerFile)').Replace('$(OutputRid)', '$(DepsRid)'))</RpmFile>
+      <RpmPackageName>$(RuntimeDependenciesRpmPkgName)</RpmPackageName>
+      <RpmPackageVersion>$(RuntimeDepsRpmPackageVersion)</RpmPackageVersion>
+      <ConfigJsonName>dotnet-runtime-deps-rpm_config_$(DepsRid).json</ConfigJsonName>
+      <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <RpmLayoutDirectory>$(RpmIntermediatesDir)/rpmLayoutDirectory/</RpmLayoutDirectory>
+      <RpmLayoutPackageRoot>$(RpmLayoutDirectory)package_root</RpmLayoutPackageRoot>
+      <RpmLayoutDocs>$(RpmLayoutDirectory)docs</RpmLayoutDocs>
+      <RpmLayoutTemplates>$(RpmLayoutDirectory)templates</RpmLayoutTemplates> <!-- Copyright, Changelog -->
+    </PropertyGroup>
+
+    <!-- Error out if the configuration file doesn't exist -->
+    <Error Condition="!Exists('$(ConfigJsonFile)')" Text="Config file does not exist : '$(ConfigJsonFile)'" />
+
+    <RemoveDir Condition="Exists('$(RpmIntermediatesDir)')" Directories="$(RpmIntermediatesDir)" />
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+
+    <!-- Create empty rpm layout -->
+    <RemoveDir Condition="Exists('$(RpmLayoutDirectory)')" Directories="$(RpmLayoutDirectory)" />
+    <MakeDir Directories="$(RpmLayoutDirectory)" />
+    <MakeDir Directories="$(RpmLayoutPackageRoot)" />
+    <MakeDir Directories="$(RpmLayoutDocs)" />
+    <MakeDir Directories="$(RpmLayoutTemplates)" />
+    
+     <!-- Copy files to rpm layout -->
+    <ItemGroup>
+         <RDTemplatesFiles Include="$(TemplatesDir)/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(RDTemplatesFiles)" DestinationFiles="@(RDTemplatesFiles->'$(RpmLayoutTemplates)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(RpmPackageName)</ReplacementString>
+      </RuntimeDependenciesTokenValue>
+      <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_VERSION%">
+        <ReplacementString>$(RuntimeDepsRpmPackageVersion)</ReplacementString> 
+      </RuntimeDependenciesTokenValue>
+      <RuntimeDependenciesTokenValue Include="%RUNTIME_DEPS_REVISION%">
+        <ReplacementString>$(RuntimeDepsRpmPackageRelease)</ReplacementString>
+      </RuntimeDependenciesTokenValue>
+    </ItemGroup>
+    
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(RpmLayoutDirectory)$(rpmConfigJsonName)"
+                         ReplacementItems="@(RuntimeDependenciesTokenValue)" />
+
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs  InputDir="$(RpmLayoutDirectory)"
+                          OutputDir="$(RpmIntermediatesDir)"
+                          PackageVersion="$(RpmPackageVersion)"
+                          ConfigJsonFile="$(RpmLayoutDirectory)$(rpmConfigJsonName)">
+                          <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
+    <Exec Command="fpm $(FPMCmdParameters)"  WorkingDirectory="$(RpmIntermediatesDir)" />
+
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
 
   </Target>
 
