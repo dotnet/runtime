@@ -14,11 +14,12 @@ namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
+        private const int InitialBufferSize = 4096 * 4;
         private SafeSslHandle _sslContext;
         private Interop.AppleCrypto.SSLReadFunc _readCallback;
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
-        private Queue<byte> _fromConnection = new Queue<byte>();
-        private Queue<byte> _toConnection = new Queue<byte>();
+        private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
+        private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
 
@@ -143,6 +144,12 @@ namespace System.Net
             {
                 if (null != _sslContext)
                 {
+                    lock (_sslContext)
+                    {
+                        _inputBuffer.Dispose();
+                        _outputBuffer.Dispose();
+                    }
+
                     _sslContext.Dispose();
                     _sslContext = null;
                 }
@@ -153,17 +160,14 @@ namespace System.Net
 
         private unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
         {
-            ulong toWrite = (ulong)*dataLength;
-            byte* readFrom = data;
+            int toWrite = (int)((ulong)*dataLength);
+            var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
 
-            lock (_toConnection)
+            lock (_sslContext)
             {
-                while (toWrite > 0)
-                {
-                    _toConnection.Enqueue(*readFrom);
-                    readFrom++;
-                    toWrite--;
-                }
+                _outputBuffer.EnsureAvailableSpace(toWrite);
+                inputBuffer.CopyTo(_outputBuffer.AvailableSpan);
+                _outputBuffer.Commit(toWrite);
             }
 
             // Since we can enqueue everything, no need to re-assign *dataLength.
@@ -180,30 +184,24 @@ namespace System.Net
 
             if (toRead == 0)
             {
-
                 return noErr;
             }
 
             uint transferred = 0;
 
-            lock (_fromConnection)
+            lock (_sslContext)
             {
-
-                if (_fromConnection.Count == 0)
+                if (_inputBuffer.ActiveLength == 0)
                 {
-
                     *dataLength = (void*)0;
                     return errSSLWouldBlock;
                 }
 
-                byte* writePos = data;
+                int limit = Math.Min((int)toRead, _inputBuffer.ActiveLength);
 
-                while (transferred < toRead && _fromConnection.Count > 0)
-                {
-                    *writePos = _fromConnection.Dequeue();
-                    writePos++;
-                    transferred++;
-                }
+                _inputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(data, limit));
+                _inputBuffer.Discard(limit);
+                transferred = (uint)limit;
             }
 
             *dataLength = (void*)transferred;
@@ -222,30 +220,30 @@ namespace System.Net
 
         internal void Write(ReadOnlySpan<byte> buf)
         {
-            lock (_fromConnection)
+            lock (_sslContext)
             {
-                foreach (byte b in buf)
-                {
-                    _fromConnection.Enqueue(b);
-                }
+                _inputBuffer.EnsureAvailableSpace(buf.Length);
+                buf.CopyTo(_inputBuffer.AvailableSpan);
+                _inputBuffer.Commit(buf.Length);
             }
         }
 
-        internal int BytesReadyForConnection => _toConnection.Count;
+        internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal byte[] ReadPendingWrites()
         {
-            lock (_toConnection)
+
+            lock (_sslContext)
             {
-                if (_toConnection.Count == 0)
+                if (_outputBuffer.ActiveLength == 0)
                 {
                     return null;
                 }
 
-                byte[] data = _toConnection.ToArray();
-                _toConnection.Clear();
+                byte[] buffer = _outputBuffer.ActiveSpan.ToArray();
+                _outputBuffer.Discard(_outputBuffer.ActiveLength);
 
-                return data;
+                return buffer;
             }
         }
 
@@ -256,14 +254,12 @@ namespace System.Net
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
 
-            lock (_toConnection)
+            lock (_sslContext)
             {
-                int limit = Math.Min(count, _toConnection.Count);
+                int limit = Math.Min(count, _outputBuffer.ActiveLength);
 
-                for (int i = 0; i < limit; i++)
-                {
-                    buf[offset + i] = _toConnection.Dequeue();
-                }
+                _outputBuffer.ActiveSpan.Slice(0, limit).CopyTo(new Span<byte>(buf, offset, limit));
+                _outputBuffer.Discard(limit);
 
                 return limit;
             }
