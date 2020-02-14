@@ -35,7 +35,7 @@ namespace System.Drawing
                 return true;
             }
 
-            Version installedVersion = null;
+            Version installedVersion;
 
             try
             {
