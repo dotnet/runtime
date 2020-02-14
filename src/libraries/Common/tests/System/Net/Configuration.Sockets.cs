@@ -16,7 +16,7 @@ namespace System.Net.Test.Common
 
            private static Lazy<(int Min, int Max)> s_portPoolRangeLazy = new Lazy<(int Min, int Max)>(() =>
            {
-               string configString = GetValue("COREFX_NET_SOCKETS_PORTPOOLRANGE", "17000 22000");
+               string configString = GetValue("DOTNET_TEST_NET_SOCKETS_PORTPOOLRANGE", "17000 22000");
                string[] portRange = configString.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                int minPort = int.Parse(portRange[0].Trim());
                int maxPort = int.Parse(portRange[1].Trim());

@@ -34,7 +34,7 @@ namespace System.Net.Test.Common
             {
                 StartInfo = new ProcessStartInfo()
                 {
-                    Environment = {["COREFX_NET_SOCKETS_PORTPOOLRANGE"] = portRangeString}
+                    Environment = {["DOTNET_TEST_NET_SOCKETS_PORTPOOLRANGE"] = portRangeString}
                 }
             };
         }
