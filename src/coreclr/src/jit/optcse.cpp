@@ -3032,7 +3032,6 @@ public:
             if (dsc->csdStructHndMismatch)
             {
                 JITDUMP("Abandoned CSE #%02u because we had mismatching struct handles\n", candidate.CseIndex());
-                assert(!"Mismatched Struct Handle");
                 continue;
             }
 

@@ -18127,12 +18127,10 @@ bool GenTree::isCommutativeSIMDIntrinsic()
 // Returns true for the SIMD Instrinsic instructions that have MemoryLoad semantics, false otherwise
 bool GenTreeSIMD::OperIsMemoryLoad() const
 {
-#ifdef TARGET_XARCH
     if (gtSIMDIntrinsicID == SIMDIntrinsicInitArray)
     {
         return true;
     }
-#endif // TARGET_XARCH
     return false;
 }
 #endif // FEATURE_SIMD
