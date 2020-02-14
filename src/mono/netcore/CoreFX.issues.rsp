@@ -1,10 +1,3 @@
--notrait category=OuterLoop 
--notrait category=RequiresElevation
--notrait category=nonnetcoreapptests
--notrait category=nonmonotests
--notrait category=failing
--notrait category=IgnoreForCI
-
 ####################################################################
 ##  System.Runtime.Loader.Tests
 ####################################################################
