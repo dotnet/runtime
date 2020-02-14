@@ -15,7 +15,7 @@ namespace System
     {
         private const int StackallocIntBufferSizeLimit = 128;
 
-        private static unsafe void FillStringChecked(string dest, int destPos, string src)
+        private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
             Debug.Assert(src != null);
@@ -24,11 +24,10 @@ namespace System
                 throw new IndexOutOfRangeException();
             }
 
-            fixed (char* pDest = &dest._firstChar)
-            fixed (char* pSrc = &src._firstChar)
-            {
-                wstrcpy(pDest + destPos, pSrc, src.Length);
-            }
+            Buffer.Memmove(
+                destination: ref Unsafe.Add(ref dest._firstChar, destPos),
+                source: ref src._firstChar,
+                elementCount: (uint)src.Length);
         }
 
         public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
@@ -1672,11 +1671,10 @@ namespace System
 
             string result = FastAllocateString(length);
 
-            fixed (char* dest = &result._firstChar)
-            fixed (char* src = &_firstChar)
-            {
-                wstrcpy(dest, src + startIndex, length);
-            }
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref _firstChar, startIndex));
 
             return result;
         }

@@ -58,11 +58,12 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(value.Length);
-            unsafe
-            {
-                fixed (char* dest = &result._firstChar, source = value)
-                    wstrcpy(dest, source, value.Length);
-            }
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref MemoryMarshal.GetArrayDataReference(value));
+
             return result;
         }
 
@@ -91,11 +92,12 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(length);
-            unsafe
-            {
-                fixed (char* dest = &result._firstChar, source = value)
-                    wstrcpy(dest, source + startIndex, length);
-            }
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(value), startIndex));
+
             return result;
         }
 
@@ -117,8 +119,12 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(count);
-            fixed (char* dest = &result._firstChar)
-                wstrcpy(dest, ptr, count);
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref *ptr);
+
             return result;
         }
 
@@ -151,8 +157,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
 
             string result = FastAllocateString(length);
-            fixed (char* dest = &result._firstChar)
-                wstrcpy(dest, pStart, length);
+
+            Buffer.Memmove(
+               elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+               destination: ref result._firstChar,
+               source: ref *pStart);
+
             return result;
         }
 
@@ -398,20 +408,24 @@ namespace System
         }
 
         // Returns the entire string as an array of characters.
-        public unsafe char[] ToCharArray()
+        public char[] ToCharArray()
         {
             if (Length == 0)
                 return Array.Empty<char>();
 
             char[] chars = new char[Length];
-            fixed (char* src = &_firstChar, dest = &chars[0])
-                wstrcpy(dest, src, Length);
+
+            Buffer.Memmove(
+                destination: ref MemoryMarshal.GetArrayDataReference(chars),
+                source: ref _firstChar,
+                elementCount: (uint)Length);
+
             return chars;
         }
 
         // Returns a substring of this string as an array of characters.
         //
-        public unsafe char[] ToCharArray(int startIndex, int length)
+        public char[] ToCharArray(int startIndex, int length)
         {
             // Range check everything.
             if (startIndex < 0 || startIndex > Length || startIndex > Length - length)
@@ -425,8 +439,12 @@ namespace System
             }
 
             char[] chars = new char[length];
-            fixed (char* src = &_firstChar, dest = &chars[0])
-                wstrcpy(dest, src + startIndex, length);
+
+            Buffer.Memmove(
+               destination: ref MemoryMarshal.GetArrayDataReference(chars),
+               source: ref Unsafe.Add(ref _firstChar, startIndex),
+               elementCount: (uint)length);
+
             return chars;
         }
 
