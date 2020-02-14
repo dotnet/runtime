@@ -9,7 +9,7 @@
 #include <interoplib.h>
 #include "referencetrackertypes.h"
 
-enum class CreateComInterfaceFlagsEx : LONG
+enum class CreateComInterfaceFlagsEx : int32_t
 {
     None = InteropLib::Com::CreateComInterfaceFlags_None,
     CallerDefinedIUnknown = InteropLib::Com::CreateComInterfaceFlags_CallerDefinedIUnknown,
