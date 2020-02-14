@@ -1049,7 +1049,10 @@ namespace System.Net.Http
             Debug.Assert(_headerBuffer.ActiveLength == 0);
 
             // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
-            request.Headers.TransferEncodingChunked = false;
+            if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+            {
+                request.Headers.TransferEncodingChunked = false;
+            }
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
