@@ -368,7 +368,7 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd,
                 size = getSIMDVectorRegisterByteLength();
                 if (vectorRegSizeForReturn)
                 {
-                    vectorRegSizeForReturn = size; // Vector<T> uses appropriate vector register for return
+                    *vectorRegSizeForReturn = size; // Vector<T> uses appropriate vector register for return
                 }
             }
 
