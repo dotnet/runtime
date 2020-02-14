@@ -567,10 +567,11 @@ namespace System.Net.Sockets
 
             internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
-                // todo: handle if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
                 PinHandle = Buffer.Pin();
 
-                ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
+                ioControlBlock.AioLioOpcode = (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
+                    ? (ushort)Interop.Sys.IoControlBlockFlags.IOCB_CMD_NOOP
+                    : (ushort)Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
                 ioControlBlock.AioNbytes = (ulong)Buffer.Length;
