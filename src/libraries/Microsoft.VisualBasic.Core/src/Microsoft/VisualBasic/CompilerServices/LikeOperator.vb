@@ -146,7 +146,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             WidthChanged = False
 
             If Length = 0 Then Return
-            Input = Input.ToLower(System.Globalization.CultureInfo.InvariantCulture)
+            Input = Input.ToLowerInvariant()
 
             Dim ExtraChars As Integer
 

@@ -67,7 +67,7 @@ namespace System.Security.Cryptography
             return _core.CreateDecryptor();
         }
 
-        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return _core.CreateDecryptor(rgbKey, rgbIV);
         }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
             return _core.CreateEncryptor();
         }
 
-        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[] rgbIV)
+        public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
             return _core.CreateEncryptor(rgbKey, rgbIV);
         }

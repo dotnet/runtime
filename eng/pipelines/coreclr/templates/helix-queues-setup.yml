@@ -116,12 +116,8 @@ jobs:
 
     # Windows_NT arm
     - ${{ if eq(parameters.platform, 'Windows_NT_arm') }}:
-    # Currently down as there's no suitable ARM32 pool at the moment, tracked under
-    #   https://github.com/dotnet/runtime/issues/1097
-    #   https://github.com/dotnet/runtime/issues/1663
-    #   https://github.com/dotnet/core-eng/issues/8490
-    #  - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-    #    - Windows.10.Arm64.Open
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
+        - Windows.10.Arm64v8.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
 

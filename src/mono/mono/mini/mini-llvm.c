@@ -395,6 +395,10 @@ typedef enum {
 	INTRINS_SSE_PTESTZ,
 	INTRINS_SSE_INSERTPS,
 	INTRINS_SSE_PSHUFB,
+	INTRINS_SSE_SADD_SATI8,
+	INTRINS_SSE_UADD_SATI8,
+	INTRINS_SSE_SADD_SATI16,
+	INTRINS_SSE_UADD_SATI16,
 #endif
 #ifdef TARGET_WASM
 	INTRINS_WASM_ANYTRUE_V16,
@@ -3403,12 +3407,9 @@ emit_init_method (EmitContext *ctx)
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, FALSE);
 	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "is_inited");
 
-	//WASM doesn't support the "llvm.expect.i8" intrinsic
-#ifndef TARGET_WASM
 	args [0] = inited_var;
 	args [1] = LLVMConstInt (LLVMInt8Type (), 1, FALSE);
 	inited_var = LLVMBuildCall (ctx->builder, get_intrins (ctx, INTRINS_EXPECT_I8), args, 2, "");
-#endif
 
 	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
 
@@ -3767,15 +3768,10 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	 * it needs to continue normally, or return back to the exception handling system.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		int clause_index;
 		char name [128];
 
 		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
 			continue;
-
-		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
-		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
-		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
 
 		if (bb->in_scount == 0) {
 			LLVMValueRef val;
@@ -3790,14 +3786,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			if (!ctx->ex_var)
 				ctx->ex_var = LLVMBuildAlloca (builder, ObjRefType (), "exvar");
 		}
-
-		/*
-		 * Create a new bblock which CALL_HANDLER/landing pads can branch to, because branching to the
-		 * LLVM bblock containing a landing pad causes problems for the
-		 * LLVM optimizer passes.
-		 */
-		sprintf (name, "BB%d_CALL_HANDLER_TARGET", bb->block_num);
-		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
 	}
 	ctx->builder = old_builder;
 }
@@ -7679,6 +7667,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE2_ADDS: {
+			gint32 intrinsicId = 0;
+			if (ins->inst_c1 == MONO_TYPE_I1)
+				intrinsicId = INTRINS_SSE_SADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_U1)
+				intrinsicId = INTRINS_SSE_UADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_I2)
+				intrinsicId = INTRINS_SSE_SADD_SATI16;
+			else if (ins->inst_c1 == MONO_TYPE_U2)
+				intrinsicId = INTRINS_SSE_UADD_SATI16;
+			else
+				g_assert_not_reached ();
+
+			LLVMValueRef args [2];
+			args [0] = convert (ctx, lhs, type_to_simd_type (ins->inst_c1));
+			args [1] = convert (ctx, rhs, type_to_simd_type (ins->inst_c1));
+			values [ins->dreg] = convert (ctx, 
+				LLVMBuildCall (builder, get_intrins (ctx, intrinsicId), args, 2, dname),
+				type_to_simd_type (ins->inst_c1));
+			break;
+		}
+
 		case OP_SSE2_PACKUS: {
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, type_to_simd_type (MONO_TYPE_I2));
@@ -8487,6 +8497,7 @@ emit_method_inner (EmitContext *ctx)
 	LLVMValueRef *values = ctx->values;
 	int i, max_block_num, bb_index;
 	gboolean last = FALSE;
+	gboolean llvmonly_fail = FALSE;
 	LLVMCallInfo *linfo;
 	LLVMModuleRef lmodule = ctx->lmodule;
 	BBInfo *bblocks;
@@ -8653,8 +8664,14 @@ emit_method_inner (EmitContext *ctx)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
-		    set_failure (ctx, "non-finally/catch/fault clause.");
-			return;
+			if (cfg->llvm_only) {
+				// FIXME: Treat unhandled opcodes like __arglist the same way
+				// It would require deleting the already emitted code
+				llvmonly_fail = TRUE;
+			} else {
+				set_failure (ctx, "non-finally/catch/fault clause.");
+				return;
+			}
 		}
 	}
 	if (header->num_clauses || (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) || cfg->no_inline)
@@ -8849,6 +8866,33 @@ emit_method_inner (EmitContext *ctx)
 	LLVMPositionBuilderAtEnd (entry_builder, entry_bb);
 	emit_entry_bb (ctx, entry_builder);
 
+	if (llvmonly_fail)
+		/*
+		 * In llvmonly mode, we want to emit an llvm method for every method even if it fails to compile,
+		 * so direct calls can be made from outside the assembly.
+		 */
+		goto after_codegen_1;
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		int clause_index;
+		char name [128];
+
+		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			continue;
+
+		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
+		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
+		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
+
+		/*
+		 * Create a new bblock which CALL_HANDLER/landing pads can branch to, because branching to the
+		 * LLVM bblock containing a landing pad causes problems for the
+		 * LLVM optimizer passes.
+		 */
+		sprintf (name, "BB%d_CALL_HANDLER_TARGET", bb->block_num);
+		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
+	}
+
 	// Make landing pads first
 	ctx->exc_meta = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
@@ -8968,6 +9012,24 @@ emit_method_inner (EmitContext *ctx)
 
 	ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
 
+after_codegen_1:
+
+	if (llvmonly_fail) {
+		/*
+		 * FIXME: Maybe fallback to interpreter
+		 */
+		static LLVMTypeRef sig;
+
+		ctx->builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, ctx->inited_bb);
+
+		if (!sig)
+			sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+		LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_missing_method_exception));
+		LLVMBuildCall (ctx->builder, callee, NULL, 0, "");
+		LLVMBuildUnreachable (ctx->builder);
+	}
+
 	/* Initialize the method if needed */
 	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
 		// FIXME: Add more shared got entries
@@ -9009,7 +9071,6 @@ emit_method_inner (EmitContext *ctx)
 
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
-
 
 after_codegen:
 	if (cfg->llvm_only) {
@@ -9359,6 +9420,18 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_ROUNDPD, "llvm.x86.sse41.round.pd"},
 	{INTRINS_SSE_PTESTZ, "llvm.x86.sse41.ptestz"},
 	{INTRINS_SSE_INSERTPS, "llvm.x86.sse41.insertps"},
+#if LLVM_API_VERSION >= 800
+	// these intrinsics were renamed in LLVM 8
+	{INTRINS_SSE_SADD_SATI8, "llvm.sadd.sat.v16i8"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.uadd.sat.v16i8"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.sadd.sat.v8i16"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.uadd.sat.v8i16"},
+#else
+	{INTRINS_SSE_SADD_SATI8, "llvm.x86.sse2.padds.b"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.x86.sse2.paddus.b"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.x86.sse2.padds.w"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.x86.sse2.paddus.w"},
+#endif
 #endif
 #ifdef TARGET_WASM
 	{INTRINS_WASM_ANYTRUE_V16, "llvm.wasm.anytrue.v16i8"},
@@ -9656,6 +9729,20 @@ add_intrinsic (LLVMModuleRef module, int id)
 		ret_type = type_to_simd_type (MONO_TYPE_I2);
 		arg_types [0] = type_to_simd_type (MONO_TYPE_I4);
 		arg_types [1] = type_to_simd_type (MONO_TYPE_I4);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI8:
+	case INTRINS_SSE_UADD_SATI8:
+		ret_type = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I1);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI16:
+	case INTRINS_SSE_UADD_SATI16:
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I2);
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 		/* SSE Binary ops */

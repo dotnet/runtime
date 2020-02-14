@@ -666,6 +666,7 @@ static guint16 sse_methods [] = {
 
 static guint16 sse2_methods [] = {
 	SN_Add,
+	SN_AddSaturate,
 	SN_And,
 	SN_AndNot,
 	SN_CompareEqual,
@@ -834,6 +835,8 @@ emit_x86_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature 
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FSUB : OP_ISUB, arg0_type, fsig, args);
 		case SN_Add:
 			return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, arg0_type == MONO_TYPE_R8 ? OP_FADD : OP_IADD, arg0_type, fsig, args);
+		case SN_AddSaturate:
+			return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_ADDS, -1, arg0_type, fsig, args);
 		case SN_And:
 			return emit_simd_ins_for_sig (cfg, klass, OP_SSE_AND, -1, arg0_type, fsig, args);
 		case SN_AndNot:

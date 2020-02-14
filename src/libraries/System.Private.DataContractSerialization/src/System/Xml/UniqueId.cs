@@ -49,8 +49,6 @@ namespace System.Xml
                               0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100, 0x100,
         };
 
-        private const string val2char = "0123456789abcdef";
-
         public UniqueId() : this(Guid.NewGuid())
         {
         }
@@ -137,10 +135,10 @@ namespace System.Xml
             return char2val[ch1] | char2val[0x80 + ch2];
         }
 
-        private unsafe void UnsafeEncode(char* val2char, byte b, char* pch)
+        private static unsafe void UnsafeEncode(byte b, char* pch)
         {
-            pch[0] = val2char[b >> 4];
-            pch[1] = val2char[b & 0x0F];
+            pch[0] = HexConverter.ToCharLower(b >> 4);
+            pch[1] = HexConverter.ToCharLower(b);
         }
 
         public bool IsGuid => ((_idLow | _idHigh) != 0);
@@ -241,26 +239,22 @@ namespace System.Xml
                     pch[27] = '-';
                     pch[32] = '-';
 
-                    fixed (char* ps = val2char)
-                    {
-                        char* _val2char = ps;
-                        UnsafeEncode(_val2char, bytes[0], &pch[15]);
-                        UnsafeEncode(_val2char, bytes[1], &pch[13]);
-                        UnsafeEncode(_val2char, bytes[2], &pch[11]);
-                        UnsafeEncode(_val2char, bytes[3], &pch[9]);
-                        UnsafeEncode(_val2char, bytes[4], &pch[20]);
-                        UnsafeEncode(_val2char, bytes[5], &pch[18]);
-                        UnsafeEncode(_val2char, bytes[6], &pch[25]);
-                        UnsafeEncode(_val2char, bytes[7], &pch[23]);
-                        UnsafeEncode(_val2char, bytes[8], &pch[28]);
-                        UnsafeEncode(_val2char, bytes[9], &pch[30]);
-                        UnsafeEncode(_val2char, bytes[10], &pch[33]);
-                        UnsafeEncode(_val2char, bytes[11], &pch[35]);
-                        UnsafeEncode(_val2char, bytes[12], &pch[37]);
-                        UnsafeEncode(_val2char, bytes[13], &pch[39]);
-                        UnsafeEncode(_val2char, bytes[14], &pch[41]);
-                        UnsafeEncode(_val2char, bytes[15], &pch[43]);
-                    }
+                    UnsafeEncode(bytes[0], &pch[15]);
+                    UnsafeEncode(bytes[1], &pch[13]);
+                    UnsafeEncode(bytes[2], &pch[11]);
+                    UnsafeEncode(bytes[3], &pch[9]);
+                    UnsafeEncode(bytes[4], &pch[20]);
+                    UnsafeEncode(bytes[5], &pch[18]);
+                    UnsafeEncode(bytes[6], &pch[25]);
+                    UnsafeEncode(bytes[7], &pch[23]);
+                    UnsafeEncode(bytes[8], &pch[28]);
+                    UnsafeEncode(bytes[9], &pch[30]);
+                    UnsafeEncode(bytes[10], &pch[33]);
+                    UnsafeEncode(bytes[11], &pch[35]);
+                    UnsafeEncode(bytes[12], &pch[37]);
+                    UnsafeEncode(bytes[13], &pch[39]);
+                    UnsafeEncode(bytes[14], &pch[41]);
+                    UnsafeEncode(bytes[15], &pch[43]);
                 }
             }
 

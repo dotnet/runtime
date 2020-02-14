@@ -2703,7 +2703,7 @@ namespace Microsoft.CSharp
                     return "void";
                 }
 
-                string lowerCaseString = s.ToLower(CultureInfo.InvariantCulture).Trim();
+                string lowerCaseString = s.ToLowerInvariant().Trim();
 
                 switch (lowerCaseString)
                 {

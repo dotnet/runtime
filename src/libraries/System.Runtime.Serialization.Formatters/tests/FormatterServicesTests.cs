@@ -150,6 +150,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Fact]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp, "The coreclr doesn't support GetUninitializedObject for shared generic instances")]
+        [SkipOnMonoAttribute("System.__Canon doesn't exist on Mono")]
         public void GetUninitializedObject_SharedGenericInstance_NetCore_ThrowsNotSupportedException()
         {
             Type canonType = Type.GetType("System.__Canon");

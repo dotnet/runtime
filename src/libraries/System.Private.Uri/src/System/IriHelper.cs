@@ -273,7 +273,7 @@ namespace System
 
                         for (int count = 0; count < encodedBytesCount; ++count)
                         {
-                            UriHelper.EscapeAsciiChar((char)encodedBytes[count], ref dest);
+                            UriHelper.EscapeAsciiChar(encodedBytes[count], ref dest);
                         }
                     }
                 }

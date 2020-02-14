@@ -227,54 +227,95 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 buf);
         }
 
-        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate)
+        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate, string certFilePath, string privateKeyFilePath)
         {
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
+            IntPtr unmanagedAddr = IntPtr.Zero;
+            MsQuicNativeMethods.CertFileParams fileParams = default;
 
-            // If no certificate is provided, provide a null one.
-            if (certificate != null)
+            try
             {
-                createConfigStatus = SecConfigCreateDelegate(
-                    _registrationContext,
-                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
-                    certificate.Handle,
-                    null,
-                    IntPtr.Zero,
-                    SecCfgCreateCallbackHandler);
+                if (certFilePath != null && privateKeyFilePath != null)
+                {
+                    fileParams = new MsQuicNativeMethods.CertFileParams
+                    {
+                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath),
+                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath)
+                    };
+
+                    unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
+                    Marshal.StructureToPtr(fileParams, unmanagedAddr, fDeleteOld: false);
+
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
+                        certificate.Handle,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+                else if (certificate != null)
+                {
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
+                        certificate.Handle,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+                else
+                {
+                    // If no certificate is provided, provide a null one.
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
+                        IntPtr.Zero,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+
+                QuicExceptionHelpers.ThrowIfFailed(
+                    createConfigStatus,
+                    "Could not create security configuration.");
+
+                void SecCfgCreateCallbackHandler(
+                    IntPtr context,
+                    uint status,
+                    IntPtr securityConfig)
+                {
+                    secConfig = new MsQuicSecurityConfig(this, securityConfig);
+                    secConfigCreateStatus = status;
+                    tcs.SetResult(null);
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+
+                QuicExceptionHelpers.ThrowIfFailed(
+                    secConfigCreateStatus,
+                    "Could not create security configuration.");
             }
-            else
+            finally
             {
-                createConfigStatus = SecConfigCreateDelegate(
-                    _registrationContext,
-                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
-                    IntPtr.Zero,
-                    null,
-                    IntPtr.Zero,
-                    SecCfgCreateCallbackHandler);
+                if (fileParams.CertificateFilePath != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(fileParams.CertificateFilePath);
+                }
+
+                if (fileParams.PrivateKeyFilePath != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(fileParams.PrivateKeyFilePath);
+                }
+
+                if (unmanagedAddr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(unmanagedAddr);
+                }
             }
-
-            QuicExceptionHelpers.ThrowIfFailed(
-                createConfigStatus,
-                "Could not create security configuration.");
-
-            void SecCfgCreateCallbackHandler(
-                IntPtr context,
-                uint status,
-                IntPtr securityConfig)
-            {
-                secConfig = new MsQuicSecurityConfig(this, securityConfig);
-                secConfigCreateStatus = status;
-                tcs.SetResult(null);
-            }
-
-            await tcs.Task.ConfigureAwait(false);
-
-            QuicExceptionHelpers.ThrowIfFailed(
-                secConfigCreateStatus,
-                "Could not create security configuration.");
 
             return secConfig;
         }

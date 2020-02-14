@@ -1153,6 +1153,14 @@ namespace Internal.JitInterface
         private bool shouldEnforceCallvirtRestriction(CORINFO_MODULE_STRUCT_* scope)
         { throw new NotImplementedException("shouldEnforceCallvirtRestriction"); }
 
+        private char* getStringLiteral(CORINFO_MODULE_STRUCT_* module, uint metaTOK, ref int length)
+        {
+            MethodIL methodIL = (MethodIL)HandleToObject((IntPtr)module);
+            string s = (string)methodIL.GetObject((int)metaTOK);
+            length = (int)s.Length;
+            return (char*)GetPin(s);
+        }
+
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
@@ -1189,7 +1197,7 @@ namespace Internal.JitInterface
         }
 
 
-        private int appendClassName(short** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
+        private int appendClassName(char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
         {
             // We support enough of this to make SIMD work, but not much else.
 
@@ -1201,13 +1209,13 @@ namespace Internal.JitInterface
             int length = name.Length;
             if (pnBufLen > 0)
             {
-                short* buffer = *ppBuf;
+                char* buffer = *ppBuf;
                 for (int i = 0; i < Math.Min(name.Length, pnBufLen); i++)
-                    buffer[i] = (short)name[i];
+                    buffer[i] = name[i];
                 if (name.Length < pnBufLen)
-                    buffer[name.Length] = 0;
+                    buffer[name.Length] = (char)0;
                 else
-                    buffer[pnBufLen - 1] = 0;
+                    buffer[pnBufLen - 1] = (char)0;
                 pnBufLen -= length;
                 *ppBuf = buffer + length;
             }
@@ -2061,221 +2069,6 @@ namespace Internal.JitInterface
             return (CORINFO_FIELD_ACCESSOR)(-1);
         }
 
-        private void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
-        {
-#if DEBUG
-            // In debug, write some bogus data to the struct to ensure we have filled everything
-            // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
-#endif
-
-            Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_SET |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_INIT_ARRAY)) != 0);
-
-            var field = HandleToObject(pResolvedToken.hField);
-#if READYTORUN
-            MethodDesc callerMethod = HandleToObject(callerHandle);
-
-            if (field.Offset.IsIndeterminate)
-                throw new RequiresRuntimeJitException(field);
-#endif
-
-            CORINFO_FIELD_ACCESSOR fieldAccessor;
-            CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
-            uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
-
-            if (field.IsStatic)
-            {
-                fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
-
-#if READYTORUN
-                if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
-                {
-                    // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
-                    // we need to modify field access flags appropriately
-                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                }
-#endif
-
-                if (field.HasRva)
-                {
-                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
-
-                    // TODO: Handle the case when the RVA is in the TLS range
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
-
-                    // We are not going through a helper. The constructor has to be triggered explicitly.
-#if READYTORUN
-                    if (!IsClassPreInited(field.OwningType))
-#else
-                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
-#endif
-                    {
-                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
-                    }
-                }
-                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
-#if READYTORUN
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
-                    {
-                        pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE);
-                    }
-                    else
-                    {
-                        pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
-                    }
-#else
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
-                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
-
-                    // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
-                    // attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-                        ReadyToRunHelperId helperId;
-
-                        // Find out what kind of base do we need to look up.
-                        if (field.IsThreadStatic)
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        }
-                        else if (field.HasGCStaticBase)
-                        {
-                            helperId = ReadyToRunHelperId.GetGCStaticBase;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
-
-                        // What generic context do we look up the base from.
-                        ISymbolNode helper;
-                        if (contextMethod.AcquiresInstMethodTableFromThis() || contextMethod.RequiresInstMethodTableArg())
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(
-                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
-                        }
-                        else
-                        {
-                            Debug.Assert(contextMethod.RequiresInstMethodDescArg());
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
-                                helperId, runtimeDeterminedField.OwningType, contextMethod);
-                        }
-
-                        pResult->fieldLookup = CreateConstLookupToSymbol(helper);
-                    }
-#endif // READYTORUN
-                }
-                else
-                {
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
-
-                    ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (field.IsThreadStatic)
-                    {
-#if READYTORUN
-                        if (field.HasGCStaticBase)
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
-                        }
-#else
-                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
-#endif
-                    }
-                    else
-                    {
-                        helperId = field.HasGCStaticBase ?
-                            ReadyToRunHelperId.GetGCStaticBase :
-                            ReadyToRunHelperId.GetNonGCStaticBase;
-
-                        //
-                        // Currently, we only do this optimization for regular statics, but it
-                        // looks like it may be permissible to do this optimization for
-                        // thread statics as well.
-                        //
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
-                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
-                        }
-                    }
-
-#if READYTORUN
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
-                        fieldAccessor == CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER)
-                    {
-                        PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
-                        
-                        // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
-                        // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, GetSignatureContext()));
-
-                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
-
-                        fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
-                        fieldOffset = 0;
-                    }
-                    else
-#endif
-
-                    if (helperId != ReadyToRunHelperId.Invalid)
-                    {
-                        pResult->fieldLookup = CreateConstLookupToSymbol(
-#if READYTORUN
-                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
-#else
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
-#endif
-                            );
-                    }
-                }
-            }
-            else
-            {
-                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE;
-            }
-
-            if (field.IsInitOnly)
-                fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_FINAL;
-
-            pResult->fieldAccessor = fieldAccessor;
-            pResult->fieldFlags = fieldFlags;
-            pResult->fieldType = getFieldType(pResolvedToken.hField, &pResult->structType, pResolvedToken.hClass);
-            pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-            pResult->offset = fieldOffset;
-
-#if READYTORUN
-            EncodeFieldBaseOffset(field, pResult, callerMethod);
-#endif
-
-            // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
-            //       and STS::AccessCheck::CanAccess.
-        }
-
         private bool isFieldStatic(CORINFO_FIELD_STRUCT_* fldHnd)
         {
             return HandleToObject(fldHnd).IsStatic;
@@ -2367,7 +2160,7 @@ namespace Internal.JitInterface
 
         private HRESULT GetErrorHRESULT(_EXCEPTION_POINTERS* pExceptionPointers)
         { throw new NotImplementedException("GetErrorHRESULT"); }
-        private uint GetErrorMessage(short* buffer, uint bufferLength)
+        private uint GetErrorMessage(char* buffer, uint bufferLength)
         { throw new NotImplementedException("GetErrorMessage"); }
 
         private int FilterException(_EXCEPTION_POINTERS* pExceptionPointers)
@@ -2430,7 +2223,7 @@ namespace Internal.JitInterface
             pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
-        private string getJitTimeLogFilename()
+        private char* getJitTimeLogFilename()
         {
             return null;
         }

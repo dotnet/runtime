@@ -1,0 +1,8 @@
+<Project>
+  <Target Name="GenerateReferenceSource" DependsOnTargets="GetProjectWithBestTargetFrameworks">
+    <MSBuild Projects="@(InnerBuildProjectsWithBestTargetFramework)"
+             Targets="GenerateReferenceSource"
+             BuildInParallel="$(BuildInParallel)">
+    </MSBuild>
+  </Target>
+</Project>

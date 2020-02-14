@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 
@@ -9,14 +10,11 @@ namespace Internal.Cryptography
 {
     internal abstract partial class AsnFormatter
     {
-        private static readonly char[] s_hexValues =
-            { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         internal static AsnFormatter Instance { get { return s_instance; } }
 
         public string Format(Oid? oid, byte[] rawData, bool multiLine)
         {
-            return FormatNative(oid, rawData, multiLine) ?? EncodeHexString(rawData);
+            return FormatNative(oid, rawData, multiLine) ?? HexConverter.ToString(rawData.AsSpan(), HexConverter.Casing.Upper);
         }
 
         protected abstract string? FormatNative(Oid? oid, byte[] rawData, bool multiLine);
@@ -50,11 +48,9 @@ namespace Internal.Cryptography
                         hexOrder[j++] = ' ';
                     }
 
-                    uint digit = (uint)((sArray[i] & 0xf0) >> 4);
-                    hexOrder[j++] = s_hexValues[digit];
-
-                    digit = (uint)(sArray[i] & 0x0f);
-                    hexOrder[j++] = s_hexValues[digit];
+                    int digit = sArray[i];
+                    hexOrder[j++] = HexConverter.ToCharUpper(digit >> 4);
+                    hexOrder[j++] = HexConverter.ToCharUpper(digit);
                 }
 
                 result = new string(hexOrder);

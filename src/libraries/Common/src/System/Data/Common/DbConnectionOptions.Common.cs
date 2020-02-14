@@ -153,7 +153,7 @@ namespace System.Data.Common
             {
                 count--; // trailing whitespace
             }
-            return buffer.ToString(0, count).ToLower(CultureInfo.InvariantCulture);
+            return buffer.ToString(0, count).ToLowerInvariant();
         }
 
         private static string GetKeyValue(StringBuilder buffer, bool trimWhitespace)
@@ -445,7 +445,7 @@ namespace System.Data.Common
                 CaptureCollection keyvalues = match.Groups[ValueIndex].Captures;
                 foreach (Capture keypair in match.Groups[KeyIndex].Captures)
                 {
-                    string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLower(CultureInfo.InvariantCulture);
+                    string keyname = (firstKey ? keypair.Value : keypair.Value.Replace("==", "=")).ToLowerInvariant();
                     string keyvalue = keyvalues[indexValue++].Value;
                     if (0 < keyvalue.Length)
                     {

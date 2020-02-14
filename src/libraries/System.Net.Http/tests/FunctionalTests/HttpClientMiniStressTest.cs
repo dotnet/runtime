@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -30,8 +31,8 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // TODO: public to test HTTP/3.
-    internal sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
+    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http3 : HttpClientMiniStress
     {
         public SocketsHttpHandler_HttpClientMiniStress_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
