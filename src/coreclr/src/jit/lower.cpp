@@ -98,8 +98,14 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-
-// This is the main entry point for Lowering.
+// LowerNode: this is the main entry point for Lowering.
+//
+// Arguments:
+//    node - the node we are lowering.
+//
+// Returns:
+//    next node in the transformed node sequence that needs to be lowered.
+//
 GenTree* Lowering::LowerNode(GenTree* node)
 {
     assert(node != nullptr);
