@@ -114,18 +114,21 @@ namespace System
 
         private static Version GetICUVersion()
         {
-            if (IsWindows)
+            int version = 0;
+            Type interopGlobalization = Type.GetType("Interop+Globalization");
+            if (interopGlobalization != null)
             {
-                return new Version(0, 0, 0, 0);
+                MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
+                if (methodInfo != null)
+                {
+                    version = (int)methodInfo.Invoke(null, new object[] { });
+                }
             }
-            else
-            {
-                int ver = libc.GetICUVersion();
-                return new Version( ver & 0xFF,
-                                (ver >> 8)  & 0xFF,
-                                (ver >> 16) & 0xFF,
-                                    ver >> 24);
-            }
+
+            return new Version( version & 0xFF,
+                            (version >> 8)  & 0xFF,
+                            (version >> 16) & 0xFF,
+                                version >> 24);
         }
 
         private static Version GetOSXProductVersion()
@@ -328,21 +331,6 @@ namespace System
 
             [DllImport("libc", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr gnu_get_libc_version();
-
-            public unsafe static int GetICUVersion()
-            {
-                Type interopGlobalization = Type.GetType("Interop+Globalization");
-                if (interopGlobalization != null)
-                {
-                    MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
-                    if (methodInfo != null)
-                    {
-                        return (int)methodInfo.Invoke(null, new object[] { });
-                    }
-                }
-
-                throw new Exception("Failed to find method Interop.Globalization.GetICUVersion.");
-            }
         }
     }
 }
