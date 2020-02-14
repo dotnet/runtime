@@ -10,7 +10,7 @@
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
     <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp2.0/ILLink.Tasks.dll</ILLinkTasksPath>
+    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)$(NetFrameworkCurrent)/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
