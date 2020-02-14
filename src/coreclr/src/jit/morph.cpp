@@ -11301,8 +11301,8 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
         case GT_GT:
         {
-            // Try and optimize boxes feeding compares
-            GenTree* optimizedTree = gtFoldExprSpecial(tree);
+            // Try and optimize nullable boxes feeding compares
+            GenTree* optimizedTree = gtFoldBoxNullable(tree);
 
             if (optimizedTree->OperGet() != tree->OperGet())
             {
