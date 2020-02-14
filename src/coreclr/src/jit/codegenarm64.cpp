@@ -7006,21 +7006,19 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_saddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_saddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
-    // smaxlv vector
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_smaxlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
+    // smaxv vector
+    theEmitter->emitIns_R_R(INS_smaxv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_smaxv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_smaxv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_smaxv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_smaxv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
-    // sminlv vector
-    theEmitter->emitIns_R_R(INS_sminlv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
-    theEmitter->emitIns_R_R(INS_sminlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
-    theEmitter->emitIns_R_R(INS_sminlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
-    theEmitter->emitIns_R_R(INS_sminlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_sminlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_sminlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
+    // sminv vector
+    theEmitter->emitIns_R_R(INS_sminv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_sminv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_sminv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_sminv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_sminv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
     // uaddlv vector
     theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
@@ -7030,22 +7028,19 @@ void CodeGen::genArm64EmitterUnitTests()
     theEmitter->emitIns_R_R(INS_uaddlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
     theEmitter->emitIns_R_R(INS_uaddlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
 
-    // umaxlv vector
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_umaxlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
+    // umaxv vector
+    theEmitter->emitIns_R_R(INS_umaxv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_umaxv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_umaxv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_umaxv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_umaxv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
-    // uminlv vector
-    theEmitter->emitIns_R_R(INS_uminlv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
-    theEmitter->emitIns_R_R(INS_uminlv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
-    theEmitter->emitIns_R_R(INS_uminlv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
-    theEmitter->emitIns_R_R(INS_uminlv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
-    theEmitter->emitIns_R_R(INS_uminlv, EA_8BYTE, REG_V12, REG_V13, INS_OPTS_2S);
-    theEmitter->emitIns_R_R(INS_uminlv, EA_16BYTE, REG_V14, REG_V15, INS_OPTS_4S);
-
+    // uminv vector
+    theEmitter->emitIns_R_R(INS_uminv, EA_8BYTE, REG_V4, REG_V5, INS_OPTS_8B);
+    theEmitter->emitIns_R_R(INS_uminv, EA_16BYTE, REG_V6, REG_V7, INS_OPTS_16B);
+    theEmitter->emitIns_R_R(INS_uminv, EA_8BYTE, REG_V8, REG_V9, INS_OPTS_4H);
+    theEmitter->emitIns_R_R(INS_uminv, EA_16BYTE, REG_V10, REG_V11, INS_OPTS_8H);
+    theEmitter->emitIns_R_R(INS_uminv, EA_16BYTE, REG_V12, REG_V13, INS_OPTS_4S);
 
     // faddp scalar
     theEmitter->emitIns_R_R(INS_faddp, EA_4BYTE, REG_V0, REG_V1);
