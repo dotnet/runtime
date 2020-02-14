@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     /// Converter for <cref>System.Collections.IList</cref>.
     internal sealed class IListConverter<TCollection>
-        : IEnumerableDefaultConverter<TCollection, object>
+        : IEnumerableDefaultConverter<TCollection, object?>
         where TCollection : IList
     {
         protected override void Add(object? value, ref ReadStack state)
@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
                 enumerator = state.Current.CollectionEnumerator;
             }
 
-            JsonConverter<object> converter = GetElementConverter(ref state);
+            JsonConverter<object?> converter = GetElementConverter(ref state);
             do
             {
                 if (ShouldFlush(writer, ref state))
@@ -77,7 +77,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 object? element = enumerator.Current;
 
-                if (!converter.TryWrite(writer, element!, options, ref state))
+                if (!converter.TryWrite(writer, element, options, ref state))
                 {
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
