@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -49,6 +48,7 @@ namespace System.Text.RegularExpressions
 
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charToLowerMethod = typeof(char).GetMethod("ToLower", new Type[] { typeof(char), typeof(CultureInfo) })!;
         private static readonly MethodInfo s_charToLowerInvariantMethod = typeof(char).GetMethod("ToLowerInvariant", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_cultureInfoGetCurrentCultureMethod = typeof(CultureInfo).GetMethod("get_CurrentCulture")!;
@@ -142,8 +142,8 @@ namespace System.Text.RegularExpressions
         /// Entry point to dynamically compile a regular expression.  The expression is compiled to
         /// an in-memory assembly.
         /// </summary>
-        internal static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
-            new RegexLWCGCompiler().FactoryInstanceFromCode(code, options, hasTimeout);
+        internal static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+            new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
 
 #if DEBUG // until it can be fully implemented
         /// <summary>
@@ -1769,7 +1769,7 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Multi:
                         // Boundaries are like set checks and don't involve repetition, either.
                         case RegexNode.Boundary:
-                        case RegexNode.Nonboundary:
+                        case RegexNode.NonBoundary:
                         case RegexNode.ECMABoundary:
                         case RegexNode.NonECMABoundary:
                         // Anchors are also trivial.
@@ -2259,7 +2259,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Boundary:
-                    case RegexNode.Nonboundary:
+                    case RegexNode.NonBoundary:
                     case RegexNode.ECMABoundary:
                     case RegexNode.NonECMABoundary:
                         EmitBoundary(node);
@@ -2418,7 +2418,7 @@ namespace System.Text.RegularExpressions
                         BrfalseFar(doneLabel);
                         break;
 
-                    case RegexNode.Nonboundary:
+                    case RegexNode.NonBoundary:
                         Callvirt(s_isBoundaryMethod);
                         BrtrueFar(doneLabel);
                         break;
@@ -3891,7 +3891,7 @@ namespace System.Text.RegularExpressions
                     }
 
                 case RegexCode.Boundary:
-                case RegexCode.Nonboundary:
+                case RegexCode.NonBoundary:
                     //: if (!IsBoundary(Textpos(), _textbeg, _textend))
                     //:     break Backward;
                     Ldthis();
@@ -4355,12 +4355,12 @@ namespace System.Text.RegularExpressions
                 case RegexCode.Oneloopatomic | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Notoneloopatomic | RegexCode.Ci | RegexCode.Rtl:
                 case RegexCode.Setloopatomic | RegexCode.Ci | RegexCode.Rtl:
-                    //: int c = Operand(1);
-                    //: if (c > Rightchars())
-                    //:     c = Rightchars();
+                    //: int len = Operand(1);
+                    //: if (len > Rightchars())
+                    //:     len = Rightchars();
                     //: char ch = (char)Operand(0);
                     //: int i;
-                    //: for (i = c; i > 0; i--)
+                    //: for (i = len; i > 0; i--)
                     //: {
                     //:     if (Rightcharnext() != ch)
                     //:     {
@@ -4368,14 +4368,13 @@ namespace System.Text.RegularExpressions
                     //:         break;
                     //:     }
                     //: }
-                    //: if (c > i)
-                    //:     Track(c - i - 1, Textpos() - 1);
+                    //: if (len > i)
+                    //:     Track(len - i - 1, Textpos() - 1);
                     {
-                        LocalBuilder cLocal = _temp1Local!;
                         LocalBuilder lenLocal = _temp2Local!;
+                        LocalBuilder iLocal = _temp1Local!;
                         charInClassLocal = _temp3Local!;
-                        Label l1 = DefineLabel();
-                        Label l2 = DefineLabel();
+                        Label loopEnd = DefineLabel();
 
                         int c = Operand(1);
                         if (c == 0)
@@ -4404,78 +4403,137 @@ namespace System.Text.RegularExpressions
                             Ldc(c);
                             MarkLabel(l4);
                         }
-                        Dup();
-                        Stloc(lenLocal);
-                        Ldc(1);
-                        Add();
-                        Stloc(cLocal);
 
-                        MarkLabel(l1);
-                        Ldloc(cLocal);
-                        Ldc(1);
-                        Sub();
-                        Dup();
-                        Stloc(cLocal);
-                        Ldc(0);
-                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
+                        // If this is a notoneloop{atomic} and we're left-to-right and case-sensitive,
+                        // we can use the vectorized IndexOf to search for the target character.
+                        if ((Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic) &&
+                            !IsRightToLeft() &&
+                            !IsCaseInsensitive())
                         {
-                            BleFar(l2);
-                        }
-                        else
-                        {
-                            Ble(l2);
-                        }
+                            Stloc(lenLocal);
 
-                        if (IsRightToLeft())
-                        {
-                            Leftcharnext();
-                        }
-                        else
-                        {
-                            Rightcharnext();
-                        }
-
-                        if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
-                        {
-                            EmitTimeoutCheck();
-                            EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
-                            BrtrueFar(l1);
-                        }
-                        else
-                        {
-                            if (IsCaseInsensitive())
-                            {
-                                CallToLower();
-                            }
-
+                            // i = runtext.AsSpan(runtextpos, len).IndexOf(ch);
+                            Ldloc(_runtextLocal!);
+                            Ldloc(_runtextposLocal!);
+                            Ldloc(lenLocal);
+                            Call(s_stringAsSpanIntIntMethod);
                             Ldc(Operand(0));
-                            if (Code() == RegexCode.Oneloop || Code() == RegexCode.Oneloopatomic)
+                            Call(s_spanIndexOf);
+                            Stloc(iLocal);
+
+                            Label charFound = DefineLabel();
+
+                            // if (i != -1) goto charFound;
+                            Ldloc(iLocal);
+                            Ldc(-1);
+                            Bne(charFound);
+
+                            // runtextpos += len;
+                            // i = 0;
+                            // goto loopEnd;
+                            Ldloc(_runtextposLocal!);
+                            Ldloc(lenLocal);
+                            Add();
+                            Stloc(_runtextposLocal!);
+                            Ldc(0);
+                            Stloc(iLocal);
+                            BrFar(loopEnd);
+
+                            // charFound:
+                            // runtextpos += i;
+                            // i = len - i;
+                            // goto loopEnd;
+                            MarkLabel(charFound);
+                            Ldloc(_runtextposLocal!);
+                            Ldloc(iLocal);
+                            Add();
+                            Stloc(_runtextposLocal!);
+                            Ldloc(lenLocal);
+                            Ldloc(iLocal);
+                            Sub();
+                            Stloc(iLocal);
+                            BrFar(loopEnd);
+                        }
+                        else
+                        {
+                            // Otherwise, we emit the open-coded loop.
+
+                            Dup();
+                            Stloc(lenLocal);
+                            Ldc(1);
+                            Add();
+                            Stloc(iLocal);
+
+                            Label loopCondition = DefineLabel();
+                            MarkLabel(loopCondition);
+                            Ldloc(iLocal);
+                            Ldc(1);
+                            Sub();
+                            Dup();
+                            Stloc(iLocal);
+                            Ldc(0);
+                            if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
                             {
-                                Beq(l1);
+                                BleFar(loopEnd);
                             }
                             else
                             {
-                                Debug.Assert(Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic);
-                                Bne(l1);
+                                Ble(loopEnd);
                             }
+
+                            if (IsRightToLeft())
+                            {
+                                Leftcharnext();
+                            }
+                            else
+                            {
+                                Rightcharnext();
+                            }
+
+                            if (Code() == RegexCode.Setloop || Code() == RegexCode.Setloopatomic)
+                            {
+                                EmitTimeoutCheck();
+                                EmitMatchCharacterClass(_strings![Operand(0)], IsCaseInsensitive(), charInClassLocal);
+                                BrtrueFar(loopCondition);
+                            }
+                            else
+                            {
+                                if (IsCaseInsensitive())
+                                {
+                                    CallToLower();
+                                }
+
+                                Ldc(Operand(0));
+                                if (Code() == RegexCode.Oneloop || Code() == RegexCode.Oneloopatomic)
+                                {
+                                    Beq(loopCondition);
+                                }
+                                else
+                                {
+                                    Debug.Assert(Code() == RegexCode.Notoneloop || Code() == RegexCode.Notoneloopatomic);
+                                    Bne(loopCondition);
+                                }
+                            }
+
+                            Ldloc(_runtextposLocal!);
+                            Ldc(1);
+                            Sub(IsRightToLeft());
+                            Stloc(_runtextposLocal!);
                         }
 
-                        Ldloc(_runtextposLocal!);
-                        Ldc(1);
-                        Sub(IsRightToLeft());
-                        Stloc(_runtextposLocal!);
-
-                        MarkLabel(l2);
-
+                        // loopEnd:
+                        MarkLabel(loopEnd);
                         if (Code() != RegexCode.Oneloopatomic && Code() != RegexCode.Notoneloopatomic && Code() != RegexCode.Setloopatomic)
                         {
+                            // if (len <= i) goto advance;
                             Ldloc(lenLocal);
-                            Ldloc(cLocal);
+                            Ldloc(iLocal);
                             Ble(AdvanceLabel());
 
+                            // TrackPush(len - i - 1, runtextpos - Bump())
                             ReadyPushTrack();
                             Ldloc(lenLocal);
-                            Ldloc(cLocal);
+                            Ldloc(iLocal);
                             Sub();
                             Ldc(1);
                             Sub();
@@ -4667,7 +4725,8 @@ namespace System.Text.RegularExpressions
                     break;
 
                 default:
-                    throw new NotImplementedException(SR.UnimplementedState);
+                    Debug.Fail($"Unimplemented state: {_regexopcode:X8}");
+                    break;
             }
         }
 
@@ -4752,6 +4811,24 @@ namespace System.Text.RegularExpressions
 
                 // Negate the answer if the negation flag was set
                 if (RegexCharClass.IsNegated(charClass))
+                {
+                    Ldc(0);
+                    Ceq();
+                }
+
+                return;
+            }
+
+            // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
+            // compare against it.  It has a fast-lookup path for ASCII, so is as good or better than any lookup we'd generate (plus
+            // we get smaller code), and it's what we'd do for the fallback (which we get to avoid generating) as part of CharInClass.
+            if (!invariant && RegexCharClass.TryGetSingleUnicodeCategory(charClass, out UnicodeCategory category, out bool negated))
+            {
+                // char.GetUnicodeInfo(ch) == category
+                Call(s_charGetUnicodeInfo);
+                Ldc((int)category);
+                Ceq();
+                if (negated)
                 {
                     Ldc(0);
                     Ceq();

@@ -242,11 +242,11 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
 
     //If memcpy has been defined to PAL_memcpy, we undefine it so that this case
     //can be covered by the if !defined(memcpy) block below
-    #ifdef TARGET_UNIX
+    #ifdef HOST_UNIX
     #if IS_REDEFINED_IN_PAL(memcpy)
     #undef memcpy
     #endif //IS_REDEFINED_IN_PAL
-    #endif //TARGET_UNIX
+    #endif //HOST_UNIX
 
         // You should be using CopyValueClass if you are doing an memcpy
         // in the CG heap.
@@ -254,11 +254,11 @@ FORCEINLINE void* memcpyUnsafe(void *dest, const void *src, size_t len)
     FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len) {
             WRAPPER_NO_CONTRACT;
 
-            #ifndef TARGET_UNIX
-                return memcpy(dest, src, len);
-            #else //TARGET_UNIX
+            #ifdef HOST_UNIX
                 return PAL_memcpy(dest, src, len);
-            #endif //TARGET_UNIX
+            #else //HOST_UNIX
+                return memcpy(dest, src, len);
+            #endif //HOST_UNIX
 
         }
     extern "C" void *  __cdecl GCSafeMemCpy(void *, const void *, size_t);

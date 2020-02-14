@@ -5,15 +5,7 @@
 project(dotnet)
 set(DOTNET_PROJECT_NAME "dotnet")
 
-set(SOURCES 
-    ../fxr/fx_ver.cpp
-)
-
-set(HEADERS
-    ../fxr/fx_ver.h
-)
-
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
         dotnet.manifest)
 endif()

@@ -7585,7 +7585,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #endif // !UNIX_X86_ABI_
 #else  // TARGET_X86
     assert(bias == 0);
-#endif // !_TARGET_X86
+#endif // !TARGET_X86
 }
 
 #ifdef TARGET_X86

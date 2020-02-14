@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>System.Linq</AssemblyName>
     <RootNamespace>System.Linq</RootNamespace>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

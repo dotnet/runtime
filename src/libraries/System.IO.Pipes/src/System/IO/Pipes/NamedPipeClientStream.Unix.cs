@@ -69,7 +69,6 @@ namespace System.IO.Pipes
 
         public int NumberOfServerInstances
         {
-            [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
             {
                 CheckPipePropertyOperations();

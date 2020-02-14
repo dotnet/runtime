@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner <see cref="ImmutableSortedDictionary{TKey, TValue}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableSortedDictionary<TKey, TValue> where TKey : notnull
     {
         /// <summary>
@@ -27,8 +26,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         [DebuggerTypeProxy(typeof(ImmutableSortedDictionaryBuilderDebuggerProxy<,>))]
         public sealed class Builder : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, IDictionary
@@ -580,7 +577,6 @@ namespace System.Collections.Immutable
             /// Removes any entries from the dictionaries with keys that match those found in the specified sequence.
             /// </summary>
             /// <param name="items">The keys for entries to remove from the dictionary.</param>
-            [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
             public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> items)
             {
                 Requires.NotNull(items, nameof(items));

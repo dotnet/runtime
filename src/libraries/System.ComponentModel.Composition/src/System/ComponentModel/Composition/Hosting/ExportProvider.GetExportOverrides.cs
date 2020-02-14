@@ -259,7 +259,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006")]
         public IEnumerable<Lazy<object, object>> GetExports(Type type, Type? metadataViewType, string? contractName)
         {
             IEnumerable<Export> exports = GetExportsCore(type, metadataViewType, contractName, ImportCardinality.ZeroOrMore);
@@ -306,7 +305,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006")]
         public IEnumerable<Lazy<T>> GetExports<T>()
         {
             return GetExports<T>((string?)null);
@@ -348,7 +346,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006")]
         public IEnumerable<Lazy<T>> GetExports<T>(string? contractName)
         {
             return GetExportsCore<T>(contractName);
@@ -387,7 +384,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006")]
         public IEnumerable<Lazy<T, TMetadataView>> GetExports<T, TMetadataView>()
         {
             return GetExports<T, TMetadataView>((string?)null);
@@ -430,7 +426,6 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="ObjectDisposedException">
         ///     The <see cref="CompositionContainer"/> has been disposed of.
         /// </exception>
-        [SuppressMessage("Microsoft.Design", "CA1006")]
         public IEnumerable<Lazy<T, TMetadataView>> GetExports<T, TMetadataView>(string? contractName)
         {
             return GetExportsCore<T, TMetadataView>(contractName);

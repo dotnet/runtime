@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -21,7 +22,7 @@ namespace System.Text.Json.Serialization
 
         int IEqualityComparer<T>.GetHashCode(T obj)
         {
-            return obj!.GetHashCode();
+            return RuntimeHelpers.GetHashCode(obj!);
         }
     }
 }

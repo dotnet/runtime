@@ -1,7 +1,7 @@
 <Project DefaultTargets="Build">
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
 
-  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
+  <Target Name="BuildAllProjects">
     <PropertyGroup>
       <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
     </PropertyGroup>
@@ -11,13 +11,13 @@
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'=='true' and '%(Identity)' != ''"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true"
              ContinueOnError="ErrorAndStop" />
 
     <MSBuild Targets="$(DefaultBuildAllTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;%(Project.AdditionalProperties)"
              BuildInParallel="true"
              ContinueOnError="ErrorAndStop" />
 

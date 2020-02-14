@@ -95,7 +95,6 @@ namespace System.ComponentModel.Composition.Primitives
         ///         <paramref name="definition"/>, return an empty <see cref="IEnumerable{T}"/>.
         ///     </note>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public virtual IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExports(ImportDefinition definition)
         {
             ThrowIfDisposed();

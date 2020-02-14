@@ -273,7 +273,9 @@ DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_CONTEXT_P
 #endif
     {
         SIZE_T baseAddress = DacGlobalBase();
+#ifdef HOST_UNIX
         if (baseAddress == 0 || !PAL_VirtualUnwindOutOfProc(context, contextPointers, baseAddress, DacReadAllAdapter))
+#endif
         {
             hr = E_FAIL;
         }

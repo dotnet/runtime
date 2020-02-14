@@ -3,7 +3,7 @@
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
     <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>

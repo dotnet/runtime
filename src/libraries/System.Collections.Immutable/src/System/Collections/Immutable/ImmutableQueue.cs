@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A set of initialization methods for instances of <see cref="ImmutableQueue{T}"/>.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public static class ImmutableQueue
     {
         /// <summary>
@@ -105,7 +104,6 @@ namespace System.Collections.Immutable
         /// <param name="value">Receives the value from the head of the queue.</param>
         /// <returns>The new queue with the head element removed.</returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "1#")]
         [Pure]
         public static IImmutableQueue<T> Dequeue<T>(this IImmutableQueue<T> queue, out T value)
         {

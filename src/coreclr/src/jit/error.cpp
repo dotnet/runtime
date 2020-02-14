@@ -272,10 +272,12 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
     LogEnv*     env       = JitTls::GetLogEnv();
     const int   BUFF_SIZE = 8192;
     char*       buff      = (char*)alloca(BUFF_SIZE);
+    const char* phaseName = "unknown phase";
     if (env->compiler)
     {
-        _snprintf_s(buff, BUFF_SIZE, _TRUNCATE, "Assertion failed '%s' in '%s' (IL size %d)\n", why,
-                    env->compiler->info.compFullName, env->compiler->info.compILCodeSize);
+        phaseName = PhaseNames[env->compiler->mostRecentlyActivePhase];
+        _snprintf_s(buff, BUFF_SIZE, _TRUNCATE, "Assertion failed '%s' in '%s' during '%s' (IL size %d)\n", why,
+                    env->compiler->info.compFullName, phaseName, env->compiler->info.compILCodeSize);
         msg = buff;
     }
     printf(""); // null string means flush
@@ -283,8 +285,8 @@ extern "C" void __cdecl assertAbort(const char* why, const char* file, unsigned 
 #if FUNC_INFO_LOGGING
     if (Compiler::compJitFuncInfoFile != nullptr)
     {
-        fprintf(Compiler::compJitFuncInfoFile, "%s - Assertion failed (%s:%d - %s)\n",
-                (env == nullptr) ? "UNKNOWN" : env->compiler->info.compFullName, file, line, why);
+        fprintf(Compiler::compJitFuncInfoFile, "%s - Assertion failed (%s:%d - %s) during %s\n",
+                (env == nullptr) ? "UNKNOWN" : env->compiler->info.compFullName, file, line, why, phaseName);
     }
 #endif // FUNC_INFO_LOGGING
 

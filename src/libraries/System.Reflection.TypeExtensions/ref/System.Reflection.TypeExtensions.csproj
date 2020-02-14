@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.TypeExtensions.cs" />

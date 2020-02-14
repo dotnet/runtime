@@ -1428,7 +1428,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         // Lowering will have split any candidate lclVars into lo/hi vars.
         return false;
     }
-#endif // !defined(_TARGET_64BIT)
+#endif // !defined(TARGET_64BIT)
 
     // If we have JMP, reg args must be put on the stack
 

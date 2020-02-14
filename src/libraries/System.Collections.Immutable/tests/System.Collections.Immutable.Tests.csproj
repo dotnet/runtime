@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetsNetFx)' == 'true'">

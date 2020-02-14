@@ -13,8 +13,6 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public interface IImmutableDictionary<TKey, TValue> : IReadOnlyDictionary<TKey, TValue>
     {
         /// <summary>
@@ -42,7 +40,6 @@ namespace System.Collections.Immutable
         /// <param name="pairs">The pairs.</param>
         /// <returns>The new dictionary containing the additional key-value pairs.</returns>
         /// <exception cref="ArgumentException">Thrown when one of the given keys already exists in the dictionary but has a different value.</exception>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         [Pure]
         IImmutableDictionary<TKey, TValue> AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs);
 
@@ -65,7 +62,6 @@ namespace System.Collections.Immutable
         /// <param name="items">The key=value pairs to set on the dictionary.  Any keys that conflict with existing keys will overwrite the previous values.</param>
         /// <returns>An immutable dictionary.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         IImmutableDictionary<TKey, TValue> SetItems(IEnumerable<KeyValuePair<TKey, TValue>> items);
 
         /// <summary>

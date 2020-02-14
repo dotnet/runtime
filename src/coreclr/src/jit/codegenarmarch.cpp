@@ -763,7 +763,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 #else  // !TARGET_ARM64
             // There is no zero register on ARM32
             unreached();
-#endif // !_TARGET_ARM64
+#endif // !TARGET_ARM64
         }
         else
         {
@@ -1344,7 +1344,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 #elif defined(TARGET_ARM64)
     // Structs of size >=9 and <=16 are returned in two return registers on ARM64 and HFAs.
     assert(varTypeIsStruct(treeNode));
-#endif // _TARGET_*
+#endif // TARGET*
 
     // Assumption: current implementation requires that a multi-reg
     // var in 'var = call' is flagged as lvIsMultiRegRet to prevent it from
@@ -2496,7 +2496,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, regThis, 0);
 #elif defined(TARGET_ARM64)
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, regThis, 0);
-#endif // _TARGET_*
+#endif // TARGET*
     }
 
     // Either gtControlExpr != null or gtCallAddr != null or it is a direct non-virtual call to a user or helper
@@ -3334,7 +3334,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
         GetEmitter()->emitIns_R_R(INS_mov, emitActualTypeSize(treeNode), treeNode->GetRegNum(), op1->GetRegNum());
     }
 
-#endif // _TARGET_*
+#endif // TARGET*
 
     genProduceReg(treeNode);
 }

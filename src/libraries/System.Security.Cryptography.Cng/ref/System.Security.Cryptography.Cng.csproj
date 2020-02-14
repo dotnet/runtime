@@ -6,7 +6,9 @@
     <!-- FEATURE_ECDH_DERIVEFROM is technically also available on net462+, but it doesn't require being enabled since it is a facade -->
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsNetStandard)' == 'true'">$(DefineConstants);FEATURE_ECDH_DERIVEFROM</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;net462-Debug;net462-Release;net47-Debug;net47-Release;$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;$(NetFrameworkCurrent)-Debug;$(NetFrameworkCurrent)-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <TargetFrameworks>netcoreapp3.0;netstandard2.1;net461;net462;net47;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
+    <ExcludeCurrentFullFramework>true</ExcludeCurrentFullFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Cng.cs" />

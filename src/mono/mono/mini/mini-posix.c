@@ -231,7 +231,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 			return;
 		mono_sigctx_to_monoctx (ctx, &mctx);
 		if (mono_dump_start ())
-			mono_handle_native_crash ("SIGABRT", &mctx, info);
+			mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, info);
 		else
 			abort ();
 	}
@@ -240,6 +240,7 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 {
 #ifndef DISABLE_CRASH_REPORTING
+	MONO_SIG_HANDLER_INFO_TYPE *info = MONO_SIG_HANDLER_GET_INFO ();
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	// Note: this is only run from the non-controlling thread
@@ -252,7 +253,7 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	// running. Returns FALSE on unrecoverable error.
 	if (mono_dump_start ()) {
 		// Process was killed from outside since crash reporting wasn't running yet.
-		mono_handle_native_crash ("SIGTERM", &mctx, NULL);
+		mono_handle_native_crash (mono_get_signame (info->si_signo), &mctx, NULL);
 	} else {
 		// Crash reporting already running and we got a second SIGTERM from as part of thread-summarizing
 		if (!mono_threads_summarize_execute (&mctx, &output, &hashes, FALSE, NULL, 0))
@@ -437,6 +438,7 @@ mono_runtime_posix_install_handlers (void)
 
 	sigset_t signal_set;
 	sigemptyset (&signal_set);
+	mono_load_signames ();
 	if (mini_debug_options.handle_sigint) {
 		add_signal_handler (SIGINT, mono_sigint_signal_handler, SA_RESTART);
 		sigaddset (&signal_set, SIGINT);
@@ -446,7 +448,7 @@ mono_runtime_posix_install_handlers (void)
 	sigaddset (&signal_set, SIGFPE);
 	add_signal_handler (SIGQUIT, sigquit_signal_handler, SA_RESTART);
 	sigaddset (&signal_set, SIGQUIT);
-	add_signal_handler (SIGILL, mono_sigill_signal_handler, 0);
+	add_signal_handler (SIGILL, mono_crashing_signal_handler, 0);
 	sigaddset (&signal_set, SIGILL);
 	add_signal_handler (SIGBUS, mono_sigsegv_signal_handler, 0);
 	sigaddset (&signal_set, SIGBUS);
@@ -454,6 +456,10 @@ mono_runtime_posix_install_handlers (void)
 		add_signal_handler (SIGUSR2, sigusr2_signal_handler, SA_RESTART);
 		sigaddset (&signal_set, SIGUSR2);
 	}
+	add_signal_handler (SIGTRAP, mono_crashing_signal_handler, 0);
+	sigaddset (&signal_set, SIGTRAP);
+	add_signal_handler (SIGSYS, mono_crashing_signal_handler, 0);
+	sigaddset (&signal_set, SIGSYS);
 
 	/* it seems to have become a common bug for some programs that run as parents
 	 * of many processes to block signal delivery for real time signals.

@@ -2975,7 +2975,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
 
 #else
 #error Unsupported or unset target architecture
-#endif // _TARGET_*
+#endif // TARGET*
 
         bool      isBackFilled     = false;
         unsigned  nextFltArgRegNum = fltArgRegNum; // This is the next floating-point argument register number to use
@@ -3079,7 +3079,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         }
 #else
 #error Unsupported or unset target architecture
-#endif // _TARGET_XXX_
+#endif // TARGET_XXX
         if (isStructArg)
         {
             // We have an argument with a struct type, but it may be be a child of a GT_COMMA
@@ -11185,7 +11185,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 //
 // Note for TARGET_ARMARCH we don't have  a remainder instruction, so we don't do this optimization
 //
-#else  // _TARGET_XARCH
+#else  // TARGET_XARCH
             /* If this is an unsigned long mod with op2 which is a cast to long from a
                constant int, then don't morph to a call to the helper.  This can be done
                faster inline using idiv.
@@ -11224,7 +11224,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     return tree;
                 }
             }
-#endif // _TARGET_XARCH
+#endif // TARGET_XARCH
 
         ASSIGN_HELPER_FOR_MOD:
 

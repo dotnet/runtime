@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>$(NetCoreAppCurrent)-Debug;$(NetCoreAppCurrent)-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release</Configurations>
+    <TargetFrameworks>netcoreapp3.0;$(NetCoreAppCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreApp>true</ExcludeCurrentNetCoreApp>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.OpenSsl.cs" />
