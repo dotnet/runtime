@@ -4615,7 +4615,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
     // For x64/x86, align Tier1 methods to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
