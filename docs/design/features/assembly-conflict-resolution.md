@@ -16,7 +16,7 @@ Since each layer (and other probing locations) can contain the same assembly by 
 
 #### Probe Ordering
 The probing locations consists of:
-1.  Serving Location
+1.  Servicing Location
 1.  Shared Store
 1.  Framework directory(s) from higher to lower
 1.  App directory
