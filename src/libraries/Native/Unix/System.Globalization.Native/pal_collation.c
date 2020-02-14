@@ -10,8 +10,8 @@
 #include <search.h>
 #include <string.h>
 
-#include "pal_collation.h"
 #include "pal_errors_internal.h"
+#include "pal_collation.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
 c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a < b");

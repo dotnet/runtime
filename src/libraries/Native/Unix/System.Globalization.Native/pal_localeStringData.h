@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 //
 
+#pragma once
+
 #include "pal_locale.h"
 #include "pal_compiler.h"
 

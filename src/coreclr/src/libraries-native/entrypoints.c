@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef __LIB_NATIVE_ENTRYPOINTS
-#define __LIB_NATIVE_ENTRYPOINTS
-#endif
-
 #ifdef TARGET_UNIX
+
+#include "pal_types.h"
+
+typedef uint16_t UChar;
+
+// Include System.Globalization.Native headers
 #include "pal_calendarData.h"
 #include "pal_casing.h"
 #include "pal_collation.h"

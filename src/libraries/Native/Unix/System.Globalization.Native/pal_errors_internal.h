@@ -4,7 +4,7 @@
  
 #pragma once
 
-#include "pal_icushim.h"
+#include "pal_icushim_internal.h"
 #include "pal_errors.h"
 
 /*

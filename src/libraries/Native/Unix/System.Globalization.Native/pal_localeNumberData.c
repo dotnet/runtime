@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pal_localeNumberData.h"
 #include "pal_locale_internal.h"
+#include "pal_localeNumberData.h"
 
 // invariant character definitions used by ICU
 #define UCHAR_CURRENCY ((UChar)0x00A4)   // international currency

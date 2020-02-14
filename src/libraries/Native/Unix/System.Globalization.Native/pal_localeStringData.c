@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "pal_localeStringData.h"
 #include "pal_locale_internal.h"
+#include "pal_localeStringData.h"
 
 /*
 Function:

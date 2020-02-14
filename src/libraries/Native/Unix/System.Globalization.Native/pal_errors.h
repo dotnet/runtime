@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include "pal_icushim.h"
-#include "pal_compiler.h"
-
 /*
 * These values should be kept in sync with
 * Interop.GlobalizationInterop.ResultCode
