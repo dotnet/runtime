@@ -2145,19 +2145,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize(dictionary));
         }
 
-        public class ClassWithoutParameterlessCtor
+        private class ClassWithoutParameterlessCtor
         {
             public ClassWithoutParameterlessCtor(int num) { }
             public string Name { get; set; }
         }
 
-        public class ClassWithInternalParameterlessConstructor
+        private class ClassWithInternalParameterlessConstructor
         {
             internal ClassWithInternalParameterlessConstructor() { }
             public string Name { get; set; }
         }
 
-        public class ClassWithPrivateParameterlessConstructor
+        private class ClassWithPrivateParameterlessConstructor
         {
             private ClassWithPrivateParameterlessConstructor() { }
             public string Name { get; set; }

@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Xunit;
 
@@ -225,11 +226,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ConcreteDerivedClassWithNoPublicDefaultCtor>("{\"ErrorString\":\"oops\"}"));
         }
 
-        public class PublicParameterizedConstructorTestClass
+        private class PublicParameterizedConstructorTestClass
         {
             public PublicParameterizedConstructorTestClass(string name)
             {
-                throw new InvalidOperationException();
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
             }
 
             private PublicParameterizedConstructorTestClass(int internalId)
@@ -242,11 +243,11 @@ namespace System.Text.Json.Serialization.Tests
             public static PublicParameterizedConstructorTestClass Instance { get; } = new PublicParameterizedConstructorTestClass(42);
         }
 
-        public class ClassWithInternalParameterlessCtor
+        private class ClassWithInternalParameterlessCtor
         {
             internal ClassWithInternalParameterlessCtor()
             {
-                throw new InvalidOperationException();
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
             }
 
             private ClassWithInternalParameterlessCtor(string name)
@@ -259,11 +260,11 @@ namespace System.Text.Json.Serialization.Tests
             public static ClassWithInternalParameterlessCtor Instance { get; } = new ClassWithInternalParameterlessCtor("InstancePropertyInternal");
         }
 
-        public class ClassWithPrivateParameterlessCtor
+        private class ClassWithPrivateParameterlessCtor
         {
             private ClassWithPrivateParameterlessCtor()
             {
-                throw new InvalidOperationException();
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
             }
 
             private ClassWithPrivateParameterlessCtor(string name)
@@ -276,13 +277,13 @@ namespace System.Text.Json.Serialization.Tests
             public static ClassWithPrivateParameterlessCtor Instance { get; } = new ClassWithPrivateParameterlessCtor("InstancePropertyPrivate");
         }
 
-        public class CollectionWithoutPublicParameterlessCtor : IList
+        private class CollectionWithoutPublicParameterlessCtor : IList
         {
             private readonly List<object> _list;
 
             internal CollectionWithoutPublicParameterlessCtor()
             {
-                throw new InvalidOperationException();
+                Debug.Fail("The JsonSerializer should not be callin non-public ctors, by default.");
             }
 
             public CollectionWithoutPublicParameterlessCtor(List<object> list)
@@ -347,7 +348,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        public class GenericClassWithProtectedInternalCtor<T>
+        private class GenericClassWithProtectedInternalCtor<T>
         {
             public T Result { get; set; }
 
@@ -357,7 +358,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        public sealed class ConcreteDerivedClassWithNoPublicDefaultCtor : GenericClassWithProtectedInternalCtor<string>
+        private sealed class ConcreteDerivedClassWithNoPublicDefaultCtor : GenericClassWithProtectedInternalCtor<string>
         {
             public string ErrorString { get; set; }
 
