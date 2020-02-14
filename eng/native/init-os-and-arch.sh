@@ -3,34 +3,13 @@
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
 case "$OSName" in
-    Darwin)
-        os=OSX
-        ;;
-
-    FreeBSD)
-        os=FreeBSD
-        ;;
-
-    Linux)
-        os=Linux
-        ;;
-
-    NetBSD)
-        os=NetBSD
-        ;;
-
-    OpenBSD)
-        os=OpenBSD
-        ;;
-
-    SunOS)
-        os=SunOS
-        ;;
-
-    *)
-        echo "Unsupported OS $OSName detected, configuring as if for Linux"
-        os=Linux
-        ;;
+FreeBSD|Linux|NetBSD|OpenBSD|SunOS)
+    os=$OSName ;;
+Darwin)
+	os=OSX ;;
+*)
+    echo "Unsupported OS $OSName detected, configuring as if for Linux"
+    os=Linux ;;
 esac
 
 # Use uname to determine what the CPU is.
@@ -46,7 +25,7 @@ case "$CPUName" in
         arch=arm64
         ;;
 
-    amd64)
+    amd64|x86_64)
         arch=x64
         ;;
 
@@ -60,13 +39,9 @@ case "$CPUName" in
         fi
         ;;
 
-    i686)
+    i[3-6]86)
         echo "Unsupported CPU $CPUName detected, build might not succeed!"
         arch=x86
-        ;;
-
-    x86_64)
-        arch=x64
         ;;
 
     *)
