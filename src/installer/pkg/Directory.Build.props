@@ -36,8 +36,6 @@
     <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\$(NetCoreAppCurrent)\dotnet-deb-tool.dll</DebtoolAssemblyFile>
     <DotnetDebToolSourceDir>$(RepoRoot)tools-local/dotnet-deb-tool/</DotnetDebToolSourceDir>
 
-    <BuildLinuxPackages Condition="'$(BuildLinuxPackages)' != true">false</BuildLinuxPackages>
-
     <IsDebianBasedDistro
       Condition="
         $(PackageTargetRid.StartsWith('ubuntu')) or
