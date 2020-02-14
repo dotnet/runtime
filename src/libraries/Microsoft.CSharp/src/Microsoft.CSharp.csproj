@@ -7,6 +7,7 @@
   <PropertyGroup>
     <EnableComBinder>true</EnableComBinder>
     <DefineConstants Condition="'$(EnableComBinder)'=='true'">$(DefineConstants);FEATURE_COM</DefineConstants>
+    <AllowUnsafeBlocks Condition="'$(EnableComBinder)'=='true'">true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
@@ -222,6 +223,11 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArgBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantArray.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ComInterop\VariantBuilder.cs" />
+
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
