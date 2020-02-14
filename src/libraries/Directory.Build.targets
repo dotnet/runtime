@@ -207,8 +207,8 @@
     <ExcludeFromPackage Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)' and '$(ExcludeCurrentFullFrameworkFromPackage)' == 'true'">true</ExcludeFromPackage>
   </PropertyGroup>
 
-  <!-- The Default behavior in the VS is to show the files for first target framework in target frameworks property.
-        This is required to show all the files corresponding to all target frameworks in the VS -->
+  <!-- The Default behavior in VS is to show the files for first target framework in TargetFrameworks property.
+        This is required to show all the files corresponding to all target frameworks in VS. -->
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)\**\*.cs"
           Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder);@(Compile)" />
