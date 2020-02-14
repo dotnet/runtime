@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Text;
 
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
@@ -212,9 +213,18 @@ namespace R2RDump
                     }
                 }
 
-                if (rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
+                if (!_options.HideTransitions && rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.TryGetValue(codeOffset, out List<BaseGcTransition> transitionsForOffset))
                 {
-                    foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
+                    string[] formattedTransitions = new string[transitionsForOffset.Count];
+                    for (int transitionIndex = 0; transitionIndex < formattedTransitions.Length; transitionIndex++)
+                    {
+                        formattedTransitions[transitionIndex] = transitionsForOffset[transitionIndex].ToString();
+                    }
+                    if (_options.Normalize)
+                    {
+                        Array.Sort(formattedTransitions);
+                    }
+                    foreach (string transition in formattedTransitions)
                     {
                         _writer.WriteLine($"{indentString}{transition}");
                     }
@@ -407,6 +417,15 @@ namespace R2RDump
                     int ii2EndOffset = ii2Offset + section.Size;
                     InliningInfoSection2 inliningInfoSection2 = new InliningInfoSection2(_r2r, ii2Offset, ii2EndOffset);
                     _writer.WriteLine(inliningInfoSection2.ToString());
+                    break;
+                case ReadyToRunSectionType.OwnerCompositeExecutable:
+                    int oceOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    Decoder decoder = Encoding.UTF8.GetDecoder();
+                    int charLength = decoder.GetCharCount(_r2r.Image, oceOffset, section.Size);
+                    char[] charArray = new char[charLength];
+                    decoder.GetChars(_r2r.Image, oceOffset, section.Size, charArray, 0, flush: true);
+                    string ownerCompositeExecutable = new string(charArray);
+                    _writer.WriteLine("Composite executable: {0}", ownerCompositeExecutable);
                     break;
             }
         }

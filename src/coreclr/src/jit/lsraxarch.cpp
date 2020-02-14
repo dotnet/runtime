@@ -2751,12 +2751,9 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildIndir(GenTreeIndir* indirTree)
 {
-    // If this is the rhs of a block copy (i.e. non-enregisterable struct),
-    // it has no register requirements.
-    if (indirTree->TypeGet() == TYP_STRUCT)
-    {
-        return 0;
-    }
+    // struct typed indirs are expected only on rhs of a block copy,
+    // but in this case they must be contained.
+    assert(indirTree->TypeGet() != TYP_STRUCT);
 
 #ifdef FEATURE_SIMD
     RefPosition* internalFloatDef = nullptr;

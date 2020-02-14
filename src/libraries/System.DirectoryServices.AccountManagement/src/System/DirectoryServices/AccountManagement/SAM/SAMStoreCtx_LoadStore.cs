@@ -308,7 +308,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Map each SAM attribute into the Principal in turn
                 foreach (string samAttribute in samAttributes)
                 {
-                    ArrayList entries = (ArrayList)propertyMappingTableByWinNT[samAttribute.ToLower(CultureInfo.InvariantCulture)];
+                    ArrayList entries = (ArrayList)propertyMappingTableByWinNT[samAttribute.ToLowerInvariant()];
 
                     // If it's not in the table, it's not an SAM attribute we care about
                     if (entries == null)

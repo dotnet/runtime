@@ -10,6 +10,7 @@ parameters:
   pool: ''
   condition: true
   llvm: false
+  crossrootfsDir: ''
 
 ### Product build
 jobs:
@@ -23,6 +24,7 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     llvm: ${{ parameters.llvm }}
+    crossrootfsDir: ${{ parameters.crossroofsDir }}
     condition: ${{ parameters.condition }}
 
     # Compute job name from template parameters

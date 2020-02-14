@@ -510,7 +510,7 @@ namespace System.Net
             else
             {
                 // Check current path (implicit/explicit) against given URI.
-                if (!path.StartsWith(CookieParser.CheckQuoted(m_path)))
+                if (!path.StartsWith(CookieParser.CheckQuoted(m_path), StringComparison.Ordinal))
                 {
                     if (shouldThrow)
                     {

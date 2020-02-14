@@ -190,7 +190,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_RETURN:
-            LowerRet(node);
+            LowerRet(node->AsUnOp());
             break;
 
         case GT_RETURNTRAP:
@@ -3084,7 +3084,7 @@ void Lowering::LowerJmpMethod(GenTree* jmp)
 }
 
 // Lower GT_RETURN node to insert PInvoke method epilog if required.
-void Lowering::LowerRet(GenTree* ret)
+void Lowering::LowerRet(GenTreeUnOp* ret)
 {
     assert(ret->OperGet() == GT_RETURN);
 
@@ -3097,7 +3097,7 @@ void Lowering::LowerRet(GenTree* ret)
         (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1())))
     {
         GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, ret->TypeGet(), ret->gtGetOp1(), nullptr);
-        ret->AsOp()->gtOp1   = bitcast;
+        ret->gtOp1           = bitcast;
         BlockRange().InsertBefore(ret, bitcast);
         ContainCheckBitCast(bitcast);
     }
@@ -3107,7 +3107,7 @@ void Lowering::LowerRet(GenTree* ret)
     {
         InsertPInvokeMethodEpilog(comp->compCurBB DEBUGARG(ret));
     }
-    ContainCheckRet(ret->AsOp());
+    ContainCheckRet(ret);
 }
 
 GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
@@ -5764,7 +5764,7 @@ void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 // Arguments:
 //    node - pointer to the node
 //
-void Lowering::ContainCheckRet(GenTreeOp* ret)
+void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 {
     assert(ret->OperIs(GT_RETURN));
 
