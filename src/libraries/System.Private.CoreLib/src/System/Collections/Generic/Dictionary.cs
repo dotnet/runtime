@@ -302,10 +302,10 @@ namespace System.Collections.Generic
         }
 
         public Enumerator GetEnumerator()
-            => new Enumerator(this, Enumerator.KeyValuePair);
+            => new Enumerator(this);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-            => new Enumerator(this, Enumerator.KeyValuePair);
+            => new Enumerator(this);
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -976,7 +976,7 @@ namespace System.Collections.Generic
         }
 
         IEnumerator IEnumerable.GetEnumerator()
-            => new Enumerator(this, Enumerator.KeyValuePair);
+            => new Enumerator(this);
 
         /// <summary>
         /// Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage
@@ -1152,7 +1152,7 @@ namespace System.Collections.Generic
         }
 
         IDictionaryEnumerator IDictionary.GetEnumerator()
-            => new Enumerator(this, Enumerator.DictEntry);
+            => new DictionaryEnumerator(this);
 
         void IDictionary.Remove(object key)
         {
@@ -1173,24 +1173,18 @@ namespace System.Collections.Generic
 #endif
         }
 
-        public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
-            IDictionaryEnumerator
+        public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>
         {
             private readonly Dictionary<TKey, TValue> _dictionary;
             private readonly int _version;
             private int _index;
             private KeyValuePair<TKey, TValue> _current;
-            private readonly int _getEnumeratorRetType;  // What should Enumerator.Current return?
 
-            internal const int DictEntry = 1;
-            internal const int KeyValuePair = 2;
-
-            internal Enumerator(Dictionary<TKey, TValue> dictionary, int getEnumeratorRetType)
+            internal Enumerator(Dictionary<TKey, TValue> dictionary)
             {
                 _dictionary = dictionary;
                 _version = dictionary._version;
                 _index = 0;
-                _getEnumeratorRetType = getEnumeratorRetType;
                 _current = default;
             }
 
@@ -1234,14 +1228,7 @@ namespace System.Collections.Generic
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
 
-                    if (_getEnumeratorRetType == DictEntry)
-                    {
-                        return new DictionaryEntry(_current.Key, _current.Value);
-                    }
-                    else
-                    {
-                        return new KeyValuePair<TKey, TValue>(_current.Key, _current.Value);
-                    }
+                    return _current;
                 }
             }
 
@@ -1254,45 +1241,6 @@ namespace System.Collections.Generic
 
                 _index = 0;
                 _current = default;
-            }
-
-            DictionaryEntry IDictionaryEnumerator.Entry
-            {
-                get
-                {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-                    }
-
-                    return new DictionaryEntry(_current.Key, _current.Value);
-                }
-            }
-
-            object IDictionaryEnumerator.Key
-            {
-                get
-                {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-                    }
-
-                    return _current.Key;
-                }
-            }
-
-            object? IDictionaryEnumerator.Value
-            {
-                get
-                {
-                    if (_index == 0 || (_index == _dictionary._count + 1))
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-                    }
-
-                    return _current.Value;
-                }
             }
         }
 

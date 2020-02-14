@@ -49,7 +49,7 @@ namespace System.Collections.Generic
     // and IReadOnlyDictionary<TKey, TValue>.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct KeyValuePair<TKey, TValue>
+    public readonly struct KeyValuePair<TKey, TValue> : IKeyValue
     {
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly TKey key; // Do not rename (binary serialization)
@@ -65,6 +65,10 @@ namespace System.Collections.Generic
         public TKey Key => key;
 
         public TValue Value => value;
+
+        object? IKeyValue.Key => key;
+
+        object? IKeyValue.Value => value;
 
         public override string ToString()
         {

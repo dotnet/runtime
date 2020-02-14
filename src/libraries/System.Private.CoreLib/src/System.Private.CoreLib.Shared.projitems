@@ -129,6 +129,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\DictionaryEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IAsyncEnumerator.cs" />
