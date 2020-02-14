@@ -113,12 +113,13 @@ typedef struct DECLSPEC_ALIGN(8) _T_CONTEXT {
 // each frame function.
 //
 
-#if defined(HOST_WINDOWS) && defined(HOST_X86)
-typedef struct _RUNTIME_FUNCTION {
+#if defined(HOST_WINDOWS)
+typedef struct _T_RUNTIME_FUNCTION {
     DWORD BeginAddress;
     DWORD UnwindData;
-} RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
+} T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
 
+#if defined(HOST_X86)
 //
 // Define unwind history table structure.
 //
@@ -127,7 +128,7 @@ typedef struct _RUNTIME_FUNCTION {
 
 typedef struct _UNWIND_HISTORY_TABLE_ENTRY {
     DWORD ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
+    PT_RUNTIME_FUNCTION FunctionEntry;
 } UNWIND_HISTORY_TABLE_ENTRY, *PUNWIND_HISTORY_TABLE_ENTRY;
 
 typedef struct _UNWIND_HISTORY_TABLE {
@@ -140,8 +141,11 @@ typedef struct _UNWIND_HISTORY_TABLE {
     DWORD HighAddress;
     UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
 } UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
-#endif // defined(HOST_WINDOWS) && defined(HOST_X86)
-
+#endif // HOST_X86
+#else // HOST_WINDOWS
+#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
+#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
+#endif // HOST_WINDOWS
 
 //
 // Nonvolatile context pointer record.
@@ -175,7 +179,7 @@ typedef struct _T_KNONVOLATILE_CONTEXT_POINTERS {
 //
 
 typedef
-PRUNTIME_FUNCTION
+PT_RUNTIME_FUNCTION
 (*PGET_RUNTIME_FUNCTION_CALLBACK) (
     IN DWORD64 ControlPc,
     IN PVOID Context
@@ -184,7 +188,7 @@ PRUNTIME_FUNCTION
 typedef struct _T_DISPATCHER_CONTEXT {
     ULONG ControlPc;
     ULONG ImageBase;
-    PRUNTIME_FUNCTION FunctionEntry;
+    PT_RUNTIME_FUNCTION FunctionEntry;
     ULONG EstablisherFrame;
     ULONG TargetPc;
     PT_CONTEXT ContextRecord;
@@ -196,15 +200,6 @@ typedef struct _T_DISPATCHER_CONTEXT {
     PUCHAR NonVolatileRegisters;
 } T_DISPATCHER_CONTEXT, *PT_DISPATCHER_CONTEXT;
 
-#if defined(HOST_WINDOWS) && !defined(HOST_X86)
-typedef struct _T_RUNTIME_FUNCTION {
-    DWORD BeginAddress;
-    DWORD UnwindData;
-} T_RUNTIME_FUNCTION, *PT_RUNTIME_FUNCTION;
-#else
-#define T_RUNTIME_FUNCTION RUNTIME_FUNCTION
-#define PT_RUNTIME_FUNCTION PRUNTIME_FUNCTION
-#endif
 
 #elif defined(HOST_AMD64) && defined(TARGET_ARM64)  // Host amd64 managing ARM64 related code
 
