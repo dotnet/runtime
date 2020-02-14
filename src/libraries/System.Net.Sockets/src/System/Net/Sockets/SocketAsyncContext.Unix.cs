@@ -313,9 +313,9 @@ namespace System.Net.Sockets
 
             public abstract void InvokeCallback(bool allowPooling);
 
-            internal virtual unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
+            internal virtual bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
 
-            internal virtual unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock) => throw new InvalidOperationException();
+            internal virtual bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock) => throw new InvalidOperationException();
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
             public void Trace(string message, [CallerMemberName] string memberName = null)
@@ -407,7 +407,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
             {
                 PinHandle.Dispose();
 
@@ -472,7 +472,7 @@ namespace System.Net.Sockets
                 return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
 
-            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
@@ -482,7 +482,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
@@ -578,7 +578,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
@@ -635,7 +635,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
 
-            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
@@ -645,7 +645,7 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override unsafe bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
@@ -2127,7 +2127,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public unsafe void HandleEvents(Interop.Sys.SocketEvents events)
+        public void HandleEvents(Interop.Sys.SocketEvents events)
         {
             if ((events & Interop.Sys.SocketEvents.Error) != 0)
             {
