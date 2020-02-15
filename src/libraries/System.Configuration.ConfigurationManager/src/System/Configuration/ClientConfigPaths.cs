@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -73,14 +74,7 @@ namespace System.Configuration
                 {
                     // An EntryAssembly may not be found when running from a custom host.
                     // Try to find the native entry point.
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        string moduleFileName = Interop.Kernel32.GetModuleFileName(new HandleRef(null, IntPtr.Zero));
-                        if (!string.IsNullOrEmpty(moduleFileName))
-                        {
-                            ApplicationUri = Path.GetFullPath(moduleFileName);
-                        }
-                    }
+                    ApplicationUri = Process.GetCurrentProcess().MainModule.FileName;
                 }
             }
 

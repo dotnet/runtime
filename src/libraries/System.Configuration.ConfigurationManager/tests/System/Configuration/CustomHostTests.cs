@@ -22,15 +22,12 @@ namespace System.Configuration.Tests
             {
                 MakeAssemblyGetEntryAssemblyReturnNull();
 
+                string expectedFilePathEnding = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
+                    "dotnet.exe.config" :
+                    "dotnet.config";
+
                 Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    Assert.EndsWith("dotnet.exe.config", config.FilePath);
-                }
-                else
-                {
-                    Assert.Empty(config.FilePath);
-                }
+                Assert.EndsWith(expectedFilePathEnding, config.FilePath);
             }).Dispose();
         }
 
