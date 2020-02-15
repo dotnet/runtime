@@ -761,11 +761,7 @@ namespace System.Collections.Immutable
                 var offset = this.Count;
                 this.Count += length;
 
-                var nodes = _elements;
-                for (int i = 0; i < length; i++)
-                {
-                    nodes[offset + i] = items[i];
-                }
+                Array.Copy(items, 0, _elements, offset, length);
             }
         }
     }
