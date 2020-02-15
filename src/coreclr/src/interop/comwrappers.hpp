@@ -180,9 +180,6 @@ public:
 
     // End the reference tracking process for external object.
     static HRESULT EndReferenceTracking();
-
-    // Clean up internal resources used for reference tracking.
-    static void OnShutdown();
 };
 
 // Class used to hold COM objects (i.e. IUnknown base class)

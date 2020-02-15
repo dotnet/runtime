@@ -15,15 +15,7 @@ using RuntimeCallContext = InteropLibImports::RuntimeCallContext;
 
 namespace InteropLib
 {
-    void Shutdown() noexcept
-    {
 #ifdef FEATURE_COMWRAPPERS
-        TrackerObjectManager::OnShutdown();
-#endif // FEATURE_COMWRAPPERS
-    }
-
-#ifdef FEATURE_COMWRAPPERS
-
     // Exposed COM related API
     namespace Com
     {

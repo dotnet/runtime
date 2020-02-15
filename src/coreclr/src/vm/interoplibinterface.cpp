@@ -1247,21 +1247,3 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
 
 #endif // FEATURE_COMINTEROP
 }
-
-void Interop::OnRuntimeShutdown()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    // Release IJupiterGCMgr*
-    RCWWalker::OnEEShutdown();
-
-    InteropLib::Shutdown();
-
-#endif // FEATURE_COMINTEROP
-}

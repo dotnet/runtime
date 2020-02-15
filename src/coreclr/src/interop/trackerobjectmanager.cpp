@@ -370,13 +370,3 @@ HRESULT TrackerObjectManager::EndReferenceTracking()
 
     return hr;
 }
-
-void TrackerObjectManager::OnShutdown()
-{
-    IReferenceTrackerManager* trackerManager = s_TrackerManager;
-    if (::InterlockedCompareExchangePointer((void**)&s_TrackerManager, nullptr, trackerManager) == trackerManager)
-    {
-        // Make sure s_TrackerManager is either null or a valid pointer.
-        trackerManager->Release();
-    }
-}

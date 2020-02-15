@@ -18,9 +18,6 @@ namespace InteropLib
 {
     using OBJECTHANDLE = void*;
 
-    // Clean up the interop library.
-    void Shutdown() noexcept;
-
     namespace Com
     {
         // See CreateComInterfaceFlags in ComWrappers.cs
