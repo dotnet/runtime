@@ -9914,30 +9914,6 @@ add_intrinsics (LLVMModuleRef module)
 
 		AddFunc (module, "llvm_resume_unwind_trampoline", LLVMVoidType (), NULL, 0);
 	}
-
-	/* Load/Store intrinsics */
-	{
-		LLVMTypeRef arg_types [5];
-		int i;
-		char name [128];
-
-		for (i = 1; i <= 8; i *= 2) {
-			arg_types [0] = LLVMPointerType (LLVMIntType (i * 8), 0);
-			arg_types [1] = LLVMInt32Type ();
-			arg_types [2] = LLVMInt1Type ();
-			arg_types [3] = LLVMInt32Type ();
-			sprintf (name, "llvm.mono.load.i%d.p0i%d", i * 8, i * 8);
-			AddFunc (module, name, LLVMIntType (i * 8), arg_types, 4);
-
-			arg_types [0] = LLVMIntType (i * 8);
-			arg_types [1] = LLVMPointerType (LLVMIntType (i * 8), 0);
-			arg_types [2] = LLVMInt32Type ();
-			arg_types [3] = LLVMInt1Type ();
-			arg_types [4] = LLVMInt32Type ();
-			sprintf (name, "llvm.mono.store.i%d.p0i%d", i * 8, i * 8);
-			AddFunc (module, name, LLVMVoidType (), arg_types, 5);
-		}
-	}
 }
 
 static void
