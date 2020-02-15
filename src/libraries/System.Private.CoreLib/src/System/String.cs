@@ -509,6 +509,25 @@ namespace System
             return result;
         }
 
+        internal static string CreateFromSpan(ref char buffer, int length)
+        {
+            Debug.Assert(length >= 0);
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(length);
+
+            Buffer.Memmove(
+                elementCount: (uint)result.Length, // derefing Length now allows JIT to prove 'result' not null below
+                destination: ref result._firstChar,
+                source: ref buffer);
+
+            return result;
+        }
+
         internal static unsafe void wstrcpy(char* dmem, char* smem, int charCount)
         {
             Buffer.Memmove((byte*)dmem, (byte*)smem, ((uint)charCount) * 2);

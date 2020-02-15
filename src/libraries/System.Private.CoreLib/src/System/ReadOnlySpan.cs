@@ -321,14 +321,25 @@ namespace System
         /// For <see cref="ReadOnlySpan{Char}"/>, returns a new instance of string that represents the characters pointed to by the span.
         /// Otherwise, returns a <see cref="string"/> with the name of the type and the number of elements.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override string ToString()
         {
             if (typeof(T) == typeof(char))
             {
-                return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _pointer.Value), _length));
+                return string.CreateFromSpan(ref Unsafe.As<T, char>(ref _pointer.Value), _length);
             }
+            else
+            {
+                return ToStringSlow();
+            }
+        }
+
+        private string ToStringSlow()
+        {
+            Debug.Assert(typeof(T) != typeof(char));
+
 #if FEATURE_UTF8STRING
-            else if (typeof(T) == typeof(Char8))
+            if (typeof(T) == typeof(Char8))
             {
                 // TODO_UTF8STRING: Call into optimized transcoding routine when it's available.
                 return Encoding.UTF8.GetString(new ReadOnlySpan<byte>(ref Unsafe.As<T, byte>(ref _pointer.Value), _length));
