@@ -37,13 +37,13 @@ namespace Microsoft.Win32
         public int ValueCount { get { throw null; } }
         public Microsoft.Win32.RegistryView View { get { throw null; } }
         public void Close() { }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, bool writable) { throw null; }
-        public Microsoft.Win32.RegistryKey? CreateSubKey(string subkey, bool writable, Microsoft.Win32.RegistryOptions options) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, Microsoft.Win32.RegistryOptions registryOptions, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, Microsoft.Win32.RegistryKeyPermissionCheck permissionCheck, System.Security.AccessControl.RegistrySecurity? registrySecurity) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, bool writable) { throw null; }
+        public Microsoft.Win32.RegistryKey CreateSubKey(string subkey, bool writable, Microsoft.Win32.RegistryOptions options) { throw null; }
         public void DeleteSubKey(string subkey) { }
         public void DeleteSubKey(string subkey, bool throwOnMissingSubKey) { }
         public void DeleteSubKeyTree(string subkey) { }

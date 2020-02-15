@@ -126,37 +126,37 @@ namespace Microsoft.Win32
         /// <summary>Creates a new subkey, or opens an existing one.</summary>
         /// <param name="subkey">Name or path to subkey to create or open.</param>
         /// <returns>The subkey, or <b>null</b> if the operation failed.</returns>
-        public RegistryKey? CreateSubKey(string subkey)
+        public RegistryKey CreateSubKey(string subkey)
         {
             return CreateSubKey(subkey, _checkMode);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, bool writable)
+        public RegistryKey CreateSubKey(string subkey, bool writable)
         {
             return CreateSubKey(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, RegistryOptions.None);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, bool writable, RegistryOptions options)
+        public RegistryKey CreateSubKey(string subkey, bool writable, RegistryOptions options)
         {
             return CreateSubKey(subkey, writable ? RegistryKeyPermissionCheck.ReadWriteSubTree : RegistryKeyPermissionCheck.ReadSubTree, options);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck)
         {
             return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity? registrySecurity)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions, RegistrySecurity? registrySecurity)
         {
             return CreateSubKey(subkey, permissionCheck, registryOptions);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity? registrySecurity)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistrySecurity? registrySecurity)
         {
             return CreateSubKey(subkey, permissionCheck, RegistryOptions.None);
         }
 
-        public RegistryKey? CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
+        public RegistryKey CreateSubKey(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
         {
             ValidateKeyOptions(registryOptions);
             ValidateKeyName(subkey);

@@ -82,7 +82,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private unsafe RegistryKey? CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
+        private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, RegistryOptions registryOptions)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
 
@@ -776,7 +776,7 @@ namespace Microsoft.Win32
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null!, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[]?)null, ref datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);
