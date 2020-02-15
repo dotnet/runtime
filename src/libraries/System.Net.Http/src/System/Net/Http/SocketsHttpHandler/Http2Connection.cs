@@ -212,7 +212,10 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace($"{nameof(initialFrame)}={initialFrame}");
 
             // Read frame header
-            await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
+            if (_incomingBuffer.ActiveLength < FrameHeader.Size)
+            {
+                await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
+            }
             FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
 
             if (frameHeader.Length > FrameHeader.MaxLength)
@@ -229,7 +232,10 @@ namespace System.Net.Http
             _incomingBuffer.Discard(FrameHeader.Size);
 
             // Read frame contents
-            await EnsureIncomingBytesAsync(frameHeader.Length).ConfigureAwait(false);
+            if (_incomingBuffer.ActiveLength < frameHeader.Length)
+            {
+                await EnsureIncomingBytesAsync(frameHeader.Length).ConfigureAwait(false);
+            }
 
             return frameHeader;
         }
@@ -251,6 +257,7 @@ namespace System.Net.Http
                 // Keep processing frames as they arrive.
                 for (long frameNum = 1; ; frameNum++)
                 {
+                    await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false); // not functionally necessary, but often ReadFrameAsync yielding/allocating
                     frameHeader = await ReadFrameAsync().ConfigureAwait(false);
                     if (NetEventSource.IsEnabled) Trace($"Frame {frameNum}: {frameHeader}.");
 
