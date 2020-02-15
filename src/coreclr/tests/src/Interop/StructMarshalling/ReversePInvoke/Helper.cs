@@ -994,6 +994,72 @@ public class Helper
 
     #endregion
 
+    #region methods for ByteStruct3Byte struct
+    public static ByteStruct3Byte NewByteStruct3Byte(byte b1, byte b2, byte b3)
+    {
+        ByteStruct3Byte u1 = new ByteStruct3Byte();
+        u1.b1 = b1;
+        u1.b2 = b2;
+        u1.b3 = b3;
+
+        return u1;
+    }
+    public static void PrintByteStruct3Byte(ByteStruct3Byte str1, string name)
+    {
+        Console.WriteLine("\t{0}.b1 = {1}", name, str1.b1);
+        Console.WriteLine("\t{0}.b2 = {1}", name, str1.b2);
+        Console.WriteLine("\t{0}.b3 = {1}", name, str1.b3);
+    }
+    public static bool ValidateByteStruct3Byte(ByteStruct3Byte str1, ByteStruct3Byte str2, string methodName)
+    {
+        if (str1.b1 != str2.b1 || str1.b2 != str2.b2)
+        {
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
+            Console.WriteLine("\tThe Actual is...");
+            PrintByteStruct3Byte(str1, str1.ToString());
+            Console.WriteLine("\tThe Expected is...");
+            PrintByteStruct3Byte(str2, str2.ToString());
+            return false;
+        }
+        else
+        {
+            Console.WriteLine("\tPASSED!");
+            return true;
+        }
+    }
+    #endregion
+
+    #region methods for IntergerStructSequential struct
+    public static IntergerStructSequential NewIntergerStructSequential(int i1)
+    {
+        IntergerStructSequential u1 = new IntergerStructSequential();
+        u1.i = i1;
+
+        return u1;
+    }
+    public static void PrintIntergerStructSequential(IntergerStructSequential str1, string name)
+    {
+        Console.WriteLine("\t{0}.i = {1}", name, str1.i);
+    }
+    public static bool ValidateIntergerStructSequential(IntergerStructSequential str1, IntergerStructSequential str2, string methodName)
+    {
+        if (str1.i != str2.i)
+        {
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
+            Console.WriteLine("\tThe Actual is...");
+            PrintIntergerStructSequential(str1, str1.ToString());
+            Console.WriteLine("\tThe Expected is...");
+            PrintIntergerStructSequential(str2, str2.ToString());
+            return false;
+        }
+        else
+        {
+            Console.WriteLine("\tPASSED!");
+            return true;
+        }
+    }
+    #endregion
+
 }
 
 public static class TestFramework

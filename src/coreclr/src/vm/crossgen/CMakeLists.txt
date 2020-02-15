@@ -2,6 +2,7 @@ set(VM_CROSSGEN_SOURCES
   ../appdomain.cpp
   ../array.cpp
   ../assembly.cpp
+  ../assemblyloadcontext.cpp
   ../assemblyspec.cpp
   ../baseassemblyspec.cpp
   ../binder.cpp
@@ -91,6 +92,7 @@ set(VM_CROSSGEN_HEADERS
   ../appdomain.inl
   ../array.h
   ../assembly.hpp
+  ../assemblyloadcontext.h
   ../assemblyspec.hpp
   ../assemblyspecbase.h
   ../baseassemblyspec.h

@@ -799,6 +799,48 @@ BOOL CEEInfo::isValidStringRef (
     return result;
 }
 
+LPCWSTR CEEInfo::getStringLiteral (
+        CORINFO_MODULE_HANDLE       moduleHnd,
+        mdToken                     metaTOK,
+        int*                        length)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    Module* module = GetModule(moduleHnd);
+
+    LPCWSTR result = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (IsDynamicScope(moduleHnd))
+    {
+        *length = GetDynamicResolver(moduleHnd)->GetStringLiteralLength(metaTOK);
+    }
+    else
+    {
+        DWORD dwCharCount;
+        LPCWSTR pString;
+        if (!FAILED((module)->GetMDImport()->GetUserString(metaTOK, &dwCharCount, NULL, &pString)))
+        {
+            // For string.Empty pString will be null
+            *length = dwCharCount;
+            result = pString;
+        }
+        else
+        {
+            *length = -1;
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,

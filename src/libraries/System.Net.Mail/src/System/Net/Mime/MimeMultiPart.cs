@@ -37,7 +37,7 @@ namespace System.Net.Mime
 
         private void SetType(MimeMultiPartType type)
         {
-            ContentType.MediaType = "multipart" + "/" + type.ToString().ToLower(CultureInfo.InvariantCulture);
+            ContentType.MediaType = "multipart" + "/" + type.ToString().ToLowerInvariant();
             ContentType.Boundary = GetNextBoundary();
         }
 

@@ -29,8 +29,6 @@ namespace System.Text
                               0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         };
 
-        private const string Val2Char = "0123456789ABCDEF";
-
         public override int GetMaxByteCount(int charCount)
         {
             if (charCount < 0)
@@ -138,8 +136,6 @@ namespace System.Text
                 throw new ArgumentException(SR.XmlArrayTooSmall, nameof(chars));
             if (byteCount > 0)
             {
-                fixed (char* _val2char = Val2Char)
-                {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {
                         fixed (char* _chars = &chars[charIndex])
@@ -149,14 +145,13 @@ namespace System.Text
                             byte* pbMax = _bytes + byteCount;
                             while (pb < pbMax)
                             {
-                                pch[0] = _val2char[pb[0] >> 4];
-                                pch[1] = _val2char[pb[0] & 0x0F];
+                                pch[0] = HexConverter.ToCharUpper(pb[0] >> 4);
+                                pch[1] = HexConverter.ToCharUpper(pb[0]);
                                 pb++;
                                 pch += 2;
                             }
                         }
                     }
-                }
             }
             return charCount;
         }

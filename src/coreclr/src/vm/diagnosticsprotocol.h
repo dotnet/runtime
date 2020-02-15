@@ -24,7 +24,7 @@ bool TryParse(uint8_t *&bufferCursor, uint32_t &bufferLen, T &result)
 
     if (bufferLen < sizeof(T))
         return false;
-    result = *(reinterpret_cast<T *>(bufferCursor));
+    memcpy(&result, bufferCursor, sizeof(T));
     bufferCursor += sizeof(T);
     bufferLen -= sizeof(T);
     return true;

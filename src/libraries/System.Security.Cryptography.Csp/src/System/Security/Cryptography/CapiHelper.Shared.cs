@@ -130,12 +130,12 @@ namespace Internal.NativeCrypto
 
             if (isPrivate)
             {
-                bw.WriteReversed(rsaParameters.P);
-                bw.WriteReversed(rsaParameters.Q);
-                bw.WriteReversed(rsaParameters.DP);
-                bw.WriteReversed(rsaParameters.DQ);
-                bw.WriteReversed(rsaParameters.InverseQ);
-                bw.WriteReversed(rsaParameters.D);
+                bw.WriteReversed(rsaParameters.P!);
+                bw.WriteReversed(rsaParameters.Q!);
+                bw.WriteReversed(rsaParameters.DP!);
+                bw.WriteReversed(rsaParameters.DQ!);
+                bw.WriteReversed(rsaParameters.InverseQ!);
+                bw.WriteReversed(rsaParameters.D!);
             }
 
             bw.Flush();

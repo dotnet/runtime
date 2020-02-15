@@ -19,7 +19,7 @@ namespace System.IO.Ports
             {
                 // GetFiles can return unexpected results because of 8.3 matching.
                 // Like /dev/tty
-                if (name.StartsWith("/dev/tty."))
+                if (name.StartsWith("/dev/tty.", StringComparison.Ordinal))
                 {
                     ports.Add(name);
                 }
@@ -27,7 +27,7 @@ namespace System.IO.Ports
 
             foreach (string name in Directory.GetFiles("/dev", "cu.*"))
             {
-                if (name.StartsWith("/dev/cu."))
+                if (name.StartsWith("/dev/cu.", StringComparison.Ordinal))
                 {
                     ports.Add(name);
                 }

@@ -810,7 +810,7 @@ namespace ILCompiler
         /// This method decides whether the type needs aligned base offset in order to have layout resilient to 
         /// base class layout changes.
         /// </summary>
-        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset)
+        protected override void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8)
         {
             if (type.IsValueType)
             {
@@ -837,7 +837,8 @@ namespace ILCompiler
             }
 
             LayoutInt alignment = new LayoutInt(type.Context.Target.PointerSize);
-            if (type.RequiresAlign8())
+
+            if (requiresAlign8)
             {
                 alignment = new LayoutInt(8);
             }

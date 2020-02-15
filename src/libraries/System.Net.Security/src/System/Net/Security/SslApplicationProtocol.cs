@@ -95,14 +95,12 @@ namespace System.Net.Security
                     byte b = arr[index++];
                     byteChars[i] = '0';
                     byteChars[i + 1] = 'x';
-                    byteChars[i + 2] = GetHexValue(Math.DivRem(b, 16, out int rem));
-                    byteChars[i + 3] = GetHexValue(rem);
+                    byteChars[i + 2] = HexConverter.ToCharLower(b >> 4);
+                    byteChars[i + 3] = HexConverter.ToCharLower(b);
                     byteChars[i + 4] = ' ';
                 }
 
                 return new string(byteChars, 0, byteChars.Length - 1);
-
-                static char GetHexValue(int i) => (char)(i < 10 ? i + '0' : i - 10 + 'a');
             }
         }
 

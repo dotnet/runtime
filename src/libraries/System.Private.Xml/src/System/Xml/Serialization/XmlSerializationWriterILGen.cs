@@ -2292,7 +2292,6 @@ namespace System.Xml.Serialization
 
     internal class ReflectionAwareILGen
     {
-        private const string hexDigits = "0123456789ABCDEF";
         // reflectionVariables holds mapping between a reflection entity
         // referenced in the generated code (such as TypeInfo,
         // FieldInfo) and the variable which represent the entity (and
@@ -2508,7 +2507,7 @@ namespace System.Xml.Serialization
                         Debug.Assert(initValue.MemberInfo.Name == initValue.Arg.Substring(3));
                         initValue.ILG.LoadMember(initValue.ILG.GetLocal("o"), initValue.MemberInfo);
                     }
-                    else if (initValue.Source.EndsWith("]", StringComparison.Ordinal))
+                    else if (initValue.Source.EndsWith(']'))
                     {
                         initValue.Load(initValue.Type);
                     }
@@ -2614,8 +2613,8 @@ namespace System.Xml.Serialization
                     {
                         byte b = (byte)ch;
                         writer.Append("\\x");
-                        writer.Append(hexDigits[b >> 4]);
-                        writer.Append(hexDigits[b & 0xF]);
+                        writer.Append(HexConverter.ToCharUpper(b >> 4));
+                        writer.Append(HexConverter.ToCharUpper(b));
                     }
                 }
                 else if (ch == '\"')
