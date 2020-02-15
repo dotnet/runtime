@@ -15,6 +15,12 @@ namespace System.Net.Sockets.Tests
 {
     public class UnixDomainSocketTest
     {
+        [Fact]
+        public void OSSupportsUnixDomainSockets_ReturnsCorrectValue()
+        {
+            Assert.Equal(PlatformSupportsUnixDomainSockets, Socket.OSSupportsUnixDomainSockets);
+        }
+
         [PlatformSpecific(~TestPlatforms.Windows)] // Windows doesn't currently support ConnectEx with domain sockets
         [ConditionalFact(nameof(PlatformSupportsUnixDomainSockets))]
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
@@ -446,17 +452,13 @@ namespace System.Net.Sockets.Tests
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    // UDS support added in April 2018 Update
-                    if (!PlatformDetection.IsWindows10Version1803OrGreater || PlatformDetection.IsWindowsNanoServer)
+                    try
                     {
-                        return false;
+                        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Tcp);
                     }
-
-                    // TODO: Windows 10 April 2018 Update doesn't support UDS in 32-bit processes on 64-bit OSes,
-                    // allowing the socket call to succeed but then failing in bind. Remove this check once it's supported.
-                    if (!Environment.Is64BitProcess && Environment.Is64BitOperatingSystem)
+                    catch (SocketException se)
                     {
-                        return false;
+                        return se.SocketErrorCode != SocketError.AddressFamilyNotSupported;
                     }
                 }
 

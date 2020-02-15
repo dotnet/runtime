@@ -5554,7 +5554,7 @@ namespace System.Text.Json.Tests
                 jsonUtf8.WriteEndObject();
                 jsonUtf8.Flush();
 
-                // TODO: The output doesn't match what JSON.NET does (different rounding/e-notation).
+                // TODO: https://github.com/dotnet/runtime/issues/32350
                 // JsonTestHelper.AssertContents(expectedStr, output);
             }
         }

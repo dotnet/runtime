@@ -617,7 +617,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, obj.MyImmutableList.Count);
             TestRoundTrip(obj);
 
-            // Skip ImmutableArray due to https://github.com/dotnet/runtime/issues/31404.
+            // TODO: Skip ImmutableArray due to https://github.com/dotnet/runtime/issues/1037.
             const string inputJsonWithNullCollections =
                 @"{
                     ""Array"":null,

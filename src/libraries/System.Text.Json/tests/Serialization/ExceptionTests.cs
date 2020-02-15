@@ -364,7 +364,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("JsonElement needs to support Path")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32359")]
         public static void ExtensionPropertyRoundTripFails()
         {
             try

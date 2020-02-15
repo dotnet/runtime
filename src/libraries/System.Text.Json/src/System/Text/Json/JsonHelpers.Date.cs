@@ -421,8 +421,7 @@ namespace System.Text.Json
                 case JsonConstants.Plus:
                 case JsonConstants.Hyphen:
                     parseData.OffsetToken = curByte;
-                    return ParseOffset(ref parseData, source.Slice(sourceIndex))
-                        && true;
+                    return ParseOffset(ref parseData, source.Slice(sourceIndex));
                 default:
                     return false;
             }
