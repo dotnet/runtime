@@ -67,8 +67,6 @@ CeeSectionString::~CeeSectionString()
 StringTableEntry* CeeSectionString::createEntry(__in_z LPWSTR target, ULONG hashId)
 {
     StringTableEntry *entry = new StringTableEntry;
-    if (!entry)
-        return NULL;
     entry->m_next = NULL;
     entry->m_hashId = hashId;
     entry->m_offset = dataLen();
