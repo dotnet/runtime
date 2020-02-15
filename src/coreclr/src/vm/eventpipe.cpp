@@ -124,11 +124,12 @@ void EventPipe::EnableViaEnvironmentVariables()
         }
         auto configuration = XplatEventLoggerConfiguration();
         auto configToParse = eventpipeConfig;
+        bool enableDefaultConfig = false;
 
         // TODO: The behavior should be the same as existing code - enable with default provider configuration 
         if (configToParse == nullptr || *configToParse == L'\0')
         {
-            return;
+            enableDefaultConfig = true;
         }
 
         // Count how many providers there are to parse
@@ -145,36 +146,51 @@ void EventPipe::EnableViaEnvironmentVariables()
             configToParse = end + 1;
         }
 
-        configToParse = eventpipeConfig;
-        EventPipeProviderConfiguration* pProviders = new EventPipeProviderConfiguration[cnt]; 
-        int i = 0;
+        // Create EventPipeProviderConfiguration and start tracing.
+        EventPipeProviderConfiguration* pProviders = nullptr;
 
-        while (configToParse != nullptr)
+        // If COMPlus_EnableEventPipe is set to 1 but no configuration was specified, enable EventPipe session
+        // with the default provider configurations.
+        if (enableDefaultConfig)
         {
-            auto end = wcschr(configToParse, comma);
-            configuration.Parse(configToParse);
+            // TODO: Enable SampleProfiler once we can mutate a EventPipe session post-creation.
+            pProviders = new EventPipeProviderConfiguration[2];
+            pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x4c14fccbd, 5, nullptr);
+            pProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimePrivate"), 0x4002000b, 5, nullptr);
+            cnt = 2;
+        }
+        else
+        {
+            configToParse = eventpipeConfig;
+            pProviders = new EventPipeProviderConfiguration[cnt];
+            int i = 0;
+            while (configToParse != nullptr)
+            {
+                auto end = wcschr(configToParse, comma);
+                configuration.Parse(configToParse);
 
-            // SampleProfiler can't be enabled on startup.
-            if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
-            {
-                cnt -= 1;
-            }
-            else
-            {
-                pProviders[i++] = EventPipeProviderConfiguration(
-                    configuration.GetProviderName(),
-                    configuration.GetEnabledKeywordsMask(),
-                    configuration.GetLevel(),
-                    nullptr
-                    // TODO: Add arguments here
-                );
-            }
+                // SampleProfiler can't be enabled on startup yet.
+                if (wcscmp(W("Microsoft-DotNETCore-SampleProfiler"), configuration.GetProviderName()) == 0)
+                {
+                    cnt -= 1;
+                }
+                else
+                {
+                    pProviders[i++] = EventPipeProviderConfiguration(
+                        configuration.GetProviderName(),
+                        configuration.GetEnabledKeywordsMask(),
+                        configuration.GetLevel(),
+                        nullptr
+                        // TODO: Add arguments here
+                    );
+                }
 
-            if (end == nullptr)
-            {
-                break;
+                if (end == nullptr)
+                {
+                    break;
+                }
+                configToParse = end + 1;
             }
-            configToParse = end + 1;
         }
 
         UINT64 sessionID = EventPipe::Enable(
