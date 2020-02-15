@@ -15,5 +15,6 @@
     <Compile Include="FileSystemAuditRuleTests.cs" />
     <Compile Include="FileSystemSecurityTests.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="MemoryMappedFileAclTests.cs" />
   </ItemGroup>
 </Project>

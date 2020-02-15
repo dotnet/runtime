@@ -36,7 +36,7 @@ namespace System.IO.MemoryMappedFiles
 
             // create the view
             SafeMemoryMappedViewHandle viewHandle = Interop.MapViewOfFile(memMappedFileHandle,
-                    (int)MemoryMappedFile.GetFileMapAccess(access), newOffset, new UIntPtr(nativeSize));
+                    (int)MemoryMappedFileInternal.GetFileMapAccess(access), newOffset, new UIntPtr(nativeSize));
             if (viewHandle.IsInvalid)
             {
                 viewHandle.Dispose();
@@ -61,8 +61,8 @@ namespace System.IO.MemoryMappedFiles
             if (((viewInfo.State & Interop.Kernel32.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
                 IntPtr tempHandle = Interop.VirtualAlloc(
-                    viewHandle, (UIntPtr)(nativeSize != MemoryMappedFile.DefaultSize ? nativeSize : viewSize),
-                    Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFile.GetPageAccess(access));
+                    viewHandle, (UIntPtr)(nativeSize != MemoryMappedFileInternal.DefaultSize ? nativeSize : viewSize),
+                    Interop.Kernel32.MemOptions.MEM_COMMIT, MemoryMappedFileInternal.GetPageAccess(access));
                 int lastError = Marshal.GetLastWin32Error();
                 if (viewHandle.IsInvalid)
                 {
@@ -76,7 +76,7 @@ namespace System.IO.MemoryMappedFiles
             }
 
             // if the user specified DefaultSize as the size, we need to get the actual size
-            if (size == MemoryMappedFile.DefaultSize)
+            if (size == MemoryMappedFileInternal.DefaultSize)
             {
                 size = (long)(viewSize - (ulong)extraMemNeeded);
             }

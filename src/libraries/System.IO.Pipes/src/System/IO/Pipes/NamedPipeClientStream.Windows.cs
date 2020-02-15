@@ -22,7 +22,7 @@ namespace System.IO.Pipes
         // to the server after it calls WaitForConnection.
         private bool TryConnect(int timeout, CancellationToken cancellationToken)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
+            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(_inheritability);
 
             // PipeOptions.CurrentUserOnly is special since it doesn't match directly to a corresponding Win32 valid flag.
             // Remove it, while keeping others untouched since historically this has been used as a way to pass flags to

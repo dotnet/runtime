@@ -47,7 +47,7 @@ namespace System.IO.Pipes
             GCHandle pinningHandle = default;
             try
             {
-                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
+                Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability, pipeSecurity, ref pinningHandle);
 
                 if (direction == PipeDirection.In)
                 {

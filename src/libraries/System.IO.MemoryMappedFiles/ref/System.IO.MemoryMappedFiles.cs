@@ -24,6 +24,7 @@ namespace System.IO.MemoryMappedFiles
     public partial class MemoryMappedFile : System.IDisposable
     {
         internal MemoryMappedFile() { }
+        public MemoryMappedFile(Microsoft.Win32.SafeHandles.SafeMemoryMappedFileHandle handle) { }
         public Microsoft.Win32.SafeHandles.SafeMemoryMappedFileHandle SafeMemoryMappedFileHandle { get { throw null; } }
         public static System.IO.MemoryMappedFiles.MemoryMappedFile CreateFromFile(System.IO.FileStream fileStream, string? mapName, long capacity, System.IO.MemoryMappedFiles.MemoryMappedFileAccess access, System.IO.HandleInheritability inheritability, bool leaveOpen) { throw null; }
         public static System.IO.MemoryMappedFiles.MemoryMappedFile CreateFromFile(string path) { throw null; }

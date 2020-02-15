@@ -15,6 +15,19 @@ internal static partial class Interop
             internal uint nLength;
             internal IntPtr lpSecurityDescriptor;
             internal BOOL bInheritHandle;
+
+            internal unsafe SECURITY_ATTRIBUTES(byte* pSecurityDescriptor, bool inheritHandle = false)
+                : this(inheritHandle)
+            {
+                lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+            }
+
+            internal unsafe SECURITY_ATTRIBUTES(bool inheritHandle = false)
+            {
+                nLength = (uint)sizeof(SECURITY_ATTRIBUTES);
+                bInheritHandle = inheritHandle ? BOOL.TRUE : BOOL.FALSE;
+                lpSecurityDescriptor = default;
+            }
         }
     }
 }

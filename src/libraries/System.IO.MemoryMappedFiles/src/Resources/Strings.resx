@@ -152,6 +152,12 @@
   <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
     <value>Access to the path is denied.</value>
   </data>
+  <data name="Argument_HandleIsClosed" xml:space="preserve">
+    <value>The safe handle is closed.</value>
+  </data>
+  <data name="Argument_HandleIsInvalid" xml:space="preserve">
+    <value>The safe handle is invalid.</value>
+  </data>
   <data name="Argument_MapNameEmptyString" xml:space="preserve">
     <value>Map name cannot be an empty string.</value>
   </data>

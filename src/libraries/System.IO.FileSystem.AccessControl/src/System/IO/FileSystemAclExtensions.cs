@@ -294,12 +294,7 @@ namespace System.IO
 
             fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
             {
-                var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = ((share & FileShare.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE,
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
-                };
+                var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES(pSecurityDescriptor, ((share & FileShare.Inheritable) != 0));
 
                 using (DisableMediaInsertionPrompt.Create())
                 {

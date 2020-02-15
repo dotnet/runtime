@@ -184,16 +184,7 @@ namespace System.IO
 
         private static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default;
-            if ((share & FileShare.Inheritable) != 0)
-            {
-                secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-                {
-                    nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    bInheritHandle = Interop.BOOL.TRUE
-                };
-            }
-            return secAttrs;
+            return new Interop.Kernel32.SECURITY_ATTRIBUTES(((share & FileShare.Inheritable) != 0));
         }
 
         private bool HasActiveBufferOperation => !_activeBufferOperation.IsCompleted;

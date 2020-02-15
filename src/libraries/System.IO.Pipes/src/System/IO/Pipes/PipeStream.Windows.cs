@@ -395,13 +395,7 @@ namespace System.IO.Pipes
 
         internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability)
         {
-            Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
-            {
-                nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                bInheritHandle = ((inheritability & HandleInheritability.Inheritable) != 0) ? Interop.BOOL.TRUE : Interop.BOOL.FALSE
-            };
-
-            return secAttrs;
+            return new Interop.Kernel32.SECURITY_ATTRIBUTES(((inheritability & HandleInheritability.Inheritable) != 0));
         }
 
         internal static unsafe Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(HandleInheritability inheritability, PipeSecurity? pipeSecurity, ref GCHandle pinningHandle)
