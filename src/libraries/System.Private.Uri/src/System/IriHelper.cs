@@ -187,7 +187,7 @@ namespace System
                 {
                     // unicode
 
-                    bool escape;
+                    bool isInIriUnicodeRange;
                     bool surrogatePair = false;
 
                     char ch2 = '\0';
@@ -195,14 +195,22 @@ namespace System
                     if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
                     {
                         ch2 = pInput[next + 1];
-                        escape = !CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, ch2, out surrogatePair, component == UriComponents.Query);
                     }
                     else
                     {
-                        escape = !CheckIriUnicodeRange(ch, component == UriComponents.Query);
+                        isInIriUnicodeRange = CheckIriUnicodeRange(ch, component == UriComponents.Query);
                     }
 
-                    if (escape)
+                    if (isInIriUnicodeRange)
+                    {
+                        dest.Append(ch);
+                        if (surrogatePair)
+                        {
+                            dest.Append(ch2);
+                        }
+                    }
+                    else
                     {
                         Span<byte> encodedBytes = stackalloc byte[4];
 
@@ -222,14 +230,6 @@ namespace System
                         foreach (byte b in encodedBytes)
                         {
                             UriHelper.EscapeAsciiChar(b, ref dest);
-                        }
-                    }
-                    else
-                    {
-                        dest.Append(ch);
-                        if (surrogatePair)
-                        {
-                            dest.Append(ch2);
                         }
                     }
 
