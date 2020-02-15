@@ -356,8 +356,7 @@ struct ComSmartPtr
 
     ~ComSmartPtr()
     {
-        if (p != nullptr)
-            (void)p->Release();
+        Release();
     }
 
     ComSmartPtr& operator=(_In_ const ComSmartPtr&) = delete;
@@ -385,8 +384,7 @@ struct ComSmartPtr
 
     void Attach(_In_opt_ T* t) noexcept
     {
-        if (p != nullptr)
-            (void)p->Release();
+        Release();
         p = t;
     }
 
@@ -395,5 +393,14 @@ struct ComSmartPtr
         T* tmp = p;
         p = nullptr;
         return tmp;
+    }
+
+    void Release() noexcept
+    {
+        if (p != nullptr)
+        {
+            (void)p->Release();
+            p = nullptr;
+        }
     }
 };
