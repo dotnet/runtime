@@ -308,6 +308,8 @@ ElfReader::GetStringAtIndex(int index, std::string& result)
     return true;
 }
 
+#ifdef HOST_UNIX
+
 //
 // Enumerate through the dynamic debug link map entries
 //
@@ -358,6 +360,8 @@ ElfReader::EnumerateLinkMapEntries()
     return true;
 }
 
+#endif // HOST_UNIX
+
 bool
 ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
 {
@@ -376,8 +380,9 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
     }
     TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
         ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
-
-    _ASSERTE(phnum != PN_XNUM);
+#ifdef PN_XNUM
+     _ASSERTE(phnum != PN_XNUM);
+#endif
     _ASSERTE(ehdr.e_phentsize == sizeof(Elf_Phdr));
 #ifdef TARGET_64BIT
     _ASSERTE(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
