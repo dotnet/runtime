@@ -382,9 +382,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCominterop)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.Nosupport.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"> <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
