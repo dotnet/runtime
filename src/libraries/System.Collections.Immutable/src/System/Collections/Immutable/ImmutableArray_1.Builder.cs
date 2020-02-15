@@ -68,7 +68,7 @@ namespace System.Collections.Immutable
                             var temp = new T[value];
                             if (_count > 0)
                             {
-                                Array.Copy(_elements, 0, temp, 0, _count);
+                                Array.Copy(_elements, temp, _count);
                             }
 
                             _elements = temp;
@@ -437,7 +437,7 @@ namespace System.Collections.Immutable
                 }
 
                 T[] result = new T[this.Count];
-                Array.Copy(_elements, 0, result, 0, this.Count);
+                Array.Copy(_elements, result, this.Count);
                 return result;
             }
 

@@ -316,7 +316,7 @@ namespace System.Collections.Immutable
 
             if (index != 0)
             {
-                Array.Copy(self.array!, 0, tmp, 0, index);
+                Array.Copy(self.array!, tmp, index);
             }
             if (index != self.Length)
             {
