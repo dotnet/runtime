@@ -96,7 +96,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeObjectArray_36167()
         {
-            // https://github.com/dotnet/corefx/issues/36167
+            // https://github.com/dotnet/runtime/issues/29019
             object[] data = JsonSerializer.Deserialize<object[]>("[1]");
             Assert.Equal(1, data.Length);
             Assert.IsType<JsonElement>(data[0]);
@@ -617,7 +617,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, obj.MyImmutableList.Count);
             TestRoundTrip(obj);
 
-            // Skip ImmutableArray due to https://github.com/dotnet/corefx/issues/42399.
+            // Skip ImmutableArray due to https://github.com/dotnet/runtime/issues/31404.
             const string inputJsonWithNullCollections =
                 @"{
                     ""Array"":null,

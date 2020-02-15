@@ -149,7 +149,7 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        // https://github.com/dotnet/corefx/issues/39067.
+        // https://github.com/dotnet/runtime/issues/30095.
         public static void Regression39067_TestingDateTimeMinValue()
         {
             string jsonString = @"""0001-01-01T00:00:00""";

@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- TODO: Add net472 configuration after OOB package bug is fixed: https://github.com/dotnet/corefx/issues/23889 -->
+  <!-- TODO: Add net472 configuration after OOB package bug is fixed: https://github.com/dotnet/runtime/issues/23497 -->
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>

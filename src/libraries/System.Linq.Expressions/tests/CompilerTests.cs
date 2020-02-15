@@ -141,7 +141,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VariableBinder_CatchBlock_Filter1()
         {
-            // See https://github.com/dotnet/corefx/issues/11994 for reported issue
+            // See https://github.com/dotnet/runtime/issues/18676 for reported issue
 
             Verify_VariableBinder_CatchBlock_Filter(
                 Expression.Catch(
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VariableBinder_CatchBlock_Filter2()
         {
-            // See https://github.com/dotnet/corefx/issues/11994 for reported issue
+            // See https://github.com/dotnet/runtime/issues/18676 for reported issue
 
             Verify_VariableBinder_CatchBlock_Filter(
                 Expression.Catch(

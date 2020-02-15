@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         // todo: move this to object tests; it is not a value test.
-        // https://github.com/dotnet/corefx/issues/40979
+        // https://github.com/dotnet/runtime/issues/30814
         [Fact]
         public static void EscapingShouldntStackOverflow_40979()
         {

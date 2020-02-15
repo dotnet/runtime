@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void StringEnumUriAndCustomDateTimeConverter()
         {
-            // Validating a scenario reported with https://github.com/dotnet/corefx/issues/38568.
+            // Validating a scenario reported with https://github.com/dotnet/runtime/issues/29894.
             // Our DateTime parsing is ISO 8601 strict, more flexible parsing is possible by
             // writing a simple converter. String based enum parsing is handled by registering
             // a custom built-in parser (JsonStringEnumConverter). Uri is handled implicitly.

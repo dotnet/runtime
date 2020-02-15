@@ -139,7 +139,7 @@ namespace System.IO
 
             // These checks are in place to ensure Unix error throwing happens the same way
             // as it does on Windows.These checks can be removed if a solution to
-            // https://github.com/dotnet/corefx/issues/2460 is found that doesn't require
+            // https://github.com/dotnet/runtime/issues/14885 is found that doesn't require
             // validity checks before making an API call.
             if (!new DirectoryInfo(Path.GetDirectoryName(FullName)!).Exists)
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullName));

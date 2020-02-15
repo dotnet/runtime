@@ -14,7 +14,7 @@ namespace System.SpanTests
     public static partial class SpanTests
     {
         // Calling Span APIs via Reflection is not supported yet.
-        // These tests check that using reflection results in graceful failures. See https://github.com/dotnet/coreclr/issues/17296
+        // These tests check that using reflection results in graceful failures. See https://github.com/dotnet/runtime/issues/10057
         // These tests are only relevant for fast span.
 
         [Fact]

@@ -431,7 +431,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public static readonly object[][] T61Cases =
         {
-            // https://github.com/dotnet/corefx/issues/27466
+            // https://github.com/dotnet/runtime/issues/25195
             new object[]
             {
                 "CN=GrapeCity inc., OU=Tools Development, O=GrapeCity inc., " +

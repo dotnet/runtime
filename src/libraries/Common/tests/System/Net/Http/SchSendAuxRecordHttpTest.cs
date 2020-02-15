@@ -15,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
 
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/26539")]    // Flaky test
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/24776")]    // Flaky test
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
         public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }

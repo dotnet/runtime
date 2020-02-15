@@ -621,7 +621,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DictionaryOfObject_37569()
         {
-            // https://github.com/dotnet/corefx/issues/37569
+            // https://github.com/dotnet/runtime/issues/29504
             Dictionary<string, object> dictionary = new Dictionary<string, object>
             {
                 ["key"] = new Poco { Id = 10 },

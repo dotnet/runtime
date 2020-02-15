@@ -216,7 +216,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void IsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();
@@ -241,7 +241,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void CreatePartDefinition_EnsureIsDiscoverable()
         {
             var expectations = new ExpectationCollection<Type, bool>();

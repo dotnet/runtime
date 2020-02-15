@@ -137,7 +137,7 @@ namespace System.ServiceProcess.Tests
             using (ServiceController svc = new ServiceController(ServiceName))
             {
                 // The Service exists at this point, but OpenService is failing, possibly because its being invoked concurrently for another service.
-                // https://github.com/dotnet/corefx/issues/23388
+                // https://github.com/dotnet/runtime/issues/23247
                 if (svc.Status != ServiceControllerStatus.Stopped)
                 {
                     try
