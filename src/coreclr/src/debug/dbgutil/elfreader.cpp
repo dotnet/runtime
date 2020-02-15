@@ -53,11 +53,11 @@ private:
 bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
-    ElfReader* reader = new ElfReaderExport(dataTarget);
-    if (reader->PopulateELFInfo(baseAddress))
+    ElfReaderExport elfreader(dataTarget);
+    if (elfreader.PopulateELFInfo(baseAddress))
     {
         uint64_t symbolOffset;
-        if (reader->TryLookupSymbol(symbolName, &symbolOffset))
+        if (elfreader.TryLookupSymbol(symbolName, &symbolOffset))
         {
             *symbolAddress = baseAddress + symbolOffset;
             return true;
@@ -71,8 +71,16 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
 // ELF reader constructor/destructor
 //
 
-ElfReader::ElfReader()
+ElfReader::ElfReader() :
+    m_rdebugAddr(nullptr),
+    m_gnuHashTableAddr(nullptr),
+    m_stringTableAddr(nullptr),
+    m_stringTableSize(0),
+    m_symbolTableAddr(nullptr),
+    m_buckets(nullptr),
+    m_chainsAddress(nullptr)
 {
+    memset(&m_hashTable, 0, sizeof(m_hashTable));
 }
 
 ElfReader::~ElfReader()
@@ -352,7 +360,7 @@ ElfReader::EnumerateLinkMapEntries()
         TRACE("\nDSO: link_map entry %p l_ld %p l_addr (Ehdr) %" PRIx " %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName.c_str());
 
         // Call the derived class for each module
-        ForEachModule(map.l_addr, moduleName);
+        VisitModule(map.l_addr, moduleName);
 
         linkMapAddr = map.l_next;
     }
@@ -437,7 +445,7 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
         }
 
         // Give any derived classes a chance at the program header
-        ForEachProgramHeader(loadbias, baseAddress, &ph);
+        VisitProgramHeader(loadbias, baseAddress, &ph);
     }
 
     return true;

@@ -429,7 +429,7 @@ CrashInfo::GetDSOInfo()
 // Add all the necessary ELF headers to the core dump
 //
 void
-CrashInfo::ForEachModule(uint64_t baseAddress, std::string& moduleName)
+CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
 {
     if (baseAddress == 0 || baseAddress == m_auxvValues[AT_SYSINFO_EHDR] || baseAddress == m_auxvValues[AT_BASE]) {
         return;
@@ -457,7 +457,7 @@ CrashInfo::ForEachModule(uint64_t baseAddress, std::string& moduleName)
 // region and module addresses to the crash info.
 //
 void
-CrashInfo::ForEachProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phdr)
+CrashInfo::VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, Phdr* phdr)
 {
     switch (phdr->p_type)
     {

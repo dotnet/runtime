@@ -81,8 +81,8 @@ public:
 private:
     bool GetAuxvEntries();
     bool GetDSOInfo();
-    void ForEachModule(uint64_t baseAddress, std::string& moduleName);
-    void ForEachProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
+    void VisitModule(uint64_t baseAddress, std::string& moduleName);
+    void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateModuleMappings();
     bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);

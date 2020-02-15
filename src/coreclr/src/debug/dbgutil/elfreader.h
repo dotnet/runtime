@@ -79,8 +79,8 @@ private:
     bool GetChain(int index, int32_t* chain);
     bool GetStringAtIndex(int index, std::string& result);
     bool EnumerateDynamicEntries(ElfW(Dyn)* dynamicAddr);
-    virtual void ForEachModule(uint64_t baseAddress, std::string& moduleName) { };
-    virtual void ForEachProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
+    virtual void VisitModule(uint64_t baseAddress, std::string& moduleName) { };
+    virtual void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;
     virtual void Trace(const char* format, ...) { };
 };
