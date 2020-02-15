@@ -12,12 +12,12 @@ usage()
 
 initDistroRid()
 {
-    source ${__ProjectRoot}/init-distro-rid.sh
+    source $__RepoRootDir/eng/native/init-distro-rid.sh
 
     local passedRootfsDir=""
 
     # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( ${__CrossBuild} == 1 )); then
+    if (( __CrossBuild == 1 )); then
         passedRootfsDir=${ROOTFS_DIR}
     fi
 
@@ -97,9 +97,8 @@ while :; do
             __Id=$(echo $1| cut -d'=' -f 2)
             buildArgs="$buildArgs /p:OfficialBuildId=$__Id"
             ;;
-        -__DoCrossArchBuild=*)
-            __CrossBuild=$(echo $1| cut -d'=' -f 2)
-            buildArgs="$buildArgs /p:__DoCrossArchBuild=$__CrossBuild"
+        cross)
+            __CrossBuild=1
             ;;
         -portablebuild=false)
             buildArgs="$buildArgs /p:PortableBuild=false"
@@ -127,7 +126,7 @@ if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
     export OutputRID=${__DistroRid}
 fi
 
-logFile=$__ProjectRoot/artifacts/log/build-packages.binlog
+logFile=$__RepoRootDir/artifacts/log/build-packages.binlog
 $__RepoRootDir/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
                                    -verbosity minimal -bl:$logFile \
                                    /p:__BuildOS=$__BuildOS \

@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
     <Compile Include="System\Transactions\CommittableTransaction.cs" />
     <Compile Include="System\Transactions\DependentTransaction.cs" />
@@ -42,11 +41,8 @@
     <Compile Include="System\Transactions\Configuration\MachineSettingsSection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -54,7 +50,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\TransactionsEtwProvider.cs" />

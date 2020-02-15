@@ -45,7 +45,7 @@ ZapInfo::ZapInfo(ZapImage * pImage, mdMethodDef md, CORINFO_METHOD_HANDLE handle
 
     m_pUnwindInfo(NULL),
     m_pUnwindInfoFragments(NULL),
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     m_pChainedColdUnwindInfo(NULL),
 #endif
 #endif // FEATURE_EH_FUNCLETS
@@ -114,7 +114,7 @@ void ZapInfo::ResetForJitRetry()
 #ifdef FEATURE_EH_FUNCLETS
     m_pUnwindInfoFragments = NULL;
     m_pUnwindInfo = NULL;
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     m_pChainedColdUnwindInfo = NULL;
 #endif
 #endif // FEATURE_EH_FUNCLETS
@@ -454,7 +454,7 @@ void ZapInfo::CompileMethod()
     }
 #endif
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (methodAttribs & CORINFO_FLG_JIT_INTRINSIC)
     {
         // Skip generating hardware intrinsic method bodies.
@@ -536,7 +536,7 @@ void ZapInfo::CompileMethod()
 
     MethodCompileComplete(m_currentMethodInfo.ftn);
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // The x86 JIT over estimates the code size. Trim the blob size down to
     // the actual size.
     // We can do this only for non-split code. Adjusting the code size for split
@@ -817,13 +817,13 @@ void ZapInfo::PublishCompiledMethod()
     // Set the combined GCInfo + UnwindInfo blob
     m_pUnwindInfo->SetUnwindData(pMethod->m_pGCInfo);
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     if (m_pChainedColdUnwindInfo != NULL)
     {
         // Chain the cold unwind info with the hot unwind info
         m_pChainedColdUnwindInfo->SetUnwindData(m_pUnwindInfo);
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #endif // FEATURE_EH_FUNCLETS
 
@@ -1158,12 +1158,12 @@ void * ZapInfo::allocGCInfo(size_t size)
 {
     _ASSERTE(m_pGCInfo == NULL);
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (size & 0xFFFFFFFF80000000LL)
     {
         IfFailThrow(CORJIT_OUTOFMEM);
     }
-#endif // BIT64
+#endif // HOST_64BIT
 
     m_pGCInfo = new BYTE[size];
     m_cbGCInfo = size;
@@ -1364,7 +1364,7 @@ void ZapInfo::allocUnwindInfo (
         _ASSERTE(m_pUnwindInfo == NULL);
         m_pUnwindInfo = pUnwindInfo;
     }
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     else
     if (funcKind == CORJIT_FUNC_ROOT && pColdCode != NULL)
     {
@@ -1814,7 +1814,7 @@ void * ZapInfo::getHelperFtn (CorInfoHelpFunc ftnNum, void **ppIndirection)
     case CORINFO_HELP_PROF_FCN_TAILCALL:
         *ppIndirection = m_pImage->GetInnerPtr(GetProfilingHandleImport(), kZapProfilingHandleImportValueIndexTailcallAddr * TARGET_POINTER_SIZE);
         return NULL;
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     case CORINFO_HELP_STOP_FOR_GC:
         // Force all calls in ngen images for this helper to use an indirect call.
         // We cannot use a jump stub to reach this helper because
@@ -1837,7 +1837,7 @@ void * ZapInfo::getHelperFtn (CorInfoHelpFunc ftnNum, void **ppIndirection)
         {
             pHelperThunk = new (m_pImage->GetHeap()) ZapHelperThunk(dwHelper);
         }
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
         if ((dwHelper & CORCOMPILE_HELPER_PTR) == 0)
             pHelperThunk = m_pImage->GetInnerPtr(pHelperThunk, THUMB_CODE);
 #endif
@@ -1927,7 +1927,7 @@ PVOID ZapInfo::embedDirectCall(CORINFO_METHOD_HANDLE ftn,
         pEntryPointOrThunkToEmbed = m_pImage->GetImportTable()->GetExternalMethodThunk(ftn);
     }
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     pEntryPointOrThunkToEmbed = m_pImage->GetInnerPtr(pEntryPointOrThunkToEmbed, THUMB_CODE);
 #endif
 
@@ -2149,9 +2149,9 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
         bool fIsHWIntrinsic            = false;
         bool fTreatAsRegularMethodCall = false;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
-#elif _TARGET_ARM64_
+#elif TARGET_ARM64
         fIsPlatformHWIntrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0;
 #endif
 
@@ -2169,7 +2169,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
         // answer for the CPU the code is running on.
         fTreatAsRegularMethodCall = (fIsGetIsSupportedMethod && fIsPlatformHWIntrinsic) || (!fIsPlatformHWIntrinsic && fIsHWIntrinsic);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         if (fIsPlatformHWIntrinsic)
         {
             // Simplify the comparison logic by grabbing the name of the ISA
@@ -2210,7 +2210,7 @@ DWORD FilterNamedIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn
                 fTreatAsRegularMethodCall = strcmp(methodName, "Round") == 0;
             }
         }
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
         if (fTreatAsRegularMethodCall)
         {
@@ -2660,13 +2660,13 @@ void ZapInfo::recordRelocation(void *location, void *target,
     {
     case IMAGE_REL_BASED_ABSOLUTE:
     case IMAGE_REL_BASED_PTR:
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     case IMAGE_REL_BASED_REL32:
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
         location = (PBYTE)location + slotNum;
         break;
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     case IMAGE_REL_BASED_THUMB_MOV32:
     case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
     case IMAGE_REL_BASED_THUMB_BRANCH24:
@@ -2690,7 +2690,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
         break;
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     case IMAGE_REL_ARM64_BRANCH26:
     case IMAGE_REL_ARM64_PAGEBASE_REL21:
     case IMAGE_REL_ARM64_PAGEOFFSET_12A:
@@ -2781,13 +2781,13 @@ void ZapInfo::recordRelocation(void *location, void *target,
         *(UNALIGNED TARGET_POINTER_TYPE *)location = (TARGET_POINTER_TYPE)targetOffset;
         break;
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     case IMAGE_REL_BASED_REL32:
         *(UNALIGNED INT32 *)location = targetOffset + addlDelta;
         break;
-#endif // _TARGET_X86_ || _TARGET_AMD64_
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined(_TARGET_ARM_)
+#if defined(TARGET_ARM)
     case IMAGE_REL_BASED_THUMB_MOV32:
     case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
         PutThumb2Mov32((UINT16 *)location, targetOffset);
@@ -2800,7 +2800,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
         break;
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined(TARGET_ARM64)
     case IMAGE_REL_ARM64_BRANCH26:
         if (!FitsInRel28(targetOffset))
             ThrowHR(COR_E_OVERFLOW);
@@ -2839,15 +2839,15 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 WORD ZapInfo::getRelocTypeHint(void * target)
 {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
     // There should be no external pointers
     return IMAGE_REL_BASED_REL32;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     // Use full 32-bit branch targets when retrying compilation on ARM
     if (m_zapper->m_pOpt->m_fNGenLastRetry)
         return (WORD)-1;
     return IMAGE_REL_BASED_THUMB_BRANCH24;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return IMAGE_REL_ARM64_BRANCH26;
 #else
     // No hints
@@ -3632,7 +3632,7 @@ CorInfoHelpFunc ZapInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToke
 CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
     if (IsReadyToRunCompilation())
-        return CORINFO_HELP_NEWARR_1_R2R_DIRECT;
+        return CORINFO_HELP_NEWARR_1_DIRECT;
 
     return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }
@@ -4004,7 +4004,7 @@ CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
 {
     CorInfoIntrinsics intrinsicID = m_pEEJitInfo->getIntrinsicID(method, pMustExpand);
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if ((intrinsicID == CORINFO_INTRINSIC_Ceiling) || (intrinsicID == CORINFO_INTRINSIC_Floor))
     {
         // These are normally handled via the SSE4.1 instructions ROUNDSS/ROUNDSD.
@@ -4012,7 +4012,7 @@ CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
         // fallback to the method call implementation instead.
         intrinsicID = CORINFO_INTRINSIC_Illegal;
     }
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
     return intrinsicID;
 }
@@ -4030,7 +4030,7 @@ CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
 BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                        CORINFO_SIG_INFO* sig)
 {
-#if defined(_TARGET_X86_) && defined(PLATFORM_UNIX)
+#if defined(TARGET_X86) && defined(TARGET_UNIX)
     // FUTURE ReadyToRun: x86 pinvoke stubs on Unix platforms
     if (IsReadyToRunCompilation())
         return TRUE;

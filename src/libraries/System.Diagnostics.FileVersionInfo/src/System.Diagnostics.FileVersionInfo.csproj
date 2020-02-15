@@ -3,7 +3,8 @@
     <AssemblyName>System.Diagnostics.FileVersionInfo</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\FileVersionInfo.cs" />
@@ -40,18 +41,15 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -59,7 +57,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <ProjectReference Include="../../System.Reflection.Metadata/src/System.Reflection.Metadata.csproj" />
     <Reference Include="System.Collections.Immutable" />
-    <Reference Include="System.IO" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

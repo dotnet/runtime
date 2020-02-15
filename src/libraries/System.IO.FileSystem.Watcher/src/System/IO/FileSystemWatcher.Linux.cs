@@ -40,7 +40,7 @@ namespace System.IO
                 switch (error.Error)
                 {
                     case Interop.Error.EMFILE:
-                        string maxValue = ReadMaxUserLimit(MaxUserInstancesPath);
+                        string? maxValue = ReadMaxUserLimit(MaxUserInstancesPath);
                         string message = !string.IsNullOrEmpty(maxValue) ?
                             SR.Format(SR.IOException_INotifyInstanceUserLimitExceeded_Value, maxValue) :
                             SR.IOException_INotifyInstanceUserLimitExceeded;
@@ -125,12 +125,12 @@ namespace System.IO
         /// Cancellation for the currently running watch operation.
         /// This is non-null if an operation has been started and null if stopped.
         /// </summary>
-        private CancellationTokenSource _cancellation;
+        private CancellationTokenSource? _cancellation;
 
         /// <summary>Reads the value of a max user limit path from procfs.</summary>
         /// <param name="path">The path to read.</param>
         /// <returns>The value read, or "0" if a failure occurred.</returns>
-        private static string ReadMaxUserLimit(string path)
+        private static string? ReadMaxUserLimit(string path)
         {
             try { return File.ReadAllText(path).Trim(); }
             catch { return null; }
@@ -301,7 +301,7 @@ namespace System.IO
             internal void Start()
             {
                 // Schedule a task to read from the inotify queue and process the events.
-                Task.Factory.StartNew(obj => ((RunningInstance)obj).ProcessEvents(),
+                Task.Factory.StartNew(obj => ((RunningInstance)obj!).ProcessEvents(),
                     this, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
                 // PERF: As needed, we can look into making this use async I/O rather than burning
@@ -337,7 +337,7 @@ namespace System.IO
             /// <summary>Adds a watch on a directory to the existing inotify handle.</summary>
             /// <param name="parent">The parent directory entry.</param>
             /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
-            private void AddDirectoryWatchUnlocked(WatchedDirectory parent, string directoryName)
+            private void AddDirectoryWatchUnlocked(WatchedDirectory? parent, string directoryName)
             {
                 string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
 
@@ -363,7 +363,7 @@ namespace System.IO
                     Exception exc;
                     if (error.Error == Interop.Error.ENOSPC)
                     {
-                        string maxValue = ReadMaxUserLimit(MaxUserWatchesPath);
+                        string? maxValue = ReadMaxUserLimit(MaxUserWatchesPath);
                         string message = !string.IsNullOrEmpty(maxValue) ?
                             SR.Format(SR.IOException_INotifyWatchesUserLimitExceeded_Value, maxValue) :
                             SR.IOException_INotifyWatchesUserLimitExceeded;
@@ -374,8 +374,7 @@ namespace System.IO
                         exc = Interop.GetExceptionForIoErrno(error, fullPath);
                     }
 
-                    FileSystemWatcher watcher;
-                    if (_weakWatcher.TryGetTarget(out watcher))
+                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                     {
                         watcher.OnError(new ErrorEventArgs(exc));
                     }
@@ -384,7 +383,7 @@ namespace System.IO
                 }
 
                 // Then store the path information into our map.
-                WatchedDirectory directoryEntry;
+                WatchedDirectory? directoryEntry;
                 bool isNewDirectory = false;
                 if (_wdToPathMap.TryGetValue(wd, out directoryEntry))
                 {
@@ -396,10 +395,7 @@ namespace System.IO
                     // of the world, but there's little that can be done about that.)
                     if (directoryEntry.Parent != parent)
                     {
-                        if (directoryEntry.Parent != null)
-                        {
-                            directoryEntry.Parent.Children.Remove (directoryEntry);
-                        }
+                        directoryEntry.Parent?.Children!.Remove (directoryEntry);
                         directoryEntry.Parent = parent;
                         if (parent != null)
                         {
@@ -452,10 +448,7 @@ namespace System.IO
                 Debug.Assert (_includeSubdirectories);
                 lock (SyncObj)
                 {
-                    if (directoryEntry.Parent != null)
-                    {
-                        directoryEntry.Parent.Children.Remove (directoryEntry);
-                    }
+                    directoryEntry.Parent?.Children!.Remove(directoryEntry);
                     RemoveWatchedDirectoryUnlocked (directoryEntry, removeInotify);
                 }
             }
@@ -519,12 +512,12 @@ namespace System.IO
                 // When cancellation is requested, clear out all watches.  This should force any active or future reads
                 // on the inotify handle to return 0 bytes read immediately, allowing us to wake up from the blocking call
                 // and exit the processing loop and clean up.
-                var ctr = _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj).CancellationCallback(), this);
+                var ctr = _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj!).CancellationCallback(), this);
                 try
                 {
                     // Previous event information
                     ReadOnlySpan<char> previousEventName = ReadOnlySpan<char>.Empty;
-                    WatchedDirectory previousEventParent = null;
+                    WatchedDirectory? previousEventParent = null;
                     uint previousEventCookie = 0;
 
                     // Process events as long as we're not canceled and there are more to read...
@@ -535,7 +528,7 @@ namespace System.IO
                         // so as to avoid a rooted cycle that would prevent our processing loop from ever ending
                         // if the watcher is dropped by the user without being disposed. If we can't get the watcher,
                         // there's nothing more to do (we can't raise events), so bail.
-                        FileSystemWatcher watcher;
+                        FileSystemWatcher? watcher;
                         if (!_weakWatcher.TryGetTarget(out watcher))
                         {
                             break;
@@ -543,7 +536,7 @@ namespace System.IO
 
                         uint mask = nextEvent.mask;
                         ReadOnlySpan<char> expandedName = ReadOnlySpan<char>.Empty;
-                        WatchedDirectory associatedDirectoryEntry = null;
+                        WatchedDirectory? associatedDirectoryEntry = null;
 
                         // An overflow event means that we can't trust our state without restarting since we missed events and
                         // some of those events could be a directory create, meaning we wouldn't have added the directory to the
@@ -729,8 +722,7 @@ namespace System.IO
                 }
                 catch (Exception exc)
                 {
-                    FileSystemWatcher watcher;
-                    if (_weakWatcher.TryGetTarget(out watcher))
+                    if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
                     {
                         watcher.OnError(new ErrorEventArgs(exc));
                     }
@@ -852,32 +844,22 @@ namespace System.IO
             {
                 /// <summary>A StringBuilder cached on the current thread to avoid allocations when possible.</summary>
                 [ThreadStatic]
-                private static StringBuilder t_builder;
+                private static StringBuilder? t_builder;
 
                 /// <summary>The parent directory.</summary>
-                internal WatchedDirectory Parent;
+                internal WatchedDirectory? Parent;
 
                 /// <summary>The watch descriptor associated with this directory.</summary>
                 internal int WatchDescriptor;
 
                 /// <summary>The filename of this directory.</summary>
-                internal string Name;
+                internal string? Name;
 
                 /// <summary>Child directories of this directory for which we added explicit watches.</summary>
-                internal List<WatchedDirectory> Children;
+                internal List<WatchedDirectory>? Children;
 
                 /// <summary>Child directories of this directory for which we added explicit watches.  This is the same as Children, but ensured to be initialized as non-null.</summary>
-                internal List<WatchedDirectory> InitializedChildren
-                {
-                    get
-                    {
-                        if (Children == null)
-                        {
-                            Children = new List<WatchedDirectory> ();
-                        }
-                        return Children;
-                    }
-                }
+                internal List<WatchedDirectory> InitializedChildren => Children ??= new List<WatchedDirectory>();
 
                 // PERF: Work is being done here proportionate to depth of watch directories.
                 // If this becomes a bottleneck, we'll need to come up with another mechanism
@@ -894,14 +876,10 @@ namespace System.IO
                 /// <param name="relativeToRoot">Whether to get a path relative to the root directory being watched, or a full path.</param>
                 /// <param name="additionalName">An additional name to include in the path, relative to this directory.</param>
                 /// <returns>The computed path.</returns>
-                internal string GetPath(bool relativeToRoot, string additionalName = null)
+                internal string GetPath(bool relativeToRoot, string? additionalName = null)
                 {
                     // Use our cached builder
-                    StringBuilder builder = t_builder;
-                    if (builder == null)
-                    {
-                        t_builder = builder = new StringBuilder();
-                    }
+                    StringBuilder builder = (t_builder ??= new StringBuilder());
                     builder.Clear();
 
                     // Write the directory's path.  Then if an additional filename was supplied, append it

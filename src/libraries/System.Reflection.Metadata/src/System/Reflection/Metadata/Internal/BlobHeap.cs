@@ -9,10 +9,10 @@ namespace System.Reflection.Metadata.Ecma335
 {
     internal struct BlobHeap
     {
-        private static byte[][] s_virtualValues;
+        private static byte[][]? s_virtualValues;
 
         internal readonly MemoryBlock Block;
-        private VirtualHeap _lazyVirtualHeap;
+        private VirtualHeap? _lazyVirtualHeap;
 
         internal BlobHeap(MemoryBlock block, MetadataKind metadataKind)
         {
@@ -162,7 +162,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal byte[] GetVirtualBlobBytes(BlobHandle handle, bool unique)
         {
             BlobHandle.VirtualIndex index = handle.GetVirtualIndex();
-            byte[] result = s_virtualValues[(int)index];
+            byte[] result = s_virtualValues![(int)index];
 
             switch (index)
             {
@@ -206,7 +206,6 @@ namespace System.Reflection.Metadata.Ecma335
 
                 var partReader = GetBlobReader(blobReader.ReadBlobHandle());
 
-                // TODO: avoid allocating temp string (https://github.com/dotnet/corefx/issues/2102)
                 builder.Append(partReader.ReadUTF8(partReader.Length));
                 isFirstPart = false;
             }

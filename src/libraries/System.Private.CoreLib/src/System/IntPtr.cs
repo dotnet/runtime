@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nint = System.Int64;
 #else
 using nint = System.Int32;
@@ -38,7 +38,7 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(long value)
         {
-#if BIT64
+#if TARGET_64BIT
             _value = (void*)value;
 #else
             _value = (void*)checked((int)value);
@@ -79,7 +79,7 @@ namespace System
 
         public override unsafe int GetHashCode()
         {
-#if BIT64
+#if TARGET_64BIT
             long l = (long)_value;
             return unchecked((int)l) ^ (int)(l >> 32);
 #else
@@ -90,7 +90,7 @@ namespace System
         [NonVersionable]
         public unsafe int ToInt32()
         {
-#if BIT64
+#if TARGET_64BIT
             long l = (long)_value;
             return checked((int)l);
 #else
@@ -123,7 +123,7 @@ namespace System
         [NonVersionable]
         public static unsafe explicit operator int(IntPtr value)
         {
-#if BIT64
+#if TARGET_64BIT
             long l = (long)value._value;
             return checked((int)l);
 #else

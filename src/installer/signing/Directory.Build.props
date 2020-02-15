@@ -1,11 +1,11 @@
 <Project>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
 
-    <!-- Skip signing steps by default for non-official builds. Skip signing in the runtime repository until we onboard unified signing scripts. -->
-    <SkipSigning>true</SkipSigning>
+    <!-- TODO: (Consolidation) Skip signing steps by default for non-official builds. https://github.com/dotnet/runtime/issues/1026 -->
+    <SkipSigning Condition="'$(DotNetSignType)' == ''">true</SkipSigning>
   </PropertyGroup>
 </Project>

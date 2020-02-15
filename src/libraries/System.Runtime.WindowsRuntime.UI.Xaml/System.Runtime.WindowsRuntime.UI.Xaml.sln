@@ -26,14 +26,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
-		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
-		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
-		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{263DA4F1-C3BC-4B43-98E7-9F38B419A131}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA1600B8-C4D3-42A9-A28A-04D0C8282566}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

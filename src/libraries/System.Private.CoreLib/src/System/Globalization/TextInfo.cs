@@ -11,11 +11,11 @@ using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
-#else // BIT64
+#else // TARGET_64BIT
 using nuint = System.UInt32;
-#endif // BIT64
+#endif // TARGET_64BIT
 
 namespace System.Globalization
 {
@@ -24,7 +24,7 @@ namespace System.Globalization
     /// A writing system is the collection of scripts and orthographic rules
     /// required to represent a language as text.
     /// </summary>
-    public partial class TextInfo : ICloneable, IDeserializationCallback
+    public sealed partial class TextInfo : ICloneable, IDeserializationCallback
     {
         private enum Tristate : byte
         {
@@ -45,9 +45,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static TextInfo Invariant => s_invariant ??= new TextInfo(CultureData.Invariant);
-
-        private static volatile TextInfo? s_invariant;
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true);
 
         internal TextInfo(CultureData cultureData)
         {
@@ -59,18 +57,24 @@ namespace System.Globalization
             FinishInitialization();
         }
 
+        private TextInfo(CultureData cultureData, bool readOnly)
+            : this(cultureData)
+        {
+            SetReadOnlyState(readOnly);
+        }
+
         void IDeserializationCallback.OnDeserialization(object? sender)
         {
             throw new PlatformNotSupportedException();
         }
 
-        public virtual int ANSICodePage => _cultureData.ANSICodePage;
+        public int ANSICodePage => _cultureData.ANSICodePage;
 
-        public virtual int OEMCodePage => _cultureData.OEMCodePage;
+        public int OEMCodePage => _cultureData.OEMCodePage;
 
-        public virtual int MacCodePage => _cultureData.MacCodePage;
+        public int MacCodePage => _cultureData.MacCodePage;
 
-        public virtual int EBCDICCodePage => _cultureData.EBCDICCodePage;
+        public int EBCDICCodePage => _cultureData.EBCDICCodePage;
 
         // Just use the LCID from our text info name
         public int LCID => CultureInfo.GetCultureInfo(_textInfoName).LCID;
@@ -79,7 +83,7 @@ namespace System.Globalization
 
         public bool IsReadOnly => _isReadOnly;
 
-        public virtual object Clone()
+        public object Clone()
         {
             object o = MemberwiseClone();
             ((TextInfo)o).SetReadOnlyState(false);
@@ -123,7 +127,7 @@ namespace System.Globalization
         /// <summary>
         /// Returns the string used to separate items in a list.
         /// </summary>
-        public virtual string ListSeparator
+        public string ListSeparator
         {
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
@@ -142,7 +146,7 @@ namespace System.Globalization
         /// Converts the character or string to lower case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToLower(char c)
+        public char ToLower(char c)
         {
             if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
@@ -152,7 +156,7 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: false);
         }
 
-        public virtual string ToLower(string str)
+        public string ToLower(string str)
         {
             if (str == null)
             {
@@ -534,7 +538,7 @@ namespace System.Globalization
         /// Converts the character or string to upper case.  Certain locales
         /// have different casing semantics from the file systems in Win32.
         /// </summary>
-        public virtual char ToUpper(char c)
+        public char ToUpper(char c)
         {
             if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
@@ -544,7 +548,7 @@ namespace System.Globalization
             return ChangeCase(c, toUpper: true);
         }
 
-        public virtual string ToUpper(string str)
+        public string ToUpper(string str)
         {
             if (str == null)
             {
@@ -643,7 +647,7 @@ namespace System.Globalization
             for (int i = 0; i < str.Length; i++)
             {
                 int charLen;
-                UnicodeCategory charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                UnicodeCategory charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
                 if (char.CheckLetter(charType))
                 {
                     // Special case to check for Dutch specific titlecasing with "IJ" characters
@@ -670,7 +674,7 @@ namespace System.Globalization
                     // Use a loop to find all of the other letters following this letter.
                     while (i < str.Length)
                     {
-                        charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
+                        charType = CharUnicodeInfo.GetUnicodeCategoryInternal(str, i, out charLen);
                         if (IsLetterCategory(charType))
                         {
                             if (charType == UnicodeCategory.LowercaseLetter)

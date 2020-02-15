@@ -5,7 +5,7 @@ You can contribute to .NET Runtime with issues and PRs. Simply filing issues for
 
 ## Contribution "Bar"
 
-Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Core roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
+Project maintainers will merge changes that improve the product significantly and broadly and that align with the [.NET Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md).
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
@@ -31,7 +31,7 @@ Please do not:
   of time.
 * **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to .NET Core, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
-* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project-docs/api-review-process.md).
+* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
 
 ## Managed Code Compatibility
 
@@ -45,20 +45,26 @@ We use and recommend the following workflow:
     - You can skip this step for trivial changes.
     - Reuse an existing issue on the topic, if there is one.
     - Get agreement from the team and the community that your proposed change is a good one.
-    - If your change adds a new API, follow the [API Review Process](docs/project/api-reivew-process.md).
+    - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
-3. Create a branch off of master (`git checkout -b mybranch`).
+3. In your fork, create a branch off of master (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
-4. Make and commit your changes.
+4. Make and commit your changes to your branch.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
     - Make sure that the builds are clean.
     - Make sure that the tests are all passing, including your new tests.
-7. Create a pull request (PR) against the upstream repository's **master** branch.
-    - Push your changes to your fork on GitHub (if you haven't already).
+7. Create a pull request (PR) against the dotnet/runtime repository's **master** branch.
+    - State in the description what issue or improvement your change is addressing.
+    - Check if all the Continuous Integration checks are passing.
+8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
+    - Details about the pull request [review procedure](docs/pr-guide.md).
+9. When area owners have signed off, and all checks are green, your PR will be merged.
+    - The next official build will automatically include your change.
+    - You can delete the branch you used for making the change.
 
 Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
 
@@ -66,7 +72,7 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 ## Up for Grabs
 
-The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/corefx/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
+The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
 ## Commit Messages
 
@@ -105,8 +111,8 @@ The following file header is the used for .NET Core. Please use it for new files
 // See the LICENSE file in the project root for more information.
 ```
 
-- See [class.cpp](../../src/vm/class.cpp) for an example of the header in a C++ file.
-- See [List.cs](../../src/System.Private.CoreLib/shared/System/Collections/Generic/List.cs) for an example of the header in a C# file.
+- See [class.cpp](./src/coreclr/src/vm/class.cpp) for an example of the header in a C++ file.
+- See [List.cs](./src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs) for an example of the header in a C# file.
 
 ## PR - CI Process
 
@@ -128,16 +134,16 @@ We encourage ports of CoreCLR to other platforms. There are multiple ports ongoi
 
 Chips:
 
-- [ARM32](https://github.com/dotnet/coreclr/labels/arch-arm32)
-- [ARM64](https://github.com/dotnet/coreclr/labels/arch-arm64)
-- [X86](https://github.com/dotnet/coreclr/labels/arch-x86)
+- [ARM32](https://github.com/dotnet/runtime/labels/arch-arm32)
+- [ARM64](https://github.com/dotnet/runtime/labels/arch-arm64)
+- [X86](https://github.com/dotnet/runtime/labels/arch-x86)
 
 Operating System:
 
-- [Linux](https://github.com/dotnet/coreclr/labels/os-linux)
-- [macOS](https://github.com/dotnet/coreclr/labels/os-mac-os-x)
-- [Windows Subsystem for Linux](https://github.com/dotnet/coreclr/labels/os-windows-wsl)
-- [FreeBSD](https://github.com/dotnet/coreclr/labels/os-freebsd)
+- [Linux](https://github.com/dotnet/runtime/labels/os-linux)
+- [macOS](https://github.com/dotnet/runtime/labels/os-mac-os-x)
+- [Windows Subsystem for Linux](https://github.com/dotnet/runtime/labels/os-windows-wsl)
+- [FreeBSD](https://github.com/dotnet/runtime/labels/os-freebsd)
 
 Note: Add links to install instructions for each of these ports.
 
@@ -151,12 +157,12 @@ The following rules must be followed for PRs that include files from another pro
 
 - The license of the file is [permissive](https://en.wikipedia.org/wiki/Permissive_free_software_licence).
 - The license of the file is left in-tact.
-- The contribution is correctly attributed in the [3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
+- The contribution is correctly attributed in the [3rd party notices](./THIRD-PARTY-NOTICES.TXT) file in the repository, as needed.
 
-See [IdnMapping.cs](../../src/System.Private.CoreLib/shared/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](../../THIRD-PARTY-NOTICES.TXT) file.
+See [IdnMapping.cs](./src/libraries/System.Private.CoreLib/src/System/Globalization/IdnMapping.cs) for an example of a file copied from another project and attributed in the [CoreCLR 3rd party notices](./THIRD-PARTY-NOTICES.TXT) file.
 
 ### Porting Files from Other Projects
 
-There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C# , for example, are the same as would be used for copying the same file, as described above.
+There are many good algorithms implemented in other languages that would benefit the .NET Core project. The rules for porting a Java file to C#, for example, are the same as would be used for copying the same file, as described above.
 
 [Clean-room](https://en.wikipedia.org/wiki/Clean_room_design) implementations of existing algorithms that are not permissively licensed will generally not be accepted. If you want to create or nominate such an implementation, please create an issue to discuss the idea.

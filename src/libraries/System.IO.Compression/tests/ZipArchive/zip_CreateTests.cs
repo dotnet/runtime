@@ -89,7 +89,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode_Seekable()
         {
             using (var s = new MemoryStream())
@@ -102,7 +101,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
         public static async Task CreateNormal_Unicode_Unseekable()
         {
             using (var s = new MemoryStream())

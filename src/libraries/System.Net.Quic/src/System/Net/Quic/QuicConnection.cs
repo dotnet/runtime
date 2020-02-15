@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace System.Net.Quic
     public sealed class QuicConnection : IDisposable
     {
         private readonly QuicConnectionProvider _provider;
+
+        public static bool IsQuicSupported => MsQuicApi.IsQuicSupported;
 
         /// <summary>
         /// Create an outbound QUIC connection.
@@ -26,8 +29,13 @@ namespace System.Net.Quic
 
         // !!! TEMPORARY: Remove "implementationProvider" before shipping
         public QuicConnection(QuicImplementationProvider implementationProvider, IPEndPoint remoteEndPoint, SslClientAuthenticationOptions sslClientAuthenticationOptions, IPEndPoint localEndPoint = null)
+            : this(implementationProvider, new QuicClientConnectionOptions() { RemoteEndPoint = remoteEndPoint, ClientAuthenticationOptions = sslClientAuthenticationOptions, LocalEndPoint = localEndPoint })
         {
-            _provider = implementationProvider.CreateConnection(remoteEndPoint, sslClientAuthenticationOptions, localEndPoint);
+        }
+
+        public QuicConnection(QuicImplementationProvider implementationProvider, QuicClientConnectionOptions options)
+        {
+            _provider = implementationProvider.CreateConnection(options);
         }
 
         internal QuicConnection(QuicConnectionProvider provider)
@@ -74,8 +82,18 @@ namespace System.Net.Quic
         /// <summary>
         /// Close the connection and terminate any active streams.
         /// </summary>
-        public void Close() => _provider.Close();
+        public ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default) => _provider.CloseAsync(errorCode, cancellationToken);
 
         public void Dispose() => _provider.Dispose();
+
+        /// <summary>
+        /// Gets the maximum number of bidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableUnidirectionalStreamCount() => _provider.GetRemoteAvailableUnidirectionalStreamCount();
+
+        /// <summary>
+        /// Gets the maximum number of unidirectional streams that can be made to the peer.
+        /// </summary>
+        public long GetRemoteAvailableBidirectionalStreamCount() => _provider.GetRemoteAvailableBidirectionalStreamCount();
     }
 }

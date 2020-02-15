@@ -5,10 +5,10 @@
 #Requires -RunAsAdministrator
 
 # Firewall configuration
-$script:firewallGroup = "CoreFX Testing"
+$script:firewallGroup = "Libraries Testing"
 $script:firewallRules = @(
-    @{Name = "CoreFXNet - HTTP 80"; Port = 80},
-    @{Name = "CoreFXNet - HTTP 443"; Port = 443}
+    @{Name = "LibariesNet - HTTP 80"; Port = 80},
+    @{Name = "LibrariesNet - HTTP 443"; Port = 443}
 )
 
 Function InstallServerFirewall

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Security.Authentication;
 
 namespace System.Net.Test.Common
 {
@@ -14,10 +15,13 @@ namespace System.Net.Test.Common
 
     public abstract class LoopbackServerFactory
     {
+        public abstract GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null);
         public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null);
 
+        // TODO: just expose a version property.
         public abstract bool IsHttp11 { get; }
         public abstract bool IsHttp2 { get; }
+        public abstract bool IsHttp3 { get; }
 
         // Common helper methods
 
@@ -35,11 +39,15 @@ namespace System.Net.Test.Common
 
     public abstract class GenericLoopbackServer : IDisposable
     {
+        public virtual Uri Address { get; }
+
         // Accept a new connection, process a single request and send the specified response, and gracefully close the connection.
         public abstract Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "");
 
         // Accept a new connection, and hand it to provided delegate.
         public abstract Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync);
+
+        public abstract Task<GenericLoopbackConnection> EstablishGenericConnectionAsync();
 
         public abstract void Dispose();
 
@@ -79,6 +87,12 @@ namespace System.Net.Test.Common
     public class GenericLoopbackOptions
     {
         public IPAddress Address { get; set; } = IPAddress.Loopback;
+        public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
+        public SslProtocols SslProtocols { get; set; } =
+#if !NETSTANDARD2_0
+                SslProtocols.Tls13 |
+#endif
+                SslProtocols.Tls12;
     }
 
     public struct HttpHeaderData

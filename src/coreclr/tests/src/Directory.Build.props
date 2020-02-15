@@ -32,7 +32,7 @@
     <BaseIntermediateOutputPath Condition="'$(__ManagedTestIntermediatesDir)' != ''">$(__ManagedTestIntermediatesDir)\</BaseIntermediateOutputPath>
     <__NativeTestIntermediatesDir Condition="'$(__NativeTestIntermediatesDir)' == ''">$([System.IO.Path]::GetFullPath($(BaseOutputPathWithConfig)..\..\coreclr\obj\$(BuildOS).$(Platform).$(Configuration)\Native\))</__NativeTestIntermediatesDir>
     <BuildProjectRelativeDir>$(MSBuildProjectName)\</BuildProjectRelativeDir>
-    <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(SourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(SourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
+    <BuildProjectRelativeDir Condition="'$(MSBuildProjectDirectory.Contains($(TestSourceDir)))'">$([System.String]::Copy('$(MSBuildProjectDirectory)').Replace($(TestSourceDir),''))\$(MSBuildProjectName)</BuildProjectRelativeDir>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(BuildProjectRelativeDir)\</IntermediateOutputPath>
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
     <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
@@ -142,7 +142,7 @@
     <RestoreOutputPath>$(MSBuildProjectDirectory)\obj</RestoreOutputPath>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>.NETCoreApp,Version=v5.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netcoreapp5.0</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>$(NetCoreAppCurrentTargetFrameworkMoniker)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(NetCoreAppCurrent)</NuGetTargetMonikerShort>
   </PropertyGroup>
 </Project>

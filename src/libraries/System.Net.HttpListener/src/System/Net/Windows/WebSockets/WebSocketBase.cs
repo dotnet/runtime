@@ -2294,17 +2294,7 @@ namespace System.Net.WebSockets
             // Has to be called under _ThisLock lock
             private CancellationToken CreateLinkedCancellationToken(CancellationToken cancellationToken)
             {
-                CancellationTokenSource linkedCancellationTokenSource;
-
-                if (cancellationToken == CancellationToken.None)
-                {
-                    linkedCancellationTokenSource = new CancellationTokenSource();
-                }
-                else
-                {
-                    linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken,
-                        new CancellationTokenSource().Token);
-                }
+                var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 Debug.Assert(_cancellationTokenSource == null, "'_cancellationTokenSource' MUST be NULL.");
                 _cancellationTokenSource = linkedCancellationTokenSource;

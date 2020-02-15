@@ -1,10 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
-using Internal.Text;
-using Internal.TypeSystem;
+
+using ILCompiler.DependencyAnalysis.ARM64;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -14,9 +14,53 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// </summary>
     public partial class ImportThunk
     {
-        protected override void EmitCode(NodeFactory factory, ref ARM64.ARM64Emitter instructionEncoder, bool relocsOnly)
+        protected override void EmitCode(NodeFactory factory, ref ARM64Emitter instructionEncoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+
+            switch (_thunkKind)
+            {
+                case Kind.Eager:
+                    break;
+
+                case Kind.DelayLoadHelper:
+                case Kind.VirtualStubDispatch:
+                    // x11 contains indirection cell
+                    // Do nothing x11 contains our first param
+
+                    if (!relocsOnly)
+                    {
+                        // movz x9, #index
+                        int index = _instanceCell.Table.IndexFromBeginningOfArray;
+                        instructionEncoder.EmitMOV(Register.X9, checked((ushort)index));
+                    }
+
+                    // Move Module* -> x10
+                    // ldr x10, [PC+0x1c]
+                    instructionEncoder.EmitLDR(Register.X10, 0x1c);
+
+                    // ldr x10, [x10]
+                    instructionEncoder.EmitLDR(Register.X10, Register.X10);
+                    break;
+
+                case Kind.Lazy:
+                    // Move Module* -> x1
+                    // ldr x1, [PC+0x1c]
+                    instructionEncoder.EmitLDR(Register.X1, 0x1c);
+
+                    // ldr x1, [x1]
+                    instructionEncoder.EmitLDR(Register.X1, Register.X1);
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            // branch to helper
+            instructionEncoder.EmitJMP(_helperCell);
+
+            // Emit relocation for the Module* load above
+            if (_thunkKind != Kind.Eager)
+                instructionEncoder.Builder.EmitReloc(_moduleImport, RelocType.IMAGE_REL_BASED_DIR64);
         }
     }
 }

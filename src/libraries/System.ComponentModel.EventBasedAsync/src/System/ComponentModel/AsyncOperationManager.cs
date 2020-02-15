@@ -10,7 +10,7 @@ namespace System.ComponentModel
 {
     public static class AsyncOperationManager
     {
-        public static AsyncOperation CreateOperation(object userSuppliedState)
+        public static AsyncOperation CreateOperation(object? userSuppliedState)
         {
             return AsyncOperation.CreateOperation(userSuppliedState, SynchronizationContext);
         }
@@ -25,7 +25,7 @@ namespace System.ComponentModel
                     SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
                 }
 
-                return SynchronizationContext.Current;
+                return SynchronizationContext.Current!;
             }
 
             // a thread should set this to null  when it is done, else the context will never be disposed/GC'd

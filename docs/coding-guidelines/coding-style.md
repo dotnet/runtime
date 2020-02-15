@@ -35,7 +35,7 @@ The general rule we follow is "use Visual Studio defaults".
     - Using braces is always accepted, and required if any block of an `if`/`else if`/.../`else` compound statement uses braces or if a single statement body spans multiple lines.
     - Braces may be omitted only if the body of *every* block associated with an `if`/`else if`/.../`else` compound statement is placed on a single line.
 
-An [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has been provided at the root of the corefx repository, enabling C# auto-formatting conforming to the above guidelines.
+An [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has been provided at the root of the runtime repository, enabling C# auto-formatting conforming to the above guidelines.
 
 We also use the [.NET Codeformatter Tool](https://github.com/dotnet/codeformatter) to ensure the code base maintains a consistent style over time, the tool automatically fixes the code base to conform to the guidelines outlined above.
 
@@ -95,7 +95,7 @@ namespace System.Collections.Generic
 
         private void InsertNodeBefore(LinkedListNode<T> node, LinkedListNode<T> newNode)
         {
-           ...
+            ...
         }
         
         ...
@@ -124,10 +124,10 @@ namespace System.Collections.Generics
                 _parent = parent;
                 _value = value;
             }
-            
+
             public T Value
             {
-               get { return _value; }
+                get { return _value; }
             }
         }
 

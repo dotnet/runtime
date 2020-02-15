@@ -229,6 +229,10 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"199\\u0037-07\\u002d16T1\\u0039:20:30.4555555+\\u002dZ\"" };
             // Proper format but invalid calendar date, time, or time zone designator fields 1997-00-16
             yield return new object[] { "\"\\u0031\\u0039\\u0039\\u0037\\u002d\\u0030\\u0030\\u002d\\u0031\\u0036\"" };
+
+            // High byte expansion - parsing fails early at 254 characters.
+            yield return new object[] { "\"" + new string('\u20AC', 250) + "\"" };
+            yield return new object[] { "\"" + new string('\u20AC', 260) + "\"" };
         }
 
         public static IEnumerable<object[]> DateTimeFractionTrimBaseTests()

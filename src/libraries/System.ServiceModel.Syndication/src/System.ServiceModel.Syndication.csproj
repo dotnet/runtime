@@ -3,7 +3,8 @@
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetsNetFx)' == 'true'">true</OmitResources>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\ServiceModel\Channels\UriGenerator.cs" />

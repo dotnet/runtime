@@ -3,7 +3,7 @@
     <!-- ensure these projects use a different intermediate and output directory than generated projects -->
     <OutDirName>manual.$(MSBuildProjectName)</OutDirName>
   </PropertyGroup>
-  
+
   <Import Project="..\Directory.Build.props" />
 
   <!-- import generated projects in order to share generated properties -->
@@ -11,8 +11,13 @@
 
   <PropertyGroup>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <!-- Use runtime assemblies for the TargetGroup, using build configuration OSGroup -->
-    <RefPath>$(ArtifactsBinDir)runtime/$(TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', '$(OutDirName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetFramework)-$(Configuration)</IntermediateOutputPath>
+    <!-- Use runtime assemblies for the TargetFramework, using build configuration OSGroup -->
+    <RefPath>$(ArtifactsBinDir)runtime/$(BuildTargetFramework)-$(OSGroup)-$(Configuration)-$(ArchGroup)/</RefPath>
+    <CoreCLROSGroup>$(OSGroup)</CoreCLROSGroup>
+    <MonoOSGroup>$(OSGroup)</MonoOSGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,4 +25,10 @@
       Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
       Exclude="$(RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
+
+  <Target Name="AddSystemPrivateCoreLibReferencePath" DependsOnTargets="ResolveCoreCLRFilesFromLocalBuild" BeforeTargets="ResolveReferences">
+    <ItemGroup>
+      <ReferencePath Include="@(CoreCLRFiles)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.dll'" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Data.Common</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />
@@ -301,7 +301,7 @@
     <Compile Include="System\Data\SQLTypes\SQLBytes.cs" />
     <Compile Include="System\Data\ProviderBase\DataReaderContainer.cs" />
     <Compile Include="System\Data\ProviderBase\SchemaMapping.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
+    <Compile Include="$(CommonPath)System\Runtime\CompilerServices\PreserveDependencyAttribute.cs">
       <Link>Common\System\Runtime\CompilerServices\PreserveDependencyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
@@ -312,14 +312,11 @@
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Numerics" />

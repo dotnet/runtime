@@ -8,7 +8,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn />
     <Nullable>enable</Nullable>
-    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>

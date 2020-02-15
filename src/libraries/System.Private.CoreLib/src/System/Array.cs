@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -374,14 +375,14 @@ namespace System
             if (comparer == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
 
-            int ret = 0;
+            HashCode hashCode = default;
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = HashCode.Combine(ret, comparer.GetHashCode(GetValue(i)!));
+                hashCode.Add(comparer.GetHashCode(GetValue(i)!));
             }
 
-            return ret;
+            return hashCode.ToHashCode();
         }
 
         // Searches an array for a given element using a binary search algorithm.
@@ -1020,7 +1021,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1028,7 +1029,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1115,7 +1116,7 @@ namespace System
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref array.GetRawSzArrayData(), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), startIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1123,7 +1124,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(char))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), startIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1131,7 +1132,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1139,7 +1140,7 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
                     int result = SpanHelpers.IndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), startIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
                     return (result >= 0 ? startIndex : 0) + result;
@@ -1250,7 +1251,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I4:
                         case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1258,7 +1259,7 @@ namespace System
                             break;
                         case CorElementType.ELEMENT_TYPE_I8:
                         case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                         case CorElementType.ELEMENT_TYPE_I:
                         case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1363,7 +1364,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref array.GetRawSzArrayData(), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), endIndex),
                         Unsafe.As<T, byte>(ref value),
                         count);
 
@@ -1373,7 +1374,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), endIndex),
                         Unsafe.As<T, char>(ref value),
                         count);
 
@@ -1383,7 +1384,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), endIndex),
                         Unsafe.As<T, int>(ref value),
                         count);
 
@@ -1393,7 +1394,7 @@ namespace System
                 {
                     int endIndex = startIndex - count + 1;
                     int result = SpanHelpers.LastIndexOf(
-                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), endIndex),
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), endIndex),
                         Unsafe.As<T, long>(ref value),
                         count);
 
@@ -1459,7 +1460,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I4:
                 case CorElementType.ELEMENT_TYPE_U4:
-#if !BIT64
+#if TARGET_32BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1468,7 +1469,7 @@ namespace System
                     return;
                 case CorElementType.ELEMENT_TYPE_I8:
                 case CorElementType.ELEMENT_TYPE_U8:
-#if BIT64
+#if TARGET_64BIT
                 case CorElementType.ELEMENT_TYPE_I:
                 case CorElementType.ELEMENT_TYPE_U:
 #endif
@@ -1515,7 +1516,7 @@ namespace System
             if (length <= 1)
                 return;
 
-            ref T first = ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index);
+            ref T first = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index);
             ref T last = ref Unsafe.Add(ref Unsafe.Add(ref first, length), -1);
             do
             {
@@ -1721,7 +1722,7 @@ namespace System
 
             if (array.Length > 1)
             {
-                var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+                var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
                 ArraySortHelper<T>.Default.Sort(span, null);
             }
         }
@@ -1770,7 +1771,7 @@ namespace System
 
             if (length > 1)
             {
-                var span = new Span<T>(ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), index), length);
+                var span = new Span<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), index), length);
                 ArraySortHelper<T>.Default.Sort(span, comparer);
             }
         }
@@ -1794,8 +1795,8 @@ namespace System
                     return;
                 }
 
-                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref Unsafe.As<byte, TKey>(ref keys.GetRawSzArrayData()), index), length);
-                var spanItems = new Span<TValue>(ref Unsafe.Add(ref Unsafe.As<byte, TValue>(ref items.GetRawSzArrayData()), index), length);
+                var spanKeys = new Span<TKey>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(keys), index), length);
+                var spanItems = new Span<TValue>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(items), index), length);
                 ArraySortHelper<TKey, TValue>.Default.Sort(spanKeys, spanItems, comparer);
             }
         }
@@ -1812,7 +1813,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            var span = new Span<T>(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), array.Length);
+            var span = new Span<T>(ref MemoryMarshal.GetArrayDataReference(array), array.Length);
             ArraySortHelper<T>.Sort(span, comparison);
         }
 

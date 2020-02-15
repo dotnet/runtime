@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Threading.Tasks.cs" />
     <Compile Include="System.Threading.Tasks.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

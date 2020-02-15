@@ -12,7 +12,6 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A set of initialization methods for instances of <see cref="ImmutableDictionary{TKey, TValue}"/>.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public static class ImmutableDictionary
     {
         /// <summary>
@@ -22,7 +21,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TValue">The type of values stored by the dictionary.</typeparam>
         /// <returns>The immutable collection.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>()
+        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>() where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty;
         }
@@ -37,7 +36,7 @@ namespace System.Collections.Immutable
         /// The immutable collection.
         /// </returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> keyComparer)
+        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer);
         }
@@ -53,7 +52,7 @@ namespace System.Collections.Immutable
         /// The immutable collection.
         /// </returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableDictionary<TKey, TValue> Create<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer);
         }
@@ -66,8 +65,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.AddRange(items);
         }
@@ -81,8 +79,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey> keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer).AddRange(items);
         }
@@ -97,8 +94,7 @@ namespace System.Collections.Immutable
         /// <param name="items">The items to prepopulate.</param>
         /// <returns>The new immutable collection.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer, IEnumerable<KeyValuePair<TKey, TValue>> items)
+        public static ImmutableDictionary<TKey, TValue> CreateRange<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer, IEnumerable<KeyValuePair<TKey, TValue>> items) where TKey : notnull
         {
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer).AddRange(items);
         }
@@ -110,7 +106,7 @@ namespace System.Collections.Immutable
         /// <typeparam name="TValue">The type of values stored by the dictionary.</typeparam>
         /// <returns>The new builder.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>()
+        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>() where TKey : notnull
         {
             return Create<TKey, TValue>().ToBuilder();
         }
@@ -123,7 +119,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer.</param>
         /// <returns>The new builder.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IEqualityComparer<TKey> keyComparer)
+        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return Create<TKey, TValue>(keyComparer).ToBuilder();
         }
@@ -137,7 +133,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer.</param>
         /// <returns>The new builder.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableDictionary<TKey, TValue>.Builder CreateBuilder<TKey, TValue>(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             return Create<TKey, TValue>(keyComparer, valueComparer).ToBuilder();
         }
@@ -155,7 +151,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer to use for the map.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             Requires.NotNull(source, nameof(source));
             Requires.NotNull(keySelector, nameof(keySelector));
@@ -171,7 +167,7 @@ namespace System.Collections.Immutable
         /// <param name="builder">The builder to create the immutable dictionary from.</param>
         /// <returns>An immutable dictionary.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this ImmutableDictionary<TKey, TValue>.Builder builder)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this ImmutableDictionary<TKey, TValue>.Builder builder) where TKey : notnull
         {
             Requires.NotNull(builder, nameof(builder));
 
@@ -190,7 +186,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use for the map.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IEqualityComparer<TKey> keyComparer)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableDictionary(source, keySelector, elementSelector, keyComparer, null);
         }
@@ -204,7 +200,7 @@ namespace System.Collections.Immutable
         /// <param name="keySelector">The function that will produce the key for the map from each sequence element.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TSource> ToImmutableDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        public static ImmutableDictionary<TKey, TSource> ToImmutableDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector) where TKey : notnull
         {
             return ToImmutableDictionary(source, keySelector, v => v, null, null);
         }
@@ -219,7 +215,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use for the map.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TSource> ToImmutableDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey> keyComparer)
+        public static ImmutableDictionary<TKey, TSource> ToImmutableDictionary<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableDictionary(source, keySelector, v => v, keyComparer, null);
         }
@@ -235,7 +231,7 @@ namespace System.Collections.Immutable
         /// <param name="elementSelector">The function that will produce the value for the map from each sequence element.</param>
         /// <returns>The immutable map.</returns>
         [Pure]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TSource, TKey, TValue>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TValue> elementSelector) where TKey : notnull
         {
             return ToImmutableDictionary(source, keySelector, elementSelector, null, null);
         }
@@ -250,8 +246,7 @@ namespace System.Collections.Immutable
         /// <param name="valueComparer">The value comparer to use for the immutable map.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer) where TKey : notnull
         {
             Requires.NotNull(source, nameof(source));
 
@@ -273,8 +268,7 @@ namespace System.Collections.Immutable
         /// <param name="keyComparer">The key comparer to use when building the immutable map.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey> keyComparer)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? keyComparer) where TKey : notnull
         {
             return ToImmutableDictionary(source, keyComparer, null);
         }
@@ -287,8 +281,7 @@ namespace System.Collections.Immutable
         /// <param name="source">The sequence of key=value pairs.</param>
         /// <returns>An immutable map.</returns>
         [Pure]
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source)
+        public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull
         {
             return ToImmutableDictionary(source, null, null);
         }
@@ -305,7 +298,7 @@ namespace System.Collections.Immutable
         ///   <c>true</c> if this map contains the key-value pair; otherwise, <c>false</c>.
         /// </returns>
         [Pure]
-        public static bool Contains<TKey, TValue>(this IImmutableDictionary<TKey, TValue> map, TKey key, TValue value)
+        public static bool Contains<TKey, TValue>(this IImmutableDictionary<TKey, TValue> map, TKey key, TValue value) where TKey : notnull
         {
             Requires.NotNull(map, nameof(map));
             Requires.NotNullAllowStructs(key, nameof(key));
@@ -319,9 +312,10 @@ namespace System.Collections.Immutable
         /// <param name="key">The key to search for.</param>
         /// <returns>The value for the key, or the default value of type <typeparamref name="TValue"/> if no matching key was found.</returns>
         [Pure]
-        public static TValue GetValueOrDefault<TKey, TValue>(this IImmutableDictionary<TKey, TValue> dictionary, TKey key)
+        [return: MaybeNull]
+        public static TValue GetValueOrDefault<TKey, TValue>(this IImmutableDictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull
         {
-            return GetValueOrDefault(dictionary, key, default(TValue));
+            return GetValueOrDefault(dictionary, key, default(TValue)!);
         }
 
         /// <summary>
@@ -336,13 +330,13 @@ namespace System.Collections.Immutable
         /// The value for the key, or <paramref name="defaultValue"/> if no matching key was found.
         /// </returns>
         [Pure]
-        public static TValue GetValueOrDefault<TKey, TValue>(this IImmutableDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
+        public static TValue GetValueOrDefault<TKey, TValue>(this IImmutableDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) where TKey : notnull
         {
             Requires.NotNull(dictionary, nameof(dictionary));
             Requires.NotNullAllowStructs(key, nameof(key));
 
             TValue value;
-            if (dictionary.TryGetValue(key, out value))
+            if (dictionary.TryGetValue(key, out value!))
             {
                 return value;
             }

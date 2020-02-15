@@ -2,12 +2,11 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.InteropServices.WindowsRuntime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
-    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetsWindows)'!='true'" />
     <Reference Include="System.Runtime" Condition="'$(TargetsWindows)'!='true'" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetsWindows)'!='true'">

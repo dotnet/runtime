@@ -2,6 +2,14 @@ trigger: none
 
 pr: none
 
+schedules:
+- cron: "0 5 * * *"
+  displayName: Mon through Sun at 9:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
 jobs:
 #
 # Checkout repository
@@ -10,7 +18,7 @@ jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
     buildConfig: checked
     platforms:
     - Linux_arm
@@ -38,3 +46,4 @@ jobs:
       testGroup: outerloop
       readyToRun: true
       displayNameArgs: R2R
+      liveLibrariesBuildConfig: Release

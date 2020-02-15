@@ -7,10 +7,10 @@ using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 
-#if !FEATURE_PAL
+#if !TARGET_UNIX
 using Dia;
 using Dia.Util;
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 using System.Globalization;
 
 /******************************************************************************
@@ -31,7 +31,7 @@ public abstract class SymbolProvider
                                         String keyBaseName);
 }
 
-#if !FEATURE_PAL
+#if !TARGET_UNIX
 public class PdbSymbolProvider : SymbolProvider
 {
     public PdbSymbolProvider(String symbolFilename, String dllFilename)
@@ -149,7 +149,7 @@ public class PdbSymbolProvider : SymbolProvider
     FileInfo fPDB = null;
     DiaFile df = null;
 }
-#endif // !FEATURE_PAL
+#endif // !TARGET_UNIX
 
 public class Shell
 {
@@ -295,7 +295,7 @@ Required:
 
         if (pdbFile != null)
         {
-#if FEATURE_PAL
+#if TARGET_UNIX
             throw new InvalidOperationException("PDBs are only supported on Windows.");
 #else
             PdbSymbolProvider pdbSymProvider = new PdbSymbolProvider(pdbFile, dllFile);

@@ -178,6 +178,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector256{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector256<T> AsVector256<T>(this Vector<T> value)
             where T : struct
         {
@@ -194,6 +195,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public static Vector<T> AsVector<T>(this Vector256<T> value)
             where T : struct
         {

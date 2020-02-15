@@ -520,7 +520,7 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
     int phnum = ehdr.e_phnum;
     assert(phnum != PN_XNUM);
     assert(ehdr.e_phentsize == sizeof(Phdr));
-#ifdef BIT64
+#ifdef HOST_64BIT
     assert(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
 #else
     assert(ehdr.e_ident[EI_CLASS] == ELFCLASS32);

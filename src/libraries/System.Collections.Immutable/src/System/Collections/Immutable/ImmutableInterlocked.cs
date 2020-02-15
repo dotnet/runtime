@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Collections.Immutable
@@ -121,7 +122,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[] oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref location.array);
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray));
@@ -131,7 +132,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -165,7 +166,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(transformer, nameof(transformer));
 
             bool successful;
-            T[] oldArray = Volatile.Read(ref location.array);
+            T[]? oldArray = Volatile.Read(ref location.array);
             do
             {
                 ImmutableArray<T> newImmutableArray = transformer(new ImmutableArray<T>(oldArray), transformerArgument);
@@ -175,7 +176,7 @@ namespace System.Collections.Immutable
                     return false;
                 }
 
-                T[] interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
+                T[]? interlockedResult = Interlocked.CompareExchange(ref location.array, newImmutableArray.array, oldArray);
                 successful = ReferenceEquals(oldArray, interlockedResult);
                 oldArray = interlockedResult; // we already have a volatile read that we can reuse for the next loop
             }
@@ -240,7 +241,7 @@ namespace System.Collections.Immutable
         /// <param name="valueFactory">The function to execute to obtain the value to insert into the dictionary if the key is not found.</param>
         /// <param name="factoryArgument">The argument to pass to the value factory.</param>
         /// <returns>The value obtained from the dictionary or <paramref name="valueFactory"/> if it was not present.</returns>
-        public static TValue GetOrAdd<TKey, TValue, TArg>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
+        public static TValue GetOrAdd<TKey, TValue, TArg>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument) where TKey : notnull
         {
             Requires.NotNull(valueFactory, nameof(valueFactory));
 
@@ -248,7 +249,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(map, nameof(location));
 
             TValue value;
-            if (map.TryGetValue(key, out value))
+            if (map.TryGetValue(key, out value!))
             {
                 return value;
             }
@@ -269,7 +270,7 @@ namespace System.Collections.Immutable
         /// This delegate will not be invoked more than once.
         /// </param>
         /// <returns>The value obtained from the dictionary or <paramref name="valueFactory"/> if it was not present.</returns>
-        public static TValue GetOrAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TValue> valueFactory)
+        public static TValue GetOrAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TValue> valueFactory) where TKey : notnull
         {
             Requires.NotNull(valueFactory, nameof(valueFactory));
 
@@ -277,7 +278,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(map, nameof(location));
 
             TValue value;
-            if (map.TryGetValue(key, out value))
+            if (map.TryGetValue(key, out value!))
             {
                 return value;
             }
@@ -295,7 +296,7 @@ namespace System.Collections.Immutable
         /// <param name="key">The key for the value to retrieve or add.</param>
         /// <param name="value">The value to add to the dictionary if one is not already present.</param>
         /// <returns>The value obtained from the dictionary or <paramref name="value"/> if it was not present.</returns>
-        public static TValue GetOrAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue value)
+        public static TValue GetOrAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue value) where TKey : notnull
         {
             var priorCollection = Volatile.Read(ref location);
             bool successful;
@@ -303,7 +304,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(priorCollection, nameof(location));
                 TValue oldValue;
-                if (priorCollection.TryGetValue(key, out oldValue))
+                if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     return oldValue;
                 }
@@ -330,7 +331,7 @@ namespace System.Collections.Immutable
         /// <param name="addValueFactory">The function that receives the key and returns a new value to add to the dictionary when no value previously exists.</param>
         /// <param name="updateValueFactory">The function that receives the key and prior value and returns the new value with which to update the dictionary.</param>
         /// <returns>The added or updated value.</returns>
-        public static TValue AddOrUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory)
+        public static TValue AddOrUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, Func<TKey, TValue> addValueFactory, Func<TKey, TValue, TValue> updateValueFactory) where TKey : notnull
         {
             Requires.NotNull(addValueFactory, nameof(addValueFactory));
             Requires.NotNull(updateValueFactory, nameof(updateValueFactory));
@@ -343,7 +344,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(priorCollection, nameof(location));
 
                 TValue oldValue;
-                if (priorCollection.TryGetValue(key, out oldValue))
+                if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
                 }
@@ -374,7 +375,7 @@ namespace System.Collections.Immutable
         /// <param name="addValue">The value to use if no previous value exists.</param>
         /// <param name="updateValueFactory">The function that receives the key and prior value and returns the new value with which to update the dictionary.</param>
         /// <returns>The added or updated value.</returns>
-        public static TValue AddOrUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory)
+        public static TValue AddOrUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue addValue, Func<TKey, TValue, TValue> updateValueFactory) where TKey : notnull
         {
             Requires.NotNull(updateValueFactory, nameof(updateValueFactory));
 
@@ -386,7 +387,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(priorCollection, nameof(location));
 
                 TValue oldValue;
-                if (priorCollection.TryGetValue(key, out oldValue))
+                if (priorCollection.TryGetValue(key, out oldValue!))
                 {
                     newValue = updateValueFactory(key, oldValue);
                 }
@@ -416,7 +417,7 @@ namespace System.Collections.Immutable
         /// <param name="key">The key to add, if is not already defined in the dictionary.</param>
         /// <param name="value">The value to add.</param>
         /// <returns><c>true</c> if the key was not previously set in the dictionary and the value was set; <c>false</c> otherwise.</returns>
-        public static bool TryAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue value)
+        public static bool TryAdd<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue value) where TKey : notnull
         {
             var priorCollection = Volatile.Read(ref location);
             bool successful;
@@ -448,7 +449,7 @@ namespace System.Collections.Immutable
         /// <param name="newValue">The new value to set.</param>
         /// <param name="comparisonValue">The value that must already be set in the dictionary in order for the update to succeed.</param>
         /// <returns><c>true</c> if the key and comparison value were present in the dictionary and the update was made; <c>false</c> otherwise.</returns>
-        public static bool TryUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue)
+        public static bool TryUpdate<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, TValue newValue, TValue comparisonValue) where TKey : notnull
         {
             var valueComparer = EqualityComparer<TValue>.Default;
             var priorCollection = Volatile.Read(ref location);
@@ -458,7 +459,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(priorCollection, nameof(location));
 
                 TValue priorValue;
-                if (!priorCollection.TryGetValue(key, out priorValue) || !valueComparer.Equals(priorValue, comparisonValue))
+                if (!priorCollection.TryGetValue(key, out priorValue!) || !valueComparer.Equals(priorValue, comparisonValue))
                 {
                     // The key isn't in the dictionary, or its current value doesn't match what the caller expected.
                     return false;
@@ -482,7 +483,7 @@ namespace System.Collections.Immutable
         /// <param name="key">The key to remove.</param>
         /// <param name="value">Receives the value from the pre-existing entry, if one exists.</param>
         /// <returns><c>true</c> if the key was found and removed; <c>false</c> otherwise.</returns>
-        public static bool TryRemove<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, out TValue value)
+        public static bool TryRemove<TKey, TValue>(ref ImmutableDictionary<TKey, TValue> location, TKey key, [MaybeNullWhen(false)] out TValue value) where TKey : notnull
         {
             var priorCollection = Volatile.Read(ref location);
             bool successful;
@@ -490,7 +491,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(priorCollection, nameof(location));
 
-                if (!priorCollection.TryGetValue(key, out value))
+                if (!priorCollection.TryGetValue(key, out value!))
                 {
                     return false;
                 }
@@ -515,7 +516,7 @@ namespace System.Collections.Immutable
         /// <param name="location">The variable or field to atomically update.</param>
         /// <param name="value">The value popped from the stack, if it was non-empty.</param>
         /// <returns><c>true</c> if an element was removed from the stack; <c>false</c> otherwise.</returns>
-        public static bool TryPop<T>(ref ImmutableStack<T> location, out T value)
+        public static bool TryPop<T>(ref ImmutableStack<T> location, [MaybeNullWhen(false)] out T value)
         {
             var priorCollection = Volatile.Read(ref location);
             bool successful;
@@ -525,7 +526,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T);
+                    value = default(T)!;
                     return false;
                 }
 
@@ -570,7 +571,7 @@ namespace System.Collections.Immutable
         /// <param name="location">The variable or field to atomically update.</param>
         /// <param name="value">Receives the value from the head of the queue, if the queue is non-empty.</param>
         /// <returns><c>true</c> if the queue was not empty and the head element was removed; <c>false</c> otherwise.</returns>
-        public static bool TryDequeue<T>(ref ImmutableQueue<T> location, out T value)
+        public static bool TryDequeue<T>(ref ImmutableQueue<T> location, [MaybeNullWhen(false)] out T value)
         {
             var priorCollection = Volatile.Read(ref location);
             bool successful;
@@ -580,7 +581,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T);
+                    value = default(T)!;
                     return false;
                 }
 

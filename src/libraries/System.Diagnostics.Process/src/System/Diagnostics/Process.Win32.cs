@@ -16,7 +16,7 @@ namespace System.Diagnostics
     {
         private bool _haveMainWindow;
         private IntPtr _mainWindowHandle;
-        private string _mainWindowTitle;
+        private string? _mainWindowTitle;
 
         private bool _haveResponding;
         private bool _responding;
@@ -315,23 +315,18 @@ namespace System.Diagnostics
 
         private bool WaitForInputIdleCore(int milliseconds)
         {
-            const int WAIT_OBJECT_0 = 0x00000000;
-            const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
-            const int WAIT_TIMEOUT = 0x00000102;
-
             bool idle;
             using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.SYNCHRONIZE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
             {
                 int ret = Interop.User32.WaitForInputIdle(handle, milliseconds);
                 switch (ret)
                 {
-                    case WAIT_OBJECT_0:
+                    case Interop.Kernel32.WAIT_OBJECT_0:
                         idle = true;
                         break;
-                    case WAIT_TIMEOUT:
+                    case Interop.Kernel32.WAIT_TIMEOUT:
                         idle = false;
                         break;
-                    case WAIT_FAILED:
                     default:
                         throw new InvalidOperationException(SR.InputIdleUnkownError);
                 }
@@ -354,11 +349,11 @@ namespace System.Diagnostics
         {
             get
             {
-                Interop.NtDll.PROCESS_BASIC_INFORMATION info = default;
-
                 using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
                 {
-                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.PROCESSINFOCLASS.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
+                    Interop.NtDll.PROCESS_BASIC_INFORMATION info;
+
+                    if (Interop.NtDll.NtQueryInformationProcess(handle, Interop.NtDll.ProcessBasicInformation, &info, (uint)sizeof(Interop.NtDll.PROCESS_BASIC_INFORMATION), out _) != 0)
                         throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                     return (int)info.InheritedFromUniqueProcessId;

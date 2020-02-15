@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,31 +17,31 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ModuleToken _methodToken;
 
-        private readonly SignatureContext _signatureContext;
-
         public DelegateCtorSignature(
             TypeDesc delegateType,
             IMethodNode targetMethod,
-            ModuleToken methodToken,
-            SignatureContext signatureContext)
+            ModuleToken methodToken)
         {
             _delegateType = delegateType;
             _targetMethod = targetMethod;
             _methodToken = methodToken;
-            _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)delegateType.Context;
+            compilerContext.EnsureLoadableType(delegateType);
+            compilerContext.EnsureLoadableMethod(targetMethod.Method);
         }
 
         public override int ClassCode => 99885741;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder builder = new ObjectDataSignatureBuilder();
             builder.AddSymbol(this);
 
             if (!relocsOnly)
             {
-                SignatureContext innerContext = builder.EmitFixup(r2rFactory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, _signatureContext);
+                SignatureContext innerContext = builder.EmitFixup(factory, ReadyToRunFixupKind.DelegateCtor, _methodToken.Module, factory.SignatureContext);
 
                 builder.EmitMethodSignature(
                     new MethodWithToken(_targetMethod.Method, _methodToken, constrainedType: null),
@@ -49,7 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     enforceOwningType: false,
                     innerContext,
                     isUnboxingStub: false,
-                    isInstantiatingStub: false);
+                    isInstantiatingStub: _targetMethod.Method.HasInstantiation);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
             }
@@ -73,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append($@"DelegateCtor(");
             sb.Append(nameMangler.GetMangledTypeName(_delegateType));
             sb.Append(" -> ");
-            sb.Append(nameMangler.GetMangledMethodName(_targetMethod.Method));
+            _targetMethod.AppendMangledName(nameMangler, sb);
             sb.Append("; ");
             sb.Append(_methodToken.ToString());
             sb.Append(")");
@@ -86,15 +86,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (result != 0)
                 return result;
 
-            result = comparer.Compare(_targetMethod.Method, otherNode._targetMethod.Method);
+            result = comparer.Compare(_targetMethod, otherNode._targetMethod);
             if (result != 0)
                 return result;
 
-            result = _methodToken.CompareTo(otherNode._methodToken);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
+            return _methodToken.CompareTo(otherNode._methodToken);
         }
     }
 }

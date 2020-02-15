@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,27 +12,27 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     public class NewObjectFixupSignature : Signature
     {
         private readonly TypeDesc _typeDesc;
-        private readonly SignatureContext _signatureContext;
 
-        public NewObjectFixupSignature(TypeDesc typeDesc, SignatureContext signatureContext)
+        public NewObjectFixupSignature(TypeDesc typeDesc)
         {
             _typeDesc = typeDesc;
-            _signatureContext = signatureContext;
+
+            // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
+            ((CompilerTypeSystemContext)typeDesc.Context).EnsureLoadableType(typeDesc);
         }
 
         public override int ClassCode => 551247760;
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
-            ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
             ObjectDataSignatureBuilder dataBuilder = new ObjectDataSignatureBuilder();
 
             if (!relocsOnly)
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = _signatureContext.GetTargetModule(_typeDesc);
-                SignatureContext innerContext = dataBuilder.EmitFixup(r2rFactory, ReadyToRunFixupKind.NewObject, targetModule, _signatureContext);
+                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_typeDesc);
+                SignatureContext innerContext = dataBuilder.EmitFixup(factory, ReadyToRunFixupKind.NewObject, targetModule, factory.SignatureContext);
                 dataBuilder.EmitTypeSignature(_typeDesc, innerContext);
             }
 
@@ -49,18 +49,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             NewObjectFixupSignature otherNode = (NewObjectFixupSignature)other;
-            int result = comparer.Compare(_typeDesc, otherNode._typeDesc);
-            if (result != 0)
-                return result;
-
-            return _signatureContext.CompareTo(otherNode._signatureContext, comparer);
-        }
-
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
-        {
-            DependencyList dependencies = new DependencyList();
-            dependencies.Add(factory.ConstructedTypeSymbol(_typeDesc), "Type constructed through new object fixup");
-            return dependencies;
+            return comparer.Compare(_typeDesc, otherNode._typeDesc);
         }
     }
 }

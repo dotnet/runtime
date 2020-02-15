@@ -27,7 +27,6 @@ namespace System.Dynamic
         /// <summary>
         /// The type to convert to.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Type Type { get; }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace System.Dynamic
         /// <param name="target">The target of the dynamic convert operation.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public abstract DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion);
+        public abstract DynamicMetaObject FallbackConvert(DynamicMetaObject target, DynamicMetaObject? errorSuggestion);
 
         /// <summary>
         /// Performs the binding of the dynamic convert operation.
@@ -59,7 +58,7 @@ namespace System.Dynamic
         /// <param name="target">The target of the dynamic convert operation.</param>
         /// <param name="args">An array of arguments of the dynamic convert operation.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
+        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[]? args)
         {
             ContractUtils.RequiresNotNull(target, nameof(target));
             ContractUtils.Requires(args == null || args.Length == 0, nameof(args));

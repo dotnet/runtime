@@ -36,7 +36,7 @@
     At that point restore and conflict resolution already happened therefore setting the item here has no side effects.
    -->
   <Target Name="_SetRuntimeFrameworksForTestAssemblies"
-          Condition="'$(SelfContained)' != 'true'"
+          Condition="'$(SelfContained)' != 'true' and '$(MSBuildProjectExtension)' != '.depproj'"
           BeforeTargets="GenerateBuildDependencyFile">
     <ItemGroup>
       <RuntimeFramework Include="Microsoft.NETCore.App" Version="$(ProductVersion)" />

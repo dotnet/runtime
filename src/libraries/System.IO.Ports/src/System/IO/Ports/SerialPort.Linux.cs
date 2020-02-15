@@ -32,12 +32,14 @@ namespace System.IO.Ports
                     // by checking for presence of device/id or device/of_node
                     // checking for that for non-ttyS entries is incorrect as some uart
                     // devices are incorrectly filtered out
-                    bool isTtyS = entry.Name.StartsWith("ttyS");
+                    bool isTtyS = entry.Name.StartsWith("ttyS", StringComparison.Ordinal);
+                    bool isTtyGS = !isTtyS && entry.Name.StartsWith("ttyGS", StringComparison.Ordinal);
                     if ((isTtyS &&
                          (File.Exists(entry.FullName + "/device/id") ||
                           Directory.Exists(entry.FullName + "/device/of_node"))) ||
                         (!isTtyS && Directory.Exists(entry.FullName + "/device/tty")) ||
-                        Directory.Exists(sysUsbDir + entry.Name))
+                        Directory.Exists(sysUsbDir + entry.Name) ||
+                        (isTtyGS && (File.Exists(entry.FullName + "/dev"))))
                     {
                         string deviceName = devDir + entry.Name;
                         if (File.Exists(deviceName))
@@ -56,11 +58,11 @@ namespace System.IO.Ports
                 var ports = new List<string>();
                 foreach (var portName in Directory.EnumerateFiles(devDir, "tty*"))
                 {
-                    if (portName.StartsWith("/dev/ttyS") ||
-                        portName.StartsWith("/dev/ttyUSB") ||
-                        portName.StartsWith("/dev/ttyACM") ||
-                        portName.StartsWith("/dev/ttyAMA") ||
-                        portName.StartsWith("/dev/ttymxc"))
+                    if (portName.StartsWith("/dev/ttyS", StringComparison.Ordinal) ||
+                        portName.StartsWith("/dev/ttyUSB", StringComparison.Ordinal) ||
+                        portName.StartsWith("/dev/ttyACM", StringComparison.Ordinal) ||
+                        portName.StartsWith("/dev/ttyAMA", StringComparison.Ordinal) ||
+                        portName.StartsWith("/dev/ttymxc", StringComparison.Ordinal))
                     {
                         ports.Add(portName);
                     }

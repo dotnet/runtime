@@ -11,7 +11,7 @@
 
 #include <windows.h>
 #include <winerror.h>
-#include "strongname.h"
+#include "strongnameinternal.h"
 
 #include "fusionhelpers.hpp"
 #include "fusionassemblyname.hpp"
@@ -26,26 +26,6 @@
 #define DISPLAY_NAME_DELIMITER_STRING W(",")
 #define VERSION_STRING_SEGMENTS 4
 #define REMAINING_BUFFER_SIZE ((*pccDisplayName) - (pszBuf - szDisplayName))
-
-// ---------------------------------------------------------------------------
-// Private Helpers
-// ---------------------------------------------------------------------------
-namespace
-{
-    HRESULT GetPublicKeyTokenFromPKBlob(LPBYTE pbPublicKeyToken, DWORD cbPublicKeyToken,
-                                        LPBYTE *ppbSN, LPDWORD pcbSN)
-    {
-        HRESULT hr = S_OK;
-
-        // Generate the hash of the public key.
-        if (!StrongNameTokenFromPublicKey(pbPublicKeyToken, cbPublicKeyToken, ppbSN, pcbSN))
-        {
-            hr = StrongNameErrorInfo();
-        }
-
-        return hr;
-    }
-};
 
 // ---------------------------------------------------------------------------
 // CPropertyArray ctor
@@ -353,7 +333,7 @@ HRESULT CAssemblyName::SetPropertyInternal(DWORD  PropertyId,
         if (pvProperty && cbProperty)
         {
             // Generate the public key token from the pk.
-            if (FAILED(hr = GetPublicKeyTokenFromPKBlob((LPBYTE) pvProperty, cbProperty, &pbSN, &cbSN)))
+            if (FAILED(hr = StrongNameTokenFromPublicKey((LPBYTE) pvProperty, cbProperty, &pbSN, &cbSN)))
                 goto exit;
 
             // Set the public key token property.

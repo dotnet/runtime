@@ -416,7 +416,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_HAS_NEWARRAY        0x00400000 // BB contains 'new' of an array
 #define BBF_HAS_NEWOBJ          0x00800000 // BB contains 'new' of an object type.
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #define BBF_FINALLY_TARGET      0x01000000 // BB is the target of a finally return: where a finally will return during
                                            // non-exceptional flow. Because the ARM calling sequence for calling a
@@ -425,7 +425,7 @@ struct BasicBlock : private LIR::Range
                                            // generate correct code at the finally target, to allow for proper stack
                                            // unwind from within a non-exceptional call to a finally.
 
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #define BBF_BACKWARD_JUMP       0x02000000 // BB is surrounded by a backward jump/switch arc
 #define BBF_RETLESS_CALL        0x04000000 // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
@@ -465,7 +465,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_COMPACT_UPD                                                                                                \
     (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
-     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ)
+     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
 
 // Flags a block should not have had before it is split.
 
@@ -481,14 +481,15 @@ struct BasicBlock : private LIR::Range
 
 // Flags gained by the bottom block when a block is split.
 // Note, this is a conservative guess.
-// For example, the bottom block might or might not have BBF_HAS_NEWARRAY,
-// but we assume it has BBF_HAS_NEWARRAY.
+// For example, the bottom block might or might not have BBF_HAS_NEWARRAY or BBF_HAS_NULLCHECK,
+// but we assume it has BBF_HAS_NEWARRAY and BBF_HAS_NULLCHECK.
 
 // TODO: Should BBF_RUN_RARELY be added to BBF_SPLIT_GAINED ?
 
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END)
+     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
+     BBF_HAS_VTABREF)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
@@ -650,43 +651,11 @@ struct BasicBlock : private LIR::Range
     bool isValid();
 
     // Returns "true" iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
-    // a block corresponding to an exit from the try of a try/finally.  In the flow graph,
-    // this becomes a block that calls the finally, and a second, immediately
-    // following empty block (in the bbNext chain) to which the finally will return, and which
-    // branches unconditionally to the next block to be executed outside the try/finally.
-    // Note that code is often generated differently than this description. For example, on ARM,
-    // the target of the BBJ_ALWAYS is loaded in LR (the return register), and a direct jump is
-    // made to the 'finally'. The effect is that the 'finally' returns directly to the target of
-    // the BBJ_ALWAYS. A "retless" BBJ_CALLFINALLY is one that has no corresponding BBJ_ALWAYS.
-    // This can happen if the finally is known to not return (e.g., it contains a 'throw'). In
-    // that case, the BBJ_CALLFINALLY flags has BBF_RETLESS_CALL set. Note that ARM never has
-    // "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
-    // generating code.
-    bool isBBCallAlwaysPair()
-    {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-        if (this->bbJumpKind == BBJ_CALLFINALLY)
-#else
-        if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
-#endif
-        {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-            // On ARM, there are no retless BBJ_CALLFINALLY.
-            assert(!(this->bbFlags & BBF_RETLESS_CALL));
-#endif
-            // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
-            assert(this->bbNext != nullptr);
-            assert(this->bbNext->bbJumpKind == BBJ_ALWAYS);
-            assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
-            assert(this->bbNext->isEmpty());
-
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
+    // a block corresponding to an exit from the try of a try/finally.
+    bool isBBCallAlwaysPair();
+    // Returns "true" iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair --
+    // a block corresponding to an exit from the try of a try/finally.
+    bool isBBCallAlwaysPairTail();
 
     BBjumpKinds bbJumpKind; // jump (if any) at the end of this block
 
@@ -997,9 +966,9 @@ struct BasicBlock : private LIR::Range
 
     void* bbEmitCookie;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     void* bbUnwindNopEmitCookie;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef VERIFIER
     stackDesc bbStackIn;  // stack descriptor for  input
@@ -1189,8 +1158,6 @@ struct BasicBlock : private LIR::Range
         return false;
     }
 #endif // DEBUG
-
-    static void DisplayStaticSizes(FILE* fout);
 };
 
 template <>

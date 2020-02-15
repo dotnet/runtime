@@ -19,14 +19,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52BE9F68-69EC-44AA-806E-11EFB57D9B4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B8FECC6-34A1-48FE-BA75-99572D2D6DB2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

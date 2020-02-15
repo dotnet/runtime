@@ -14,8 +14,8 @@ namespace System.ComponentModel.Composition.Hosting
     [DebuggerTypeProxy(typeof(CompositionScopeDefinitionDebuggerProxy))]
     public class CompositionScopeDefinition : ComposablePartCatalog, INotifyComposablePartCatalogChanged
     {
-        private ComposablePartCatalog _catalog;
-        private IEnumerable<ExportDefinition> _publicSurface = null;
+        private ComposablePartCatalog? _catalog;
+        private IEnumerable<ExportDefinition>? _publicSurface = null;
         private IEnumerable<CompositionScopeDefinition> _children = Enumerable.Empty<CompositionScopeDefinition>();
         private volatile int _isDisposed = 0;
 
@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <param name="catalog">The catalog.</param>
         /// <param name="children">The children.</param>
-        private void InitializeCompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition> children, IEnumerable<ExportDefinition> publicSurface)
+        private void InitializeCompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition>? children, IEnumerable<ExportDefinition>? publicSurface)
         {
             _catalog = catalog;
             if (children != null)
@@ -69,8 +69,7 @@ namespace System.ComponentModel.Composition.Hosting
                 _publicSurface = publicSurface;
             }
 
-            INotifyComposablePartCatalogChanged notifyCatalog = _catalog as INotifyComposablePartCatalogChanged;
-            if (notifyCatalog != null)
+            if (_catalog is INotifyComposablePartCatalogChanged notifyCatalog)
             {
                 notifyCatalog.Changed += OnChangedInternal;
                 notifyCatalog.Changing += OnChangingInternal;
@@ -89,8 +88,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0)
                     {
-                        INotifyComposablePartCatalogChanged notifyCatalog = _catalog as INotifyComposablePartCatalogChanged;
-                        if (notifyCatalog != null)
+                        if (_catalog is INotifyComposablePartCatalogChanged notifyCatalog)
                         {
                             notifyCatalog.Changed -= OnChangedInternal;
                             notifyCatalog.Changing -= OnChangingInternal;
@@ -150,6 +148,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>The children.</value>
         public override IEnumerator<ComposablePartDefinition> GetEnumerator()
         {
+            Debug.Assert(_catalog != null);
             return _catalog.GetEnumerator();
         }
 
@@ -181,6 +180,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
 
+            Debug.Assert(_catalog != null);
             return _catalog.GetExports(definition);
         }
 
@@ -213,12 +213,12 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Notify when the contents of the Catalog has changed.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changed;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changed;
 
         /// <summary>
         /// Notify when the contents of the Catalog is changing.
         /// </summary>
-        public event EventHandler<ComposablePartCatalogChangeEventArgs> Changing;
+        public event EventHandler<ComposablePartCatalogChangeEventArgs>? Changing;
 
         /// <summary>
         /// Raises the <see cref="Changed"/> event.
@@ -226,7 +226,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changedEvent = Changed;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
             if (changedEvent != null)
             {
                 changedEvent.Invoke(this, e);
@@ -239,19 +239,19 @@ namespace System.ComponentModel.Composition.Hosting
         /// <param name="e">The <see cref="System.ComponentModel.Composition.Hosting.ComposablePartCatalogChangeEventArgs"/> instance containing the event data.</param>
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
-            EventHandler<ComposablePartCatalogChangeEventArgs> changingEvent = Changing;
+            EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
             if (changingEvent != null)
             {
                 changingEvent.Invoke(this, e);
             }
         }
 
-        private void OnChangedInternal(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnChangedInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             OnChanged(e);
         }
 
-        private void OnChangingInternal(object sender, ComposablePartCatalogChangeEventArgs e)
+        private void OnChangingInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             OnChanging(e);
         }

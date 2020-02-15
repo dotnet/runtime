@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netfx-Debug;netfx-Release;netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>netcoreapp3.0;netstandard2.0;net461;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\ApplicationIdentity.cs" />
@@ -180,13 +182,13 @@
     <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
-    <Compile Include="$(CoreLibSharedDir)System\Security\IStackWalk.cs">
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\IStackWalk.cs">
       <Link>System\Security\IStackWalk.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Security\PermissionSet.cs">
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\PermissionSet.cs">
       <Link>System\Security\PermissionSet.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Security\Permissions\PermissionState.cs">
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Security\Permissions\PermissionState.cs">
       <Link>System\Security\Permissions\PermissionState.cs</Link>
     </Compile>
   </ItemGroup>

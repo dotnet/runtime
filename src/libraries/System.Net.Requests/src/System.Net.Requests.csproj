@@ -3,11 +3,8 @@
     <RootNamespace>System.Net.Requests</RootNamespace>
     <AssemblyName>System.Net.Requests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Net\AuthenticationManager.cs" />
     <Compile Include="System\Net\Authorization.cs" />
@@ -84,8 +81,8 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-      <Link>System\Threading\Tasks\TaskToApm.cs</Link>
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
@@ -108,8 +105,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Http" />
@@ -118,7 +113,6 @@
     <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Net.WebHeaderCollection" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
@@ -127,7 +121,6 @@
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

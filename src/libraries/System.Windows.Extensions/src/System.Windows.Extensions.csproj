@@ -2,7 +2,8 @@
   <PropertyGroup>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_System_Windows_Extensions</GeneratePlatformNotSupportedAssemblyMessage>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp3.0-Debug;netcoreapp3.0-Release;netcoreapp3.0-Windows_NT-Debug;netcoreapp3.0-Windows_NT-Release</Configurations>
+    <TargetFrameworks>netcoreapp3.0-Windows_NT;netcoreapp3.0;$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertAddCertificateLinkToStore.cs">
@@ -56,12 +57,12 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2UI.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\SafeX509Handles.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Utils.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>CoreLib\System\Text\ValueStringBuilder.cs</Link>
-    </Compile>
     <Compile Include="System\Drawing\FontConverter.cs" />
     <Compile Include="System\Drawing\IconConverter.cs" />
     <Compile Include="System\Drawing\ImageConverter.cs" />

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Dynamic.Utils;
 using System.Linq.Expressions;
@@ -17,23 +18,22 @@ namespace System.Dynamic
     /// <summary>
     /// Represents an object with members that can be dynamically added and removed at runtime.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
-    public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object>, INotifyPropertyChanged
+    public sealed class ExpandoObject : IDynamicMetaObjectProvider, IDictionary<string, object?>, INotifyPropertyChanged
     {
         private static readonly MethodInfo s_expandoTryGetValue =
-            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryGetValue));
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryGetValue))!;
 
         private static readonly MethodInfo s_expandoTrySetValue =
-            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTrySetValue));
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTrySetValue))!;
 
         private static readonly MethodInfo s_expandoTryDeleteValue =
-            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryDeleteValue));
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoTryDeleteValue))!;
 
         private static readonly MethodInfo s_expandoPromoteClass =
-            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoPromoteClass));
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoPromoteClass))!;
 
         private static readonly MethodInfo s_expandoCheckVersion =
-            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoCheckVersion));
+            typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.ExpandoCheckVersion))!;
 
         internal readonly object LockObject;                          // the read-only field is used for locking the Expando object
         private ExpandoData _data;                                    // the data currently being held by the Expando object
@@ -44,7 +44,7 @@ namespace System.Dynamic
         internal const int AmbiguousMatchFound = -2;        // The value is used to indicate there exists ambiguous match in the Expando object
         internal const int NoMatch = -1;                    // The value is used to indicate there is no matching member
 
-        private PropertyChangedEventHandler _propertyChanged;
+        private PropertyChangedEventHandler? _propertyChanged;
 
         /// <summary>
         /// Creates a new ExpandoObject with no members.
@@ -62,7 +62,7 @@ namespace System.Dynamic
         /// class has changed a full lookup for the slot will be performed and the correct
         /// value will be retrieved.
         /// </summary>
-        internal bool TryGetValue(object indexClass, int index, string name, bool ignoreCase, out object value)
+        internal bool TryGetValue(object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             // read the data now.  The data is immutable so we get a consistent view.
             // If there's a concurrent writer they will replace data and it just appears
@@ -94,7 +94,7 @@ namespace System.Dynamic
 
             // Capture the value into a temp, so it doesn't get mutated after we check
             // for Uninitialized.
-            object temp = data[index];
+            object? temp = data[index];
             if (temp == Uninitialized)
             {
                 value = null;
@@ -112,10 +112,10 @@ namespace System.Dynamic
         /// not have the provided slot then the Expando's class will change. Only case sensitive
         /// setter is supported in ExpandoObject.
         /// </summary>
-        internal void TrySetValue(object indexClass, int index, object value, string name, bool ignoreCase, bool add)
+        internal void TrySetValue(object? indexClass, int index, object? value, string name, bool ignoreCase, bool add)
         {
             ExpandoData data;
-            object oldValue;
+            object? oldValue;
 
             lock (LockObject)
             {
@@ -172,7 +172,7 @@ namespace System.Dynamic
             }
 
             // Notify property changed outside the lock
-            PropertyChangedEventHandler propertyChanged = _propertyChanged;
+            PropertyChangedEventHandler? propertyChanged = _propertyChanged;
             if (propertyChanged != null && value != oldValue)
             {
                 propertyChanged(this, new PropertyChangedEventArgs(data.Class.Keys[index]));
@@ -182,7 +182,7 @@ namespace System.Dynamic
         /// <summary>
         /// Deletes the data stored for the specified class at the specified index.
         /// </summary>
-        internal bool TryDeleteValue(object indexClass, int index, string name, bool ignoreCase, object deleteValue)
+        internal bool TryDeleteValue(object? indexClass, int index, string name, bool ignoreCase, object? deleteValue)
         {
             ExpandoData data;
             lock (LockObject)
@@ -205,7 +205,7 @@ namespace System.Dynamic
                     return false;
                 }
 
-                object oldValue = data[index];
+                object? oldValue = data[index];
                 if (oldValue == Uninitialized)
                 {
                     return false;
@@ -299,14 +299,14 @@ namespace System.Dynamic
         #endregion
 
         #region Helper methods
-        private void TryAddMember(string key, object value)
+        private void TryAddMember(string key, object? value)
         {
             ContractUtils.RequiresNotNull(key, nameof(key));
             // Pass null to the class, which forces lookup.
             TrySetValue(null, -1, value, key, ignoreCase: false, add: true);
         }
 
-        private bool TryGetValueForKey(string key, out object value)
+        private bool TryGetValueForKey(string key, out object? value)
         {
             // Pass null to the class, which forces lookup.
             return TryGetValue(null, -1, key, ignoreCase: false, value: out value);
@@ -486,7 +486,7 @@ namespace System.Dynamic
 
         [DebuggerTypeProxy(typeof(ValueCollectionDebugView))]
         [DebuggerDisplay("Count = {Count}")]
-        private class ValueCollection : ICollection<object>
+        private class ValueCollection : ICollection<object?>
         {
             private readonly ExpandoObject _expando;
             private readonly int _expandoVersion;
@@ -515,7 +515,7 @@ namespace System.Dynamic
 
             #region ICollection<string> Members
 
-            public void Add(object item)
+            public void Add(object? item)
             {
                 throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
@@ -525,7 +525,7 @@ namespace System.Dynamic
                 throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
 
-            public bool Contains(object item)
+            public bool Contains(object? item)
             {
                 lock (_expando.LockObject)
                 {
@@ -545,7 +545,7 @@ namespace System.Dynamic
                 }
             }
 
-            public void CopyTo(object[] array, int arrayIndex)
+            public void CopyTo(object?[] array, int arrayIndex)
             {
                 ContractUtils.RequiresNotNull(array, nameof(array));
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _expandoCount, nameof(arrayIndex), nameof(Count));
@@ -574,7 +574,7 @@ namespace System.Dynamic
 
             public bool IsReadOnly => true;
 
-            public bool Remove(object item)
+            public bool Remove(object? item)
             {
                 throw System.Linq.Expressions.Error.CollectionReadOnly();
             }
@@ -583,7 +583,7 @@ namespace System.Dynamic
 
             #region IEnumerable<string> Members
 
-            public IEnumerator<object> GetEnumerator()
+            public IEnumerator<object?> GetEnumerator()
             {
                 ExpandoData data = _expando._data;
                 for (int i = 0; i < data.Class.Keys.Length; i++)
@@ -591,7 +591,7 @@ namespace System.Dynamic
                     CheckVersion();
                     // Capture the value into a temp so we don't inadvertently
                     // return Uninitialized.
-                    object temp = data[i];
+                    object? temp = data[i];
                     if (temp != Uninitialized)
                     {
                         yield return temp;
@@ -615,16 +615,15 @@ namespace System.Dynamic
 
         #region IDictionary<string, object> Members
 
-        ICollection<string> IDictionary<string, object>.Keys => new KeyCollection(this);
+        ICollection<string> IDictionary<string, object?>.Keys => new KeyCollection(this);
 
-        ICollection<object> IDictionary<string, object>.Values => new ValueCollection(this);
+        ICollection<object?> IDictionary<string, object?>.Values => new ValueCollection(this);
 
-        object IDictionary<string, object>.this[string key]
+        object? IDictionary<string, object?>.this[string key]
         {
             get
             {
-                object value;
-                if (!TryGetValueForKey(key, out value))
+                if (!TryGetValueForKey(key, out object? value))
                 {
                     throw System.Linq.Expressions.Error.KeyDoesNotExistInExpando(key);
                 }
@@ -638,12 +637,12 @@ namespace System.Dynamic
             }
         }
 
-        void IDictionary<string, object>.Add(string key, object value)
+        void IDictionary<string, object?>.Add(string key, object? value)
         {
             this.TryAddMember(key, value);
         }
 
-        bool IDictionary<string, object>.ContainsKey(string key)
+        bool IDictionary<string, object?>.ContainsKey(string key)
         {
             ContractUtils.RequiresNotNull(key, nameof(key));
 
@@ -652,14 +651,14 @@ namespace System.Dynamic
             return index >= 0 && data[index] != Uninitialized;
         }
 
-        bool IDictionary<string, object>.Remove(string key)
+        bool IDictionary<string, object?>.Remove(string key)
         {
             ContractUtils.RequiresNotNull(key, nameof(key));
             // Pass null to the class, which forces lookup.
             return TryDeleteValue(null, -1, key, ignoreCase: false, deleteValue: Uninitialized);
         }
 
-        bool IDictionary<string, object>.TryGetValue(string key, out object value)
+        bool IDictionary<string, object?>.TryGetValue(string key, out object? value)
         {
             return TryGetValueForKey(key, out value);
         }
@@ -668,16 +667,16 @@ namespace System.Dynamic
 
         #region ICollection<KeyValuePair<string, object>> Members
 
-        int ICollection<KeyValuePair<string, object>>.Count => _count;
+        int ICollection<KeyValuePair<string, object?>>.Count => _count;
 
-        bool ICollection<KeyValuePair<string, object>>.IsReadOnly => false;
+        bool ICollection<KeyValuePair<string, object?>>.IsReadOnly => false;
 
-        void ICollection<KeyValuePair<string, object>>.Add(KeyValuePair<string, object> item)
+        void ICollection<KeyValuePair<string, object?>>.Add(KeyValuePair<string, object?> item)
         {
             TryAddMember(item.Key, item.Value);
         }
 
-        void ICollection<KeyValuePair<string, object>>.Clear()
+        void ICollection<KeyValuePair<string, object?>>.Clear()
         {
             // We remove both class and data!
             ExpandoData data;
@@ -702,10 +701,9 @@ namespace System.Dynamic
             }
         }
 
-        bool ICollection<KeyValuePair<string, object>>.Contains(KeyValuePair<string, object> item)
+        bool ICollection<KeyValuePair<string, object?>>.Contains(KeyValuePair<string, object?> item)
         {
-            object value;
-            if (!TryGetValueForKey(item.Key, out value))
+            if (!TryGetValueForKey(item.Key, out object? value))
             {
                 return false;
             }
@@ -713,7 +711,7 @@ namespace System.Dynamic
             return object.Equals(value, item.Value);
         }
 
-        void ICollection<KeyValuePair<string, object>>.CopyTo(KeyValuePair<string, object>[] array, int arrayIndex)
+        void ICollection<KeyValuePair<string, object?>>.CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
             ContractUtils.RequiresNotNull(array, nameof(array));
 
@@ -721,14 +719,14 @@ namespace System.Dynamic
             lock (LockObject)
             {
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _count, nameof(arrayIndex), nameof(ICollection<KeyValuePair<string, object>>.Count));
-                foreach (KeyValuePair<string, object> item in this)
+                foreach (KeyValuePair<string, object?> item in this)
                 {
                     array[arrayIndex++] = item;
                 }
             }
         }
 
-        bool ICollection<KeyValuePair<string, object>>.Remove(KeyValuePair<string, object> item)
+        bool ICollection<KeyValuePair<string, object?>>.Remove(KeyValuePair<string, object?> item)
         {
             return TryDeleteValue(null, -1, item.Key, ignoreCase: false, deleteValue: item.Value);
         }
@@ -737,7 +735,7 @@ namespace System.Dynamic
 
         #region IEnumerable<KeyValuePair<string, object>> Member
 
-        IEnumerator<KeyValuePair<string, object>> IEnumerable<KeyValuePair<string, object>>.GetEnumerator()
+        IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator()
         {
             ExpandoData data = _data;
             return GetExpandoEnumerator(data, data.Version);
@@ -751,7 +749,7 @@ namespace System.Dynamic
 
         // Note: takes the data and version as parameters so they will be
         // captured before the first call to MoveNext().
-        private IEnumerator<KeyValuePair<string, object>> GetExpandoEnumerator(ExpandoData data, int version)
+        private IEnumerator<KeyValuePair<string, object?>> GetExpandoEnumerator(ExpandoData data, int version)
         {
             for (int i = 0; i < data.Class.Keys.Length; i++)
             {
@@ -764,10 +762,10 @@ namespace System.Dynamic
                 }
                 // Capture the value into a temp so we don't inadvertently
                 // return Uninitialized.
-                object temp = data[i];
+                object? temp = data[i];
                 if (temp != Uninitialized)
                 {
-                    yield return new KeyValuePair<string, object>(data.Class.Keys[i], temp);
+                    yield return new KeyValuePair<string, object?>(data.Class.Keys[i], temp);
                 }
             }
         }
@@ -783,7 +781,7 @@ namespace System.Dynamic
             {
             }
 
-            private DynamicMetaObject BindGetOrInvokeMember(DynamicMetaObjectBinder binder, string name, bool ignoreCase, DynamicMetaObject fallback, Func<DynamicMetaObject, DynamicMetaObject> fallbackInvoke)
+            private DynamicMetaObject BindGetOrInvokeMember(DynamicMetaObjectBinder binder, string name, bool ignoreCase, DynamicMetaObject fallback, Func<DynamicMetaObject, DynamicMetaObject>? fallbackInvoke)
             {
                 ExpandoClass klass = Value.Class;
 
@@ -858,7 +856,7 @@ namespace System.Dynamic
                 ExpandoClass klass;
                 int index;
 
-                ExpandoClass originalClass = GetClassEnsureIndex(binder.Name, binder.IgnoreCase, Value, out klass, out index);
+                ExpandoClass? originalClass = GetClassEnsureIndex(binder.Name, binder.IgnoreCase, Value, out klass, out index);
 
                 return AddDynamicTestAndDefer(
                     binder,
@@ -909,7 +907,7 @@ namespace System.Dynamic
                 var klass = expandoData.Class;
                 for (int i = 0; i < klass.Keys.Length; i++)
                 {
-                    object val = expandoData[i];
+                    object? val = expandoData[i];
                     if (val != ExpandoObject.Uninitialized)
                     {
                         yield return klass.Keys[i];
@@ -921,7 +919,7 @@ namespace System.Dynamic
             /// Adds a dynamic test which checks if the version has changed.  The test is only necessary for
             /// performance as the methods will do the correct thing if called with an incorrect version.
             /// </summary>
-            private DynamicMetaObject AddDynamicTestAndDefer(DynamicMetaObjectBinder binder, ExpandoClass klass, ExpandoClass originalClass, DynamicMetaObject succeeds)
+            private DynamicMetaObject AddDynamicTestAndDefer(DynamicMetaObjectBinder binder, ExpandoClass klass, ExpandoClass? originalClass, DynamicMetaObject succeeds)
             {
                 Expression ifTestSucceeds = succeeds.Expression;
                 if (originalClass != null)
@@ -964,7 +962,7 @@ namespace System.Dynamic
             /// this returns both the original and desired new class.  A rule is created which includes the test for the
             /// original class, the promotion to the new class, and the set/delete based on the class post-promotion.
             /// </summary>
-            private ExpandoClass GetClassEnsureIndex(string name, bool caseInsensitive, ExpandoObject obj, out ExpandoClass klass, out int index)
+            private ExpandoClass? GetClassEnsureIndex(string name, bool caseInsensitive, ExpandoObject obj, out ExpandoClass klass, out int index)
             {
                 ExpandoClass originalClass = Value.Class;
 
@@ -1015,7 +1013,7 @@ namespace System.Dynamic
                 return BindingRestrictions.GetTypeRestriction(this);
             }
 
-            public new ExpandoObject Value => (ExpandoObject)base.Value;
+            public new ExpandoObject Value => (ExpandoObject)base.Value!;
         }
 
         #endregion
@@ -1042,12 +1040,12 @@ namespace System.Dynamic
             /// Expando._data must be locked when mutating the value.  Otherwise a copy of it
             /// could be made and lose values.
             /// </summary>
-            private readonly object[] _dataArray;
+            private readonly object?[] _dataArray;
 
             /// <summary>
             /// Indexer for getting/setting the data
             /// </summary>
-            internal object this[int index]
+            internal object? this[int index]
             {
                 get
                 {
@@ -1083,7 +1081,7 @@ namespace System.Dynamic
             /// <summary>
             /// Constructs a new ExpandoData object with the specified class and data.
             /// </summary>
-            internal ExpandoData(ExpandoClass klass, object[] data, int version)
+            internal ExpandoData(ExpandoClass klass, object?[] data, int version)
             {
                 Class = klass;
                 _dataArray = data;
@@ -1127,7 +1125,7 @@ namespace System.Dynamic
 
         #region INotifyPropertyChanged
 
-        event PropertyChangedEventHandler INotifyPropertyChanged.PropertyChanged
+        event PropertyChangedEventHandler? INotifyPropertyChanged.PropertyChanged
         {
             add { _propertyChanged += value; }
             remove { _propertyChanged -= value; }
@@ -1156,7 +1154,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="value">The out parameter containing the value of the member.</param>
         /// <returns>True if the member exists in the expando object, otherwise false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoTryGetValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase, out object value)
+        public static bool ExpandoTryGetValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase, out object? value)
         {
             return expando.TryGetValue(indexClass, index, name, ignoreCase, out value);
         }
@@ -1174,7 +1172,7 @@ namespace System.Runtime.CompilerServices
         /// Returns the index for the set member.
         /// </returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static object ExpandoTrySetValue(ExpandoObject expando, object indexClass, int index, object value, string name, bool ignoreCase)
+        public static object? ExpandoTrySetValue(ExpandoObject expando, object? indexClass, int index, object? value, string name, bool ignoreCase)
         {
             expando.TrySetValue(indexClass, index, value, name, ignoreCase, false);
             return value;
@@ -1190,7 +1188,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         /// <returns>true if the item was successfully removed; otherwise, false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoTryDeleteValue(ExpandoObject expando, object indexClass, int index, string name, bool ignoreCase)
+        public static bool ExpandoTryDeleteValue(ExpandoObject expando, object? indexClass, int index, string name, bool ignoreCase)
         {
             return expando.TryDeleteValue(indexClass, index, name, ignoreCase, ExpandoObject.Uninitialized);
         }
@@ -1202,7 +1200,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="version">The version to check.</param>
         /// <returns>true if the version is equal; otherwise, false.</returns>
         [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
-        public static bool ExpandoCheckVersion(ExpandoObject expando, object version)
+        public static bool ExpandoCheckVersion(ExpandoObject expando, object? version)
         {
             return expando.Class == version;
         }

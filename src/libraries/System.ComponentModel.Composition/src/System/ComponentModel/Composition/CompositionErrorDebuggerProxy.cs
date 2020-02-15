@@ -23,12 +23,12 @@ namespace System.ComponentModel.Composition
             get { return _error.Description; }
         }
 
-        public Exception Exception
+        public Exception? Exception
         {
             get { return _error.Exception; }
         }
 
-        public ICompositionElement Element
+        public ICompositionElement? Element
         {
             get { return _error.Element; }
         }

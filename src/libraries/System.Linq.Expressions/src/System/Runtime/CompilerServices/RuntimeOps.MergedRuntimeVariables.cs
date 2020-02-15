@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices
 
             public int Count => _indexes.Length;
 
-            public object this[int index]
+            public object? this[int index]
             {
                 get
                 {

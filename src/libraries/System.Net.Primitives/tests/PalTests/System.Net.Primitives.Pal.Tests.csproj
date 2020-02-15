@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
@@ -44,8 +44,11 @@
     <Compile Include="$(CommonPath)System\Marvin.cs">
       <Link>ProductionCode\Common\System\Marvin.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>ProductionCode\Common\System\Text\StringBuilderCache.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -78,9 +81,6 @@
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs">
       <Link>ProductionCode\System\Net\SocketException.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </Compile>
@@ -101,15 +101,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.Constants.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs">
       <Link>ProductionCode\Common\Interop\Windows\NtDll\Interop.NtStatus.cs</Link>
@@ -137,7 +128,7 @@
     <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs">
       <Link>ProductionCode\Common\Interop\Interop.CheckedAccess.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
       <Link>ProductionCode\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
@@ -146,7 +137,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetDomainName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetDomainName.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.GetHostName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetNameInfo.cs">

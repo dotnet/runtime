@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -232,7 +232,7 @@ namespace BinderTracingTests
         [BinderTest(isolate: true)]
         public static BindOperation AssemblyLoadFromResolveHandler_LoadDependency()
         {
-            string assemblyPath = GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
+            string assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(SubdirectoryAssemblyName);
             Assembly asm = Assembly.LoadFrom(assemblyPath);
             Type t = asm.GetType(DependentAssemblyTypeName);
             MethodInfo method = t.GetMethod("UseDependentAssembly", BindingFlags.Public | BindingFlags.Static);
@@ -343,17 +343,12 @@ namespace BinderTracingTests
             };
         }
 
-        private static string GetAssemblyInSubdirectoryPath(string assemblyName)
-        {
-            string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            return Path.Combine(appPath, "DependentAssemblies", $"{assemblyName}.dll");
-        }
-
         private enum HandlerReturn
         {
             Null,
             RequestedAssembly,
-            NameMismatch
+            NameMismatch,
+            Exception
         }
 
         private class Handlers : IDisposable
@@ -386,6 +381,9 @@ namespace BinderTracingTests
 
             private Assembly OnAssemblyLoadContextResolving(AssemblyLoadContext context, AssemblyName assemblyName)
             {
+                if (handlerReturn == HandlerReturn.Exception)
+                    throw new Exception("Exception in handler for AssemblyLoadContext.Resolving");
+
                 Assembly asm = ResolveAssembly(context, assemblyName);
                 var invocation = new HandlerInvocation()
                 {
@@ -405,6 +403,9 @@ namespace BinderTracingTests
 
             private Assembly OnAppDomainAssemblyResolve(object sender, ResolveEventArgs args)
             {
+                if (handlerReturn == HandlerReturn.Exception)
+                    throw new Exception("Exception in handler for AppDomain.AssemblyResolve");
+
                 var assemblyName = new AssemblyName(args.Name);
                 var customContext = new CustomALC(nameof(OnAppDomainAssemblyResolve));
                 Assembly asm = ResolveAssembly(customContext, assemblyName);
@@ -429,7 +430,7 @@ namespace BinderTracingTests
                     return null;
 
                 string name = handlerReturn == HandlerReturn.RequestedAssembly ? assemblyName.Name : $"{assemblyName.Name}Mismatch";
-                string assemblyPath = GetAssemblyInSubdirectoryPath(name);
+                string assemblyPath = Helpers.GetAssemblyInSubdirectoryPath(name);
 
                 if (!File.Exists(assemblyPath))
                     return null;

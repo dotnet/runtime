@@ -41,9 +41,10 @@ namespace Internal.JitInterface
             IA64 = 0x0200,
             AMD64 = 0x8664,
             ARM = 0x01c4,
+            ARM64 = 0xaa64,
         }
 
-        private const string JitLibrary = "clrjitilc";
+        internal const string JitLibrary = "clrjitilc";
 
 #if SUPPORT_JIT
         private const string JitSupportLibrary = "*";
@@ -108,29 +109,11 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        private static JitConfigProvider s_jitConfig;
-
         private readonly UnboxingMethodDescFactory _unboxingThunkFactory;
 
-        public static void RegisterJITModule(JitConfigProvider jitConfig)
+        public static void Startup()
         {
-            s_jitConfig = jitConfig;
-            if (jitConfig.JitPath != null)
-            {
-                NativeLibrary.SetDllImportResolver(typeof(CorInfoImpl).Assembly, JitLibraryResolver);
-            }
-
-            jitStartup(GetJitHost(jitConfig.UnmanagedInstance));
-        }
-
-        private static IntPtr JitLibraryResolver(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
-        {
-            IntPtr libHandle = IntPtr.Zero;
-            if (libraryName == JitLibrary)
-            {
-                libHandle = NativeLibrary.Load(s_jitConfig.JitPath, assembly, searchPath);
-            }
-            return libHandle;
+            jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
         }
 
         public CorInfoImpl()
@@ -242,7 +225,7 @@ namespace Internal.JitInterface
             var relocs = _relocs.ToArray();
             Array.Sort(relocs, (x, y) => (x.Offset - y.Offset));
 
-            int alignment = s_jitConfig.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
+            int alignment = JitConfigProvider.Instance.HasFlag(CorJitFlag.CORJIT_FLAG_SIZE_OPT) ?
                 _compilation.NodeFactory.Target.MinimumFunctionAlignment :
                 _compilation.NodeFactory.Target.OptimumFunctionAlignment;
 
@@ -276,6 +259,9 @@ namespace Internal.JitInterface
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
             _methodCodeNode.InitializeDebugVarInfos(_debugVarInfos);
+#if READYTORUN
+            _methodCodeNode.InitializeInliningInfo(_inlinedMethods.ToArray());
+#endif
             PublishProfileData();
         }
 
@@ -345,6 +331,9 @@ namespace Internal.JitInterface
 #if !READYTORUN
             _sequencePoints = null;
             _variableToTypeDesc = null;
+
+            _parameterIndexToNameMap = null;
+            _localSlotToInfoMap = null;
 #endif
             _debugLocInfos = null;
             _debugVarInfos = null;
@@ -352,6 +341,7 @@ namespace Internal.JitInterface
 
 #if READYTORUN
             _profileDataNode = null;
+            _inlinedMethods = new ArrayBuilder<MethodDesc>();
 #endif
         }
 
@@ -421,7 +411,6 @@ namespace Internal.JitInterface
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
             }
-
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
             Get_CORINFO_SIG_INFO(method, &methodInfo->args);
             Get_CORINFO_SIG_INFO(methodIL.GetLocals(), &methodInfo->locals);
@@ -432,6 +421,11 @@ namespace Internal.JitInterface
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
+
+            if (method.IsPInvoke && method.IsSuppressGCTransition())
+            {
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_SUPPRESS_GC_TRANSITION;
+            }
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -480,7 +474,7 @@ namespace Internal.JitInterface
 
             CorInfoType corInfoRetType = asCorInfoType(signature.ReturnType, &sig->retTypeClass);
             sig->_retType = (byte)corInfoRetType;
-            sig->retTypeSigClass = sig->retTypeClass; // The difference between the two is not relevant for ILCompiler
+            sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
             sig->flags = 0;    // used by IL stubs code
 
@@ -505,7 +499,7 @@ namespace Internal.JitInterface
             sig->_retType = (byte)CorInfoType.CORINFO_TYPE_VOID;
             sig->retTypeClass = null;
             sig->retTypeSigClass = null;
-            sig->flags = (byte)CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
+            sig->flags = CorInfoSigInfoFlags.CORINFO_SIGFLAG_IS_LOCAL_SIG;
 
             sig->numArgs = (ushort)locals.Length;
 
@@ -636,14 +630,7 @@ namespace Internal.JitInterface
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
 
             if (method.IsPInvoke)
-            {
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
-
-                if (method.IsRawPInvoke())
-                {
-                    result |= CorInfoFlag.CORINFO_FLG_FORCEINLINE;
-                }
-            }
 
 #if READYTORUN
             if (method.RequireSecObject)
@@ -684,7 +671,7 @@ namespace Internal.JitInterface
 #if READYTORUN
             // Check for SIMD intrinsics
             DefType owningDefType = method.OwningType as DefType;
-            if (owningDefType != null && VectorFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
+            if (owningDefType != null && VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(owningDefType))
             {
                 throw new RequiresRuntimeJitException("This function is using SIMD intrinsics, their size is machine specific");
             }
@@ -768,10 +755,6 @@ namespace Internal.JitInterface
                 // Call may not be inlined
                 return CorInfoInline.INLINE_NEVER;
             }
-        }
-
-        private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
-        {
         }
 
         private void reportTailCallDecision(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd, bool fIsTailPrefix, CorInfoTailCall tailCallResult, byte* reason)
@@ -964,7 +947,8 @@ namespace Internal.JitInterface
                 else
                 {
                     var methodContext = (MethodDesc)typeOrMethodContext;
-                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition());
+                    Debug.Assert(methodContext.GetTypicalMethodDefinition() == owningMethod.GetTypicalMethodDefinition() ||
+                        (owningMethod.Name == "CreateDefaultInstance" && methodContext.Name == "CreateInstance"));
                     typeInst = methodContext.OwningType.Instantiation;
                     methodInst = methodContext.Instantiation;
                 }
@@ -1278,7 +1262,7 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_STACK_PTR;
 
                 // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || metadataType.IsWellKnownType(WellKnownType.TypedReference))
+                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
                     result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
 
                 // TODO
@@ -1397,14 +1381,29 @@ namespace Internal.JitInterface
             return (uint)type.InstanceFieldAlignment.AsInt;
         }
 
+        private int MarkGcField(byte* gcPtrs, CorInfoGCType gcType)
+        {
+            // Ensure that if we have multiple fields with the same offset,
+            // that we don't double count the data in the gc layout.
+            if (*gcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
+            {
+                *gcPtrs = (byte)gcType;
+                return 1;
+            }
+            else
+            {
+                Debug.Assert(*gcPtrs == (byte)gcType);
+                return 0;
+            }
+        }
+
         private int GatherClassGCLayout(TypeDesc type, byte* gcPtrs)
         {
             int result = 0;
 
             if (type.IsByReferenceOfT)
             {
-                *gcPtrs = (byte)CorInfoGCType.TYPE_GC_BYREF;
-                return 1;
+                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
             }
 
             foreach (var field in type.GetFields())
@@ -1445,20 +1444,9 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    // Ensure that if we have multiple fields with the same offset, 
-                    // that we don't double count the data in the gc layout.
-                    if (*fieldGcPtrs == (byte)CorInfoGCType.TYPE_GC_NONE)
-                    {
-                        *fieldGcPtrs = (byte)gcType;
-                        result++;
-                    }
-                    else
-                    {
-                        Debug.Assert(*fieldGcPtrs == (byte)gcType);
-                    }
+                    result += MarkGcField(fieldGcPtrs, gcType);
                 }
             }
-
             return result;
         }
 
@@ -1597,10 +1585,11 @@ namespace Internal.JitInterface
                         return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
                     }
                 }
-                else if (!md.IsConstructor && !typeToInit.IsValueType)
+                else if (!md.IsConstructor && !typeToInit.IsValueType && !typeToInit.IsInterface)
                 {
                     // According to the spec, we should be able to do this optimization for both reference and valuetypes.
                     // To maintain backward compatibility, we are doing it for reference types only.
+                    // We don't do this for interfaces though, as those don't have instance constructors.
                     // For instance methods of types with precise-initialization
                     // semantics, we can assume that the .ctor triggerred the
                     // type initialization.
@@ -1641,7 +1630,7 @@ namespace Internal.JitInterface
                 // This optimization may cause static fields in reference types to be accessed without cctor being triggered
                 // for NULL "this" object. It does not conform with what the spec says. However, we have been historically 
                 // doing it for perf reasons.
-                if (!typeToInit.IsValueType && !typeToInit.IsBeforeFieldInit)
+                if (!typeToInit.IsValueType && ! typeToInit.IsInterface && !typeToInit.IsBeforeFieldInit)
                 {
                     if (typeToInit == typeFromContext(context) || typeToInit == MethodBeingCompiled.OwningType)
                     {
@@ -1659,10 +1648,6 @@ namespace Internal.JitInterface
             }
 
             return CorInfoInitClassResult.CORINFO_INITCLASS_USE_HELPER;
-        }
-
-        private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
-        {
         }
 
         private CORINFO_CLASS_STRUCT_* getBuiltinClass(CorInfoClassId classId)
@@ -1773,16 +1758,29 @@ namespace Internal.JitInterface
                     {
                         result = TypeCompareState.Must;
                     }
-                    // For negative results, the unknown type parameter in
-                    // fromClass might match some instantiated interface,
-                    // either directly or via variance.
+                    // We have __Canon parameter(s) in fromClass, somewhere.
                     //
-                    // However, CanCastTo will report failure in such cases since
-                    // __Canon won't match the instantiated type on the
-                    // interface (which can't be __Canon since we screened out
-                    // canonical subtypes for toClass above). So only report
-                    // failure if the interface is not instantiated.
-                    else if (!toType.HasInstantiation)
+                    // In CanCastTo, these __Canon(s) won't match the interface or
+                    // instantiated types on the interface, so CanCastTo may
+                    // return false negatives.
+                    //
+                    // Only report MustNot if the fromClass is not __Canon
+                    // and the interface is not instantiated; then there is
+                    // no way for the fromClass __Canon(s) to confuse things.
+                    //
+                    //    __Canon       -> IBar             May
+                    //    IFoo<__Canon> -> IFoo<string>     May
+                    //    IFoo<__Canon> -> IBar             MustNot
+                    //
+                    else if (fromType.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+                    {
+                        result = TypeCompareState.May;
+                    }
+                    else if (toType.HasInstantiation)
+                    {
+                        result = TypeCompareState.May;
+                    }
+                    else
                     {
                         result = TypeCompareState.MustNot;
                     }
@@ -2063,212 +2061,6 @@ namespace Internal.JitInterface
             return (CORINFO_FIELD_ACCESSOR)(-1);
         }
 
-        private void getFieldInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
-        {
-#if DEBUG
-            // In debug, write some bogus data to the struct to ensure we have filled everything
-            // properly.
-            MemoryHelper.FillMemory((byte*)pResult, 0xcc, Marshal.SizeOf<CORINFO_FIELD_INFO>());
-#endif
-
-            Debug.Assert(((int)flags & ((int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_SET |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS |
-                                        (int)CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_INIT_ARRAY)) != 0);
-
-            var field = HandleToObject(pResolvedToken.hField);
-#if READYTORUN
-            MethodDesc callerMethod = HandleToObject(callerHandle);
-
-            if (field.Offset.IsIndeterminate)
-                throw new RequiresRuntimeJitException(field);
-#endif
-
-            CORINFO_FIELD_ACCESSOR fieldAccessor;
-            CORINFO_FIELD_FLAGS fieldFlags = (CORINFO_FIELD_FLAGS)0;
-            uint fieldOffset = (field.IsStatic && field.HasRva ? 0xBAADF00D : (uint)field.Offset.AsInt);
-
-            if (field.IsStatic)
-            {
-                fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
-
-#if READYTORUN
-                if (field.FieldType.IsValueType && field.HasGCStaticBase && !field.HasRva)
-                {
-                    // statics of struct types are stored as implicitly boxed in CoreCLR i.e.
-                    // we need to modify field access flags appropriately
-                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP;
-                }
-#endif
-
-                if (field.HasRva)
-                {
-                    fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_UNMANAGED;
-
-                    // TODO: Handle the case when the RVA is in the TLS range
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RVA_ADDRESS;
-
-                    // We are not going through a helper. The constructor has to be triggered explicitly.
-#if READYTORUN
-                    if (!IsClassPreInited(field.OwningType))
-#else
-                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
-#endif
-                    {
-                        fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
-                    }
-                }
-                else if (field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    // The JIT wants to know how to access a static field on a generic type. We need a runtime lookup.
-#if READYTORUN
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER;
-                    if (field.IsThreadStatic)
-                    {
-                        pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCTHREADSTATIC_BASE:
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCTHREADSTATIC_BASE);
-                    }
-                    else
-                    {
-                        pResult->helper = (field.HasGCStaticBase ?
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
-                            CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
-                    }
-#else
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_READYTORUN_HELPER;
-                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
-
-                    // Don't try to compute the runtime lookup if we're inlining. The JIT is going to abort the inlining
-                    // attempt anyway.
-                    MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-                    if (contextMethod == MethodBeingCompiled)
-                    {
-                        FieldDesc runtimeDeterminedField = (FieldDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-
-                        ReadyToRunHelperId helperId;
-
-                        // Find out what kind of base do we need to look up.
-                        if (field.IsThreadStatic)
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        }
-                        else if (field.HasGCStaticBase)
-                        {
-                            helperId = ReadyToRunHelperId.GetGCStaticBase;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                        }
-
-                        // What generic context do we look up the base from.
-                        ISymbolNode helper;
-                        if (contextMethod.AcquiresInstMethodTableFromThis() || contextMethod.RequiresInstMethodTableArg())
-                        {
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromTypeLookup(
-                                helperId, runtimeDeterminedField.OwningType, contextMethod.OwningType);
-                        }
-                        else
-                        {
-                            Debug.Assert(contextMethod.RequiresInstMethodDescArg());
-                            helper = _compilation.NodeFactory.ReadyToRunHelperFromDictionaryLookup(
-                                helperId, runtimeDeterminedField.OwningType, contextMethod);
-                        }
-
-                        pResult->fieldLookup = CreateConstLookupToSymbol(helper);
-                    }
-#endif // READYTORUN
-                }
-                else
-                {
-                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-                    pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
-
-                    ReadyToRunHelperId helperId = ReadyToRunHelperId.Invalid;
-                    CORINFO_FIELD_ACCESSOR intrinsicAccessor;
-                    if (field.IsIntrinsic &&
-                        (flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_GET) != 0 &&
-                        (intrinsicAccessor = getFieldIntrinsic(field)) != (CORINFO_FIELD_ACCESSOR)(-1))
-                    {
-                        fieldAccessor = intrinsicAccessor;
-                    }
-                    else if (field.IsThreadStatic)
-                    {
-#if READYTORUN
-                        if (field.HasGCStaticBase)
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        }
-                        else
-                        {
-                            helperId = ReadyToRunHelperId.GetThreadNonGcStaticBase;
-                        }
-#else
-                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
-#endif
-                    }
-                    else if (field.HasGCStaticBase)
-                    {
-                        helperId = ReadyToRunHelperId.GetGCStaticBase;
-                    }
-                    else
-                    {
-                        helperId = ReadyToRunHelperId.GetNonGCStaticBase;
-                    }
-
-#if READYTORUN
-                    if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
-                        fieldAccessor == CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER)
-                    {
-                        PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
-                        
-                        // Static fields outside of the version bubble need to be accessed using the ENCODE_FIELD_ADDRESS
-                        // helper in accordance with ZapInfo::getFieldInfo in CoreCLR.
-                        pResult->fieldLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.FieldAddress(field, GetSignatureContext()));
-
-                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_STATIC_BASE;
-
-                        fieldFlags &= ~CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC_IN_HEAP; // The dynamic helper takes care of the unboxing
-                        fieldOffset = 0;
-                    }
-                    else
-#endif
-
-                    if (helperId != ReadyToRunHelperId.Invalid)
-                    {
-                        pResult->fieldLookup = CreateConstLookupToSymbol(
-#if READYTORUN
-                            _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType, GetSignatureContext())
-#else
-                            _compilation.NodeFactory.ReadyToRunHelper(helperId, field.OwningType)
-#endif
-                            );
-                    }
-                }
-            }
-            else
-            {
-                fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_INSTANCE;
-            }
-
-            if (field.IsInitOnly)
-                fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_FINAL;
-
-            pResult->fieldAccessor = fieldAccessor;
-            pResult->fieldFlags = fieldFlags;
-            pResult->fieldType = getFieldType(pResolvedToken.hField, &pResult->structType, pResolvedToken.hClass);
-            pResult->accessAllowed = CorInfoIsAccessAllowedResult.CORINFO_ACCESS_ALLOWED;
-            pResult->offset = fieldOffset;
-
-#if READYTORUN
-            EncodeFieldBaseOffset(field, pResult, callerMethod);
-#endif
-
-            // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
-            //       and STS::AccessCheck::CanAccess.
-        }
-
         private bool isFieldStatic(CORINFO_FIELD_STRUCT_* fldHnd)
         {
             return HandleToObject(fldHnd).IsStatic;
@@ -2420,6 +2212,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
+            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
         }
 
         private string getJitTimeLogFilename()
@@ -2530,21 +2323,24 @@ namespace Internal.JitInterface
         private byte* findNameOfToken(CORINFO_MODULE_STRUCT_* moduleHandle, mdToken token, byte* szFQName, UIntPtr FQNameCapacity)
         { throw new NotImplementedException("findNameOfToken"); }
 
-        SystemVStructClassificator _systemVStructClassificator = new SystemVStructClassificator();
-
         private bool getSystemVAmd64PassStructInRegisterDescriptor(CORINFO_CLASS_STRUCT_* structHnd, SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr)
         {
             TypeDesc typeDesc = HandleToObject(structHnd);
 
-            return _systemVStructClassificator.getSystemVAmd64PassStructInRegisterDescriptor(typeDesc, structPassInRegDescPtr);
+            SystemVStructClassificator.GetSystemVAmd64PassStructInRegisterDescriptor(typeDesc, out *structPassInRegDescPtr);
+            return true;
         }
 
         private uint getThreadTLSIndex(ref void* ppIndirection)
         { throw new NotImplementedException("getThreadTLSIndex"); }
         private void* getInlinedCallFrameVptr(ref void* ppIndirection)
         { throw new NotImplementedException("getInlinedCallFrameVptr"); }
+
         private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
-        { throw new NotImplementedException("getAddrOfCaptureThreadGlobal"); }
+        {
+            ppIndirection = null;
+            return null;
+        }
 
         private Dictionary<CorInfoHelpFunc, ISymbolNode> _helperCache = new Dictionary<CorInfoHelpFunc, ISymbolNode>();
         private void* getHelperFtn(CorInfoHelpFunc ftnNum, ref void* ppIndirection)
@@ -2798,16 +2594,6 @@ namespace Internal.JitInterface
             // Nothing to do
         }
 
-        private void setEHcount(uint cEH)
-        {
-            _ehClauses = new CORINFO_EH_CLAUSE[cEH];
-        }
-
-        private void setEHinfo(uint EHnumber, ref CORINFO_EH_CLAUSE clause)
-        {
-            _ehClauses[EHnumber] = clause;
-        }
-
         private bool logMsg(uint level, byte* fmt, IntPtr args)
         {
             // Console.WriteLine(Marshal.PtrToStringAnsi((IntPtr)fmt));
@@ -2900,19 +2686,41 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        // Translates relocation type constants used by JIT (defined in winnt.h) to RelocType enumeration
+        private static RelocType GetRelocType(TargetArchitecture targetArchitecture, ushort fRelocType)
+        {
+            if (targetArchitecture != TargetArchitecture.ARM64)
+                return (RelocType)fRelocType;
+
+            const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
+            const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+
+            switch (fRelocType)
+            {
+                case IMAGE_REL_ARM64_PAGEBASE_REL21:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21;
+                case IMAGE_REL_ARM64_PAGEOFFSET_12A:
+                    return RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A;
+                default:
+                    Debug.Fail("Invalid RelocType: " + fRelocType);
+                    return 0;
+            };
+        }
+
         private void recordRelocation(void* location, void* target, ushort fRelocType, ushort slotNum, int addlDelta)
         {
-            // slotNum is not unused
+            // slotNum is not used
             Debug.Assert(slotNum == 0);
 
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
 
+            TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
+
             if (locationBlock != BlockType.Code)
             {
                 // TODO: https://github.com/dotnet/corert/issues/3877
-                TargetArchitecture targetArchitecture = _compilation.TypeSystemContext.Target.Architecture;
                 if (targetArchitecture == TargetArchitecture.ARM)
                     return;
                 throw new NotImplementedException("Arbitrary relocs"); 
@@ -2951,12 +2759,13 @@ namespace Internal.JitInterface
 
             relocDelta += addlDelta;
 
+            RelocType relocType = GetRelocType(targetArchitecture, fRelocType);
             // relocDelta is stored as the value
-            Relocation.WriteValue((RelocType)fRelocType, location, relocDelta);
+            Relocation.WriteValue(relocType, location, relocDelta);
 
             if (_relocs.Count == 0)
                 _relocs.EnsureCapacity(_code.Length / 32 + 1);
-            _relocs.Add(new Relocation((RelocType)fRelocType, relocOffset, relocTarget));
+            _relocs.Add(new Relocation(relocType, relocOffset, relocTarget));
         }
 
         private ushort getRelocTypeHint(void* target)
@@ -2990,7 +2799,7 @@ namespace Internal.JitInterface
                 case TargetArchitecture.ARM:
                     return (uint)ImageFileMachine.ARM;
                 case TargetArchitecture.ARM64:
-                    return (uint)ImageFileMachine.ARM;
+                    return (uint)ImageFileMachine.ARM64;
                 default:
                     throw new NotImplementedException("Expected target architecture is not supported");
             }
@@ -3010,7 +2819,7 @@ namespace Internal.JitInterface
         private uint getJitFlags(ref CORJIT_FLAGS flags, uint sizeInBytes)
         {
             // Read the user-defined configuration options.
-            foreach (var flag in s_jitConfig.Flags)
+            foreach (var flag in JitConfigProvider.Instance.Flags)
                 flags.Set(flag);
 
             // Set the rest of the flags that don't make sense to expose publically.

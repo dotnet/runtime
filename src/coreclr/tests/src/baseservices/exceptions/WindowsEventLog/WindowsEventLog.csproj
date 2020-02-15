@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <DefineConstants Condition="$(OSGroup) == 'Windows_NT'">WINDOWS</DefineConstants>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
@@ -10,5 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <TraitTags Include="OsSpecific" />
   </ItemGroup>
 </Project>

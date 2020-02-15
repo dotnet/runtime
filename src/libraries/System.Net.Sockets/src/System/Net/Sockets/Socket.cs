@@ -106,15 +106,6 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        public Socket(SocketInformation socketInformation)
-        {
-            //
-            // This constructor works in conjunction with DuplicateAndClose, which is not supported.
-            // See comments in DuplicateAndClose.
-            //
-            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
-
         // Called by the class to create a socket to accept an incoming request.
         private Socket(SafeSocketHandle fd)
         {
@@ -2043,16 +2034,7 @@ namespace System.Net.Sockets
                 (_rightEndPoint != null || remoteEP.GetType() == typeof(IPEndPoint));
         }
 
-        public SocketInformation DuplicateAndClose(int targetProcessId)
-        {
-            //
-            // On Windows, we cannot duplicate a socket that is bound to an IOCP.  In this implementation, we *only*
-            // support IOCPs, so this will not work.
-            //
-            // On Unix, duplication of a socket into an arbitrary process is not supported at all.
-            //
-            throw new PlatformNotSupportedException(SR.net_sockets_duplicateandclose_notsupported);
-        }
+
 
         internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)
         {
@@ -4121,6 +4103,13 @@ namespace System.Net.Sockets
 
             // Prepare for and make the native call.
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
+
+            EndPoint oldEndPoint = _rightEndPoint;
+            if (_rightEndPoint == null)
+            {
+                _rightEndPoint = endPointSnapshot;
+            }
+
             SocketError socketError;
             try
             {
@@ -4128,9 +4117,15 @@ namespace System.Net.Sockets
             }
             catch
             {
+                _rightEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
                 throw;
+            }
+
+            if (!CheckErrorAndUpdateStatus(socketError))
+            {
+                _rightEndPoint = oldEndPoint;
             }
 
             bool retval = (socketError == SocketError.IOPending);
@@ -4616,7 +4611,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.ioctlsocket returns errorCode:{errorCode}");
 
-            // We will update only internal state but only on successfull win32 call
+            // We will update only internal state but only on successful win32 call
             // so if the native call fails, the state will remain the same.
             if (errorCode == SocketError.Success)
             {

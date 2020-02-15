@@ -288,10 +288,6 @@ typedef struct
     USHORT      usBuildNumber;          // Build Number.
     USHORT      usRevisionNumber;       // Revision Number.
     LPCSTR      szLocale;               // Locale.
-    DWORD       *rProcessor;            // Processor array.
-    ULONG       ulProcessor;            // [IN/OUT] Size of the processor array/Actual # of entries filled in.
-    OSINFO      *rOS;                   // OSINFO array.
-    ULONG       ulOS;                   // [IN/OUT]Size of the OSINFO array/Actual # of entries filled in.
 } AssemblyMetaDataInternal;
 
 

@@ -2,9 +2,9 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5364</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Net\BindIPEndPoint.cs" />
     <Compile Include="System\Net\ServicePoint.cs" />
@@ -13,10 +13,8 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />

@@ -1,5 +1,5 @@
 <Project DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
     <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
@@ -22,7 +22,6 @@
 
     <!-- CI machines doesn't have net472 targeting pack installed yet and we hit: https://github.com/dotnet/corefx/issues/29906 -->
     <TargetFrameworksToExclude Include="net472" />
-    <TargetFrameworksToExclude Include="netfx" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -166,7 +165,7 @@
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
     <ZipDirectory
         SourceDirectory="$(TestSupportDir)"
-        DestinationFile="$(TestArchiveRuntimeRoot)packages-testPayload-$(ConfigurationGroup).zip"
+        DestinationFile="$(TestArchiveRuntimeRoot)packages-testPayload-$(Configuration).zip"
         Overwrite="true" />
 
   </Target>
@@ -221,5 +220,5 @@
   <!-- define test to do nothing, for this project Build does all the testing -->
   <Target Name="Test" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

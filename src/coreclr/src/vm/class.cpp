@@ -988,9 +988,9 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
 
     if (pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()
         || pMT->GetNumInstanceFieldBytes() == 4
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         || pMT->GetNumInstanceFieldBytes() == 8
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
         )) // Don't do the optimization if we're getting specified anything but the trivial layout.
     {
         FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();
@@ -1022,10 +1022,10 @@ CorElementType EEClass::ComputeInternalCorElementTypeForValueType(MethodTable * 
             case ELEMENT_TYPE_U:
             case ELEMENT_TYPE_I4:
             case ELEMENT_TYPE_U4:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             case ELEMENT_TYPE_I8:
             case ELEMENT_TYPE_U8:
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
             {
                 return type;
@@ -1181,7 +1181,7 @@ int MethodTable::GetVectorSize()
 {
     // This is supported for finding HVA types for Arm64. In order to support the altjit,
     // we support this on 64-bit platforms (i.e. Arm64 and X64).
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     if (IsIntrinsicType())
     {
         LPCUTF8 namespaceName;
@@ -1211,20 +1211,14 @@ int MethodTable::GetVectorSize()
             // We need to verify that T (the element or "base" type) is a primitive type.
             TypeHandle typeArg = GetInstantiation()[0];
             CorElementType corType = typeArg.GetSignatureCorElementType();
-            bool isSupportedElementType = (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8);
-            // These element types are not supported for Vector64<T>.
-            if ((vectorSize == 8) && (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8))
-            {
-                isSupportedElementType = false;
-            }
-            if (isSupportedElementType)
+            if (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8)
             {
                 _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;
             }
         }
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
     return 0;
 }
 
@@ -1340,7 +1334,7 @@ EEClass::CheckForHFA()
         {
         case ELEMENT_TYPE_VALUETYPE:
             {
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
             // hfa/hva types are unique by size, except for Vector64 which we can conveniently
                 // treat as if it were a double for ABI purposes. However, it only qualifies as
                 // an HVA if all fields are the same type. This will ensure that we only
@@ -1365,7 +1359,7 @@ EEClass::CheckForHFA()
                     }
                 }
                 else
-#endif // _TARGET_ARM64_
+#endif // TARGET_ARM64
                 {
 #if defined(FEATURE_HFA)
                     fieldType = pByValueClassCache[i]->GetHFAType();
@@ -1425,7 +1419,7 @@ EEClass::CheckForHFA()
     case ELEMENT_TYPE_R8:
         elemSize = 8;
         break;
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     case ELEMENT_TYPE_VALUETYPE:
         // Should already have set elemSize, but be conservative
         if (elemSize == 0)
@@ -1539,7 +1533,7 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
     {
     case ELEMENT_TYPE_R4: elemSize = sizeof(float); break;
     case ELEMENT_TYPE_R8: elemSize = sizeof(double); break;
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     case ELEMENT_TYPE_VALUETYPE: elemSize = 16; break;
 #endif
     default: _ASSERTE(!"Invalid HFA Type");
@@ -3892,7 +3886,7 @@ namespace
         {
             // Safe cast - no primitive type is larger than 4gb!
             pManagedPlacementInfo->m_size = ((UINT32)CorTypeInfo::Size(corElemType));
-    #if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+    #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (corElemType)
             {
                 // The System V ABI for i386 defines different packing for these types.
@@ -3910,7 +3904,7 @@ namespace
                 break;
             }
             }
-    #else // _TARGET_X86_ && UNIX_X86_ABI
+    #else // TARGET_X86 && UNIX_X86_ABI
             pManagedPlacementInfo->m_alignment = pManagedPlacementInfo->m_size;
     #endif
 

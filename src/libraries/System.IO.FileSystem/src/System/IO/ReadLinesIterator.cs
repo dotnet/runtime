@@ -85,17 +85,17 @@ namespace System.IO
             }
             finally
             {
-                _reader = null;
+                _reader = null!;
                 base.Dispose(disposing);
             }
         }
 
         internal static ReadLinesIterator CreateIterator(string path, Encoding encoding)
         {
-            return CreateIterator(path, encoding, (StreamReader)null);
+            return CreateIterator(path, encoding, (StreamReader?)null);
         }
 
-        private static ReadLinesIterator CreateIterator(string path, Encoding encoding, StreamReader reader)
+        private static ReadLinesIterator CreateIterator(string path, Encoding encoding, StreamReader? reader)
         {
             return new ReadLinesIterator(path, encoding, reader ?? new StreamReader(path, encoding));
         }

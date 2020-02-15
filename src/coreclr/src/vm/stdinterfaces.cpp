@@ -102,37 +102,6 @@ const IID IID_ICustomPropertyProvider = {0x7C925755,0x3E48,0x42B4,{0x86, 0x77, 0
 
 const IID IID_IStringable = {0x96369f54,0x8eb6,0x48f0, {0xab,0xce,0xc1,0xb2,0x11,0xe6,0x27,0xc3}};
 
-// For free-threaded marshaling, we must not be spoofed by out-of-process or cross-runtime marshal data.
-// Only unmarshal data that comes from our own runtime.
-BYTE         g_UnmarshalSecret[sizeof(GUID)];
-bool         g_fInitedUnmarshalSecret = false;
-
-
-static HRESULT InitUnmarshalSecret()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (!g_fInitedUnmarshalSecret)
-    {
-        ComCall::LockHolder lh;
-
-        if (!g_fInitedUnmarshalSecret)
-        {
-            hr = ::CoCreateGuid((GUID *) g_UnmarshalSecret);
-            if (SUCCEEDED(hr))
-                g_fInitedUnmarshalSecret = true;
-        }
-    }
-    return hr;
-}
 
 //------------------------------------------------------------------------------------------
 //      IUnknown methods for CLR objects
@@ -2441,10 +2410,7 @@ HRESULT GetSpecialMarshaler(IMarshal* pMarsh, SimpleComCallWrapper* pSimpleWrap,
 
     HRESULT hr = S_OK;
 
-
-    // In case of APPX process we always use the standard marshaller.
-    // In Non-APPX process use standard marshalling for everything except in-proc servers.
-    // In case of CoreCLR, we always use the standard marshaller as well.
+    // In case of CoreCLR, we always use the standard marshaller.
 
     SafeComHolderPreemp<IUnknown> pMarshalerObj = NULL;
     IfFailRet(CoCreateFreeThreadedMarshaler(NULL, &pMarshalerObj));
@@ -2496,16 +2462,7 @@ HRESULT __stdcall Marshal_GetUnmarshalClass (
     if (FAILED(hr))
         return hr;
 
-    if (pMsh != NULL)
-    {
-        hr = pMsh->GetUnmarshalClass (riid, pv, dwDestContext, pvDestContext, mshlflags, pclsid);
-        return hr;
-    }
-
-    // Use a statically allocated singleton class to do all unmarshalling.
-    *pclsid = CLSID_ComCallUnmarshalV4;
-
-    return S_OK;
+    return pMsh->GetUnmarshalClass (riid, pv, dwDestContext, pvDestContext, mshlflags, pclsid);
 }
 
 HRESULT __stdcall Marshal_GetMarshalSizeMax (
@@ -2534,15 +2491,7 @@ HRESULT __stdcall Marshal_GetMarshalSizeMax (
     if (FAILED(hr))
         return hr;
 
-    if (pMsh != NULL)
-    {
-        HRESULT hr = pMsh->GetMarshalSizeMax (riid, pv, dwDestContext, pvDestContext, mshlflags, pSize);
-        return hr;
-    }
-
-    *pSize = sizeof (IUnknown *) + sizeof (ULONG) + sizeof(GUID);
-
-    return S_OK;
+    return pMsh->GetMarshalSizeMax (riid, pv, dwDestContext, pvDestContext, mshlflags, pSize);
 }
 
 HRESULT __stdcall Marshal_MarshalInterface (
@@ -2563,7 +2512,6 @@ HRESULT __stdcall Marshal_MarshalInterface (
     }
     CONTRACTL_END;
 
-    ULONG cbRef;
     HRESULT hr = S_OK;
 
     SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pMarsh);
@@ -2584,38 +2532,7 @@ HRESULT __stdcall Marshal_MarshalInterface (
     if (FAILED(hr))
         return hr;
 
-    if (pMsh != NULL)
-    {
-        hr = pMsh->MarshalInterface (pStm, riid, pv, dwDestContext, pvDestContext, mshlflags);
-        return hr;
-    }
-
-    // Write the raw IP into the marshalling stream.
-    hr = pStm->Write (&pv, sizeof (pv), 0);
-    if (FAILED (hr))
-        return hr;
-
-    // Followed by the marshalling flags (we need these on the remote end to
-    // manage refcounting the IP).
-    hr = pStm->Write (&mshlflags, sizeof (mshlflags), 0);
-    if (FAILED (hr))
-        return hr;
-
-    // Followed by the secret, which confirms that the pointer above can be trusted
-    // because it originated from our runtime.
-    hr = InitUnmarshalSecret();
-    if (FAILED(hr))
-        return hr;
-
-    hr = pStm->Write(g_UnmarshalSecret, sizeof(g_UnmarshalSecret), 0);
-    if (FAILED(hr))
-        return hr;
-
-    // We have now created an additional reference to the object.
-    cbRef = SafeAddRefPreemp((IUnknown *)pv);
-    LogInteropAddRef((IUnknown *)pv, cbRef, "MarshalInterface");
-
-    return S_OK;
+    return pMsh->MarshalInterface (pStm, riid, pv, dwDestContext, pvDestContext, mshlflags);
 }
 
 HRESULT __stdcall Marshal_UnmarshalInterface (

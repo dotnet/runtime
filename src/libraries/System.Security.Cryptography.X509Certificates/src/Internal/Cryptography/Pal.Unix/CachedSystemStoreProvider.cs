@@ -170,7 +170,7 @@ namespace Internal.Cryptography.Pal
                     // One is the regular format ('BEGIN CERTIFICATE') and the other
                     // contains additional AUX-data ('BEGIN TRUSTED CERTIFICATE').
                     // The additional data contains the appropriate usage (e.g. emailProtection, serverAuth, ...).
-                    // Because corefx doesn't validate for a specific usage, derived certificates are rejected.
+                    // Because we don't validate for a specific usage, derived certificates are rejected.
                     // For now, we skip the certificates with AUX data and use the regular certificates.
                     ICertificatePal pal;
                     while (OpenSslX509CertificateReader.TryReadX509PemNoAux(fileBio, out pal) ||

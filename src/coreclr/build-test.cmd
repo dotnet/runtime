@@ -32,6 +32,7 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
+for %%i in ("%__RepoRootDir%") do SET "__RepoRootDir=%%~fi"
 
 set "__TestDir=%__ProjectDir%\tests"
 set "__ProjectFilesDir=%__TestDir%"
@@ -59,7 +60,7 @@ set __DoCrossgen2=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
-set __LocalCoreFXPath=
+set __LocalCoreFXConfig=%__BuildType%
 set __SkipFXRestoreArg=
 set __GenerateLayoutOnly=0
 
@@ -105,7 +106,6 @@ if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!proce
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "copynativeonly"        (set __CopyNativeTestBinaries=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "localcorefxpath"       (set __LocalCoreFXPath=%2&set __SkipFXRestoreArg=/p:__SkipFXRestore=true&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "generatelayoutonly"    (set __SkipManaged=1&set __SkipNative=1&set __CopyNativeProjectsAfterCombinedTestBuild=false&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "--"                    (set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
@@ -206,7 +206,7 @@ REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-REM echo Using CMake from %CMakePath%
+echo %__MsgPrefix%Using CMake from !CMakePath!
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
@@ -235,9 +235,9 @@ if not defined VSINSTALLDIR (
 )
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
-set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0" "-DCLR_ENG_NATIVE_DIR=%__RepoRootDir%/eng/native"
 call "%__SourceDir%\pal\tools\gen-buildsys.cmd" "%__ProjectFilesDir%" "%__NativeTestIntermediatesDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
-  
+
 if not !errorlevel! == 0 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
     exit /b 1
@@ -260,7 +260,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM We pass the /m flag directly to MSBuild so that we can get both MSBuild and CL parallelism, which is fastest for our builds.
-"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /m !__Logging!
+"%CMakePath%" --build %__NativeTestIntermediatesDir% --target install --config %__BuildType% -- /nologo /m !__Logging!
 
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: native test build failed.
@@ -320,7 +320,7 @@ if defined __SkipManaged goto SkipManagedBuild
 echo %__MsgPrefix%Starting the Managed Tests Build
 
 if not defined VSINSTALLDIR (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md for build instructions.
+    echo %__ErrMsgPrefix%%__MsgPrefix%Error: build-test.cmd should be run from a Visual Studio Command Prompt.  Please see https://github.com/dotnet/runtime/tree/master/docs/workflow for build instructions.
     exit /b 1
 )
 set __AppendToLog=false
@@ -476,37 +476,6 @@ xcopy /s /y /i "%CORE_ROOT_STAGE%" "%CORE_ROOT%"
 
 REM =========================================================================================
 REM ===
-REM === Create the test host necessary for running CoreFX tests.
-REM === The test host includes a dotnet executable, system libraries and CoreCLR assemblies found in CORE_ROOT.
-REM ===
-REM =========================================================================================
-
-echo %__MsgPrefix%Building CoreFX test host
-
-set __BuildLogRootName=Tests_CoreFX_Testhost
-set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
-set __BuildWrn=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn
-set __BuildErr=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.err
-set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%"
-set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
-set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
-set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__RepoRootDir%\eng\common\msbuild.ps1" %__ArcadeScriptArgs%^
-  %__ProjectDir%\tests\src\runtest.proj /t:CreateTestHost /nodeReuse:false^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  !__Logging! %__CommonMSBuildArgs% %RuntimeIdArg% %__PriorityArg% %__UnprocessedBuildArgs%
-if errorlevel 1 (
-    echo %__ErrMsgPrefix%%__MsgPrefix%Error: Create Test Host failed. Refer to the build log files for details:
-    echo     %__BuildLog%
-    echo     %__BuildWrn%
-    echo     %__BuildErr%
-    exit /b 1
-)
-
-REM =========================================================================================
-REM ===
 REM === Create test wrappers.
 REM ===
 REM =========================================================================================
@@ -525,7 +494,7 @@ set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
 
 REM Build wrappers using the local SDK's msbuild. As we move to arcade, the other builds should be moved away from run.exe as well.
-call "%__ProjectDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs%
+call "%__RepoRootDir%\dotnet.cmd" msbuild %__ProjectDir%\tests\src\runtest.proj /nodereuse:false /p:BuildWrappers=true !__Logging! %__msbuildArgs% %TargetsWindowsMsbuildArg% %__SkipFXRestoreArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__ErrMsgPrefix%%__MsgPrefix%Error: XUnit wrapper build failed. Refer to the build log files for details:
     echo     %__BuildLog%
@@ -548,8 +517,12 @@ set __CrossgenArg = ""
 if defined __DoCrossgen (
     set __CrossgenArg="/p:Crossgen=true"
     if "%__TargetsWindows%" == "1" (
-        echo %__MsgPrefix%Running crossgen on framework assemblies
+        echo %__MsgPrefix%Running crossgen on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
+        if ERRORLEVEL 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen precompilation of framework assemblies failed
+            exit /b 1
+        )
     ) else (
         echo "%__MsgPrefix%Crossgen only supported on Windows, for now"
     )
@@ -558,8 +531,12 @@ if defined __DoCrossgen (
 if defined __DoCrossgen2 (
     set __CrossgenArg="/p:Crossgen2=true"
     if "%__BuildArch%" == "x64" (
-        echo %__MsgPrefix%Running crossgen2 on framework assemblies
+        echo %__MsgPrefix%Running crossgen2 on framework assemblies in CORE_ROOT: %CORE_ROOT%
         call :PrecompileFX
+        if ERRORLEVEL 1 (
+            echo %__ErrMsgPrefix%%__MsgPrefix%Error: crossgen2 precompilation of framework assemblies failed
+            exit /b 1
+        )
     ) else (
         echo "%__MsgPrefix%Crossgen2 only supported on x64, for now"
     )
@@ -567,22 +544,6 @@ if defined __DoCrossgen2 (
 
 
 rd /s /q "%CORE_ROOT_STAGE%"
-
-
-REM =========================================================================================
-REM ===
-REM === Copy CoreFX assemblies if needed.
-REM ===
-REM =========================================================================================
-
-if NOT "%__LocalCoreFXPath%"=="" (
-    echo Patch CoreFX from %__LocalCoreFXPath%
-    set NEXTCMD=python "%__ProjectDir%\tests\scripts\patch-corefx.py" -clr_core_root "%CORE_ROOT%"^
-    -fx_root "%__LocalCoreFXPath%" -arch %__BuildArch% -build_type %__BuildType%
-    echo !NEXTCMD!
-    !NEXTCMD!
-)
-
 
 REM =========================================================================================
 REM ===
@@ -627,7 +588,7 @@ echo     win7-x64: Builds overlay for Windows 7
 echo crossgen: Precompiles the framework managed assemblies
 echo copynativeonly: Only copy the native test binaries to the managed output. Do not build the native or managed tests.
 echo skipgeneratelayout: Do not generate the Core_Root layout or the CoreFX testhost.
-echo -generatelayoutonly: Generate the Core_Root layout without build managed or native test components
+echo generatelayoutonly: Generate the Core_Root layout without building managed or native test components
 echo targetsNonWindows:
 echo Exclude- Optional parameter - specify location of default exclusion file ^(defaults to tests\issues.targets if not specified^)
 echo     Set to "" to disable default exclusion file.
@@ -641,67 +602,82 @@ exit /b 1
 
 :NoDIA
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
-This is due to a bug in the Visual Studio installer. It does not install DIA SDK at "%VSINSTALLDIR%" but rather ^
-at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
-of the previous version to "%VSINSTALLDIR%" and then build.
-REM DIA SDK not included in Express editions
-echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2017 or 2019 (Community is free).
-echo See: https://github.com/dotnet/runtime/blob/master/docs/coreclr/project-docs/developer-guide.md#prerequisites
+Did you install all the requirements for building on Windows, including the "Desktop Development with C++" workload? ^
+Please see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/windows-requirements.md ^
+Another possibility is that you have a parallel installation of Visual Studio and the DIA SDK is there. In this case it ^
+may help to copy its "DIA SDK" folder into "%VSINSTALLDIR%" manually, then try again.
 exit /b 1
 
 :PrecompileFX
-for %%F in (%CORE_ROOT%\*.dll) do call :PrecompileAssembly "%%F" %%~nF%%~xF
-exit /b 0
+set __TotalPrecompiled=0
+set __FailedToPrecompile=0
+set __FailedAssemblies=
+for %%F in ("%CORE_ROOT%\System.*.dll";"%CORE_ROOT%\Microsoft.*.dll") do (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.VisualBasic.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.CSharp.dll" (
+    if not "%%~nxF"=="Microsoft.CodeAnalysis.dll" (
+    if not "%%~nxF"=="System.Runtime.WindowsRuntime.dll" (
+        call :PrecompileAssembly "%%F" %%~nxF __TotalPrecompiled __FailedToPrecompile __FailedAssemblies
+        echo Processed: !__TotalPrecompiled!, failed !__FailedToPrecompile!
+    )))))
+)
+
+if !__FailedToPrecompile! NEQ 0 (
+    echo Failed assemblies:
+    FOR %%G IN (!__FailedAssemblies!) do echo   %%G
+)
+
+exit /b !__FailedToPrecompile!
 
 REM Compile the managed assemblies in Core_ROOT before running the tests
 :PrecompileAssembly
 
-REM Skip mscorlib since it is already precompiled.
-if /I "%2" == "mscorlib.dll" exit /b 0
-if /I "%2" == "mscorlib.ni.dll" exit /b 0
-REM don't precompile anything from CoreCLR
-if /I exist %CORE_ROOT_STAGE%\%2 exit /b 0
+set AssemblyPath=%1
+set AssemblyName=%2
 
-REM Don't precompile xunit.* files
-echo "%2" | findstr /b "xunit." >nul && (
-  exit /b 0
-)
-
-set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen.exe"
-if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x86\crossgen.exe" )
-if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT_STAGE%\x64\crossgen.exe" )
+set __CrossgenExe="%CORE_ROOT%\crossgen.exe"
+if /i "%__BuildArch%" == "arm" ( set __CrossgenExe="%CORE_ROOT%\x86\crossgen.exe" )
+if /i "%__BuildArch%" == "arm64" ( set __CrossgenExe="%CORE_ROOT%\x64\crossgen.exe" )
 set __CrossgenExe=%__CrossgenExe%
 
 if defined __DoCrossgen2 (
-    set __CrossgenExe="%CORE_ROOT_STAGE%\crossgen2\crossgen2.exe"
+    set __CrossgenExe="%CORE_ROOT%\crossgen2\crossgen2.exe"
 )
 
-set __CrossgenOutputFile="%CORE_ROOT%\temp.ni.dll"
+REM Intentionally avoid using the .dll extension to prevent
+REM subsequent compilations from picking it up as a reference
+set __CrossgenOutputFile="%CORE_ROOT%\temp.ni._dll"
+set __CrossgenCmd=
 
-if defined __Crossgen (
-    "!__CrossgenExe!" /Platform_Assemblies_Paths "!CORE_ROOT!" /in "%1" /out "!__CrossgenOutputFile" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+if defined __DoCrossgen (
+    set __CrossgenCmd=!__CrossgenExe! /Platform_Assemblies_Paths "!CORE_ROOT!" /in !AssemblyPath! /out !__CrossgenOutputFile!
 ) else (
-    "!CORE_ROOT_STAGE!\crossgen2\crossgen2 -r:"!CORE_ROOT!\*.dll" -O --inputbubble -out:"__CrossgenOutputFile" "%1" >nul 2>nul
-    set /a __exitCode = !errorlevel!
+    set __CrossgenCmd=!__CrossgenExe! -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:"!CORE_ROOT!\netstandard.dll" -O --inputbubble --out:!__CrossgenOutputFile! !AssemblyPath!
 )
+
+echo %__CrossgenCmd%
+%__CrossgenCmd%
+set /a __exitCode = !errorlevel!
+
+set /a "%~3+=1"
 
 if "%__exitCode%" == "-2146230517" (
-    echo %2 is not a managed assembly.
+    echo %AssemblyPath% is not a managed assembly.
     exit /b 0
 )
 
 if %__exitCode% neq 0 (
-    echo Unable to precompile %2, Exit Code is %__exitCode%
+    echo Unable to precompile %AssemblyPath%, exit code is %__exitCode%
+    set /a "%~4+=1"
+    set "%~5=!%~5!,!AssemblyName!"
     exit /b 0
 )
 
 REM Delete original .dll & replace it with the Crossgened .dll
-del %1
-ren "%__CrossgenOutputFile%" %2
+del %AssemblyPath%
+ren "%__CrossgenOutputFile%" %AssemblyName%
 
-echo Successfully precompiled %2
+echo Successfully precompiled %AssemblyPath%
 exit /b 0
 
 :Exit_Failure

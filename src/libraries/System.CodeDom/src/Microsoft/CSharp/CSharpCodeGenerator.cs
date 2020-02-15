@@ -125,6 +125,7 @@ namespace Microsoft.CSharp
                         break;
                     case '\u2028':
                     case '\u2029':
+                    case '\u0085':
                         AppendEscapedChar(b, value[i]);
                         break;
 
@@ -2702,7 +2703,7 @@ namespace Microsoft.CSharp
                     return "void";
                 }
 
-                string lowerCaseString = s.ToLower(CultureInfo.InvariantCulture).Trim();
+                string lowerCaseString = s.ToLowerInvariant().Trim();
 
                 switch (lowerCaseString)
                 {

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CookieTest.cs" />
@@ -12,9 +12,12 @@
     <Compile Include="CredentialCacheTest.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="EndPointTest.cs" />
-    <Compile Include="IPAddressParsing.cs" />
-    <Compile Include="IPAddressTest.cs" />
     <Compile Include="IPAddressMappingTest.cs" />
+    <Compile Include="IPAddressParsing.cs" />
+    <Compile Include="IPAddressParsingSpan.cs" />
+    <Compile Include="IPAddressSpanTest.cs" />
+    <Compile Include="IPAddressTest.cs" />
+    <Compile Include="IPEndPointParsing.cs" />
     <Compile Include="IPEndPointTest.cs" />
     <Compile Include="NetworkCredentialTest.cs" />
     <Compile Include="SocketAddressTest.cs" />
@@ -24,12 +27,6 @@
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="CookieCollectionTest.netcoreapp.cs" />
-    <Compile Include="IPAddressSpanTest.cs" />
-    <Compile Include="IPAddressParsingSpan.cs" />
-    <Compile Include="IPEndPointParsing.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

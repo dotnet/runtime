@@ -51,7 +51,7 @@
 
 #define dwUniBuf 16384
 
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
 extern char *g_pszExeFile;
 #endif
 

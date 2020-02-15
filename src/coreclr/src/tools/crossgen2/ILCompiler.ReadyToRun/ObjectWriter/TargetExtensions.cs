@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -38,6 +38,12 @@ namespace ILCompiler.PEWriter
 
                 case Internal.TypeSystem.TargetArchitecture.X86:
                     return Machine.I386;
+
+                case Internal.TypeSystem.TargetArchitecture.ARM64:
+                    return Machine.Arm64;
+
+                case Internal.TypeSystem.TargetArchitecture.ARM:
+                    return Machine.ArmThumb2;
 
                 default:
                     throw new NotImplementedException(target.Architecture.ToString());

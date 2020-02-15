@@ -19,7 +19,7 @@ namespace System.IO
 {
     public static partial class Directory
     {
-        public static DirectoryInfo GetParent(string path)
+        public static DirectoryInfo? GetParent(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -29,7 +29,7 @@ namespace System.IO
 
             string fullPath = Path.GetFullPath(path);
 
-            string s = Path.GetDirectoryName(fullPath);
+            string? s = Path.GetDirectoryName(fullPath);
             if (s == null)
                 return null;
             return new DirectoryInfo(s);
@@ -50,7 +50,7 @@ namespace System.IO
         }
 
         // Tests if the given path refers to an existing DirectoryInfo on disk.
-        public static bool Exists(string path)
+        public static bool Exists(string? path)
         {
             try
             {
@@ -227,7 +227,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             string fullPath = Path.GetFullPath(path);
-            string root = Path.GetPathRoot(fullPath);
+            string root = Path.GetPathRoot(fullPath)!;
 
             return root;
         }
@@ -276,15 +276,15 @@ namespace System.IO
                 && string.Equals(sourcePath, destPath, fileSystemSensitivity))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            string sourceRoot = Path.GetPathRoot(sourcePath);
-            string destinationRoot = Path.GetPathRoot(destPath);
+            string? sourceRoot = Path.GetPathRoot(sourcePath);
+            string? destinationRoot = Path.GetPathRoot(destPath);
 
             // Compare paths for the same, skip this step if we already know the paths are identical.
             if (!string.Equals(sourceRoot, destinationRoot, StringComparison.OrdinalIgnoreCase))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
-            // to make sure our cross platform behavior matches NetFX behavior.
+            // to make sure our cross platform behavior matches .NET Framework behavior.
             if (!FileSystem.DirectoryExists(fullsourceDirName) && !FileSystem.FileExists(fullsourceDirName))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, fullsourceDirName));
 

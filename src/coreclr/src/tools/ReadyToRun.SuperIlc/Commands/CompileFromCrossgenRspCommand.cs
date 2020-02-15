@@ -107,7 +107,7 @@ namespace ReadyToRun.SuperIlc
                 List<ProcessInfo> fileCompilations = new List<ProcessInfo>();
                 foreach (CompilerRunner runner in compilerRunners)
                 {
-                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, responseFileOuputPath, crossgenArguments.InputFile));
+                    var compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, responseFileOuputPath, new string[] { crossgenArguments.InputFile }));
                     fileCompilations.Add(compilationProcess);
                 }
 
@@ -121,7 +121,7 @@ namespace ReadyToRun.SuperIlc
                         success = false;
                         compilationFailures++;
 
-                        Console.WriteLine($"Failed compiling {compilationProcess.Parameters.InputFileName}");
+                        Console.WriteLine($"Failed compiling {compilationProcess.Parameters.OutputFileName}");
                     }
                 }
             }

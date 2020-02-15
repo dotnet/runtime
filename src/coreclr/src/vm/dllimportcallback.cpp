@@ -105,7 +105,7 @@ private:
 
 static UMEntryThunkFreeList s_thunkFreeList(DEFAULT_THUNK_FREE_LIST_THRESHOLD);
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
 
 EXTERN_C VOID __cdecl UMThunkStubRareDisable();
 EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
@@ -754,7 +754,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     return pcpusl->Link(pLoaderHeap);
 }
 
-#else // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#else // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
 {
@@ -763,7 +763,7 @@ PCODE UMThunkMarshInfo::GetExecStubEntryPoint()
     return GetEEFuncEntryPoint(UMThunkStub);
 }
 
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
 UMEntryThunkCache::UMEntryThunkCache(AppDomain *pDomain) :
     m_crst(CrstUMEntryThunkCache),
@@ -961,10 +961,17 @@ void UMEntryThunk::Terminate()
     CONTRACTL
     {
         NOTHROW;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
     m_code.Poison();
+
+    if (GetObjectHandle())
+    {
+        DestroyLongWeakHandle(GetObjectHandle());
+        m_pObjectHandle = 0;
+    }
 
     s_thunkFreeList.AddToList(this);
 }
@@ -1031,7 +1038,7 @@ UMThunkMarshInfo::~UMThunkMarshInfo()
     }
     CONTRACTL_END;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     if (m_pExecStub)
         m_pExecStub->DecRef();
 #endif
@@ -1093,7 +1100,7 @@ VOID UMThunkMarshInfo::LoadTimeInit(Signature sig, Module * pModule, MethodDesc 
     m_pModule = pModule;
     m_sig = sig;
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     INDEBUG(m_cbRetPop = 0xcccc;)
 #endif
 }
@@ -1136,7 +1143,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         pFinalILStub = GetStubForInteropMethod(pMD, dwStubFlags, &pStubMD);
     }
 
-#if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && !defined(FEATURE_STUBS_AS_IL)
     PInvokeStaticSigInfo sigInfo;
 
     if (pMD != NULL)
@@ -1183,7 +1190,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
             pFinalExecStub->DecRef();
     }
 
-#else // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#else // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     if (pFinalILStub == NULL)
     {
@@ -1216,7 +1223,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         }
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     MetaSig sig(pMD);
     int numRegistersUsed = 0;
     UINT16 cbRetPop = 0;
@@ -1270,22 +1277,22 @@ VOID UMThunkMarshInfo::RunTimeInit()
         // For all the other calling convention except cdecl, callee pops the stack arguments
         m_cbRetPop = cbRetPop + static_cast<UINT16>(m_cbActualArgSize);
     }
-#else // _TARGET_X86_
+#else // TARGET_X86
     //
     // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
     //
     m_cbActualArgSize =
         (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && !FEATURE_STUBS_AS_IL
 
     // Must be the last thing we set!
     InterlockedCompareExchangeT<PCODE>(&m_pILStub, pFinalILStub, (PCODE)1);
 }
 
-#if defined(_TARGET_X86_) && defined(FEATURE_STUBS_AS_IL)
+#if defined(TARGET_X86) && defined(FEATURE_STUBS_AS_IL)
 VOID UMThunkMarshInfo::SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, char *pDst)
 {
     MethodDesc *pMD = GetMethod();
@@ -1363,7 +1370,7 @@ EXTERN_C VOID STDCALL UMThunkStubSetupArgumentsWorker(UMThunkMarshInfo *pMarshIn
 {
     pMarshInfo->SetupArguments(pSrc, pArgRegs, pDst);
 }
-#endif // _TARGET_X86_ && FEATURE_STUBS_AS_IL
+#endif // TARGET_X86 && FEATURE_STUBS_AS_IL
 
 #ifdef _DEBUG
 void STDCALL LogUMTransition(UMEntryThunk* thunk)

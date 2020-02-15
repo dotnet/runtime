@@ -29,11 +29,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class TimeZoneInfo :
-#nullable disable // see comment on String
-        IEquatable<TimeZoneInfo>,
-#nullable restore
-        ISerializable, IDeserializationCallback
+    public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
         {
@@ -1755,17 +1751,24 @@ namespace System
         internal static DateTime TransitionTimeToDateTime(int year, TransitionTime transitionTime)
         {
             DateTime value;
-            DateTime timeOfDay = transitionTime.TimeOfDay;
+            TimeSpan timeOfDay = transitionTime.TimeOfDay.TimeOfDay;
 
             if (transitionTime.IsFixedDateRule)
             {
                 // create a DateTime from the passed in year and the properties on the transitionTime
 
+                int day = transitionTime.Day;
                 // if the day is out of range for the month then use the last day of the month
-                int day = DateTime.DaysInMonth(year, transitionTime.Month);
+                if (day > 28)
+                {
+                    int daysInMonth = DateTime.DaysInMonth(year, transitionTime.Month);
+                    if (day > daysInMonth)
+                    {
+                        day = daysInMonth;
+                    }
+                }
 
-                value = new DateTime(year, transitionTime.Month, (day < transitionTime.Day) ? day : transitionTime.Day,
-                            timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
+                value = new DateTime(year, transitionTime.Month, day) + timeOfDay;
             }
             else
             {
@@ -1774,8 +1777,7 @@ namespace System
                     //
                     // Get the (transitionTime.Week)th Sunday.
                     //
-                    value = new DateTime(year, transitionTime.Month, 1,
-                            timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
+                    value = new DateTime(year, transitionTime.Month, 1) + timeOfDay;
 
                     int dayOfWeek = (int)value.DayOfWeek;
                     int delta = (int)transitionTime.DayOfWeek - dayOfWeek;
@@ -1796,8 +1798,7 @@ namespace System
                     // If TransitionWeek is greater than 4, we will get the last week.
                     //
                     int daysInMonth = DateTime.DaysInMonth(year, transitionTime.Month);
-                    value = new DateTime(year, transitionTime.Month, daysInMonth,
-                            timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
+                    value = new DateTime(year, transitionTime.Month, daysInMonth) + timeOfDay;
 
                     // This is the day of week for the last day of the month.
                     int dayOfWeek = (int)value.DayOfWeek;

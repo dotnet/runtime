@@ -6,7 +6,7 @@ using System;
 using System.Collections.Immutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
+using System.Threading;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -64,8 +64,8 @@ namespace Internal.IL
             if (_ilBytes != null)
                 return _ilBytes;
 
-            byte[] ilBytes = _methodBody.GetILBytes();
-            return (_ilBytes = ilBytes);
+            Interlocked.CompareExchange(ref _ilBytes, _methodBody.GetILBytes(), null);
+            return _ilBytes;
         }
 
         public override bool IsInitLocals
@@ -97,7 +97,9 @@ namespace Internal.IL
 
             EcmaSignatureParser parser = new EcmaSignatureParser(_module, signatureReader);
             LocalVariableDefinition[] locals = parser.ParseLocalsSignature();
-            return (_locals = locals);
+
+            Interlocked.CompareExchange(ref _locals, locals, null);
+            return _locals;
         }
 
         public override ILExceptionRegion[] GetExceptionRegions()
@@ -131,7 +133,8 @@ namespace Internal.IL
                 }
             }
 
-            return (_ilExceptionRegions = ilExceptionRegions);
+            Interlocked.CompareExchange(ref _ilExceptionRegions, ilExceptionRegions, null);
+            return _ilExceptionRegions;
         }
 
         public override object GetObject(int token)

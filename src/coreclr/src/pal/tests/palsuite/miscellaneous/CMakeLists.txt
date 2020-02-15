@@ -1,8 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12.2)
-
 add_subdirectory(CGroup)
-add_subdirectory(CharNextA)
-add_subdirectory(CharNextExA)
 add_subdirectory(CloseHandle)
 add_subdirectory(CreatePipe)
 add_subdirectory(FlushInstructionCache)

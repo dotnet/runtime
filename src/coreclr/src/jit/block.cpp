@@ -40,8 +40,8 @@ flowList* ShuffleHelper(unsigned hash, flowList* res)
         {
             // Swap res with head.
             prev->flNext = head;
-            jitstd::swap(head->flNext, res->flNext);
-            jitstd::swap(head, res);
+            std::swap(head->flNext, res->flNext);
+            std::swap(head, res);
         }
     }
     return head;
@@ -72,8 +72,7 @@ EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* blo
     // can occur within it, so clear m_curTry if it's non-null.
     if (m_curTry != nullptr)
     {
-        BasicBlock* beforeBlock = block->bbPrev;
-        if (beforeBlock != nullptr && beforeBlock->isBBCallAlwaysPair())
+        if (block->isBBCallAlwaysPairTail())
         {
             m_curTry = nullptr;
         }
@@ -176,17 +175,15 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
 
         // Now add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
         // these cannot cause transfer to the handler...)
-        BasicBlock* prevBB = nullptr;
-
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
         //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
-        for (BasicBlock *bb = fgFirstBB; bb != nullptr; prevBB = bb, bb = bb->bbNext)
+        for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
         {
-            if (bbInExnFlowRegions(tryIndex, bb) && (prevBB == nullptr || !prevBB->isBBCallAlwaysPair()))
+            if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {
                 res = new (this, CMK_FlowList) flowList(bb, res);
 
@@ -333,12 +330,16 @@ void BasicBlock::dspFlags()
     {
         printf("newobj ");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+    if (bbFlags & BBF_HAS_NULLCHECK)
+    {
+        printf("nullcheck ");
+    }
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_FINALLY_TARGET)
     {
         printf("ftarget ");
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
         printf("bwd ");
@@ -1375,6 +1376,67 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 }
 
 //------------------------------------------------------------------------
+// isBBCallAlwaysPair: Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+
+// Return Value:
+//    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+//    -- a block corresponding to an exit from the try of a try/finally.
+//
+// Notes:
+//    In the flow graph, this becomes a block that calls the finally, and a second, immediately
+//    following empty block (in the bbNext chain) to which the finally will return, and which
+//    branches unconditionally to the next block to be executed outside the try/finally.
+//    Note that code is often generated differently than this description. For example, on ARM,
+//    the target of the BBJ_ALWAYS is loaded in LR (the return register), and a direct jump is
+//    made to the 'finally'. The effect is that the 'finally' returns directly to the target of
+//    the BBJ_ALWAYS. A "retless" BBJ_CALLFINALLY is one that has no corresponding BBJ_ALWAYS.
+//    This can happen if the finally is known to not return (e.g., it contains a 'throw'). In
+//    that case, the BBJ_CALLFINALLY flags has BBF_RETLESS_CALL set. Note that ARM never has
+//    "retless" BBJ_CALLFINALLY blocks due to a requirement to use the BBJ_ALWAYS for
+//    generating code.
+//
+bool BasicBlock::isBBCallAlwaysPair()
+{
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    if (this->bbJumpKind == BBJ_CALLFINALLY)
+#else
+    if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
+#endif
+    {
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+        // On ARM, there are no retless BBJ_CALLFINALLY.
+        assert(!(this->bbFlags & BBF_RETLESS_CALL));
+#endif
+        // Some asserts that the next block is a BBJ_ALWAYS of the proper form.
+        assert(this->bbNext != nullptr);
+        assert(this->bbNext->bbJumpKind == BBJ_ALWAYS);
+        assert(this->bbNext->bbFlags & BBF_KEEP_BBJ_ALWAYS);
+        assert(this->bbNext->isEmpty());
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// isBBCallAlwaysPairTail: Determine if this is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+//
+// Return Value:
+//    True iff "this" is the last block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
+//    -- a block corresponding to an exit from the try of a try/finally.
+//
+// Notes:
+//    See notes on isBBCallAlwaysPair(), above.
+//
+bool BasicBlock::isBBCallAlwaysPairTail()
+{
+    return (bbPrev != nullptr) && bbPrev->isBBCallAlwaysPair();
+}
+
+//------------------------------------------------------------------------
 // hasEHBoundaryIn: Determine if this block begins at an EH boundary.
 //
 // Return Value:
@@ -1417,14 +1479,6 @@ bool BasicBlock::hasEHBoundaryIn()
 bool BasicBlock::hasEHBoundaryOut()
 {
     bool returnVal = false;
-    // If a block is marked BBF_KEEP_BBJ_ALWAYS, it is always paired with its predecessor which is an
-    // EH boundary block. It must remain empty, and we must not have any live incoming vars in registers,
-    // in particular because we can't perform resolution if there are mismatches across edges.
-    if ((bbFlags & BBF_KEEP_BBJ_ALWAYS) != 0)
-    {
-        returnVal = true;
-    }
-
     if (bbJumpKind == BBJ_EHFILTERRET)
     {
         returnVal = true;
@@ -1443,144 +1497,4 @@ bool BasicBlock::hasEHBoundaryOut()
 #endif // FEATURE_EH_FUNCLETS
 
     return returnVal;
-}
-
-//------------------------------------------------------------------------------
-// DisplayStaticSizes: display various static sizes of the BasicBlock data structure.
-//
-// Arguments:
-//    fout  - where to write the output
-//
-// Return Value:
-//    None
-//
-// Note: This function only does something if MEASURE_BLOCK_SIZE is defined, which it might
-// be in private Release builds.
-//
-/* static */
-void BasicBlock::DisplayStaticSizes(FILE* fout)
-{
-#if MEASURE_BLOCK_SIZE
-
-    BasicBlock* bbDummy = nullptr;
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Offset / size of bbNext                = %3u / %3u\n", offsetof(BasicBlock, bbNext),
-            sizeof(bbDummy->bbNext));
-    fprintf(fout, "Offset / size of bbPrev                = %3u / %3u\n", offsetof(BasicBlock, bbPrev),
-            sizeof(bbDummy->bbPrev));
-    fprintf(fout, "Offset / size of bbFlags               = %3u / %3u\n", offsetof(BasicBlock, bbFlags),
-            sizeof(bbDummy->bbFlags));
-    fprintf(fout, "Offset / size of bbNum                 = %3u / %3u\n", offsetof(BasicBlock, bbNum),
-            sizeof(bbDummy->bbNum));
-    fprintf(fout, "Offset / size of bbPostOrderNum        = %3u / %3u\n", offsetof(BasicBlock, bbPostOrderNum),
-            sizeof(bbDummy->bbPostOrderNum));
-    fprintf(fout, "Offset / size of bbRefs                = %3u / %3u\n", offsetof(BasicBlock, bbRefs),
-            sizeof(bbDummy->bbRefs));
-    fprintf(fout, "Offset / size of bbWeight              = %3u / %3u\n", offsetof(BasicBlock, bbWeight),
-            sizeof(bbDummy->bbWeight));
-    fprintf(fout, "Offset / size of bbJumpKind            = %3u / %3u\n", offsetof(BasicBlock, bbJumpKind),
-            sizeof(bbDummy->bbJumpKind));
-    fprintf(fout, "Offset / size of bbJumpOffs            = %3u / %3u\n", offsetof(BasicBlock, bbJumpOffs),
-            sizeof(bbDummy->bbJumpOffs));
-    fprintf(fout, "Offset / size of bbJumpDest            = %3u / %3u\n", offsetof(BasicBlock, bbJumpDest),
-            sizeof(bbDummy->bbJumpDest));
-    fprintf(fout, "Offset / size of bbJumpSwt             = %3u / %3u\n", offsetof(BasicBlock, bbJumpSwt),
-            sizeof(bbDummy->bbJumpSwt));
-    fprintf(fout, "Offset / size of bbEntryState          = %3u / %3u\n", offsetof(BasicBlock, bbEntryState),
-            sizeof(bbDummy->bbEntryState));
-    fprintf(fout, "Offset / size of bbStkTempsIn          = %3u / %3u\n", offsetof(BasicBlock, bbStkTempsIn),
-            sizeof(bbDummy->bbStkTempsIn));
-    fprintf(fout, "Offset / size of bbStkTempsOut         = %3u / %3u\n", offsetof(BasicBlock, bbStkTempsOut),
-            sizeof(bbDummy->bbStkTempsOut));
-    fprintf(fout, "Offset / size of bbTryIndex            = %3u / %3u\n", offsetof(BasicBlock, bbTryIndex),
-            sizeof(bbDummy->bbTryIndex));
-    fprintf(fout, "Offset / size of bbHndIndex            = %3u / %3u\n", offsetof(BasicBlock, bbHndIndex),
-            sizeof(bbDummy->bbHndIndex));
-    fprintf(fout, "Offset / size of bbCatchTyp            = %3u / %3u\n", offsetof(BasicBlock, bbCatchTyp),
-            sizeof(bbDummy->bbCatchTyp));
-    fprintf(fout, "Offset / size of bbStkDepth            = %3u / %3u\n", offsetof(BasicBlock, bbStkDepth),
-            sizeof(bbDummy->bbStkDepth));
-    fprintf(fout, "Offset / size of bbFPinVars            = %3u / %3u\n", offsetof(BasicBlock, bbFPinVars),
-            sizeof(bbDummy->bbFPinVars));
-    fprintf(fout, "Offset / size of bbCheapPreds          = %3u / %3u\n", offsetof(BasicBlock, bbCheapPreds),
-            sizeof(bbDummy->bbCheapPreds));
-    fprintf(fout, "Offset / size of bbPreds               = %3u / %3u\n", offsetof(BasicBlock, bbPreds),
-            sizeof(bbDummy->bbPreds));
-    fprintf(fout, "Offset / size of bbReach               = %3u / %3u\n", offsetof(BasicBlock, bbReach),
-            sizeof(bbDummy->bbReach));
-    fprintf(fout, "Offset / size of bbIDom                = %3u / %3u\n", offsetof(BasicBlock, bbIDom),
-            sizeof(bbDummy->bbIDom));
-    fprintf(fout, "Offset / size of bbDfsNum              = %3u / %3u\n", offsetof(BasicBlock, bbDfsNum),
-            sizeof(bbDummy->bbDfsNum));
-    fprintf(fout, "Offset / size of bbCodeOffs            = %3u / %3u\n", offsetof(BasicBlock, bbCodeOffs),
-            sizeof(bbDummy->bbCodeOffs));
-    fprintf(fout, "Offset / size of bbCodeOffsEnd         = %3u / %3u\n", offsetof(BasicBlock, bbCodeOffsEnd),
-            sizeof(bbDummy->bbCodeOffsEnd));
-    fprintf(fout, "Offset / size of bbVarUse              = %3u / %3u\n", offsetof(BasicBlock, bbVarUse),
-            sizeof(bbDummy->bbVarUse));
-    fprintf(fout, "Offset / size of bbVarDef              = %3u / %3u\n", offsetof(BasicBlock, bbVarDef),
-            sizeof(bbDummy->bbVarDef));
-    fprintf(fout, "Offset / size of bbLiveIn              = %3u / %3u\n", offsetof(BasicBlock, bbLiveIn),
-            sizeof(bbDummy->bbLiveIn));
-    fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
-            sizeof(bbDummy->bbLiveOut));
-    // Can't do bitfield bbMemoryUse, bbMemoryDef, bbMemoryLiveIn, bbMemoryLiveOut, bbMemoryHavoc
-    fprintf(fout, "Offset / size of bbMemorySsaPhiFunc    = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaPhiFunc),
-            sizeof(bbDummy->bbMemorySsaPhiFunc));
-    fprintf(fout, "Offset / size of bbMemorySsaNumIn      = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumIn),
-            sizeof(bbDummy->bbMemorySsaNumIn));
-    fprintf(fout, "Offset / size of bbMemorySsaNumOut     = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumOut),
-            sizeof(bbDummy->bbMemorySsaNumOut));
-    fprintf(fout, "Offset / size of bbScope               = %3u / %3u\n", offsetof(BasicBlock, bbScope),
-            sizeof(bbDummy->bbScope));
-    fprintf(fout, "Offset / size of bbCseGen              = %3u / %3u\n", offsetof(BasicBlock, bbCseGen),
-            sizeof(bbDummy->bbCseGen));
-#if ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbAssertionGen        = %3u / %3u\n", offsetof(BasicBlock, bbAssertionGen),
-            sizeof(bbDummy->bbAssertionGen));
-#endif // ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbCseIn               = %3u / %3u\n", offsetof(BasicBlock, bbCseIn),
-            sizeof(bbDummy->bbCseIn));
-#if ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbAssertionIn         = %3u / %3u\n", offsetof(BasicBlock, bbAssertionIn),
-            sizeof(bbDummy->bbAssertionIn));
-#endif // ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbCseOut              = %3u / %3u\n", offsetof(BasicBlock, bbCseOut),
-            sizeof(bbDummy->bbCseOut));
-#if ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbAssertionOut        = %3u / %3u\n", offsetof(BasicBlock, bbAssertionOut),
-            sizeof(bbDummy->bbAssertionOut));
-#endif // ASSERTION_PROP
-    fprintf(fout, "Offset / size of bbEmitCookie          = %3u / %3u\n", offsetof(BasicBlock, bbEmitCookie),
-            sizeof(bbDummy->bbEmitCookie));
-
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-    fprintf(fout, "Offset / size of bbUnwindNopEmitCookie = %3u / %3u\n", offsetof(BasicBlock, bbUnwindNopEmitCookie),
-            sizeof(bbDummy->bbUnwindNopEmitCookie));
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
-
-#ifdef VERIFIER
-    fprintf(fout, "Offset / size of bbStackIn             = %3u / %3u\n", offsetof(BasicBlock, bbStackIn),
-            sizeof(bbDummy->bbStackIn));
-    fprintf(fout, "Offset / size of bbStackOut            = %3u / %3u\n", offsetof(BasicBlock, bbStackOut),
-            sizeof(bbDummy->bbStackOut));
-    fprintf(fout, "Offset / size of bbTypesIn             = %3u / %3u\n", offsetof(BasicBlock, bbTypesIn),
-            sizeof(bbDummy->bbTypesIn));
-    fprintf(fout, "Offset / size of bbTypesOut            = %3u / %3u\n", offsetof(BasicBlock, bbTypesOut),
-            sizeof(bbDummy->bbTypesOut));
-#endif // VERIFIER
-
-#ifdef DEBUG
-    fprintf(fout, "Offset / size of bbLoopNum             = %3u / %3u\n", offsetof(BasicBlock, bbLoopNum),
-            sizeof(bbDummy->bbLoopNum));
-#endif // DEBUG
-
-    fprintf(fout, "Offset / size of bbNatLoopNum          = %3u / %3u\n", offsetof(BasicBlock, bbNatLoopNum),
-            sizeof(bbDummy->bbNatLoopNum));
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Size of BasicBlock                     = %3u\n", sizeof(BasicBlock));
-
-#endif // MEASURE_BLOCK_SIZE
 }

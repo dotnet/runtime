@@ -1,9 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.IO.Pipes</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
@@ -18,49 +19,48 @@
     <Compile Include="System\IO\Pipes\PipeState.cs" />
     <Compile Include="System\IO\Pipes\PipeStream.cs" />
     <Compile Include="System\IO\Pipes\PipeTransmissionMode.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\StreamHelpers.CopyValidation.cs" Link="Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs" Link="Common\CoreLib\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Include="$(CommonPath)System\IO\StreamHelpers.CopyValidation.cs" Link="Common\System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs" Link="Common\Interop\Windows\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs" Link="Common\Interop\Windows\Interop.Errors.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FreeLibrary.cs" Link="Common\CoreLib\Interop\Windows\Interop.FreeLibrary.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" Link="Common\CoreLib\Interop\Windows\Interop.SecurityOptions.cs" />
-    <Compile Include="$(CoreLibSharedDir)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" Link="Common\CoreLib\Microsoft\Win32\SafeLibraryHandle.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs" Link="Common\CoreLib\Interop\Windows\Interop.BOOL.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Common\Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs" Link="Common\Interop\Windows\Interop.FormatMessage.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SecurityOptions.cs" Link="Common\CoreLib\Interop\Windows\Interop.SecurityOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\CoreLib\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" Link="Common\CoreLib\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleOptions.cs" Link="Common\Interop\Windows\Interop.HandleOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PipeOptions.cs" Link="Common\Interop\Windows\Interop.PipeOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileOperations.cs" Link="Common\Interop\Windows\Interop.FileOperations.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs" Link="Common\CoreLib\Interop\Windows\Interop.FileTypes.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" Link="Common\Interop\Windows\Interop.GetCurrentProcess.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs" Link="Common\CoreLib\Interop\Windows\Interop.FileTypes.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs" Link="Common\Interop\Windows\Interop.GetCurrentProcess.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DuplicateHandle_IntPtr.cs" Link="Common\Interop\Windows\Interop.DuplicateHandle_IntPtr.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" Link="Common\CoreLib\Interop\Windows\Interop.GetFileType.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs" Link="Common\CoreLib\Interop\Windows\Interop.GetFileType.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreatePipe_SafePipeHandle.cs" Link="Common\Interop\Windows\Interop.CreatePipe_SafePipeHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConnectNamedPipe.cs" Link="Common\Interop\Windows\Interop.ConnectNamedPipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WaitNamedPipe.cs" Link="Common\Interop\Windows\Interop.WaitNamedPipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNamedPipeHandleState.cs" Link="Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetNamedPipeInfo.cs" Link="Common\Interop\Windows\Interop.GetNamedPipeInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetNamedPipeHandleState.cs" Link="Common\Interop\Windows\Interop.SetNamedPipeHandleState.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" Link="Common\Interop\Windows\Interop.CancelIoEx.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs" Link="Common\Interop\Windows\Interop.FlushFileBuffers.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" Link="Common\Interop\Windows\Interop.ReadFile_IntPtr.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" Link="Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" Link="Common\Interop\Windows\Interop.WriteFile_IntPtr.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" Link="Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" Link="Common\Interop\Windows\Interop.CancelIoEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs" Link="Common\Interop\Windows\Interop.FlushFileBuffers.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" Link="Common\Interop\Windows\Interop.ReadFile_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" Link="Common\Interop\Windows\Interop.ReadFile_NativeOverlapped.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" Link="Common\Interop\Windows\Interop.WriteFile_IntPtr.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" Link="Common\Interop\Windows\Interop.WriteFile_NativeOverlapped.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DisconnectNamedPipe.cs" Link="Common\Interop\Windows\Interop.DisconnectNamedPipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipe.cs" Link="Common\Interop\Windows\Interop.CreateNamedPipe.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MaxLengths.cs" Link="Common\Interop\Windows\Interop.MaxLengths.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RevertToSelf.cs" Link="Common\Interop\Windows\Interop.RevertToSelf.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ImpersonateNamedPipeClient.cs" Link="Common\Interop\Windows\Interop.ImpersonateNamedPipeClient.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs" Link="Common\CoreLib\System\IO\Win32Marshal.cs" />
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs" Link="Common\CoreLib\System\IO\Win32Marshal.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePipeHandle.Windows.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\AnonymousPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\ConnectionCompletionSource.cs" />
+    <Compile Include="System\IO\Pipes\NamedPipeServerStreamAcl.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeClientStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Windows.cs" />
     <Compile Include="System\IO\Pipes\PipeAccessRights.cs" />
@@ -75,7 +75,7 @@
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateNamedPipeClient.cs" Link="Common\Interop\Windows\Interop.CreateNamedPipeClient.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs" Link="Common\CoreLib\Interop\Windows\Interop.LoadLibraryEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" Link="Common\Interop\Windows\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="System\IO\Pipes\NamedPipeServerStream.Win32.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
@@ -86,43 +86,39 @@
     <Compile Include="System\IO\Pipes\PipeStream.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs" Link="Common\CoreLib\Interop\Unix\Interop.Errors.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs" Link="Common\CoreLib\Interop\Unix\Interop.IOErrors.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs" Link="Common\Interop\Unix\Interop.Close.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs" Link="Common\CoreLib\Interop\Unix\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs" Link="Common\CoreLib\Interop\Unix\Interop.IOErrors.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs" Link="Common\Interop\Unix\Interop.Close.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.Pipe.cs" Link="Common\Interop\Unix\Interop.Fcntl.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Fcntl.cs" Link="Common\Interop\Unix\Interop.Fcntl.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.FLock.cs" Link="Common\Interop\Unix\Interop.FLock.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetHostName.cs" Link="Common\Interop\Unix\Interop.GetHostName.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs" Link="Common\Interop\Unix\Interop.FLock.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetHostName.cs" Link="Common\Interop\Unix\Interop.GetHostName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerUserName.cs" Link="Common\Interop\Unix\Interop.GetPeerUserName.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkDir.cs" Link="Common\Interop\Unix\Interop.MkDir.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs" Link="Common\Interop\Unix\Interop.Open.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.OpenFlags.cs" Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs" Link="Common\Interop\Unix\Interop.Open.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs" Link="Common\Interop\Unix\Interop.OpenFlags.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Permissions.cs" Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Pipe.cs" Link="Common\Interop\Unix\Interop.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs" Link="Common\Interop\Unix\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.Pipe.cs" Link="Common\Interop\Unix\Interop.Read.Pipe.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Unlink.cs" Link="Common\Interop\Unix\Interop.Unlink.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Unlink.cs" Link="Common\Interop\Unix\Interop.Unlink.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.Pipe.cs" Link="Common\Interop\Unix\Interop.Write.Pipe.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Pipe.cs" Link="Common\Interop\Unix\Interop.Stat.Pipe.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPeerID.cs" Link="Common\Interop\Unix\Interop.GetPeerID.cs" />
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\Interop.GetEUid.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs" Link="Common\Interop\Unix\Interop.GetEUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetEUid.cs" Link="Common\Interop\Unix\Interop.SetEUid.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\ForceAsyncAwaiter.cs" Link="Common\System\Threading\Tasks\ForceAsyncAwaiter.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Overlapped" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Collections.NonGeneric" />

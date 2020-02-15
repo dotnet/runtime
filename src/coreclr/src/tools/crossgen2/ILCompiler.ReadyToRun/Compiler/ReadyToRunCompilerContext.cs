@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
-using VectorIntrinsicFieldLayoutAlgorithm = ILCompiler.VectorFieldLayoutAlgorithm;
 
 namespace ILCompiler
 {
@@ -25,16 +24,16 @@ namespace ILCompiler
     {
         private ReadyToRunMetadataFieldLayoutAlgorithm _r2rFieldLayoutAlgorithm;
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
+        private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
-        VectorIntrinsicFieldLayoutAlgorithm _vectorIntrinsicFieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode)
             : base(details, genericsMode)
         {
             _r2rFieldLayoutAlgorithm = new ReadyToRunMetadataFieldLayoutAlgorithm();
             _systemObjectFieldLayoutAlgorithm = new SystemObjectFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
             _vectorFieldLayoutAlgorithm = new VectorFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
-            _vectorIntrinsicFieldLayoutAlgorithm = new VectorIntrinsicFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
         }
 
         public override FieldLayoutAlgorithm GetLayoutAlgorithmForType(DefType type)
@@ -45,13 +44,13 @@ namespace ILCompiler
                 throw new NotImplementedException();
             else if (type.IsRuntimeDeterminedType)
                 throw new NotImplementedException();
-            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorOfTType(type))
+            else if (VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
+            {
+                return _vectorOfTFieldLayoutAlgorithm;
+            }
+            else if (VectorFieldLayoutAlgorithm.IsVectorType(type))
             {
                 return _vectorFieldLayoutAlgorithm;
-            }
-            else if (VectorIntrinsicFieldLayoutAlgorithm.IsVectorType(type))
-            {
-                return _vectorIntrinsicFieldLayoutAlgorithm;
             }
             else
             {
@@ -98,56 +97,61 @@ namespace ILCompiler
         {
             return BaseTypeRuntimeInterfacesAlgorithm.Instance;
         }
+    }
 
-        private class VectorFieldLayoutAlgorithm : FieldLayoutAlgorithm
+    internal class VectorOfTFieldLayoutAlgorithm : FieldLayoutAlgorithm
+    {
+        private FieldLayoutAlgorithm _fallbackAlgorithm;
+
+        public VectorOfTFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
         {
-            private FieldLayoutAlgorithm _fallbackAlgorithm;
+            _fallbackAlgorithm = fallbackAlgorithm;
+        }
 
-            public VectorFieldLayoutAlgorithm(FieldLayoutAlgorithm fallbackAlgorithm)
-            {
-                _fallbackAlgorithm = fallbackAlgorithm;
-            }
+        public override bool ComputeContainsGCPointers(DefType type)
+        {
+            return _fallbackAlgorithm.ComputeContainsGCPointers(type);
+        }
 
-            public override bool ComputeContainsGCPointers(DefType type)
-            {
-                return _fallbackAlgorithm.ComputeContainsGCPointers(type);
-            }
+        public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+        {
+            return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
+        }
 
-            public override DefType ComputeHomogeneousFloatAggregateElementType(DefType type)
+        public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
+        {
+            List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
+            foreach (FieldDesc field in type.GetFields())
             {
-                return _fallbackAlgorithm.ComputeHomogeneousFloatAggregateElementType(type);
-            }
-
-            public override ComputedInstanceFieldLayout ComputeInstanceLayout(DefType type, InstanceLayoutKind layoutKind)
-            {
-                List<FieldAndOffset> fieldsAndOffsets = new List<FieldAndOffset>();
-                foreach (FieldDesc field in type.GetFields())
+                if (!field.IsStatic)
                 {
-                    if (!field.IsStatic)
-                    {
-                        fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
-                    }
+                    fieldsAndOffsets.Add(new FieldAndOffset(field, LayoutInt.Indeterminate));
                 }
-                ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
-                {
-                    FieldSize = LayoutInt.Indeterminate,
-                    FieldAlignment = LayoutInt.Indeterminate,
-                    ByteCountUnaligned = LayoutInt.Indeterminate,
-                    ByteCountAlignment = LayoutInt.Indeterminate,
-                    Offsets = fieldsAndOffsets.ToArray(),
-                };
-                return instanceLayout;
             }
-
-            public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+            ComputedInstanceFieldLayout instanceLayout = new ComputedInstanceFieldLayout()
             {
-                return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
-            }
+                FieldSize = LayoutInt.Indeterminate,
+                FieldAlignment = LayoutInt.Indeterminate,
+                ByteCountUnaligned = LayoutInt.Indeterminate,
+                ByteCountAlignment = LayoutInt.Indeterminate,
+                Offsets = fieldsAndOffsets.ToArray(),
+            };
+            return instanceLayout;
+        }
 
-            public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
-            {
-                return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
-            }
+        public override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType type, StaticLayoutKind layoutKind)
+        {
+            return _fallbackAlgorithm.ComputeStaticFieldLayout(type, layoutKind);
+        }
+
+        public override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+        {
+            return _fallbackAlgorithm.ComputeValueTypeShapeCharacteristics(type);
+        }
+
+        public static bool IsVectorOfTType(DefType type)
+        {
+            return type.IsIntrinsic && type.Namespace == "System.Numerics" && type.Name == "Vector`1";
         }
     }
 }

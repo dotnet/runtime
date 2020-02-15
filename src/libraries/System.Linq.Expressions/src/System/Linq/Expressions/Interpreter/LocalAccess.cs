@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal interface IBoxableInstruction
     {
-        Instruction BoxIfIndexMatches(int index);
+        Instruction? BoxIfIndexMatches(int index);
     }
 
     internal abstract class LocalAccessInstruction : Instruction
@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Interpreter
             _index = index;
         }
 
-        public override string ToDebugString(int instructionIndex, object cookie, Func<int, int> labelIndexer, IReadOnlyList<object> objects)
+        public override string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects)
         {
             return cookie == null ?
                 InstructionName + "(" + _index + ")" :
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        public Instruction BoxIfIndexMatches(int index)
+        public Instruction? BoxIfIndexMatches(int index)
         {
             return (index == _index) ? InstructionList.LoadLocalBoxed(index) : null;
         }
@@ -68,7 +68,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox)frame.Data[_index];
+            var box = (IStrongBox)frame.Data[_index]!;
             frame.Data[frame.StackIndex++] = box.Value;
             return 1;
         }
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure[_index];
+            IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box.Value;
             return 1;
         }
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure[_index];
+            IStrongBox box = frame.Closure![_index];
             frame.Data[frame.StackIndex++] = box;
             return 1;
         }
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        public Instruction BoxIfIndexMatches(int index)
+        public Instruction? BoxIfIndexMatches(int index)
         {
             return (index == _index) ? InstructionList.AssignLocalBoxed(index) : null;
         }
@@ -153,7 +153,7 @@ namespace System.Linq.Expressions.Interpreter
             return 1;
         }
 
-        public Instruction BoxIfIndexMatches(int index)
+        public Instruction? BoxIfIndexMatches(int index)
         {
             return (index == _index) ? InstructionList.StoreLocalBoxed(index) : null;
         }
@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox)frame.Data[_index];
+            var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Peek();
             return 1;
         }
@@ -190,7 +190,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            var box = (IStrongBox)frame.Data[_index];
+            var box = (IStrongBox)frame.Data[_index]!;
             box.Value = frame.Data[--frame.StackIndex];
             return 1;
         }
@@ -209,7 +209,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            IStrongBox box = frame.Closure[_index];
+            IStrongBox box = frame.Closure![_index];
             box.Value = frame.Peek();
             return 1;
         }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object o = frame.Pop();
+            object? o = frame.Pop();
             frame.Push(o == null ? o : RuntimeHelpers.GetObjectValue(o));
             return 1;
         }
@@ -235,7 +235,6 @@ namespace System.Linq.Expressions.Interpreter
 
     #region Initialize
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1012:AbstractTypesShouldNotHaveConstructors")]
     internal abstract class InitializeLocalInstruction : LocalAccessInstruction
     {
         internal InitializeLocalInstruction(int index)
@@ -256,7 +255,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public Instruction BoxIfIndexMatches(int index)
+            public Instruction? BoxIfIndexMatches(int index)
             {
                 return (index == _index) ? InstructionList.InitImmutableRefBox(index) : null;
             }
@@ -281,7 +280,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public Instruction BoxIfIndexMatches(int index)
+            public Instruction? BoxIfIndexMatches(int index)
             {
                 return (index == _index) ? new ImmutableBox(index, _defaultValue) : null;
             }
@@ -336,7 +335,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                frame.Data[_index] = new StrongBox<object>(frame.Data[_index]);
+                frame.Data[_index] = new StrongBox<object?>(frame.Data[_index]);
                 return 1;
             }
 
@@ -356,7 +355,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public Instruction BoxIfIndexMatches(int index)
+            public Instruction? BoxIfIndexMatches(int index)
             {
                 if (index == _index)
                 {
@@ -393,7 +392,7 @@ namespace System.Linq.Expressions.Interpreter
                 return 1;
             }
 
-            public Instruction BoxIfIndexMatches(int index)
+            public Instruction? BoxIfIndexMatches(int index)
             {
                 return (index == _index) ? new MutableBox(index, _type) : null;
             }
@@ -413,7 +412,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                object value;
+                object? value;
 
                 try
                 {
@@ -425,7 +424,7 @@ namespace System.Linq.Expressions.Interpreter
                     throw ContractUtils.Unreachable;
                 }
 
-                frame.Data[_index] = new StrongBox<object>(value);
+                frame.Data[_index] = new StrongBox<object?>(value);
 
                 return 1;
             }
@@ -456,7 +455,7 @@ namespace System.Linq.Expressions.Interpreter
             var ret = new IStrongBox[_count];
             for (int i = ret.Length - 1; i >= 0; i--)
             {
-                ret[i] = (IStrongBox)frame.Pop();
+                ret[i] = (IStrongBox)frame.Pop()!;
             }
             frame.Push(RuntimeVariables.Create(ret));
             return 1;

@@ -292,7 +292,7 @@ CLRTestExpectedExitCode=0
 
     <PropertyGroup>
       <BashEnvironmentVariables>
-        @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0d%0a')
+@(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
      

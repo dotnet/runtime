@@ -64,7 +64,7 @@ int __cdecl main(int argc, char *argv[])
     }
 
     /* set the attributes of the destination file to normal again */
-    bRc = SetFileAttributes(szDest, FILE_ATTRIBUTE_NORMAL);
+    bRc = SetFileAttributesA(szDest, FILE_ATTRIBUTE_NORMAL);
     if(!bRc)
     {
         Fail("CopyFileA: ERROR-> Couldn't set file attributes for "

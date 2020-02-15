@@ -1,29 +1,12 @@
 <Project Sdk="Microsoft.Build.Traversal">
-  <ItemGroup Condition="'$(__SkipCoreLibBuild)'==''">
-    <ProjectReference Include="Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.builds" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <ProjectReference Include="Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetsWindows)'=='true' OR '$(DotNetBuildFromSource)'=='true'">
     <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(__SkipNativeBuild)'==''">
-    <ProjectReference Include="Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" />
-    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
-    <ProjectReference Include="Microsoft.NETCore.Native\Microsoft.NETCore.Native.builds" />
-  </ItemGroup>
-
   <ItemGroup>
+    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
     <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" />
     <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(BuildArch)'=='x64' And ('$(__BuildOS)' == 'Windows_NT' Or '$(__BuildOS)' == 'Linux')">
-    <ProjectReference Include="Microsoft.NETCore.Crossgen2\Microsoft.NETCore.Crossgen2.builds" />
   </ItemGroup>
 
   <!-- Generate a version.txt file we include in our packages

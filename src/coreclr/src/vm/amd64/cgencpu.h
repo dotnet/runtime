@@ -10,7 +10,7 @@
 
 
 
-#ifndef _TARGET_AMD64_
+#ifndef TARGET_AMD64
 #error Should only include "AMD64\cgencpu.h" for AMD64 builds
 #endif
 
@@ -82,9 +82,9 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define INSTRFMT_K64SMALL
 #define INSTRFMT_K64
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 #define USE_REDIRECT_FOR_GCSTRESS
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
 //
 // REX prefix byte
@@ -488,7 +488,7 @@ struct HijackArgs
         };
         ULONG64 ReturnValue[2];
     };
-#endif // PLATFORM_UNIX
+#endif // TARGET_UNIX
     CalleeSavedRegisters Regs;
     union
     {
@@ -527,14 +527,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode)
 #define JIT_GetSharedNonGCStaticBase        JIT_GetSharedNonGCStaticBase_SingleAppDomain
 #define JIT_GetSharedGCStaticBaseNoCtor     JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain
 #define JIT_GetSharedNonGCStaticBaseNoCtor  JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain
-
-#ifndef FEATURE_PAL
-#define JIT_ChkCastClass            JIT_ChkCastClass
-#define JIT_ChkCastClassSpecial     JIT_ChkCastClassSpecial
-#define JIT_IsInstanceOfClass       JIT_IsInstanceOfClass
-#define JIT_ChkCastInterface        JIT_ChkCastInterface
-#define JIT_IsInstanceOfInterface   JIT_IsInstanceOfInterface
-#endif // FEATURE_PAL
 
 #define JIT_Stelem_Ref              JIT_Stelem_Ref
 

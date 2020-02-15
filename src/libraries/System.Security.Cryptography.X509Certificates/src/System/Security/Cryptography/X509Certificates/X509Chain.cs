@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.X509Certificates
                     return IntPtr.Zero;
                 }
 
-                // For desktop compat, we may return an invalid handle here (IntPtr.Zero)
+                // For .NET Framework compat, we may return an invalid handle here (IntPtr.Zero)
                 return handle.DangerousGetHandle();
             }
         }
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Reset()
         {
-            // _chainPolicy is not reset for desktop compat
+            // _chainPolicy is not reset for .NET Framework compat
             _lazyChainStatus = null;
             _chainElements = null;
             _useMachineContext = false;

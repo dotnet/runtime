@@ -4,12 +4,12 @@
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+    <TargetFrameworks>netstandard2.0;netstandard1.1</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Context.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Reflection" />
   </ItemGroup>

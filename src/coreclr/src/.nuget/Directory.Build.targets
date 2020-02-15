@@ -3,12 +3,6 @@
 
   <Import Project="../Directory.Build.targets" />
 
-  <PropertyGroup>
-    <!-- Reset PackageOutputPath. The ProjectDefaults targets from Arcade set it to be in the artifacts directory,
-         but our publishing step currently looks under PackagesBinDir -->
-    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-  </PropertyGroup>
-
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
   <!--
@@ -20,43 +14,16 @@
     </ItemGroup>
 
     <ItemGroup>
-      <AdditionalLibPackageExcludes Include="@(LongNameFile -> '%(TargetPath)')" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <NativeWithSymbolFile Include="@(NativeBinary);@(CrossGenBinary)">
+      <NativeWithSymbolFile Include="@(NativeBinary)">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-      </NativeWithSymbolFile>
-      <!-- Using lib/netstandard1.0 here.  There is no TFM for this since it is a runtime itself. -->
-      <NativeWithSymbolFile Include="@(ArchitectureSpecificLibFile)">
-        <TargetPath>runtimes/$(PackageTargetRuntime)/lib/netstandard1.0</TargetPath>
       </NativeWithSymbolFile>
       <NativeWithSymbolFile Include="@(ArchitectureSpecificToolFile)">
         <TargetPath>tools</TargetPath>
       </NativeWithSymbolFile>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(HasCrossTargetComponents)'=='true'">
-      <NativeWithSymbolFile Include="@(CrossArchitectureSpecificNativeFileAndSymbol)">
-        <TargetPath>runtimes/$(CrossTargetComponentFolder)_$(Platform)/native</TargetPath>
-      </NativeWithSymbolFile>
-      <NativeWithSymbolFile Include="@(CrossArchitectureSpecificToolFile)">
-        <TargetPath>tools/$(CrossTargetComponentFolder)_$(Platform)</TargetPath>
-      </NativeWithSymbolFile>
-    </ItemGroup>
-
-    <ItemGroup>
-      <!-- The symbols for these files are already in place together with respective *.ni.pdb -->
-      <IlForCrossGenedFile Include="@(CrossGenBinary -> '%(RootDir)%(Directory)IL\%(Filename).dll')">
-        <TargetPath>runtimes/$(PackageTargetRuntime)/il</TargetPath>
-      </IlForCrossGenedFile>
-    </ItemGroup>
-
     <ItemGroup>
       <File Include="@(NativeWithSymbolFile)" />
-      <File Include="@(LongNameFile);@(IlForCrossGenedFile)">
-        <IsSymbolFile>true</IsSymbolFile>
-      </File>
     </ItemGroup>
 
     <ItemGroup>

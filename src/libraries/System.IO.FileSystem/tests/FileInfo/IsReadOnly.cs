@@ -48,7 +48,7 @@ namespace System.IO.Tests
             Assert.False(info.IsReadOnly);
         }
 
-        // In NetFX we ignore "not found" errors, which leaves the attributes
+        // In .NET Framework we ignore "not found" errors, which leaves the attributes
         // state as invalid (0xFFFFFFFF), which makes all flags true.
 
         [Theory, MemberData(nameof(TrailingCharacters))]

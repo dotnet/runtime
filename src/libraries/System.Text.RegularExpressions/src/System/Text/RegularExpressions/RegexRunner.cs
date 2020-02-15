@@ -15,7 +15,7 @@
 // backtracked results from) the Match instance.
 
 using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.RegularExpressions
 {
@@ -62,7 +62,6 @@ namespace System.Text.RegularExpressions
         private bool _ignoreTimeout;
         private int _timeoutOccursAt;
 
-
         // We have determined this value in a series of experiments where x86 retail
         // builds (ono-lab-optimized) were run on different pattern/input pairs. Larger values
         // of TimeoutCheckFrequency did not tend to increase performance; smaller values
@@ -84,118 +83,266 @@ namespace System.Text.RegularExpressions
         /// and we could use a separate method Skip() that will quickly scan past
         /// any characters that we know can't match.
         /// </summary>
-        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick)
-        {
-            return Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
-        }
+        protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
+            Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            int bump;
-            int stoppos;
-            bool initted = false;
+            // Handle timeout argument
+            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            if (!ignoreTimeout)
+            {
+                // We are using Environment.TickCount and not Stopwatch for performance reasons.
+                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
+                // overflow it will still stay ahead of Environment.TickCount for comparisons made
+                // in DoCheckTimeout().
+                Regex.ValidateMatchTimeout(timeout); // validate timeout as this could be called from user code due to being protected
+                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                _timeoutOccursAt = Environment.TickCount + _timeout;
+                _timeoutChecksToSkip = TimeoutCheckFrequency;
+            }
 
-            // We need to re-validate timeout here because Scan is historically protected and
-            // thus there is a possibility it is called from user code:
-            Regex.ValidateMatchTimeout(timeout);
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at textbeg.
+            int bump = 1, stoppos = textend;
+            if (regex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = textbeg;
+            }
 
-            _ignoreTimeout = (Regex.InfiniteMatchTimeout == timeout);
-            _timeout = _ignoreTimeout
-                                    ? (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
-                                    : (int)(timeout.TotalMilliseconds + 0.5); // Round
-
-            runregex = regex;
-            runtext = text;
-            runtextbeg = textbeg;
-            runtextend = textend;
-            runtextstart = textstart;
-
-            bump = runregex.RightToLeft ? -1 : 1;
-            stoppos = runregex.RightToLeft ? runtextbeg : runtextend;
-
+            // Store runtextpos into field, as we may bump it in next check.  The remaining arguments
+            // are stored below once we're past the potential return in the next check.
             runtextpos = textstart;
 
-            // If previous match was empty or failed, advance by one before matching
-
+            // If previous match was empty or failed, advance by one before matching.
             if (prevlen == 0)
             {
-                if (runtextpos == stoppos)
+                if (textstart == stoppos)
+                {
                     return Match.Empty;
+                }
 
                 runtextpos += bump;
             }
 
-            StartTimeoutWatch();
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            runtext = text;
+            runtextstart = textstart;
+            runtextbeg = textbeg;
+            runtextend = textend;
 
+            // Main loop: FindFirstChar/Go + bump until the ending position.
+            bool initialized = false;
             while (true)
             {
 #if DEBUG
-                if (runregex.Debug)
+                if (regex.IsDebug)
                 {
                     Debug.WriteLine("");
-                    Debug.WriteLine("Search range: from " + runtextbeg.ToString(CultureInfo.InvariantCulture) + " to " + runtextend.ToString(CultureInfo.InvariantCulture));
-                    Debug.WriteLine("Firstchar search starting at " + runtextpos.ToString(CultureInfo.InvariantCulture) + " stopping at " + stoppos.ToString(CultureInfo.InvariantCulture));
+                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
+                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
                 }
 #endif
+
+                // Find the next potential location for a match in the input.
                 if (FindFirstChar())
                 {
-                    CheckTimeout();
-
-                    if (!initted)
+                    if (!ignoreTimeout)
                     {
-                        InitMatch();
-                        initted = true;
+                        DoCheckTimeout();
                     }
-#if DEBUG
-                    if (runregex.Debug)
+
+                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
+                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
+                    if (!initialized)
                     {
-                        Debug.WriteLine("Executing engine starting at " + runtextpos.ToString(CultureInfo.InvariantCulture));
+                        InitializeForGo();
+                        initialized = true;
+                    }
+
+#if DEBUG
+                    if (regex.IsDebug)
+                    {
+                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
                         Debug.WriteLine("");
                     }
 #endif
+
+                    // See if there's a match at this position.
                     Go();
 
-                    if (runmatch!._matchcount[0] > 0)
+                    // If we got a match, we're done.
+                    Match match = runmatch!;
+                    if (match._matchcount[0] > 0)
                     {
-                        // We'll return a match even if it touches a previous empty match
-                        return TidyMatch(quick);
+                        runtext = null; // drop reference to text to avoid keeping it alive in a cache
+
+                        if (quick)
+                        {
+                            runmatch!.Text = null!; // drop reference
+                            return null;
+                        }
+
+                        // Return the match in its canonical form.
+                        runmatch = null;
+                        match.Tidy(runtextpos);
+                        return match;
                     }
 
-                    // reset state for another go
+                    // Reset state for another iteration.
                     runtrackpos = runtrack!.Length;
                     runstackpos = runstack!.Length;
                     runcrawlpos = runcrawl!.Length;
                 }
 
-                // failure!
-
+                // We failed to match at this position.  If we're at the stopping point, we're done.
                 if (runtextpos == stoppos)
                 {
-                    TidyMatch(true);
+                    runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                    if (runmatch != null) runmatch.Text = null!;
                     return Match.Empty;
                 }
 
-                // Recognize leading []* and various anchors, and bump on failure accordingly
-
-                // Bump by one and start again
-
+                // Bump by one (in whichever direction is appropriate) and loop to go again.
                 runtextpos += bump;
             }
-            // We never get here
         }
 
-        private void StartTimeoutWatch()
+        /// <summary>Enumerates all of the matches with the specified regex, invoking the callback for each.</summary>
+        /// <remarks>
+        /// This repeatedly hands out the same Match instance, updated with new information.
+        /// </remarks>
+        internal void Scan<TState>(Regex regex, string text, int textstart, ref TState state, MatchCallback<TState> callback, TimeSpan timeout)
         {
-            if (_ignoreTimeout)
-                return;
+            // Handle timeout argument
+            _timeout = -1; // (int)Regex.InfiniteMatchTimeout.TotalMilliseconds
+            bool ignoreTimeout = _ignoreTimeout = Regex.InfiniteMatchTimeout == timeout;
+            if (!ignoreTimeout)
+            {
+                // We are using Environment.TickCount and not Stopwatch for performance reasons.
+                // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
+                // overflow it will still stay ahead of Environment.TickCount for comparisons made
+                // in DoCheckTimeout().
+                _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                _timeoutOccursAt = Environment.TickCount + _timeout;
+                _timeoutChecksToSkip = TimeoutCheckFrequency;
+            }
 
-            _timeoutChecksToSkip = TimeoutCheckFrequency;
+            // Configure the additional value to "bump" the position along each time we loop around
+            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+            // bump by 1 and stop at text.Length, but if we're examining right-to-left, we instead bump
+            // by -1 and stop at 0.
+            int bump = 1, stoppos = text.Length;
+            if (regex.RightToLeft)
+            {
+                bump = -1;
+                stoppos = 0;
+            }
 
-            // We are using Environment.TickCount and not Timewatch for performance reasons.
-            // Environment.TickCount is an int that cycles. We intentionally let timeoutOccursAt
-            // overflow it will still stay ahead of Environment.TickCount for comparisons made
-            // in DoCheckTimeout():
-            _timeoutOccursAt = Environment.TickCount + _timeout;
+            // Store remaining arguments into fields now that we're going to start the scan.
+            // These are referenced by the derived runner.
+            runregex = regex;
+            runtextstart = runtextpos = textstart;
+            runtext = text;
+            runtextend = text.Length;
+            runtextbeg = 0;
+
+            // Main loop: FindFirstChar/Go + bump until the ending position.
+            bool initialized = false;
+            while (true)
+            {
+#if DEBUG
+                if (regex.IsDebug)
+                {
+                    Debug.WriteLine("");
+                    Debug.WriteLine($"Search range: from {runtextbeg} to {runtextend}");
+                    Debug.WriteLine($"Firstchar search starting at {runtextpos} stopping at {stoppos}");
+                }
+#endif
+
+                // Find the next potential location for a match in the input.
+                if (FindFirstChar())
+                {
+                    if (!ignoreTimeout)
+                    {
+                        DoCheckTimeout();
+                    }
+
+                    // Ensure that the runner is initialized.  This includes initializing all of the state in the runner
+                    // that Go might use, such as the backtracking stack, as well as a Match object for it to populate.
+                    if (!initialized)
+                    {
+                        InitializeForGo();
+                        initialized = true;
+                    }
+
+#if DEBUG
+                    if (regex.IsDebug)
+                    {
+                        Debug.WriteLine($"Executing engine starting at {runtextpos}");
+                        Debug.WriteLine("");
+                    }
+#endif
+
+                    // See if there's a match at this position.
+                    Go();
+
+                    // See if we have a match.
+                    Match match = runmatch!;
+                    if (match._matchcount[0] > 0)
+                    {
+                        // Hand it out to the callback in canonical form.
+                        match.Tidy(runtextpos);
+                        initialized = false;
+                        if (!callback(ref state, match))
+                        {
+                            // If the callback returns false, we're done.
+                            match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
+                            return;
+                        }
+
+                        // Reset state for another iteration.
+                        runtrackpos = runtrack!.Length;
+                        runstackpos = runstack!.Length;
+                        runcrawlpos = runcrawl!.Length;
+                        if (match.Length == 0)
+                        {
+                            if (runtextpos == stoppos)
+                            {
+                                match.Text = runtext = null!; // drop reference to text to avoid keeping it alive in a cache
+                                return;
+                            }
+
+                            runtextpos += bump;
+                        }
+
+                        // Loop around to perform next match from where we left off.
+                        continue;
+                    }
+
+                    // Ran Go but it didn't find a match. Reset state for another iteration.
+                    runtrackpos = runtrack!.Length;
+                    runstackpos = runstack!.Length;
+                    runcrawlpos = runcrawl!.Length;
+                }
+
+                // We failed to match at this position.  If we're at the stopping point, we're done.
+                if (runtextpos == stoppos)
+                {
+                    runtext = null; // drop reference to text to avoid keeping it alive in a cache
+                    if (runmatch != null) runmatch.Text = null!;
+                    return;
+                }
+
+                // Bump by one (in whichever direction is appropriate) and loop to go again.
+                runtextpos += bump;
+            }
         }
 
         protected void CheckTimeout()
@@ -225,14 +372,14 @@ namespace System.Text.RegularExpressions
                 return;
 
 #if DEBUG
-            if (runregex!.Debug)
+            if (runregex!.IsDebug)
             {
                 Debug.WriteLine("");
                 Debug.WriteLine("RegEx match timeout occurred!");
-                Debug.WriteLine("Specified timeout:       " + TimeSpan.FromMilliseconds(_timeout).ToString());
-                Debug.WriteLine("Timeout check frequency: " + TimeoutCheckFrequency);
-                Debug.WriteLine("Search pattern:          " + runregex.pattern);
-                Debug.WriteLine("Input:                   " + runtext);
+                Debug.WriteLine($"Specified timeout:       {TimeSpan.FromMilliseconds(_timeout)}");
+                Debug.WriteLine($"Timeout check frequency: {TimeoutCheckFrequency}");
+                Debug.WriteLine($"Search pattern:          {runregex.pattern}");
+                Debug.WriteLine($"Input:                   {runtext}");
                 Debug.WriteLine("About to throw RegexMatchTimeoutException.");
             }
 #endif
@@ -265,27 +412,24 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Initializes all the data members that are used by Go()
         /// </summary>
-        private void InitMatch()
+        private void InitializeForGo()
         {
-            // Use a hashtabled Match object if the capture numbers are sparse
-
-            if (runmatch == null)
+            if (runmatch is null)
             {
-                if (runregex!.caps != null)
-                    runmatch = new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
-                else
-                    runmatch = new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
+                // Use a hashtabled Match object if the capture numbers are sparse
+                runmatch = runregex!.caps is null ?
+                    new Match(runregex, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart) :
+                    new MatchSparse(runregex, runregex.caps, runregex.capsize, runtext!, runtextbeg, runtextend - runtextbeg, runtextstart);
             }
             else
             {
                 runmatch.Reset(runregex!, runtext!, runtextbeg, runtextend, runtextstart);
             }
 
-            // note we test runcrawl, because it is the last one to be allocated
+            // Note we test runcrawl, because it is the last one to be allocated
             // If there is an alloc failure in the middle of the three allocations,
             // we may still return to reuse this instance, and we want to behave
-            // as if the allocations didn't occur. (we used to test _trackcount != 0)
-
+            // as if the allocations didn't occur.
             if (runcrawl != null)
             {
                 runtrackpos = runtrack!.Length;
@@ -294,15 +438,22 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
+            // Everything above runs once per match.
+            // Everything below runs once per runner.
+
             InitTrackCount();
 
-            int tracksize = runtrackcount * 8;
-            int stacksize = runtrackcount * 8;
+            int stacksize;
+            int tracksize = stacksize = runtrackcount * 8;
 
             if (tracksize < 32)
+            {
                 tracksize = 32;
+            }
             if (stacksize < 16)
+            {
                 stacksize = 16;
+            }
 
             runtrack = new int[tracksize];
             runtrackpos = tracksize;
@@ -315,36 +466,16 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>
-        /// Put match in its canonical form before returning it.
-        /// </summary>
-        private Match? TidyMatch(bool quick)
-        {
-            if (!quick)
-            {
-                Match match = runmatch!;
-
-                runmatch = null;
-
-                match.Tidy(runtextpos);
-                return match;
-            }
-            else
-            {
-                // in quick mode, a successful match returns null, and
-                // the allocated match object is left in the cache
-
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Called by the implementation of Go() to increase the size of storage
         /// </summary>
         protected void EnsureStorage()
         {
-            if (runstackpos < runtrackcount * 4)
+            int limit = runtrackcount * 4;
+
+            if (runstackpos < limit)
                 DoubleStack();
-            if (runtrackpos < runtrackcount * 4)
+
+            if (runtrackpos < limit)
                 DoubleTrack();
         }
 
@@ -382,9 +513,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleTrack()
         {
-            int[] newtrack;
-
-            newtrack = new int[runtrack!.Length * 2];
+            int[] newtrack = new int[runtrack!.Length * 2];
 
             Array.Copy(runtrack, 0, newtrack, runtrack.Length, runtrack.Length);
             runtrackpos += runtrack.Length;
@@ -397,9 +526,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleStack()
         {
-            int[] newstack;
-
-            newstack = new int[runstack!.Length * 2];
+            int[] newstack = new int[runstack!.Length * 2];
 
             Array.Copy(runstack, 0, newstack, runstack.Length, runstack.Length);
             runstackpos += runstack.Length;
@@ -411,9 +538,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void DoubleCrawl()
         {
-            int[] newcrawl;
-
-            newcrawl = new int[runcrawl!.Length * 2];
+            int[] newcrawl = new int[runcrawl!.Length * 2];
 
             Array.Copy(runcrawl, 0, newcrawl, runcrawl.Length, runcrawl.Length);
             runcrawlpos += runcrawl.Length;
@@ -456,11 +581,9 @@ namespace System.Text.RegularExpressions
         {
             if (end < start)
             {
-                int T;
-
-                T = end;
+                int t = end;
                 end = start;
-                start = T;
+                start = t;
             }
 
             Crawl(capnum);
@@ -474,22 +597,17 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void TransferCapture(int capnum, int uncapnum, int start, int end)
         {
-            int start2;
-            int end2;
-
-            // these are the two intervals that are cancelling each other
+            // these are the two intervals that are canceling each other
 
             if (end < start)
             {
-                int T;
-
-                T = end;
+                int t = end;
                 end = start;
-                start = T;
+                start = t;
             }
 
-            start2 = MatchIndex(uncapnum);
-            end2 = start2 + MatchLength(uncapnum);
+            int start2 = MatchIndex(uncapnum);
+            int end2 = start2 + MatchLength(uncapnum);
 
             // The new capture gets the innermost defined interval
 
@@ -557,13 +675,15 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Dump the current state
         /// </summary>
+        [ExcludeFromCodeCoverage]
         internal virtual void DumpState()
         {
-            Debug.WriteLine("Text:  " + TextposDescription());
-            Debug.WriteLine("Track: " + StackDescription(runtrack!, runtrackpos));
-            Debug.WriteLine("Stack: " + StackDescription(runstack!, runstackpos));
+            Debug.WriteLine($"Text:  {TextposDescription()}");
+            Debug.WriteLine($"Track: {StackDescription(runtrack!, runtrackpos)}");
+            Debug.WriteLine($"Stack: {StackDescription(runstack!, runstackpos)}");
         }
 
+        [ExcludeFromCodeCoverage]
         private static string StackDescription(int[] a, int index)
         {
             var sb = new StringBuilder();
@@ -573,14 +693,18 @@ namespace System.Text.RegularExpressions
             sb.Append(a.Length);
 
             if (sb.Length < 8)
+            {
                 sb.Append(' ', 8 - sb.Length);
+            }
 
             sb.Append('(');
 
             for (int i = index; i < a.Length; i++)
             {
                 if (i > index)
+                {
                     sb.Append(' ');
+                }
                 sb.Append(a[i]);
             }
 
@@ -589,6 +713,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
+        [ExcludeFromCodeCoverage]
         internal virtual string TextposDescription()
         {
             var sb = new StringBuilder();
@@ -596,12 +721,18 @@ namespace System.Text.RegularExpressions
             sb.Append(runtextpos);
 
             if (sb.Length < 8)
+            {
                 sb.Append(' ', 8 - sb.Length);
+            }
 
             if (runtextpos > runtextbeg)
+            {
                 sb.Append(RegexCharClass.CharDescription(runtext![runtextpos - 1]));
+            }
             else
+            {
                 sb.Append('^');
+            }
 
             sb.Append('>');
 

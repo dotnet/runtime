@@ -41,7 +41,7 @@ jobs:
 
     # Send telemetry for all builds
     enableTelemetry: true
-    helixRepo: 'dotnet/coreclr'
+    helixRepo: 'dotnet/runtime'
     helixType: ${{ parameters.helixType }}
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
@@ -98,39 +98,25 @@ jobs:
 
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
-        value: official/dotnet/coreclr/$(Build.SourceBranch)
+        value: official/dotnet/runtime/$(Build.SourceBranch)
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
-        value: pr/dotnet/coreclr/$(Build.SourceBranch)
+        value: pr/dotnet/runtime/$(Build.SourceBranch)
     - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: _HelixSource
-        value: ci/dotnet/coreclr/$(Build.SourceBranch)
+        value: ci/dotnet/runtime/$(Build.SourceBranch)
 
     - ${{ if ne(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: 'cross'
-      - name: crossPackagesArg
-        value: '-__DoCrossArchBuild=1'
     - ${{ if eq(parameters.crossrootfsDir, '') }}:
       - name: crossArg
-        value: ''
-      - name: crossPackagesArg
         value: ''
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - checkout: none
-      clean: true
-
-    - download: current
-      artifact: Checkout_bundle
-      displayName: Download Checkout.bundle
-
-    - script: |
-        git clone $(Pipeline.Workspace)/Checkout_bundle/Checkout.bundle .
-        git remote set-url origin $(Build.Repository.Uri)
-      displayName: Clone the repository from Checkout.bundle
+    - template: /eng/pipelines/common/clone-checkout-bundle-step.yml
 
     - ${{ parameters.steps }}

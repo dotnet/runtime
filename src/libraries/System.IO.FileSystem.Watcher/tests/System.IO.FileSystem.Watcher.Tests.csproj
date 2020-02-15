@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcore-FreeBSD-Debug;netcore-FreeBSD-Release</Configurations>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FileSystemWatcher.cs" />

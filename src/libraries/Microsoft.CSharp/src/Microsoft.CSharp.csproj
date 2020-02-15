@@ -2,9 +2,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.CSharp</AssemblyName>
     <RootNamespace>Microsoft.CSharp</RootNamespace>
-    <!-- dotnet/corefx#3128 tracks removing this exclusion -->
-    <ExcludeLocalizationImport Condition="'$(TargetsWindows)' != 'true'">true</ExcludeLocalizationImport>
-    <Configurations>netstandard2.0-Debug;netstandard2.0-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
@@ -163,6 +161,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />

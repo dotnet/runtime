@@ -163,14 +163,12 @@ internal static partial class Interop
 
         internal static int GetFormatInfoForMountPoint(string name, out string format)
         {
-            DriveType temp;
-            return GetFormatInfoForMountPoint(name, out format, out temp);
+            return GetFormatInfoForMountPoint(name, out format, out _);
         }
 
         internal static int GetFormatInfoForMountPoint(string name, out DriveType type)
         {
-            string temp;
-            return GetFormatInfoForMountPoint(name, out temp, out type);
+            return GetFormatInfoForMountPoint(name, out _, out type);
         }
 
         private static int GetFormatInfoForMountPoint(string name, out string format, out DriveType type)
@@ -184,8 +182,8 @@ internal static partial class Interop
                 {
                     // Check if we have a numeric answer or string
                     format = numericFormat != -1 ?
-                        Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) :
-                        Marshal.PtrToStringAnsi((IntPtr)formatBuffer);
+                        Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
+                        Marshal.PtrToStringAnsi((IntPtr)formatBuffer)!;
                     type = GetDriveType(format);
                 }
                 else

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 using System;
@@ -10,37 +10,31 @@ namespace TestLibrary
 {
     public class HostPolicyMock
     {
-    #if PLATFORM_WINDOWS
-        private const CharSet HostpolicyCharSet = CharSet.Unicode;
-    #else
-        private const CharSet HostpolicyCharSet = CharSet.Ansi;
-    #endif
-
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         private static extern int Set_corehost_resolve_component_dependencies_Values(
             int returnValue,
             string assemblyPaths,
             string nativeSearchPaths,
             string resourceSearchPaths);
 
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         private static extern void Set_corehost_set_error_writer_returnValue(IntPtr error_writer);
 
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         private static extern IntPtr Get_corehost_set_error_writer_lastSet_error_writer();
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         internal delegate void Callback_corehost_resolve_component_dependencies(
             string component_main_assembly_path);
 
-        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [DllImport("hostpolicy", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         private static extern void Set_corehost_resolve_component_dependencies_Callback(
             IntPtr callback);
 
         private static Type _assemblyDependencyResolverType;
         private static Type _corehost_error_writer_fnType;
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Auto)]
         public delegate void ErrorWriterDelegate(string message);
 
         public static void Initialize(string testBasePath, string coreRoot)

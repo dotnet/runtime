@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -22,23 +22,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly bool _useInstantiatingStub;
 
-        private readonly SignatureContext _signatureContext;
-
         public DelayLoadHelperMethodImport(
-            ReadyToRunCodegenNodeFactory factory, 
+            NodeFactory factory, 
             ImportSectionNode importSectionNode, 
             ReadyToRunHelper helper, 
             MethodWithToken method,
             bool useVirtualCall,
             bool useInstantiatingStub,
             Signature instanceSignature, 
-            SignatureContext signatureContext,
             string callSite = null)
             : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, callSite)
         {
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;
-            _signatureContext = signatureContext;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -51,13 +47,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 // Require compilation of the canonical version for instantiating stubs
                 MethodDesc canonMethod = _method.Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                ReadyToRunCodegenNodeFactory r2rFactory = (ReadyToRunCodegenNodeFactory)factory;
-                ISymbolNode canonMethodNode = r2rFactory.MethodEntrypoint(
+                ISymbolNode canonMethodNode = factory.MethodEntrypoint(
                     new MethodWithToken(canonMethod, _method.Token, constrainedType: null),
                     isUnboxingStub: false,
                     isInstantiatingStub: false,
-                    isPrecodeImportRequired: false,
-                    signatureContext: _signatureContext);
+                    isPrecodeImportRequired: false);
                 yield return new DependencyListEntry(canonMethodNode, "Canonical method for instantiating stub");
             }
         }
@@ -70,10 +64,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DelayLoadHelperMethodImport otherNode = (DelayLoadHelperMethodImport)other;
             int result = _useInstantiatingStub.CompareTo(otherNode._useInstantiatingStub);
-            if (result != 0)
-                return result;
-
-            result = _signatureContext.CompareTo(otherNode._signatureContext, comparer);
             if (result != 0)
                 return result;
 

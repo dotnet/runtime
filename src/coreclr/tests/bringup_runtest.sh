@@ -448,7 +448,7 @@ function create_testhost
     fi
 
     # Initialize test variables
-    local dotnetExe=$coreClrSrc/dotnet.sh
+    local dotnetExe=$coreClrSrc/../../dotnet.sh
     local coreClrSrcTestDir=$coreClrSrc/tests
     
     if [ -z $coreClrBinDir ]; then

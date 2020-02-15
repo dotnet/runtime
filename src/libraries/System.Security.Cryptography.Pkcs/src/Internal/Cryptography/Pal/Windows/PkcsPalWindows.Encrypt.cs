@@ -127,7 +127,7 @@ namespace Internal.Cryptography.Pal.Windows
                 string algorithmOidValue = contentEncryptionAlgorithm.Oid.Value;
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(algorithmOidValue);
 
-                // Desktop compat: Though it seems like we could copy over the contents of contentEncryptionAlgorithm.Parameters, that property is for retrieving information from decoded Cms's only, and it
+                // .NET Framework compat: Though it seems like we could copy over the contents of contentEncryptionAlgorithm.Parameters, that property is for retrieving information from decoded Cms's only, and it
                 // massages the raw data so it wouldn't be usable here anyway. To hammer home that fact, the EncryptedCms constructor rather rudely forces contentEncryptionAlgorithm.Parameters to be the empty array.
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.cbData = 0;
                 pEnvelopedEncodeInfo->ContentEncryptionAlgorithm.Parameters.pbData = IntPtr.Zero;
@@ -429,7 +429,7 @@ namespace Internal.Cryptography.Pal.Windows
                     pRc2AuxInfo->dwBitLen = contentEncryptionAlgorithm.KeyLength;
                     if (pRc2AuxInfo->dwBitLen == 0)
                     {
-                        // Desktop compat: If the caller didn't set the KeyLength property, set dwBitLength to the maxmium key length supported by RC2/RC4. The desktop queries CAPI for this but
+                        // .NET Framework compat: If the caller didn't set the KeyLength property, set dwBitLength to the maxmium key length supported by RC2/RC4. The .NET Framework queries CAPI for this but
                         // since that requires us to use a prohibited api (CryptAcquireContext), we'll just hardcode what CAPI returns for RC2 and RC4.
                         pRc2AuxInfo->dwBitLen = KeyLengths.DefaultKeyLengthForRc2AndRc4;
                     }

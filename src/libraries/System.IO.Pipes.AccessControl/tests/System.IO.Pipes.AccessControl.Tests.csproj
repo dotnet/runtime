@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="System.IO.Pipes" />
@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeServerStreamAclTests.cs" />
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
+    <Compile Include="NamedPipeTests\NamedPipeServerStreamAclTests.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />
     <Compile Include="PipeServerStreamAclTestBase.cs" />
     <Compile Include="PipeTest.AclExtensions.cs" />

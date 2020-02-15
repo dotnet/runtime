@@ -165,7 +165,7 @@ namespace System.Text.Tests
             }
 
             Decoder decoder = Encoding.Unicode.GetDecoder();
-            VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, false, bytes.Length, chars.Length / 2, false, "006.1");
+            VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, false, bytes.Length, chars.Length / 2, true, "006.1");
             decoder.Reset();
             // There will be 1 byte left unconverted after previous statement, and set flush = false should left this 1 byte in the buffer.
             VerificationHelper(decoder, bytes, 0, bytes.Length, chars, 0, chars.Length, true, bytes.Length, chars.Length / 2 + 1, true, "006.2");
@@ -288,8 +288,8 @@ namespace System.Text.Tests
             char[] chars = new char[32];
             Decoder decoder = Encoding.UTF8.GetDecoder();
 
-            VerificationHelper(decoder, bytes, 0, 1, chars, 0, 10, false, 1, 0, false, "011.1"); // incomplete since still state in Decoder
-            VerificationHelper(decoder, bytes, 1, 2, chars, 0, 10, false, 2, 1, false, "011.2"); // incomplete since still state in Decoder
+            VerificationHelper(decoder, bytes, 0, 1, chars, 0, 10, false, 1, 0, true, "011.1"); // complete since all source bytes consumed and no pending data for destination
+            VerificationHelper(decoder, bytes, 1, 2, chars, 0, 10, false, 2, 1, true, "011.2"); // complete since all source bytes consumed and no pending data for destination
             VerificationHelper(decoder, bytes, 3, 6, chars, 1, 1, false, 2, 1, false, "011.3"); // incomplete since not all bytes consumed
             VerificationHelper(decoder, bytes, 5, 4, chars, 2, 10, false, 4, 2, true, "011.4"); // complete since all bytes consumed and no leftover state
             VerificationHelper(decoder, bytes, 9, 1, chars, 4, 10, true, 1, 1, true, "011.5"); // complete since all bytes consumed and no leftover state

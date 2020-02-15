@@ -11,7 +11,6 @@ namespace System.Collections.Immutable
     /// <content>
     /// Contains the inner <see cref="ImmutableHashSet{T}.Builder"/> class.
     /// </content>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableHashSet<T>
     {
         /// <summary>
@@ -28,8 +27,6 @@ namespace System.Collections.Immutable
         /// Instance members of this class are <em>not</em> thread-safe.
         /// </para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible", Justification = "Ignored")]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class Builder : IReadOnlyCollection<T>, ISet<T>
         {
@@ -57,7 +54,7 @@ namespace System.Collections.Immutable
             /// Caches an immutable instance that represents the current state of the collection.
             /// </summary>
             /// <value>Null if no immutable view has been created for the current version.</value>
-            private ImmutableHashSet<T> _immutable;
+            private ImmutableHashSet<T>? _immutable;
 
             /// <summary>
             /// A number that increments every time the builder changes its contents.

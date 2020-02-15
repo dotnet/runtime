@@ -1,4 +1,3 @@
-
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(UTILCODE_COMMON_SOURCES
@@ -62,17 +61,16 @@ set(UTILCODE_COMMON_SOURCES
 # These source file do not yet compile on Linux.
 # They should be moved out from here into the declaration
 # of UTILCODE_SOURCES above after fixing compiler errors.
-if(WIN32)
+if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
     appxutil.cpp
     dacutil.cpp
     dlwrap.cpp
-    loadrc.cpp
     securitywrapper.cpp
     securityutil.cpp
     stacktrace.cpp
   )
-endif(WIN32)
+endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
@@ -107,19 +105,19 @@ add_library_clr(utilcode STATIC ${UTILCODE_SOURCES})
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 add_library_clr(utilcode_crossgen STATIC ${UTILCODE_CROSSGEN_SOURCES})
 
-if(CLR_CMAKE_PLATFORM_UNIX)
+if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost  nativeresourcestring)
   target_link_libraries(utilcode_crossgen  nativeresourcestring)
   target_link_libraries(utilcode_dac nativeresourcestring)
   target_link_libraries(utilcode nativeresourcestring)
   add_dependencies(utilcode_dac coreclrpal)
   add_dependencies(utilcode coreclrpal)
-endif(CLR_CMAKE_PLATFORM_UNIX)
+endif(CLR_CMAKE_HOST_UNIX)
 
 
-if(WIN32)
+if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
 set_target_properties(utilcode_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)

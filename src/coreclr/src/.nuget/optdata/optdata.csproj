@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <OptimizationDataSupported Condition="'$(BuildOS)' == 'Windows_NT' And ('$(BuildArch)' == 'x64' Or '$(BuildArch)' == 'x86')">True</OptimizationDataSupported>
     <OptimizationDataSupported Condition="'$(BuildOS)' == 'Linux' And '$(BuildArch)' == 'x64'">True</OptimizationDataSupported>
@@ -13,10 +13,6 @@
     <PackageReference Include="optimization.PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
       Condition="'$(optimizationPGOCoreCLRVersion)'!='' And '$(OptimizationDataSupported)'!=''"
-      GeneratePathProperty="true" />
-    <PackageReference Include="optimization.IBC.CoreCLR"
-      Version="$(optimizationIBCCoreCLRVersion)"
-      Condition="'$(optimizationIBCCoreCLRVersion)'!='' And '$(OptimizationDataSupported)'!=''"
       GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -34,7 +30,7 @@
   <Target Name="DumpPgoDataPackagePath">
     <!-- Error if PgoDataPackagePathOutputFile is not set. -->
     <Error Condition="'$(PgoDataPackagePathOutputFile)'==''" Text="PgoDataPackagePathOutputFile must be passed as a property." />
-    
+
     <PropertyGroup>
       <PgoPackagePath>$([MSBuild]::NormalizePath($(Pkgoptimization_PGO_CoreCLR),../../,optimization.$(_BuildOSArchLowercase).pgo.coreclr,$(optimizationPGOCoreCLRVersion)))</PgoPackagePath>
     </PropertyGroup>
@@ -48,33 +44,4 @@
     <WriteLinesToFile File="$(PgoDataPackagePathOutputFile)" Lines="" Condition="'$(OptimizationDataSupported)' != 'True'" Overwrite="true"/>
     <Message Text="optimizationPGOCoreCLR Package path: $(PgoPackagePath) written to: $(PgoDataPackagePathOutputFile)" Importance="High" />
   </Target>
-
-  <!--                                                                       -->
-  <!-- Task: DumpIbcDataPackagePath                                          -->
-  <!--                                                                       -->
-  <!-- Notes:                                                                -->
-  <!--                                                                       -->
-  <!-- DumpIbcDataPackagePath is used by build.sh and build.cmd to pass      -->
-  <!-- the path information to cmake. The task will write a file to be       -->
-  <!-- read back by build.cmd/sh. The path for the file is:                  -->
-  <!-- $(IbcDataPackagePathOutputFile)                                       -->
-  <!--                                                                       -->
-  <Target Name="DumpIbcDataPackagePath">
-    <!-- Error if IbcDataPackagePathOutputFile is not set. -->
-    <Error Condition="'$(IbcDataPackagePathOutputFile)'==''" Text="IbcDataPackagePathOutputFile must be passed as a property." />
-
-    <PropertyGroup>
-      <IbcPackagePath>$([MSBuild]::NormalizePath($(Pkgoptimization_IBC_CoreCLR),../../,optimization.$(_BuildOSArchLowercase).ibc.coreclr,$(optimizationIBCCoreCLRVersion)))</IbcPackagePath>
-    </PropertyGroup>
-
-    <Error Condition="!Exists('$(IbcPackagePath)') And '$(OptimizationDataSupported)' == 'True'" Text="Unable to locate restored IBC package. Maybe the platform-specific package naming changed?" />
-
-    <!-- Cleanup old version file -->
-    <Delete Files="$(IbcDataPackagePathOutputFile)" Condition="Exists('$(IbcDataPackagePathOutputFile)')" />
-
-    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="$(IbcPackagePath)" Condition="'$(OptimizationDataSupported)' == 'True'" Overwrite="true"/>
-    <WriteLinesToFile File="$(IbcDataPackagePathOutputFile)" Lines="" Condition="'$(OptimizationDataSupported)' != 'True'" Overwrite="true"/>
-    <Message Text="optimizationIBCCoreCLRVersion: $(IbcPackagePath) written to: $(IbcDataPackagePathOutputFile)" Importance="High" />
-  </Target>
-
 </Project>

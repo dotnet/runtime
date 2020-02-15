@@ -11,24 +11,20 @@ namespace System.Linq.Expressions.Interpreter
 {
     internal sealed class InterpretedFrame
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [ThreadStatic]
-        private static InterpretedFrame s_currentFrame;
+        private static InterpretedFrame? s_currentFrame;
 
         internal readonly Interpreter Interpreter;
-        internal InterpretedFrame _parent;
+        internal InterpretedFrame? _parent;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        private readonly int[] _continuations;
+        private readonly int[]? _continuations;
         private int _continuationIndex;
         private int _pendingContinuation;
-        private object _pendingValue;
+        private object? _pendingValue;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public readonly object[] Data;
+        public readonly object?[] Data;
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2105:ArrayFieldsShouldNotBeReadOnly")]
-        public readonly IStrongBox[] Closure;
+        public readonly IStrongBox[]? Closure;
 
         public int StackIndex;
         public int InstructionIndex;
@@ -39,7 +35,7 @@ namespace System.Linq.Expressions.Interpreter
         public ExceptionHandler CurrentAbortHandler;
 #endif
 
-        internal InterpretedFrame(Interpreter interpreter, IStrongBox[] closure)
+        internal InterpretedFrame(Interpreter interpreter, IStrongBox[]? closure)
         {
             Interpreter = interpreter;
             StackIndex = interpreter.LocalCount;
@@ -57,16 +53,16 @@ namespace System.Linq.Expressions.Interpreter
             _pendingValue = Interpreter.NoValue;
         }
 
-        public DebugInfo GetDebugInfo(int instructionIndex)
+        public DebugInfo? GetDebugInfo(int instructionIndex)
         {
             return DebugInfo.GetMatchingDebugInfo(Interpreter._debugInfos, instructionIndex);
         }
 
-        public string Name => Interpreter.Name;
+        public string? Name => Interpreter.Name;
 
         #region Data Stack Operations
 
-        public void Push(object value)
+        public void Push(object? value)
         {
             Data[StackIndex++] = value;
         }
@@ -101,7 +97,7 @@ namespace System.Linq.Expressions.Interpreter
             Data[StackIndex++] = value;
         }
 
-        public object Pop()
+        public object? Pop()
         {
             return Data[--StackIndex];
         }
@@ -111,7 +107,7 @@ namespace System.Linq.Expressions.Interpreter
             StackIndex = Interpreter.LocalCount + depth;
         }
 
-        public object Peek()
+        public object? Peek()
         {
             return Data[StackIndex - 1];
         }
@@ -127,7 +123,7 @@ namespace System.Linq.Expressions.Interpreter
 
         #region Stack Trace
 
-        public InterpretedFrame Parent => _parent;
+        public InterpretedFrame? Parent => _parent;
 
         public static bool IsInterpretedFrame(MethodBase method)
         {
@@ -137,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerable<InterpretedFrameInfo> GetStackTraceDebugInfo()
         {
-            InterpretedFrame frame = this;
+            InterpretedFrame? frame = this;
             do
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
@@ -153,7 +149,7 @@ namespace System.Linq.Expressions.Interpreter
             }
         }
 
-        public static InterpretedFrameInfo[] GetExceptionStackTrace(Exception exception)
+        public static InterpretedFrameInfo[]? GetExceptionStackTrace(Exception exception)
         {
             return exception.Data[typeof(InterpretedFrameInfo)] as InterpretedFrameInfo[];
         }
@@ -164,10 +160,10 @@ namespace System.Linq.Expressions.Interpreter
             get
             {
                 var trace = new List<string>();
-                InterpretedFrame frame = this;
+                InterpretedFrame? frame = this;
                 do
                 {
-                    trace.Add(frame.Name);
+                    trace.Add(frame.Name!);
                     frame = frame.Parent;
                 } while (frame != null);
                 return trace.ToArray();
@@ -175,14 +171,14 @@ namespace System.Linq.Expressions.Interpreter
         }
 #endif
 
-        internal InterpretedFrame Enter()
+        internal InterpretedFrame? Enter()
         {
-            InterpretedFrame currentFrame = s_currentFrame;
+            InterpretedFrame? currentFrame = s_currentFrame;
             s_currentFrame = this;
             return _parent = currentFrame;
         }
 
-        internal void Leave(InterpretedFrame prevFrame)
+        internal void Leave(InterpretedFrame? prevFrame)
         {
             s_currentFrame = prevFrame;
         }
@@ -203,12 +199,12 @@ namespace System.Linq.Expressions.Interpreter
 
         public void PushContinuation(int continuation)
         {
-            _continuations[_continuationIndex++] = continuation;
+            _continuations![_continuationIndex++] = continuation;
         }
 
         public int YieldToCurrentContinuation()
         {
-            RuntimeLabel target = Interpreter._labels[_continuations[_continuationIndex - 1]];
+            RuntimeLabel target = Interpreter._labels[_continuations![_continuationIndex - 1]];
             SetStackDepth(target.StackDepth);
             return target.Index - InstructionIndex;
         }
@@ -224,7 +220,7 @@ namespace System.Linq.Expressions.Interpreter
             // the current continuation might have higher priority (continuationIndex is the depth of the current continuation):
             if (pendingTarget.ContinuationStackDepth < _continuationIndex)
             {
-                RuntimeLabel currentTarget = Interpreter._labels[_continuations[_continuationIndex - 1]];
+                RuntimeLabel currentTarget = Interpreter._labels[_continuations![_continuationIndex - 1]];
                 SetStackDepth(currentTarget.StackDepth);
                 return currentTarget.Index - InstructionIndex;
             }
@@ -253,10 +249,10 @@ namespace System.Linq.Expressions.Interpreter
         internal void PopPendingContinuation()
         {
             _pendingValue = Pop();
-            _pendingContinuation = (int)Pop();
+            _pendingContinuation = (int)Pop()!;
         }
 
-        public int Goto(int labelIndex, object value, bool gotoExceptionHandler)
+        public int Goto(int labelIndex, object? value, bool gotoExceptionHandler)
         {
             // TODO: we know this at compile time (except for compiled loop):
             RuntimeLabel target = Interpreter._labels[labelIndex];

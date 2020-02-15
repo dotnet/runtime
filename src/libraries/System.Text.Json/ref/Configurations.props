@@ -1,9 +1,0 @@
-﻿<Project DefaultTargets="Build">
-  <PropertyGroup>
-    <BuildConfigurations>
-      netstandard2.0;
-      netcoreapp;
-      netfx;
-    </BuildConfigurations>
-  </PropertyGroup>
-</Project>

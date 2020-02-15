@@ -1,14 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
@@ -39,19 +36,19 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetCPInfoEx.cs">
       <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
-      <Link>Interop\Windows\Interop.MAX_PATH.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Interop.BOOL.cs">
-      <Link>Interop\Windows\Interop.BOOL.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Beep.cs">
       <Link>Common\Interop\Windows\Interop.Beep.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FormatMessage.cs">
       <Link>Common\Interop\Windows\Interop.FormatMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConsoleCursorInfo.cs">
@@ -69,8 +66,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FillConsoleOutputCharacter.cs">
       <Link>Common\Interop\Windows\Interop.FillConsoleOutputCharacter.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.FileTypes.cs">
-      <Link>Interop\Windows\Interop.FileTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleScreenBufferInfo.cs">
       <Link>Common\Interop\Windows\Interop.GetConsoleScreenBufferInfo.cs</Link>
@@ -96,14 +93,14 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.GetKeyState.cs">
       <Link>Common\Interop\Windows\Interop.GetKeyState.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
-      <Link>Interop\Windows\Interop.GetStdHandle.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
+      <Link>Common\Interop\Windows\Interop.GetStdHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
-      <Link>Interop\Windows\Interop.HandleTypes.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
+      <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.MultiByteToWideChar.cs">
+      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.PeekConsoleInput.cs">
       <Link>Common\Interop\Windows\Interop.PeekConsoleInput.cs</Link>
@@ -144,8 +141,8 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SetConsoleWindowInfo.cs">
       <Link>Common\Interop\Windows\Interop.SetConsoleWindowInfo.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs">
+      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WriteFile_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile.cs</Link>
@@ -159,11 +156,11 @@
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Windows.cs">
       <Link>Common\System\IO\EncodingHelper.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\IO\Win32Marshal.cs">
-      <Link>System\IO\Win32Marshal.cs</Link>
+    <Compile Include="$(CommonPath)System\IO\Win32Marshal.cs">
+      <Link>Common\System\IO\Win32Marshal.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>System\Text\ValueStringBuilder.cs</Link>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
@@ -181,7 +178,7 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\StringBuilderCache.cs">
+    <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs">
       <Link>Common\System\Text\StringBuilderCache.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Text\EncodingHelper.Unix.cs">
@@ -193,13 +190,13 @@
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.Errors.cs">
-      <Link>Interop\Unix\Interop.Errors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs">
+      <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\Interop.IOErrors.cs">
-      <Link>Interop\Unix\Interop.IOErrors.cs</Link>
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.IOErrors.cs">
+      <Link>Common\Interop\Unix\Interop.IOErrors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Close.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs">
       <Link>Common\Interop\Unix\Interop.Close.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Dup.cs">
@@ -208,7 +205,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FileDescriptors.cs">
       <Link>Common\Interop\Unix\Interop.FileDescriptors.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.FLock.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetControlCharacters.cs">
@@ -217,22 +214,22 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs">
       <Link>Common\Interop\Unix\Interop.IsATty.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.LSeek.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.LSeek.cs">
       <Link>Common\Interop\Unix\Interop.LSeek.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Open.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Open.cs">
       <Link>Common\Interop\Unix\Interop.Open.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.OpenFlags.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.OpenFlags.cs">
       <Link>Common\Interop\Unix\Interop.OpenFlags.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs">
       <Link>Common\Interop\Unix\Interop.Poll.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetEUid.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs">
       <Link>Common\Interop\Unix\Interop.GetEUid.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.GetPwUid.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetPwUid.cs">
       <Link>Common\Interop\Unix\Interop.GetPwUid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.RegisterForCtrlC.cs">
@@ -250,13 +247,13 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SNPrintF.cs">
       <Link>Common\Interop\Unix\Interop.SNPrintF.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Stat.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs">
       <Link>Common\Interop\Unix\Interop.Stat.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Read.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Read.cs">
       <Link>Common\Interop\Unix\Interop.Read.cs</Link>
     </Compile>
-    <Compile Include="$(CoreLibSharedDir)Interop\Unix\System.Native\Interop.Write.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\Interop.Write.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
@@ -273,18 +270,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">

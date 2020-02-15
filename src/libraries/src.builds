@@ -1,14 +1,12 @@
-<Project DefaultTargets="Build">
+<Project DefaultTargets="Build" TreatAsLocalProperty="AdditionalBuildTargetFrameworks">
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
-
-  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
-    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);netstandard2.0-$(ConfigurationGroup)</AdditionalBuildConfigurations>
-  </PropertyGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.csproj" Exclude="@(ProjectExclusions)" />
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.ilproj" Exclude="@(ProjectExclusions)" />
     <Project Include="$(MSBuildThisFileDirectory)*\src\*.vbproj" Exclude="@(ProjectExclusions)" />
+    <!-- Explicitly include the runtime.depproj project here to correctly set up the test host. -->
+    <Project Include="$(MSBuildThisFileDirectory)restore\runtime\runtime.depproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">

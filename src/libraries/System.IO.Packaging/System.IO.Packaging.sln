@@ -26,18 +26,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
-		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Debug|Any CPU.ActiveCfg = netstandard2.0-Debug|Any CPU
-		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Debug|Any CPU.Build.0 = netstandard2.0-Debug|Any CPU
-		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Release|Any CPU.ActiveCfg = netstandard2.0-Release|Any CPU
-		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Release|Any CPU.Build.0 = netstandard2.0-Release|Any CPU
+		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F827C19-6023-48D3-909F-9F43AB42FAF0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DD91348-1D1F-4964-B5CB-047D916E79EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

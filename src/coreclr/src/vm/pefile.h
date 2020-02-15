@@ -46,6 +46,7 @@ class PEFile;
 class PEModule;
 class PEAssembly;
 class SimpleRWLock;
+class AssemblyLoadContext;
 
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
@@ -568,6 +569,8 @@ public:
     // Returns the ICLRPrivBinder* instance associated with the PEFile
     PTR_ICLRPrivBinder GetBindingContext();
 
+    AssemblyLoadContext* GetAssemblyLoadContext();
+
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
@@ -651,8 +654,6 @@ class PEAssembly : public PEFile
     //
     // fCopiedName means to get the "shadow copied" path rather than the original path, if applicable
     void GetCodeBase(SString &result, BOOL fCopiedName = FALSE);
-    // Get the fully qualified assembly name from its metadata token
-    static void GetFullyQualifiedAssemblyName(IMDInternalImport* pImport, mdAssembly mda, SString &result, DWORD flags = 0);
 
     // Display name is the fusion binding name for an assembly
     void GetDisplayName(SString &result, DWORD flags = 0);
@@ -714,10 +715,6 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-    // Using a separate entry and not m_pHostAssembly because otherwise
-    // HasHostAssembly becomes true that trips various other code paths resulting in bad
-    // things
-    SString                  m_sTextualIdentity;
 
   public:
     PTR_PEFile GetCreator()
@@ -735,8 +732,8 @@ class PEAssembly : public PEFile
     // Indicates if the assembly can be cached in a binding cache such as AssemblySpecBindingCache.
     inline bool CanUseWithBindingCache()
     {
-            STATIC_CONTRACT_WRAPPER;
-            return (HasBindableIdentity());
+        STATIC_CONTRACT_WRAPPER;
+        return (HasBindableIdentity());
     }
 };
 

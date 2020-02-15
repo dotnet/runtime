@@ -1,10 +1,6 @@
 project(System.Net.Security.Native C)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
 add_compile_options(-Wno-incompatible-pointer-types-discards-qualifiers)
-
-add_definitions(-DPIC=1)
 
 if (HAVE_GSSFW_HEADERS)
    find_library(LIBGSS NAMES GSS)
@@ -38,7 +34,6 @@ add_library(System.Net.Security.Native
 add_library(System.Net.Security.Native-Static
     STATIC
     ${NATIVEGSS_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

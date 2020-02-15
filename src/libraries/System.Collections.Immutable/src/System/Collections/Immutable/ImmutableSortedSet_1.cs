@@ -33,7 +33,6 @@ namespace System.Collections.Immutable
         /// <summary>
         /// An empty sorted set with the default sort comparer.
         /// </summary>
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly ImmutableSortedSet<T> Empty = new ImmutableSortedSet<T>();
 
         /// <summary>
@@ -50,7 +49,7 @@ namespace System.Collections.Immutable
         /// Initializes a new instance of the <see cref="ImmutableSortedSet{T}"/> class.
         /// </summary>
         /// <param name="comparer">The comparer.</param>
-        internal ImmutableSortedSet(IComparer<T> comparer = null)
+        internal ImmutableSortedSet(IComparer<T>? comparer = null)
         {
             _root = Node.EmptyNode;
             _comparer = comparer ?? Comparer<T>.Default;
@@ -83,6 +82,7 @@ namespace System.Collections.Immutable
         /// Gets the maximum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The maximum value in the set.</value>
+        [MaybeNull]
         public T Max
         {
             get { return _root.Max; }
@@ -92,6 +92,7 @@ namespace System.Collections.Immutable
         /// Gets the minimum value in the collection, as defined by the comparer.
         /// </summary>
         /// <value>The minimum value in the set.</value>
+        [MaybeNull]
         public T Min
         {
             get { return _root.Min; }
@@ -317,7 +318,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(other, nameof(other));
 
-            ImmutableSortedSet<T> immutableSortedSet;
+            ImmutableSortedSet<T>? immutableSortedSet;
             if (TryCastToImmutableSortedSet(other, out immutableSortedSet) && immutableSortedSet.KeyComparer == this.KeyComparer) // argument is a compatible immutable sorted set
             {
                 if (immutableSortedSet.IsEmpty)
@@ -354,7 +355,7 @@ namespace System.Collections.Immutable
         /// See the <see cref="IImmutableSet{T}"/> interface.
         /// </summary>
         [Pure]
-        public ImmutableSortedSet<T> WithComparer(IComparer<T> comparer)
+        public ImmutableSortedSet<T> WithComparer(IComparer<T>? comparer)
         {
             if (comparer == null)
             {
@@ -859,7 +860,7 @@ namespace System.Collections.Immutable
         /// The position into which the new element was inserted, or -1 to indicate that the item was not inserted into the collection,
         /// </returns>
         /// <exception cref="System.NotSupportedException"></exception>
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             throw new NotSupportedException();
         }
@@ -880,9 +881,9 @@ namespace System.Collections.Immutable
         /// <returns>
         /// true if the <see cref="object"/> is found in the <see cref="IList"/>; otherwise, false.
         /// </returns>
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
-            return this.Contains((T)value);
+            return this.Contains((T)value!);
         }
 
         /// <summary>
@@ -892,9 +893,9 @@ namespace System.Collections.Immutable
         /// <returns>
         /// The index of <paramref name="value"/> if found in the list; otherwise, -1.
         /// </returns>
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
-            return this.IndexOf((T)value);
+            return this.IndexOf((T)value!);
         }
 
         /// <summary>
@@ -903,7 +904,7 @@ namespace System.Collections.Immutable
         /// <param name="index">The zero-based index at which <paramref name="value"/> should be inserted.</param>
         /// <param name="value">The object to insert into the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             throw new NotSupportedException();
         }
@@ -913,7 +914,7 @@ namespace System.Collections.Immutable
         /// </summary>
         /// <param name="value">The object to remove from the <see cref="IList"/>.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             throw new NotSupportedException();
         }
@@ -936,7 +937,7 @@ namespace System.Collections.Immutable
         /// </value>
         /// <param name="index">The index.</param>
         /// <exception cref="System.NotSupportedException"></exception>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return this[index]; }
             set { throw new NotSupportedException(); }
@@ -1013,7 +1014,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Discovers an immutable sorted set for a given value, if possible.
         /// </summary>
-        private static bool TryCastToImmutableSortedSet(IEnumerable<T> sequence, out ImmutableSortedSet<T> other)
+        private static bool TryCastToImmutableSortedSet(IEnumerable<T> sequence, [NotNullWhen(true)] out ImmutableSortedSet<T>? other)
         {
             other = sequence as ImmutableSortedSet<T>;
             if (other != null)

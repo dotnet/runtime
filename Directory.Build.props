@@ -1,4 +1,12 @@
-<Project>
+<Project TreatAsLocalProperty="RepoRoot">
+
+  <PropertyGroup>
+    <!--
+      For non-SDK projects that import this file and then import Microsoft.Common.props,
+      tell Microsoft.Common.props not to import Directory.Build.props again
+    -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+  </PropertyGroup>
 
   <!--
     Import the arcade sdk with these requirements.
@@ -10,29 +18,37 @@
   -->
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(SkipImportArcadeSdkFromRoot)' != 'true'" />
 
-  <!-- Common paths -->
-
   <!-- Set these properties early enough for libraries as they import the Arcade SDK not early enough.  -->
   <PropertyGroup Condition="'$(SkipImportArcadeSdkFromRoot)' == 'true'">
-    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <RepoRoot>$([MSBuild]::EnsureTrailingSlash('$(MSBuildThisFileDirectory)'))</RepoRoot>
     <RepositoryEngineeringDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng'))</RepositoryEngineeringDir>
     <ArtifactsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts'))</ArtifactsDir>
     <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin'))</ArtifactsBinDir>
+    <ArtifactsObjDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'obj'))</ArtifactsObjDir>
   </PropertyGroup>
 
+  <!-- The TFMs to build and test against. -->
   <PropertyGroup>
-    <RepoToolsLocalDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'tools-local'))</RepoToolsLocalDir>
-    <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(RepoToolsLocalDir)', 'tasks'))</RepoTasksDir>
+    <NETCoreAppCurrentVersion>5.0</NETCoreAppCurrentVersion>
+    <NetCoreAppCurrentTargetFrameworkMoniker>.NETCoreApp,Version=v$(NETCoreAppCurrentVersion)</NetCoreAppCurrentTargetFrameworkMoniker>
+    <NetCoreAppCurrent>netcoreapp$(NETCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <NetFrameworkCurrent>net472</NetFrameworkCurrent>
+  </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)Configurations.props" />
+
+  <!--
+    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    $(Subset) automatically when creating project-to-project dependencies.
+  -->
+  <Import Project="$(RepositoryEngineeringDir)Subsets.props" />
+
+  <PropertyGroup>
     <!-- Installer specific, required during restore. -->
     <InstallerTasksOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'installer.tasks'))</InstallerTasksOutputPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'netstandard2.0', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(InstallerTasksOutputPath)', 'Debug', 'net46', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <HostMachineInfoProps>$(ArtifactsObjDir)HostMachineInfo.props</HostMachineInfoProps>
-
-    <LibrariesProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'libraries'))</LibrariesProjectRoot>
-    <CoreClrProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'coreclr'))</CoreClrProjectRoot>
-    <InstallerProjectRoot>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'installer'))</InstallerProjectRoot>
 
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'docs'))</DocsDir>
     <ManPagesDir>$([MSBuild]::NormalizeDirectory('$(DocsDir)', 'manpages'))</ManPagesDir>
@@ -49,6 +65,40 @@
     <RepositoryUrl>git://github.com/dotnet/runtime</RepositoryUrl>
     <ProjectUrl>https://github.com/dotnet/runtime</ProjectUrl>
     <LicenseUrl>https://github.com/dotnet/runtime/blob/master/LICENSE.TXT</LicenseUrl>
+    <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'pkg', 'Microsoft.NETCore.Platforms', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
+    <LicenseFile>$(RepoRoot)LICENSE.TXT</LicenseFile>
+
+    <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
+    <IsPrerelease>true</IsPrerelease>
+
+    <!-- Experimental packages should not be stable -->
+    <SuppressFinalPackageVersion Condition="'$(SuppressFinalPackageVersion)' == '' and $(MSBuildProjectName.Contains('Experimental'))">true</SuppressFinalPackageVersion>
+    <IsShippingAssembly Condition="$(MSBuildProjectName.Contains('Experimental'))">false</IsShippingAssembly>
+
+    <!-- We don't want Private packages to be shipped to NuGet.org -->
+    <IsShippingPackage Condition="$(MSBuildProjectName.Contains('Private')) and '$(MSBuildProjectExtension)' == '.pkgproj'">false</IsShippingPackage>
   </PropertyGroup>
+
+  <!-- Language configuration -->
+  <PropertyGroup>
+    <!-- default to allowing all language features -->
+    <LangVersion>latest</LangVersion>
+    <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
+    <Deterministic>true</Deterministic>
+
+    <!-- Resource naming bug: https://github.com/microsoft/msbuild/issues/4740 -->
+    <EmbeddedResourceUseDependentUponConvention>false</EmbeddedResourceUseDependentUponConvention>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Default to portable build if not explicitly set -->
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+    <!-- Used for launchSettings.json and runtime config files. -->
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <!-- Determine what architecture we are building on. -->
+    <BuildArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture.ToString().ToLowerInvariant())</BuildArchitecture>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.props" />
 
 </Project>

@@ -1,15 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Text.RegularExpressions</AssemblyName>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILED</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);FEATURE_COMPILEAPIS</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_COMPILED</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
     <Compile Include="System\Collections\HashtableExtensions.cs" />
+    <Compile Include="System\Collections\Generic\ValueListBuilder.Pop.cs" />
+    <Compile Include="System\Text\SegmentStringBuilder.cs" />
     <Compile Include="System\Text\RegularExpressions\Capture.cs" />
     <Compile Include="System\Text\RegularExpressions\CaptureCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\CollectionDebuggerProxy.cs" />
@@ -17,18 +17,17 @@
     <Compile Include="System\Text\RegularExpressions\GroupCollection.cs" />
     <Compile Include="System\Text\RegularExpressions\Match.cs" />
     <Compile Include="System\Text\RegularExpressions\MatchCollection.cs" />
-    <Compile Include="System\Text\RegularExpressions\Reference.cs" />
-    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.cs" />
+    <Compile Include="System\Text\RegularExpressions\Regex.Cache.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Match.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Replace.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Split.cs" />
     <Compile Include="System\Text\RegularExpressions\Regex.Timeout.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexAssemblyCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexBoyerMoore.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexFCD.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexNode.cs" />
@@ -36,44 +35,41 @@
     <Compile Include="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParseException.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexParser.cs" />
-    <Compile Include="System\Text\RegularExpressions\RegexPrefix.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexPrefixAnalyzer.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexReplacement.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexTree.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexWriter.cs" />
-    <!-- Common or Common-branched source files -->
-    <Compile Include="$(CommonPath)System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs">
-      <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CoreLibSharedDir)System\Text\ValueStringBuilder.cs">
-      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
-    </Compile>
-    <Compile Include="System\Text\ValueStringBuilder.Reverse.cs" />
-  </ItemGroup>
-  <!-- Files that enable compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Text\RegularExpressions\ThrowHelper.cs" />
+    <!-- Files that enable compiled feature -->
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\CompiledRegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompiler.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexLWCGCompiler.cs" />
+    <!-- Common or Common-branched source files -->
+    <Compile Include="$(CommonPath)System\NotImplemented.cs">
+      <Link>Common\System\NotImplemented.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs">
+      <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs">
+      <Link>Common\System\Text\ValueStringBuilder.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-  </ItemGroup>
-  <!-- References required for compiled feature -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <!-- References required for compiled feature -->
+    <Reference Include="System.Reflection.Emit" />
     <Reference Include="System.Reflection.Emit.ILGeneration" />
     <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />

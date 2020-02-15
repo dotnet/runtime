@@ -340,7 +340,7 @@ namespace System.IO
             return new ManualResetEvent(false);
         }
 
-        public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        public virtual IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
@@ -503,7 +503,7 @@ namespace System.IO
 
 
 
-        public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        public virtual IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             return BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: false, apm: true);
         }
@@ -884,7 +884,7 @@ namespace System.IO
         {
         }
 
-        internal IAsyncResult BlockingBeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        internal IAsyncResult BlockingBeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             // To avoid a race with a stream's position pointer & generating conditions
             // with internal buffer indexes in our own streams that
@@ -913,7 +913,7 @@ namespace System.IO
             return SynchronousAsyncResult.EndRead(asyncResult);
         }
 
-        internal IAsyncResult BlockingBeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+        internal IAsyncResult BlockingBeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
         {
             // To avoid a race condition with a stream's position pointer & generating conditions
             // with internal buffer indexes in our own streams that
@@ -1012,7 +1012,7 @@ namespace System.IO
                     Task.CompletedTask;
             }
 
-            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
                 if (!CanRead) throw Error.GetReadNotSupported();
 
@@ -1027,7 +1027,7 @@ namespace System.IO
                 return BlockingEndRead(asyncResult);
             }
 
-            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
                 if (!CanWrite) throw Error.GetWriteNotSupported();
 
@@ -1304,7 +1304,7 @@ namespace System.IO
                     return _stream.ReadByte();
             }
 
-            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+            public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
 #if CORERT
                 throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
@@ -1365,7 +1365,7 @@ namespace System.IO
                     _stream.WriteByte(b);
             }
 
-            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object? state)
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
 #if CORERT
                 throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251

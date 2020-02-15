@@ -1,5 +1,5 @@
 # Build Project Guidelines
-In order to work in corefx repo you must first run build.cmd/sh from the root of the repo at least
+In order to work in dotnet/runtime repo you must first run build.cmd/sh from the root of the repo at least
 once before you can iterate and work on a given library project.
 
 ## Behind the scenes with build.cmd/sh
@@ -8,7 +8,7 @@ once before you can iterate and work on a given library project.
 - Restore external dependencies
  - CoreCLR - Copy to `bin\runtime\$(BuildConfiguration)`
  - Netstandard Library - Copy to `bin\ref\netstandard`
- - NetFx targeting pack - Copy to `bin\ref\netfx`
+ - NetFx targeting pack - Copy to `bin\ref\net472`
 - Build targeting pack
  - Build src\ref.builds which builds all references assembly projects. For reference assembly project information see [ref](#ref)
 - Build product
@@ -37,12 +37,12 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(TargetGroup) -> netstandard | netcoreapp | netfx`
+- `$(TargetGroup) -> netstandard2.1 | netcoreapp5.0 | net472`
 //**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
 - `$(ArchGroup) - x86 | x64 | arm | arm64 | [defaults to x64 when empty]`
-- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/corefx/tree/master/pkg/Microsoft.NETCore.Platforms) for more info.
+- `$(RuntimeOS) - win7 | osx10.10 | ubuntu.14.04 | [any other RID OS+version] | [defaults to running OS when empty]` See [RIDs](https://github.com/dotnet/runtime/tree/master/src/libraries/pkg/Microsoft.NETCore.Platforms) for more info.
 
 For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
 
@@ -77,9 +77,9 @@ All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
   <BuildConfigurations>
-    netcoreapp-Windows_NT;
-    netcoreapp-Unix;
-    netfx-Windows_NT;
+    $(NetCoreAppCurrent)-Windows_NT;
+    $(NetCoreAppCurrent)-Unix;
+    $(NetFrameworkCurrent)-Windows_NT;
   </BuildConfigurations>
 <PropertyGroup>
 ```
@@ -90,12 +90,12 @@ Placeholder build configurations can be added to the `<BuildConfigurations>` pro
 Placeholder build configurations start with _ prefix.
 
 Example:
-When we have a project that has a `netstandard` build configuration that means that this project is compatible with any build configuration. So if we do a vertical build for `netfx` this project will be built as part of the vertical because `netfx` is compatible with `netstandard`. This means that in the runtime and testhost binaries the netstandard implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `netfx` vertical we need to add a placeholder configuration:
+When we have a project that has a `netstandard` build configuration that means that this project is compatible with any build configuration. So if we do a vertical build for `net472` this project will be built as part of the vertical because `net472` is compatible with `netstandard2.0`. This means that in the runtime and testhost binaries the netstandard implementation will be included, and we will test against those assets instead of testing against the framework inbox asset. In order to tell the build system to not include this project as part of the `net472` vertical we need to add a placeholder configuration:
 ```
 <PropertyGroup>
   <BuildConfigurations>
-    netstandard;
-    _netfx;
+    netstandard2.0;
+    _net472;
   </BuildConfigurations>
 </PropertyGroup>
 ```
@@ -120,8 +120,8 @@ TODO: Link to the target framework and OS fallbacks when they are available.
 Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/osgroups.props and https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/targetgroups.props
 
 ## Supported full build configurations
-- .NET Core latest on current OS (default) -> `netcoreapp-[RunningOS]`
-- .NET Framework latest -> `netfx-Windows_NT`
+- .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
+- .NET Framework latest -> `$(NetFrameworkCurrent)-Windows_NT`
 
 ## Project configurations for VS
 For each unique configuration needed for a given library project a configuration entry separated by a ';' should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
@@ -149,7 +149,7 @@ We have a build task that you can run to automatically update all the projects w
 dotnet msbuild build.proj /t:UpdateVSConfigurations
 ```
 
-If you want to scope the generation you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/corefx/blob/master/build.proj
+If you want to scope the generation you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/runtime/blob/master/src/libraries/build.proj
 
 # Library project guidelines
 Library projects should use the following directory layout.
@@ -162,7 +162,7 @@ src\<Library Name>\tests - Contains the test code for a library
 ```
 
 ## ref
-Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/updating-ref-source.md).
+Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all. Instructions on updating reference sources can be found [here](https://github.com/dotnet/runtime/blob/master/docs/coding-guidelines/updating-ref-source.md).
 
 In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `BuildConfigurations` property.
 
@@ -244,7 +244,8 @@ Each source file should use the following guidelines
   - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
 
 ## Define naming convention
-As mentioned in [Conventions for forked code](conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:
+
+As mentioned in [Conventions for forked code](#conventions-for-forked-code) `#ifdef`ing the code is the last resort as it makes code harder to maintain overtime. If we do need to use `#ifdef`'s we should use the following conventions:
 - Defines based on conventions should be one of `$(OSGroup)`, `$(TargetGroup)`, `$(ConfigurationGroup)`, or `$(Platform)`, matching exactly by case to ensure consistency.
  - Examples: `<DefineConstants>$(DefineConstants);net46</DefineConstants>`
 - Defines based on convention should match the pattern `FEATURE_<feature name>`. These can unique to a given library project or potentially shared (via name) across multiple projects.

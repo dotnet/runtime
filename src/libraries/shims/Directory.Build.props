@@ -1,12 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <!-- shared configurations between shims and apicompat -->
-    <BuildConfigurations>
-      $(BuildConfigurations);
-      netcoreapp;;
-    </BuildConfigurations>
-  </PropertyGroup>
-
   <Import Project="..\Directory.Build.props" />
 
   <Import Project="netfxreference.props" />
@@ -21,6 +13,8 @@
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <HasMatchingContract>true</HasMatchingContract>
+    <!-- Shims have no code in them. No point in running IL linker over them -->
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or '$(MSBuildProjectName)' == 'mscorlib' or '$(MSBuildProjectName)' == 'netstandard'">

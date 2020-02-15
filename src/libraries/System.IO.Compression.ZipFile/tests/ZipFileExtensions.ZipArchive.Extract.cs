@@ -22,7 +22,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsHighSierraOrHigher))]
+        [Fact]
         public void ExtractToDirectoryExtension_Unicode()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <AllowUnsafeBlocks Condition="'$(TargetsUnix)' == 'true'">true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX</TargetFrameworks>
   </PropertyGroup>
   <Choose>
     <!-- Disable the whole workitem on Windows arm64 until https://github.com/dotnet/core-eng/issues/5118 is fixed. -->
@@ -11,6 +11,7 @@
         <Compile Include="NotifyReadVirtualNetworkStream.cs" />
         <Compile Include="DummyTcpServer.cs" />
         <Compile Include="TestConfiguration.cs" />
+        <Compile Include="TestHelper.cs" />
         <!-- SslStream Tests -->
         <Compile Include="CertificateValidationClientServer.cs" />
         <Compile Include="CertificateValidationRemoteServer.cs" />
@@ -78,8 +79,8 @@
         <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs">
           <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
         </Compile>
-        <Compile Include="$(CoreLibSharedDir)System\Threading\Tasks\TaskToApm.cs">
-          <Link>ProductionCode\System\Threading\Tasks\TaskToApm.cs</Link>
+        <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs">
+          <Link>ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs</Link>
         </Compile>
       </ItemGroup>
       <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
@@ -98,7 +99,6 @@
         <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
         <Compile Include="SslStreamCredentialCacheTest.cs" />
         <Compile Include="SslStreamSystemDefaultsTest.cs" />
-        <Compile Include="SslStreamStreamToStreamTest.netcoreapp.cs" />
       </ItemGroup>
       <ItemGroup>
         <Compile Include="LoggingTest.cs" />
@@ -122,38 +122,6 @@
         </Compile>
         <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs">
           <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-        </Compile>
-      </ItemGroup>
-      <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
-        <None Include="..\Scripts\Unix\setup-kdc.sh">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\krb5.conf">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.ubuntu">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.centos">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <None Include="..\Scripts\Unix\kdc.conf.opensuse">
-          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-        <Compile Include="NegotiateStreamTest.Linux.cs" />
-        <Compile Include="UnixGssFakeNegotiateStream.cs" />
-        <Compile Include="UnixGssFakeStreamFramer.cs" />
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs">
-          <Link>Common\Microsoft\Win32\SafeHandles\GssSafeHandles.cs</Link>
-        </Compile>
-        <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs">
-          <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.cs</Link>
         </Compile>
       </ItemGroup>
       <ItemGroup>

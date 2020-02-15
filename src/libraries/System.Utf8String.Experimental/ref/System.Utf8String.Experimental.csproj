@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{7AF57E6B-2CED-45C9-8BCA-5BBA60D018E0}</ProjectGuid>
     <!-- disable warnings about obsolete APIs -->
     <NoWarn>$(NoWarn);0809;0618</NoWarn>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">

@@ -81,7 +81,7 @@ namespace System.Reflection.Tests
                 Assert.Null(cat.Value);
                 if (parameterType == typeof(object))
                 {
-                    // Why "string?" That's what NETFX has always put here for this corner case.
+                    // Why "string?" That's what .NET Framework has always put here for this corner case.
                     Assert.Equal(typeof(string).Project(), cat.ArgumentType);
                 }
                 else

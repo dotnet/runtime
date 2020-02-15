@@ -1,11 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
     <FileAlignment>512</FileAlignment>
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <UnicodeUcdVersion>12.1</UnicodeUcdVersion>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -13,7 +14,6 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
     <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
@@ -45,14 +45,19 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeDebug.cs">
       <Link>System\Text\UnicodeDebug.cs</Link>
     </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Text\UnicodeUtility.cs">
       <Link>System\Text\UnicodeUtility.cs</Link>
     </Compile>
-    <EmbeddedResource Include="$(CommonTestPath)Data\UnicodeData.12.1.txt">
-      <LogicalName>UnicodeData.12.1.txt</LogicalName>
-    </EmbeddedResource>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

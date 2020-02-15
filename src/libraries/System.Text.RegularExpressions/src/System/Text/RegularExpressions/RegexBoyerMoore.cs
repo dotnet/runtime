@@ -12,6 +12,7 @@
 // need to be examined.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.Text.RegularExpressions
@@ -28,6 +29,10 @@ namespace System.Text.RegularExpressions
         public readonly bool CaseInsensitive;
         private readonly CultureInfo _culture;
 
+        /// <summary>The maximum prefix string length for which we'll attempt to create a Boyer-Moore table.</summary>
+        /// <remarks>This is limited in order to minimize the overhead of constructing a Regex.</remarks>
+        public const int MaxLimit = 50_000; // must be <= char.MaxValue for RegexCompiler to compile Boyer-Moore correctly
+
         /// <summary>
         /// Constructs a Boyer-Moore state machine for searching for the string
         /// pattern. The string must not be zero-length.
@@ -37,6 +42,7 @@ namespace System.Text.RegularExpressions
             // Sorry, you just can't use Boyer-Moore to find an empty pattern.
             // We're doing this for your own protection. (Really, for speed.)
             Debug.Assert(pattern.Length != 0, "RegexBoyerMoore called with an empty string. This is bad for perf");
+            Debug.Assert(pattern.Length <= MaxLimit, "RegexBoyerMoore can take a long time for large patterns");
             Debug.Assert(!caseInsensitive || pattern.ToLower(culture) == pattern, "RegexBoyerMoore called with a pattern which is not lowercased with caseInsensitive true.");
 
             Pattern = pattern;
@@ -106,8 +112,6 @@ namespace System.Text.RegularExpressions
                         // to the tail suffix.
                         if (Positive[match] == 0)
                             Positive[match] = match - scan;
-
-                        // System.Diagnostics.Debug.WriteLine("Set positive[" + match + "] to " + (match - scan));
 
                         break;
                     }
@@ -205,23 +209,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        private bool MatchPattern(string text, int index)
-        {
-            if (CaseInsensitive)
-            {
-                if (text.Length - index < Pattern.Length)
-                {
-                    return false;
-                }
-
-                return (0 == string.Compare(Pattern, 0, text, index, Pattern.Length, CaseInsensitive, _culture));
-            }
-            else
-            {
-                return (0 == string.CompareOrdinal(Pattern, 0, text, index, Pattern.Length));
-            }
-        }
-
         /// <summary>
         /// When a regex is anchored, we can do a quick IsMatch test instead of a Scan
         /// </summary>
@@ -231,16 +218,21 @@ namespace System.Text.RegularExpressions
             {
                 if (index < beglimit || endlimit - index < Pattern.Length)
                     return false;
-
-                return MatchPattern(text, index);
             }
             else
             {
                 if (index > endlimit || index - beglimit < Pattern.Length)
                     return false;
 
-                return MatchPattern(text, index - Pattern.Length);
+                index -= Pattern.Length;
             }
+
+            if (CaseInsensitive)
+            {
+                return string.Compare(Pattern, 0, text, index, Pattern.Length, ignoreCase: true, _culture) == 0;
+            }
+
+            return Pattern.AsSpan().SequenceEqual(text.AsSpan(index, Pattern.Length));
         }
 
         /// <summary>
@@ -347,34 +339,36 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        /// <summary>
-        /// Used when dumping for debugging.
-        /// </summary>
-        public override string ToString() => Pattern;
+        /// <summary>Used when dumping for debugging.</summary>
+        [ExcludeFromCodeCoverage]
+        public override string ToString() => Dump(string.Empty);
 
+        [ExcludeFromCodeCoverage]
         public string Dump(string indent)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            sb.Append(indent + "BM Pattern: " + Pattern + "\n");
-            sb.Append(indent + "Positive: ");
-            for (int i = 0; i < Positive.Length; i++)
+            sb.AppendLine($"{indent}BM Pattern: {Pattern}");
+
+            sb.Append($"{indent}Positive: ");
+            foreach (int i in Positive)
             {
-                sb.Append(Positive[i].ToString(CultureInfo.InvariantCulture) + " ");
+                sb.Append($"{i} ");
             }
-            sb.Append("\n");
+            sb.AppendLine();
 
             if (NegativeASCII != null)
             {
-                sb.Append(indent + "Negative table\n");
+                sb.Append($"{indent}Negative table: ");
                 for (int i = 0; i < NegativeASCII.Length; i++)
                 {
                     if (NegativeASCII[i] != Pattern.Length)
                     {
-                        sb.Append(indent + "  " + Regex.Escape(Convert.ToString((char)i, CultureInfo.InvariantCulture)) + " " + NegativeASCII[i].ToString(CultureInfo.InvariantCulture) + "\n");
+                        sb.Append($" {{{Regex.Escape(((char)i).ToString())} {NegativeASCII[i]}}}");
                     }
                 }
             }
+            sb.AppendLine();
 
             return sb.ToString();
         }

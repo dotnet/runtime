@@ -2,21 +2,23 @@
   <!-- Make sure that the DebuggableAttribute is set properly. -->
   <PropertyGroup>
     <DebugOptimization>IMPL</DebugOptimization>
-    <DebugOptimization Condition="'$(ConfigurationGroup)' == 'Release'">OPT</DebugOptimization>
+    <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
   </PropertyGroup>
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IncludePath>include\$(TargetGroup)</IncludePath>
-    <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true'">include\netcoreapp</IncludePath>
+    <IncludePath>include\$(TargetFramework)</IncludePath>
+    <IncludePath Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetFramework)' == ''">include\netcoreapp</IncludePath>
     <IncludePath Condition="'$(TargetsNetFx)' == 'true'">include\netfx</IncludePath>
     <IlasmFlags>$(IlasmFlags) -INCLUDE=$(IncludePath) -DEBUG=$(DebugOptimization)</IlasmFlags>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netstandard2.0-Debug;netstandard2.0-Release;netstandard1.0-Debug;netstandard1.0-Release;net45-Debug;net45-Release;netfx-Debug;netfx-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp2.0;netstandard1.0;net45;$(NetFrameworkCurrent)</TargetFrameworks>
+    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <Reference Include="System.Runtime" />
-    <ILResourceReference Include="$(RefPath)$(TargetFileName)" />
+    <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
+    <ILResourceReference Include="$(Refpath)\$(TargetFileName)" />
   </ItemGroup>
 </Project>

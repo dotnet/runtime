@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.8) # This project is only included on Win32 platforms so we can have a higher CMake version requirement since we already require a newer CMake version on Windows for various reasons.
 # Quick note: The CMake C# support is using the CSC bundled with the MSBuild that the native build runs on, not the one supplied by the local .NET SDK.
 
 project(DacTableGen LANGUAGES CSharp)

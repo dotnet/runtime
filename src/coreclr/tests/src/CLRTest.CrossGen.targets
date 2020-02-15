@@ -27,6 +27,8 @@ WARNING:   When setting properties based on their current state (for example:
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'true'" Include = "set RunCrossGen=1"/>
     <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen"/>
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen="/>
+    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen2"/>
+    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen2="/>
   </ItemGroup>
 
   <!--
@@ -69,7 +71,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
           mkdir IL
           cp $(MSBuildProjectName).dll IL/$(MSBuildProjectName).dll
           mv $(MSBuildProjectName).dll $(MSBuildProjectName).org
-          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen2/crossgen2" -r:$CORE_ROOT/*.dll --targetarch=x64 -O --inputbubble -o:$(scriptPath)$(MSBuildProjectName).dll $(scriptPath)$(MSBuildProjectName).org
+          __Command=$_DebuggerFullPath "$CORE_ROOT/crossgen2/crossgen2" -r:$CORE_ROOT/System.*.dll -r:$CORE_ROOT/Microsoft.*.dll -r:$CORE_ROOT/mscorlib.dll -r:$PWD/*.dll --targetarch=x64 -O --inputbubble $ExtraCrossGen2Args -o:$(scriptPath)$(MSBuildProjectName).dll $(scriptPath)$(MSBuildProjectName).org
           echo $__Command
           $__Command
           __cg2ExitCode=$?
@@ -130,7 +132,7 @@ if defined RunCrossGen2 (
             mkdir IL
             copy $(MSBuildProjectName).dll IL\$(MSBuildProjectName).dll
             ren $(MSBuildProjectName).dll $(MSBuildProjectName).org
-            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2" %21scriptPath%21$(MSBuildProjectName).org -o:%21scriptPath%21$(MSBuildProjectName).dll --targetarch:x64 -O --inputbubble -r:!CORE_ROOT!\*.dll
+            set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2" %21scriptPath%21$(MSBuildProjectName).org -o:%21scriptPath%21$(MSBuildProjectName).dll --targetarch:x64 -O --inputbubble %21ExtraCrossGen2Args%21 -r:"!CORE_ROOT!\System.*.dll" -r:"!CORE_ROOT!\Microsoft.*.dll" -r:"!CORE_ROOT!\mscorlib.dll" -r:%25cd%25\*.dll
             echo "!__Command!"
             call !__Command!
             set CrossGen2Status=!ERRORLEVEL!

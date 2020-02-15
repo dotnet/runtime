@@ -17,45 +17,58 @@ namespace System
 {
     public static partial class Math
     {
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Abs(double value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Abs(float value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acos(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Acosh(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Asin(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Asinh(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Atan(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Atan2(double y, double x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Atanh(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Cbrt(double d);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Ceiling(double a);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Cos(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Cosh(double value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Exp(double d);
 
@@ -75,27 +88,34 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log2(double x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log10(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Pow(double x, double y);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double ScaleB(double x, int n);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sin(double a);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sinh(double value);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Sqrt(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Tan(double a);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Tanh(double value);
 

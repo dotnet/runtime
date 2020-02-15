@@ -17,6 +17,6 @@ internal static partial class Interop
             IntPtr TokenAttributes,
             SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
             System.Security.Principal.TokenType TokenType,
-            ref SafeTokenHandle DuplicateTokenHandle);
+            ref SafeTokenHandle? DuplicateTokenHandle);
     }
 }

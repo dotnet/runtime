@@ -311,7 +311,7 @@ namespace System.Reflection.Metadata
             private CustomAttributeHandle GetCurrentCustomAttributeIndirect()
             {
                 return CustomAttributeHandle.FromRowId(
-                    _reader.CustomAttributeTable.PtrTable[(_currentRowId & (int)TokenTypeIds.RIDMask) - 1]);
+                    _reader.CustomAttributeTable.PtrTable![(_currentRowId & (int)TokenTypeIds.RIDMask) - 1]);
             }
 
             public bool MoveNext()

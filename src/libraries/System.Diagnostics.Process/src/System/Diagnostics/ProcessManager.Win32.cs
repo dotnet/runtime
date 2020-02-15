@@ -9,6 +9,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
+using SYSTEM_PROCESS_INFORMATION = Interop.NtDll.SYSTEM_PROCESS_INFORMATION;
+using SYSTEM_THREAD_INFORMATION = Interop.NtDll.SYSTEM_THREAD_INFORMATION;
+
 namespace System.Diagnostics
 {
     internal static partial class ProcessManager
@@ -71,7 +74,7 @@ namespace System.Diagnostics
             if (processId == SystemProcessID || processId == IdleProcessID)
             {
                 // system process and idle process doesn't have any modules
-                throw new Win32Exception(Interop.Errors.EFail, SR.EnumProcessModuleFailed);
+                throw new Win32Exception(HResults.E_FAIL, SR.EnumProcessModuleFailed);
             }
 
             SafeProcessHandle processHandle = SafeProcessHandle.InvalidHandle;
@@ -241,7 +244,7 @@ namespace System.Diagnostics
     internal static class NtProcessInfoHelper
     {
         // Cache a single buffer for use in GetProcessInfos().
-        private static long[] CachedBuffer;
+        private static long[]? CachedBuffer;
 
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
@@ -250,18 +253,15 @@ namespace System.Diagnostics
         private const int DefaultCachedBufferSize = 128 * 1024;
 #endif
 
-        internal static ProcessInfo[] GetProcessInfos(Predicate<int> processIdFilter = null)
+        internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
         {
-            int requiredSize = 0;
-            int status;
-
             ProcessInfo[] processInfos;
 
             // Start with the default buffer size.
             int bufferSize = DefaultCachedBufferSize;
 
             // Get the cached buffer.
-            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
+            long[]? buffer = Interlocked.Exchange(ref CachedBuffer, null);
 
             try
             {
@@ -272,11 +272,8 @@ namespace System.Diagnostics
                         // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
                         buffer = new long[(bufferSize + 7) / 8];
                     }
-                    else
-                    {
-                        // If we have cached buffer, set the size properly.
-                        bufferSize = buffer.Length * sizeof(long);
-                    }
+
+                    uint requiredSize = 0;
 
                     unsafe
                     {
@@ -284,18 +281,18 @@ namespace System.Diagnostics
                         // by GetProcessInfos below
                         fixed (long* bufferPtr = buffer)
                         {
-                            status = Interop.NtDll.NtQuerySystemInformation(
-                                Interop.NtDll.NtQuerySystemProcessInformation,
+                            uint status = Interop.NtDll.NtQuerySystemInformation(
+                                Interop.NtDll.SystemProcessInformation,
                                 bufferPtr,
-                                bufferSize,
-                                out requiredSize);
+                                (uint)(buffer.Length * sizeof(long)),
+                                &requiredSize);
 
-                            if (unchecked((uint)status) != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                             {
                                 // see definition of NT_SUCCESS(Status) in SDK
-                                if (status < 0)
+                                if ((int)status < 0)
                                 {
-                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
+                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                                 }
 
                                 // Parse the data block to get process information
@@ -306,7 +303,7 @@ namespace System.Diagnostics
                     }
 
                     buffer = null;
-                    bufferSize = GetNewBufferSize(bufferSize, requiredSize);
+                    bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
                 }
             }
             finally
@@ -320,35 +317,33 @@ namespace System.Diagnostics
 
         private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
         {
+            int newSize;
+
             if (requiredSize == 0)
             {
                 //
                 // On some old OS like win2000, requiredSize will not be set if the buffer
                 // passed to NtQuerySystemInformation is not enough.
                 //
-                int newSize = existingBufferSize * 2;
-                if (newSize < existingBufferSize)
-                {
-                    // In reality, we should never overflow.
-                    // Adding the code here just in case it happens.
-                    throw new OutOfMemoryException();
-                }
-                return newSize;
+                newSize = existingBufferSize * 2;
             }
             else
             {
                 // allocating a few more kilo bytes just in case there are some new process
                 // kicked in since new call to NtQuerySystemInformation
-                int newSize = requiredSize + 1024 * 10;
-                if (newSize < requiredSize)
-                {
-                    throw new OutOfMemoryException();
-                }
-                return newSize;
+                newSize = requiredSize + 1024 * 10;
             }
+
+            if (newSize < 0)
+            {
+                // In reality, we should never overflow.
+                // Adding the code here just in case it happens.
+                throw new OutOfMemoryException();
+            }
+            return newSize;
         }
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int> processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int>? processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -358,7 +353,7 @@ namespace System.Diagnostics
 
             while (true)
             {
-                ref readonly SystemProcessInformation pi = ref MemoryMarshal.AsRef<SystemProcessInformation>(data.Slice(processInformationOffset));
+                ref readonly SYSTEM_PROCESS_INFORMATION pi = ref MemoryMarshal.AsRef<SYSTEM_PROCESS_INFORMATION>(data.Slice(processInformationOffset));
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
@@ -405,10 +400,10 @@ namespace System.Diagnostics
                     // get the threads for current process
                     processInfos[processInfo.ProcessId] = processInfo;
 
-                    int threadInformationOffset = processInformationOffset + sizeof(SystemProcessInformation);
+                    int threadInformationOffset = processInformationOffset + sizeof(SYSTEM_PROCESS_INFORMATION);
                     for (int i = 0; i < pi.NumberOfThreads; i++)
                     {
-                        ref readonly SystemThreadInformation ti = ref MemoryMarshal.AsRef<SystemThreadInformation>(data.Slice(threadInformationOffset));
+                        ref readonly SYSTEM_THREAD_INFORMATION ti = ref MemoryMarshal.AsRef<SYSTEM_THREAD_INFORMATION>(data.Slice(threadInformationOffset));
 
                         ThreadInfo threadInfo = new ThreadInfo();
 
@@ -422,7 +417,7 @@ namespace System.Diagnostics
 
                         processInfo._threadInfoList.Add(threadInfo);
 
-                        threadInformationOffset += sizeof(SystemThreadInformation);
+                        threadInformationOffset += sizeof(SYSTEM_THREAD_INFORMATION);
                     }
                 }
 
@@ -483,56 +478,6 @@ namespace System.Diagnostics
             // copy characters between period (or end of string) and
             // slash (or start of string) to make image name
             return name.Substring(slash, period - slash + 1);
-        }
-
-        // native struct defined in ntexapi.h
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SystemProcessInformation
-        {
-            internal uint NextEntryOffset;
-            internal uint NumberOfThreads;
-            private fixed byte Reserved1[48];
-            internal Interop.UNICODE_STRING ImageName;
-            internal int BasePriority;
-            internal IntPtr UniqueProcessId;
-            private readonly UIntPtr Reserved2;
-            internal uint HandleCount;
-            internal uint SessionId;
-            private readonly UIntPtr Reserved3;
-            internal UIntPtr PeakVirtualSize;  // SIZE_T
-            internal UIntPtr VirtualSize;
-            private readonly uint Reserved4;
-            internal UIntPtr PeakWorkingSetSize;  // SIZE_T
-            internal UIntPtr WorkingSetSize;  // SIZE_T
-            private readonly UIntPtr Reserved5;
-            internal UIntPtr QuotaPagedPoolUsage;  // SIZE_T
-            private readonly UIntPtr Reserved6;
-            internal UIntPtr QuotaNonPagedPoolUsage;  // SIZE_T
-            internal UIntPtr PagefileUsage;  // SIZE_T
-            internal UIntPtr PeakPagefileUsage;  // SIZE_T
-            internal UIntPtr PrivatePageCount;  // SIZE_T
-            private fixed long Reserved7[6];
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct SystemThreadInformation
-        {
-            private fixed long Reserved1[3];
-            private readonly uint Reserved2;
-            internal IntPtr StartAddress;
-            internal CLIENT_ID ClientId;
-            internal int Priority;
-            internal int BasePriority;
-            private readonly uint Reserved3;
-            internal uint ThreadState;
-            internal uint WaitReason;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct CLIENT_ID
-        {
-            internal IntPtr UniqueProcess;
-            internal IntPtr UniqueThread;
         }
     }
 }

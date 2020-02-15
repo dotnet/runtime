@@ -1,11 +1,12 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Collections.Generic;
 
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
+using Internal.JitInterface;
 
 namespace ILCompiler
 {
@@ -15,80 +16,69 @@ namespace ILCompiler
     public class ReadyToRunRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
-        private ProfileData _profileData;
+        private IEnumerable<MethodDesc> _profileData;
+        private readonly bool _profileDrivenPartialNGen;
 
-        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager)
+        public ReadyToRunRootProvider(EcmaModule module, ProfileDataManager profileDataManager, bool profileDrivenPartialNGen)
         {
             _module = module;
-            _profileData = profileDataManager.GetDataForModuleDesc(module);
+            _profileData = profileDataManager.GetMethodsForModuleDesc(module);
+            _profileDrivenPartialNGen = profileDrivenPartialNGen;
         }
 
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
-            foreach (var methodProfileInfo in _profileData.GetAllMethodProfileData())
+            foreach (var method in _profileData)
             {
-                if (!methodProfileInfo.Flags.HasFlag(MethodProfilingDataFlags.ExcludeHotMethodCode) &&
-                    !methodProfileInfo.Flags.HasFlag(MethodProfilingDataFlags.ExcludeColdMethodCode))
+                try
                 {
-                    try
+                    // Validate that this method is fully instantiated
+                    if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
                     {
-                        MethodDesc method = methodProfileInfo.Method;
+                        continue;
+                    }
 
-                        // Validate that this method is fully instantiated
-                        if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables())
+                    if (method.IsGenericMethodDefinition)
+                    {
+                        continue;
+                    }
+
+                    bool containsSignatureVariables = false;
+                    foreach (TypeDesc t in method.Instantiation)
+                    {
+                        if (t.IsGenericDefinition)
                         {
-                            continue;
+                            containsSignatureVariables = true;
+                            break;
                         }
 
-                        if (method.IsGenericMethodDefinition)
+                        if (t.ContainsSignatureVariables())
                         {
-                            continue;
+                            containsSignatureVariables = true;
+                            break;
                         }
+                    }
+                    if (containsSignatureVariables)
+                        continue;
 
-                        bool containsSignatureVariables = false;
-                        foreach (TypeDesc t in method.Instantiation)
-                        {
-                            if (t.IsGenericDefinition)
-                            {
-                                containsSignatureVariables = true;
-                                break;
-                            }
-
-                            if (t.ContainsSignatureVariables())
-                            {
-                                containsSignatureVariables = true;
-                                break;
-                            }
-                        }
-                        if (containsSignatureVariables)
-                            continue;
-
+                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    {
                         CheckCanGenerateMethod(method);
                         rootProvider.AddCompilationRoot(method, "Profile triggered method");
                     }
-                    catch (TypeSystemException)
-                    {
-                        // Individual methods can fail to load types referenced in their signatures.
-                        // Skip them in library mode since they're not going to be callable.
-                        continue;
-                    }
+                }
+                catch (TypeSystemException)
+                {
+                    // Individual methods can fail to load types referenced in their signatures.
+                    // Skip them in library mode since they're not going to be callable.
+                    continue;
                 }
             }
 
-            if (!_profileData.PartialNGen)
+            if (!_profileDrivenPartialNGen)
             {
                 foreach (MetadataType type in _module.GetAllTypes())
                 {
-                    try
-                    {
-                        rootProvider.AddCompilationRoot(type, "Library module type");
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // Swallow type load exceptions while rooting
-                        continue;
-                    }
-
                     MetadataType typeWithMethods = type;
                     if (type.HasInstantiation)
                     {
@@ -124,8 +114,11 @@ namespace ILCompiler
 
                 try
                 {
-                    CheckCanGenerateMethod(methodToRoot);
-                    rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    if (!CorInfoImpl.ShouldSkipCompilation(method))
+                    {
+                        CheckCanGenerateMethod(methodToRoot);
+                        rootProvider.AddCompilationRoot(methodToRoot, reason);
+                    }
                 }
                 catch (TypeSystemException)
                 {
@@ -143,6 +136,9 @@ namespace ILCompiler
         /// </summary>
         public static void CheckCanGenerateMethod(MethodDesc method)
         {
+            // Ensure the method is loadable
+            ((CompilerTypeSystemContext)method.Context).EnsureLoadableMethod(method);
+
             MethodSignature signature = method.Signature;
 
             // Vararg methods are not supported in .NET Core

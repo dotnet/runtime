@@ -2,11 +2,8 @@
   <PropertyGroup>
     <RootNamespace>System.Diagnostics.TextWriterTraceListener</RootNamespace>
     <AssemblyName>System.Diagnostics.TextWriterTraceListener</AssemblyName>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="FxCopBaseline.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Diagnostics\ConsoleTraceListener.cs" />
     <Compile Include="System\Diagnostics\DelimitedListTraceListener.cs" />
@@ -42,10 +39,9 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Console" />
     <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />

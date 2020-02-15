@@ -154,11 +154,11 @@ namespace System.Net.Mime
 
             if (id == MailHeaderID.ContentType && _part != null)
             {
-                _part.ContentType.Set(value.ToLower(CultureInfo.InvariantCulture), this);
+                _part.ContentType.Set(value.ToLowerInvariant(), this);
             }
             else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
             {
-                ((MimePart)_part).ContentDisposition.Set(value.ToLower(CultureInfo.InvariantCulture), this);
+                ((MimePart)_part).ContentDisposition.Set(value.ToLowerInvariant(), this);
             }
             else
             {
@@ -197,11 +197,11 @@ namespace System.Net.Mime
 
             if (id == MailHeaderID.ContentType && _part != null)
             {
-                _part.ContentType.Set(value.ToLower(CultureInfo.InvariantCulture), this);
+                _part.ContentType.Set(value.ToLowerInvariant(), this);
             }
             else if (id == MailHeaderID.ContentDisposition && _part is MimePart)
             {
-                ((MimePart)_part).ContentDisposition.Set(value.ToLower(CultureInfo.InvariantCulture), this);
+                ((MimePart)_part).ContentDisposition.Set(value.ToLowerInvariant(), this);
             }
             else
             {

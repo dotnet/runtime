@@ -50,7 +50,7 @@ FindFirstFileExWrapper(
     _In_ DWORD dwAdditionalFlags
     );
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
 BOOL
 CopyFileExWrapper(
     _In_        LPCWSTR lpExistingFileName,
@@ -61,19 +61,13 @@ CopyFileExWrapper(
     _Inout_opt_ LPBOOL pbCancel,
     _In_        DWORD dwCopyFlags
     );
-#endif //FEATURE_PAL
+#endif //TARGET_UNIX
 
 BOOL
 MoveFileExWrapper(
     _In_     LPCWSTR lpExistingFileName,
     _In_opt_ LPCWSTR lpNewFileName,
     _In_     DWORD    dwFlags
-    );
-
-BOOL
-CreateDirectoryWrapper(
-    _In_ LPCWSTR lpPathName,
-    _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes
     );
 
 DWORD

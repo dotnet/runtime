@@ -29,7 +29,8 @@ namespace ILCompiler.DependencyAnalysis
         //
         // Relocations for R2R image production
         //
-        IMAGE_REL_SYMBOL_SIZE = 0x1000,             // The size of data in the image represented by the target symbol node
+        IMAGE_REL_SYMBOL_SIZE           = 0x1000,   // The size of data in the image represented by the target symbol node
+        IMAGE_REL_FILE_ABSOLUTE         = 0x1001,   // 32 bit offset from begining of image
     }
 
     public struct Relocation
@@ -167,6 +168,95 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert((uint)GetThumb2BlRel24(p) == imm24);
         }
 
+        //*****************************************************************************
+        //  Extract the PC-Relative offset from an adrp instruction
+        //*****************************************************************************
+        private static unsafe int GetArm64Rel21(uint* pCode)
+        {
+            int adrpInstr = (int)*pCode;
+
+            // 23-5 bits for the high part. Shift it by 5.
+            int immhi = (adrpInstr & 0xFFFFE0) >> 5;
+            // 30,29 bits for the lower part. Shift it by 29.
+            int immlo = (adrpInstr & 0x60000000) >> 29;
+
+            // Merge them
+            int imm21 = (immhi << 2) | immlo;
+
+            return imm21;
+        }
+
+        //*****************************************************************************
+        // Returns whether the offset fits into an Arm64 adrp instruction
+        //*****************************************************************************
+        private static bool FitsInRel21(int val32)
+        {
+            return (val32 >= 0) && (val32 <= 0x001FFFFF);
+        }
+
+        //*****************************************************************************
+        //  Deposit the PC-Relative offset 'imm21' into an adrp instruction
+        //*****************************************************************************
+        private static unsafe void PutArm64Rel21(uint* pCode, int imm21)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert(FitsInRel21(imm21));
+
+            uint adrpInstr = *pCode;
+            // Check adrp opcode 1ii1 0000 ...
+            Debug.Assert((adrpInstr & 0x9F000000) == 0x90000000);
+
+            adrpInstr &= 0x9F00001F;             // keep bits 31, 28-24, 4-0.
+            int immlo = imm21 & 0x03;            // Extract low 2 bits which will occupy 30-29 bits.
+            int immhi = (imm21 & 0x1FFFFC) >> 2; // Extract high 19 bits which will occupy 23-5 bits.
+            adrpInstr |= (uint)((immlo << 29) | (immhi << 5));
+
+            *pCode = adrpInstr;                  // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel21(pCode) == imm21);
+        }
+
+        //*****************************************************************************
+        //  Extract the PC-Relative offset from an add instruction
+        //*****************************************************************************
+        private static unsafe int GetArm64Rel12(uint* pCode)
+        {
+            uint addInstr = *pCode;
+
+            // 21-10 contains value. Mask 12 bits and shift by 10 bits.
+            int imm12 = (int)(addInstr & 0x003FFC00) >> 10;
+
+            return imm12;
+        }
+
+        //*****************************************************************************
+        // Returns whether the offset fits into an Arm64 add instruction
+        //*****************************************************************************
+        private static bool FitsInRel12(int val32)
+        {
+            return (val32 >= 0) && (val32 <= 0x00000FFF);
+        }
+
+        //*****************************************************************************
+        //  Deposit the PC-Relative offset 'imm12' into an add instruction
+        //*****************************************************************************
+        private static unsafe void PutArm64Rel12(uint* pCode, int imm12)
+        {
+            // Verify that we got a valid offset
+            Debug.Assert(FitsInRel12(imm12));
+
+            uint addInstr = *pCode;
+            // Check add opcode 1001 0001 00...
+            Debug.Assert((addInstr & 0xFFC00000) == 0x91000000);
+
+            addInstr &= 0xFFC003FF;          // keep bits 31-22, 9-0
+            addInstr |= (uint)(imm12 << 10); // Occupy 21-10.
+
+            *pCode = addInstr;               // write the assembled instruction
+
+            Debug.Assert(GetArm64Rel12(pCode) == imm12);
+        }
+
         public Relocation(RelocType relocType, int offset, ISymbolNode target)
         {
             RelocType = relocType;
@@ -183,6 +273,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_ADDR32NB:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                     *(int*)location = (int)value;
                     break;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -193,6 +284,12 @@ namespace ILCompiler.DependencyAnalysis
                     break;
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     PutThumb2BlRel24((ushort*)location, (uint)value);
+                    break;
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                    PutArm64Rel21((uint*)location, (int)value);
+                    break;
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    PutArm64Rel12((uint*)location, (int)value);
                     break;
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
@@ -210,6 +307,7 @@ namespace ILCompiler.DependencyAnalysis
                 case RelocType.IMAGE_REL_BASED_REL32:
                 case RelocType.IMAGE_REL_BASED_RELPTR32:
                 case RelocType.IMAGE_REL_SECREL:
+                case RelocType.IMAGE_REL_FILE_ABSOLUTE:
                 case RelocType.IMAGE_REL_SYMBOL_SIZE:
                     return *(int*)location;
                 case RelocType.IMAGE_REL_BASED_DIR64:
@@ -218,6 +316,10 @@ namespace ILCompiler.DependencyAnalysis
                     return (long)GetThumb2Mov32((ushort*)location);
                 case RelocType.IMAGE_REL_BASED_THUMB_BRANCH24:
                     return (long)GetThumb2BlRel24((ushort*)location);
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
+                    return GetArm64Rel21((uint*)location);
+                case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
+                    return GetArm64Rel12((uint*)location);
                 default:
                     Debug.Fail("Invalid RelocType: " + relocType);
                     return 0;
