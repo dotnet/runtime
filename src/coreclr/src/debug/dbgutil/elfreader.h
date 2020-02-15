@@ -9,7 +9,9 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <elf.h>
+#ifdef HOST_UNIX
 #include <link.h>
+#endif // HOST_UNIX
 #include <string>
 #include <vector>
 
@@ -63,7 +65,9 @@ public:
     bool PopulateELFInfo(uint64_t baseAddress);
     bool PopulateELFInfo(ElfW(Phdr)* phdrAddr, int phnum);
     bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
-    bool EnumerateLinkMapEntries();
+#ifdef HOST_UNIX
+     bool EnumerateLinkMapEntries();
+#endif
     bool EnumerateProgramHeaders(uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
     bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
 
