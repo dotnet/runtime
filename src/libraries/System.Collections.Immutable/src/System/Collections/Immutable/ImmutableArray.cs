@@ -154,6 +154,7 @@ namespace System.Collections.Immutable
             // The caller may have passed in an array explicitly (not relying on compiler params keyword)
             // and could then change the array after the call, thereby violating the immutable
             // guarantee provided by this struct. So we always copy the array to ensure it won't ever change.
+            int length = items.Length;
             var array = new T[length];
             Array.Copy(items, array, length);
             return new ImmutableArray<T>(array);
