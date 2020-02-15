@@ -6,7 +6,6 @@
 #include <ComHelpers.h>
 #include <unordered_map>
 #include <list>
-#include <atlbase.h>
 
 namespace API
 {
@@ -79,7 +78,7 @@ namespace
         std::atomic<int> _trackerSourceCount;
         bool _connected;
         std::atomic<int> _elementId;
-        std::unordered_map<int, CComPtr<IUnknown>> _elements;
+        std::unordered_map<int, ComSmartPtr<IUnknown>> _elements;
 
         TrackerObject(size_t id) : _id{ id }, _trackerSourceCount{ 0 }, _connected{ false }, _elementId{ 1 }
         { }
@@ -91,7 +90,7 @@ namespace
             auto curr = std::begin(_elements);
             while (curr != std::end(_elements))
             {
-                CComPtr<API::IReferenceTrackerTarget> mowMaybe;
+                ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
                 if (S_OK == curr->second->QueryInterface(&mowMaybe))
                 {
                     if (shouldPeg)
@@ -116,7 +115,7 @@ namespace
             try
             {
                 *id = _elementId;
-                if (!_elements.insert(std::make_pair(*id, CComPtr<IUnknown>{ c })).second)
+                if (!_elements.insert(std::make_pair(*id, ComSmartPtr<IUnknown>{ c })).second)
                     return S_FALSE;
 
                 _elementId++;
@@ -126,7 +125,7 @@ namespace
                 return E_OUTOFMEMORY;
             }
 
-            CComPtr<API::IReferenceTrackerTarget> mowMaybe;
+            ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
             if (S_OK == c->QueryInterface(&mowMaybe))
                 (void)mowMaybe->AddRefFromReferenceTracker();
 
@@ -139,7 +138,7 @@ namespace
             if (iter == std::end(_elements))
                 return S_FALSE;
 
-            CComPtr<API::IReferenceTrackerTarget> mowMaybe;
+            ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
             if (S_OK == iter->second->QueryInterface(&mowMaybe))
             {
                 (void)mowMaybe->ReleaseFromReferenceTracker();
@@ -172,13 +171,13 @@ namespace
 
     class TrackerRuntimeManagerImpl : public API::IReferenceTrackerManager
     {
-        CComPtr<API::IReferenceTrackerHost> _runtimeServices;
-        std::list<CComPtr<TrackerObject>> _objects;
+        ComSmartPtr<API::IReferenceTrackerHost> _runtimeServices;
+        std::list<ComSmartPtr<TrackerObject>> _objects;
 
     public:
         void RecordObject(_In_ TrackerObject* obj)
         {
-            _objects.push_back(CComPtr<TrackerObject>{ obj });
+            _objects.push_back(ComSmartPtr<TrackerObject>{ obj });
 
             if (_runtimeServices != nullptr)
                 _runtimeServices->AddMemoryPressure(sizeof(TrackerObject));
@@ -278,7 +277,7 @@ namespace
     {
         assert(pCallback != nullptr);
 
-        CComPtr<API::IReferenceTrackerTarget> mowMaybe;
+        ComSmartPtr<API::IReferenceTrackerTarget> mowMaybe;
         for (auto& e : _elements)
         {
             if (S_OK == e.second->QueryInterface(&mowMaybe))

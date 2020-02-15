@@ -205,8 +205,7 @@ struct ComHolder
 
     ComHolder& operator=(_Inout_ ComHolder&& other)
     {
-        Release();
-        p = other.Detach();
+        Attach(other.Detach());
         return (*this);
     }
 
@@ -240,8 +239,6 @@ struct ComHolder
     void Attach(_In_opt_ T* i) noexcept
     {
         Release();
-        if (i != nullptr)
-            (void)i->AddRef();
         p = i;
     }
 
