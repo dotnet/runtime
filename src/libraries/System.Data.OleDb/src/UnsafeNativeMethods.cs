@@ -409,7 +409,7 @@ namespace System.Data.Common
             System.Data.OleDb.OleDbHResult SetParameterInfo(
                 [In] IntPtr cParams,
                 [In, MarshalAs(UnmanagedType.LPArray)] IntPtr[] rgParamOrdinals,
-                [In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Struct)] System.Data.OleDb.tagDBPARAMBINDINFO[] rgParamBindInfo);
+                [In] IntPtr rgParamBindInfo);
         }
 
         [Guid("2206CCB1-19C1-11D1-89E0-00C04FD7A829"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown), ComImport, SuppressUnmanagedCodeSecurity]

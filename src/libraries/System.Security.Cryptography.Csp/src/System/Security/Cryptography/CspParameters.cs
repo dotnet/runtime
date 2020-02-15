@@ -12,8 +12,8 @@ namespace System.Security.Cryptography
     public sealed class CspParameters
     {
         public int ProviderType;
-        public string ProviderName;
-        public string KeyContainerName;
+        public string? ProviderName;
+        public string? KeyContainerName;
         public int KeyNumber;
         private int _flags;
         private IntPtr _parentWindowHandle;
@@ -49,18 +49,18 @@ namespace System.Security.Cryptography
         }
 
         [CLSCompliantAttribute(false)]
-        public SecureString KeyPassword { get; set; }
+        public SecureString? KeyPassword { get; set; }
 
         public CspParameters() : this(CapiHelper.DefaultRsaProviderType, null, null) { }
 
         public CspParameters(int dwTypeIn) : this(dwTypeIn, null, null) { }
-        public CspParameters(int dwTypeIn, string strProviderNameIn) : this(dwTypeIn, strProviderNameIn, null) { }
-        public CspParameters(int dwTypeIn, string strProviderNameIn, string strContainerNameIn) :
+        public CspParameters(int dwTypeIn, string? strProviderNameIn) : this(dwTypeIn, strProviderNameIn, null) { }
+        public CspParameters(int dwTypeIn, string? strProviderNameIn, string? strContainerNameIn) :
             this(dwTypeIn, strProviderNameIn, strContainerNameIn, CspProviderFlags.NoFlags)
         {
         }
 
-        internal CspParameters(int providerType, string providerName, string keyContainerName, CspProviderFlags flags)
+        internal CspParameters(int providerType, string? providerName, string? keyContainerName, CspProviderFlags flags)
         {
             ProviderType = providerType;
             ProviderName = providerName;

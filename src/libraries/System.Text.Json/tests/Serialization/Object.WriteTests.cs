@@ -77,6 +77,31 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteObjectWorks_ReferenceTypeMissingPublicParameterlessConstructor()
+        {
+            PublicParameterizedConstructorTestClass paramterless = PublicParameterizedConstructorTestClass.Instance;
+            Assert.Equal("{\"Name\":\"42\"}", JsonSerializer.Serialize(paramterless));
+
+            ClassWithInternalParameterlessCtor internalObj = ClassWithInternalParameterlessCtor.Instance;
+            Assert.Equal("{\"Name\":\"InstancePropertyInternal\"}", JsonSerializer.Serialize(internalObj));
+
+            ClassWithPrivateParameterlessCtor privateObj = ClassWithPrivateParameterlessCtor.Instance;
+            Assert.Equal("{\"Name\":\"InstancePropertyPrivate\"}", JsonSerializer.Serialize(privateObj));
+
+            var list = new CollectionWithoutPublicParameterlessCtor(new List<object> { 1, "foo", false });
+            Assert.Equal("[1,\"foo\",false]", JsonSerializer.Serialize(list));
+
+            var envelopeList = new List<object>()
+            {
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Error("oops"),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok<string>(),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok<int>(),
+                ConcreteDerivedClassWithNoPublicDefaultCtor.Ok()
+            };
+            Assert.Equal("[{\"ErrorString\":\"oops\",\"Result\":null},{\"Result\":null},{\"Result\":0},{\"ErrorString\":\"ok\",\"Result\":null}]", JsonSerializer.Serialize(envelopeList));
+        }
+
+        [Fact]
         public static void WritePolymorhicSimple()
         {
             string json = JsonSerializer.Serialize(new { Prop = (object)new[] { 0 } });

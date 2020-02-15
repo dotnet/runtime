@@ -7164,8 +7164,13 @@ exit_frame:
 
 	g_assert (frame->imethod);
 
-	if (clause_args && clause_args->base_frame)
-		memcpy (clause_args->base_frame->stack, frame->stack, frame->imethod->alloca_size);
+	if (clause_args && clause_args->base_frame) {
+		// We finished executing a filter. The execution stack of the base frame
+		// should remain unmodified, but we need to update the local space.
+		char *locals_base = (char*)clause_args->base_frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size;
+
+		memcpy (locals_base, locals, frame->imethod->locals_size);
+	}
 
 	if (!clause_args && frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */

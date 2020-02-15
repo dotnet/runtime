@@ -508,7 +508,7 @@ namespace System.Security.Cryptography
     public abstract partial class RSA : System.Security.Cryptography.AsymmetricAlgorithm
     {
         protected RSA() { }
-        public override string KeyExchangeAlgorithm { get { throw null; } }
+        public override string? KeyExchangeAlgorithm { get { throw null; } }
         public override string SignatureAlgorithm { get { throw null; } }
         public static new System.Security.Cryptography.RSA Create() { throw null; }
         public static System.Security.Cryptography.RSA Create(int keySizeInBits) { throw null; }

@@ -687,6 +687,8 @@ namespace System.Data.OleDb
         internal const string DbInfoKeywords = "DbInfoKeywords";
         internal const string Keyword = "Keyword";
 
+        internal static readonly bool IsRunningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
+
         // Debug error string writeline
         internal static string ELookup(OleDbHResult hr)
         {
