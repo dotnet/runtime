@@ -68,9 +68,9 @@ private:
     }
 };
 
-#ifndef COM_CLIENT
-    #include <ComHelpers.h>
+#include <ComHelpers.h>
 
+#ifndef COM_CLIENT
     #define DEF_FUNC(n) virtual COM_DECLSPEC_NOTHROW HRESULT STDMETHODCALLTYPE n
 
     #include "NumericTesting.h"
