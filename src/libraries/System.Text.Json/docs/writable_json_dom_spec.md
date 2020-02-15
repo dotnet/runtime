@@ -249,7 +249,7 @@ Mailbox.SendAllEmployeesData(employees.AsJsonElement());
 * RFC: https://tools.ietf.org/html/rfc8259
 
 ### Similar APIs
-`JsonElement` and `JsonDocument` from `System.Json.Text` API:
+`JsonElement` and `JsonDocument` from `System.Text.Json` API:
 * video: https://channel9.msdn.com/Shows/On-NET/Try-the-new-SystemTextJson-APIs
 * blogpost: https://devblogs.microsoft.com/dotnet/try-the-new-system-text-json-apis/
 
