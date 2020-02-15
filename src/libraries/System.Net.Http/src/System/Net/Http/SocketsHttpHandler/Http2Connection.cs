@@ -162,15 +162,28 @@ namespace System.Net.Http
         private async ValueTask EnsureIncomingBytesAsync(int minReadBytes)
         {
             if (NetEventSource.IsEnabled) Trace($"{nameof(minReadBytes)}={minReadBytes}");
-            if (_incomingBuffer.ActiveLength >= minReadBytes)
+            int bytesNeeded = minReadBytes - _incomingBuffer.ActiveLength;
+            if (bytesNeeded <= 0)
             {
                 return;
             }
 
-            int bytesNeeded = minReadBytes - _incomingBuffer.ActiveLength;
             _incomingBuffer.EnsureAvailableSpace(bytesNeeded);
-            int bytesRead = await ReadAtLeastAsync(_stream, _incomingBuffer.AvailableMemory, bytesNeeded).ConfigureAwait(false);
-            _incomingBuffer.Commit(bytesRead);
+
+            int totalBytesRead = 0;
+            do
+            {
+                int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory.Slice(totalBytesRead)).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, bytesNeeded));
+                }
+
+                totalBytesRead += bytesRead;
+            }
+            while (totalBytesRead < bytesNeeded);
+
+            _incomingBuffer.Commit(totalBytesRead);
         }
 
         private async Task FlushOutgoingBytesAsync()
@@ -1813,25 +1826,6 @@ namespace System.Net.Http
                     CheckForShutdown();
                 }
             }
-        }
-
-        private static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
-        {
-            Debug.Assert(buffer.Length >= minReadBytes);
-
-            int totalBytesRead = 0;
-            while (totalBytesRead < minReadBytes)
-            {
-                int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead)).ConfigureAwait(false);
-                if (bytesRead == 0)
-                {
-                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, minReadBytes));
-                }
-
-                totalBytesRead += bytesRead;
-            }
-
-            return totalBytesRead;
         }
 
         public sealed override string ToString() => $"{nameof(Http2Connection)}({_pool})"; // Description for diagnostic purposes
