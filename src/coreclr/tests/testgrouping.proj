@@ -10,7 +10,8 @@
       <XUnitWrapperDll>$(BinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
-    <TestGrouping Condition="'$(BuildOS)' == 'Windows_NT'" Include="$(BinDir)JIT\jit64\mcc\**">
+    <!-- Disabled on ARM due to https://github.com/dotnet/runtime/issues/32320 -->
+    <TestGrouping Condition="'$(BuildOS)' == 'Windows_NT' and '$(BuildArch)' != 'arm'" Include="$(BinDir)JIT\jit64\mcc\**">
       <TestGroup>JIT.jit64.mcc</TestGroup>
       <XUnitWrapperDll>$(BinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
