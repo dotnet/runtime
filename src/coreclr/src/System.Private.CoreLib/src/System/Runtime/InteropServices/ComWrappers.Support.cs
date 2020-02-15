@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
     [CLSCompliant(false)]
-    public abstract class ComWrappers
+    public abstract partial class ComWrappers
     {
         /// <summary>
         /// Interface type and pointer to targeted VTable.
