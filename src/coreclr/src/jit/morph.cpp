@@ -17583,6 +17583,16 @@ bool Compiler::fgMorphCombineSIMDFieldAssignments(BasicBlock* block, Statement* 
         dstNode         = originalLHS;
         dstNode->gtType = simdType;
         dstNode->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+
+        // This may have changed a partial local field into full local field
+        if (dstNode->IsPartialLclFld(this))
+        {
+            dstNode->gtFlags |= GTF_VAR_USEASG;
+        }
+        else
+        {
+            dstNode->gtFlags &= ~GTF_VAR_USEASG;
+        }
     }
     else
     {
