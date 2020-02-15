@@ -109,11 +109,19 @@ namespace System
             ValueStringBuilder dest = new ValueStringBuilder(size);
             byte[]? bytes = null;
 
+            const int percentEncodingLen = 3; // Escaped UTF-8 will take 3 chars: %AB.
+            int bufferRemaining = 0;
+
             int next = start;
             char ch;
+            bool escape = false;
+            bool surrogatePair = false;
 
             for (; next < end; ++next)
             {
+                escape = false;
+                surrogatePair = false;
+
                 if ((ch = pInput[next]) == '%')
                 {
                     if (next + 2 < end)
@@ -218,61 +226,56 @@ namespace System
                 {
                     // unicode
 
-                    bool escape;
-                    bool surrogatePair = false;
-
-                    char ch2 = '\0';
+                    char ch2;
 
                     if ((char.IsHighSurrogate(ch)) && (next + 1 < end))
                     {
                         ch2 = pInput[next + 1];
                         escape = !CheckIriUnicodeRange(ch, ch2, ref surrogatePair, component == UriComponents.Query);
-                    }
-                    else
-                    {
-                        escape = !CheckIriUnicodeRange(ch, component == UriComponents.Query);
-                    }
-
-                    if (escape)
-                    {
-                        Span<byte> encodedBytes = stackalloc byte[4];
-
-                        Rune rune;
-                        if (surrogatePair)
+                        if (!escape)
                         {
-                            rune = new Rune(ch, ch2);
-                        }
-                        else if (!Rune.TryCreate(ch, out rune))
-                        {
-                            rune = Rune.ReplacementChar;
-                        }
-
-                        int bytesWritten = rune.EncodeToUtf8(encodedBytes);
-                        encodedBytes = encodedBytes.Slice(0, bytesWritten);
-
-                        foreach (byte b in encodedBytes)
-                        {
-                            UriHelper.EscapeAsciiChar(b, ref dest);
+                            // copy the two chars
+                            dest.Append(pInput[next++]);
+                            dest.Append(pInput[next]);
                         }
                     }
                     else
                     {
-                        dest.Append(ch);
-                        if (surrogatePair)
+                        if (CheckIriUnicodeRange(ch, component == UriComponents.Query))
                         {
-                            dest.Append(ch2);
+                            // copy it
+                            dest.Append(pInput[next]);
                         }
-                    }
-
-                    if (surrogatePair)
-                    {
-                        next++;
+                        else
+                        {
+                            // escape it
+                            escape = true;
+                        }
                     }
                 }
                 else
                 {
                     // just copy the character
                     dest.Append(pInput[next]);
+                }
+
+                if (escape)
+                {
+                    const int MaxNumberOfBytesEncoded = 4;
+
+                    byte[] encodedBytes = new byte[MaxNumberOfBytesEncoded];
+                    fixed (byte* pEncodedBytes = &encodedBytes[0])
+                    {
+                        int encodedBytesCount = Encoding.UTF8.GetBytes(pInput + next, surrogatePair ? 2 : 1, pEncodedBytes, MaxNumberOfBytesEncoded);
+                        Debug.Assert(encodedBytesCount <= MaxNumberOfBytesEncoded, "UTF8 encoder should not exceed specified byteCount");
+
+                        bufferRemaining -= encodedBytesCount * percentEncodingLen;
+
+                        for (int count = 0; count < encodedBytesCount; ++count)
+                        {
+                            UriHelper.EscapeAsciiChar(encodedBytes[count], ref dest);
+                        }
+                    }
                 }
             }
 
