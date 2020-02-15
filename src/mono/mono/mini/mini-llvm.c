@@ -113,6 +113,7 @@ typedef struct {
 	GPtrArray *cfgs;
 	int unbox_tramp_num, unbox_tramp_elemsize;
 	GHashTable *got_idx_to_type;
+	GHashTable *no_method_table_lmethods;
 } MonoLLVMModule;
 
 /*
@@ -2820,7 +2821,7 @@ emit_get_method (MonoLLVMModule *module)
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		for (i = 0; i < table_len; ++i) {
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
-			if (m)
+			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
 				table_elems [i] = LLVMBuildBitCast (builder, m, rtype, "");
 			else
 				table_elems [i] = LLVMConstNull (rtype);
@@ -2891,7 +2892,7 @@ emit_get_method (MonoLLVMModule *module)
 			LLVMPositionBuilderAtEnd (builder, bb);
 
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
-			if (m)
+			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
 				LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
 			else
 				LLVMBuildRet (builder, LLVMConstNull (rtype));
@@ -8557,6 +8558,8 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
+			/* Not looked up at runtime */
+			g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 
 			goto after_codegen;
 		} else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
@@ -10162,6 +10165,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->method_to_lmethod = g_hash_table_new (NULL, NULL);
 	module->method_to_call_info = g_hash_table_new (NULL, NULL);
 	module->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
+	module->no_method_table_lmethods = g_hash_table_new (NULL, NULL);
 	module->callsite_list = g_ptr_array_new ();
 }
 
