@@ -397,6 +397,11 @@ namespace System.Net.Sockets
 
             internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
+                if (!TrySetRunning())
+                {
+                    return false;
+                }
+
                 PinHandle = Buffer.Pin();
 
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
@@ -474,6 +479,11 @@ namespace System.Net.Sockets
 
             internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
+                if (!TrySetRunning())
+                {
+                    return false;
+                }
+
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)BufferPtr + (ulong)Offset;
@@ -567,6 +577,11 @@ namespace System.Net.Sockets
 
             internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
+                if (!TrySetRunning())
+                {
+                    return false;
+                }
+
                 PinHandle = Buffer.Pin();
 
                 ioControlBlock.AioLioOpcode = (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
@@ -638,6 +653,11 @@ namespace System.Net.Sockets
 
             internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
+                if (!TrySetRunning())
+                {
+                    return false;
+                }
+
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)BufferPtr;

@@ -414,8 +414,7 @@ namespace System.Net.Sockets
                         else if (context.TryGetNextOperation(socketEvent.Events, out SocketAsyncContext.AsyncOperation nextOperation))
                         {
                             // todo: batch more than 1 operation from a single queue
-                            // todo: if TrySetRunning fails, we have pinned memory...
-                            if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]) && nextOperation.TrySetRunning())
+                            if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]))
                             {
                                 ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
                                 batchedOperations[batchedCount++] = nextOperation;
