@@ -12065,7 +12065,11 @@ void CEEJitInfo::allocMem (
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
+    if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 32;
+    }
+    else if ((flag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 16;
     }
@@ -12075,9 +12079,18 @@ void CEEJitInfo::allocMem (
     }
     if (roDataSize > 0)
     {
-        size_t codeAlignment = ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN)!= 0)
-                               ? 16 : sizeof(void*);
+        size_t codeAlignment = sizeof(void*);
+
+        if ((flag & CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN) != 0)
+        {
+            codeAlignment = 32;
+        }
+        else if ((flag & CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN) != 0)
+        {
+            codeAlignment = 16;
+        }
         totalSize.AlignUp(codeAlignment);
+
         if (roDataAlignment > codeAlignment) {
             // Add padding to align read-only data.
             totalSize += (roDataAlignment - codeAlignment);
