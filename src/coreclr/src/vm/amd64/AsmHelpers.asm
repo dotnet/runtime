@@ -25,6 +25,7 @@ extern  ProfileLeave:proc
 extern  ProfileTailcall:proc
 extern OnHijackWorker:proc
 extern JIT_RareDisableHelperWorker:proc
+extern g_xmmYmmStateSupport:dword
 
 ifdef _DEBUG
 extern DebugCheckStubUnwindInfoWorker:proc
@@ -223,18 +224,30 @@ NESTED_END NDirectImportThunk, _TEXT
 
 NESTED_ENTRY JIT_RareDisableHelper, _TEXT
 
-    alloc_stack         38h
+    alloc_stack         48h
     END_PROLOGUE
 
+    cmp         [g_xmmYmmStateSupport], 0
+    jne         SaveXMM
+    vmovdqu     ymmword ptr [rsp+20h], ymm0
+    jmp         SaveNonFloatingPointReturn
+SaveXMM:
     movdqa      [rsp+20h], xmm0     ; Save xmm0
-    mov         [rsp+30h], rax      ; Save rax
+SaveNonFloatingPointReturn:
+    mov         [rsp+40h], rax      ; Save rax
 
     call        JIT_RareDisableHelperWorker
 
+    cmp         [g_xmmYmmStateSupport], 0
+    jne         RestoreXMM
+    vmovdqu     ymm0, ymmword ptr [rsp+20]
+    jmp         RestoreNonFloatingPointReturn
+RestoreXMM:
     movdqa      xmm0, [rsp+20h]     ; Restore xmm0
-    mov         rax,  [rsp+30h]     ; Restore rax
+RestoreNonFloatingPointReturn:
+    mov         rax,  [rsp+40h]     ; Restore rax
 
-    add         rsp, 38h
+    add         rsp, 48h
     ret
 
 NESTED_END JIT_RareDisableHelper, _TEXT
@@ -287,13 +300,25 @@ LEAF_ENTRY getFPReturn, _TEXT
         cmp     ecx, 4
         je      getFPReturn4
         cmp     ecx, 8
-        jne     getFPReturnNot8
-        movsd   real8 ptr [rdx], xmm0
-getFPReturnNot8:
+        je     getFPReturn8
+        cmp     ecx, 16
+        je     getFPReturn16
+        cmp     ecx, 32
+        je     getFPReturn32
+getFPReturnUnknown:
         REPRET
 
 getFPReturn4:
         movss   real4 ptr [rdx], xmm0
+        ret
+getFPReturn8:
+        movsd   real8 ptr [rdx], xmm0
+        ret
+getFPReturn16:
+        movapd  xmmword ptr [rdx], xmm0
+        ret
+getFPReturn32:
+        vmovupd  xmmword ptr [rdx], xmm0
         ret
 LEAF_END getFPReturn, _TEXT
 
@@ -455,6 +480,32 @@ NESTED_ENTRY OnHijackTripThread, _TEXT
         ret                 ; return to the correct place, adjusted by our caller
 NESTED_END OnHijackTripThread, _TEXT
 
+; A JITted method's return address was hijacked to return to us here.
+; VOID OnHijackTripThreadYMMSupport()
+NESTED_ENTRY OnHijackTripThreadYMMSupport, _TEXT
+
+        ; Don't fiddle with this unless you change HijackFrame::UpdateRegDisplay
+        ; and HijackObjectArgs
+        push                rax ; make room for the real return address (Rip)
+        PUSH_CALLEE_SAVED_REGISTERS
+        push_vol_reg        rax
+        mov                 rcx, rsp
+
+        alloc_stack         40h ; make extra room for xmm0
+        vmovdqu             ymmword ptr [rsp + 20h], ymm0
+
+        END_PROLOGUE
+
+        call                OnHijackWorker
+
+        vmovdqu             ymm0, ymmword ptr [rsp + 20h]
+
+        add                 rsp, 40h
+        pop                 rax
+        POP_CALLEE_SAVED_REGISTERS
+        ret                 ; return to the correct place, adjusted by our caller
+NESTED_END OnHijackTripThreadYMMSupport, _TEXT
+
 
 ;
 ;    typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
@@ -475,7 +526,7 @@ NESTED_END OnHijackTripThread, _TEXT
 ;
 SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA   equ 8h*11 + 4h*2    ; includes fudge to make FP_SPILL right
 SIZEOF_OUTGOING_ARGUMENT_HOMES          equ 8h*4
-SIZEOF_FP_ARG_SPILL                     equ 10h*1
+SIZEOF_FP_ARG_SPILL                     equ 20h*1
 
 ; Need to be careful to keep the stack 16byte aligned here, since we are pushing 3
 ; arguments that will align the stack and we just want to keep it aligned with our
@@ -667,6 +718,155 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
+;EXTERN_C void ProfileEnterNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
+NESTED_ENTRY ProfileEnterNakedYMMSupport, _TEXT
+        push_nonvol_reg         rax
+
+;       Upon entry :
+;           rcx = clientInfo
+;           rdx = profiledRsp
+
+        lea                     rax, [rsp + 10h]    ; caller rsp
+        mov                     r10, [rax - 8h]     ; return address
+
+        alloc_stack             SIZEOF_STACK_FRAME
+
+        ; correctness of return value in structure doesn't matter for enter probe
+
+
+        ; setup ProfilePlatformSpecificData structure
+        xor                     r8, r8;
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
+        save_reg_postrsp        rbp, OFFSETOF_PLATFORM_SPECIFIC_DATA +    8h          ;                 -- struct rbp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], rax    ; caller rsp      -- struct probeRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 18h], r10    ; return address  -- struct ip field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 20h], rdx    ;                 -- struct profiledRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 28h], r8     ; r8 is null      -- struct rax field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 30h], r8     ; r8 is null      -- struct hiddenArg field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 38h], xmm0    ;      -- struct flt0 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], xmm1    ;      -- struct flt1 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 48h], xmm2    ;      -- struct flt2 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 50h], xmm3    ;      -- struct flt3 field
+        mov                     r10, PROFILE_ENTER
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 58h], r10d   ; flags    ;      -- struct flags field
+
+        ; we need to be able to restore the fp return register
+        vmovdqu                 ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL], ymm0
+    END_PROLOGUE
+
+        ; rcx already contains the clientInfo
+        lea                     rdx, [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA]
+        call                    ProfileEnter
+
+        ; restore fp return register
+        vmovdqu                 ymm0, ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
+
+        ; begin epilogue
+        add                     rsp, SIZEOF_STACK_FRAME
+        pop                     rax
+        ret
+NESTED_END ProfileEnterNakedYMMSupport, _TEXT
+
+;EXTERN_C void ProfileLeaveNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
+NESTED_ENTRY ProfileLeaveNakedYMMSupport, _TEXT
+        push_nonvol_reg         rax
+
+;       Upon entry :
+;           rcx = clientInfo
+;           rdx = profiledRsp
+
+        ; need to be careful with rax here because it contains the return value which we want to harvest
+
+        lea                     r10, [rsp + 10h]    ; caller rsp
+        mov                     r11, [r10 - 8h]     ; return address
+
+        alloc_stack             SIZEOF_STACK_FRAME
+
+        ; correctness of argument registers in structure doesn't matter for leave probe
+
+        ; setup ProfilePlatformSpecificData structure
+        xor                     r8, r8;
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
+        save_reg_postrsp        rbp, OFFSETOF_PLATFORM_SPECIFIC_DATA +    8h          ;                 -- struct rbp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], r10    ; caller rsp      -- struct probeRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 18h], r11    ; return address  -- struct ip field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 20h], rdx    ;                 -- struct profiledRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 28h], rax    ; return value    -- struct rax field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 30h], r8     ; r8 is null      -- struct hiddenArg field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 38h], xmm0    ;      -- struct flt0 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], xmm1    ;      -- struct flt1 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 48h], xmm2    ;      -- struct flt2 field
+        movsd                   real8 ptr [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 50h], xmm3    ;      -- struct flt3 field
+        mov                     r10, PROFILE_LEAVE
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 58h], r10d   ; flags           -- struct flags field
+
+        ; we need to be able to restore the fp return register
+        vmovdqu                 ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL], ymm0
+    END_PROLOGUE
+
+        ; rcx already contains the clientInfo
+        lea                     rdx, [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA]
+        call                    ProfileLeave
+
+        ; restore fp return register
+        vmovdqu                 ymm0, ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
+
+        ; begin epilogue
+        add                     rsp, SIZEOF_STACK_FRAME
+        pop                     rax
+        ret
+NESTED_END ProfileLeaveNakedYMMSupport, _TEXT
+
+;EXTERN_C void ProfileTailcallNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID, size_t profiledRsp);
+NESTED_ENTRY ProfileTailcallNakedYMMSupport, _TEXT
+        push_nonvol_reg         rax
+
+;       Upon entry :
+;           rcx = clientInfo
+;           rdx = profiledRsp
+
+        lea                     rax, [rsp + 10h]    ; caller rsp
+        mov                     r11, [rax - 8h]     ; return address
+
+        alloc_stack             SIZEOF_STACK_FRAME
+
+        ; correctness of return values and argument registers in structure
+        ; doesn't matter for tailcall probe
+
+
+        ; setup ProfilePlatformSpecificData structure
+        xor                     r8, r8;
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA +  0h], r8     ; r8 is null      -- struct functionId field
+        save_reg_postrsp        rbp, OFFSETOF_PLATFORM_SPECIFIC_DATA +    8h          ;                 -- struct rbp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 10h], rax    ; caller rsp      -- struct probeRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 18h], r11    ; return address  -- struct ip field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 20h], rdx    ;                 -- struct profiledRsp field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 28h], r8     ; r8 is null      -- struct rax field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 30h], r8     ; r8 is null      -- struct hiddenArg field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 38h], r8     ; r8 is null      -- struct flt0 field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 40h], r8     ; r8 is null      -- struct flt1 field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 48h], r8     ; r8 is null      -- struct flt2 field
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 50h], r8     ; r8 is null      -- struct flt3 field
+        mov                     r10, PROFILE_TAILCALL
+        mov                     [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA + 58h], r10d   ; flags           -- struct flags field
+
+        ; we need to be able to restore the fp return register
+        vmovdqu                 ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL], ymm0
+    END_PROLOGUE
+
+        ; rcx already contains the clientInfo
+        lea                     rdx, [rsp + OFFSETOF_PLATFORM_SPECIFIC_DATA]
+        call                    ProfileTailcall
+
+        ; restore fp return register
+        vmovdqu                 ymm0, ymmword ptr [rsp + OFFSETOF_FP_ARG_SPILL +  0h]
+
+        ; begin epilogue
+        add                     rsp, SIZEOF_STACK_FRAME
+        pop                     rax
+        ret
+NESTED_END ProfileTailcallNakedYMMSupport, _TEXT
+
 
 ;; extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16]);
 NESTED_ENTRY getcpuid, _TEXT
@@ -701,6 +901,7 @@ LEAF_ENTRY xmmYmmStateSupport, _TEXT
     not_supported:
         mov     eax, 0
     done:
+        mov g_xmmYmmStateSupport, eax   ; initialize g_xmmYmmStateSupport
         ret
 LEAF_END xmmYmmStateSupport, _TEXT
 

@@ -136,7 +136,7 @@ ReturnsQuad:
         jmp     Epilog
 
 ReturnsYmmQuad:
-        vmovapd ymmword ptr [rbx+CallDescrData__returnValue], ymm0
+        vmovupd ymmword ptr [rbx+CallDescrData__returnValue], ymm0
         jmp     Epilog
 
         NESTED_END CallDescrWorkerInternal, _TEXT

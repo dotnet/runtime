@@ -21,6 +21,8 @@ Abstract:
 
 #include "pal/palinternal.h"
 
+extern int g_xmmYmmStateSupport;
+
 /*++
 Function:
 XmmYmmStateSupport
@@ -47,5 +49,6 @@ extern "C" unsigned int XmmYmmStateSupport()
         : "ebx", "ecx", "edx" /* registers that are clobbered */
       );
     // Check OS has enabled both XMM and YMM state support
-    return ((eax & 0x06) == 0x06) ? 1 : 0;
+    s_xmmYmmStateSupport = ((eax & 0x06) == 0x06) ? 1 : 0;
+    return s_xmmYmmStateSupport;
 }

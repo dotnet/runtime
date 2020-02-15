@@ -26,6 +26,9 @@
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
 
+// This is initialized to either 0 or 1 by the XmmYmmStateSupport function when it is called
+int g_xmmYmmStateSupport = 2;
+
 void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegisters * pRegs)
 {
     LIMITED_METHOD_CONTRACT;

@@ -624,6 +624,9 @@ EXTERN_C void WINAPI OnHijackTripThread();
 #ifdef TARGET_X86
 EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning an FP value
 #endif // TARGET_X86
+#ifdef TARGET_AMD64
+EXTERN_C void WINAPI OnHijackTripThreadYMMSupport();  // hijacked JIT code might be using YMM registers
+#endif // TARGET_AMD64
 
 #endif // FEATURE_HIJACK
 

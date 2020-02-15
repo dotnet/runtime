@@ -5695,6 +5695,12 @@ VOID * GetHijackAddr(Thread *pThread, EECodeInfo *codeInfo)
         return reinterpret_cast<VOID *>(OnHijackFPTripThread);
     }
 #endif // TARGET_X86
+#ifdef TARGET_AMD64
+    if (g_xmmYmmStateSupport == 1)
+    {
+        return reinterpret_cast<VOID *>(OnHijackTripThreadYMMSupport);
+    }
+#endif
 
     return reinterpret_cast<VOID *>(OnHijackTripThread);
 }

@@ -432,17 +432,6 @@ void ProfilingAPIUtility::LogProfInfo(int iStringResourceID, ...)
     va_end(insertionArgs);
 }
 
-#ifdef PROF_TEST_ONLY_FORCE_ELT
-// Special forward-declarations of the profiling API's slow-path enter/leave/tailcall
-// hooks. These need to be forward-declared here so that they may be referenced in
-// InitializeProfiling() below solely for the debug-only, test-only code to allow
-// enter/leave/tailcall to be turned on at startup without a profiler. See
-// code:ProfControlBlock#TestOnlyELT
-EXTERN_C void STDMETHODCALLTYPE ProfileEnterNaked(UINT_PTR clientData);
-EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNaked(UINT_PTR clientData);
-EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(UINT_PTR clientData);
-#endif //PROF_TEST_ONLY_FORCE_ELT
-
 // ----------------------------------------------------------------------------
 // ProfilingAPIUtility::InitializeProfiling
 //
@@ -511,9 +500,9 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
     if (dwEnableSlowELTHooks != 0)
     {
         (&g_profControlBlock)->fTestOnlyForceEnterLeave = TRUE;
-        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_ENTER, (void *) ProfileEnterNaked);
-        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_LEAVE, (void *) ProfileLeaveNaked);
-        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_TAILCALL, (void *) ProfileTailcallNaked);
+        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_ENTER, (void *) PROFILECALLBACK(ProfileEnter));
+        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_LEAVE, (void *) PROFILECALLBACK(ProfileLeave));
+        SetJitHelperFunction(CORINFO_HELP_PROF_FCN_TAILCALL, (void *) PROFILECALLBACK(ProfileTailcall));
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Enabled test-only slow ELT hooks.\n"));
     }
 #endif //PROF_TEST_ONLY_FORCE_ELT

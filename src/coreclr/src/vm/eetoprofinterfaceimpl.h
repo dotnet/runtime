@@ -23,6 +23,22 @@
 #include "eventtracebase.h"
 #include "gcinterface.h"
 
+#ifdef TARGET_AMD64
+#define PROFILECALLBACK(name) (xmmYmmStateSupport() ? name##NakedYMMSupport : name##Naked)
+#else
+#define PROFILECALLBACK(name) name##Naked
+#endif
+
+// Declarations for asm wrappers of profiler callbacks
+EXTERN_C void STDMETHODCALLTYPE ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID);
+#ifdef TARGET_AMD64
+EXTERN_C void STDMETHODCALLTYPE ProfileEnterNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileLeaveNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID);
+EXTERN_C void STDMETHODCALLTYPE ProfileTailcallNakedYMMSupport(FunctionIDOrClientID functionIDOrClientID);
+#endif
+
 class SimpleRWLock;
 
 class ProfToEEInterfaceImpl;
