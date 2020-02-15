@@ -277,6 +277,12 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 
 #elif LLVM_API_VERSION > 600
 
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+#define NO_CALL_FRAME_OPT " -no-x86-call-frame-opt"
+#else
+#define NO_CALL_FRAME_OPT ""
+#endif
+
 // The OptimizationList is automatically populated with registered Passes by the
 // PassNameParser.
 //
@@ -310,7 +316,7 @@ public:
 		// FIXME: find optimal mono specific order of passes
 		// see https://llvm.org/docs/Frontend/PerformanceTips.html#pass-ordering
 		// the following order is based on a stripped version of "OPT -O2"
-		const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks";
+		const char *default_opts = " -simplifycfg -sroa -lower-expect -instcombine -jump-threading -loop-rotate -licm -simplifycfg -lcssa -loop-idiom -indvars -loop-deletion -gvn -memcpyopt -sccp -bdce -instcombine -dse -simplifycfg -enable-implicit-null-checks" NO_CALL_FRAME_OPT;
 		const char *opts = g_getenv ("MONO_LLVM_OPT");
 		if (opts == NULL)
 			opts = default_opts;
