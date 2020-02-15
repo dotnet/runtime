@@ -112,6 +112,8 @@ namespace System
             int next = start;
             char ch;
 
+            Span<byte> maxUtf8EncodedSpan = stackalloc byte[4];
+
             for (; next < end; ++next)
             {
                 if ((ch = pInput[next]) == '%')
@@ -235,8 +237,6 @@ namespace System
 
                     if (escape)
                     {
-                        Span<byte> encodedBytes = stackalloc byte[4];
-
                         Rune rune;
                         if (surrogatePair)
                         {
@@ -247,8 +247,8 @@ namespace System
                             rune = Rune.ReplacementChar;
                         }
 
-                        int bytesWritten = rune.EncodeToUtf8(encodedBytes);
-                        encodedBytes = encodedBytes.Slice(0, bytesWritten);
+                        int bytesWritten = rune.EncodeToUtf8(maxUtf8EncodedSpan);
+                        Span<byte> encodedBytes = maxUtf8EncodedSpan.Slice(0, bytesWritten);
 
                         foreach (byte b in encodedBytes)
                         {
