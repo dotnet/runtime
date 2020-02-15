@@ -9,7 +9,8 @@ or on Windows,
 ```bat
 build.cmd
 ```
-Note that by the debug configuration is the default. It generates a 'debug' output and that includes asserts, less code optimizations, and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration release` (or `-c release`).
+Note that the debug configuration is the default option. It generates a 'debug' output and that includes asserts, fewer code optimizations, and is easier for debugging. If you want to make performance measurements, or just want tests to execute more quickly, you can also build the 'release' version which does not have these checks by adding the flag `-configuration release` (or `-c release`).
+ 
 
 Once you've built the whole runtime and assuming you want to work with just mono, we have provided `$/mono.sh` that only builds mono and is short hand for:
 
