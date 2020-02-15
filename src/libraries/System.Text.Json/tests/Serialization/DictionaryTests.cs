@@ -1263,11 +1263,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json));
         }
 
-        [Fact, ActiveIssue("JsonElement fails since it is a struct.")]
+        [Fact]
         public static void ObjectToJsonElement()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
-            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            Dictionary<string, JsonElement> result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            JsonElement element = result["MyDictionary"];
+            Assert.Equal(JsonValueKind.Object, element.ValueKind);
+            Assert.Equal("Value", element.GetProperty("Key").GetString());
         }
 
         [Fact]
