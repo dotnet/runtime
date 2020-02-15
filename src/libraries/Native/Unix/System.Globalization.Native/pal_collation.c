@@ -10,6 +10,7 @@
 #include <search.h>
 #include <string.h>
 
+#include "pal_casing.h"
 #include "pal_collation.h"
 
 c_static_assert_msg(UCOL_EQUAL == 0, "managed side requires 0 for equal strings");
@@ -527,22 +528,9 @@ AreEqualOrdinalIgnoreCase
 */
 static int AreEqualOrdinalIgnoreCase(UChar32 one, UChar32 two)
 {
-    // Return whether the two characters are identical or would be identical if they were upper-cased.
+    // Return whether the two characters are identical or would be identical if they were case-folded.
 
-    if (one == two)
-    {
-        return TRUE;
-    }
-
-    if (one == 0x0131 || two == 0x0131)
-    {
-        // On Windows with InvariantCulture, the LATIN SMALL LETTER DOTLESS I (U+0131)
-        // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
-        // We special case it to match the Windows invariant behavior.
-        return FALSE;
-    }
-
-    return u_toupper(one) == u_toupper(two);
+    return (one == two) || (CaseFoldCodePoint(one) == CaseFoldCodePoint(two));
 }
 
 /*
@@ -857,21 +845,21 @@ int32_t GlobalizationNative_CompareStringOrdinalIgnoreCase(
         U16_NEXT(lpStr2, str2Idx, cwStr2Length, str2Codepoint);
 #pragma clang diagnostic pop
 
-        if (str1Codepoint != str2Codepoint && u_toupper(str1Codepoint) != u_toupper(str2Codepoint))
+        if (str1Codepoint == str2Codepoint)
         {
-            return str1Codepoint < str2Codepoint ? -1 : 1;
+            continue; // exact code point match
         }
+
+        str1Codepoint = CaseFoldCodePoint(str1Codepoint);
+        str2Codepoint = CaseFoldCodePoint(str2Codepoint);
+
+        if (str1Codepoint == str2Codepoint)
+        {
+            continue; // case folded code point match
+        }
+
+        return str1Codepoint - str2Codepoint; // mismatch
     }
 
-    if (cwStr1Length < cwStr2Length)
-    {
-        return -1;
-    }
-
-    if (cwStr2Length < cwStr1Length)
-    {
-        return 1;
-    }
-
-    return 0;
+    return cwStr1Length - cwStr2Length;
 }

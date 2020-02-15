@@ -5,20 +5,21 @@
 #include "pal_compiler.h"
 #include "pal_locale.h"
 
+static UChar32 CaseFoldCodePoint(UChar32 codePoint);
+
 DLLEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,
                                               UChar* lpDst,
                                               int32_t cwDstLength,
                                               int32_t bToUpper);
 
-DLLEXPORT void GlobalizationNative_ChangeCaseInvariant(const UChar* lpSrc,
-                                                       int32_t cwSrcLength,
-                                                       UChar* lpDst,
-                                                       int32_t cwDstLength,
-                                                       int32_t bToUpper);
-
 DLLEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
                                                      int32_t cwSrcLength,
                                                      UChar* lpDst,
                                                      int32_t cwDstLength,
                                                      int32_t bToUpper);
+
+DLLEXPORT void GlobalizationNative_SimpleCaseFold(const UChar* lpSrc,
+                                                  int32_t cwSrcLength,
+                                                  UChar* lpDst,
+                                                  int32_t cwDstLength);

@@ -37,6 +37,7 @@
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
     PER_FUNCTION_BLOCK(u_charsToUChars, libicuuc) \
+    PER_FUNCTION_BLOCK(u_foldCase, libicuuc) \
     PER_FUNCTION_BLOCK(u_getVersion, libicuuc) \
     PER_FUNCTION_BLOCK(u_strlen, libicuuc) \
     PER_FUNCTION_BLOCK(u_strncpy, libicuuc) \
@@ -145,6 +146,7 @@ FOR_ALL_ICU_FUNCTIONS
 // Redefine all calls to ICU functions as calls through pointers that are set
 // to the functions of the selected version of ICU in the initialization.
 #define u_charsToUChars(...) u_charsToUChars_ptr(__VA_ARGS__)
+#define u_foldcase(...) u_foldCase_ptr(__VA_ARGS__)
 #define u_getVersion(...) u_getVersion_ptr(__VA_ARGS__)
 #define u_strlen(...) u_strlen_ptr(__VA_ARGS__)
 #define u_strncpy(...) u_strncpy_ptr(__VA_ARGS__)

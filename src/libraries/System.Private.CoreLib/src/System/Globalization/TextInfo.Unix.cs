@@ -23,33 +23,28 @@ namespace System.Globalization
         {
             Debug.Assert(localeName != null);
 
-            return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
+            return _cultureName.Length > 0 /* invariant has an empty string culture name */
+                && CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }
-
-        private bool IsInvariant { get { return _cultureName.Length == 0; } }
 
         internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            if (IsInvariant)
+        TryAgain:
+
+            if (_needsTurkishCasing == Tristate.False) // most common path
             {
-                Interop.Globalization.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                Interop.Globalization.ChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+            }
+            else if (_needsTurkishCasing == Tristate.True)
+            {
+                Interop.Globalization.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
             }
             else
             {
-                if (_needsTurkishCasing == Tristate.NotInitialized)
-                {
-                    _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? Tristate.True : Tristate.False;
-                }
-                if (_needsTurkishCasing == Tristate.True)
-                {
-                    Interop.Globalization.ChangeCaseTurkish(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
-                }
-                else
-                {
-                    Interop.Globalization.ChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
-                }
+                _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? Tristate.True : Tristate.False;
+                goto TryAgain;
             }
         }
 
