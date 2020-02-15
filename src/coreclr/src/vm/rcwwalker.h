@@ -43,7 +43,6 @@ public :
     static void OnJupiterRCWCreated(RCW *pRCW, IJupiterObject *pJupiterObject);
     static void AfterJupiterRCWCreated(RCW *pRCW);
     static void BeforeJupiterRCWDestroyed(RCW *pRCW);
-    static void OnEEShutdown();
 
     //
     // Send out a AddRefFromTrackerSource callback to notify Jupiter we've done a AddRef
