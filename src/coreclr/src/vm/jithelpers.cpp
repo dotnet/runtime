@@ -2972,6 +2972,7 @@ NOINLINE HCIMPL3(VOID, JIT_Unbox_Nullable_Framed, void * destPtr, MethodTable* t
     {
         COMPlusThrowInvalidCastException(&objRef, TypeHandle(typeMT));
     }
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 }
 HCIMPLEND
@@ -2991,6 +2992,7 @@ HCIMPL3(VOID, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Obj
     if (Nullable::UnBoxNoGC(destPtr, objRef, typeMT))
     {
         // exact match (type equivalence not needed)
+        FC_GC_POLL();
         return;
     }
 
@@ -3001,16 +3003,30 @@ HCIMPL3(VOID, JIT_Unbox_Nullable, void * destPtr, CORINFO_CLASS_HANDLE type, Obj
 HCIMPLEND
 
 /*************************************************************/
-/* framed helper that handles full-blown type equivalence */
-NOINLINE HCIMPL2(LPVOID, JIT_Unbox_Helper_Framed, CORINFO_CLASS_HANDLE type, Object* obj)
+/* framed Unbox helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 {
     FCALL_CONTRACT;
 
     LPVOID result = NULL;
 
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    MethodTable* pMT2 = obj->GetMethodTable();
+
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-    if (TypeHandle(type).IsEquivalentTo(objRef->GetTypeHandle()))
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+        (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+        (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // we allow enums and their primtive type to be interchangable
+        result = objRef->GetData();
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
     {
         // the structures are equivalent
         result = objRef->GetData();
@@ -3019,66 +3035,11 @@ NOINLINE HCIMPL2(LPVOID, JIT_Unbox_Helper_Framed, CORINFO_CLASS_HANDLE type, Obj
     {
         COMPlusThrowInvalidCastException(&objRef, TypeHandle(type));
     }
+
+    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return result;
-}
-HCIMPLEND
-
-/*************************************************************/
-/* the uncommon case for the helper below (allowing enums to be unboxed
-   as their underlying type */
-LPVOID __fastcall JIT_Unbox_Helper(CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-
-    CorElementType type1 = typeHnd.GetInternalCorElementType();
-
-        // we allow enums and their primtive type to be interchangable
-
-    MethodTable* pMT2 = obj->GetMethodTable();
-    CorElementType type2 = pMT2->GetInternalCorElementType();
-    if (type1 == type2)
-    {
-        MethodTable* pMT1 = typeHnd.AsMethodTable();
-        if (pMT1 && (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
-        {
-            _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(type1));
-            return(obj->GetData());
-        }
-    }
-
-    // Even less common cases (type equivalence) go to a framed helper.
-    ENDFORBIDGC();
-    return HCCALL2(JIT_Unbox_Helper_Framed, type, obj);
-}
-
-/*************************************************************/
-HCIMPL2(LPVOID, JIT_Unbox, CORINFO_CLASS_HANDLE type, Object* obj)
-{
-    FCALL_CONTRACT;
-
-    TypeHandle typeHnd(type);
-    VALIDATEOBJECT(obj);
-    _ASSERTE(!typeHnd.IsTypeDesc());   // boxable types have method tables
-
-        // This has been tuned so that branch predictions are good
-        // (fall through for forward branches) for the common case
-    if (obj != NULL) {
-        if (obj->GetMethodTable() == typeHnd.AsMethodTable())
-            return(obj->GetData());
-        else {
-                // Stuff the uncommon case into a helper so that
-                // its register needs don't cause spills that effect
-                // the common case above.
-            return JIT_Unbox_Helper(type, obj);
-        }
-    }
-
-    FCThrow(kNullReferenceException);
 }
 HCIMPLEND
 
