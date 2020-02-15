@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.Unicode;
 using Internal.Runtime.CompilerServices;
 
@@ -485,15 +486,17 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
+            uint currentA, currentB;
+
             // in InvariantMode we support all range and not only the ascii characters.
             char maxChar = (GlobalizationMode.Invariant ? (char)0xFFFF : (char)0x7F);
 
-            while (length != 0 && charA <= maxChar && charB <= maxChar)
+            while (length != 0 && (currentA = charA) <= maxChar && (currentB = charB) <= maxChar)
             {
                 // Ordinal equals or lowercase equals if the result ends up in the a-z range
-                if (charA == charB ||
-                    ((charA | 0x20) == (charB | 0x20) &&
-                        (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                if (currentA == currentB ||
+                    ((currentA | 0x20) == (currentB | 0x20) &&
+                        ((currentA | 0x20) - 'a') <= (uint)('z' - 'a')))
                 {
                     length--;
                     charA = ref Unsafe.Add(ref charA, 1);
@@ -501,21 +504,35 @@ namespace System.Globalization
                 }
                 else
                 {
-                    int currentA = charA;
-                    int currentB = charB;
+                    // Simple case map both chars if needed
 
-                    // Uppercase both chars if needed
-                    if ((uint)(charA - 'a') <= 'z' - 'a')
+#pragma warning disable CS0162 // Unreachable code detected: one of the two blocks below isn't relevant depending on target platform
+                    if (TextInfo.CaseFoldToUpper)
                     {
-                        currentA -= 0x20;
+                        if (UnicodeUtility.IsInRangeInclusive(currentA, 'a', 'z'))
+                        {
+                            currentA -= 0x20;
+                        }
+                        if (UnicodeUtility.IsInRangeInclusive(currentB, 'a', 'z'))
+                        {
+                            currentB -= 0x20;
+                        }
                     }
-                    if ((uint)(charB - 'a') <= 'z' - 'a')
+                    else
                     {
-                        currentB -= 0x20;
+                        if (UnicodeUtility.IsInRangeInclusive(currentA, 'A', 'Z'))
+                        {
+                            currentA += 0x20;
+                        }
+                        if (UnicodeUtility.IsInRangeInclusive(currentB, 'A', 'Z'))
+                        {
+                            currentB += 0x20;
+                        }
                     }
+#pragma warning restore CS0162 // Unreachable code detected
 
                     // Return the (case-insensitive) difference between them.
-                    return currentA - currentB;
+                    return (int)(currentA - currentB);
                 }
             }
 

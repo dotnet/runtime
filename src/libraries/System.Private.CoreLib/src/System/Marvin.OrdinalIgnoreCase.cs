@@ -38,7 +38,7 @@ namespace System
                 {
                     goto NotAscii;
                 }
-                p0 += Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue);
+                p0 += CaseFoldTwoAsciiChars(tempValue);
                 Block(ref p0, ref p1);
 
                 byteOffset += 4;
@@ -57,7 +57,7 @@ namespace System
                 }
 
                 // addition is written with -0x80u to allow fall-through to next statement rather than jmp past it
-                p0 += Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(tempValue) + (0x800000u - 0x80u);
+                p0 += CaseFoldTwoAsciiChars(tempValue) + (0x800000u - 0x80u);
             }
             p0 += 0x80u;
 
@@ -78,10 +78,10 @@ namespace System
             char[]? borrowedArr = null;
             Span<char> scratch = (uint)count <= 64 ? stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(count));
 
-            int charsWritten = new ReadOnlySpan<char>(ref data, count).ToUpperInvariant(scratch);
-            Debug.Assert(charsWritten == count); // invariant case conversion should involve simple folding; preserve code unit count
+            int charsWritten = CaseFoldBuffer(new ReadOnlySpan<char>(ref data, count), scratch);
+            Debug.Assert(charsWritten == count); // simple case folding should preserve code unit count
 
-            // Slice the array to the size returned by ToUpperInvariant.
+            // Slice the array to the size returned by the case folding operation.
             // Multiplication below will not overflow since going from positive Int32 to UInt32.
             int hash = ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(scratch)), (uint)charsWritten * 2, p0, p1);
 

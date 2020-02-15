@@ -11,6 +11,8 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
+        internal const bool CaseFoldToUpper = false; // ICU folds ASCII characters to lowercase
+
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
         private void FinishInitialization() { }
@@ -46,6 +48,13 @@ namespace System.Globalization
                 _needsTurkishCasing = NeedsTurkishCasing(_textInfoName) ? Tristate.True : Tristate.False;
                 goto TryAgain;
             }
+        }
+
+        private unsafe void CaseFold(char* pSource, int pSourceLen, char* pResult, int pResultLen)
+        {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
+            Interop.Globalization.SimpleCaseFold(pSource, pSourceLen, pResult, pResultLen);
         }
 
     }

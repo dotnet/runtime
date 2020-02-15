@@ -8,6 +8,8 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
+        internal const bool CaseFoldToUpper = true; // NLS doesn't perform case folding; it normalizes to uppercase
+
         private unsafe void FinishInitialization()
         {
             _sortHandle = CompareInfo.GetSortHandle(_textInfoName);
@@ -40,6 +42,11 @@ namespace System.Globalization
             }
 
             Debug.Assert(ret == pSourceLen, "Expected getting the same length of the original string");
+        }
+
+        private unsafe void CaseFold(char* pSource, int pSourceLen, char* pResult, int pResultLen)
+        {
+            throw new PlatformNotSupportedException(); // this code path shouldn't get hit on Windows
         }
 
         // PAL Ends here

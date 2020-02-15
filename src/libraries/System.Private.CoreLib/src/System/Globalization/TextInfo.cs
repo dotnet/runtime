@@ -203,8 +203,12 @@ namespace System.Globalization
 
         private unsafe void ChangeCaseCommon<TConversion>(ref char source, ref char destination, int charCount) where TConversion : struct
         {
-            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
-            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
+            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion) || typeof(TConversion) == typeof(ToCaseFoldConversion));
+
+            // JIT treats the below as constants
+
+            bool toCaseFold = typeof(TConversion) == typeof(ToCaseFoldConversion);
+            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion) || (CaseFoldToUpper && typeof(TConversion) == typeof(ToCaseFoldConversion));
 
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(charCount >= 0);
@@ -301,7 +305,14 @@ namespace System.Globalization
                 // has a case conversion that's different from the invariant culture, even for ASCII data (e.g., tr-TR converts
                 // 'i' (U+0069) to Latin Capital Letter I With Dot Above (U+0130)).
 
-                ChangeCase(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
+                if (toCaseFold)
+                {
+                    CaseFold(pSource + currIdx, charCount, pDestination + currIdx, charCount);
+                }
+                else
+                {
+                    ChangeCase(pSource + currIdx, charCount, pDestination + currIdx, charCount, toUpper);
+                }
             }
 
         Return:
@@ -310,8 +321,12 @@ namespace System.Globalization
 
         private unsafe string ChangeCaseCommon<TConversion>(string source) where TConversion : struct
         {
-            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
-            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
+            Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion) || typeof(TConversion) == typeof(ToCaseFoldConversion));
+
+            // JIT treats the below as constants
+
+            bool toCaseFold = typeof(TConversion) == typeof(ToCaseFoldConversion);
+            bool toUpper = typeof(TConversion) == typeof(ToUpperConversion) || (CaseFoldToUpper && typeof(TConversion) == typeof(ToCaseFoldConversion));
 
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
@@ -406,7 +421,14 @@ namespace System.Globalization
                     // and run the culture-aware logic over the remainder of the data
                     fixed (char* pResult = result)
                     {
-                        ChangeCase(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        if (toCaseFold)
+                        {
+                            CaseFold(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx);
+                        }
+                        else
+                        {
+                            ChangeCase(pSource + currIdx, source.Length - (int)currIdx, pResult + currIdx, result.Length - (int)currIdx, toUpper);
+                        }
                     }
                     return result;
                 }
@@ -570,6 +592,30 @@ namespace System.Globalization
                 c = (char)(c & ~0x20);
             }
             return c;
+        }
+
+        // For internal use only. Performs simple case folding of the source into the destination.
+        internal void ToCaseFold(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            Debug.Assert(source.Length <= destination.Length);
+
+            if (GlobalizationMode.Invariant)
+            {
+#pragma warning disable CS0162 // Unreachable code detected: one of the two blocks below isn't relevant depending on target platform
+                if (CaseFoldToUpper)
+                {
+                    ToUpperAsciiInvariant(source, destination);
+                }
+                else
+                {
+                    ToLowerAsciiInvariant(source, destination);
+                }
+#pragma warning restore CS0162 // Unreachable code detected
+            }
+            else
+            {
+                ChangeCaseCommon<ToCaseFoldConversion>(source, destination);
+            }
         }
 
         private static bool IsAscii(char c) => c < 0x80;
@@ -870,5 +916,8 @@ namespace System.Globalization
 
         // A dummy struct that is used for 'ToLower' in generic parameters
         private readonly struct ToLowerConversion { }
+
+        // A dummy struct that is used for 'ToCaseFold' in generic parameters
+        private readonly struct ToCaseFoldConversion { }
     }
 }
