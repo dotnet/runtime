@@ -65,5 +65,10 @@ namespace System.Runtime.InteropServices
         {
             throw new PlatformNotSupportedException();
         }
+
+        protected static void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
