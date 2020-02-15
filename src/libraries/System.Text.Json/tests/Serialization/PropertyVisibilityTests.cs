@@ -271,7 +271,7 @@ namespace System.Text.Json.Serialization.Tests
             public ClassWithIgnoredUnsupportedBigInteger MyClass { get; set; }
         }
 
-        // Todo: add tests with missing object property and missing collection property.
+        // Todo: https://github.com/dotnet/runtime/issues/32348
 
         public class ClassWithPrivateSetterAndGetter
         {
