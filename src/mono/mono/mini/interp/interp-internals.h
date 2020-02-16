@@ -195,6 +195,7 @@ typedef struct FrameClauseArgs FrameClauseArgs;
 
 /* State of the interpreter main loop */
 typedef struct {
+	stackval valuetype_this;
 	stackval *sp;
 	unsigned char *vt_sp;
 	const unsigned short  *ip;

@@ -3223,36 +3223,6 @@ mono_interp_leave (InterpFrame* child_frame)
 	return (MonoException*)tmp_sp.data.p;
 }
 
-static MONO_NEVER_INLINE void
-mono_interp_newobj_vt (
-	// Parameters are sorted by name and parameter list is minimized
-	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
-	// use no stack in caller).
-	InterpFrame* child_frame,
-	ThreadContext* context,
-	MonoError* error)
-{
-	stackval* const sp = child_frame->stack_args;
-
-	stackval valuetype_this;
-
-	memset (&valuetype_this, 0, sizeof (stackval));
-	sp->data.p = &valuetype_this;
-
-	// FIXME remove recursion
-	//
-	// FIXME It is unfortunate to outline a recursive case as it
-	// increases its stack usage. We do this however as it conserves
-	// stack for all the other recursive cases.
-	interp_exec_method (child_frame, context, error);
-
-	CHECK_RESUME_STATE (context);
-
-	*sp = valuetype_this;
-resume:
-	;
-}
-
 static MONO_NEVER_INLINE MonoException*
 mono_interp_newobj (
 	// Parameters are sorted by name and parameter list is minimized
@@ -3981,6 +3951,8 @@ main_loop:
 		MINT_IN_CASE(MINT_CALL)
 		MINT_IN_CASE(MINT_CALLVIRT)
 		MINT_IN_CASE(MINT_VCALLVIRT) {
+			gboolean newobj_vt_fast;
+
 			// FIXME CALLVIRT opcodes are not used on netcore. We should kill them.
 			// FIXME braces from here until call: label.
 			is_void = *ip == MINT_VCALL || *ip == MINT_VCALLVIRT;
@@ -4011,7 +3983,14 @@ main_loop:
 #else
 			ip += 3;
 #endif
-call:;
+			goto call;
+call_newobj_vt_fast:
+			newobj_vt_fast = TRUE;
+			if (FALSE) {
+call:
+				newobj_vt_fast = FALSE;
+			}
+
 			// FIXME This assumes a grow-down stack.
 			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
@@ -4022,6 +4001,13 @@ call:;
 			SAVE_INTERP_STATE (frame);
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
+
+			if (newobj_vt_fast) {
+				retval = &frame->state.valuetype_this;
+				memset (retval, 0, sizeof (*retval));
+				frame->retval = retval;
+				sp->data.p = retval;
+			}
 
 			gboolean tracing;
 
@@ -5138,16 +5124,18 @@ call:;
 			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			guint16 const param_count = ip [2];
 
+			// Make room for vt_sp parameter.
 			if (param_count) {
 				sp -= param_count;
 				memmove (sp + 1, sp, param_count * sizeof (stackval));
 			}
-			child_frame->stack_args = sp;
 			gboolean const vtst = *ip == MINT_NEWOBJ_VTST_FAST;
+
 			if (vtst) {
+				child_frame = alloc_frame (context, &dummy, frame, cmethod, sp, NULL);
 				memset (vt_sp, 0, ip [3]);
 				sp->data.p = vt_sp;
 				ip += 4;
@@ -5160,9 +5148,8 @@ call:;
 
 			} else {
 				ip += 3;
-				// FIXME remove recursion
-				mono_interp_newobj_vt (child_frame, context, error);
-				CHECK_RESUME_STATE (context);
+				is_void = FALSE;
+				goto call_newobj_vt_fast;
 			}
 			++sp;
 			MINT_IN_BREAK;
