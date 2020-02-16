@@ -13,8 +13,10 @@ using Internal.Runtime.CompilerServices;
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
 #if TARGET_64BIT
 using nuint = System.UInt64;
+using nint = System.Int64;
 #else
 using nuint = System.UInt32;
+using nint = System.Int32;
 #endif // TARGET_64BIT
 
 namespace System
@@ -1310,84 +1312,169 @@ namespace System
         // Optimized byte-based SequenceEquals. The "length" parameter for this one is declared a nuint rather than int as we also use it for types other than byte
         // where the length can exceed 2Gb once scaled by sizeof(T).
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)
+        public static bool SequenceEqual(ref byte first, ref byte second, nuint length)
         {
-            IntPtr offset = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            IntPtr lengthToExamine = (IntPtr)(void*)length;
-
-            if ((byte*)lengthToExamine >= (byte*)sizeof(UIntPtr))
+            // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
+            if (length >= sizeof(nuint))
             {
-                // Only check that the ref is the same if buffers are large, and hence
-                // its worth avoiding doing unnecessary comparisons
-                if (Unsafe.AreSame(ref first, ref second))
-                    goto Equal;
+                // Conditional jmp foward to favor shorter lengths. (See comment at "Equal:" label)
+                // The longer lengths can make back the time due to branch misprediction
+                // better than shorter lengths.
+                goto Longer;
+            }
 
-                if (Vector.IsHardwareAccelerated && (byte*)lengthToExamine >= (byte*)Vector<byte>.Count)
+#if TARGET_64BIT
+            // On 32-bit, this will never be true since sizeof(nuint) == 4
+            if (length >= sizeof(uint))
+            {
+                nint offset = 0;
+                if (length > sizeof(uint))
                 {
-                    lengthToExamine -= Vector<byte>.Count;
-                    while ((byte*)lengthToExamine > (byte*)offset)
+                    // Set offset for next compare to sizeof(uint) from end
+                    offset = (nint)length - sizeof(uint);
+                    // Compare start
+                    if (LoadUInt(ref first) != LoadUInt(ref second))
+                    {
+                        goto NotEqual;
+                    }
+                }
+
+                // Compare end
+                return LoadUInt(ref first, offset) == LoadUInt(ref second, offset);
+            }
+#endif
+            if (length >= sizeof(ushort))
+            {
+                nint offset = 0;
+                if (length > sizeof(ushort))
+                {
+                    // Set offset for next compare to sizeof(ushort) from end
+                    offset = (nint)length - sizeof(ushort);
+                    // Compare start
+                    if (LoadUShort(ref first) != LoadUShort(ref second))
+                    {
+                        goto NotEqual;
+                    }
+                }
+
+                // Compare end
+                return LoadUShort(ref first, offset) == LoadUShort(ref second, offset);
+            }
+
+            if (length != 0)
+            {
+                // Only length 1 possible
+                Debug.Assert((int)length == 1);
+                return first == second;
+            }
+
+            Debug.Assert((int)length == 0);
+            goto Equal;
+        Longer:
+            // Only check that the ref is the same if buffers are large, and hence
+            // its worth avoiding doing unnecessary comparisons
+            if (Unsafe.AreSame(ref first, ref second))
+            {
+                // This becomes a conditional jmp foward to not favor it. (See comment at "Equal:" label)
+                return true;
+            }
+
+            if (Sse.IsSupported)
+            {
+                if (Avx.IsSupported && (nint)length >= Vector256<byte>.Count)
+                {
+                    nint offset = 0;
+                    nint lengthToExamine = (nint)length - Vector256<byte>.Count;
+                    if (lengthToExamine != 0)
+                    {
+                        do
+                        {
+                            if (!LoadVector256(ref first, offset).Equals(LoadVector256(ref second, offset)))
+                            {
+                                goto NotEqual;
+                            }
+                            offset += Vector256<byte>.Count;
+                        } while (lengthToExamine > offset);
+                    }
+
+                    // Do final compare as Vector256<byte>.Count from end rather than start
+                    Debug.Assert(lengthToExamine >= 0);
+                    return LoadVector256(ref first, lengthToExamine).Equals(LoadVector256(ref second, lengthToExamine));
+                }
+                else if ((nint)length >= Vector128<byte>.Count)
+                {
+                    nint offset = 0;
+                    nint lengthToExamine = (nint)length - Vector128<byte>.Count;
+                    if (lengthToExamine != 0)
+                    {
+                        do
+                        {
+                            if (!LoadVector128(ref first, offset).Equals(LoadVector128(ref second, offset)))
+                            {
+                                goto NotEqual;
+                            }
+                            offset += Vector128<byte>.Count;
+                        } while (lengthToExamine > offset);
+                    }
+
+                    // Do final compare as Vector128<byte>.Count from end rather than start
+                    Debug.Assert(lengthToExamine >= 0);
+                    return LoadVector128(ref first, lengthToExamine).Equals(LoadVector128(ref second, lengthToExamine));
+                }
+            }
+            else if (Vector.IsHardwareAccelerated && (nint)length >= Vector<byte>.Count)
+            {
+                nint offset = 0;
+                nint lengthToExamine = (nint)length - Vector<byte>.Count;
+                if (lengthToExamine > 0)
+                {
+                    do
                     {
                         if (LoadVector(ref first, offset) != LoadVector(ref second, offset))
                         {
                             goto NotEqual;
                         }
                         offset += Vector<byte>.Count;
-                    }
-                    return LoadVector(ref first, lengthToExamine) == LoadVector(ref second, lengthToExamine);
+                    } while (lengthToExamine > offset);
                 }
 
-                Debug.Assert((byte*)lengthToExamine >= (byte*)sizeof(UIntPtr));
+                // Do final compare as Vector<byte>.Count from end rather than start
+                Debug.Assert(lengthToExamine >= 0);
+                return LoadVector(ref first, lengthToExamine) == LoadVector(ref second, lengthToExamine);
+            }
 
-                lengthToExamine -= sizeof(UIntPtr);
-                while ((byte*)lengthToExamine > (byte*)offset)
+            Debug.Assert(length >= sizeof(nuint));
+            {
+                nint offset = 0;
+                nint lengthToExamine = (nint)length - sizeof(nuint);
+                if (lengthToExamine > 0)
                 {
-                    if (LoadUIntPtr(ref first, offset) != LoadUIntPtr(ref second, offset))
+                    do
                     {
-                        goto NotEqual;
-                    }
-                    offset += sizeof(UIntPtr);
-                }
-                return LoadUIntPtr(ref first, lengthToExamine) == LoadUIntPtr(ref second, lengthToExamine);
-            }
+                        // Compare unsigned so not do a sign extend mov on 64 bit
+                        if (LoadNUInt(ref first, offset) != LoadNUInt(ref second, offset))
+                        {
+                            goto NotEqual;
+                        }
+                        offset += sizeof(nuint);
+                    } while (lengthToExamine > offset);
 
-            Debug.Assert((byte*)lengthToExamine < (byte*)sizeof(UIntPtr));
-
-            // On 32-bit, this will never be true since sizeof(UIntPtr) == 4
-#if TARGET_64BIT
-            if ((byte*)lengthToExamine >= (byte*)sizeof(int))
-            {
-                if (LoadInt(ref first, offset) != LoadInt(ref second, offset))
-                {
-                    goto NotEqual;
-                }
-                offset += sizeof(int);
-                lengthToExamine -= sizeof(int);
-            }
-#endif
-
-            if ((byte*)lengthToExamine >= (byte*)sizeof(short))
-            {
-                if (LoadShort(ref first, offset) != LoadShort(ref second, offset))
-                {
-                    goto NotEqual;
-                }
-                offset += sizeof(short);
-                lengthToExamine -= sizeof(short);
-            }
-
-            if (lengthToExamine != IntPtr.Zero)
-            {
-                Debug.Assert((int)lengthToExamine == 1);
-
-                if (Unsafe.AddByteOffset(ref first, offset) != Unsafe.AddByteOffset(ref second, offset))
-                {
-                    goto NotEqual;
+                    // Do final compare as sizeof(nuint) from end rather than start
+                    Debug.Assert(lengthToExamine >= 0);
+                    return LoadNUInt(ref first, lengthToExamine) == LoadNUInt(ref second, lengthToExamine);
                 }
             }
 
+            // As there are so many true/false exit points the Jit will coalesce them to one location.
+            // We want them at the end so the conditional early exit jmps are all jmp forwards so the
+            // branch predictor in a uninitialized state will not take them e.g.
+            // - loops are conditional jmps backwards and predicted
+            // - exceptions are conditional fowards jmps and not predicted
+            // When the sequence is equal; which is the longest execution, we want it to determine that
+            // as fast as possible so we do not want the early outs to be "predicted not taken" branches.
         Equal:
             return true;
-        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
+        NotEqual:
             return false;
         }
 
@@ -1644,28 +1731,52 @@ namespace System
                                                        0x01ul << 48) + 1;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe short LoadShort(ref byte start, IntPtr offset)
-            => Unsafe.ReadUnaligned<short>(ref Unsafe.AddByteOffset(ref start, offset));
+        private static ushort LoadUShort(ref byte start)
+            => Unsafe.ReadUnaligned<ushort>(ref start);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe int LoadInt(ref byte start, IntPtr offset)
-            => Unsafe.ReadUnaligned<int>(ref Unsafe.AddByteOffset(ref start, offset));
+        private static ushort LoadUShort(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe UIntPtr LoadUIntPtr(ref byte start, IntPtr offset)
+        private static uint LoadUInt(ref byte start)
+            => Unsafe.ReadUnaligned<uint>(ref start);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint LoadUInt(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<uint>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static nuint LoadNUInt(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<nuint>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static UIntPtr LoadUIntPtr(ref byte start, IntPtr offset)
             => Unsafe.ReadUnaligned<UIntPtr>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector<byte> LoadVector(ref byte start, IntPtr offset)
+        private static Vector<byte> LoadVector(ref byte start, IntPtr offset)
             => Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector128<byte> LoadVector128(ref byte start, IntPtr offset)
+        private static Vector<byte> LoadVector(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<Vector<byte>>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<byte> LoadVector128(ref byte start, IntPtr offset)
             => Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe Vector256<byte> LoadVector256(ref byte start, IntPtr offset)
+        private static Vector128<byte> LoadVector128(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<Vector128<byte>>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> LoadVector256(ref byte start, IntPtr offset)
             => Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.AddByteOffset(ref start, offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<byte> LoadVector256(ref byte start, nint offset)
+            => Unsafe.ReadUnaligned<Vector256<byte>>(ref Unsafe.AddByteOffset(ref start, (IntPtr)offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe IntPtr GetByteVectorSpanLength(IntPtr offset, int length)
