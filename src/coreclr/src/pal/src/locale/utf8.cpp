@@ -1586,13 +1586,8 @@ public:
                         charCount--;
                     }
                 }
-                else {
-                    // 2 byte encoding
-
-                    // check for non-shortest form
-                    if ((ch & 0x1E) == 0) {
-                        goto BadLongCode;
-                    }
+                else if ((ch & 0x1E) == 0) {
+                    goto BadLongCode;
                 }
 
                 // extra byte
@@ -2185,12 +2180,11 @@ public:
                             ch = ch + (cha << 10) + (0x10000 - CharUnicodeInfo::LOW_SURROGATE_START - (CharUnicodeInfo::HIGH_SURROGATE_START << 10));
                             goto EncodeChar;
                         }
-                        else if (ch > 0){
+                        if (ch > 0){
                             goto ProcessChar;
                         }
-                        else {
-                            break;
-                        }
+
+                        break;
                     }
                 }
 
@@ -2568,13 +2562,12 @@ public:
                             byteCount++;
                             goto EncodeChar;
                         }
-                        else if (ch > 0){
+                        if (ch > 0){
                             goto ProcessChar;
                         }
-                        else {
-                            byteCount--; // ignore last one.
-                            break;
-                        }
+                        
+                        byteCount--; // ignore last one.
+                        break;
                     }
                 }
 
