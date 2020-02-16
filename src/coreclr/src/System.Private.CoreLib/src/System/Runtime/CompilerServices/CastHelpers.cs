@@ -485,7 +485,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static ref byte Unbox(void* toTypeHnd, object obj)
         {
-            // this will NRE if obj is null, as expected.
+            // this will throw NullReferenceException if obj is null, attributed to the user code, as expected.
             if (RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return ref obj.GetRawData();
 

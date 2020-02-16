@@ -3023,7 +3023,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
         (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
         (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
-        // we allow enums and their primtive type to be interchangable
+        // we allow enums and their primitive type to be interchangable
         result = objRef->GetData();
     }
     else if (pMT1->IsEquivalentTo(pMT2))
