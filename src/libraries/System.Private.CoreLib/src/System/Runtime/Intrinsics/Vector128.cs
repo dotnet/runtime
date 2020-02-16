@@ -463,6 +463,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi8</remarks>
         /// <returns>A new <see cref="Vector128{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -562,6 +563,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi16</remarks>
         /// <returns>A new <see cref="Vector128{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -605,6 +607,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi32</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -640,6 +643,7 @@ namespace System.Runtime.Intrinsics
 
         /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_set1_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -947,6 +951,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi8</remarks>
         /// <returns>A new <see cref="Vector128{SByte}" /> with each element initialized to corresponding specified value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -1084,6 +1089,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi16</remarks>
         /// <returns>A new <see cref="Vector128{UInt16}" /> with each element initialized to corresponding specified value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -1126,6 +1132,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi32</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> with each element initialized to corresponding specified value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -1169,6 +1176,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64x</remarks>
         /// <returns>A new <see cref="Vector128{UInt64}" /> with each element initialized to corresponding specified value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
@@ -1325,6 +1333,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance from two <see cref="Vector64{UInt32}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
+        /// <remarks>On x86, this method corresponds to __m128i _mm_setr_epi64</remarks>
         /// <returns>A new <see cref="Vector128{UInt32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(Vector64<uint> lower, Vector64<uint> upper)
