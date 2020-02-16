@@ -107,9 +107,9 @@ namespace
         { }
         ~ExternalWrapperResultHolder()
         {
-            if (Result.Context != nullptr)
+            if (Result.Context != NULL)
                 InteropLib::Com::DestroyWrapperForExternal(Result.Context);
-            if (Result.AgileRef != nullptr)
+            if (Result.AgileRef != NULL)
                 (void)Result.AgileRef->Release();
         }
         InteropLib::Com::ExternalWrapperResult* operator&()
@@ -123,10 +123,12 @@ namespace
         ExternalObjectContext* DetachContext()
         {
             ExternalObjectContext* t = GetContext();
-            Result.Context = nullptr;
+            Result.Context = NULL;
             return t;
         }
     };
+
+    using ExtObjCxtRefCache = RCWRefCache;
 
     class ExtObjCxtCache
     {
@@ -139,7 +141,7 @@ namespace
             {
                 NOTHROW;
                 GC_NOTRIGGER;
-                POSTCONDITION(RETVAL != NULL);
+                POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
             }
             CONTRACT_END;
 
@@ -204,21 +206,28 @@ namespace
         friend struct InteropLibImports::RuntimeCallContext;
         SHash<Traits> _hashMap;
         Crst _lock;
+        ExtObjCxtRefCache* _refCache;
 
         ExtObjCxtCache()
             : _lock(CrstExternalObjectContextCache, CRST_UNSAFE_COOPGC)
+            , _refCache(GetAppDomain()->GetRCWRefCache())
         { }
         ~ExtObjCxtCache() = default;
 
     public:
+#if _DEBUG
         bool IsLockHeld()
         {
             WRAPPER_NO_CONTRACT;
-#if _DEBUG
             return (_lock.OwnedByCurrentThread() != FALSE);
-#else
-            return true;
-#endif // !_DEBUG
+        }
+#endif // _DEBUG
+
+        // Get the associated reference cache with this external object cache.
+        ExtObjCxtRefCache* GetRefCache()
+        {
+            WRAPPER_NO_CONTRACT;
+            return _refCache;
         }
 
         // Create a managed IEnumerable instance for this collection.
@@ -390,8 +399,6 @@ namespace
 
     // Global instance
     Volatile<ExtObjCxtCache*> ExtObjCxtCache::g_Instance;
-
-    using ExtObjCxtRefCache = RCWRefCache;
 
     // Defined handle types for the specific object uses.
     const HandleType InstanceHandleType{ HNDTYPE_STRONG };
@@ -947,10 +954,10 @@ namespace InteropLibImports
         // Pointer to cache used to create object references.
         ExtObjCxtRefCache* RefCache;
 
-        RuntimeCallContext(_In_ ExtObjCxtCache* cache, _In_ ExtObjCxtRefCache* refCache)
+        RuntimeCallContext(_In_ ExtObjCxtCache* cache)
             : Curr{ cache->_hashMap.Begin() }
             , End{ cache->_hashMap.End() }
-            , RefCache{ refCache }
+            , RefCache{ cache->GetRefCache() }
         { }
     };
 
@@ -1192,25 +1199,22 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
     // See Interop::OnGCFinished()
     if (nCondemnedGeneration >= 2)
     {
-        EX_TRY
+        // If no cache exists, then there is nothing to do here.
+        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+        if (cache != NULL)
         {
-            ExtObjCxtCache* cache = ExtObjCxtCache::GetInstance();
-            RCWRefCache *refCache = GetAppDomain()->GetRCWRefCache();
+            ExtObjCxtRefCache* refCache = cache->GetRefCache();
 
             // Reset the ref cache
             refCache->ResetDependentHandles();
 
             // Create a call context for the InteropLib.
-            InteropLibImports::RuntimeCallContext cxt(cache, refCache);
+            InteropLibImports::RuntimeCallContext cxt(cache);
             (void)InteropLib::Com::BeginExternalObjectReferenceTracking(&cxt);
 
             // Shrink cache and clear unused handles.
             refCache->ShrinkDependentHandles();
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowCorruptingExceptions)
     }
 
 #endif // FEATURE_COMINTEROP
