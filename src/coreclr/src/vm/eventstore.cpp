@@ -66,14 +66,12 @@ public:
         // The number of events stored in the pool should be small.
         _ASSERTE (count <= ThreadStore::s_pThreadStore->ThreadCountInEE() * 2 + 10);
 #endif
-        walk = m_Store;
-        while (walk) {
+        for (walk = m_store; walk; walk = walk->next) {
             if (walk->StoreHandleForEvent (handle) )
                 return;
             if (walk->next == NULL) {
                 break;
             }
-            walk = walk->next;
         }
         if (walk != NULL)
         {
