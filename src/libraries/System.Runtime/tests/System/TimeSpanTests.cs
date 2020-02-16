@@ -143,10 +143,13 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void FromMaxValue_Invalid()
+        public static void FromMinMaxValue_DoesNotThrow()
         {
-            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(TimeSpan.MaxValue.TotalMinutes));
-            Assert.Throws<OverflowException>(() => TimeSpan.FromMinutes(TimeSpan.MinValue.TotalMinutes));
+            var maxTimeSpan = TimeSpan.FromDays(TimeSpan.MaxValue.TotalDays);
+            var minTimeSpan = TimeSpan.FromDays(TimeSpan.MinValue.TotalDays);
+
+            Assert.Equal(TimeSpan.MaxValue, maxTimeSpan);
+            Assert.Equal(TimeSpan.MinValue, minTimeSpan);
         }
 
         public static IEnumerable<object[]> CompareTo_TestData()
