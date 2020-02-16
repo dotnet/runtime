@@ -74,7 +74,7 @@ namespace System
         // Provides a string representation of a byte.
         public override string ToString()
         {
-            return Number.FormatInt32(m_value, null, null);
+            return Number.Int32ToDecStr(m_value, digits: -1, provider: null);
         }
 
         public string ToString(IFormatProvider? provider)
@@ -89,22 +89,12 @@ namespace System
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x000000FF);
-                return Number.FormatUInt32(temp, format, provider);
-            }
-            return Number.FormatInt32(m_value, format, provider);
+            return Number.FormatSByte(m_value, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            if (m_value < 0 && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
-            {
-                uint temp = (uint)(m_value & 0x000000FF);
-                return Number.TryFormatUInt32(temp, format, provider, destination, out charsWritten);
-            }
-            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatSByte(m_value, format, provider, destination, out charsWritten);
         }
 
         [CLSCompliant(false)]
