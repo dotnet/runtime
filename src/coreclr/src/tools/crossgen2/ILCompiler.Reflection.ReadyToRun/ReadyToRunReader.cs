@@ -48,6 +48,13 @@ namespace ILCompiler.Reflection.ReadyToRun
 
     public sealed class ReadyToRunReader
     {
+        private const string SystemModuleName = "System.Private.CoreLib";
+
+        /// <summary>
+        /// MetadataReader for the system module (normally System.Private.CoreLib)
+        /// </summary>
+        private MetadataReader _systemModuleReader;
+
         private readonly IAssemblyResolver _assemblyResolver;
 
         /// <summary>
@@ -374,6 +381,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             return false;
         }
 
+        private MetadataReader GetSystemModuleMetadataReader() =>
+            _systemModuleReader ??= _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+
         public MetadataReader GetGlobalMetadataReader()
         {
             EnsureHeader();
@@ -616,11 +626,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                 uint methodFlags = decoder.ReadUInt();
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
-                    mdReader = decoder.GetMetadataReaderFromModuleOverride();
-                    if (mdReader == null)
+                    mdReader = decoder.GetMetadataReaderFromModuleOverride() ?? mdReader;
+                    if (_composite)
                     {
-                        // The only types that don't have module overrides on them in composite images are primitive types within System.Private.CoreLib
-                        mdReader = _assemblyResolver.FindAssembly("System.Private.CoreLib", Filename);
+                        // The only types that don't have module overrides on them in composite images are primitive types within the system module
+                        mdReader ??= GetSystemModuleMetadataReader();
                     }
                     owningType = decoder.ReadTypeSignatureNoEmit();
                 }

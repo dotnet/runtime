@@ -30,6 +30,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Ssl listening options (ALPN, cert, etc)
         private SslServerAuthenticationOptions _sslOptions;
 
+        private QuicListenerOptions _options;
         private volatile bool _disposed;
         private IPEndPoint _listenEndPoint;
 
@@ -44,11 +45,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true
             });
 
+            _options = options;
             _sslOptions = options.ServerAuthenticationOptions;
             _listenEndPoint = options.ListenEndPoint;
 
             _ptr = _session.ListenerOpen(options);
-
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -76,7 +77,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new QuicOperationAbortedException();
             }
 
-            await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate);
+            await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate,
+                _options.CertificateFilePath,
+                _options.PrivateKeyFilePath);
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return connection;

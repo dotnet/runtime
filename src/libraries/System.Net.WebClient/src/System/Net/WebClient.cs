@@ -1110,7 +1110,7 @@ namespace System.Net
 
             if (contentType != null)
             {
-                contentType = contentType.ToLower(CultureInfo.InvariantCulture);
+                contentType = contentType.ToLowerInvariant();
                 string[] parsedList = contentType.Split(s_parseContentTypeSeparators);
                 bool nextItem = false;
                 foreach (string item in parsedList)

@@ -9102,6 +9102,21 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_PINVOKE]");
                     }
+
+                    if (call->IsFatPointerCandidate())
+                    {
+                        chars += printf("[CALL_FAT_POINTER_CANDIDATE]");
+                    }
+
+                    if (call->IsGuarded())
+                    {
+                        chars += printf("[CALL_GUARDED]");
+                    }
+
+                    if (call->IsExpRuntimeLookup())
+                    {
+                        chars += printf("[CALL_EXP_RUNTIME_LOOKUP]");
+                    }
                 }
                 break;
             default:

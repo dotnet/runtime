@@ -240,8 +240,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void SocketCtr_SocketInformation_NonIpSocket_ThrowsNotSupportedException()
         {
-            // UDS unsupported:
-            if (!PlatformDetection.IsWindows10Version1803OrGreater || !Environment.Is64BitProcess) return;
+            if (!Socket.OSSupportsUnixDomainSockets) return;
 
             using Socket original = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
             SocketInformation info = original.DuplicateAndClose(CurrentProcessId);

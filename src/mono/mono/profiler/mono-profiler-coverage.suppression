@@ -86,7 +86,6 @@ System.Interactive.Async
 System.Interactive.Providers
 System.IO.Compression
 System.IO.Compression.FileSystem
-System.Json
 System.Json.Microsoft
 System.Management
 System.Messaging

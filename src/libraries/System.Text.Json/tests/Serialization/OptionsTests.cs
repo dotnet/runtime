@@ -326,9 +326,9 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Options_GetConverterForObjectJsonElement_GivesCorrectConverter()
         {
-            GenericObjectOrJsonElementConverterTestHelper<object>("JsonConverterObject", new object(), "[3]", true);
+            GenericObjectOrJsonElementConverterTestHelper<object>("ObjectConverter", new object(), "[3]", true);
             JsonElement element = JsonDocument.Parse("[3]").RootElement;
-            GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonConverterJsonElement", element, "[3]", false);
+            GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonElementConverter", element, "[3]", false);
         }
 
         private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue, bool throws)
@@ -381,28 +381,28 @@ namespace System.Text.Json.Serialization.Tests
         public static void Options_GetConverter_GivesCorrectDefaultConverterAndReadWriteSuccess()
         {
             var options = new JsonSerializerOptions();
-            GenericConverterTestHelper<bool>("JsonConverterBoolean", true, "true", options);
-            GenericConverterTestHelper<byte>("JsonConverterByte", (byte)128, "128", options);
-            GenericConverterTestHelper<char>("JsonConverterChar", 'A', "\"A\"", options);
-            GenericConverterTestHelper<double>("JsonConverterDouble", 15.1d, "15.1", options);
-            GenericConverterTestHelper<SampleEnum>("JsonConverterEnum`1", SampleEnum.Two, "2", options);
-            GenericConverterTestHelper<short>("JsonConverterInt16", (short)5, "5", options);
-            GenericConverterTestHelper<int>("JsonConverterInt32", -100, "-100", options);
-            GenericConverterTestHelper<long>("JsonConverterInt64", (long)11111, "11111", options);
-            GenericConverterTestHelper<sbyte>("JsonConverterSByte", (sbyte)-121, "-121", options);
-            GenericConverterTestHelper<float>("JsonConverterSingle", 14.5f, "14.5", options);
-            GenericConverterTestHelper<string>("JsonConverterString", "Hello", "\"Hello\"", options);
-            GenericConverterTestHelper<ushort>("JsonConverterUInt16", (ushort)1206, "1206", options);
-            GenericConverterTestHelper<uint>("JsonConverterUInt32", (uint)3333, "3333", options);
-            GenericConverterTestHelper<ulong>("JsonConverterUInt64", (ulong)44444, "44444", options);
-            GenericConverterTestHelper<decimal>("JsonConverterDecimal", 3.3m, "3.3", options);
-            GenericConverterTestHelper<byte[]>("JsonConverterByteArray", new byte[] { 1, 2, 3, 4 }, "\"AQIDBA==\"", options);
-            GenericConverterTestHelper<DateTime>("JsonConverterDateTime", new DateTime(2018, 12, 3), "\"2018-12-03T00:00:00\"", options);
-            GenericConverterTestHelper<DateTimeOffset>("JsonConverterDateTimeOffset", new DateTimeOffset(new DateTime(2018, 12, 3, 00, 00, 00, DateTimeKind.Utc)), "\"2018-12-03T00:00:00+00:00\"", options);
+            GenericConverterTestHelper<bool>("BooleanConverter", true, "true", options);
+            GenericConverterTestHelper<byte>("ByteConverter", (byte)128, "128", options);
+            GenericConverterTestHelper<char>("CharConverter", 'A', "\"A\"", options);
+            GenericConverterTestHelper<double>("DoubleConverter", 15.1d, "15.1", options);
+            GenericConverterTestHelper<SampleEnum>("EnumConverter`1", SampleEnum.Two, "2", options);
+            GenericConverterTestHelper<short>("Int16Converter", (short)5, "5", options);
+            GenericConverterTestHelper<int>("Int32Converter", -100, "-100", options);
+            GenericConverterTestHelper<long>("Int64Converter", (long)11111, "11111", options);
+            GenericConverterTestHelper<sbyte>("SByteConverter", (sbyte)-121, "-121", options);
+            GenericConverterTestHelper<float>("SingleConverter", 14.5f, "14.5", options);
+            GenericConverterTestHelper<string>("StringConverter", "Hello", "\"Hello\"", options);
+            GenericConverterTestHelper<ushort>("UInt16Converter", (ushort)1206, "1206", options);
+            GenericConverterTestHelper<uint>("UInt32Converter", (uint)3333, "3333", options);
+            GenericConverterTestHelper<ulong>("UInt64Converter", (ulong)44444, "44444", options);
+            GenericConverterTestHelper<decimal>("DecimalConverter", 3.3m, "3.3", options);
+            GenericConverterTestHelper<byte[]>("ByteArrayConverter", new byte[] { 1, 2, 3, 4 }, "\"AQIDBA==\"", options);
+            GenericConverterTestHelper<DateTime>("DateTimeConverter", new DateTime(2018, 12, 3), "\"2018-12-03T00:00:00\"", options);
+            GenericConverterTestHelper<DateTimeOffset>("DateTimeOffsetConverter", new DateTimeOffset(new DateTime(2018, 12, 3, 00, 00, 00, DateTimeKind.Utc)), "\"2018-12-03T00:00:00+00:00\"", options);
             Guid testGuid = new Guid();
-            GenericConverterTestHelper<Guid>("JsonConverterGuid", testGuid, $"\"{testGuid.ToString()}\"", options);
-            GenericConverterTestHelper<KeyValuePair<string, string>>("JsonKeyValuePairConverter`2", new KeyValuePair<string, string>("key", "value"), @"{""Key"":""key"",""Value"":""value""}", options);
-            GenericConverterTestHelper<Uri>("JsonConverterUri", new Uri("http://test.com"), "\"http://test.com\"", options);
+            GenericConverterTestHelper<Guid>("GuidConverter", testGuid, $"\"{testGuid.ToString()}\"", options);
+            GenericConverterTestHelper<KeyValuePair<string, string>>("KeyValuePairConverter`2", new KeyValuePair<string, string>("key", "value"), @"{""Key"":""key"",""Value"":""value""}", options);
+            GenericConverterTestHelper<Uri>("UriConverter", new Uri("http://test.com"), "\"http://test.com\"", options);
             
         }
 

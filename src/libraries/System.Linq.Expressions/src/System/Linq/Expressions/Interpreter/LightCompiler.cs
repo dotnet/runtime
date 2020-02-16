@@ -108,7 +108,7 @@ namespace System.Linq.Expressions.Interpreter
                 // Unreachable.
                 // Want to assert that this case isn't hit, but an assertion failure here will be eaten because
                 // we are in an exception filter. Therefore return true here and assert in the catch block.
-                handler = null;
+                handler = null!;
                 unwrappedException = exception;
                 return true;
             }
@@ -215,8 +215,9 @@ namespace System.Linq.Expressions.Interpreter
         private class DebugInfoComparer : IComparer<DebugInfo>
         {
             //We allow comparison between int and DebugInfo here
-            int IComparer<DebugInfo>.Compare(DebugInfo d1, DebugInfo d2)
+            int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
             {
+                Debug.Assert(d1 != null && d2 != null);
                 if (d1.Index > d2.Index) return 1;
                 else if (d1.Index == d2.Index) return 0;
                 else return -1;

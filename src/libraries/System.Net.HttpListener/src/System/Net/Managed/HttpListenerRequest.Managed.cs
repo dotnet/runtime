@@ -99,7 +99,7 @@ namespace System.Net
             }
 
             _rawUrl = parts[1];
-            if (parts[2].Length != 8 || !parts[2].StartsWith("HTTP/"))
+            if (parts[2].Length != 8 || !parts[2].StartsWith("HTTP/", StringComparison.Ordinal))
             {
                 _context.ErrorMessage = "Invalid request line (version).";
                 return;

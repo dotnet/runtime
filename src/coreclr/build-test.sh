@@ -184,22 +184,25 @@ precompile_coreroot_fx()
             continue
         fi
 
-        echo Precompiling "$filename"
+        local commandLine=""
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            "$__CrossgenExe" /Platform_Assemblies_Paths "$overlayDir" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            "$overlayDir"/crossgen2/crossgen2 "$crossgen2References" -O --inputbubble --out "$outputDir"/"$(basename $filename)" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$overlayDir/crossgen2/crossgen2 $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
+        echo Precompiling "$filename"
+        $commandLine 1> "$filename".stdout 2> "$filename".stderr
         local exitCode="$?"
         if [[ "$exitCode" != 0 ]]; then
             if grep -q -e '0x80131018' "$filename".stderr; then
                 printf "\n\t$filename is not a managed assembly.\n\n"
             else
                 echo Unable to precompile "$filename", exit code is "$exitCode".
+                echo Command-line: "$commandLine"
                 cat "$filename".stdout
                 cat "$filename".stderr
                 failedAssemblies+=($(basename -- "$filename"))

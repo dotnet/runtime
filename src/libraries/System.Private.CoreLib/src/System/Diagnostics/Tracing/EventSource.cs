@@ -1579,7 +1579,11 @@ namespace System.Diagnostics.Tracing
             /// <param name="input">
             /// Data to include in the hash. Must not be null.
             /// </param>
+#if ES_BUILD_STANDALONE
             public void Append(byte[] input)
+#else
+            public void Append(ReadOnlySpan<byte> input)
+#endif
             {
                 foreach (byte b in input)
                 {
@@ -1691,6 +1695,7 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
+#if ES_BUILD_STANDALONE
             if (namespaceBytes == null)
             {
                 namespaceBytes = new byte[] {
@@ -1698,6 +1703,13 @@ namespace System.Diagnostics.Tracing
                     0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
                 };
             }
+#else
+            ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
+            {
+                0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
+                0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
+            };
+#endif
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             Sha1ForNonSecretPurposes hash = default;
@@ -3882,10 +3894,10 @@ namespace System.Diagnostics.Tracing
         // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
         // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
         // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
-
+#if ES_BUILD_STANDALONE
         // used for generating GUID from eventsource name
         private static byte[]? namespaceBytes;
-
+#endif
 #endregion
     }
 
@@ -4020,8 +4032,6 @@ namespace System.Diagnostics.Tracing
         /// is the only way to actually make the listen die. Thus it is important that users of EventListener
         /// call Dispose when they are done with their logging.
         /// </summary>
-#if ES_BUILD_STANDALONE
-#endif
         public virtual void Dispose()
         {
             lock (EventListenersLock)

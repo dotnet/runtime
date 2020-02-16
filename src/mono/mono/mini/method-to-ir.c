@@ -1719,7 +1719,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 
 	const MonoJitICallId jit_icall_id = mono_get_tls_key_to_jit_icall_id (key);
 
-	if (cfg->compile_aot) {
+	if (cfg->compile_aot && !cfg->llvm_only) {
 		MonoInst *addr;
 		/*
 		 * tls getters are critical pieces of code and we don't want to resolve them

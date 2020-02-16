@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
@@ -392,6 +393,6 @@ namespace System.Text.Json.Serialization
         /// <param name="writer">The <see cref="Utf8JsonWriter"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
-        public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
+        public abstract void Write(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options);
     }
 }

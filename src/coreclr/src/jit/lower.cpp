@@ -98,8 +98,14 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-
-// This is the main entry point for Lowering.
+// LowerNode: this is the main entry point for Lowering.
+//
+// Arguments:
+//    node - the node we are lowering.
+//
+// Returns:
+//    next node in the transformed node sequence that needs to be lowered.
+//
 GenTree* Lowering::LowerNode(GenTree* node)
 {
     assert(node != nullptr);
@@ -128,8 +134,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_ADD:
-            LowerAdd(node->AsOp());
-            break;
+        {
+            GenTree* next = LowerAdd(node->AsOp());
+            if (next != nullptr)
+            {
+                return next;
+            }
+        }
+        break;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -4498,12 +4510,43 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
 // Arguments:
 //    node - the node we care about
 //
-void Lowering::LowerAdd(GenTreeOp* node)
+// Returns:
+//    nullptr if no transformation was done, or the next node in the transformed node sequence that
+//    needs to be lowered.
+//
+GenTree* Lowering::LowerAdd(GenTreeOp* node)
 {
-#ifndef TARGET_ARMARCH
     if (varTypeIsIntegralOrI(node->TypeGet()))
     {
+        GenTree* op1 = node->gtGetOp1();
+        GenTree* op2 = node->gtGetOp2();
         LIR::Use use;
+
+        // It is not the best place to do such simple arithmetic optimizations,
+        // but it allows us to avoid `LEA(addr, 0)` nodes and doing that in morph
+        // requires more changes. Delete that part if we get an expression optimizer.
+        if (op2->IsIntegralConst(0))
+        {
+            JITDUMP("Lower: optimize val + 0: ");
+            DISPNODE(node);
+            JITDUMP("Replaced with: ");
+            DISPNODE(op1);
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                use.ReplaceWith(comp, op1);
+            }
+            else
+            {
+                op1->SetUnusedValue();
+            }
+            GenTree* next = node->gtNext;
+            BlockRange().Remove(op2);
+            BlockRange().Remove(node);
+            JITDUMP("Remove [06%u], [06%u]\n", op2->gtTreeID, node->gtTreeID);
+            return next;
+        }
+
+#ifndef TARGET_ARMARCH
         if (BlockRange().TryGetUse(node, &use))
         {
             // If this is a child of an indir, let the parent handle it.
@@ -4514,13 +4557,14 @@ void Lowering::LowerAdd(GenTreeOp* node)
                 TryCreateAddrMode(node, false);
             }
         }
-    }
 #endif // !TARGET_ARMARCH
+    }
 
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
+    return nullptr;
 }
 
 //------------------------------------------------------------------------

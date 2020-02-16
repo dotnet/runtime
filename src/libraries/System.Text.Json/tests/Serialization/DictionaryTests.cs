@@ -1263,11 +1263,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Dictionary<string, string>>(json));
         }
 
-        [Fact, ActiveIssue("JsonElement fails since it is a struct.")]
+        [Fact]
         public static void ObjectToJsonElement()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
-            JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            Dictionary<string, JsonElement> result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+            JsonElement element = result["MyDictionary"];
+            Assert.Equal(JsonValueKind.Object, element.ValueKind);
+            Assert.Equal("Value", element.GetProperty("Key").GetString());
         }
 
         [Fact]
@@ -2145,15 +2148,64 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Serialize(dictionary));
         }
 
-        public class ClassWithoutParameterlessCtor
+        private class ClassWithoutParameterlessCtor
         {
             public ClassWithoutParameterlessCtor(int num) { }
+            public string Name { get; set; }
+        }
+
+        private class ClassWithInternalParameterlessConstructor
+        {
+            internal ClassWithInternalParameterlessConstructor() { }
+            public string Name { get; set; }
+        }
+
+        private class ClassWithPrivateParameterlessConstructor
+        {
+            private ClassWithPrivateParameterlessConstructor() { }
+            public string Name { get; set; }
         }
 
         [Fact]
         public static void DictionaryWith_ObjectWithNoParameterlessCtor_AsValue_Throws()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithoutParameterlessCtor>>(@"{""key"":{}}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithInternalParameterlessConstructor>>(@"{""key"":{}}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<Dictionary<string, ClassWithPrivateParameterlessConstructor>>(@"{""key"":{}}"));
+        }
+
+        [Fact]
+        public static void DictionaryWith_ObjectWithNoParameterlessCtor_Serialize_Works()
+        {
+            var noParameterless = new Dictionary<string, ClassWithoutParameterlessCtor>()
+            {
+                ["key"] = new ClassWithoutParameterlessCtor(5)
+                {
+                    Name = "parameterless"
+                }
+            };
+
+            string json = JsonSerializer.Serialize(noParameterless);
+            Assert.Equal("{\"key\":{\"Name\":\"parameterless\"}}", json);
+
+            var onlyInternal = new Dictionary<string, ClassWithInternalParameterlessConstructor>()
+            {
+                ["key"] = new ClassWithInternalParameterlessConstructor()
+                {
+                    Name = "internal"
+                }
+            };
+
+            json = JsonSerializer.Serialize(onlyInternal);
+            Assert.Equal("{\"key\":{\"Name\":\"internal\"}}", json);
+
+            var onlyPrivate = new Dictionary<string, ClassWithPrivateParameterlessConstructor>()
+            {
+                ["key"] = null
+            };
+
+            json = JsonSerializer.Serialize(onlyPrivate);
+            Assert.Equal("{\"key\":null}", json);
         }
     }
 }
