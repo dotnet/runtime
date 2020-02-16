@@ -1737,7 +1737,7 @@ namespace System.Net.Http
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
                     duplex == false ||
-                    requestBodyTask == await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) ||
+                    await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted)
                 {
                     // The sending of the request body completed before receiving all of the request headers (or we're
