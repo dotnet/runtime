@@ -406,7 +406,8 @@ namespace System.Net.Sockets
 
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
-                ioControlBlock.AioBuf = (ulong)PinHandle.Pointer + (ulong)Offset;
+                ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
+                ioControlBlock.AioOffset = Offset;
                 ioControlBlock.AioNbytes = (ulong)Count;
 
                 return true;
@@ -486,7 +487,8 @@ namespace System.Net.Sockets
 
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PWRITE;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
-                ioControlBlock.AioBuf = (ulong)BufferPtr + (ulong)Offset;
+                ioControlBlock.AioBuf = (ulong)BufferPtr;
+                ioControlBlock.AioOffset = Offset;
                 ioControlBlock.AioNbytes = (ulong)Count;
 
                 return true;
@@ -589,7 +591,9 @@ namespace System.Net.Sockets
                     : (ushort)Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
+                ioControlBlock.AioOffset = 0;
                 ioControlBlock.AioNbytes = (ulong)Buffer.Length;
+                ioControlBlock.AioReqprio = 0;
 
                 return true;
             }
@@ -661,6 +665,7 @@ namespace System.Net.Sockets
                 ioControlBlock.AioLioOpcode = Interop.Sys.IoControlBlockFlags.IOCB_CMD_PREAD;
                 ioControlBlock.AioFildes = (uint)context._socket.DangerousGetHandle().ToInt32();
                 ioControlBlock.AioBuf = (ulong)BufferPtr;
+                ioControlBlock.AioOffset = 0;
                 ioControlBlock.AioNbytes = (ulong)Length;
 
                 return true;

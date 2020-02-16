@@ -75,7 +75,7 @@ namespace System.Net.Sockets
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
-        private readonly Interop.Sys.AioContext* _aioContext;
+        private readonly Interop.Sys.AioContext _aioContext;
         private readonly Interop.Sys.IoEvent* _aioEvents;
         private readonly Interop.Sys.IoControlBlock* _aioBlocks;
         private readonly Interop.Sys.IoControlBlock** _aioBlocksPointers;
@@ -140,7 +140,7 @@ namespace System.Net.Sockets
         //
         private bool IsFull { get { return _nextHandle == MaxHandles; } }
 
-        private bool IsAio => _aioContext != null;
+        private bool IsAio => _aioContext.Ring != null;
 
         // True if we've don't have sufficient active sockets to allow allocating a new engine.
         private bool HasLowNumberOfSockets
@@ -283,18 +283,22 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                if (Interop.Sys.IoSetup(EventBufferCount, out _aioContext) == 0)
+                fixed (Interop.Sys.AioContext* address = &_aioContext)
                 {
-                    _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
-                    _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
-                    _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * EventBufferCount);
-
-                    // Marshal.AllocHGlobal allocated memory might contain some garbage
-                    new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount).Clear();
-
-                    for (int i = 0; i < EventBufferCount; i++)
+                    if (Interop.Sys.IoSetup(EventBufferCount, address) == 0)
                     {
-                        _aioBlocksPointers[i] = &_aioBlocks[i];
+                        _aioEvents = (Interop.Sys.IoEvent*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoEvent) * EventBufferCount);
+                        _aioBlocks = (Interop.Sys.IoControlBlock*)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock) * EventBufferCount);
+                        _aioBlocksPointers = (Interop.Sys.IoControlBlock**)Marshal.AllocHGlobal(sizeof(Interop.Sys.IoControlBlock*) * EventBufferCount);
+
+                        // Marshal.AllocHGlobal allocated memory might contain some garbage
+                        new Span<Interop.Sys.IoEvent>(_aioEvents, EventBufferCount).Clear();
+                        new Span<Interop.Sys.IoControlBlock>(_aioBlocks, EventBufferCount).Clear();
+
+                        for (int i = 0; i < EventBufferCount; i++)
+                        {
+                            _aioBlocksPointers[i] = &_aioBlocks[i];
+                        }
                     }
                 }
 
@@ -413,30 +417,37 @@ namespace System.Net.Sockets
                         }
                         else if (context.TryGetNextOperation(socketEvent.Events, out SocketAsyncContext.AsyncOperation nextOperation))
                         {
-                            // todo: batch more than 1 operation from a single queue
-                            if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]))
+                            do
                             {
-                                ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
-                                batchedOperations[batchedCount++] = nextOperation;
-                            }
-                            else
-                            {
-                                // todo: should we dispatch it to thread poll or execute on this thread??
-                                nextOperation.Dispatch();
-                            }
+                                if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]))
+                                {
+                                    ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
+                                    batchedOperations[batchedCount++] = nextOperation;
+
+                                    nextOperation = nextOperation.Next;
+                                }
+                                else
+                                {
+                                    // todo: should we dispatch it to thread poll or execute on this thread??
+                                    // ((IThreadPoolWorkItem)nextOperation).Execute();
+                                    nextOperation.Dispatch();
+                                    break;
+                                }
+                            } while (nextOperation != null && batchedCount < batchedOperations.Length);
                         }
                     }
                 }
 
                 if (batchedCount > 0)
                 {
-                    if (Interop.Sys.IoSubmit(*_aioContext, batchedCount, _aioBlocksPointers) != batchedCount)
+                    int result = Interop.Sys.IoSubmit(_aioContext, batchedCount, _aioBlocksPointers);
+                    if (result != batchedCount)
                     {
                         throw new InternalException("IoSubmit has failed"); // todo: provide sth in the future and|or implement a while loop
                     }
 
                     // todo: perf: avoid the syscall by using a well known pattern that reads from the ring
-                    if (Interop.Sys.IoGetEvents(*_aioContext, batchedCount, batchedCount, _aioEvents) != batchedCount)
+                    if (Interop.Sys.IoGetEvents(_aioContext, batchedCount, batchedCount, _aioEvents) != batchedCount)
                     {
                         throw new InternalException("IoGetEvents has failed"); // todo: provide sth in the future and|or implement a while loop
                     }
@@ -481,9 +492,9 @@ namespace System.Net.Sockets
             {
                 Interop.Sys.CloseSocketEventPort(_port);
             }
-            if (_aioContext != null)
+            if (_aioContext.Ring != null)
             {
-                Interop.Sys.IoDestroy(*_aioContext);
+                Interop.Sys.IoDestroy(_aioContext);
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioEvents));
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocksPointers));
                 Marshal.FreeHGlobal(new IntPtr((void*)_aioBlocks));
