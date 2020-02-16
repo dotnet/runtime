@@ -284,10 +284,12 @@ namespace
                     if (inst->ThreadContext == threadContext
                         && (withFlags == ExternalObjectContext::Flags_None || inst->IsSet(withFlags)))
                     {
-                        // Separate the wrapper from the tracker runtime
-                        // prior to passing this onto the caller.
+                        // Separate the wrapper from the tracker runtime prior to
+                        // passing this onto the caller. This call is okay to make
+                        // even if the instance isn't from the tracker runtime.
                         InteropLib::Com::SeparateWrapperFromTrackerRuntime(inst);
                         gc.arrRef->SetAt(objCount, inst->GetObjectRef());
+                        STRESS_LOG1(LF_INTEROP, LL_INFO100, "Add EOC to Enumerable: 0x%p\n", inst);
                     }
                 }
             }
@@ -567,6 +569,7 @@ namespace
             // A new managed object wrapper was created, remove the object from the holder.
             // No AddRef() here since the wrapper should be created with a reference.
             wrapperRaw = newWrapper.Extract();
+            STRESS_LOG1(LF_INTEROP, LL_INFO100, "Created MOW: 0x%p\n", wrapperRaw);
         }
         else
         {
@@ -578,6 +581,7 @@ namespace
             hr = InteropLib::Com::IsActiveWrapper(wrapper);
             if (hr == S_FALSE)
             {
+                STRESS_LOG1(LF_INTEROP, LL_INFO100, "Reactivating MOW: 0x%p\n", wrapperRaw);
                 OBJECTHANDLE h = GetAppDomain()->CreateTypedHandle(gc.instRef, InstanceHandleType);
                 hr = InteropLib::Com::ReactivateWrapper(wrapper, static_cast<InteropLib::OBJECTHANDLE>(h));
             }
@@ -687,6 +691,7 @@ namespace
 
                 // Detach from the holder to avoid cleanup.
                 (void)resultHolder.DetachContext();
+                STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created EOC (Ignore Cache: %d): 0x%p\n", (int)ignoreCache, extObjCxt);
             }
 
             _ASSERTE(extObjCxt->IsActive());
@@ -938,6 +943,7 @@ namespace InteropLibImports
                 gc.objRef,
                 trackerTargetFlags);
 
+            STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created Target for External: 0x%p => 0x%p\n", gc.objRef, *trackerTarget);
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;
@@ -1020,6 +1026,7 @@ namespace InteropLibImports
         if (source->PassiveGetSyncBlock() == target->PassiveGetSyncBlock())
             return S_FALSE;
 
+        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Found reference path: 0x%p => 0x%p\n", source, target);
         return runtimeContext->RefCache->AddReferenceFromObjectToObject(source, target);
     }
 }
@@ -1117,6 +1124,7 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
     }
     CONTRACTL_END;
 
+    STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying MOW: 0x%p\n", wrapper);
     InteropLib::Com::DestroyWrapperForObject(wrapper);
 }
 
@@ -1135,6 +1143,7 @@ void ComWrappersNative::DestroyExternalComObjectContext(_In_ void* contextRaw)
     _ASSERTE(!context->IsActive());
 #endif
 
+    STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying EOC: 0x%p\n", contextRaw);
     InteropLib::Com::DestroyWrapperForExternal(contextRaw);
 }
 
@@ -1154,8 +1163,11 @@ void ComWrappersNative::MarkExternalComObjectContextCollected(_In_ void* context
     _ASSERTE(context->IsActive());
     context->MarkCollected();
 
+    bool inCache = context->IsSet(ExternalObjectContext::Flags_InCache);
+    STRESS_LOG2(LF_INTEROP, LL_INFO100, "Mark Collected EOC (In Cache: %d): 0x%p\n", (int)inCache, contextRaw);
+
     // Verify the caller didn't ignore the cache during creation.
-    if (context->IsSet(ExternalObjectContext::Flags_InCache))
+    if (inCache)
     {
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
         cache->Remove(context);
@@ -1203,6 +1215,7 @@ void Interop::OnGCStarted(_In_ int nCondemnedGeneration)
         ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
         if (cache != NULL)
         {
+            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "Begin Reference Tracking\n");
             ExtObjCxtRefCache* refCache = cache->GetRefCache();
 
             // Reset the ref cache
@@ -1247,7 +1260,14 @@ void Interop::OnGCFinished(_In_ int nCondemnedGeneration)
     //
     // See Interop::OnGCStarted()
     if (nCondemnedGeneration >= 2)
-        (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+    {
+        ExtObjCxtCache* cache = ExtObjCxtCache::GetInstanceNoThrow();
+        if (cache != NULL)
+        {
+            (void)InteropLib::Com::EndExternalObjectReferenceTracking();
+            STRESS_LOG0(LF_INTEROP, LL_INFO10000, "End Reference Tracking\n");
+        }
+    }
 
 #endif // FEATURE_COMINTEROP
 }
