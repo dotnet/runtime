@@ -943,7 +943,7 @@ namespace InteropLibImports
                 gc.objRef,
                 trackerTargetFlags);
 
-            STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created Target for External: 0x%p => 0x%p\n", gc.objRef, *trackerTarget);
+            STRESS_LOG2(LF_INTEROP, LL_INFO100, "Created Target for External: 0x%p => 0x%p\n", OBJECTREFToObject(gc.objRef), *trackerTarget);
             GCPROTECT_END();
         }
         END_EXTERNAL_ENTRYPOINT;
@@ -1026,7 +1026,9 @@ namespace InteropLibImports
         if (source->PassiveGetSyncBlock() == target->PassiveGetSyncBlock())
             return S_FALSE;
 
-        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Found reference path: 0x%p => 0x%p\n", source, target);
+        STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Found reference path: 0x%p => 0x%p\n",
+            OBJECTREFToObject(source),
+            OBJECTREFToObject(target));
         return runtimeContext->RefCache->AddReferenceFromObjectToObject(source, target);
     }
 }
