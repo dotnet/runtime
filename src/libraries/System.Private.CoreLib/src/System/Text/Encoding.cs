@@ -1301,9 +1301,9 @@ namespace System.Text
             internal unsafe byte GetNextByte()
             {
                 Debug.Assert(_bytes < _byteEnd, "[EncodingCharBuffer.GetNextByte]Expected more date");
-                if (_bytes >= _byteEnd)
-                    return 0;
-                return *(_bytes++);
+                if (_bytes < _byteEnd)
+                    return *(_bytes++);
+                return 0;
             }
 
             internal unsafe int BytesUsed => (int)(_bytes - _byteStart);
