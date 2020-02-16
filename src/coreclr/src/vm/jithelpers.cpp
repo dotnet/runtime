@@ -3013,6 +3013,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
+    HELPER_METHOD_POLL(); 
 
     CorElementType corElementType = pMT1->GetInternalCorElementType();
     if (corElementType != ELEMENT_TYPE_VALUETYPE &&  corElementType == pMT2->GetInternalCorElementType())
@@ -3029,8 +3030,6 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
     {
         COMPlusThrowInvalidCastException(&objRef, TypeHandle(pMT1));
     }
-
-    HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return result;
@@ -3062,7 +3061,9 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
         return obj->GetData();
     }
 
-    return Unbox_Helper_Framed(pMT1, obj);
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
+    ENDFORBIDGC();
+    return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
 }
 HCIMPLEND
 
