@@ -3004,24 +3004,17 @@ HCIMPLEND
 
 /*************************************************************/
 /* framed Unbox helper that handles enums and full-blown type equivalence */
-NOINLINE HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
+NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
 {
     FCALL_CONTRACT;
 
     LPVOID result = NULL;
-
-    TypeHandle typeHnd(type);
-    // boxable types have method tables
-    _ASSERTE(!typeHnd.IsTypeDesc());
-    MethodTable* pMT1 = typeHnd.AsMethodTable();
     MethodTable* pMT2 = obj->GetMethodTable();
 
     OBJECTREF objRef = ObjectToOBJECTREF(obj);
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
 
-    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
-        (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
-        (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    if (pMT1->GetVerifierCorElementType() == pMT2->GetVerifierCorElementType())
     {
         // we allow enums and their primitive type to be interchangable
         result = objRef->GetData();
@@ -3033,13 +3026,41 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     }
     else
     {
-        COMPlusThrowInvalidCastException(&objRef, TypeHandle(type));
+        COMPlusThrowInvalidCastException(&objRef, TypeHandle(pMT1));
     }
 
     HELPER_METHOD_POLL(); 
     HELPER_METHOD_FRAME_END();
 
     return result;
+}
+HCIMPLEND
+
+/*************************************************************/
+/* Unbox helper that handles enums */
+HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
+
+    MethodTable* pMT2 = obj->GetMethodTable();
+
+    // we allow enums and their primitive type to be interchangable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetVerifierCorElementType() == pMT2->GetVerifierCorElementType() &&
+        g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+    {
+        return obj->GetData();
+    }
+
+    return Unbox_Helper_Framed(pMT1, obj);
 }
 HCIMPLEND
 
