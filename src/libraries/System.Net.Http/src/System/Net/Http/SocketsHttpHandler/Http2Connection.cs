@@ -159,31 +159,29 @@ namespace System.Net.Http
             _ = ProcessIncomingFramesAsync();
         }
 
-        private async ValueTask EnsureIncomingBytesAsync(int minReadBytes)
+        private async ValueTask EnsureIncomingBytesAsync(int bytesNeeded)
         {
-            if (NetEventSource.IsEnabled) Trace($"{nameof(minReadBytes)}={minReadBytes}");
-            int bytesNeeded = minReadBytes - _incomingBuffer.ActiveLength;
-            if (bytesNeeded <= 0)
-            {
-                return;
-            }
+            Debug.Assert(bytesNeeded >= 0);
+            if (NetEventSource.IsEnabled) Trace($"{nameof(bytesNeeded)}={bytesNeeded}");
 
-            _incomingBuffer.EnsureAvailableSpace(bytesNeeded);
-
-            int totalBytesRead = 0;
-            do
+            bytesNeeded -= _incomingBuffer.ActiveLength;
+            if (bytesNeeded > 0)
             {
-                int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory.Slice(totalBytesRead)).ConfigureAwait(false);
-                if (bytesRead == 0)
+                _incomingBuffer.EnsureAvailableSpace(bytesNeeded);
+                do
                 {
-                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, bytesNeeded));
+                    int bytesRead = await _stream.ReadAsync(_incomingBuffer.AvailableMemory).ConfigureAwait(false);
+                    Debug.Assert(bytesRead >= 0);
+                    if (bytesRead == 0)
+                    {
+                        throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, bytesNeeded));
+                    }
+
+                    _incomingBuffer.Commit(bytesRead);
+                    bytesNeeded -= bytesRead;
                 }
-
-                totalBytesRead += bytesRead;
+                while (bytesNeeded > 0);
             }
-            while (totalBytesRead < bytesNeeded);
-
-            _incomingBuffer.Commit(totalBytesRead);
         }
 
         private async Task FlushOutgoingBytesAsync()
