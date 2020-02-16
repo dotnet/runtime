@@ -519,7 +519,8 @@ jobs:
     platforms:
     - Linux_arm
     - Windows_NT_x86
-    - Windows_NT_arm
+    # Coreclr tests failing on arm: https://github.com/dotnet/runtime/issues/32320
+    # - Windows_NT_arm
     - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
