@@ -3015,8 +3015,9 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
     HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
     HELPER_METHOD_POLL(); 
 
-    CorElementType corElementType = pMT1->GetInternalCorElementType();
-    if (corElementType != ELEMENT_TYPE_VALUETYPE &&  corElementType == pMT2->GetInternalCorElementType())
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
         // we allow enums and their primitive type to be interchangable
         result = objRef->GetData();
@@ -3054,9 +3055,10 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 
     // we allow enums and their primitive type to be interchangable.
     // if suspension is requested, defer to the framed helper.
-    CorElementType corElementType = pMT1->GetInternalCorElementType();
-    if (corElementType != ELEMENT_TYPE_VALUETYPE &&  corElementType == pMT2->GetInternalCorElementType() &&
-        g_TrapReturningThreads.LoadWithoutBarrier() == 0)
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads.LoadWithoutBarrier() == 0)
     {
         return obj->GetData();
     }

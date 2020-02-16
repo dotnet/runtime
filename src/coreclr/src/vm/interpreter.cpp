@@ -8695,8 +8695,9 @@ void Interpreter::UnboxAny()
                 }
                 else
                 {
-                    CorElementType corElementType = pMT1->GetInternalCorElementType();
-                    if (corElementType != ELEMENT_TYPE_VALUETYPE &&  corElementType == pMT2->GetInternalCorElementType())
+                    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+                            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+                            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
                     {
                         res = OpStackGet<Object*>(tos)->UnBox();
                     }
