@@ -34,11 +34,9 @@ public:
         EventStoreElem *walk;
         EventStoreElem *next;
 
-        walk = m_Store;
-        while (walk) {
+        for (walk = m_Store; walk; walk = next) {
             next = walk->next;
             delete (walk);
-            walk = next;
         }
     }
 
@@ -58,15 +56,13 @@ public:
 #ifdef _DEBUG
         // See if we have some leakage.
         LONG count = 0;
-        walk = m_Store;
-        while (walk) {
+        for (walk = m_Store; walk; walk = walk->next) {
             count += walk->AvailableEventCount();
-            walk = walk->next;
         }
         // The number of events stored in the pool should be small.
         _ASSERTE (count <= ThreadStore::s_pThreadStore->ThreadCountInEE() * 2 + 10);
 #endif
-        for (walk = m_store; walk; walk = walk->next) {
+        for (walk = m_Store; walk; walk = walk->next) {
             if (walk->StoreHandleForEvent (handle) )
                 return;
             if (walk->next == NULL) {
@@ -152,8 +148,7 @@ private:
         {
             LIMITED_METHOD_CONTRACT;
 
-            int i;
-            for (i = 0; i < EventStoreLength; i++) {
+            for (int i = 0; i < EventStoreLength; i++) {
                 if (hArray[i] != NULL) {
                     CLREvent* handle = hArray[i];
                     hArray[i] = NULL;
