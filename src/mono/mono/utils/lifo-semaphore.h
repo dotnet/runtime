@@ -7,10 +7,10 @@ typedef struct _LifoSemaphore LifoSemaphore;
 typedef struct _LifoSemaphoreWaitEntry LifoSemaphoreWaitEntry;
 
 struct _LifoSemaphoreWaitEntry {
+	int signaled;
 	MonoCoopCond condition;
 	LifoSemaphoreWaitEntry *previous;
 	LifoSemaphoreWaitEntry *next;
-	int signaled;
 };
 
 struct _LifoSemaphore {
