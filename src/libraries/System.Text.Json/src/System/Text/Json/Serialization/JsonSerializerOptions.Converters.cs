@@ -221,7 +221,7 @@ namespace System.Text.Json
                 if (underlyingType != null && converter.CanConvert(underlyingType))
                 {
                     // Allow nullable handling to forward to the underlying type's converter.
-                    return JsonValueConverterNullableFactory.CreateValueConverter(underlyingType, converter);
+                    return NullableConverterFactory.CreateValueConverter(underlyingType, converter);
                 }
 
                 ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(classTypeAttributeIsOn, propertyInfo, typeToConvert);
