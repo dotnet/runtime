@@ -3771,7 +3771,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			InterpMethod *imethod;
 			stackval *retval;
 			// FIXME This assumes a grow-down stack.
 			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
@@ -3782,9 +3781,9 @@ main_loop:
 			ip += 2;
 			--sp;
 
-			imethod = (InterpMethod*)sp->data.p;
-			if (imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (imethod->method, FALSE, FALSE), error);
+			cmethod = (InterpMethod*)sp->data.p;
+			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				cmethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
 				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			}
 
@@ -3809,7 +3808,7 @@ main_loop:
 			/* Non-recursive call */
 			SAVE_INTERP_STATE (frame);
 
-			frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
 			gboolean tracing;
 
@@ -3878,13 +3877,12 @@ main_loop:
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
 			stackval *retval;
 			MonoObject *this_arg;
-			InterpMethod *imethod;
 			is_void = *ip == MINT_VCALLVIRT_FAST;
 			int slot;
 
 			frame->ip = ip;
 
-			imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			slot = (gint16)ip [2];
 			ip += 3;
 			sp->data.p = vt_sp;
@@ -3892,37 +3890,37 @@ main_loop:
 			retval = is_void ? NULL : sp;
 
 			/* decrement by the actual number of args */
-			sp -= imethod->param_count + imethod->hasthis;
+			sp -= cmethod->param_count + cmethod->hasthis;
 
 			this_arg = (MonoObject*)sp->data.p;
 
-			imethod = get_virtual_method_fast (imethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (imethod->method->klass)) {
+			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
+			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
 			}
 
-			InterpMethodCodeType code_type = imethod->code_type;
+			InterpMethodCodeType code_type = cmethod->code_type;
 
 			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
 			          code_type == IMETHOD_CODE_INTERP ||
 			          code_type == IMETHOD_CODE_COMPILED);
 
 			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
-				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
-				if (mono_interp_jit_call_supported (imethod->method, sig))
+				MonoMethodSignature *sig = mono_method_signature_internal (cmethod->method);
+				if (mono_interp_jit_call_supported (cmethod->method, sig))
 					code_type = IMETHOD_CODE_COMPILED;
 				else
 					code_type = IMETHOD_CODE_INTERP;
-				imethod->code_type = code_type;
+				cmethod->code_type = code_type;
 			}
 
 			if (code_type == IMETHOD_CODE_INTERP) {
 				SAVE_INTERP_STATE (frame);
 
 				// FIXME &retval looks wrong
-				frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+				frame = alloc_frame (context, &retval, frame, cmethod, sp, retval);
 
 				gboolean tracing;
 
@@ -3936,7 +3934,7 @@ main_loop:
 				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
-				do_jit_call (sp, vt_sp, context, frame, imethod, error);
+				do_jit_call (sp, vt_sp, context, frame, cmethod, error);
 				if (!is_ok (error)) {
 					MonoException *ex = mono_error_convert_to_exception (error);
 					THROW_EX (ex, ip);
@@ -3944,7 +3942,7 @@ main_loop:
 
 				CHECK_RESUME_STATE (context);
 
-				if (imethod->rtype->type != MONO_TYPE_VOID)
+				if (cmethod->rtype->type != MONO_TYPE_VOID)
 					sp++;
 			}
 
