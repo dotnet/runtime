@@ -3759,8 +3759,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			// FIXME This assumes a grow-down stack.
-			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
 			frame->ip = ip;
 
@@ -3792,27 +3790,7 @@ main_loop:
 				}
 			}
 
-			/* Non-recursive call */
-			SAVE_INTERP_STATE (frame);
-
-			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
-
-			int tracing;
-
-			if (method_entry (context, frame,
-#if DEBUG_INTERP
-				&tracing,
-#endif
-				&ex, NULL)) {
-				if (ex)
-					THROW_EX (ex, NULL);
-				EXCEPTION_CHECKPOINT;
-			}
-
-			clause_args = NULL;
-			INIT_INTERP_STATE (frame, clause_args);
-
-			MINT_IN_BREAK;
+			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			gpointer target_ip = sp [-1].data.p;
@@ -3906,25 +3884,9 @@ main_loop:
 			}
 
 			if (code_type == IMETHOD_CODE_INTERP) {
-				SAVE_INTERP_STATE (frame);
 
-				// FIXME &retval looks wrong
-				frame = alloc_frame (context, &retval, frame, cmethod, sp, retval);
+				goto call;
 
-				int tracing;
-
-				if (method_entry (context, frame,
-#if DEBUG_INTERP
-					&tracing,
-#endif
-					&ex, NULL)) {
-					if (ex)
-						THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-
-				clause_args = NULL;
-				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, cmethod, error);
@@ -4014,8 +3976,9 @@ call:;
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
+#if DEBUG_INTERP
 			int tracing;
-
+#endif
 			if (method_entry (context, frame,
 #if DEBUG_INTERP
 				&tracing,
