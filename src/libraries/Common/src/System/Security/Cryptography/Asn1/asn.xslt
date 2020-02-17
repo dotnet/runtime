@@ -127,6 +127,7 @@ namespace <xsl:value-of select="@namespace" />
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable SA1028 // ignore whitespace warnings for generated code
 using System;<xsl:if test="asn:SequenceOf | asn:SetOf">
 using System.Collections.Generic;</xsl:if>
@@ -134,7 +135,6 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 
-#nullable enable
 namespace <xsl:value-of select="@namespace" />
 {
     [StructLayout(LayoutKind.Sequential)]

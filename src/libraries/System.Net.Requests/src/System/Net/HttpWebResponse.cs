@@ -272,7 +272,7 @@ namespace System.Net
                     _characterSet = string.Empty;
 
                     //first string is the media type
-                    string srchString = contentType.ToLower();
+                    string srchString = contentType.ToLowerInvariant();
 
                     //media subtypes of text type has a default as specified by rfc 2616
                     if (srchString.Trim().StartsWith("text/", StringComparison.Ordinal))

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -22,8 +23,8 @@ namespace Microsoft.Win32.SafeHandles
         // and operations that should go through the Socket to be done via _namedPipeSocket.  We keep the
         // Socket's SafeHandle alive as long as this SafeHandle is alive.
 
-        private Socket _namedPipeSocket;
-        private SafeHandle _namedPipeSocketHandle;
+        private Socket? _namedPipeSocket;
+        private SafeHandle? _namedPipeSocketHandle;
 
         internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
@@ -37,8 +38,8 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(_namedPipeSocketHandle.DangerousGetHandle());
         }
 
-        internal Socket NamedPipeSocket => _namedPipeSocket;
-        internal SafeHandle NamedPipeSocketHandle => _namedPipeSocketHandle;
+        internal Socket? NamedPipeSocket => _namedPipeSocket;
+        internal SafeHandle? NamedPipeSocketHandle => _namedPipeSocketHandle;
 
         protected override void Dispose(bool disposing)
         {

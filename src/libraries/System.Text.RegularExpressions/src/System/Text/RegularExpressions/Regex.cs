@@ -80,7 +80,7 @@ namespace System.Text.RegularExpressions
             if (UseOptionC())
             {
                 // Storing into this Regex's factory will also implicitly update the cache
-                factory = Compile(_code!, options, matchTimeout != InfiniteMatchTimeout);
+                factory = Compile(pattern, _code!, options, matchTimeout != InfiniteMatchTimeout);
                 _code = null;
             }
 #endif
@@ -105,16 +105,7 @@ namespace System.Text.RegularExpressions
 #if DEBUG
             if (IsDebug)
             {
-                Debug.Write($"Pattern:     {pattern}");
-                RegexOptions displayOptions = options & ~RegexOptions.Debug;
-                if (displayOptions != RegexOptions.None)
-                {
-                    Debug.Write($"Options:     {displayOptions}");
-                }
-                if (matchTimeout != InfiniteMatchTimeout)
-                {
-                    Debug.Write($"Timeout:     {matchTimeout}");
-                }
+                Debug.WriteLine($"Pattern: {pattern}    Options: {options & ~RegexOptions.Debug}    Timeout: {(matchTimeout == InfiniteMatchTimeout ? "infinite" : matchTimeout.ToString())}");
             }
 #endif
 
@@ -212,8 +203,8 @@ namespace System.Text.RegularExpressions
         /// instantiating a non-compiled regex.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static RegexRunnerFactory Compile(RegexCode code, RegexOptions options, bool hasTimeout) =>
-            RegexCompiler.Compile(code, options, hasTimeout);
+        private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
+            RegexCompiler.Compile(pattern, code, options, hasTimeout);
 #endif
 
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>

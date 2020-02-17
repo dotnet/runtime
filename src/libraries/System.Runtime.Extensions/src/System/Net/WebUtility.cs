@@ -394,8 +394,8 @@ namespace System.Net
                 else
                 {
                     expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)IntToHex((b >> 4) & 0xf);
-                    expandedBytes[pos++] = (byte)IntToHex(b & 0x0f);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharUpper(b >> 4);
+                    expandedBytes[pos++] = (byte)HexConverter.ToCharUpper(b);
                 }
             }
         }
@@ -404,7 +404,6 @@ namespace System.Net
 
         #region UrlEncode public methods
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         [return: NotNullIfNotNull("value")]
         public static string? UrlEncode(string? value)
         {
@@ -608,7 +607,6 @@ namespace System.Net
         #region UrlDecode public methods
 
 
-        [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
         [return: NotNullIfNotNull("encodedValue")]
         public static string? UrlDecode(string? encodedValue)
         {
@@ -670,16 +668,6 @@ namespace System.Net
             (h >= 'a' && h <= 'f') ? h - 'a' + 10 :
             (h >= 'A' && h <= 'F') ? h - 'A' + 10 :
             -1;
-        }
-
-        private static char IntToHex(int n)
-        {
-            Debug.Assert(n < 0x10);
-
-            if (n <= 9)
-                return (char)(n + (int)'0');
-            else
-                return (char)(n - 10 + (int)'A');
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

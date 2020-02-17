@@ -709,7 +709,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             BlockRange().Remove(node);
             break;
 
-#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM_)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
         case GT_CLS_VAR:
         {
             // Class vars that are the target of an assignment will get rewritten into
@@ -732,7 +732,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             }
         }
         break;
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH
 
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.

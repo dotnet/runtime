@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,9 +12,10 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using ILCompiler.Reflection.ReadyToRun;
+
+using Internal.Runtime;
 
 namespace R2RDump
 {
@@ -26,6 +27,7 @@ namespace R2RDump
         public bool Header { get; set; }
         public bool Disasm { get; set; }
         public bool Naked { get; set; }
+        public bool HideOffsets { get; set; }
 
         public string[] Query { get; set; }
         public string[] Keyword { get; set; }
@@ -37,8 +39,10 @@ namespace R2RDump
         public bool SectionContents { get; set; }
         public bool EntryPoints { get; set; }
         public bool Normalize { get; set; }
+        public bool HideTransitions { get; set; }
         public bool Verbose { get; set; }
         public bool Diff { get; set; }
+        public bool DiffHideSameDisasm { get; set; }
         public bool IgnoreSensitive { get; set; }
 
         public FileInfo[] Reference { get; set; }
@@ -53,16 +57,29 @@ namespace R2RDump
         private readonly static string[] ProbeExtensions = new string[] { ".ni.exe", ".ni.dll", ".exe", ".dll" };
 
         /// <summary>
-        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// Try to locate a (reference) assembly based on an AssemblyRef handle using the list of explicit reference assemblies
         /// and the list of reference paths passed to R2RDump.
         /// </summary>
-        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="metadataReader">Containing metadata reader for the assembly reference handle</param>
+        /// <param name="assemblyReferenceHandle">Handle representing the assembly reference</param>
         /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
         /// <returns></returns>
 
         public MetadataReader FindAssembly(MetadataReader metadataReader, AssemblyReferenceHandle assemblyReferenceHandle, string parentFile)
         {
             string simpleName = metadataReader.GetString(metadataReader.GetAssemblyReference(assemblyReferenceHandle).Name);
+            return FindAssembly(simpleName, parentFile);
+        }
+
+        /// <summary>
+        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// and the list of reference paths passed to R2RDump.
+        /// </summary>
+        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
+        /// <returns></returns>
+        public MetadataReader FindAssembly(string simpleName, string parentFile)
+        {
             foreach (FileInfo refAsm in Reference ?? Enumerable.Empty<FileInfo>())
             {
                 if (Path.GetFileNameWithoutExtension(refAsm.FullName).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
@@ -78,10 +95,16 @@ namespace R2RDump
             {
                 foreach (string extension in ProbeExtensions)
                 {
-                    string probeFile = Path.Combine(refPath, simpleName + extension);
-                    if (File.Exists(probeFile))
+                    try
                     {
-                        return Open(probeFile);
+                        string probeFile = Path.Combine(refPath, simpleName + extension);
+                        if (File.Exists(probeFile))
+                        {
+                            return Open(probeFile);
+                        }
+                    }
+                    catch (BadImageFormatException)
+                    {
                     }
                 }
             }
@@ -97,7 +120,7 @@ namespace R2RDump
 
             if (!peReader.HasMetadata)
             {
-                throw new Exception($"ECMA metadata not found in file '{filename}'");
+                throw new BadImageFormatException($"ECMA metadata not found in file '{filename}'");
             }
 
             return peReader.GetMetadataReader();
@@ -167,13 +190,15 @@ namespace R2RDump
         public DumpOptions Options => _options;
 
         public ReadyToRunReader Reader => _r2r;
+
+        public Disassembler Disassembler => _disassembler;
     }
 
     class R2RDump
     {
         private readonly DumpOptions _options;
-        private readonly Dictionary<ReadyToRunSection.SectionType, bool> _selectedSections = new Dictionary<ReadyToRunSection.SectionType, bool>();
-        private TextWriter _writer;
+        private readonly Dictionary<ReadyToRunSectionType, bool> _selectedSections = new Dictionary<ReadyToRunSectionType, bool>();
+        private readonly TextWriter _writer;
         private Dumper _dumper;
 
         private R2RDump(DumpOptions options)
@@ -186,6 +211,15 @@ namespace R2RDump
                 _options.Unwind = true;
                 _options.GC = true;
                 _options.SectionContents = true;
+            }
+
+            if (_options.Out != null)
+            {
+                _writer = new StreamWriter(_options.Out.FullName);
+            }
+            else
+            {
+                _writer = Console.Out;
             }
         }
 
@@ -391,7 +425,7 @@ namespace R2RDump
         {
             int queryInt;
             bool isNum = ArgStringToInt(query, out queryInt);
-            string typeName = Enum.GetName(typeof(ReadyToRunSection.SectionType), section.Type);
+            string typeName = Enum.GetName(typeof(ReadyToRunSectionType), section.Type);
 
             return (isNum && (int)section.Type == queryInt) || typeName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
         }
@@ -475,11 +509,6 @@ namespace R2RDump
                 }
 
                 Dumper previousDumper = null;
-                TextWriter globalWriter = null;
-                if (_options.Out != null)
-                {
-                    globalWriter = new StreamWriter(_options.Out.FullName);
-                }
 
                 foreach (FileInfo filename in _options.In)
                 {
@@ -498,28 +527,25 @@ namespace R2RDump
                         }
                     }
 
-                    if (!_options.Diff && globalWriter != null)
-                    {
-                        _writer = globalWriter;
-                    }
-                    else
-                    {
-                        string outFile = r2r.Filename + ".r2rdump";
-                        _writer = new StreamWriter(outFile, append: false, encoding: Encoding.ASCII);
-                    }
-                    _dumper = new TextDumper(r2r, _writer, disassembler, _options);
 
                     if (!_options.Diff)
                     {
                         // output the ReadyToRun info
+                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
                         Dump(r2r);
                     }
-                    else if (previousDumper != null)
+                    else
                     {
-                        new R2RDiff(previousDumper, _dumper, globalWriter).Run();
+                        string perFileOutput = filename.FullName + ".common-methods.r2r";
+                        _dumper = new TextDumper(r2r, new StreamWriter(perFileOutput), disassembler, _options);
+                        if (previousDumper != null)
+                        {
+                            new R2RDiff(previousDumper, _dumper, _writer).Run();
+                        }
+                        previousDumper?.Writer?.Flush();
+                        previousDumper = _dumper;
                     }
 
-                    previousDumper = _dumper;
                 }
             }
             catch (Exception e)
@@ -537,8 +563,9 @@ namespace R2RDump
                 {
                     disassembler.Dispose();
                 }
-                // close output stream
-                _writer.Close();
+                // flush output stream
+                _dumper?.Writer?.Flush();
+                _writer?.Flush();
             }
 
             return 0;

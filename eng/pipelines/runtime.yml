@@ -56,6 +56,8 @@ jobs:
     - subset: coreclr
       include:
       - src/libraries/System.Private.CoreLib/*
+      - src/libraries/Native/Unix/System.Globalization.Native/*
+      - src/libraries/Native/Unix/Common/*
       exclude:
       - eng/Version.Details.xml
       - '*.md'
@@ -208,8 +210,8 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
+    - Linux_arm
+    - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
     - Windows_NT_x64
@@ -235,8 +237,8 @@ jobs:
     platforms:
     - OSX_x64
     - Linux_x64
-    # - Linux_arm
-    # - Linux_arm64
+    - Linux_arm
+    - Linux_arm64
     - Linux_musl_x64
     # - Linux_musl_arm64
     - Windows_NT_x64
@@ -244,6 +246,62 @@ jobs:
     # - Windows_NT_arm
     # - Windows_NT_arm64
     jobParameters:
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono LLVM debug
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: debug
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    # - Linux_musl_x64
+    # - Linux_musl_arm64
+    # - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      llvm: true
+      condition: >-
+        or(
+          eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.checkout.outputs['SetPathVars_mono.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# Build Mono LLVM release
+# Only when libraries or mono changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+    runtimeFlavor: mono
+    buildConfig: release
+    platforms:
+    - OSX_x64
+    - Linux_x64
+    # - Linux_arm
+    # - Linux_arm64
+    # - Linux_musl_x64
+    # - Linux_musl_arm64
+    # - Windows_NT_x64
+    # - Windows_NT_x86
+    # - Windows_NT_arm
+    # - Windows_NT_arm64
+    jobParameters:
+      llvm: true
       condition: >-
         or(
           eq(dependencies.checkout.outputs['SetPathVars_libraries.containsChange'], true),
@@ -293,7 +351,6 @@ jobs:
     - ${{ if eq(variables['isFullMatrix'], false) }}:
       - Windows_NT_x86
     jobParameters:
-      framework: netcoreapp
       liveRuntimeBuildConfig: release
       condition: >-
         or(
@@ -311,7 +368,7 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netfx
+      framework: net472
       runTests: true
       testScope: innerloop
       condition: >-
@@ -463,6 +520,7 @@ jobs:
     - Linux_arm
     - Windows_NT_x86
     - Windows_NT_arm
+    - Windows_NT_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -509,7 +567,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -534,7 +591,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -567,7 +623,6 @@ jobs:
     jobParameters:
       isOfficialBuild: false
       isFullMatrix: ${{ variables.isFullMatrix }}
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: release
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -591,7 +646,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -612,7 +666,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
@@ -635,7 +688,6 @@ jobs:
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
-      framework: netcoreapp
       testScope: innerloop
       liveRuntimeBuildConfig: checked
       dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}

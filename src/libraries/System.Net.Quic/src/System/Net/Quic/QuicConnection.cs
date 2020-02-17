@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Quic.Implementations;
+using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,8 @@ namespace System.Net.Quic
     public sealed class QuicConnection : IDisposable
     {
         private readonly QuicConnectionProvider _provider;
+
+        public static bool IsQuicSupported => MsQuicApi.IsQuicSupported;
 
         /// <summary>
         /// Create an outbound QUIC connection.

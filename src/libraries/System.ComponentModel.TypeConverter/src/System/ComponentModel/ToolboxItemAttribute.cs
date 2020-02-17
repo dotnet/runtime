@@ -4,8 +4,6 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods", Scope = "member", Target = "System.ComponentModel.ToolboxItemAttribute.get_ToolboxItemType():System.Type")]
-
 namespace System.ComponentModel
 {
     /// <summary>

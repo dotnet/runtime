@@ -35,23 +35,23 @@
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   --> 
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+    </BinPlaceTargetFramework>
+    <BinPlaceTargetFramework Include="$(BuildConfiguration)">
       <RuntimePath>$(ArtifactsBinDir)ILLinkTrimAssembly/$(BuildConfiguration)/pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
-    </BinPlaceConfiguration>
+    </BinPlaceTargetFramework>
   </ItemGroup>
 
   <Target Name="_SetILLinkTrimAssembly" 
           Condition="'$(ILLinkTrimAssembly)' == ''"
-          DependsOnTargets="GetBinPlaceConfiguration">
+          DependsOnTargets="GetBinPlaceTargetFramework">
     <PropertyGroup>
       <!-- Currently ILLink cannot handle type projections from Windows.winmd, disable if the project references it -->
       <ILLinkTrimAssembly Condition="'%(ReferencePath.FileName)%(ReferencePath.Extension)' == 'Windows.winmd'">false</ILLinkTrimAssembly>

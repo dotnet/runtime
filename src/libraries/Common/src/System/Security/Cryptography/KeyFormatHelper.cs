@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
@@ -233,7 +235,7 @@ namespace System.Security.Cryptography
 
                 if (innerRead != decryptedMemory.Length)
                 {
-                    ret = default;
+                    ret = default!;
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
@@ -329,9 +331,9 @@ namespace System.Security.Cryptography
                 out string encryptionAlgorithmOid,
                 out bool isPkcs12);
 
-            byte[] encryptedRent = null;
+            byte[]? encryptedRent = null;
             Span<byte> encryptedSpan = default;
-            AsnWriter writer = null;
+            AsnWriter? writer = null;
 
             try
             {
@@ -385,7 +387,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(encryptedSpan);
-                CryptoPool.Return(encryptedRent, clearSize: 0);
+                CryptoPool.Return(encryptedRent!, clearSize: 0);
 
                 writer?.Dispose();
                 cipher.Dispose();
@@ -485,7 +487,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
 
@@ -524,7 +526,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                CryptoPool.Return(decrypted.Array, clearSize: 0);
+                CryptoPool.Return(decrypted.Array!, clearSize: 0);
             }
         }
     }

@@ -416,7 +416,7 @@ struct BasicBlock : private LIR::Range
 #define BBF_HAS_NEWARRAY        0x00400000 // BB contains 'new' of an array
 #define BBF_HAS_NEWOBJ          0x00800000 // BB contains 'new' of an object type.
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #define BBF_FINALLY_TARGET      0x01000000 // BB is the target of a finally return: where a finally will return during
                                            // non-exceptional flow. Because the ARM calling sequence for calling a
@@ -425,7 +425,7 @@ struct BasicBlock : private LIR::Range
                                            // generate correct code at the finally target, to allow for proper stack
                                            // unwind from within a non-exceptional call to a finally.
 
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #define BBF_BACKWARD_JUMP       0x02000000 // BB is surrounded by a backward jump/switch arc
 #define BBF_RETLESS_CALL        0x04000000 // BBJ_CALLFINALLY that will never return (and therefore, won't need a paired
@@ -465,7 +465,7 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_COMPACT_UPD                                                                                                \
     (BBF_CHANGED | BBF_GC_SAFE_POINT | BBF_HAS_JMP | BBF_NEEDS_GCPOLL | BBF_HAS_IDX_LEN | BBF_BACKWARD_JUMP |          \
-     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK)
+     BBF_HAS_NEWARRAY | BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_VTABREF)
 
 // Flags a block should not have had before it is split.
 
@@ -488,7 +488,8 @@ struct BasicBlock : private LIR::Range
 
 #define BBF_SPLIT_GAINED                                                                                               \
     (BBF_DONT_REMOVE | BBF_HAS_LABEL | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_NEWARRAY |          \
-     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK)
+     BBF_PROF_WEIGHT | BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK |             \
+     BBF_HAS_VTABREF)
 
 #ifndef __GNUC__ // GCC doesn't like C_ASSERT at global scope
     static_assert_no_msg((BBF_SPLIT_NONEXIST & BBF_SPLIT_LOST) == 0);
@@ -965,9 +966,9 @@ struct BasicBlock : private LIR::Range
 
     void* bbEmitCookie;
 
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     void* bbUnwindNopEmitCookie;
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef VERIFIER
     stackDesc bbStackIn;  // stack descriptor for  input

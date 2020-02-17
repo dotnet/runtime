@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mono;
-#if BIT64
+#if TARGET_64BIT
 using nuint = System.UInt64;
 #else
 using nuint = System.UInt32;
@@ -418,26 +418,6 @@ namespace System
 			int[] ind = {index1, index2, index3};
 			SetValue (value, ind);
 		}
-
-		static bool TrySZBinarySearch (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
-		{
-			retVal = default;
-			return false;
-		}
-
-		static bool TrySZIndexOf (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
-		{
-			retVal = default;
-			return false;
-		}
-
-		static bool TrySZLastIndexOf (Array sourceArray, int sourceIndex, int count, object? value, out int retVal)
-		{
-			retVal = default;
-			return false;
-		}
-
-		static bool TrySZReverse (Array array, int index, int count) => false;
 
 		public int GetUpperBound (int dimension)
 		{

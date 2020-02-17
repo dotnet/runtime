@@ -80,31 +80,17 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-#if NETSTANDARD2_0
-            Span<SecurityBuffer> inSecurityBufferSpan = new SecurityBuffer[2];
-#else
-            TwoSecurityBuffers twoSecurityBuffers = default;
-            Span<SecurityBuffer> inSecurityBufferSpan = MemoryMarshal.CreateSpan(ref twoSecurityBuffers._item0, 2);
-#endif
 
-            int inSecurityBufferSpanLength = 0;
-            if (incomingBlob != null && channelBinding != null)
+            InputSecurityBuffers inputBuffers = default;
+            if (incomingBlob != null)
             {
-                inSecurityBufferSpan[0] = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
-                inSecurityBufferSpan[1] = new SecurityBuffer(channelBinding);
-                inSecurityBufferSpanLength = 2;
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
-            else if (incomingBlob != null)
+
+            if (channelBinding != null)
             {
-                inSecurityBufferSpan[0] = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
-                inSecurityBufferSpanLength = 1;
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
             }
-            else if (channelBinding != null)
-            {
-                inSecurityBufferSpan[0] = new SecurityBuffer(channelBinding);
-                inSecurityBufferSpanLength = 1;
-            }
-            inSecurityBufferSpan = inSecurityBufferSpan.Slice(0, inSecurityBufferSpanLength);
 
             var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -118,7 +104,7 @@ namespace System.Net.Security
                 spn,
                 ContextFlagsAdapterPal.GetInteropFromContextFlagsPal(requestedContextFlags),
                 Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                inSecurityBufferSpan,
+                inputBuffers,
                 ref outSecurityBuffer,
                 ref outContextFlags);
             securityContext = sslContext;
@@ -151,31 +137,16 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-#if NETSTANDARD2_0
-            Span<SecurityBuffer> inSecurityBufferSpan = new SecurityBuffer[2];
-#else
-            TwoSecurityBuffers twoSecurityBuffers = default;
-            Span<SecurityBuffer> inSecurityBufferSpan = MemoryMarshal.CreateSpan(ref twoSecurityBuffers._item0, 2);
-#endif
+            InputSecurityBuffers inputBuffers = default;
+            if (incomingBlob != null)
+            {
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
+            }
 
-            int inSecurityBufferSpanLength = 0;
-            if (incomingBlob != null && channelBinding != null)
+            if (channelBinding != null)
             {
-                inSecurityBufferSpan[0] = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
-                inSecurityBufferSpan[1] = new SecurityBuffer(channelBinding);
-                inSecurityBufferSpanLength = 2;
+                inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
             }
-            else if (incomingBlob != null)
-            {
-                inSecurityBufferSpan[0] = new SecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN);
-                inSecurityBufferSpanLength = 1;
-            }
-            else if (channelBinding != null)
-            {
-                inSecurityBufferSpan[0] = new SecurityBuffer(channelBinding);
-                inSecurityBufferSpanLength = 1;
-            }
-            inSecurityBufferSpan = inSecurityBufferSpan.Slice(0, inSecurityBufferSpanLength);
 
             var outSecurityBuffer = new SecurityBuffer(resultBlob, SecurityBufferType.SECBUFFER_TOKEN);
 
@@ -188,7 +159,7 @@ namespace System.Net.Security
                 ref sslContext,
                 ContextFlagsAdapterPal.GetInteropFromContextFlagsPal(requestedContextFlags),
                 Interop.SspiCli.Endianness.SECURITY_NETWORK_DREP,
-                inSecurityBufferSpan,
+                inputBuffers,
                 ref outSecurityBuffer,
                 ref outContextFlags);
 

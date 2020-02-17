@@ -95,6 +95,8 @@ typedef struct {
 	LLVMValueRef unbox_tramp_indexes;
 	LLVMValueRef unbox_trampolines;
 	LLVMValueRef gc_poll_cold_wrapper;
+	LLVMValueRef info_var;
+	LLVMTypeRef *info_var_eltypes;
 	int max_inited_idx, max_method_idx;
 	gboolean has_jitted_code;
 	gboolean static_link;
@@ -393,6 +395,10 @@ typedef enum {
 	INTRINS_SSE_PTESTZ,
 	INTRINS_SSE_INSERTPS,
 	INTRINS_SSE_PSHUFB,
+	INTRINS_SSE_SADD_SATI8,
+	INTRINS_SSE_UADD_SATI8,
+	INTRINS_SSE_SADD_SATI16,
+	INTRINS_SSE_UADD_SATI16,
 #endif
 #ifdef TARGET_WASM
 	INTRINS_WASM_ANYTRUE_V16,
@@ -423,6 +429,7 @@ static LLVMValueRef get_intrins_from_module (LLVMModuleRef lmodule, int id);
 static void llvm_jit_finalize_method (EmitContext *ctx);
 static void mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod *call_method, LLVMValueRef *args, int num_params);
 static void mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule *module);
+static void create_aot_info_var (MonoLLVMModule *module);
 
 static inline void
 set_failure (EmitContext *ctx, const char *message)
@@ -640,6 +647,12 @@ primitive_type_to_llvm_type (MonoTypeEnum type)
 	default:
 		return NULL;
 	}
+}
+
+static MonoTypeEnum
+inst_c1_type (const MonoInst *ins)
+{
+	return (MonoTypeEnum)ins->inst_c1;
 }
 
 /*
@@ -1783,6 +1796,24 @@ LLVMFunctionType3 (LLVMTypeRef ReturnType,
 }
 
 static G_GNUC_UNUSED LLVMTypeRef
+LLVMFunctionType4 (LLVMTypeRef ReturnType,
+				   LLVMTypeRef ParamType1,
+				   LLVMTypeRef ParamType2,
+				   LLVMTypeRef ParamType3,
+				   LLVMTypeRef ParamType4,
+				   int IsVarArg)
+{
+	LLVMTypeRef param_types [4];
+
+	param_types [0] = ParamType1;
+	param_types [1] = ParamType2;
+	param_types [2] = ParamType3;
+	param_types [3] = ParamType4;
+
+	return LLVMFunctionType (ReturnType, param_types, 4, IsVarArg);
+}
+
+static G_GNUC_UNUSED LLVMTypeRef
 LLVMFunctionType5 (LLVMTypeRef ReturnType,
 				   LLVMTypeRef ParamType1,
 				   LLVMTypeRef ParamType2,
@@ -1961,25 +1992,6 @@ typedef struct {
 	LLVMTypeRef type;
 } CallSite;
 
-static gboolean
-method_is_direct_callable (MonoMethod *method)
-{
-	if (method->wrapper_type == MONO_WRAPPER_ALLOC)
-		return TRUE;
-	if (method->string_ctor)
-		return FALSE;
-	if (method->wrapper_type)
-		return FALSE;
-	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
-		return FALSE;
-	/* Can't enable this as the callee might fail llvm compilation */
-	/*
-	if (!method->is_inflated && (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_PUBLIC) && (method->flags & METHOD_ATTRIBUTE_PUBLIC))
-		return TRUE;
-	*/
-	return FALSE;
-}
-
 static LLVMValueRef
 get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
@@ -1997,7 +2009,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			}
 		} else if (type == MONO_PATCH_INFO_METHOD) {
 			MonoMethod *method = (MonoMethod*)data;
-			if (m_class_get_image (method->klass) != ctx->module->assembly->image && method_is_direct_callable (method))
+			if (m_class_get_image (method->klass) != ctx->module->assembly->image && mono_aot_is_externally_callable (method))
 				callee_name = mono_aot_get_mangled_method_name (method);
 		}
 	}
@@ -2106,6 +2118,49 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 
 	if (ctx->llvm_only)
 		return get_callee_llvmonly (ctx, llvm_sig, type, data);
+
+	callee_name = NULL;
+	/* Cross-assembly direct calls */
+	if (type == MONO_PATCH_INFO_METHOD) {
+		MonoMethod *cmethod = (MonoMethod*)data;
+
+		if (m_class_get_image (cmethod->klass) != ctx->module->assembly->image) {
+			MonoJumpInfo tmp_ji;
+
+			memset (&tmp_ji, 0, sizeof (MonoJumpInfo));
+			tmp_ji.type = type;
+			tmp_ji.data.target = data;
+			if (mono_aot_is_direct_callable (&tmp_ji)) {
+				/*
+				 * This will add a reference to cmethod's image so it will
+				 * be loaded when the current AOT image is loaded, so
+				 * the GOT slots used by the init method code are initialized.
+				 */
+				tmp_ji.type = MONO_PATCH_INFO_IMAGE;
+				tmp_ji.data.image = m_class_get_image (cmethod->klass);
+				ji = mono_aot_patch_info_dup (&tmp_ji);
+				mono_aot_get_got_offset (ji);
+
+				callee_name = mono_aot_get_mangled_method_name (cmethod);
+
+				callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->direct_callables, callee_name);
+				if (!callee) {
+					callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
+
+					LLVMSetLinkage (callee, LLVMExternalLinkage);
+
+					g_hash_table_insert (ctx->module->direct_callables, callee_name, callee);
+				} else {
+					/* LLVMTypeRef's are uniqued */
+					if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
+						callee = LLVMConstBitCast (callee, LLVMPointerType (llvm_sig, 0));
+
+					g_free (callee_name);
+				}
+				return callee;
+			}
+		}
+	}
 
 	callee_name = mono_aot_get_plt_symbol (type, data);
 	if (!callee_name)
@@ -3009,21 +3064,21 @@ static LLVMValueRef
 emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 {
 	LLVMModuleRef lmodule = module->lmodule;
-	LLVMValueRef func, indexes [2], got_entry_addr, args [16], callee;
-	LLVMBasicBlockRef entry_bb;
+	LLVMValueRef func, indexes [2], got_entry_addr, args [16], callee, inited_var, cmp;
+	LLVMBasicBlockRef entry_bb, inited_bb, notinited_bb;
 	LLVMBuilderRef builder;
 	LLVMTypeRef sig;
 	MonoJumpInfo *ji;
 	int got_offset;
 	const char *wrapper_name = mono_marshal_get_aot_init_wrapper_name (subtype);
-	char *name = g_strdup_printf ("%s%s", module->global_prefix, wrapper_name);
+	char *name = g_strdup_printf ("%s_%s", module->global_prefix, wrapper_name);
 	MonoJitICallId icall_id = MONO_JIT_ICALL_ZeroIsReserved;
 
 	switch (subtype) {
 	case AOT_INIT_METHOD:
 		icall_id = MONO_JIT_ICALL_mini_llvm_init_method;
 		func = LLVMAddFunction (lmodule, name, LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE));
-		sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), LLVMInt32Type (), FALSE);
+		sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), FALSE);
 		break;
 	case AOT_INIT_METHOD_GSHARED_MRGCTX:
 		icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_mrgctx; // Deliberate fall-through
@@ -3032,12 +3087,12 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 		if (!icall_id)
 			icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_vtable;
 		func = LLVMAddFunction (lmodule, name, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), IntPtrType (), FALSE));
-		sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), LLVMInt32Type (), IntPtrType (), FALSE);
+		sig = LLVMFunctionType4 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), IntPtrType (), FALSE);
 		break;
 	case AOT_INIT_METHOD_GSHARED_THIS:
 		icall_id = MONO_JIT_ICALL_mini_llvm_init_gshared_method_this;
 		func = LLVMAddFunction (lmodule, name, LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), ObjRefType (), FALSE));
-		sig = LLVMFunctionType3 (LLVMVoidType (), IntPtrType (), LLVMInt32Type (), ObjRefType (), FALSE);
+		sig = LLVMFunctionType4 (LLVMVoidType (), IntPtrType (), IntPtrType (), LLVMInt32Type (), ObjRefType (), FALSE);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3051,8 +3106,23 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 	set_cold_cconv (func);
 
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
+
 	builder = LLVMCreateBuilder ();
 	LLVMPositionBuilderAtEnd (builder, entry_bb);
+
+	/* Check for is_inited here as well, since this can be called from JITted code which might not check it */
+	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+	indexes [1] = LLVMGetParam (func, 0);
+	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, module->inited_var, indexes, 2, ""), "is_inited");
+
+	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
+
+	inited_bb = LLVMAppendBasicBlock (func, "INITED");
+	notinited_bb = LLVMAppendBasicBlock (func, "NOT_INITED");
+
+	LLVMBuildCondBr (builder, cmp, notinited_bb, inited_bb);
+
+	LLVMPositionBuilderAtEnd (builder, notinited_bb);
 
 	/* get_aotconst */
 	ji = g_new0 (MonoJumpInfo, 1);
@@ -3063,10 +3133,11 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), got_offset, FALSE);
 	got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
-	args [0] = LLVMBuildPtrToInt (builder, LLVMBuildLoad (builder, got_entry_addr, ""), IntPtrType (), "");
-	args [1] = LLVMGetParam (func, 0);
+	args [0] = LLVMBuildPtrToInt (builder, module->info_var, IntPtrType (), "");
+	args [1] = LLVMBuildPtrToInt (builder, LLVMBuildLoad (builder, got_entry_addr, ""), IntPtrType (), "");
+	args [2] = LLVMGetParam (func, 0);
 	if (subtype)
-		args [2] = LLVMGetParam (func, 1);
+		args [3] = LLVMGetParam (func, 1);
 
 	ji = g_new0 (MonoJumpInfo, 1);
 	ji->type = MONO_PATCH_INFO_JIT_ICALL_ID;
@@ -3086,6 +3157,9 @@ emit_init_icall_wrapper (MonoLLVMModule *module, MonoAotInitSubtype subtype)
 	indexes [1] = LLVMGetParam (func, 0);
 	LLVMBuildStore (builder, LLVMConstInt (LLVMInt8Type (), 1, FALSE), LLVMBuildGEP (builder, module->inited_var, indexes, 2, ""));
 
+	LLVMBuildBr (builder, inited_bb);
+
+	LLVMPositionBuilderAtEnd (builder, inited_bb);
 	LLVMBuildRetVoid (builder);
 
 	LLVMVerifyFunction(func, LLVMAbortProcessAction);
@@ -3333,12 +3407,9 @@ emit_init_method (EmitContext *ctx)
 	indexes [1] = LLVMConstInt (LLVMInt32Type (), cfg->method_index, FALSE);
 	inited_var = LLVMBuildLoad (builder, LLVMBuildGEP (builder, ctx->module->inited_var, indexes, 2, ""), "is_inited");
 
-	//WASM doesn't support the "llvm.expect.i8" intrinsic
-#ifndef TARGET_WASM
 	args [0] = inited_var;
 	args [1] = LLVMConstInt (LLVMInt8Type (), 1, FALSE);
 	inited_var = LLVMBuildCall (ctx->builder, get_intrins (ctx, INTRINS_EXPECT_I8), args, 2, "");
-#endif
 
 	cmp = LLVMBuildICmp (builder, LLVMIntEQ, inited_var, LLVMConstInt (LLVMTypeOf (inited_var), 0, FALSE), "");
 
@@ -3697,15 +3768,10 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	 * it needs to continue normally, or return back to the exception handling system.
 	 */
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
-		int clause_index;
 		char name [128];
 
 		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
 			continue;
-
-		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
-		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
-		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
 
 		if (bb->in_scount == 0) {
 			LLVMValueRef val;
@@ -3720,14 +3786,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			if (!ctx->ex_var)
 				ctx->ex_var = LLVMBuildAlloca (builder, ObjRefType (), "exvar");
 		}
-
-		/*
-		 * Create a new bblock which CALL_HANDLER/landing pads can branch to, because branching to the
-		 * LLVM bblock containing a landing pad causes problems for the
-		 * LLVM optimizer passes.
-		 */
-		sprintf (name, "BB%d_CALL_HANDLER_TARGET", bb->block_num);
-		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
 	}
 	ctx->builder = old_builder;
 }
@@ -7524,7 +7582,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		}
 
 		case OP_SSE_LOADU: {
-			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (ins->inst_c1), 0));
+			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
 			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_simd_type (ins->inst_c1), 0), "");
 			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
@@ -7609,6 +7667,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 
+		case OP_SSE2_ADDS: {
+			gint32 intrinsicId = 0;
+			if (ins->inst_c1 == MONO_TYPE_I1)
+				intrinsicId = INTRINS_SSE_SADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_U1)
+				intrinsicId = INTRINS_SSE_UADD_SATI8;
+			else if (ins->inst_c1 == MONO_TYPE_I2)
+				intrinsicId = INTRINS_SSE_SADD_SATI16;
+			else if (ins->inst_c1 == MONO_TYPE_U2)
+				intrinsicId = INTRINS_SSE_UADD_SATI16;
+			else
+				g_assert_not_reached ();
+
+			LLVMValueRef args [2];
+			args [0] = convert (ctx, lhs, type_to_simd_type (ins->inst_c1));
+			args [1] = convert (ctx, rhs, type_to_simd_type (ins->inst_c1));
+			values [ins->dreg] = convert (ctx, 
+				LLVMBuildCall (builder, get_intrins (ctx, intrinsicId), args, 2, dname),
+				type_to_simd_type (ins->inst_c1));
+			break;
+		}
+
 		case OP_SSE2_PACKUS: {
 			LLVMValueRef args [2];
 			args [0] = convert (ctx, lhs, type_to_simd_type (MONO_TYPE_I2));
@@ -7643,7 +7723,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_CREATE_SCALAR_UNSAFE: {
 			values [ins->dreg] = LLVMBuildInsertElement (builder, 
 				LLVMGetUndef (simd_class_to_llvm_type (ctx, ins->klass)), 
-				convert (ctx, lhs, primitive_type_to_llvm_type (ins->inst_c1)),
+				convert (ctx, lhs, primitive_type_to_llvm_type (inst_c1_type (ins))),
 				LLVMConstInt (LLVMInt32Type (), 0, FALSE), "");
 			break;
 		}
@@ -7681,7 +7761,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				// other overloads are implemented with `insertelement`
 				values [ins->dreg] = LLVMBuildInsertElement (builder, 
 					values [ins->sreg1], 
-					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (ins->inst_c1)), 
+					convert (ctx, values [ins->sreg2], primitive_type_to_llvm_type (inst_c1_type (ins))),
 					convert (ctx, values [ins->sreg3], LLVMInt8Type ()), dname);
 			}
 			break;
@@ -8281,14 +8361,6 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx);
 }
 
-static gboolean
-is_externally_callable (EmitContext *ctx, MonoMethod *method)
-{
-	if (ctx->module->llvm_only && ctx->module->static_link && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method_is_direct_callable (method)))
-		return TRUE;
-	return FALSE;
-}
-
 /*
  * mono_llvm_emit_method:
  *
@@ -8343,7 +8415,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
  	if (cfg->compile_aot) {
 		ctx->module = &aot_module;
 
-		if (is_externally_callable (ctx, cfg->method))
+		if (mono_aot_is_externally_callable (cfg->method))
 			method_name = mono_aot_get_mangled_method_name (cfg->method);
 		else
 			method_name = mono_aot_get_method_name (cfg);
@@ -8425,6 +8497,7 @@ emit_method_inner (EmitContext *ctx)
 	LLVMValueRef *values = ctx->values;
 	int i, max_block_num, bb_index;
 	gboolean last = FALSE;
+	gboolean llvmonly_fail = FALSE;
 	LLVMCallInfo *linfo;
 	LLVMModuleRef lmodule = ctx->lmodule;
 	BBInfo *bblocks;
@@ -8477,7 +8550,7 @@ emit_method_inner (EmitContext *ctx)
 			ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
 
 			const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
-			ctx->method_name = g_strdup_printf ("%s%s", ctx->module->global_prefix, init_name);
+			ctx->method_name = g_strdup_printf ("%s_%s", ctx->module->global_prefix, init_name);
 			ctx->cfg->asm_symbol = g_strdup (ctx->method_name);
 
 			if (!cfg->llvm_only && ctx->module->external_symbols) {
@@ -8563,7 +8636,7 @@ emit_method_inner (EmitContext *ctx)
 		mono_llvm_add_func_attr_nv (method, "no-frame-pointer-elim", "true");
 
 	if (cfg->compile_aot) {
-		if (is_externally_callable (ctx, cfg->method)) {
+		if (mono_aot_is_externally_callable (cfg->method)) {
 			LLVMSetLinkage (method, LLVMExternalLinkage);
 		} else {
 			LLVMSetLinkage (method, LLVMInternalLinkage);
@@ -8591,8 +8664,14 @@ emit_method_inner (EmitContext *ctx)
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
-		    set_failure (ctx, "non-finally/catch/fault clause.");
-			return;
+			if (cfg->llvm_only) {
+				// FIXME: Treat unhandled opcodes like __arglist the same way
+				// It would require deleting the already emitted code
+				llvmonly_fail = TRUE;
+			} else {
+				set_failure (ctx, "non-finally/catch/fault clause.");
+				return;
+			}
 		}
 	}
 	if (header->num_clauses || (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) || cfg->no_inline)
@@ -8787,6 +8866,33 @@ emit_method_inner (EmitContext *ctx)
 	LLVMPositionBuilderAtEnd (entry_builder, entry_bb);
 	emit_entry_bb (ctx, entry_builder);
 
+	if (llvmonly_fail)
+		/*
+		 * In llvmonly mode, we want to emit an llvm method for every method even if it fails to compile,
+		 * so direct calls can be made from outside the assembly.
+		 */
+		goto after_codegen_1;
+
+	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		int clause_index;
+		char name [128];
+
+		if (!(bb->region != -1 && (bb->flags & BB_EXCEPTION_HANDLER)))
+			continue;
+
+		clause_index = MONO_REGION_CLAUSE_INDEX (bb->region);
+		g_hash_table_insert (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)), bb);
+		g_hash_table_insert (ctx->clause_to_handler, GINT_TO_POINTER (clause_index), bb);
+
+		/*
+		 * Create a new bblock which CALL_HANDLER/landing pads can branch to, because branching to the
+		 * LLVM bblock containing a landing pad causes problems for the
+		 * LLVM optimizer passes.
+		 */
+		sprintf (name, "BB%d_CALL_HANDLER_TARGET", bb->block_num);
+		ctx->bblocks [bb->block_num].call_handler_target_bb = LLVMAppendBasicBlock (ctx->lmethod, name);
+	}
+
 	// Make landing pads first
 	ctx->exc_meta = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 
@@ -8906,6 +9012,24 @@ emit_method_inner (EmitContext *ctx)
 
 	ctx->module->max_method_idx = MAX (ctx->module->max_method_idx, cfg->method_index);
 
+after_codegen_1:
+
+	if (llvmonly_fail) {
+		/*
+		 * FIXME: Maybe fallback to interpreter
+		 */
+		static LLVMTypeRef sig;
+
+		ctx->builder = create_builder (ctx);
+		LLVMPositionBuilderAtEnd (ctx->builder, ctx->inited_bb);
+
+		if (!sig)
+			sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+		LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_missing_method_exception));
+		LLVMBuildCall (ctx->builder, callee, NULL, 0, "");
+		LLVMBuildUnreachable (ctx->builder);
+	}
+
 	/* Initialize the method if needed */
 	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
 		// FIXME: Add more shared got entries
@@ -8947,7 +9071,6 @@ emit_method_inner (EmitContext *ctx)
 
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
-
 
 after_codegen:
 	if (cfg->llvm_only) {
@@ -9297,6 +9420,18 @@ static IntrinsicDesc intrinsics[] = {
 	{INTRINS_SSE_ROUNDPD, "llvm.x86.sse41.round.pd"},
 	{INTRINS_SSE_PTESTZ, "llvm.x86.sse41.ptestz"},
 	{INTRINS_SSE_INSERTPS, "llvm.x86.sse41.insertps"},
+#if LLVM_API_VERSION >= 800
+	// these intrinsics were renamed in LLVM 8
+	{INTRINS_SSE_SADD_SATI8, "llvm.sadd.sat.v16i8"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.uadd.sat.v16i8"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.sadd.sat.v8i16"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.uadd.sat.v8i16"},
+#else
+	{INTRINS_SSE_SADD_SATI8, "llvm.x86.sse2.padds.b"},
+	{INTRINS_SSE_UADD_SATI8, "llvm.x86.sse2.paddus.b"},
+	{INTRINS_SSE_SADD_SATI16, "llvm.x86.sse2.padds.w"},
+	{INTRINS_SSE_UADD_SATI16, "llvm.x86.sse2.paddus.w"},
+#endif
 #endif
 #ifdef TARGET_WASM
 	{INTRINS_WASM_ANYTRUE_V16, "llvm.wasm.anytrue.v16i8"},
@@ -9594,6 +9729,20 @@ add_intrinsic (LLVMModuleRef module, int id)
 		ret_type = type_to_simd_type (MONO_TYPE_I2);
 		arg_types [0] = type_to_simd_type (MONO_TYPE_I4);
 		arg_types [1] = type_to_simd_type (MONO_TYPE_I4);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI8:
+	case INTRINS_SSE_UADD_SATI8:
+		ret_type = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I1);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I1);
+		AddFunc (module, name, ret_type, arg_types, 2);
+		break;
+	case INTRINS_SSE_SADD_SATI16:
+	case INTRINS_SSE_UADD_SATI16:
+		ret_type = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [0] = type_to_simd_type (MONO_TYPE_I2);
+		arg_types [1] = type_to_simd_type (MONO_TYPE_I2);
 		AddFunc (module, name, ret_type, arg_types, 2);
 		break;
 		/* SSE Binary ops */
@@ -9977,6 +10126,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->inited_var = LLVMAddGlobal (aot_module.lmodule, inited_type, "mono_inited_tmp");
 	LLVMSetInitializer (module->inited_var, LLVMConstNull (inited_type));
 
+	create_aot_info_var (module);
 
 	emit_gc_safepoint_poll (module, module->lmodule, NULL);
 
@@ -10178,22 +10328,19 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 	g_free (s);
 	return v;
 }
+#define FILE_INFO_NFIELDS (2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 22 + 5)
 
 static void
-emit_aot_file_info (MonoLLVMModule *module)
+create_aot_info_var (MonoLLVMModule *module)
 {
 	LLVMTypeRef file_info_type;
-	LLVMTypeRef *eltypes, eltype;
+	LLVMTypeRef *eltypes;
 	LLVMValueRef info_var;
-	LLVMValueRef *fields;
 	int i, nfields, tindex;
-	MonoAotFileInfo *info;
 	LLVMModuleRef lmodule = module->lmodule;
 
-	info = &module->aot_info;
-
 	/* Create an LLVM type to represent MonoAotFileInfo */
-	nfields = 2 + MONO_AOT_FILE_INFO_NUM_SYMBOLS + 22 + 5;
+	nfields = FILE_INFO_NFIELDS;
 	eltypes = g_new (LLVMTypeRef, nfields);
 	tindex = 0;
 	eltypes [tindex ++] = LLVMInt32Type ();
@@ -10214,6 +10361,26 @@ emit_aot_file_info (MonoLLVMModule *module)
 	LLVMStructSetBody (file_info_type, eltypes, nfields, FALSE);
 
 	info_var = LLVMAddGlobal (lmodule, file_info_type, "mono_aot_file_info");
+
+	module->info_var = info_var;
+	module->info_var_eltypes = eltypes;
+}
+
+static void
+emit_aot_file_info (MonoLLVMModule *module)
+{
+	LLVMTypeRef *eltypes, eltype;
+	LLVMValueRef info_var;
+	LLVMValueRef *fields;
+	int i, nfields, tindex;
+	MonoAotFileInfo *info;
+	LLVMModuleRef lmodule = module->lmodule;
+
+	info = &module->aot_info;
+	info_var = module->info_var;
+	eltypes = module->info_var_eltypes;
+	nfields = FILE_INFO_NFIELDS;
+
 	if (module->static_link) {
 		LLVMSetVisibility (info_var, LLVMHiddenVisibility);
 		LLVMSetLinkage (info_var, LLVMInternalLinkage);
@@ -10362,7 +10529,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = llvm_array_from_bytes (info->aotid, 16);
 	g_assert (tindex == nfields);
 
-	LLVMSetInitializer (info_var, LLVMConstNamedStruct (file_info_type, fields, nfields));
+	LLVMSetInitializer (info_var, LLVMConstNamedStruct (LLVMGetElementType (LLVMTypeOf (info_var)), fields, nfields));
 
 	if (module->static_link) {
 		char *s, *p;

@@ -22,6 +22,7 @@ namespace System.Tests
     public partial class StringTests
     {
         private const string SoftHyphen = "\u00AD";
+        private const string ZeroWidthJoiner = "\u200D"; // weightless in both ICU and NLS
         private static readonly char[] s_whiteSpaceCharacters = { '\u0009', '\u000a', '\u000b', '\u000c', '\u000d', '\u0020', '\u0085', '\u00a0', '\u1680' };
 
         [Theory]

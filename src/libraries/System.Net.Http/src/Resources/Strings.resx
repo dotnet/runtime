@@ -223,7 +223,7 @@
     <value>The 'q' value is invalid: '{0}'.</value>
   </data>
   <data name="net_http_log_headers_wrong_email_format" xml:space="preserve">
-    <value>Value '{0}' is not a valid email address. Error: {1}</value>
+    <value>Value '{0}' is not a valid email address</value>
   </data>
   <data name="net_http_handler_not_assigned" xml:space="preserve">
     <value>The inner handler has not been assigned.</value>

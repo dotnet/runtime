@@ -22,6 +22,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotEqual(expected, JsonSerializer.Serialize(inputString));
         }
 
+        // todo: move this to object tests; it is not a value test.
         // https://github.com/dotnet/corefx/issues/40979
         [Fact]
         public static void EscapingShouldntStackOverflow_40979()

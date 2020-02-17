@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,9 +19,20 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         private unsafe MsQuicApi()
         {
-            QuicExceptionHelpers.ThrowIfFailed(
-                Interop.MsQuic.MsQuicOpen(version: 1, out MsQuicNativeMethods.NativeApi* registration),
-                "Could not open MsQuic.");
+            MsQuicNativeMethods.NativeApi* registration;
+
+            try
+            {
+                uint status = Interop.MsQuic.MsQuicOpen(version: 1, out registration);
+                if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+                {
+                    throw new NotSupportedException(SR.net_quic_notsupported);
+                }
+            }
+            catch (DllNotFoundException)
+            {
+                throw new NotSupportedException(SR.net_quic_notsupported);
+            }
 
             MsQuicNativeMethods.NativeApi nativeRegistration = *registration;
 
@@ -114,7 +127,40 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             _registrationContext = ctx;
         }
 
-        internal static MsQuicApi Api { get; } = new MsQuicApi();
+        internal static MsQuicApi Api { get; }
+
+        internal static bool IsQuicSupported { get; }
+
+        static MsQuicApi()
+        {
+            // MsQuicOpen will succeed even if the platform will not support it. It will then fail with unspecified
+            // platform-specific errors in subsequent callbacks. For now, check for the minimum build we've tested it on.
+
+            // TODO:
+            // - Hopefully, MsQuicOpen will perform this check for us and give us a consistent error code.
+            // - Otherwise, dial this in to reflect actual minimum requirements and add some sort of platform
+            //   error code mapping when creating exceptions.
+
+            OperatingSystem ver = Environment.OSVersion;
+
+            if (ver.Platform == PlatformID.Win32NT && ver.Version < new Version(10, 0, 19041, 0))
+            {
+                IsQuicSupported = false;
+                return;
+            }
+
+            // TODO: try to initialize TLS 1.3 in SslStream.
+
+            try
+            {
+                Api = new MsQuicApi();
+                IsQuicSupported = true;
+            }
+            catch (NotSupportedException)
+            {
+                IsQuicSupported = false;
+            }
+        }
 
         internal MsQuicNativeMethods.RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal MsQuicNativeMethods.RegistrationCloseDelegate RegistrationCloseDelegate { get; }
@@ -181,54 +227,95 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 buf);
         }
 
-        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate)
+        public async ValueTask<MsQuicSecurityConfig> CreateSecurityConfig(X509Certificate certificate, string certFilePath, string privateKeyFilePath)
         {
             MsQuicSecurityConfig secConfig = null;
             var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             uint secConfigCreateStatus = MsQuicStatusCodes.InternalError;
             uint createConfigStatus;
+            IntPtr unmanagedAddr = IntPtr.Zero;
+            MsQuicNativeMethods.CertFileParams fileParams = default;
 
-            // If no certificate is provided, provide a null one.
-            if (certificate != null)
+            try
             {
-                createConfigStatus = SecConfigCreateDelegate(
-                    _registrationContext,
-                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
-                    certificate.Handle,
-                    null,
-                    IntPtr.Zero,
-                    SecCfgCreateCallbackHandler);
+                if (certFilePath != null && privateKeyFilePath != null)
+                {
+                    fileParams = new MsQuicNativeMethods.CertFileParams
+                    {
+                        CertificateFilePath = Marshal.StringToCoTaskMemUTF8(certFilePath),
+                        PrivateKeyFilePath = Marshal.StringToCoTaskMemUTF8(privateKeyFilePath)
+                    };
+
+                    unmanagedAddr = Marshal.AllocHGlobal(Marshal.SizeOf(fileParams));
+                    Marshal.StructureToPtr(fileParams, unmanagedAddr, fDeleteOld: false);
+
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_FILE,
+                        certificate.Handle,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+                else if (certificate != null)
+                {
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_CONTEXT,
+                        certificate.Handle,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+                else
+                {
+                    // If no certificate is provided, provide a null one.
+                    createConfigStatus = SecConfigCreateDelegate(
+                        _registrationContext,
+                        (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
+                        IntPtr.Zero,
+                        null,
+                        IntPtr.Zero,
+                        SecCfgCreateCallbackHandler);
+                }
+
+                QuicExceptionHelpers.ThrowIfFailed(
+                    createConfigStatus,
+                    "Could not create security configuration.");
+
+                void SecCfgCreateCallbackHandler(
+                    IntPtr context,
+                    uint status,
+                    IntPtr securityConfig)
+                {
+                    secConfig = new MsQuicSecurityConfig(this, securityConfig);
+                    secConfigCreateStatus = status;
+                    tcs.SetResult(null);
+                }
+
+                await tcs.Task.ConfigureAwait(false);
+
+                QuicExceptionHelpers.ThrowIfFailed(
+                    secConfigCreateStatus,
+                    "Could not create security configuration.");
             }
-            else
+            finally
             {
-                createConfigStatus = SecConfigCreateDelegate(
-                    _registrationContext,
-                    (uint)QUIC_SEC_CONFIG_FLAG.CERT_NULL,
-                    IntPtr.Zero,
-                    null,
-                    IntPtr.Zero,
-                    SecCfgCreateCallbackHandler);
+                if (fileParams.CertificateFilePath != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(fileParams.CertificateFilePath);
+                }
+
+                if (fileParams.PrivateKeyFilePath != IntPtr.Zero)
+                {
+                    Marshal.FreeCoTaskMem(fileParams.PrivateKeyFilePath);
+                }
+
+                if (unmanagedAddr != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(unmanagedAddr);
+                }
             }
-
-            QuicExceptionHelpers.ThrowIfFailed(
-                createConfigStatus,
-                "Could not create security configuration.");
-
-            void SecCfgCreateCallbackHandler(
-                IntPtr context,
-                uint status,
-                IntPtr securityConfig)
-            {
-                secConfig = new MsQuicSecurityConfig(this, securityConfig);
-                secConfigCreateStatus = status;
-                tcs.SetResult(null);
-            }
-
-            await tcs.Task.ConfigureAwait(false);
-
-            QuicExceptionHelpers.ThrowIfFailed(
-                secConfigCreateStatus,
-                "Could not create security configuration.");
 
             return secConfig;
         }

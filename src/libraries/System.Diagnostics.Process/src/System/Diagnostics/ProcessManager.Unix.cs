@@ -36,7 +36,7 @@ namespace System.Diagnostics
         /// <param name="processId">The process ID.</param>
         /// <param name="machineName">The machine name.</param>
         /// <returns>The ProcessInfo for the process if it could be found; otherwise, null.</returns>
-        public static ProcessInfo GetProcessInfo(int processId, string machineName)
+        public static ProcessInfo? GetProcessInfo(int processId, string machineName)
         {
             ThrowIfRemoteMachine(machineName);
             return CreateProcessInfo(processId);

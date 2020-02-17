@@ -408,6 +408,15 @@ BOOL MyICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return jitInstance->mc->repIsValidStringRef(module, metaTOK);
 }
 
+LPCWSTR MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                 unsigned              metaTOK, /* IN  */
+                                 int*                  length   /* OUT */
+                                 )
+{
+    jitInstance->mc->cr->AddCall("getStringLiteral");
+    return jitInstance->mc->repGetStringLiteral(module, metaTOK, length);
+}
+
 BOOL MyICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
 {
     jitInstance->mc->cr->AddCall("shouldEnforceCallvirtRestriction");
@@ -1880,13 +1889,13 @@ void MyICJI::getModuleNativeEntryPointRange(void** pStart, /* OUT */
 //
 DWORD MyICJI::getExpectedTargetArchitecture()
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     return IMAGE_FILE_MACHINE_I386;
-#elif defined(_TARGET_AMD64_)
+#elif defined(TARGET_AMD64)
     return IMAGE_FILE_MACHINE_AMD64;
-#elif defined(_TARGET_ARM_)
+#elif defined(TARGET_ARM)
     return IMAGE_FILE_MACHINE_ARMNT;
-#elif defined(_TARGET_ARM64_)
+#elif defined(TARGET_ARM64)
     return IMAGE_FILE_MACHINE_ARM64;
 #else
     return IMAGE_FILE_MACHINE_UNKNOWN;

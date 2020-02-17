@@ -5,8 +5,10 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
-        export __Exclude="${__ProjectDir}/tests/issues.targets"
-        export __BuildLogRootName="Tests_XunitWrapper"
+        __Exclude="${__ProjectDir}/tests/issues.targets"
+        __BuildLogRootName="Tests_XunitWrapper"
+
+        export __Exclude __BuildLogRootName
 
         buildVerbosity="Summary"
 
@@ -79,7 +81,8 @@ generate_layout()
     fi
 
     # Set up the directory for MSBuild debug logs.
-    export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+    MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+    export MSBUILDDEBUGPATH
 
     __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
@@ -101,7 +104,8 @@ generate_layout()
         xUnitTestBinBase="$__TestWorkingDir"
     fi
 
-    export CORE_ROOT="$xUnitTestBinBase"/Tests/Core_Root
+    CORE_ROOT="$xUnitTestBinBase"/Tests/Core_Root
+    export CORE_ROOT
 
     if [[ -d "${CORE_ROOT}" ]]; then
         rm -rf "$CORE_ROOT"
@@ -180,22 +184,25 @@ precompile_coreroot_fx()
             continue
         fi
 
-        echo Precompiling "$filename"
+        local commandLine=""
 
         if [[ "$__DoCrossgen" != 0 ]]; then
-            "$__CrossgenExe" /Platform_Assemblies_Paths "$overlayDir" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename"
         fi
 
         if [[ "$__DoCrossgen2" != 0 ]]; then
-            "$overlayDir"/crossgen2/crossgen2 "$crossgen2References" -O --inputbubble --out "$outputDir"/"$(basename $filename)" "$filename" 1> "$filename".stdout 2> "$filename".stderr
+            commandLine="$overlayDir/crossgen2/crossgen2 $crossgen2References -O --inputbubble --out $outputDir/$(basename $filename) $filename"
         fi
 
+        echo Precompiling "$filename"
+        $commandLine 1> "$filename".stdout 2> "$filename".stderr
         local exitCode="$?"
         if [[ "$exitCode" != 0 ]]; then
             if grep -q -e '0x80131018' "$filename".stderr; then
                 printf "\n\t$filename is not a managed assembly.\n\n"
             else
                 echo Unable to precompile "$filename", exit code is "$exitCode".
+                echo Command-line: "$commandLine"
                 cat "$filename".stdout
                 cat "$filename".stderr
                 failedAssemblies+=($(basename -- "$filename"))
@@ -255,7 +262,9 @@ build_Tests()
         fi
     fi
 
-    export __CMakeBinDir="$__TestBinDir"
+    __CMakeBinDir="$__TestBinDir"
+    export __CMakeBinDir
+
     if [[ ! -d "$__TestIntermediatesDir" ]]; then
         mkdir -p "$__TestIntermediatesDir"
     fi
@@ -291,7 +300,8 @@ build_Tests()
     fi
 
     # Set up the directory for MSBuild debug logs.
-    export MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+    MSBUILDDEBUGPATH="${__MsbuildDebugLogsDir}"
+    export MSBUILDDEBUGPATH
 
     __BuildProperties="-p:OSGroup=${__BuildOS} -p:BuildOS=${__BuildOS} -p:BuildArch=${__BuildArch} -p:BuildType=${__BuildType}"
 
@@ -384,15 +394,17 @@ build_MSBuild_projects()
         # See https://github.com/Microsoft/msbuild/issues/2993
 
         # __SkipPackageRestore and __SkipTargetingPackBuild used  to control build by tests/src/dirs.proj
-        export __SkipPackageRestore=false
-        export __SkipTargetingPackBuild=false
-        export __NumberOfTestGroups=3
+        __SkipPackageRestore=false
+        __SkipTargetingPackBuild=false
+        __NumberOfTestGroups=3
 
         __AppendToLog=false
 
         if [[ -n "$__priority1" ]]; then
-            export __NumberOfTestGroups=10
+            __NumberOfTestGroups=10
         fi
+
+        export __SkipPackageRestore __SkipTargetingPackBuild __NumberOfTestGroups
 
         for (( testGroupToBuild=1 ; testGroupToBuild <= __NumberOfTestGroups; testGroupToBuild = testGroupToBuild + 1 ))
         do
@@ -400,7 +412,8 @@ build_MSBuild_projects()
             __msbuildWrn="\"/flp1:WarningsOnly;LogFile=${__BuildWrn};Append=${__AppendToLog}\""
             __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr};Append=${__AppendToLog}\""
 
-            export __TestGroupToBuild="$testGroupToBuild"
+            __TestGroupToBuild="$testGroupToBuild"
+            export __TestGroupToBuild
 
             # Generate build command
             buildArgs=("$projectName")
@@ -427,8 +440,11 @@ build_MSBuild_projects()
                 echo "    $__BuildErr"
                 exit 1
             fi
-            export __SkipPackageRestore=true
-            export __SkipTargetingPackBuild=true
+
+            __SkipPackageRestore=true
+            __SkipTargetingPackBuild=true
+            export __SkipPackageRestore __SkipTargetingPackBuild
+
             __AppendToLog=true
         done
     else
@@ -538,7 +554,9 @@ __CodeCoverage=
 __IncludeTests=INCLUDE_TESTS
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
-export __ProjectDir="$__ProjectRoot"
+__ProjectDir="$__ProjectRoot"
+export __ProjectDir
+
 __BuildTestWrappers=1
 __BuildTestWrappersOnly=
 __Compiler=clang

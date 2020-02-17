@@ -42,15 +42,20 @@ namespace System.Text.RegularExpressions.Tests
             Assert.NotNull(s_regexCodeTreeMinRequiredLength);
         }
 
-        private static int[] GetRegexCodes(Regex r)
+        private static string GetRegexCodes(Regex r)
         {
             object code = s_regexCode.GetValue(r);
             Assert.NotNull(code);
+            string result = code.ToString();
 
+            // In release builds, the above ToString won't be informative.
+            // Also include the numerical codes, which are not as comprehensive
+            // but which exist in release builds as well.
             int[] codes = s_regexCodeCodes.GetValue(code) as int[];
             Assert.NotNull(codes);
+            result += Environment.NewLine + string.Join(", ", codes);
 
-            return codes;
+            return result;
         }
 
         private static int GetMinRequiredLength(Regex r)
@@ -267,8 +272,19 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[0-9][0-9]{1,3}?", "[0-9]{2,4}?")]
         // Set and set
         [InlineData("[ace][ace]", "[ace]{2}")]
+        // Set and one
+        [InlineData("[a]", "a")]
+        [InlineData("[a]*", "a*")]
+        [InlineData("(?>[a]*)", "(?>a*)")]
+        [InlineData("[a]*?", "a*?")]
+        // Set and notone
+        [InlineData("[^\n]", ".")]
+        [InlineData("[^\n]*", ".*")]
+        [InlineData("(?>[^\n]*)", "(?>.*)")]
+        [InlineData("[^\n]*?", ".*?")]
         // Large loop patterns
         [InlineData("a*a*a*a*a*a*a*b*b*?a+a*", "a*b*b*?a+")]
+        [InlineData("a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "a{0,30}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
         // Group elimination
         [InlineData("(?:(?:(?:(?:(?:(?:a*))))))", "a*")]
         // Nested loops
@@ -276,9 +292,34 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:a*)+", "a*")]
         [InlineData("(?:a+){4}", "a{4,}")]
         [InlineData("(?:a{1,2}){4}", "a{4,8}")]
+        // Nested atomic
+        [InlineData("(?>(?>(?>(?>abc*))))", "(?>ab(?>c*))")]
         // Alternation reduction
+        [InlineData("a|b", "[ab]")]
         [InlineData("a|b|c|d|e|g|h|z", "[a-eghz]")]
         [InlineData("a|b|c|def|g|h", "[a-c]|def|[gh]")]
+        [InlineData("this|that|there|then|those", "th(?:is|at|ere|en|ose)")]
+        [InlineData("it's (?>this|that|there|then|those)", "it's (?>th(?:is|at|ere|en|ose))")]
+        [InlineData("it's (?>this|that|there|then|those)!", "it's (?>th(?:is|at|ere|en|ose))!")]
+        [InlineData("abcd|abce", "abc[de]")]
+        [InlineData("abcd|abef", "ab(?:cd|ef)")]
+        [InlineData("abcd|aefg", "a(?:bcd|efg)")]
+        [InlineData("abcd|abc|ab|a", "a(?:bcd|bc|b|)")]
+        [InlineData("abcde|abcdef", "abcde(?:|f)")]
+        [InlineData("abcdef|abcde", "abcde(?:f|)")]
+        [InlineData("abcdef|abcdeg|abcdeh|abcdei|abcdej|abcdek|abcdel", "abcde[f-l]")]
+        [InlineData("(ab|ab*)bc", "(a(?:b|b*))bc")]
+        [InlineData("abc(?:defgh|defij)klmn", "abcdef(?:gh|ij)klmn")]
+        [InlineData("abc(defgh|defij)klmn", "abc(def(?:gh|ij))klmn")]
+        [InlineData("a[b-f]|a[g-k]", "a[b-k]")]
+        [InlineData("this|this", "this")]
+        [InlineData("this|this|this", "this")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello", "hello(?: there| again|)")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world", "hello(?: there| again|| world)")]
+        [InlineData("hello there|hello again|hello|hello|hello|hello|hello world|hello", "hello(?: there| again|| world)")]
+        [InlineData("abcd(?:(?i:e)|(?i:f))", "abcd(?i:[ef])")]
+        [InlineData("(?i:abcde)|(?i:abcdf)", "(?i:abcd[ef])")]
+        [InlineData("xyz(?:(?i:abcde)|(?i:abcdf))", "xyz(?i:abcd[ef])")]
         // Auto-atomicity
         [InlineData("a*b", "(?>a*)b")]
         [InlineData("a*b+", "(?>a*)b+")]
@@ -294,11 +335,26 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:abc*|def*)g", "(?:ab(?>c*)|de(?>f*))g")]
         [InlineData("(?:a[ce]*|b*)g", "(?:a(?>[ce]*)|(?>b*))g")]
         [InlineData("(?:a[ce]*|b*)c", "(?:a[ce]*|(?>b*))c")]
+        [InlineData("apple|(?:orange|pear)|grape", "apple|orange|pear|grape")]
+        [InlineData("(?>(?>(?>(?:abc)*)))", "(?:abc)*")]
+        [InlineData("(w*)+", "((?>w*))+")]
+        [InlineData("(w*)+\\.", "((?>w*))+\\.")]
+        [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
+        [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
         public void PatternsReduceIdentically(string pattern1, string pattern2)
         {
-            AssertExtensions.Equal(GetRegexCodes(new Regex(pattern1)), GetRegexCodes(new Regex(pattern2)));
-            Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
-            Assert.NotEqual<int>(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
+            string result1 = GetRegexCodes(new Regex(pattern1));
+            string result2 = GetRegexCodes(new Regex(pattern2));
+            if (result1 != result2)
+            {
+                throw new Xunit.Sdk.EqualException(result2, result1);
+            }
+
+            Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.RightToLeft)), GetRegexCodes(new Regex(pattern2)));
+            if (!pattern1.Contains("?i:") && !pattern2.Contains("?i:"))
+            {
+                Assert.NotEqual(GetRegexCodes(new Regex(pattern1, RegexOptions.IgnoreCase)), GetRegexCodes(new Regex(pattern2)));
+            }
         }
 
         [Theory]
@@ -341,14 +397,20 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ace][ace]{0,2147483646}", "[ace]{0,2147483647}")]
         [InlineData("[ace]{2147482647}[ace]{1000}", "[ace]{2147483647}")]
         [InlineData("[ace]{0,2147482647}[ace]{0,1000}", "[ace]{0,2147483647}")]
+        // Not reducing branches of alternations with different casing
+        [InlineData("(?i:abcd)|abcd", "abcd|abcd")]
+        [InlineData("abcd|(?i:abcd)", "abcd|abcd")]
+        [InlineData("abc(?:(?i:e)|f)", "abc[ef]")]
         // Not applying auto-atomicity
         [InlineData("a*b*", "(?>a*)b*")]
         [InlineData("[^\n]*\n*", "(?>[^\n]*)\n")]
+        [InlineData("(a[bcd]a*)*fg", "(a[bcd](?>a*))*fg")]
+        [InlineData("(\\w[bcd]\\d*)*fg", "(\\w[bcd](?>\\d*))*fg")]
         public void PatternsReduceDifferently(string pattern1, string pattern2)
         {
             var r1 = new Regex(pattern1);
             var r2 = new Regex(pattern2);
-            Assert.NotEqual<int>(GetRegexCodes(r1), GetRegexCodes(r2));
+            Assert.NotEqual(GetRegexCodes(r1), GetRegexCodes(r2));
         }
 
         [Theory]
@@ -377,6 +439,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"a*a*a*a*a*a*a*b*", 0)]
         [InlineData(@"((a{1,2}){4}){3,7}", 12)]
         [InlineData(@"\b\w{4}\b", 4)]
+        // we stop computing after a certain depth; if that logic changes in the future, these tests can be updated
+        [InlineData(@"((((((((((((((((((((((((((((((ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ)", 0)]
+        [InlineData(@"(YZ+|(WX+|(UV+|(ST+|(QR+|(OP+|(MN+|(KL+|(IJ+|(GH+|(EF+|(CD+|(AB+|(89+|(67+|(45+|(23+|(01+|(yz+|(wx+|(uv+|(st+|(qr+|(op+|(mn+|(kl+|(ij+|(gh+|(ef+|(de+|(a|bc+)))))))))))))))))))))))))))))))", 0)]
+        [InlineData(@"a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(a(ab|cd+)|ef+)|gh+)|ij+)|kl+)|mn+)|op+)|qr+)|st+)|uv+)|wx+)|yz+)|01+)|23+)|45+)|67+)|89+)|AB+)|CD+)|EF+)|GH+)|IJ+)|KL+)|MN+)|OP+)|QR+)|ST+)|UV+)|WX+)|YZ+)", 3)]
+        [InlineData(@"(((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((a)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))", 0)]
         public void MinRequiredLengthIsCorrect(string pattern, int expectedLength)
         {
             var r = new Regex(pattern);

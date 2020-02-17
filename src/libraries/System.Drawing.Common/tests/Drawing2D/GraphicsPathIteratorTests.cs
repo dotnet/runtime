@@ -100,7 +100,7 @@ namespace System.Drawing.Drawing2D.Tests
 
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void NextSubpath_FigureNotClosed_ReturnsExpeced()
+        public void NextSubpath_FigureNotClosed_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
             using (GraphicsPathIterator gpi = new GraphicsPathIterator(gp))

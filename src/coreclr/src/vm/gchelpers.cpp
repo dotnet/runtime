@@ -171,13 +171,13 @@ inline void CheckObjectSize(size_t alloc_size)
     } CONTRACTL_END;
 
     size_t max_object_size;
-#ifdef BIT64
+#ifdef HOST_64BIT
     if (g_pConfig->GetGCAllowVeryLargeObjects())
     {
         max_object_size = (INT64_MAX - 7 - min_obj_size);
     }
     else
-#endif // BIT64
+#endif // HOST_64BIT
     {
         max_object_size = (INT32_MAX - 7 - min_obj_size);
     }
@@ -450,7 +450,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit
     size_t totalSize = cElements * componentSize + pArrayMT->GetBaseSize();
@@ -583,7 +583,7 @@ void ThrowOutOfMemoryDimensionsExceeded()
         THROWS;
     } CONTRACTL_END;
 
-#ifdef BIT64
+#ifdef HOST_64BIT
     EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
 #else
     ThrowOutOfMemory();
@@ -708,7 +708,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         ThrowOutOfMemoryDimensionsExceeded();
 
     // Allocate the space from the GC heap
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     // POSITIVE_INT32 * UINT16 + SMALL_CONST
     // this cannot overflow on 64bit
     size_t totalSize = cElements * componentSize + pArrayMT->GetBaseSize();
@@ -1588,9 +1588,9 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
 //
 // We could use the pointer maps and do this more accurately if necessary
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
-#endif //_MSC_VER && _TARGET_X86_
+#endif //_MSC_VER && TARGET_X86
 
 void
 SetCardsAfterBulkCopy(Object **start, size_t len)
@@ -1602,6 +1602,6 @@ SetCardsAfterBulkCopy(Object **start, size_t len)
     }
 }
 
-#if defined(_MSC_VER) && defined(_TARGET_X86_)
+#if defined(_MSC_VER) && defined(TARGET_X86)
 #pragma optimize("", on)        // Go back to command line default optimizations
-#endif //_MSC_VER && _TARGET_X86_
+#endif //_MSC_VER && TARGET_X86

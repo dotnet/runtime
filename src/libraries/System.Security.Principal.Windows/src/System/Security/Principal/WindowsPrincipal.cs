@@ -24,13 +24,11 @@ namespace System.Security.Principal
 
     public class WindowsPrincipal : ClaimsPrincipal
     {
-        private readonly WindowsIdentity _identity = null;
+        private readonly WindowsIdentity _identity;
 
         //
         // Constructors.
         //
-
-        private WindowsPrincipal() { }
 
         public WindowsPrincipal(WindowsIdentity ntIdentity)
             : base(ntIdentity)
@@ -57,9 +55,7 @@ namespace System.Security.Principal
             source.Add(ntAccount);
             IdentityReferenceCollection target = NTAccount.Translate(source, typeof(SecurityIdentifier), false);
 
-            SecurityIdentifier sid = target[0] as SecurityIdentifier;
-
-            if (sid != null)
+            if (target[0] is SecurityIdentifier sid)
             {
                 if (IsInRole(sid))
                 {

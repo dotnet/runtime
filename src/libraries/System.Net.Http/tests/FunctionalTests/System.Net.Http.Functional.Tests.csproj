@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetsWindows)'=='true'">$(DefineConstants);TargetsWindows</DefineConstants>
     <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>$(NetCoreAppCurrent)-Unix-Debug;$(NetCoreAppCurrent)-Unix-Release;$(NetCoreAppCurrent)-Windows_NT-Debug;$(NetCoreAppCurrent)-Windows_NT-Release</Configurations>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Condition="'$(TargetsUnix)' == 'true'">
@@ -224,11 +224,11 @@
     <Compile Include="$(CommonTestPath)System\Net\Http\HPackEncoder.cs">
       <Link>Common\System\Net\Http\HPackEncoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Http\QPackDecoder.cs">
-      <Link>Common\System\Net\Http\QPackDecoder.cs</Link>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestDecoder.cs">
+      <Link>Common\System\Net\Http\QPackTestDecoder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)System\Net\Http\QPackEncoder.cs">
-      <Link>Common\System\Net\Http\QPackEncoder.cs</Link>
+    <Compile Include="$(CommonTestPath)System\Net\Http\QPackTestEncoder.cs">
+      <Link>Common\System\Net\Http\QPackTestEncoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)System\Net\Http\Http2LoopbackServer.cs">
       <Link>Common\System\Net\Http\Http2LoopbackServer.cs</Link>

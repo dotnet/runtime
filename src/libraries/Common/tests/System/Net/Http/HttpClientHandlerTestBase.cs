@@ -34,8 +34,8 @@ namespace System.Net.Http.Functional.Tests
         protected HttpClient CreateHttpClient(HttpMessageHandler handler) =>
             new HttpClient(handler) { DefaultRequestVersion = UseVersion };
 
-        protected static HttpClient CreateHttpClient(string useHttp2String) =>
-            CreateHttpClient(CreateHttpClientHandler(useHttp2String), useHttp2String);
+        protected static HttpClient CreateHttpClient(string useVersionString) =>
+            CreateHttpClient(CreateHttpClientHandler(useVersionString), useVersionString);
 
         protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useVersionString) =>
             new HttpClient(handler) { DefaultRequestVersion = Version.Parse(useVersionString) };

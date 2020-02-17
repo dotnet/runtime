@@ -624,7 +624,7 @@ public:
 #ifdef FEATURE_CONSERVATIVE_GC
     bool    GetGCConservative()             const {LIMITED_METHOD_CONTRACT; return iGCConservative;}
 #endif
-#ifdef BIT64
+#ifdef HOST_64BIT
     bool    GetGCAllowVeryLargeObjects()    const {LIMITED_METHOD_CONTRACT; return iGCAllowVeryLargeObjects;}
 #endif
 #ifdef _DEBUG
@@ -929,9 +929,9 @@ private: //----------------------------------------------------------------
 #ifdef FEATURE_CONSERVATIVE_GC
     bool iGCConservative;
 #endif // FEATURE_CONSERVATIVE_GC
-#ifdef BIT64
+#ifdef HOST_64BIT
     bool iGCAllowVeryLargeObjects;
-#endif // BIT64
+#endif // HOST_64BIT
 
     bool fGCBreakOnOOM;
 
@@ -1059,7 +1059,7 @@ public:
 #endif
 
 #if defined(_DEBUG)
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 private:
 
     // Defaults to 0, which means we will not generate long jump dispatch stubs.
@@ -1084,7 +1084,7 @@ public:
     {
         return FALSE;
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 #endif // _DEBUG
 
 #if defined(_DEBUG)

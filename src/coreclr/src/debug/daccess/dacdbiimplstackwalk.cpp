@@ -538,13 +538,6 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
             fpCallback(&frameData, pUserData);
         }
 
-        // update the current appdomain if necessary
-        AppDomain * pRetDomain = pFrame->GetReturnDomain();
-        if (pRetDomain != NULL)
-        {
-            pAppDomain = pRetDomain;
-        }
-
         // move on to the next internal frame
         pFrame = pFrame->Next();
     }
@@ -695,8 +688,7 @@ void DacDbiInterfaceImpl::InitFrameData(StackFrameIterator *   pIter,
     // Since we don't have chains anymore, this can always be false.
     pFrameData->quicklyUnwound = false;
 
-    AppDomain * pAppDomain = pCF->GetAppDomain();
-    pFrameData->vmCurrentAppDomainToken.SetHostPtr(pAppDomain);
+    pFrameData->vmCurrentAppDomainToken.SetHostPtr(AppDomain::GetCurrentDomain());
 
     if (ft == kNativeRuntimeUnwindableStackFrame)
     {
@@ -1014,7 +1006,7 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
                                                             BOOL                     fIsActiveFrame,
                                                             StackAdjustmentDirection direction)
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // If the CONTEXT is active then no adjustment is needed.
     if (!fIsActiveFrame)
     {
@@ -1033,7 +1025,7 @@ void DacDbiInterfaceImpl::AdjustRegDisplayForStackParameter(REGDISPLAY *        
         }
         SetRegdisplaySP(pRD, reinterpret_cast<LPVOID>(sp));
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 }
 
 //---------------------------------------------------------------------------------------
@@ -1149,7 +1141,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
                                                    T_CONTEXT *  pContext)
 {
-#if defined(_TARGET_X86_) && !defined(FEATURE_EH_FUNCLETS)
+#if defined(TARGET_X86) && !defined(FEATURE_EH_FUNCLETS)
     // Do a partial copy first.
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
 
@@ -1171,9 +1163,9 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-#else // _TARGET_X86_ && !FEATURE_EH_FUNCLETS
+#else // TARGET_X86 && !FEATURE_EH_FUNCLETS
     *pContext = *pRegDisp->pCurrentContext;
-#endif // !_TARGET_X86_ || FEATURE_EH_FUNCLETS
+#endif // !TARGET_X86 || FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------
@@ -1216,7 +1208,7 @@ PTR_CONTEXT DacDbiInterfaceImpl::RetrieveHijackedContext(REGDISPLAY * pRD)
         // Convert the REGDISPLAY to a CONTEXT;
         T_CONTEXT * pContext = NULL;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         T_CONTEXT ctx;
         pContext = &ctx;
         UpdateContextFromRegDisp(pRD, pContext);

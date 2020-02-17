@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.Win32.SafeHandles
@@ -608,7 +608,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>(T x, T y);
+    public delegate int Comparison<in T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
     {
@@ -883,6 +883,7 @@ namespace System
         public Decimal(int value) { throw null; }
         public Decimal(int lo, int mid, int hi, bool isNegative, byte scale) { throw null; }
         public Decimal(int[] bits) { throw null; }
+        public Decimal(System.ReadOnlySpan<int> bits) { throw null; }
         public Decimal(long value) { throw null; }
         public Decimal(float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -901,6 +902,7 @@ namespace System
         public static System.Decimal Floor(System.Decimal d) { throw null; }
         public static System.Decimal FromOACurrency(long cy) { throw null; }
         public static int[] GetBits(System.Decimal d) { throw null; }
+        public static int GetBits(System.Decimal d, System.Span<int> destination) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public static System.Decimal Multiply(System.Decimal d1, System.Decimal d2) { throw null; }
@@ -998,6 +1000,7 @@ namespace System
         public static ulong ToUInt64(System.Decimal d) { throw null; }
         public static System.Decimal Truncate(System.Decimal d) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryGetBits(System.Decimal d, System.Span<int> destination, out int valuesWritten) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Decimal result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Decimal result) { throw null; }
         public static bool TryParse(string? s, out System.Decimal result) { throw null; }
@@ -1959,6 +1962,17 @@ namespace System
         public bool IsError { get { throw null; } }
         public string? Message { get { throw null; } }
     }
+    public partial class OperationCanceledException : System.SystemException
+    {
+        public OperationCanceledException() { }
+        protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public OperationCanceledException(string? message) { }
+        public OperationCanceledException(string? message, System.Exception? innerException) { }
+        public OperationCanceledException(string? message, System.Exception? innerException, System.Threading.CancellationToken token) { }
+        public OperationCanceledException(string? message, System.Threading.CancellationToken token) { }
+        public OperationCanceledException(System.Threading.CancellationToken token) { }
+        public System.Threading.CancellationToken CancellationToken { get { throw null; } }
+    }
     public partial class OutOfMemoryException : System.SystemException
     {
         public OutOfMemoryException() { }
@@ -2293,7 +2307,7 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public unsafe String(char* value, int startIndex, int length) { }
         public String(char c, int count) { }
-        public String(char[] value) { }
+        public String(char[]? value) { }
         public String(char[] value, int startIndex, int length) { }
         public String(System.ReadOnlySpan<char> value) { }
         [System.CLSCompliantAttribute(false)]
@@ -3795,6 +3809,15 @@ namespace System
 }
 namespace System.Buffers
 {
+    public abstract partial class ArrayPool<T>
+    {
+        protected ArrayPool() { }
+        public static System.Buffers.ArrayPool<T> Shared { get { throw null; } }
+        public static System.Buffers.ArrayPool<T> Create() { throw null; }
+        public static System.Buffers.ArrayPool<T> Create(int maxArrayLength, int maxArraysPerBucket) { throw null; }
+        public abstract T[] Rent(int minimumLength);
+        public abstract void Return(T[] array, bool clearArray = false);
+    }
     public partial interface IMemoryOwner<T> : System.IDisposable
     {
         System.Memory<T> Memory { get; }
@@ -4095,6 +4118,16 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.RemoveAt(int index) { }
     }
 }
+namespace System.CodeDom.Compiler
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
+    public sealed partial class GeneratedCodeAttribute : System.Attribute
+    {
+        public GeneratedCodeAttribute(string? tool, string? version) { }
+        public string? Tool { get { throw null; } }
+        public string? Version { get { throw null; } }
+    }
+}
 namespace System.ComponentModel
 {
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]
@@ -4166,6 +4199,148 @@ namespace System.Diagnostics
         public ConditionalAttribute(string conditionString) { }
         public string ConditionString { get { throw null; } }
     }
+    public static partial class Debug
+    {
+        public static bool AutoFlush { get { throw null; } set { } }
+        public static int IndentLevel { get { throw null; } set { } }
+        public static int IndentSize { get { throw null; } set { } }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string detailMessageFormat, params object?[] args) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Close() { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Fail(string? message) => throw null; 
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Fail(string? message, string? detailMessage) => throw null; 
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Flush() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Indent() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Print(string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Print(string format, params object?[] args) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Unindent() { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Write(object? value) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Write(object? value, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Write(string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void Write(string? message, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, object? value) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, object? value, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteIf(bool condition, string? message, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLine(object? value) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLine(object? value, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLine(string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLine(string format, params object?[] args) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLine(string? message, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, object? value) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, object? value, string? category) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, string? message) { }
+        [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        public static void WriteLineIf(bool condition, string? message, string? category) { }
+    }
+    public static partial class Debugger
+    {
+        public static readonly string? DefaultCategory;
+        public static bool IsAttached { get { throw null; } }
+        public static void Break() { }
+        public static bool IsLogging() { throw null; }
+        public static bool Launch() { throw null; }
+        public static void Log(int level, string? category, string? message) { }
+        public static void NotifyOfCrossThreadDependency() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
+    public sealed partial class DebuggerBrowsableAttribute : System.Attribute
+    {
+        public DebuggerBrowsableAttribute(System.Diagnostics.DebuggerBrowsableState state) { }
+        public System.Diagnostics.DebuggerBrowsableState State { get { throw null; } }
+    }
+    public enum DebuggerBrowsableState
+    {
+        Never = 0,
+        Collapsed = 2,
+        RootHidden = 3,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true)]
+    public sealed partial class DebuggerDisplayAttribute : System.Attribute
+    {
+        public DebuggerDisplayAttribute(string? value) { }
+        public string? Name { get { throw null; } set { } }
+        public System.Type? Target { get { throw null; } set { } }
+        public string? TargetTypeName { get { throw null; } set { } }
+        public string? Type { get { throw null; } set { } }
+        public string Value { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
+    public sealed partial class DebuggerHiddenAttribute : System.Attribute
+    {
+        public DebuggerHiddenAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class DebuggerNonUserCodeAttribute : System.Attribute
+    {
+        public DebuggerNonUserCodeAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class DebuggerStepperBoundaryAttribute : System.Attribute
+    {
+        public DebuggerStepperBoundaryAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class DebuggerStepThroughAttribute : System.Attribute
+    {
+        public DebuggerStepThroughAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    public sealed partial class DebuggerTypeProxyAttribute : System.Attribute
+    {
+        public DebuggerTypeProxyAttribute(string typeName) { }
+        public DebuggerTypeProxyAttribute(System.Type type) { }
+        public string ProxyTypeName { get { throw null; } }
+        public System.Type? Target { get { throw null; } set { } }
+        public string? TargetTypeName { get { throw null; } set { } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    public sealed partial class DebuggerVisualizerAttribute : System.Attribute
+    {
+        public DebuggerVisualizerAttribute(string visualizerTypeName) { }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer, string? visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer, System.Type visualizerObjectSource) { }
+        public string? Description { get { throw null; } set { } }
+        public System.Type? Target { get { throw null; } set { } }
+        public string? TargetTypeName { get { throw null; } set { } }
+        public string? VisualizerObjectSourceTypeName { get { throw null; } }
+        public string VisualizerTypeName { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Module, AllowMultiple=false)]
     public sealed partial class DebuggableAttribute : System.Attribute
     {
@@ -4208,6 +4383,11 @@ namespace System.Diagnostics.CodeAnalysis
         public DoesNotReturnIfAttribute(bool parameterValue) { }
         public bool ParameterValue { get { throw null; } }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false, AllowMultiple=false)]
+    public sealed partial class ExcludeFromCodeCoverageAttribute : System.Attribute
+    {
+        public ExcludeFromCodeCoverageAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
     public sealed partial class MaybeNullAttribute : System.Attribute
     {
@@ -4235,6 +4415,18 @@ namespace System.Diagnostics.CodeAnalysis
     {
         public NotNullWhenAttribute(bool returnValue) { }
         public bool ReturnValue { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=true)]
+    [System.Diagnostics.ConditionalAttribute("CODE_ANALYSIS")]
+    public sealed partial class SuppressMessageAttribute : System.Attribute
+    {
+        public SuppressMessageAttribute(string category, string checkId) { }
+        public string Category { get { throw null; } }
+        public string CheckId { get { throw null; } }
+        public string? Justification { get { throw null; } set { } }
+        public string? MessageId { get { throw null; } set { } }
+        public string? Scope { get { throw null; } set { } }
+        public string? Target { get { throw null; } set { } }
     }
 }
 namespace System.Globalization
@@ -4324,18 +4516,18 @@ namespace System.Globalization
         public override System.DateTime MinSupportedDateTime { get { throw null; } }
         public override int GetEra(System.DateTime time) { throw null; }
     }
-    public partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
+    public sealed partial class CompareInfo : System.Runtime.Serialization.IDeserializationCallback
     {
         internal CompareInfo() { }
         public int LCID { get { throw null; } }
-        public virtual string Name { get { throw null; } }
+        public string Name { get { throw null; } }
         public System.Globalization.SortVersion Version { get { throw null; } }
-        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2) { throw null; }
-        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int Compare(string? string1, int offset1, string? string2, int offset2) { throw null; }
-        public virtual int Compare(string? string1, int offset1, string? string2, int offset2, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int Compare(string? string1, string? string2) { throw null; }
-        public virtual int Compare(string? string1, string? string2, System.Globalization.CompareOptions options) { throw null; }
+        public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2) { throw null; }
+        public int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, System.Globalization.CompareOptions options) { throw null; }
+        public int Compare(string? string1, int offset1, string? string2, int offset2) { throw null; }
+        public int Compare(string? string1, int offset1, string? string2, int offset2, System.Globalization.CompareOptions options) { throw null; }
+        public int Compare(string? string1, string? string2) { throw null; }
+        public int Compare(string? string1, string? string2, System.Globalization.CompareOptions options) { throw null; }
         public override bool Equals(object? value) { throw null; }
         public static System.Globalization.CompareInfo GetCompareInfo(int culture) { throw null; }
         public static System.Globalization.CompareInfo GetCompareInfo(int culture, System.Reflection.Assembly assembly) { throw null; }
@@ -4343,39 +4535,39 @@ namespace System.Globalization
         public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetHashCode(System.ReadOnlySpan<char> source, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int GetHashCode(string source, System.Globalization.CompareOptions options) { throw null; }
-        public virtual System.Globalization.SortKey GetSortKey(string source) { throw null; }
-        public virtual System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, char value) { throw null; }
-        public virtual int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, char value, int startIndex) { throw null; }
-        public virtual int IndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, char value, int startIndex, int count) { throw null; }
-        public virtual int IndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, string value) { throw null; }
-        public virtual int IndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, string value, int startIndex) { throw null; }
-        public virtual int IndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int IndexOf(string source, string value, int startIndex, int count) { throw null; }
-        public virtual int IndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
-        public virtual bool IsPrefix(string source, string prefix) { throw null; }
-        public virtual bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { throw null; }
+        public int GetHashCode(string source, System.Globalization.CompareOptions options) { throw null; }
+        public System.Globalization.SortKey GetSortKey(string source) { throw null; }
+        public System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, char value) { throw null; }
+        public int IndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, char value, int startIndex) { throw null; }
+        public int IndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, char value, int startIndex, int count) { throw null; }
+        public int IndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, string value) { throw null; }
+        public int IndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, string value, int startIndex) { throw null; }
+        public int IndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
+        public int IndexOf(string source, string value, int startIndex, int count) { throw null; }
+        public int IndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
+        public bool IsPrefix(string source, string prefix) { throw null; }
+        public bool IsPrefix(string source, string prefix, System.Globalization.CompareOptions options) { throw null; }
         public static bool IsSortable(char ch) { throw null; }
         public static bool IsSortable(string text) { throw null; }
-        public virtual bool IsSuffix(string source, string suffix) { throw null; }
-        public virtual bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, char value) { throw null; }
-        public virtual int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, char value, int startIndex) { throw null; }
-        public virtual int LastIndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, char value, int startIndex, int count) { throw null; }
-        public virtual int LastIndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, string value) { throw null; }
-        public virtual int LastIndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, string value, int startIndex) { throw null; }
-        public virtual int LastIndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
-        public virtual int LastIndexOf(string source, string value, int startIndex, int count) { throw null; }
-        public virtual int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
+        public bool IsSuffix(string source, string suffix) { throw null; }
+        public bool IsSuffix(string source, string suffix, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, char value) { throw null; }
+        public int LastIndexOf(string source, char value, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, char value, int startIndex) { throw null; }
+        public int LastIndexOf(string source, char value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, char value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(string source, char value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, string value) { throw null; }
+        public int LastIndexOf(string source, string value, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, string value, int startIndex) { throw null; }
+        public int LastIndexOf(string source, string value, int startIndex, System.Globalization.CompareOptions options) { throw null; }
+        public int LastIndexOf(string source, string value, int startIndex, int count) { throw null; }
+        public int LastIndexOf(string source, string value, int startIndex, int count, System.Globalization.CompareOptions options) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
         public override string ToString() { throw null; }
     }
@@ -4897,11 +5089,11 @@ namespace System.Globalization
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
-    public partial class SortKey
+    public sealed partial class SortKey
     {
         internal SortKey() { }
-        public virtual byte[] KeyData { get { throw null; } }
-        public virtual string OriginalString { get { throw null; } }
+        public byte[] KeyData { get { throw null; } }
+        public string OriginalString { get { throw null; } }
         public static int Compare(System.Globalization.SortKey sortkey1, System.Globalization.SortKey sortkey2) { throw null; }
         public override bool Equals(object? value) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -4979,29 +5171,29 @@ namespace System.Globalization
         public bool MoveNext() { throw null; }
         public void Reset() { }
     }
-    public partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback
+    public sealed partial class TextInfo : System.ICloneable, System.Runtime.Serialization.IDeserializationCallback
     {
         internal TextInfo() { }
-        public virtual int ANSICodePage { get { throw null; } }
+        public int ANSICodePage { get { throw null; } }
         public string CultureName { get { throw null; } }
-        public virtual int EBCDICCodePage { get { throw null; } }
+        public int EBCDICCodePage { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public bool IsRightToLeft { get { throw null; } }
         public int LCID { get { throw null; } }
-        public virtual string ListSeparator { get { throw null; } set { } }
-        public virtual int MacCodePage { get { throw null; } }
-        public virtual int OEMCodePage { get { throw null; } }
-        public virtual object Clone() { throw null; }
+        public string ListSeparator { get { throw null; } set { } }
+        public int MacCodePage { get { throw null; } }
+        public int OEMCodePage { get { throw null; } }
+        public object Clone() { throw null; }
         public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Globalization.TextInfo ReadOnly(System.Globalization.TextInfo textInfo) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
-        public virtual char ToLower(char c) { throw null; }
-        public virtual string ToLower(string str) { throw null; }
+        public char ToLower(char c) { throw null; }
+        public string ToLower(string str) { throw null; }
         public override string ToString() { throw null; }
         public string ToTitleCase(string str) { throw null; }
-        public virtual char ToUpper(char c) { throw null; }
-        public virtual string ToUpper(string str) { throw null; }
+        public char ToUpper(char c) { throw null; }
+        public string ToUpper(string str) { throw null; }
     }
     public partial class ThaiBuddhistCalendar : System.Globalization.Calendar
     {
@@ -5222,8 +5414,8 @@ namespace System.IO
         public virtual string Name { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         public virtual Microsoft.Win32.SafeHandles.SafeFileHandle SafeFileHandle { get { throw null; } }
-        public override System.IAsyncResult BeginRead(byte[] array, int offset, int numBytes, System.AsyncCallback callback, object? state) { throw null; }
-        public override System.IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, System.AsyncCallback callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginRead(byte[] array, int offset, int numBytes, System.AsyncCallback? callback, object? state) { throw null; }
+        public override System.IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, System.AsyncCallback? callback, object? state) { throw null; }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
         public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
@@ -5286,8 +5478,8 @@ namespace System.IO
         public abstract long Position { get; set; }
         public virtual int ReadTimeout { get { throw null; } set { } }
         public virtual int WriteTimeout { get { throw null; } set { } }
-        public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
-        public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback callback, object? state) { throw null; }
+        public virtual System.IAsyncResult BeginRead(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
+        public virtual System.IAsyncResult BeginWrite(byte[] buffer, int offset, int count, System.AsyncCallback? callback, object? state) { throw null; }
         public virtual void Close() { }
         public void CopyTo(System.IO.Stream destination) { }
         public virtual void CopyTo(System.IO.Stream destination, int bufferSize) { }
@@ -5324,6 +5516,43 @@ namespace System.IO
         public virtual System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual void WriteByte(byte value) { }
+    }
+    public partial class UnmanagedMemoryStream : System.IO.Stream
+    {
+        protected UnmanagedMemoryStream() { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe UnmanagedMemoryStream(byte* pointer, long length) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
+        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length) { }
+        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
+        public override bool CanRead { get { throw null; } }
+        public override bool CanSeek { get { throw null; } }
+        public override bool CanWrite { get { throw null; } }
+        public long Capacity { get { throw null; } }
+        public override long Length { get { throw null; } }
+        public override long Position { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe byte* PositionPointer { get { throw null; } set { } }
+        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
+        protected override void Dispose(bool disposing) { }
+        public override void Flush() { }
+        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        protected unsafe void Initialize(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
+        protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
+        public override int Read(byte[] buffer, int offset, int count) { throw null; }
+        public override int Read(System.Span<byte> destination) { throw null; }
+        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override int ReadByte() { throw null; }
+        public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
+        public override void SetLength(long value) { }
+        public override void Write(byte[] buffer, int offset, int count) { }
+        public override void Write(System.ReadOnlySpan<byte> source) { }
+        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public override void WriteByte(byte value) { }
     }
 }
 namespace System.Reflection
@@ -6472,6 +6701,109 @@ namespace System.Reflection
         System.Reflection.TypeInfo System.Reflection.IReflectableType.GetTypeInfo() { throw null; }
     }
 }
+namespace System.Resources
+{
+    public partial interface IResourceReader : System.Collections.IEnumerable, System.IDisposable
+    {
+        void Close();
+        new System.Collections.IDictionaryEnumerator GetEnumerator();
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class MissingManifestResourceException : System.SystemException
+    {
+        public MissingManifestResourceException() { }
+        protected MissingManifestResourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public MissingManifestResourceException(string? message) { }
+        public MissingManifestResourceException(string? message, System.Exception? inner) { }
+    }
+    public partial class MissingSatelliteAssemblyException : System.SystemException
+    {
+        public MissingSatelliteAssemblyException() { }
+        protected MissingSatelliteAssemblyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public MissingSatelliteAssemblyException(string? message) { }
+        public MissingSatelliteAssemblyException(string? message, System.Exception? inner) { }
+        public MissingSatelliteAssemblyException(string? message, string? cultureName) { }
+        public string? CultureName { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class NeutralResourcesLanguageAttribute : System.Attribute
+    {
+        public NeutralResourcesLanguageAttribute(string cultureName) { }
+        public NeutralResourcesLanguageAttribute(string cultureName, System.Resources.UltimateResourceFallbackLocation location) { }
+        public string CultureName { get { throw null; } }
+        public System.Resources.UltimateResourceFallbackLocation Location { get { throw null; } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class ResourceManager
+    {
+        public static readonly int HeaderVersionNumber;
+        public static readonly int MagicNumber;
+        protected System.Reflection.Assembly? MainAssembly;
+        protected ResourceManager() { }
+        public ResourceManager(string baseName, System.Reflection.Assembly assembly) { }
+        public ResourceManager(string baseName, System.Reflection.Assembly assembly, System.Type? usingResourceSet) { }
+        public ResourceManager(System.Type resourceSource) { }
+        public virtual string BaseName { get { throw null; } }
+        protected System.Resources.UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
+        public virtual bool IgnoreCase { get { throw null; } set { } }
+        public virtual System.Type ResourceSetType { get { throw null; } }
+        public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type? usingResourceSet) { throw null; }
+        protected static System.Globalization.CultureInfo GetNeutralResourcesLanguage(System.Reflection.Assembly a) { throw null; }
+        public virtual object? GetObject(string name) { throw null; }
+        public virtual object? GetObject(string name, System.Globalization.CultureInfo? culture) { throw null; }
+        protected virtual string GetResourceFileName(System.Globalization.CultureInfo culture) { throw null; }
+        public virtual System.Resources.ResourceSet? GetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
+        protected static System.Version? GetSatelliteContractVersion(System.Reflection.Assembly a) { throw null; }
+        public System.IO.UnmanagedMemoryStream? GetStream(string name) { throw null; }
+        public System.IO.UnmanagedMemoryStream? GetStream(string name, System.Globalization.CultureInfo? culture) { throw null; }
+        public virtual string? GetString(string name) { throw null; }
+        public virtual string? GetString(string name, System.Globalization.CultureInfo? culture) { throw null; }
+        protected virtual System.Resources.ResourceSet? InternalGetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
+        public virtual void ReleaseAllResources() { }
+    }
+    public sealed partial class ResourceReader : System.Collections.IEnumerable, System.IDisposable, System.Resources.IResourceReader
+    {
+        public ResourceReader(System.IO.Stream stream) { }
+        public ResourceReader(string fileName) { }
+        public void Close() { }
+        public void Dispose() { }
+        public System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
+        public void GetResourceData(string resourceName, out string resourceType, out byte[] resourceData) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial class ResourceSet : System.Collections.IEnumerable, System.IDisposable
+    {
+        protected ResourceSet() { }
+        public ResourceSet(System.IO.Stream stream) { }
+        public ResourceSet(System.Resources.IResourceReader reader) { }
+        public ResourceSet(string fileName) { }
+        public virtual void Close() { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual System.Type GetDefaultReader() { throw null; }
+        public virtual System.Type GetDefaultWriter() { throw null; }
+        public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
+        public virtual object? GetObject(string name) { throw null; }
+        public virtual object? GetObject(string name, bool ignoreCase) { throw null; }
+        public virtual string? GetString(string name) { throw null; }
+        public virtual string? GetString(string name, bool ignoreCase) { throw null; }
+        protected virtual void ReadResources() { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class SatelliteContractVersionAttribute : System.Attribute
+    {
+        public SatelliteContractVersionAttribute(string version) { }
+        public string Version { get { throw null; } }
+    }
+    public enum UltimateResourceFallbackLocation
+    {
+        MainAssembly = 0,
+        Satellite = 1,
+    }
+}
 namespace System.Runtime
 {
     public sealed partial class AmbiguousImplementationException : System.Exception
@@ -6526,6 +6858,16 @@ namespace System.Runtime.CompilerServices
         public AccessedThroughPropertyAttribute(string propertyName) { }
         public string PropertyName { get { throw null; } }
     }
+    public partial struct AsyncIteratorMethodBuilder
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void Complete() { }
+        public static System.Runtime.CompilerServices.AsyncIteratorMethodBuilder Create() { throw null; }
+        public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncIteratorStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
@@ -6536,6 +6878,32 @@ namespace System.Runtime.CompilerServices
     {
         public AsyncMethodBuilderAttribute(System.Type builderType) { }
         public System.Type BuilderType { get { throw null; } }
+    }
+    public partial struct AsyncTaskMethodBuilder
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.Task Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult() { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
+    public partial struct AsyncTaskMethodBuilder<TResult>
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.AsyncTaskMethodBuilder<TResult> Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
@@ -6566,6 +6934,18 @@ namespace System.Runtime.CompilerServices
         public static System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<TResult> Create() { throw null; }
         public void SetException(System.Exception exception) { }
         public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+    }
+    public partial struct AsyncVoidMethodBuilder
+    {
+        private object _dummy;
+        private int _dummyPrimitive;
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.AsyncVoidMethodBuilder Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult() { }
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
@@ -6625,6 +7005,28 @@ namespace System.Runtime.CompilerServices
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public delegate TValue CreateValueCallback(TKey key);
+    }
+    public readonly partial struct ConfiguredAsyncDisposable
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
+    }
+    public readonly partial struct ConfiguredCancelableAsyncEnumerable<T>
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T>.Enumerator GetAsyncEnumerator() { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public readonly partial struct Enumerator
+        {
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
+            public T Current { get { throw null; } }
+            public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
+            public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<bool> MoveNextAsync() { throw null; }
+        }
     }
     public readonly partial struct ConfiguredTaskAwaitable
     {
@@ -6874,7 +7276,7 @@ namespace System.Runtime.CompilerServices
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
-        public static int GetHashCode(object o) { throw null; }
+        public static int GetHashCode(object? o) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("obj")]
         public static object? GetObjectValue(object? obj) { throw null; }
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
@@ -7048,9 +7450,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { }
+        public static void Throw(System.Exception source) => throw null; 
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -7148,6 +7550,29 @@ namespace System.Runtime.InteropServices
     public sealed partial class OutAttribute : System.Attribute
     {
         public OutAttribute() { }
+    }
+    public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
+    {
+        protected SafeBuffer(bool ownsHandle) : base (default(bool)) { }
+        [System.CLSCompliantAttribute(false)]
+        public ulong ByteLength { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe void AcquirePointer(ref byte* pointer) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Initialize(uint numElements, uint sizeOfEachElement) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Initialize(ulong numBytes) { }
+        [System.CLSCompliantAttribute(false)]
+        public void Initialize<T>(uint numElements) where T : struct { }
+        [System.CLSCompliantAttribute(false)]
+        public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
+        [System.CLSCompliantAttribute(false)]
+        public T Read<T>(ulong byteOffset) where T : struct { throw null; }
+        public void ReleasePointer() { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
+        [System.CLSCompliantAttribute(false)]
+        public void Write<T>(ulong byteOffset, T value) where T : struct { }
     }
     public abstract partial class SafeHandle : System.Runtime.ConstrainedExecution.CriticalFinalizerObject, System.IDisposable
     {
@@ -7987,6 +8412,23 @@ namespace System.Threading
         public static bool operator !=(System.Threading.CancellationTokenRegistration left, System.Threading.CancellationTokenRegistration right) { throw null; }
         public bool Unregister() { throw null; }
     }
+    public partial class CancellationTokenSource : System.IDisposable
+    {
+        public CancellationTokenSource() { }
+        public CancellationTokenSource(int millisecondsDelay) { }
+        public CancellationTokenSource(System.TimeSpan delay) { }
+        public bool IsCancellationRequested { get { throw null; } }
+        public System.Threading.CancellationToken Token { get { throw null; } }
+        public void Cancel() { }
+        public void Cancel(bool throwOnFirstException) { }
+        public void CancelAfter(int millisecondsDelay) { }
+        public void CancelAfter(System.TimeSpan delay) { }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(System.Threading.CancellationToken token1, System.Threading.CancellationToken token2) { throw null; }
+        public static System.Threading.CancellationTokenSource CreateLinkedTokenSource(params System.Threading.CancellationToken[] tokens) { throw null; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+    }
     public enum LazyThreadSafetyMode
     {
         None = 0,
@@ -7998,6 +8440,25 @@ namespace System.Threading
         public const int Infinite = -1;
         public static readonly System.TimeSpan InfiniteTimeSpan;
     }
+    public sealed partial class Timer : System.MarshalByRefObject, System.IAsyncDisposable, System.IDisposable
+    {
+        public Timer(System.Threading.TimerCallback callback) { }
+        public Timer(System.Threading.TimerCallback callback, object? state, int dueTime, int period) { }
+        public Timer(System.Threading.TimerCallback callback, object? state, long dueTime, long period) { }
+        public Timer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) { }
+        [System.CLSCompliantAttribute(false)]
+        public Timer(System.Threading.TimerCallback callback, object? state, uint dueTime, uint period) { }
+        public static long ActiveCount { get { throw null; } }
+        public bool Change(int dueTime, int period) { throw null; }
+        public bool Change(long dueTime, long period) { throw null; }
+        public bool Change(System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public bool Change(uint dueTime, uint period) { throw null; }
+        public void Dispose() { }
+        public bool Dispose(System.Threading.WaitHandle notifyObject) { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+    }
+    public delegate void TimerCallback(object? state);
     public abstract partial class WaitHandle : System.MarshalByRefObject, System.IDisposable
     {
         protected static readonly System.IntPtr InvalidHandle;
@@ -8037,6 +8498,17 @@ namespace System.Threading
 }
 namespace System.Threading.Tasks
 {
+    public partial class ConcurrentExclusiveSchedulerPair
+    {
+        public ConcurrentExclusiveSchedulerPair() { }
+        public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler) { }
+        public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler, int maxConcurrencyLevel) { }
+        public ConcurrentExclusiveSchedulerPair(System.Threading.Tasks.TaskScheduler taskScheduler, int maxConcurrencyLevel, int maxItemsPerTask) { }
+        public System.Threading.Tasks.Task Completion { get { throw null; } }
+        public System.Threading.Tasks.TaskScheduler ConcurrentScheduler { get { throw null; } }
+        public System.Threading.Tasks.TaskScheduler ExclusiveScheduler { get { throw null; } }
+        public void Complete() { }
+    }
     public partial class Task : System.IAsyncResult, System.IDisposable
     {
         public Task(System.Action action) { }
@@ -8131,6 +8603,39 @@ namespace System.Threading.Tasks
         public static System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> WhenAny<TResult>(params System.Threading.Tasks.Task<TResult>[] tasks) { throw null; }
         public static System.Runtime.CompilerServices.YieldAwaitable Yield() { throw null; }
     }
+    public static partial class TaskAsyncEnumerableExtensions
+    {
+        public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public partial class TaskCanceledException : System.OperationCanceledException
+    {
+        public TaskCanceledException() { }
+        protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public TaskCanceledException(string? message) { }
+        public TaskCanceledException(string? message, System.Exception? innerException) { }
+        public TaskCanceledException(string? message, System.Exception? innerException, System.Threading.CancellationToken token) { }
+        public TaskCanceledException(System.Threading.Tasks.Task? task) { }
+        public System.Threading.Tasks.Task? Task { get { throw null; } }
+    }
+    public partial class TaskCompletionSource<TResult>
+    {
+        public TaskCompletionSource() { }
+        public TaskCompletionSource(object? state) { }
+        public TaskCompletionSource(object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
+        public TaskCompletionSource(System.Threading.Tasks.TaskCreationOptions creationOptions) { }
+        public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
+        public void SetCanceled() { }
+        public void SetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public bool TrySetCanceled() { throw null; }
+        public bool TrySetCanceled(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public bool TrySetException(System.Collections.Generic.IEnumerable<System.Exception> exceptions) { throw null; }
+        public bool TrySetException(System.Exception exception) { throw null; }
+        public bool TrySetResult(TResult result) { throw null; }
+    }
     [System.FlagsAttribute]
     public enum TaskContinuationOptions
     {
@@ -8160,6 +8665,11 @@ namespace System.Threading.Tasks
         DenyChildAttach = 8,
         HideScheduler = 16,
         RunContinuationsAsynchronously = 64,
+    }
+    public static partial class TaskExtensions
+    {
+        public static System.Threading.Tasks.Task Unwrap(this System.Threading.Tasks.Task<System.Threading.Tasks.Task> task) { throw null; }
+        public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(this System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> task) { throw null; }
     }
     public partial class TaskFactory
     {
@@ -8304,6 +8814,14 @@ namespace System.Threading.Tasks
         protected internal virtual bool TryDequeue(System.Threading.Tasks.Task task) { throw null; }
         protected bool TryExecuteTask(System.Threading.Tasks.Task task) { throw null; }
         protected abstract bool TryExecuteTaskInline(System.Threading.Tasks.Task task, bool taskWasPreviouslyQueued);
+    }
+    public partial class TaskSchedulerException : System.Exception
+    {
+        public TaskSchedulerException() { }
+        public TaskSchedulerException(System.Exception? innerException) { }
+        protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public TaskSchedulerException(string? message) { }
+        public TaskSchedulerException(string? message, System.Exception? innerException) { }
     }
     public enum TaskStatus
     {

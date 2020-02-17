@@ -217,11 +217,11 @@ TODO: Talk about initializing strutures before use
 #endif
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* abcf830c-56d1-4b33-a8ec-5063bb5495f1 */
-    0xabcf830c,
-    0x56d1,
-    0x4b33,
-    {0xa8, 0xec, 0x50, 0x63, 0xbb, 0x54, 0x95, 0xf1}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 13028353-152c-4886-b05b-fa76ee8169cf */
+    0x13028353,
+    0x152c,
+    0x4886,
+    {0xb0, 0x5b, 0xfa, 0x76, 0xee, 0x81, 0x69, 0xcf}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -252,20 +252,6 @@ enum SystemVClassificationType : unsigned __int8
     // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
     // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-    // Internal flags - never returned outside of the classification implementation.
-
-    // This value represents a very special type with two eightbytes.
-    // First ByRef, second Integer (platform int).
-    // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-    // This is the classification counterpart for that element type. It is used to detect
-    // the special TypedReference type and specialize its classification.
-    // This type is represented as a struct with two fields. The classification needs to do
-    // special handling of it since the source/methadata type of the fields is IntPtr.
-    // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-    // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-    SystemVClassificationTypeTypedReference     = 8,
-    SystemVClassificationTypeMAX                = 9,
 };
 
 // Represents classification information for a struct.
@@ -1885,9 +1871,9 @@ struct CORINFO_String : public CORINFO_Object
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1911,9 +1897,9 @@ struct CORINFO_Array : public CORINFO_Object
 struct CORINFO_Array8 : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
     union
     {
@@ -1928,9 +1914,9 @@ struct CORINFO_Array8 : public CORINFO_Object
 struct CORINFO_RefArray : public CORINFO_Object
 {
     unsigned                length;
-#ifdef BIT64
+#ifdef HOST_64BIT
     unsigned                alignpad;
-#endif // BIT64
+#endif // HOST_64BIT
 
 #if 0
     /* Multi-dimensional arrays have the lengths and bounds here */
@@ -1959,7 +1945,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */ + sizeof(unsigned __int32) /* alignpad */)
 #else
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(unsigned __int32) /* length */)
@@ -2305,6 +2291,14 @@ public:
     virtual BOOL isValidStringRef (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK     /* IN  */
+            ) = 0;
+
+    // Returns string length and content (can be null for dynamic context)
+    // for given metaTOK and module, length `-1` means input is incorrect
+    virtual LPCWSTR getStringLiteral (
+            CORINFO_MODULE_HANDLE       module,     /* IN  */
+            unsigned                    metaTOK,    /* IN  */
+            int*                        length      /* OUT */
             ) = 0;
 
     virtual BOOL shouldEnforceCallvirtRestriction(

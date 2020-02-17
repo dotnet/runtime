@@ -34,7 +34,6 @@ add_library(System.Net.Security.Native
 add_library(System.Net.Security.Native-Static
     STATIC
     ${NATIVEGSS_SOURCES}
-    ${VERSION_FILE_PATH}
 )
 
 # Disable the "lib" prefix and override default name

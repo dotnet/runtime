@@ -165,13 +165,6 @@ Exit:;
     return hr;
 }
 
-HRESULT CLRPrivBinderAssemblyLoadContext::GetBinderID(
-        UINT_PTR *pBinderId)
-{
-    *pBinderId = reinterpret_cast<UINT_PTR>(this);
-    return S_OK;
-}
-
 HRESULT CLRPrivBinderAssemblyLoadContext::GetLoaderAllocator(LPVOID* pLoaderAllocator)
 {
     _ASSERTE(pLoaderAllocator != NULL);

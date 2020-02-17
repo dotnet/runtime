@@ -45,7 +45,7 @@ function Get-Help() {
 
   Write-Host "Libraries settings:"
   Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
-  Write-Host "  -framework              Build framework: netcoreapp or netfx (short: -f)"
+  Write-Host "  -framework              Build framework: netcoreapp5.0 or net472 (short: -f)"
   Write-Host "  -coverage               Collect code coverage when testing"
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all"
   Write-Host "  -allconfigurations      Build packages for all build configurations"
@@ -85,6 +85,7 @@ if ($vs) {
 
     # This tells .NET Core to use the same dotnet.exe that build scripts use
     $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp5.0-Windows_NT-$configuration-$archTestHost";
+    $env:DEVPATH="$PSScriptRoot\..\artifacts\bin\testhost\net472-Windows_NT-$configuration-$archTestHost";
   }
 
   # This tells MSBuild to load the SDK from the directory of the bootstrapped SDK
@@ -137,8 +138,7 @@ foreach ($argument in $PSBoundParameters.Keys)
     "test"                 { $arguments += " -test" }
     "configuration"        { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
     "runtimeConfiguration" { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
-    # This should be removed after we have finalized our ci build pipeline.
-    "framework"            { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netcoreapp') { $arguments += " /p:TargetGroup=netcoreapp5.0" } else { if ($PSBoundParameters[$argument].ToLowerInvariant() -eq 'netfx') { $arguments += " /p:TargetGroup=net472" } else { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}}}
+    "framework"            { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                   { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations"    { $arguments += " /p:BuildAllConfigurations=true" }
     "arch"                 { $arguments += " /p:ArchGroup=$($PSBoundParameters[$argument]) /p:TargetArchitecture=$($PSBoundParameters[$argument])" }
