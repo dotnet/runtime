@@ -28,6 +28,14 @@ namespace System.Net.Http
             }
         }
 
+        public HttpRequestException(string message, Exception inner, HttpStatusCode? statusCode)
+            : this(message, inner)
+        {
+            StatusCode = statusCode;   
+        }
+
+        public HttpStatusCode? StatusCode { get; }
+
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
         // and the exception occurred early enough so that the request may be retried on another connection.
         internal HttpRequestException(string message, Exception inner, RequestRetryType allowRetry)
