@@ -8,14 +8,14 @@ namespace System.Diagnostics
 
     public class DataReceivedEventArgs : EventArgs
     {
-        private readonly string _data;
+        private readonly string? _data;
 
-        internal DataReceivedEventArgs(string data)
+        internal DataReceivedEventArgs(string? data)
         {
             _data = data;
         }
 
-        public string Data
+        public string? Data
         {
             get { return _data; }
         }

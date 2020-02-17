@@ -3035,7 +3035,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
         }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
         assert(addr->gtOper == GT_ADD);
@@ -3333,7 +3333,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             case GT_CNS_LNG:
             case GT_CNS_STR:
             case GT_CNS_INT:
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
             COMMON_CNS:
@@ -3532,7 +3532,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         costSz = 6;
                     }
 #else
-#error "Unknown _TARGET_"
+#error "Unknown TARGET"
 #endif
 
                     /* Overflow casts are a lot more expensive */
@@ -5670,11 +5670,11 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     return node;
 }
 
-GenTree* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
+GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon)
 {
     compQmarkUsed = true;
     cond->gtFlags |= GTF_RELOP_QMARK;
-    GenTree* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
+    GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
 #ifdef DEBUG
     if (compQmarkRationalized)
     {
@@ -14862,7 +14862,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
 
 #ifdef DEBUG
-    /* Make sure the actual types match               */
+    // Make sure the actual types match.
     if (genActualType(valTyp) != genActualType(dstTyp))
     {
         // Plus some other exceptions that are apparently legal:
@@ -14880,6 +14880,12 @@ GenTree* Compiler::gtNewTempAssign(
         // 3) TYP_BYREF = TYP_REF when object stack allocation is enabled
         else if (JitConfig.JitObjectStackAllocation() && (dstTyp == TYP_BYREF) && (valTyp == TYP_REF))
         {
+            ok = true;
+        }
+        else if (!varTypeIsGC(dstTyp) && (genTypeSize(valTyp) == genTypeSize(dstTyp)))
+        {
+            // We can have assignments that require a change of register file, e.g. for arguments
+            // and call returns. Lowering and Codegen will handle these.
             ok = true;
         }
 
@@ -14911,7 +14917,7 @@ GenTree* Compiler::gtNewTempAssign(
     // internal trees use SIMD types that are not used by the input IL. In this case, we allow
     // a null type handle and derive the necessary information about the type from its varType.
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
-    if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
+    if (varTypeIsStruct(varDsc) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
         // The struct value may be be a child of a GT_COMMA.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
@@ -14930,6 +14936,11 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else
     {
+        // We may have a scalar type variable assigned a struct value, e.g. a 'genReturnLocal'
+        // when the ABI calls for returning a struct as a primitive type.
+        // TODO-1stClassStructs: When we stop "lying" about the types for ABI purposes, the
+        // 'genReturnLocal' should be the original struct type.
+        assert(!varTypeIsStruct(valTyp) || typGetObjLayout(structHnd)->GetSize() == genTypeSize(varDsc));
         asg = gtNewAssignNode(dest, val);
     }
 
@@ -16772,7 +16783,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                 }
                 break;
 
-#if defined(_TARGET_XARCH4_) && defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
             case TYP_SIMD32:
                 switch (baseType)
                 {
@@ -16871,6 +16882,9 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_OBJ:
                 structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
                 break;
+            case GT_BLK:
+                structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
+                break;
             case GT_CALL:
                 structHnd = tree->AsCall()->gtRetClsHnd;
                 break;
@@ -16945,6 +16959,10 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                                     assert(fieldCorType == CORINFO_TYPE_VALUECLASS);
                                 }
                             }
+                        }
+                        else if (addr->OperGet() == GT_LCL_VAR)
+                        {
+                            structHnd = gtGetStructHandleIfPresent(addr);
                         }
                     }
                 }
@@ -18503,7 +18521,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#else //  _TARGET_XXX_
+#else //  TARGET_XXX
 
             // This target needs support here!
             //

@@ -436,7 +436,6 @@ namespace System.Diagnostics.Eventing.Reader
             }
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly", MessageId = "Opcodes", Justification = "matell: Shipped public in 3.5, breaking change to fix now.")]
         public IList<EventOpcode> Opcodes
         {
             get

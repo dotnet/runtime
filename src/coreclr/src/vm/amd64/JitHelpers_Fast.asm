@@ -651,6 +651,6 @@ ProbeLoop:
 
         ret
 
-LEAF_END JIT_StackProbe, _TEXT
+LEAF_END_MARKED JIT_StackProbe, _TEXT
 
         end

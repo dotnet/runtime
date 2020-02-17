@@ -12,7 +12,7 @@ using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
-    internal class MsQuicListener : QuicListenerProvider, IDisposable
+    internal sealed class MsQuicListener : QuicListenerProvider, IDisposable
     {
         // Security configuration for MsQuic
         private MsQuicSession _session;
@@ -30,6 +30,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Ssl listening options (ALPN, cert, etc)
         private SslServerAuthenticationOptions _sslOptions;
 
+        private QuicListenerOptions _options;
         private volatile bool _disposed;
         private IPEndPoint _listenEndPoint;
 
@@ -44,11 +45,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 SingleWriter = true
             });
 
+            _options = options;
             _sslOptions = options.ServerAuthenticationOptions;
             _listenEndPoint = options.ListenEndPoint;
 
             _ptr = _session.ListenerOpen(options);
-
         }
 
         internal override IPEndPoint ListenEndPoint
@@ -65,21 +66,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             ThrowIfDisposed();
 
-            if (await _acceptConnectionQueue.Reader.WaitToReadAsync())
-            {
-                if (_acceptConnectionQueue.Reader.TryRead(out MsQuicConnection connection))
-                {
-                    // resolve security config here.
-                    await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate);
-                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            MsQuicConnection connection;
 
-                    return connection;
-                }
+            try
+            {
+                connection = await _acceptConnectionQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (ChannelClosedException)
+            {
+                throw new QuicOperationAbortedException();
             }
 
-            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate,
+                _options.CertificateFilePath,
+                _options.PrivateKeyFilePath);
 
-            return null;
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            return connection;
         }
 
         public override void Dispose()
@@ -174,7 +177,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        protected void StopAcceptingConnections()
+        private void StopAcceptingConnections()
         {
             _acceptConnectionQueue.Writer.TryComplete();
         }

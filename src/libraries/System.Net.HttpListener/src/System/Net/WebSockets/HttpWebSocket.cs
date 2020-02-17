@@ -62,8 +62,7 @@ namespace System.Net.WebSockets
             // here, we know that the client has specified something, it's not empty
             // and the server has specified exactly one protocol
 
-            string[] requestProtocols = clientSecWebSocketProtocol.Split(new char[] { ',' },
-                StringSplitOptions.RemoveEmptyEntries);
+            string[] requestProtocols = clientSecWebSocketProtocol.Split(',', StringSplitOptions.RemoveEmptyEntries);
             acceptProtocol = subProtocol;
 
             // client specified protocols, serverOptions has exactly 1 non-empty entry. Check that

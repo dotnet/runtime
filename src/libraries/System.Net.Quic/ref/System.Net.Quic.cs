@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 using System.Buffers;
@@ -27,6 +27,7 @@ namespace System.Net.Quic
         public System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol => throw null;
         public ValueTask CloseAsync(long errorCode, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void Dispose() => throw null;
+        public static bool IsQuicSupported => throw null;
     }
     public sealed partial class QuicListener : IDisposable
     {
@@ -73,6 +74,8 @@ namespace System.Net.Quic
     public class QuicListenerOptions
     {
         public SslServerAuthenticationOptions ServerAuthenticationOptions { get => throw null; set => throw null; }
+        public string CertificateFilePath { get => throw null; set => throw null; }
+        public string PrivateKeyFilePath { get => throw null; set => throw null; }
         public IPEndPoint ListenEndPoint { get => throw null; set => throw null; }
         public int ListenBacklog { get => throw null; set => throw null; }
         public long MaxBidirectionalStreams { get => throw null; set => throw null; }
@@ -93,5 +96,9 @@ namespace System.Net.Quic
     {
         public QuicStreamAbortedException(string message, long errorCode) : base(message) { }
         public long ErrorCode { get; }
+    }
+    public class QuicOperationAbortedException : QuicException
+    {
+        public QuicOperationAbortedException(string message) : base(message) { }
     }
 }

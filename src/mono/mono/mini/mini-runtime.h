@@ -262,6 +262,10 @@ typedef struct MonoDebugOptions {
 	 * embedding.
 	 */
 	gboolean top_runtime_invoke_unhandled;
+
+#ifdef ENABLE_NETCORE
+	gboolean enabled;
+#endif
 } MonoDebugOptions;
 
 /*

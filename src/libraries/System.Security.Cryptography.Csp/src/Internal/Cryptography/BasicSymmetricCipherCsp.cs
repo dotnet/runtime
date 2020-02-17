@@ -17,7 +17,7 @@ namespace Internal.Cryptography
         private SafeProvHandle _hProvider;
         private SafeKeyHandle _hKey;
 
-        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[] iv, bool encrypting)
+        public BasicSymmetricCipherCsp(int algId, CipherMode cipherMode, int blockSizeInBytes, byte[] key, int effectiveKeyLength, bool addNoSaltFlag, byte[]? iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes)
         {
             _encrypting = encrypting;
@@ -27,7 +27,7 @@ namespace Internal.Cryptography
 
             SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_MODE, (int)cipherMode);
 
-            byte[] currentIv = cipherMode.GetCipherIv(iv);
+            byte[]? currentIv = cipherMode.GetCipherIv(iv);
             if (currentIv != null)
             {
                 SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_IV, currentIv);
@@ -44,14 +44,14 @@ namespace Internal.Cryptography
             if (disposing)
             {
                 SafeKeyHandle hKey = _hKey;
-                _hKey = null;
+                _hKey = null!;
                 if (hKey != null)
                 {
                     hKey.Dispose();
                 }
 
                 SafeProvHandle hProvider = _hProvider;
-                _hProvider = null;
+                _hProvider = null!;
                 if (hProvider != null)
                 {
                     hProvider.Dispose();
@@ -127,7 +127,7 @@ namespace Internal.Cryptography
 
         private static SafeProvHandle AcquireSafeProviderHandle()
         {
-            SafeProvHandle safeProvHandle = null;
+            SafeProvHandle safeProvHandle;
             var cspParams = new CspParameters((int)ProviderType.PROV_RSA_FULL);
             CapiHelper.AcquireCsp(cspParams, out safeProvHandle);
             return safeProvHandle;

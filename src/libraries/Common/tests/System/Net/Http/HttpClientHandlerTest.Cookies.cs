@@ -182,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
 
         private string GetCookieValue(HttpRequestData request)
         {
-            if (!LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version < HttpVersion.Version20)
             {
                 // HTTP/1.x must have only one value.
                 return request.GetSingleHeaderValue("Cookie");

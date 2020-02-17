@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -14,34 +16,34 @@ namespace System.Security.Cryptography
         private int _extraCount;
         private int _prefix;
         private int _iterations;
-        private byte[] _baseValue;
-        private byte[] _extra;
-        private byte[] _salt;
+        private byte[]? _baseValue;
+        private byte[]? _extra;
+        private byte[]? _salt;
         private readonly byte[] _password;
-        private string _hashName;
-        private HashAlgorithm _hash;
-        private readonly CspParameters _cspParams;
+        private string? _hashName;
+        private HashAlgorithm? _hash;
+        private readonly CspParameters? _cspParams;
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt) : this(strPassword, rgbSalt, new CspParameters()) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt) : this(password, salt, new CspParameters()) { }
+        public PasswordDeriveBytes(byte[] password, byte[]? salt) : this(password, salt, new CspParameters()) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations) :
             this(strPassword, rgbSalt, strHashName, iterations, new CspParameters()) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations) :
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations) :
             this(password, salt, hashName, iterations, new CspParameters()) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, CspParameters cspParams) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, CspParameters? cspParams) :
             this(strPassword, rgbSalt, "SHA1", 100, cspParams) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, CspParameters cspParams) :
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, CspParameters? cspParams) :
             this(password, salt, "SHA1", 100, cspParams) { }
 
-        public PasswordDeriveBytes(string strPassword, byte[] rgbSalt, string strHashName, int iterations, CspParameters cspParams) :
+        public PasswordDeriveBytes(string strPassword, byte[]? rgbSalt, string strHashName, int iterations, CspParameters? cspParams) :
             this((new UTF8Encoding(false)).GetBytes(strPassword), rgbSalt, strHashName, iterations, cspParams) { }
 
-        public PasswordDeriveBytes(byte[] password, byte[] salt, string hashName, int iterations, CspParameters cspParams)
+        public PasswordDeriveBytes(byte[] password, byte[]? salt, string hashName, int iterations, CspParameters? cspParams)
         {
             IterationCount = iterations;
             Salt = salt;
@@ -52,14 +54,14 @@ namespace System.Security.Cryptography
 
         public string HashName
         {
-            get { return _hashName; }
+            get { return _hashName!; }
             set
             {
                 if (_baseValue != null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(HashName));
 
                 _hashName = value;
-                _hash = (HashAlgorithm)CryptoConfig.CreateFromName(_hashName);
+                _hash = (HashAlgorithm?)CryptoConfig.CreateFromName(_hashName);
             }
         }
 
@@ -77,18 +79,18 @@ namespace System.Security.Cryptography
             }
         }
 
-        public byte[] Salt
+        public byte[]? Salt
         {
             get
             {
-                return (byte[])_salt?.Clone();
+                return (byte[]?)_salt?.Clone();
             }
             set
             {
                 if (_baseValue != null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(Salt));
 
-                _salt = (byte[])value?.Clone();
+                _salt = (byte[]?)value?.Clone();
             }
         }
 
@@ -181,6 +183,7 @@ namespace System.Security.Cryptography
 
         private byte[] ComputeBaseValue()
         {
+            Debug.Assert(_hash != null);
             _hash.Initialize();
             _hash.TransformBlock(_password, 0, _password.Length, _password, 0);
 
@@ -195,11 +198,11 @@ namespace System.Security.Cryptography
 
             for (int i = 1; i < (_iterations - 1); i++)
             {
-                _hash.ComputeHash(_baseValue);
+                _hash.ComputeHash(_baseValue!);
                 _baseValue = _hash.Hash;
             }
 
-            return _baseValue;
+            return _baseValue!;
         }
 
         private byte[] ComputeBytes(int cb)
@@ -208,18 +211,18 @@ namespace System.Security.Cryptography
             int ib = 0;
             byte[] rgb;
 
-            _hash.Initialize();
+            _hash!.Initialize();
             cbHash = _hash.HashSize / 8;
             rgb = new byte[((cb + cbHash - 1) / cbHash) * cbHash];
 
             using (CryptoStream cs = new CryptoStream(Stream.Null, _hash, CryptoStreamMode.Write))
             {
                 HashPrefix(cs);
-                cs.Write(_baseValue, 0, _baseValue.Length);
+                cs.Write(_baseValue!, 0, _baseValue!.Length);
                 cs.Close();
             }
 
-            Buffer.BlockCopy(_hash.Hash, 0, rgb, ib, cbHash);
+            Buffer.BlockCopy(_hash.Hash!, 0, rgb, ib, cbHash);
             ib += cbHash;
 
             while (cb > ib)
@@ -232,7 +235,7 @@ namespace System.Security.Cryptography
                     cs.Close();
                 }
 
-                Buffer.BlockCopy(_hash.Hash, 0, rgb, ib, cbHash);
+                Buffer.BlockCopy(_hash.Hash!, 0, rgb, ib, cbHash);
                 ib += cbHash;
             }
 

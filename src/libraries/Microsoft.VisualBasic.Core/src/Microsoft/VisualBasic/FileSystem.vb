@@ -75,7 +75,7 @@ Namespace Microsoft.VisualBasic
         End Sub
 
         Public Sub ChDrive(ByVal Drive As Char)
-            Drive = System.Char.ToUpper(Drive, CultureInfo.InvariantCulture)
+            Drive = System.Char.ToUpperInvariant(Drive)
 
             If (Drive < chLetterA) OrElse (Drive > chLetterZ) Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Drive"))
@@ -110,7 +110,7 @@ Namespace Microsoft.VisualBasic
             Debug.Assert(Not System.Reflection.Assembly.GetCallingAssembly() Is Utils.VBRuntimeAssembly,
                 "Methods in Microsoft.VisualBasic should not call FileSystem public method.")
 
-            Drive = System.Char.ToUpper(Drive, CultureInfo.InvariantCulture)
+            Drive = System.Char.ToUpperInvariant(Drive)
             If (Drive < chLetterA OrElse Drive > chLetterZ) Then
                 Throw VbMakeException(New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Drive")), vbErrors.DevUnavailable)
             End If

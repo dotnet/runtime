@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="GenerateRuntimeOSPropsFile">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <!-- We're using ToolRuntimeRID as a placeholder for the real corelib/runtime components until we have an actual set of runtime bits to consume for webassembly. -->
@@ -24,6 +24,15 @@
          Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework.
          This can be removed once we have a new SDK -->
     <FileToExclude Include="apphost" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- System.Data.SqlClient is not live-built anymore -->
+    <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <!-- Exclude live-built dependencies -->
+    <FileToExclude Include="Microsoft.Win32.Registry" />
+    <FileToExclude Include="System.Security.AccessControl" />
+    <FileToExclude Include="System.Security.Principal.Windows" />
   </ItemGroup>
 
   <ItemGroup>

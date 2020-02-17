@@ -23,8 +23,7 @@ class Object;
 class Assembly;
 class LoaderAllocator;
 
-class CLRPrivBinderAssemblyLoadContext :
-    public IUnknownCommon<ICLRPrivBinder, IID_ICLRPrivBinder>
+class CLRPrivBinderAssemblyLoadContext : public AssemblyLoadContext
 {
 public:
 
@@ -34,9 +33,6 @@ public:
     STDMETHOD(BindAssemblyByName)(
             /* [in] */ IAssemblyName *pIAssemblyName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
-
-    STDMETHOD(GetBinderID)(
-            /* [retval][out] */ UINT_PTR *pBinderId);
 
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);

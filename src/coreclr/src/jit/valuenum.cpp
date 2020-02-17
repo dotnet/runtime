@@ -6558,18 +6558,17 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     {
                         if (srcAddrFuncApp.m_func == VNF_PtrToStatic)
                         {
-                            var_types indType    = lclVarTree->TypeGet();
-                            ValueNum  fieldSeqVN = srcAddrFuncApp.m_args[0];
-
+                            var_types     indType            = lclVarTree->TypeGet();
+                            ValueNum      fieldSeqVN         = srcAddrFuncApp.m_args[0];
+                            FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
+#ifdef DEBUG
                             FieldSeqNode* zeroOffsetFldSeq = nullptr;
                             if (GetZeroOffsetFieldMap()->Lookup(srcAddr, &zeroOffsetFldSeq))
                             {
-                                fieldSeqVN =
-                                    vnStore->FieldSeqVNAppend(fieldSeqVN, vnStore->VNForFieldSeq(zeroOffsetFldSeq));
+                                // Check that the zero offset field seq was attached for `srcAddr`.
+                                assert(fldSeqForStaticVar->GetTail() == zeroOffsetFldSeq);
                             }
-
-                            FieldSeqNode* fldSeqForStaticVar = vnStore->FieldSeqVNToFieldSeq(fieldSeqVN);
-
+#endif
                             if (fldSeqForStaticVar != FieldSeqStore::NotAField())
                             {
                                 // We model statics as indices into GcHeap (which is a subset of ByrefExposed).

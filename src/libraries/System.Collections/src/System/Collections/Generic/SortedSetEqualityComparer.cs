@@ -27,7 +27,7 @@ namespace System.Collections.Generic
         }
 
         // Use _comparer to keep equals properties intact; don't want to choose one of the comparers.
-        public bool Equals(SortedSet<T> x, SortedSet<T> y) => SortedSet<T>.SortedSetEquals(x, y, _comparer);
+        public bool Equals(SortedSet<T>? x, SortedSet<T>? y) => SortedSet<T>.SortedSetEquals(x, y, _comparer);
 
         // IMPORTANT: this part uses the fact that GetHashCode() is consistent with the notion of equality in the set.
         public int GetHashCode(SortedSet<T> obj)
@@ -37,7 +37,10 @@ namespace System.Collections.Generic
             {
                 foreach (T t in obj)
                 {
-                    hashCode = hashCode ^ (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
+                    if (t != null)
+                    {
+                        hashCode ^= (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
+                    }
                 }
             }
             // Returns 0 for null sets.

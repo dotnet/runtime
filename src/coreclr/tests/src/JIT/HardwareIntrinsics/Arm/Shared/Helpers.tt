@@ -320,12 +320,23 @@ namespace JIT.HardwareIntrinsics.Arm
 
 <#
         }
-#>
-        public static float AbsoluteDifference(float left, float right) => Math.Abs(left - right);
 
-        public static double AbsoluteDifference(double left, double right) => Math.Abs(left - right);
+        foreach ((string typeName, string className) in new (string, string)[] { ("float", "MathF"), ("double", "Math") })
+        {
+#>
+        public static <#= typeName #> AbsoluteDifference(<#= typeName #> op1, <#= typeName #> op2) => <#= className #>.Abs(op1 - op2);
+
+        public static <#= typeName #> FusedMultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplyAddNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, -op1);
+
+        public static <#= typeName #> FusedMultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(-op2, op3, op1);
+
+        public static <#= typeName #> FusedMultiplySubtractNegated(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => <#= className #>.FusedMultiplyAdd(op2, op3, -op1);
 
 <#
+        }
+
         foreach (string typeName in new string[] { "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double" })
         {
 #>
@@ -336,6 +347,10 @@ namespace JIT.HardwareIntrinsics.Arm
         public static <#= typeName #> Min(<#= typeName #> op1, <#= typeName #> op2) => Math.Min(op1, op2);
 
         public static <#= typeName #> Multiply(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 * op2);
+
+        public static <#= typeName #> MultiplyAdd(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 + (<#= typeName #>)(op2 * op3));
+
+        public static <#= typeName #> MultiplySubtract(<#= typeName #> op1, <#= typeName #> op2, <#= typeName #> op3) => (<#= typeName #>)(op1 - (<#= typeName #>)(op2 * op3));
 
         public static <#= typeName #> Subtract(<#= typeName #> op1, <#= typeName #> op2) => (<#= typeName #>)(op1 - op2);
 

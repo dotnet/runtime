@@ -35,7 +35,6 @@ namespace System.ComponentModel.Design.Serialization
         /// can also be passed as the property value, in which case the relationship will
         /// be cleared.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1043:UseIntegralOrStringArgumentForIndexers")]
         public MemberRelationship this[MemberRelationship source]
         {
             get
@@ -71,7 +70,6 @@ namespace System.ComponentModel.Design.Serialization
         /// Also sets a relationship between two objects. Null can be passed as the property value, in which
         /// case the relationship will be cleared.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1023:IndexersShouldNotBeMultidimensional")]
         public MemberRelationship this[object sourceOwner, MemberDescriptor sourceMember]
         {
             get

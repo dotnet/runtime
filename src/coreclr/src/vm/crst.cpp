@@ -22,6 +22,19 @@
 #include <crsttypes.h>
 #undef __IN_CRST_CPP
 
+#if defined(DAC_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
+    // Validate the DAC T_CRITICAL_SECTION matches the runtime CRITICAL section when we are not cross compiling.
+    // This is important when we are cross OS compiling the DAC
+    static_assert(PAL_CS_NATIVE_DATA_SIZE == DAC_CS_NATIVE_DATA_SIZE,     T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+    static_assert(sizeof(CRITICAL_SECTION) == sizeof(T_CRITICAL_SECTION), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+
+    static_assert(offsetof(CRITICAL_SECTION, DebugInfo)      == offsetof(T_CRITICAL_SECTION, DebugInfo),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+    static_assert(offsetof(CRITICAL_SECTION, LockCount)      == offsetof(T_CRITICAL_SECTION, LockCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+    static_assert(offsetof(CRITICAL_SECTION, RecursionCount) == offsetof(T_CRITICAL_SECTION, RecursionCount), T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+    static_assert(offsetof(CRITICAL_SECTION, OwningThread)   == offsetof(T_CRITICAL_SECTION, OwningThread),   T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+    static_assert(offsetof(CRITICAL_SECTION, SpinCount)      == offsetof(T_CRITICAL_SECTION, SpinCount),      T_CRITICAL_SECTION_VALIDATION_MESSAGE);
+#endif // defined(DAC_COMPILE) && defined(TARGET_UNIX) && !defined(CROSS_COMPILE)
+
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 

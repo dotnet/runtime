@@ -18,13 +18,6 @@ namespace System.Web.Util
                         ? h - 'A' + 10
                         : -1;
 
-        public static char IntToHex(int n)
-        {
-            Debug.Assert(n < 0x10);
-
-            return n <= 9 ? (char)(n + '0') : (char)(n - 10 + 'a');
-        }
-
         // Set of safe chars, from RFC 1738.4 minus '+'
         public static bool IsUrlSafeChar(char ch)
         {
