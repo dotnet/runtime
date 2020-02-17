@@ -3771,7 +3771,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			stackval *retval;
 			// FIXME This assumes a grow-down stack.
 			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
@@ -3839,7 +3838,6 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
-			stackval *retval;
 			MonoMethodSignature* csignature;
 
 			frame->ip = ip;
@@ -3875,7 +3873,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLVIRT_FAST)
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
-			stackval *retval;
 			MonoObject *this_arg;
 			is_void = *ip == MINT_VCALLVIRT_FAST;
 			int slot;
@@ -4081,7 +4078,6 @@ call:;
 #ifndef ENABLE_NETCORE
 			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [1]];
 			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
-			stackval *retval;
 
 			sp->data.p = vt_sp;
 			retval = sp;
