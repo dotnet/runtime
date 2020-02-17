@@ -11815,6 +11815,7 @@ op_to_op_src2_membase (MonoCompile *cfg, int load_opcode, int opcode)
 int
 mono_op_to_op_imm_noemul (int opcode)
 {
+MONO_DISABLE_WARNING(4065) // switch with default but no case
 	switch (opcode) {
 #if SIZEOF_REGISTER == 4 && !defined(MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS)
 	case OP_LSHR:
@@ -11836,6 +11837,7 @@ mono_op_to_op_imm_noemul (int opcode)
 	default:
 		return mono_op_to_op_imm (opcode);
 	}
+MONO_RESTORE_WARNING
 }
 
 /**
