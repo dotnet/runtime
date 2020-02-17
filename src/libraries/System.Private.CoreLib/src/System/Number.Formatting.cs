@@ -811,8 +811,9 @@ namespace System
 
             static unsafe string FormatIntSlow(TInt value, TInt hexMask, string? format, IFormatProvider? provider)
             {
+                ReadOnlySpan<char> formatSpan = format;
                 TIntFmt intFmt = default;
-                char fmt = ParseFormatSpecifier(format, out int digits);
+                char fmt = ParseFormatSpecifier(formatSpan, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
                 if (fmtUpper == 'G' ? digits < 1 : fmtUpper == 'D')
                 {
@@ -825,7 +826,7 @@ namespace System
                 else
                 {
                     ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-                    FormatOther(value, intFmt, format, provider, fmt, digits, ref sb);
+                    FormatOther(value, intFmt, formatSpan, provider, fmt, digits, ref sb);
                     return sb.ToString();
                 }
             }
