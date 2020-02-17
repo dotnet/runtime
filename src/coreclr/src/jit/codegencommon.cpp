@@ -6308,71 +6308,164 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         noway_assert(uCntBytes == 0);
 
 #elif defined(TARGET_XARCH)
-        /*
-            Generate the following code:
+// As we output multiple instructions for SIMD zeroing, we want to balance code size, with throughput
+// so cap max size at 5 * MAX SIMD length
+#ifdef TARGET_64BIT
+        int initMaxSIMDSize =
+            5 * (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported
+                     ? YMM_REGSIZE_BYTES
+                     : compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported ? XMM_REGSIZE_BYTES : 0);
+#else  // !TARGET_64BIT
+        int initMaxSIMDSize = 5 * (compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported ? XMM_REGSIZE_BYTES : 0);
+#endif // TARGET_64BIT
 
-                lea     edi, [ebp/esp-OFFS]
-                mov     ecx, <size>
-                xor     eax, eax
-                rep     stosd
-         */
+        if ((untrLclHi - untrLclLo) <= initMaxSIMDSize)
+        {
+            noway_assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+            /*
+                Generate the following code:
+                   xor      ecx, ecx
+                   vxorps   ymm0, ymm0
+                   vmovdqu  ymmword ptr [ebp/esp-OFFS], ymm0
+                   ...
+                   vmovdqu  xmmword ptr [ebp/esp-OFFS], xmm0
+                   mov      qword ptr [ebp/esp-OFFS], rcx
+             */
 
-        noway_assert(regSet.rsRegsModified(RBM_EDI));
+            // zero out the whole thing rounded up to a single stack slot size
+            unsigned blkSize = roundUp((untrLclHi - untrLclLo), (unsigned)sizeof(int));
 
+            regNumber zeroReg = REG_NA;
+            if ((blkSize % XMM_REGSIZE_BYTES) != 0)
+            {
+                assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
+                                                                                           // incoming argument reg
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+            }
+
+            unsigned i    = 0;
+            emitter* emit = GetEmitter();
+// Grab a non-argument, non-callee saved reg
 #ifdef UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX and RDI on Amd64 System V OSes
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_R12));
-            inst_RV_RV(INS_mov, REG_R12, REG_RCX);
-            regSet.verifyRegUsed(REG_R12);
-        }
-
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_R13));
-            inst_RV_RV(INS_mov, REG_R13, REG_RDI);
-            regSet.verifyRegUsed(REG_R13);
-        }
+            // System V x64 first temp reg is xmm8
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
 #else  // !UNIX_AMD64_ABI
-        // For register arguments we may have to save ECX
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-        {
-            noway_assert(regSet.rsRegsModified(RBM_ESI));
-            inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
-            regSet.verifyRegUsed(REG_ESI);
+            // Windows first temp reg is xmm4
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
+#endif // UNIX_AMD64_ABI
+            regNumber varNum      = genFramePointerReg();
+#ifdef TARGET_64BIT
+            if (blkSize >= XMM_REGSIZE_BYTES &&
+                (blkSize < YMM_REGSIZE_BYTES || compiler->getSIMDSupportLevel() < SIMD_AVX2_Supported))
+            {
+                emit->emitIns_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg);
+            }
+            else if (blkSize >= YMM_REGSIZE_BYTES)
+            {
+                noway_assert(compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported);
+                emit->emitIns_R_R(INS_xorps, EA_32BYTE, zeroSIMDReg, zeroSIMDReg);
+            }
+
+            if (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported)
+            {
+                for (unsigned regSize = YMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
+                {
+                    emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, varNum, untrLclLo + i);
+                }
+            }
+#else  // !TARGET_64BIT
+            if (blkSize >= XMM_REGSIZE_BYTES)
+            {
+                emit->emitIns_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg);
+            }
+#endif // TARGET_64BIT
+            for (unsigned regSize = XMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
+            {
+                emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, varNum, untrLclLo + i);
+            }
+
+            for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
+            {
+                noway_assert((blkSize % XMM_REGSIZE_BYTES) != 0);
+                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, untrLclLo + i);
+            }
+#ifdef TARGET_64BIT
+            assert(i == blkSize || (i + sizeof(int) == blkSize));
+            if (i != blkSize)
+            {
+                noway_assert((blkSize % XMM_REGSIZE_BYTES) != 0);
+                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, untrLclLo + i);
+                i += sizeof(int);
+            }
+#endif // TARGET_64BIT
+            assert(i == blkSize);
         }
+        else
+        {
+            /*
+                Generate the following code:
+
+                    lea     edi, [ebp/esp-OFFS]
+                    mov     ecx, <size>
+                    xor     eax, eax
+                    rep     stosd
+             */
+
+            noway_assert(regSet.rsRegsModified(RBM_EDI));
+#ifdef UNIX_AMD64_ABI
+            // For register arguments we may have to save ECX and RDI on Amd64 System V OSes
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
+            {
+                noway_assert(regSet.rsRegsModified(RBM_R12));
+                inst_RV_RV(INS_mov, REG_R12, REG_RCX);
+                regSet.verifyRegUsed(REG_R12);
+            }
+
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
+            {
+                noway_assert(regSet.rsRegsModified(RBM_R13));
+                inst_RV_RV(INS_mov, REG_R13, REG_RDI);
+                regSet.verifyRegUsed(REG_R13);
+            }
+#else  // !UNIX_AMD64_ABI
+            // For register arguments we may have to save ECX
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+            {
+                noway_assert(regSet.rsRegsModified(RBM_ESI));
+                inst_RV_RV(INS_mov, REG_ESI, REG_ECX);
+                regSet.verifyRegUsed(REG_ESI);
+            }
 #endif // !UNIX_AMD64_ABI
 
-        noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
+            noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
 
-        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, genFramePointerReg(), untrLclLo);
-        regSet.verifyRegUsed(REG_EDI);
+            GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, genFramePointerReg(), untrLclLo);
+            regSet.verifyRegUsed(REG_EDI);
 
-        inst_RV_IV(INS_mov, REG_ECX, (untrLclHi - untrLclLo) / sizeof(int), EA_4BYTE);
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
-        instGen(INS_r_stosd);
+            inst_RV_IV(INS_mov, REG_ECX, (untrLclHi - untrLclLo) / sizeof(int), EA_4BYTE);
+            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
+            instGen(INS_r_stosd);
 
 #ifdef UNIX_AMD64_ABI
-        // Move back the argument registers
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
-        {
-            inst_RV_RV(INS_mov, REG_RCX, REG_R12);
-        }
+            // Move back the argument registers
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RCX)
+            {
+                inst_RV_RV(INS_mov, REG_RCX, REG_R12);
+            }
 
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
-        {
-            inst_RV_RV(INS_mov, REG_RDI, REG_R13);
-        }
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_RDI)
+            {
+                inst_RV_RV(INS_mov, REG_RDI, REG_R13);
+            }
 #else  // !UNIX_AMD64_ABI
-        // Move back the argument registers
-        if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
-        {
-            inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
-        }
+            // Move back the argument registers
+            if (intRegState.rsCalleeRegArgMaskLiveIn & RBM_ECX)
+            {
+                inst_RV_RV(INS_mov, REG_ECX, REG_ESI);
+            }
 #endif // !UNIX_AMD64_ABI
-
-#else // TARGET*
+        }
+#else  // TARGET*
 #error Unsupported or unset target architecture
 #endif // TARGET*
     }
