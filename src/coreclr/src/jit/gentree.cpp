@@ -12463,7 +12463,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
         // We're good to go.
         JITDUMP("Optimizing compare of obj.GetType()"
-            " and type-from-handle to compare method table pointer\n");
+                " and type-from-handle to compare method table pointer\n");
 
         // opHandleArgument is the method table we're looking for.
         GenTree* const knownMT = opHandleArgument;
@@ -12502,7 +12502,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // Transform to a helper call that avoids materializing the runtime type for the handle.
 
     JITDUMP("Optimizing compare of an unknown type"
-        " and type-from-handle to specialized helper\n");
+            " and type-from-handle to specialized helper\n");
 
     GenTreeCall::Use* helperArgs = gtNewCallArgs(opHandleArgument, opOther);
     GenTree* compare = gtNewHelperCallNode(CORINFO_HELP_ARE_TYPEHANDLE_AND_TYPE_EQUIVALENT, TYP_INT, helperArgs);
