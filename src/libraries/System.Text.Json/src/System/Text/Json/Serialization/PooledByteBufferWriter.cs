@@ -132,11 +132,11 @@ namespace System.Text.Json
                 sizeHint = MinimumBufferSize;
             }
 
-            int currentLength = _rentedBuffer.Length;
-            int availableSpace = currentLength - _index;
+            int availableSpace = _rentedBuffer.Length - _index;
 
             if (sizeHint > availableSpace)
             {
+                int currentLength = _rentedBuffer.Length;
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 int newSize = currentLength + growBy;

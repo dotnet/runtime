@@ -10,6 +10,8 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class WriteValueTests
     {
+        public static bool IsX64 { get; } = IntPtr.Size >= 8;
+
         [Fact]
         public static void NullWriterThrows()
         {
@@ -311,7 +313,7 @@ namespace System.Text.Json.Serialization.Tests
             public string GetName20 => s_name;
         }
 
-        [Fact, OuterLoop]
+        [ConditionalFact(nameof(IsX64)), OuterLoop]
         public static void SerializeExceedMaximumBufferSize()
         {
             CustomClassToExceedMaxBufferSize temp = new CustomClassToExceedMaxBufferSize();
