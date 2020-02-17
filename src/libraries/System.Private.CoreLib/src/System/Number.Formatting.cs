@@ -798,18 +798,18 @@ namespace System
             return (char)(fmt - ('X' - 'A' + 10));
         }
 
-        private static string FormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, ReadOnlySpan<char> format, IFormatProvider? provider)
+        private static string FormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, string? format, IFormatProvider? provider)
             where TIntFmt : struct, IIntFmt<TInt>
         {
             // Fast path for default format
-            if (format.Length == 0)
+            if (string.IsNullOrEmpty(format))
             {
                 return default(TIntFmt).ToDecStr(value, digits: -1, provider);
             }
 
             return FormatIntSlow(value, hexMask, format, provider);
 
-            static unsafe string FormatIntSlow(TInt value, TInt hexMask, ReadOnlySpan<char> format, IFormatProvider? provider)
+            static unsafe string FormatIntSlow(TInt value, TInt hexMask, string? format, IFormatProvider? provider)
             {
                 TIntFmt intFmt = default;
                 char fmt = ParseFormatSpecifier(format, out int digits);
@@ -886,37 +886,37 @@ namespace System
             }
         }
 
-        public static string FormatSByte(sbyte value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatSByte(sbyte value, string? format, IFormatProvider? provider)
             => FormatInt<int, Int32Fmt>(value, 0x000000FF, format, provider);
 
         public static bool TryFormatSByte(sbyte value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             => TryFormatInt<int, Int32Fmt>(value, 0x000000FF, format, provider, destination, out charsWritten);
 
-        public static string FormatInt16(short value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatInt16(short value, string? format, IFormatProvider? provider)
             => FormatInt<int, Int32Fmt>(value, 0x0000FFFF, format, provider);
 
         public static bool TryFormatInt16(short value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             => TryFormatInt<int, Int32Fmt>(value, 0x0000FFFF, format, provider, destination, out charsWritten);
 
-        public static string FormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatInt32(int value, string? format, IFormatProvider? provider)
             => FormatInt<int, Int32Fmt>(value, ~0, format, provider);
 
         public static bool TryFormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             => TryFormatInt<int, Int32Fmt>(value, ~0, format, provider, destination, out charsWritten);
 
-        public static string FormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatUInt32(uint value, string? format, IFormatProvider? provider)
             => FormatInt<uint, UInt32Fmt>(value, ~0U, format, provider);
 
         public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             => TryFormatInt<uint, UInt32Fmt>(value, ~0U, format, provider, destination, out charsWritten);
 
-        public static string FormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatInt64(long value, string? format, IFormatProvider? provider)
             => FormatInt<long, Int64Fmt>(value, ~0L, format, provider);
 
         public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             => TryFormatInt<long, Int64Fmt>(value, ~0L, format, provider, destination, out charsWritten);
 
-        public static string FormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider)
+        public static string FormatUInt64(ulong value, string? format, IFormatProvider? provider)
             => FormatInt<ulong, UInt64Fmt>(value, ~0UL, format, provider);
 
         public static unsafe bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
