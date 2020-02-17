@@ -19,13 +19,15 @@ using Xunit.Abstractions;
 
 namespace System.Net.Test.Common
 {
-    // Tests are relatively long-running, and we do not expect the TestPortPool to be changed frequently
-    // [OuterLoop]
+
     [Collection(nameof(DisableParallelExecution))]
     public class TestPortPoolTests
     {
         [CollectionDefinition(nameof(DisableParallelExecution), DisableParallelization = true)]
         public class DisableParallelExecution {}
+
+        private const string OuterLoopReason =
+            "Tests are relatively long-running, and we do not expect the TestPortPool to be changed frequently";
 
         // Port range 25010-25470 is likely unused:
         // https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
@@ -79,7 +81,7 @@ namespace System.Net.Test.Common
             RemoteExecutor.Invoke(RunTest).Dispose();
         }
 
-
+        [OuterLoop(OuterLoopReason)]
         [Theory]
         [InlineData(FirstUnusedPort, FirstUnusedPort + 300)]
         [InlineData(FirstUnusedPort, FirstUnusedPort + 3)]
@@ -109,6 +111,7 @@ namespace System.Net.Test.Common
             RemoteExecutor.Invoke(RunTest, minOuter.ToString(), maxOuter.ToString(), options).Dispose();
         }
 
+        [OuterLoop(OuterLoopReason)]
         [Fact]
         public void WhenExhausted_Throws()
         {
@@ -127,6 +130,7 @@ namespace System.Net.Test.Common
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
+        [OuterLoop(OuterLoopReason)]
         [Theory]
         [InlineData(1200)]
         public void ConcurrentAccess_AssignedPortsAreUnique(int portRangeLength)
@@ -193,6 +197,7 @@ namespace System.Net.Test.Common
             RemoteExecutor.Invoke(RunTest, options).Dispose();
         }
 
+        [OuterLoop(OuterLoopReason)]
         [Fact]
         public void TestSocketIntegration()
         {
@@ -221,6 +226,11 @@ namespace System.Net.Test.Common
             RemoteExecutor.Invoke(RunTest).Dispose();
         }
 
+        // This test case is intended to detect a potential OS configuration changes on CI machines
+        // that may prevent TestPortPool to operate correctly. The recommended action is to alter TestPortPool range
+        // in those cases.
+        // Although this test is relatively long running because of the external process execution it triggers,
+        // it's better to keep it in the Inner Loop to detect the potential issues fast.
         [Fact]
         public void ConfiguredPortRange_DoesNotOverlapWith_OsDynamicPortRange()
         {

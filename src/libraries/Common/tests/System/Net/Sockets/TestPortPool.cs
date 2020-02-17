@@ -171,6 +171,8 @@ namespace System.Net.Sockets.Tests
                 return ParseCmdletOutputMac(RunCmldet("sysctl", "net.inet.ip.portrange.first net.inet.ip.portrange.last"));
             }
 
+            // Handle the Linux case otherwise.
+            // We may need to introduce additional branches as we extend our CI support.
             return ParseCmdletOutputLinux(RunCmldet("cat", "/proc/sys/net/ipv4/ip_local_port_range"));
         }
 
