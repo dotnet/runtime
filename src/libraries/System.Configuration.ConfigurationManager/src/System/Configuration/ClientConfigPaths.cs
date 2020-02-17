@@ -61,14 +61,8 @@ namespace System.Configuration
                     string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
                     Uri uri = new Uri(configBasePath);
 
-                    if (uri.IsFile)
-                    {
-                        ApplicationUri = uri.LocalPath;
-                    }
-                    else
-                    {
-                        ApplicationUri = Uri.EscapeDataString(configBasePath);
-                    }
+                    Debug.Assert(uri.IsFile);
+                    ApplicationUri = uri.LocalPath;
                 }
                 else
                 {
