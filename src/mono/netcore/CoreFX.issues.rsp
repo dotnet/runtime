@@ -2,11 +2,6 @@
 ##  System.Runtime.Loader.Tests
 ####################################################################
 
-# relies on specific exception message
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyPath_PartiallyQualifiedPath_ThrowsArgumentException
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException
--nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromNativeImagePath_PartiallyQualifiedPath_ThrowsArgumentException2
-
 # fails
 -nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadNonExistentInDefaultContext
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidUserAssembly
