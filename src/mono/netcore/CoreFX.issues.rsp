@@ -3,9 +3,7 @@
 ####################################################################
 
 # fails
--nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadNonExistentInDefaultContext
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.GetLoadContextTest_ValidUserAssembly
--nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadFromAssemblyName_AssemblyNotFound
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByPath_ValidUserAssembly
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.LoadAssemblyByStream_ValidUserAssembly
