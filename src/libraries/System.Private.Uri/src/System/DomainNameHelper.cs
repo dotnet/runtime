@@ -204,80 +204,8 @@ namespace System
             return true;
         }
 
-        internal static unsafe string IdnEquivalent(string hostname)
-        {
-            bool allAscii = true;
-            string? bidiStrippedHost = null;
-            string idnEquivalent = IdnEquivalent(hostname, ref allAscii, ref bidiStrippedHost);
-
-            string strippedHost = (allAscii ? idnEquivalent : bidiStrippedHost!);
-
-            fixed (char* strippedHostPtr = strippedHost)
-            {
-                int length = strippedHost.Length;
-                int newPos = 0;
-                int curPos = 0;
-                bool foundAce = false;
-                bool checkedAce = false;
-                bool foundDot = false;
-
-                do
-                {
-                    foundAce = false;
-                    checkedAce = false;
-                    foundDot = false;
-
-                    //find the dot or hit the end
-                    newPos = curPos;
-                    while (newPos < length)
-                    {
-                        char c = strippedHostPtr[newPos];
-                        if (!checkedAce)
-                        {
-                            checkedAce = true;
-                            if ((newPos + 3 < length) && IsIdnAce(strippedHostPtr, newPos))
-                            {
-                                newPos += 4;
-                                foundAce = true;
-                                continue;
-                            }
-                        }
-
-                        if ((c == '.') || (c == '\u3002') ||    //IDEOGRAPHIC FULL STOP
-                            (c == '\uFF0E') ||                  //FULLWIDTH FULL STOP
-                            (c == '\uFF61'))                    //HALFWIDTH IDEOGRAPHIC FULL STOP
-                        {
-                            foundDot = true;
-                            break;
-                        }
-                        ++newPos;
-                    }
-
-                    if (foundAce)
-                    {
-                        // check ace validity
-                        try
-                        {
-                            s_idnMapping.GetUnicode(strippedHost, curPos, newPos - curPos);
-                            break;
-                        }
-                        catch (ArgumentException)
-                        {
-                            // not valid ace so treat it as a normal ascii label
-                        }
-                    }
-
-                    curPos = newPos + (foundDot ? 1 : 0);
-                } while (curPos < length);
-            }
-
-            return idnEquivalent;
-        }
-
-        //
-        // Will convert a host name into its idn equivalent
-        //
-        private static string IdnEquivalent(string hostname, ref bool allAscii, ref string? bidiStrippedHost)
+        /// <summary>Converts a host name into its idn equivalent.</summary>
+        internal static string IdnEquivalent(string hostname)
         {
             if (hostname.Length == 0)
             {
@@ -286,7 +214,7 @@ namespace System
 
             // check if only ascii chars
             // special case since idnmapping will not lowercase if only ascii present
-            allAscii = true;
+            bool allAscii = true;
             foreach (char c in hostname)
             {
                 if (c > 0x7F)
@@ -302,6 +230,7 @@ namespace System
                 return hostname.ToLowerInvariant();
             }
 
+            string bidiStrippedHost;
             unsafe
             {
                 fixed (char* hostnamePtr = hostname)
