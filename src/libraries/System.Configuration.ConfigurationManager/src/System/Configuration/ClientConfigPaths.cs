@@ -68,7 +68,10 @@ namespace System.Configuration
                 {
                     // An EntryAssembly may not be found when running from a custom host.
                     // Try to find the native entry point.
-                    ApplicationUri = Process.GetCurrentProcess().MainModule.FileName;
+                    using (Process currentProcess = Process.GetCurrentProcess())
+                    {
+                        ApplicationUri = currentProcess.MainModule.FileName;
+                    }
                 }
             }
 
