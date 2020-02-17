@@ -20,7 +20,6 @@
 #include "gcpriv.h"
 
 #define USE_INTROSORT
-#define ALLOW_REFERENCES_IN_POH
 
 // We just needed a simple random number generator for testing.
 class gc_rand
@@ -2412,7 +2411,7 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
         // poh
-        // TODO: using same numbers as for LOH. May need to tune this (see: https://github.com/dotnet/runtime/issues/13739)
+        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
     },
 
@@ -2432,8 +2431,8 @@ static static_data static_data_table[latency_level_last - latency_level_first + 
         {256*1024, SSIZE_T_MAX, 200000, 0.25f, 1.2f, 1.8f, 100000, 100},
         // loh
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0},
-        // loh
-        // TODO: using same numbers as for LOH. May need to tune this (see: https://github.com/dotnet/runtime/issues/13739)
+        // poh
+        // TODO: tuning https://github.com/dotnet/runtime/issues/13739
         {3*1024*1024, SSIZE_T_MAX, 0, 0.0f, 1.25f, 4.5f, 0, 0}
     },
 };
@@ -4570,7 +4569,7 @@ void destroy_initial_memory()
         {
             assert (memory_details.allocation_pattern == initial_memory_details::EACH_BLOCK);
             imemory_data *current_block = memory_details.initial_memory;
-            for(int i = 0; i < (memory_details.block_count*(total_generation_count - ephemeral_generation_count)); i++, current_block++)
+            for (int i = 0; i < (memory_details.block_count*(total_generation_count - ephemeral_generation_count)); i++, current_block++)
             {
                 size_t block_size = memory_details.block_size (i);
                 if (current_block->memory_base != NULL)
@@ -6455,7 +6454,7 @@ void gc_heap::fix_uoh_allocation_area (BOOL for_gc_p)
 {
     UNREFERENCED_PARAMETER(for_gc_p);
 
-    for(int i = uoh_start_generation; i < total_generation_count; i++)
+    for (int i = uoh_start_generation; i < total_generation_count; i++)
     {
 #ifdef _DEBUG
         alloc_context* acontext =
@@ -8236,7 +8235,7 @@ void gc_heap::copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
 
         // We don't need to go through all the card tables here because
         // we only need to copy from the GC version of the mark array - when we
-        // mark (even in allocate_large_object) we always use that mark array.
+        // mark (even in allocate_uoh_object) we always use that mark array.
         if ((card_table_highest_address (old_ct) >= start) &&
             (card_table_lowest_address (old_ct) <= end))
         {
@@ -21216,7 +21215,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif // MULTIPLE_HEAPS && FEATURE_CARD_MARKING_STEALING
             {
                 dprintf (3, ("Marking cross generation pointers for uoh objects on heap %d", heap_number));
-                for(int i = uoh_start_generation; i < total_generation_count; i++)
+                for (int i = uoh_start_generation; i < total_generation_count; i++)
                 {
 #ifndef ALLOW_REFERENCES_IN_POH
                     if (i != poh_generation)
@@ -21245,7 +21244,7 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
                 if (!hp->card_mark_done_uoh)
                 {
                     dprintf(3, ("Marking cross generation pointers for large objects on heap %d", hp->heap_number));
-                    for(int i = uoh_start_generation; i < total_generation_count; i++)
+                    for (int i = uoh_start_generation; i < total_generation_count; i++)
                     {
 #ifndef ALLOW_REFERENCES_IN_POH
                         if (i != poh_generation)
@@ -25973,7 +25972,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
 #endif // MULTIPLE_HEAPS && FEATURE_CARD_MARKING_STEALING
         {
             dprintf (3, ("Relocating cross generation pointers for uoh objects on heap %d", heap_number));
-            for(int i = uoh_start_generation; i < total_generation_count; i++)
+            for (int i = uoh_start_generation; i < total_generation_count; i++)
             {
 #ifndef ALLOW_REFERENCES_IN_POH
                 if (i != poh_generation)
@@ -26047,7 +26046,7 @@ void gc_heap::relocate_phase (int condemned_gen_number,
             if (!hp->card_mark_done_uoh)
             {
                 dprintf(3, ("Relocating cross generation pointers for uoh objects on heap %d", hp->heap_number));
-                for(int i = uoh_start_generation; i < total_generation_count; i++)
+                for (int i = uoh_start_generation; i < total_generation_count; i++)
                 {
 #ifndef ALLOW_REFERENCES_IN_POH
                     if (i != poh_generation)
@@ -28002,7 +28001,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
     bool reset_watch_state = !!concurrent_p;
     bool is_runtime_suspended = !concurrent_p;
     BOOL small_object_segments = TRUE;
-    for(int i = max_generation; i < total_generation_count; i++)
+    for (int i = max_generation; i < total_generation_count; i++)
     {
         heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (i)));
         PREFIX_ASSUME(seg != NULL);
@@ -33575,16 +33574,6 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
     return obj;
 }
 
-CObjectHeader* gc_heap::allocate_large_object (size_t jsize, uint32_t flags, int64_t& alloc_bytes)
-{
-    return allocate_uoh_object (jsize, flags, loh_generation, alloc_bytes);
-}
-
-CObjectHeader* gc_heap::allocate_pinned_object (size_t jsize, uint32_t flags, int64_t& alloc_bytes)
-{
-    return allocate_uoh_object (jsize, flags, poh_generation, alloc_bytes);
-}
-
 void reset_memory (uint8_t* o, size_t sizeo)
 {
     if (sizeo > 128 * 1024)
@@ -35572,7 +35561,7 @@ void gc_heap::verify_partial ()
     BOOL bad_ref_p = FALSE;
     BOOL free_ref_p = FALSE;
 
-    for(int i = max_generation; i < total_generation_count; i++)
+    for (int i = max_generation; i < total_generation_count; i++)
     {
         generation* gen = generation_of (i);
         int align_const = get_alignment_constant (i == max_generation);
@@ -36471,10 +36460,10 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     gc_heap::n_heaps = nhp;
-    // TODO: using same numbers as for LOH. May need to tune this (see: https://github.com/dotnet/runtime/issues/13739)
+    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/, nhp);
 #else
-    // TODO: using same numbers as for LOH. May need to tune this (see: https://github.com/dotnet/runtime/issues/13739)
+    // TODO: tuning https://github.com/dotnet/runtime/issues/13739
     hr = gc_heap::initialize_gc (seg_size, large_seg_size /*loh_segment_size*/, large_seg_size /*poh_segment_size*/);
 #endif //MULTIPLE_HEAPS
 
@@ -36534,7 +36523,7 @@ HRESULT GCHeap::Initialize()
 #ifndef FEATURE_REDHAWK // Redhawk forces relocation a different way
 #if defined (STRESS_HEAP) && !defined (MULTIPLE_HEAPS)
     if (GCStress<cfg_any>::IsEnabled())  {
-        for(int i = 0; i < GCHeap::NUM_HEAP_STRESS_OBJS; i++)
+        for (int i = 0; i < GCHeap::NUM_HEAP_STRESS_OBJS; i++)
         {
             m_StressObjs[i] = CreateGlobalHandle(0);
         }
@@ -37280,7 +37269,7 @@ GCHeap::AllocAlign8Common(void* _hp, alloc_context* acontext, size_t size, uint3
 
         alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
 
-        newAlloc = (Object*) hp->allocate_large_object (size, flags, acontext->alloc_bytes_uoh);
+        newAlloc = (Object*) hp->allocate_uoh_object (size, flags, loh_generation, acontext->alloc_bytes_uoh);
         ASSERT(((size_t)newAlloc & 7) == 0);
     }
 
@@ -37331,7 +37320,7 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
     if (gc_rand::get_rand() & 1)
     {
         acontext = generation_alloc_context (hp->generation_of (loh_generation));
-        newAlloc = (Object*) hp->allocate_large_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, acontext->alloc_bytes_uoh);
+        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
     }
     else
     {
@@ -37339,12 +37328,12 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
         if (hp->current_no_gc_region_info.started)
         {
             acontext = generation_alloc_context(hp->generation_of(loh_generation));
-            newAlloc = (Object*)hp->allocate_large_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, acontext->alloc_bytes_uoh);
+            newAlloc = (Object*)hp->allocate_uoh_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
         }
         else
         {
             acontext = generation_alloc_context(hp->generation_of(poh_generation));
-            newAlloc = (Object*)hp->allocate_pinned_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, acontext->alloc_bytes_uoh);
+            newAlloc = (Object*)hp->allocate_uoh_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
         }
     }
 
@@ -37402,7 +37391,7 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
     else
     {
-        newAlloc = (Object*) hp->allocate_large_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, acontext->alloc_bytes_uoh);
+        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
 #ifdef FEATURE_STRUCTALIGN
         newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
 #endif // FEATURE_STRUCTALIGN

@@ -106,6 +106,8 @@ inline void FATAL_GC_ERROR()
 
 #define CARD_BUNDLE         //enable card bundle feature.(requires WRITE_WATCH)
 
+#define ALLOW_REFERENCES_IN_POH  //Allow POH objects to contain references.
+
 // If this is defined we use a map for segments in order to find the heap for
 // a segment fast. But it does use more memory as we have to cover the whole
 // heap range and for each entry we allocate a struct of 5 ptr-size words
@@ -1277,10 +1279,6 @@ public:
     // lowest_address and highest_address, which are currently the same accross all heaps.
     PER_HEAP
     CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
-    PER_HEAP
-    CObjectHeader* allocate_large_object (size_t size, uint32_t flags, int64_t& alloc_bytes);
-    PER_HEAP
-    CObjectHeader* allocate_pinned_object (size_t size, uint32_t flags, int64_t& alloc_bytes);
 
 #ifdef FEATURE_STRUCTALIGN
     PER_HEAP
@@ -3997,7 +3995,7 @@ protected:
     PER_HEAP
     alloc_list gen2_alloc_list[NUM_GEN2_ALIST-1];
 
-// TODO: using same numbers as for LOH. May need to tune this (see: https://github.com/dotnet/runtime/issues/13739)
+// TODO: tuning https://github.com/dotnet/runtime/issues/13739
 #define NUM_POH_ALIST (12)
 #ifdef BIT64
 #define BASE_POH_ALIST (1*256)
