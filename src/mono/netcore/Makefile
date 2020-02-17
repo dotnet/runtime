@@ -49,6 +49,11 @@ run-tests-coreclr:
 run-tests-coreclr-all:
 	$(DOTNET) msbuild /t:RunCoreClrTests $(MONO_PROJ)
 
+# run corefx tests for $(LibraryToTest)
+# e.g. `make run-tests-corefx LibraryToTest=System.Runtime`
+run-tests-corefx:
+	$(DOTNET) msbuild /t:RunCoreFxTest /p:LibraryToTest=$(LibraryToTest) $(MONO_PROJ)
+
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
 # you can append BDN parameters at the end, e.g. ` -- --filter Burgers --keepFiles`

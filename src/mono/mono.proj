@@ -18,7 +18,9 @@
     <_CoreClrFileName Condition="'$(TargetsOSX)' == 'true'">libcoreclr.dylib</_CoreClrFileName>
     <_CoreClrFileName Condition="'$(_CoreClrFileName)' == ''">libcoreclr.so</_CoreClrFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
+    <CoreFxTestConfig Condition="'$(CoreFxTestConfig)' == ''">$(Configuration)</CoreFxTestConfig>
     <CoreClrTestCoreRoot>$(ArtifactsDir)tests\coreclr\$(OSGroup).$(Platform).$(CoreClrTestConfig)\Tests\Core_Root</CoreClrTestCoreRoot>
+    <CoreFxTestCoreRoot>$(ArtifactsDir)bin\testhost\$(NetCoreAppCurrent)-$(OSGroup)-$(CoreFxTestConfig)-$(Platform)\shared\Microsoft.NETCore.App\$(ProductVersion)\</CoreFxTestCoreRoot>
   </PropertyGroup>
 
   <!-- OSX/Linux Mono runtime build -->
@@ -151,10 +153,16 @@
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <PropertyGroup>
-      <Destination>$(CoreClrTestCoreRoot)</Destination>
-    </PropertyGroup>
-    <CallTarget Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
+    <MSBuild Projects ="$(MSBuildProjectFullPath)"
+            Properties="Destination=$(CoreClrTestCoreRoot)"
+            Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
+  </Target>
+
+  <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
+  <Target Name="PatchCoreFxTesthost" DependsOnTargets="ValidateLocalDotnet">
+    <MSBuild Projects ="$(MSBuildProjectFullPath)"
+            Properties="Destination=$(CoreFxTestCoreRoot)"
+            Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Coreclr runtime bits back to Core_Root -->
@@ -188,6 +196,14 @@
   <Target Name="RunCoreClrTests" DependsOnTargets="ValidateLocalDotnet;PatchCoreClrCoreRoot">
     <Exec Condition="'$(OS)' == 'Windows_NT'" Command="$(MonoProjectRoot)..\coreclr\tests\runtest.cmd $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="$(MonoProjectRoot)../coreclr/tests/./runtest.sh $(CoreClrTestConfig)" ContinueOnError="ErrorAndContinue" />
+  </Target>
+
+  <!-- Run corefx tests using testhost -->
+  <Target Name="RunCoreFxTest" DependsOnTargets="PatchCoreFxTesthost">
+    <Error Condition="$(LibraryToTest) == ''" Text="LibraryToTest variable is not set" />
+    <Error Condition="$(LibraryToTest.EndsWith('.Tests'))" Text="LibraryToTest should not end with .Tests, e.g. just 'System.Runtime'" />
+    <MSBuild Projects ="$(RepoRoot)src\libraries\$(LibraryToTest)\tests\$(LibraryToTest).Tests.csproj" 
+             Properties="Configuration=$(CoreFxTestConfig)" Targets="BuildAndTest" />
   </Target>
 
   <Target Name="RunBenchmarks" DependsOnTargets="PatchLocalMonoDotnet">
