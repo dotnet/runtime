@@ -37313,29 +37313,8 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
 #endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
 
-    //TODO: WIP this is for testing POH, it passes LOH allocations to POH heap. revert the following change when done 
-    alloc_context* acontext;
-
-    // spread 50%/50% between POH and LOH
-    if (gc_rand::get_rand() & 1)
-    {
-        acontext = generation_alloc_context (hp->generation_of (loh_generation));
-        newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-    }
-    else
-    {
-        // If NoGC started, do LOH allocation. POH does not support NoGC. Not sure if it will. 
-        if (hp->current_no_gc_region_info.started)
-        {
-            acontext = generation_alloc_context(hp->generation_of(loh_generation));
-            newAlloc = (Object*)hp->allocate_uoh_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-        }
-        else
-        {
-            acontext = generation_alloc_context(hp->generation_of(poh_generation));
-            newAlloc = (Object*)hp->allocate_uoh_object(size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
-        }
-    }
+    alloc_context* acontext = generation_alloc_context (hp->generation_of (loh_generation));
+    newAlloc = (Object*) hp->allocate_uoh_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), flags, loh_generation, acontext->alloc_bytes_uoh);
 
 #ifdef FEATURE_STRUCTALIGN
     newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
