@@ -20,6 +20,7 @@
 
 // FIXME: Make this more visible.
 #if __cplusplus
+// FIXME Does this break things? See https://github.com/mono/mono/pull/18878.
 #define MONO_INLINE inline
 #elif _MSC_VER
 #define MONO_INLINE __inline
