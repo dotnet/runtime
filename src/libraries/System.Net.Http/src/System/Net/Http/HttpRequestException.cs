@@ -31,7 +31,7 @@ namespace System.Net.Http
         public HttpRequestException(string message, Exception inner, HttpStatusCode? statusCode)
             : this(message, inner)
         {
-            StatusCode = statusCode;   
+            StatusCode = statusCode;
         }
 
         public HttpStatusCode? StatusCode { get; }
