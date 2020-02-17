@@ -6516,6 +6516,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 		}
 
+		/*
+		 * Methods with AggressiveInline flag could be inlined even if the class has a cctor.
+		 * This might create a branch so emit it in the first code bblock instead of into initlocals_bb.
+		 */
+		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method)) {
+			emit_class_init (cfg, method->klass);
+		}
+
 		if (skip_dead_blocks) {
 			int ip_offset = ip - header->code;
 
