@@ -8,9 +8,9 @@
     <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
-    <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
+    <LocalDotnetDir>$(RepoRoot).dotnet</LocalDotnetDir>
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
-    <LocalMonoDotnetDir>..\..\.dotnet-mono</LocalMonoDotnetDir>
+    <LocalMonoDotnetDir>$(RepoRoot).dotnet-mono</LocalMonoDotnetDir>
     <LocalMonoDotnet>$(LocalMonoDotnetDir)\$(DotNetExec)</LocalMonoDotnet>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
@@ -119,30 +119,42 @@
 
   <Target Name="Test" />
 
-  <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
-  <Target Name="PatchLocalMonoDotnet" DependsOnTargets="ValidateLocalDotnet">
+  <!-- Copy Mono runtime bits to $(Destination) -->
+  <Target Name="CopyMonoRuntimeFilesFromArtifactsToDestination">
     <ItemGroup>
-      <_LocalDotnetFiles Include="$(LocalDotnetDir)\**\*.*" />
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
+    <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
+    <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
+          DestinationFolder="$(Destination)"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+
+  <Target Name="CloneLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
+    <ItemGroup>
+      <_LocalDotnetFiles Include="$(LocalDotnetDir)\**\*.*" />
+    </ItemGroup>
     <!-- copy .dotnet to .dotnet-mono if it doesn't exist -->
     <Copy SourceFiles="@(_LocalDotnetFiles)"
           DestinationFolder="$(LocalMonoDotnetDir)\%(RecursiveDir)"
           SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])" />
+  </Target>
+
+  <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
+  <Target Name="PatchLocalMonoDotnet" DependsOnTargets="CloneLocalDotnet">
+      <MSBuild Projects ="$(MSBuildProjectFullPath)"
+               Properties="Destination=$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])"
+               Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <Error Condition="!Exists('$(CoreClrTestCoreRoot)')" Text="Core_Root ($(CoreClrTestCoreRoot)) doesn't exist. Have you built coreclr tests in $(CoreClrTestConfig) configuration?" />
-    <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
-    </ItemGroup>
-    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(CoreClrTestCoreRoot)" />
+    <PropertyGroup>
+      <Destination>$(CoreClrTestCoreRoot)</Destination>
+    </PropertyGroup>
+    <CallTarget Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Coreclr runtime bits back to Core_Root -->
