@@ -25,7 +25,8 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
-    * You can trigger a rebuild by adding a comment like `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps tab.
+    * You can trigger a rebuild by adding a comment like `/azp run <pipeline name>` or manually re-run only the failing lanes in Azure DevOps menu or on GitHub Checks tab clicking on "re-run failed checks" or "re-run all checks" if you want to re-run all.
+    * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.
     * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
 
 Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.

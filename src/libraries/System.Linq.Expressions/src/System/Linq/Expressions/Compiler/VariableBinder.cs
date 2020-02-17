@@ -181,7 +181,7 @@ namespace System.Linq.Expressions.Compiler
                     // Otherwise, merge it
                     if (currentScope.MergedScopes == null)
                     {
-                        currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer<object>.Instance);
+                        currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer.Instance);
                     }
                     currentScope.MergedScopes.Add(block);
                     foreach (ParameterExpression v in block.Variables)

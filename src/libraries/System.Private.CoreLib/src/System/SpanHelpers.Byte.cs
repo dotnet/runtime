@@ -1312,28 +1312,32 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static unsafe bool SequenceEqual(ref byte first, ref byte second, nuint length)
         {
-            if (Unsafe.AreSame(ref first, ref second))
-                goto Equal;
-
             IntPtr offset = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
             IntPtr lengthToExamine = (IntPtr)(void*)length;
 
-            if (Vector.IsHardwareAccelerated && (byte*)lengthToExamine >= (byte*)Vector<byte>.Count)
-            {
-                lengthToExamine -= Vector<byte>.Count;
-                while ((byte*)lengthToExamine > (byte*)offset)
-                {
-                    if (LoadVector(ref first, offset) != LoadVector(ref second, offset))
-                    {
-                        goto NotEqual;
-                    }
-                    offset += Vector<byte>.Count;
-                }
-                return LoadVector(ref first, lengthToExamine) == LoadVector(ref second, lengthToExamine);
-            }
-
             if ((byte*)lengthToExamine >= (byte*)sizeof(UIntPtr))
             {
+                // Only check that the ref is the same if buffers are large, and hence
+                // its worth avoiding doing unnecessary comparisons
+                if (Unsafe.AreSame(ref first, ref second))
+                    goto Equal;
+
+                if (Vector.IsHardwareAccelerated && (byte*)lengthToExamine >= (byte*)Vector<byte>.Count)
+                {
+                    lengthToExamine -= Vector<byte>.Count;
+                    while ((byte*)lengthToExamine > (byte*)offset)
+                    {
+                        if (LoadVector(ref first, offset) != LoadVector(ref second, offset))
+                        {
+                            goto NotEqual;
+                        }
+                        offset += Vector<byte>.Count;
+                    }
+                    return LoadVector(ref first, lengthToExamine) == LoadVector(ref second, lengthToExamine);
+                }
+
+                Debug.Assert((byte*)lengthToExamine >= (byte*)sizeof(UIntPtr));
+
                 lengthToExamine -= sizeof(UIntPtr);
                 while ((byte*)lengthToExamine > (byte*)offset)
                 {
@@ -1346,11 +1350,39 @@ namespace System
                 return LoadUIntPtr(ref first, lengthToExamine) == LoadUIntPtr(ref second, lengthToExamine);
             }
 
-            while ((byte*)lengthToExamine > (byte*)offset)
+            Debug.Assert((byte*)lengthToExamine < (byte*)sizeof(UIntPtr));
+
+            // On 32-bit, this will never be true since sizeof(UIntPtr) == 4
+#if TARGET_64BIT
+            if ((byte*)lengthToExamine >= (byte*)sizeof(int))
             {
-                if (Unsafe.AddByteOffset(ref first, offset) != Unsafe.AddByteOffset(ref second, offset))
+                if (LoadInt(ref first, offset) != LoadInt(ref second, offset))
+                {
                     goto NotEqual;
-                offset += 1;
+                }
+                offset += sizeof(int);
+                lengthToExamine -= sizeof(int);
+            }
+#endif
+
+            if ((byte*)lengthToExamine >= (byte*)sizeof(short))
+            {
+                if (LoadShort(ref first, offset) != LoadShort(ref second, offset))
+                {
+                    goto NotEqual;
+                }
+                offset += sizeof(short);
+                lengthToExamine -= sizeof(short);
+            }
+
+            if (lengthToExamine != IntPtr.Zero)
+            {
+                Debug.Assert((int)lengthToExamine == 1);
+
+                if (Unsafe.AddByteOffset(ref first, offset) != Unsafe.AddByteOffset(ref second, offset))
+                {
+                    goto NotEqual;
+                }
             }
 
         Equal:
@@ -1610,6 +1642,14 @@ namespace System
                                                        0x03ul << 32 |
                                                        0x02ul << 40 |
                                                        0x01ul << 48) + 1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe short LoadShort(ref byte start, IntPtr offset)
+            => Unsafe.ReadUnaligned<short>(ref Unsafe.AddByteOffset(ref start, offset));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe int LoadInt(ref byte start, IntPtr offset)
+            => Unsafe.ReadUnaligned<int>(ref Unsafe.AddByteOffset(ref start, offset));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe UIntPtr LoadUIntPtr(ref byte start, IntPtr offset)

@@ -122,6 +122,9 @@ namespace System.Net.Sockets.Tests
         [InlineData(false, 2)]
         public void CtorAndAccept_SocketNotKeptAliveViaInheritance(bool validateClientOuter, int acceptApiOuter)
         {
+            // 300 ms should be long enough to connect if the socket is actually present & listening.
+            const int ConnectionTimeoutMs = 300;
+
             // Run the test in another process so as to not have trouble with other tests
             // launching child processes that might impact inheritance.
             RemoteExecutor.Invoke((validateClientString, acceptApiString) =>
@@ -186,11 +189,13 @@ namespace System.Net.Sockets.Tests
                                 listener.Dispose();
                                 using (var tmpClient = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                                 {
-                                    Assert.ThrowsAny<SocketException>(() => tmpClient.Connect(ep));
-                                }
+                                    bool connected = tmpClient.TryConnect(ep, ConnectionTimeoutMs);
 
-                                // Let the child process terminate.
-                                serverPipe.WriteByte(42);
+                                    // Let the child process terminate.
+                                    serverPipe.WriteByte(42);
+
+                                    Assert.False(connected);
+                                }
                             }
                         }
                     }

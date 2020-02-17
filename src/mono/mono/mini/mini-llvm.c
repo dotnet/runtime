@@ -113,6 +113,7 @@ typedef struct {
 	GPtrArray *cfgs;
 	int unbox_tramp_num, unbox_tramp_elemsize;
 	GHashTable *got_idx_to_type;
+	GHashTable *no_method_table_lmethods;
 } MonoLLVMModule;
 
 /*
@@ -408,8 +409,6 @@ typedef enum {
 #endif
 	INTRINS_NUM
 } IntrinsicId;
-
-static MonoNativeTlsKey current_cfg_tls_id;
 
 static MonoLLVMModule aot_module;
 
@@ -2037,7 +2036,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	}
 
 	/*
-	 * Change references to jit icalls to the icall wrappers when in corlib, so
+	 * Change references to icalls/pinvokes/jit icalls to their wrappers when in corlib, so
 	 * they can be called directly.
 	 */
 	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL_ID) {
@@ -2047,6 +2046,11 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			type = MONO_PATCH_INFO_METHOD;
 			data = mono_icall_get_wrapper_method (info);
 		}
+	}
+	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_METHOD) {
+		MonoMethod *method = (MonoMethod*)data;
+		if (m_method_is_icall (method) || m_method_is_pinvoke (method))
+			data = mono_marshal_get_native_wrapper (method, TRUE, TRUE);
 	}
 
 	/*
@@ -2058,8 +2062,9 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 		MonoMethod *method = (MonoMethod*)data;
 		if (m_class_get_image (method->klass)->assembly == ctx->module->assembly) {
 			MonoJumpInfo tmp_ji;
+
 			tmp_ji.type = type;
-			tmp_ji.data.target = data;
+			tmp_ji.data.target = method;
 
 			MonoJumpInfo *ji = mono_aot_patch_info_dup (&tmp_ji);
 			ji->next = ctx->cfg->patch_info;
@@ -2097,7 +2102,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	}
 
 	/*
-	 * Calls are made through the GOT.
+	 * All other calls are made through the GOT.
 	 */
 	callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
 
@@ -2820,7 +2825,7 @@ emit_get_method (MonoLLVMModule *module)
 		table_elems = g_new0 (LLVMValueRef, table_len);
 		for (i = 0; i < table_len; ++i) {
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
-			if (m)
+			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
 				table_elems [i] = LLVMBuildBitCast (builder, m, rtype, "");
 			else
 				table_elems [i] = LLVMConstNull (rtype);
@@ -2891,7 +2896,7 @@ emit_get_method (MonoLLVMModule *module)
 			LLVMPositionBuilderAtEnd (builder, bb);
 
 			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
-			if (m)
+			if (m && !g_hash_table_lookup (module->no_method_table_lmethods, m))
 				LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
 			else
 				LLVMBuildRet (builder, LLVMConstNull (rtype));
@@ -8380,7 +8385,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	mono_loader_lock ();
 
 	/* Used to communicate with the callbacks */
-	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+	mono_llvm_jit_set_tls_cfg (cfg);
 
 	ctx = g_new0 (EmitContext, 1);
 	ctx->cfg = cfg;
@@ -8481,7 +8486,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 	free_ctx (ctx);
 
-	mono_native_tls_set_value (current_cfg_tls_id, NULL);
+	mono_llvm_jit_set_tls_cfg (NULL);
 
 	mono_loader_unlock ();
 }
@@ -8557,6 +8562,8 @@ emit_method_inner (EmitContext *ctx)
 				LLVMSetLinkage (method, LLVMExternalLinkage);
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
+			/* Not looked up at runtime */
+			g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 
 			goto after_codegen;
 		} else if (info->subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
@@ -8618,6 +8625,7 @@ emit_method_inner (EmitContext *ctx)
 			}
 		}
 	}
+
 #ifndef MONO_LLVM_LOADED
 	if (!cfg->llvm_only && mono_threads_are_safepoints_enabled () && requires_safepoint) {
 		if (!cfg->compile_aot && cfg->method->wrapper_type != MONO_WRAPPER_ALLOC) {
@@ -9913,30 +9921,6 @@ add_intrinsics (LLVMModuleRef module)
 
 		AddFunc (module, "llvm_resume_unwind_trampoline", LLVMVoidType (), NULL, 0);
 	}
-
-	/* Load/Store intrinsics */
-	{
-		LLVMTypeRef arg_types [5];
-		int i;
-		char name [128];
-
-		for (i = 1; i <= 8; i *= 2) {
-			arg_types [0] = LLVMPointerType (LLVMIntType (i * 8), 0);
-			arg_types [1] = LLVMInt32Type ();
-			arg_types [2] = LLVMInt1Type ();
-			arg_types [3] = LLVMInt32Type ();
-			sprintf (name, "llvm.mono.load.i%d.p0i%d", i * 8, i * 8);
-			AddFunc (module, name, LLVMIntType (i * 8), arg_types, 4);
-
-			arg_types [0] = LLVMIntType (i * 8);
-			arg_types [1] = LLVMPointerType (LLVMIntType (i * 8), 0);
-			arg_types [2] = LLVMInt32Type ();
-			arg_types [3] = LLVMInt1Type ();
-			arg_types [4] = LLVMInt32Type ();
-			sprintf (name, "llvm.mono.store.i%d.p0i%d", i * 8, i * 8);
-			AddFunc (module, name, LLVMVoidType (), arg_types, 5);
-		}
-	}
 }
 
 static void
@@ -9946,12 +9930,10 @@ add_types (MonoLLVMModule *module)
 }
 
 void
-mono_llvm_init (void)
+mono_llvm_init (gboolean enable_jit)
 {
 	GHashTable *h;
 	int i;
-
-	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
 	h = g_hash_table_new (NULL, NULL);
 	for (i = 0; i < INTRINS_NUM; ++i)
@@ -9962,6 +9944,9 @@ mono_llvm_init (void)
 	for (i = 0; i < INTRINS_NUM; ++i)
 		g_hash_table_insert (h, (gpointer)intrinsics [i].name, GINT_TO_POINTER (intrinsics [i].id + 1));
 	intrins_name_to_id = h;
+
+	if (enable_jit)
+		mono_llvm_jit_init ();
 }
 
 void
@@ -10162,6 +10147,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->method_to_lmethod = g_hash_table_new (NULL, NULL);
 	module->method_to_call_info = g_hash_table_new (NULL, NULL);
 	module->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
+	module->no_method_table_lmethods = g_hash_table_new (NULL, NULL);
 	module->callsite_list = g_ptr_array_new ();
 }
 
@@ -10188,12 +10174,40 @@ mono_llvm_fixup_aot_module (void)
 		CallSite *site = (CallSite*)g_ptr_array_index (module->callsite_list, sindex);
 		method = site->method;
 		LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
-
 		LLVMValueRef placeholder = (LLVMValueRef)site->load;
 		LLVMValueRef indexes [2], got_entry_addr, load;
 		char *name;
 
-		if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
+		gboolean can_direct_call = FALSE;
+
+		/* Replace sharable instances with their shared version */
+		if (!lmethod && method->is_inflated) {
+			if (mono_method_is_generic_sharable_full (method, FALSE, TRUE, FALSE)) {
+				ERROR_DECL (error);
+				MonoMethod *shared = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+				if (is_ok (error)) {
+					lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, shared);
+					if (lmethod)
+						method = shared;
+				}
+			}
+		}
+
+		if (lmethod && !m_method_is_synchronized (method)) {
+			can_direct_call = TRUE;
+		} else if (m_method_is_wrapper (method) && !method->is_inflated) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+			/* This is a call from the synchronized wrapper to the real method */
+			if (info->subtype == WRAPPER_SUBTYPE_SYNCHRONIZED_INNER) {
+				method = info->d.synchronized.method;
+				lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
+				if (lmethod)
+					can_direct_call = TRUE;
+			}
+		}
+
+		if (can_direct_call) {
 			mono_llvm_replace_uses_of (placeholder, lmethod);
 
 			if (mono_aot_can_specialize (method))
@@ -11026,7 +11040,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_init (void)
+mono_llvm_init (gboolean enable_jit)
 {
 }
 
@@ -11035,122 +11049,6 @@ mono_llvm_init (void)
 #if !defined(DISABLE_JIT) && !defined(MONO_CROSS_COMPILE)
 
 /* LLVM JIT support */
-
-static unsigned char*
-alloc_cb (LLVMValueRef function, int size)
-{
-	MonoCompile *cfg;
-
-	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
-
-	if (cfg) {
-		// FIXME: dynamic
-		return (unsigned char*)mono_domain_code_reserve (cfg->domain, size);
-	} else {
-		return (unsigned char*)mono_domain_code_reserve (mono_domain_get (), size);
-	}
-}
-
-static void
-emitted_cb (LLVMValueRef function, void *start, void *end)
-{
-	MonoCompile *cfg;
-
-	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
-	g_assert (cfg);
-	cfg->code_len = (guint8*)end - (guint8*)start;
-}
-
-static void
-exception_cb (void *data)
-{
-	MonoCompile *cfg;
-	MonoJitExceptionInfo *ei;
-	guint32 ei_len, i, j, nested_len, nindex;
-	gpointer *type_info;
-	int this_reg, this_offset;
-
-	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
-	g_assert (cfg);
-
-	/*
-	 * data points to a DWARF FDE structure, convert it to our unwind format and
-	 * save it.
-	 * An alternative would be to save it directly, and modify our unwinder to work
-	 * with it.
-	 */
-	cfg->encoded_unwind_ops = mono_unwind_decode_fde ((guint8*)data, &cfg->encoded_unwind_ops_len, NULL, &ei, &ei_len, &type_info, &this_reg, &this_offset);
-	if (cfg->verbose_level > 1)
-		mono_print_unwind_info (cfg->encoded_unwind_ops, cfg->encoded_unwind_ops_len);
-
-	/* Count nested clauses */
-	nested_len = 0;
-	for (i = 0; i < ei_len; ++i) {
-		gint32 cindex1 = *(gint32*)type_info [i];
-		MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
-
-		for (j = 0; j < cfg->header->num_clauses; ++j) {
-			int cindex2 = j;
-			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
-
-			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-				nested_len ++;
-			}
-		}
-	}
-
-	cfg->llvm_ex_info = (MonoJitExceptionInfo*)mono_mempool_alloc0 (cfg->mempool, (ei_len + nested_len) * sizeof (MonoJitExceptionInfo));
-	cfg->llvm_ex_info_len = ei_len + nested_len;
-	memcpy (cfg->llvm_ex_info, ei, ei_len * sizeof (MonoJitExceptionInfo));
-	/* Fill the rest of the information from the type info */
-	for (i = 0; i < ei_len; ++i) {
-		gint32 clause_index = *(gint32*)type_info [i];
-		MonoExceptionClause *clause = &cfg->header->clauses [clause_index];
-
-		cfg->llvm_ex_info [i].flags = clause->flags;
-		cfg->llvm_ex_info [i].data.catch_class = clause->data.catch_class;
-		cfg->llvm_ex_info [i].clause_index = clause_index;
-	}
-
-	/*
-	 * For nested clauses, the LLVM produced exception info associates the try interval with
-	 * the innermost handler, while mono expects it to be associated with all nesting clauses.
-	 * So add new clauses which use the IL info (catch class etc.) from the nesting clause,
-	 * and everything else from the nested clause.
-	 */
-	nindex = ei_len;
-	for (i = 0; i < ei_len; ++i) {
-		gint32 cindex1 = *(gint32*)type_info [i];
-		MonoExceptionClause *clause1 = &cfg->header->clauses [cindex1];
-
-		for (j = 0; j < cfg->header->num_clauses; ++j) {
-			int cindex2 = j;
-			MonoExceptionClause *clause2 = &cfg->header->clauses [cindex2];
-			MonoJitExceptionInfo *nesting_ei, *nested_ei;
-
-			if (cindex1 != cindex2 && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
-				/* clause1 is the nested clause */
-				nested_ei = &cfg->llvm_ex_info [i];
-				nesting_ei = &cfg->llvm_ex_info [nindex];
-				nindex ++;
-
-				memcpy (nesting_ei, nested_ei, sizeof (MonoJitExceptionInfo));
-
-				nesting_ei->flags = clause2->flags;
-				nesting_ei->data.catch_class = clause2->data.catch_class;
-				nesting_ei->clause_index = cindex2;
-			}
-		}
-	}
-	g_assert (nindex == ei_len + nested_len);
-	cfg->llvm_this_reg = this_reg;
-	cfg->llvm_this_offset = this_offset;
-
-	/* type_info [i] is cfg mempool allocated, no need to free it */
-
-	g_free (ei);
-	g_free (type_info);
-}
 
 /*
  * decode_llvm_eh_info:
@@ -11265,7 +11163,7 @@ init_jit_module (MonoDomain *domain)
 	module->context = LLVMGetGlobalContext ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
 
-	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (alloc_cb, emitted_cb, exception_cb, &module->ee);
+	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (&module->ee);
 
 	add_intrinsics (module->lmodule);
 	add_types (module);

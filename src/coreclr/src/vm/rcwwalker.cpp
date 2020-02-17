@@ -526,25 +526,6 @@ void RCWWalker::BeforeJupiterRCWDestroyed(RCW *pRCW)
 }
 
 //
-// Cleanup stuff when EE is about to unload
-//
-void RCWWalker::OnEEShutdown()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (s_pGCManager)
-    {
-        LOG((LF_INTEROP, LL_INFO100, "[RCW Walker] Releasing RCWWalker::s_pIGCManager 0x%p\n", s_pGCManager));
-
-        // Make sure s_pGCManager is always either NULL or a valid IJupiterGCManager *
-        // this will make crash easier to diagnose
-        IJupiterGCManager *pGCManager = FastInterlockExchangePointer((IJupiterGCManager **)&s_pGCManager, NULL);
-        if (pGCManager != NULL)
-            pGCManager->Release();
-    }
-}
-
-//
 // Walk all the jupiter RCWs in all AppDomains and build references from RCW -> CCW as we go
 //
 void RCWWalker::WalkRCWs()

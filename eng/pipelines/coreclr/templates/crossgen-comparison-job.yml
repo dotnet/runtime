@@ -176,7 +176,7 @@ jobs:
             --diff_dir   %HELIX_WORKITEM_PAYLOAD%\log\$(targetFlavor)
 
     # Publish log
-    - task: PublishBuildArtifacts@1
+    - task: PublishPipelineArtifact@1
       displayName: Publish log
       inputs:
         pathtoPublish: $(artifactsDirectory)/log
