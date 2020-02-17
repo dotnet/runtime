@@ -38,6 +38,20 @@ namespace Internal.Cryptography
 
         public abstract bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten);
 
+        // Compute the hash based on the appeneded data and doesn't reset the hash provider to allow for continued hashing
+        public virtual int GetCurrentHash(Span<byte> destination)
+        {
+            if (destination.Length < HashSizeInBytes)
+            {
+                throw new ArgumentOutOfRangeException();
+            }
+            TryGetCurrentHash(destination, out int bytesWritten);
+            return bytesWritten;
+        }
+
+        // Compute the hash based on the appeneded data and doesn't reset the hash provider to allow for continued hashing
+        public virtual bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException(SR.Cryptography_HashAlorithmNoSupportForGetCurrent);
+
         // Returns the length of the byte array returned by FinalizeHashAndReset.
         public abstract int HashSizeInBytes { get; }
 

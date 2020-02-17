@@ -40,6 +40,8 @@ namespace System.Security.Cryptography
         /// </summary>
         public HashAlgorithmName AlgorithmName => _algorithmName;
 
+        public int HashLengthInBytes { get => _hash != null ? _hash.HashSizeInBytes : _hmac!.HashSizeInBits >> 3; }
+
         /// <summary>
         /// Append the entire contents of <paramref name="data"/> to the data already processed in the hash or HMAC.
         /// </summary>
@@ -108,6 +110,37 @@ namespace System.Security.Cryptography
             }
         }
 
+        public byte[] GetCurrentHash()
+        {
+            byte[] returnArray = new byte[HashLengthInBytes];
+            GetCurrentHash(returnArray);
+            return returnArray;
+        }
+
+        public int GetCurrentHash(Span<byte> destination)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+            }
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+            return _hash != null ? _hash.GetCurrentHash(destination) : _hmac!.GetCurrentHash(destination);
+        }
+
+        public bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+            }
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+            return _hash != null ?
+                _hash.TryGetCurrentHash(destination, out bytesWritten) :
+                _hmac!.TryGetCurrentHash(destination, out bytesWritten);
+        }
+
         /// <summary>
         /// Retrieve the hash or HMAC for the data accumulated from prior calls to
         /// <see cref="AppendData(byte[])"/>, and return to the state the object
@@ -117,15 +150,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetHashAndReset()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
-            }
-
-            Debug.Assert((_hash != null) ^ (_hmac != null));
-            return _hash != null ?
-                _hash.FinalizeHashAndReset() :
-                _hmac!.FinalizeHashAndReset();
+            byte[] returnArray = new byte[HashLengthInBytes];
+            GetHashAndReset(returnArray);
+            return returnArray;
         }
 
         public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten)
@@ -139,6 +166,32 @@ namespace System.Security.Cryptography
             return _hash != null ?
                 _hash.TryFinalizeHashAndReset(destination, out bytesWritten) :
                 _hmac!.TryFinalizeHashAndReset(destination, out bytesWritten);
+        }
+
+        public int GetHashAndReset(Span<byte> destination)
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+            }
+
+            Debug.Assert((_hash != null) ^ (_hmac != null));
+
+            if (destination.Length < HashLengthInBytes)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+            int bytesWritten;
+            if (_hash != null)
+            {
+                _hash.TryFinalizeHashAndReset(destination, out bytesWritten);
+            }
+            else
+            {
+                _hmac!.TryFinalizeHashAndReset(destination, out bytesWritten);
+            }
+            return bytesWritten;
         }
 
         /// <summary>

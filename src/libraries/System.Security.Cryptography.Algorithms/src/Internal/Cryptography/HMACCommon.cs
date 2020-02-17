@@ -88,6 +88,12 @@ namespace Internal.Cryptography
         public void AppendHashData(ReadOnlySpan<byte> source) =>
             _hMacProvider.AppendHashData(source);
 
+        public int GetCurrentHash(Span<byte> destination) =>
+            _hMacProvider.GetCurrentHash(destination);
+
+        public bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten) =>
+            _hMacProvider.TryGetCurrentHash(destination, out bytesWritten);
+
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public byte[] FinalizeHashAndReset() =>
             _hMacProvider.FinalizeHashAndReset();
