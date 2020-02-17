@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public override bool Equals(object? obj) { throw null; }
-        public virtual bool Equals(System.Security.Cryptography.X509Certificates.X509Certificate other) { throw null; }
+        public virtual bool Equals(System.Security.Cryptography.X509Certificates.X509Certificate? other) { throw null; }
         public virtual byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public virtual byte[]? Export(System.Security.Cryptography.X509Certificates.X509ContentType contentType, System.Security.SecureString? password) { throw null; }
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.X509Certificates
         public virtual void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public virtual void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         public virtual void Reset() { }
-        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object sender) { }
+        void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         public virtual string ToString(bool fVerbose) { throw null; }

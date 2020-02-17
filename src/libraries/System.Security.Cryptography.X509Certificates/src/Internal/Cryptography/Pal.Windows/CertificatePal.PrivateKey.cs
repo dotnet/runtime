@@ -334,7 +334,7 @@ namespace Internal.Cryptography.Pal
             // Make a new pal from bytes.
             CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
 
-            CngProvider provider = cngKey.Provider;
+            CngProvider provider = cngKey.Provider!;
             string keyName = cngKey.KeyName;
             bool machineKey = cngKey.IsMachineKey;
 
@@ -345,7 +345,7 @@ namespace Internal.Cryptography.Pal
             CRYPT_KEY_PROV_INFO keyProvInfo = default;
 
             fixed (char* keyNamePtr = cngKey.KeyName)
-            fixed (char* provNamePtr = cngKey.Provider.Provider)
+            fixed (char* provNamePtr = cngKey.Provider!.Provider)
             {
                 keyProvInfo.pwszContainerName = keyNamePtr;
                 keyProvInfo.pwszProvName = provNamePtr;
@@ -370,7 +370,7 @@ namespace Internal.Cryptography.Pal
             CngProvider provider,
             string keyName,
             bool machineKey,
-            CngAlgorithmGroup algorithmGroup)
+            CngAlgorithmGroup? algorithmGroup)
         {
             if (provider == CngProvider.MicrosoftSoftwareKeyStorageProvider ||
                 provider == CngProvider.MicrosoftSmartCardKeyStorageProvider)
@@ -422,7 +422,7 @@ namespace Internal.Cryptography.Pal
 
         private static bool TryGuessKeySpec(
             CspParameters cspParameters,
-            CngAlgorithmGroup algorithmGroup,
+            CngAlgorithmGroup? algorithmGroup,
             out int keySpec)
         {
             if (algorithmGroup == CngAlgorithmGroup.Rsa)

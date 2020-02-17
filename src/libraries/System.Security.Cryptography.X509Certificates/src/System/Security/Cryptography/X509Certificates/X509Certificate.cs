@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Equals(other);
         }
 
-        public virtual bool Equals(X509Certificate other)
+        public virtual bool Equals(X509Certificate? other)
         {
             if (other == null)
                 return false;
