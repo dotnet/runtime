@@ -3446,7 +3446,11 @@ g_error_xsx (const char *format, int x1, const char *s, int x2)
 #endif
 
 static MONO_ALWAYS_INLINE gboolean
-method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing, MonoException **out_ex)
+method_entry (ThreadContext *context, InterpFrame *frame,
+#if DEBUG_INTERP
+	int *out_tracing,
+#endif
+	MonoException **out_ex, FrameClauseArgs *clause_args)
 {
 	gboolean slow = FALSE;
 
@@ -3470,7 +3474,9 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 		}
 	}
 
-	alloc_stack_data (context, frame, frame->imethod->alloca_size);
+	if (!clause_args || clause_args->base_frame)
+		alloc_stack_data (context, frame, frame->imethod->alloca_size);
+
 	return slow;
 }
 
@@ -3515,6 +3521,7 @@ static MONO_NEVER_INLINE void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpMethod *cmethod;
+	MonoException *ex;
 	gboolean is_void;
 	stackval *retval;
 
@@ -3527,7 +3534,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 	InterpFrame *child_frame;
 #if DEBUG_INTERP
-	gint tracing = global_tracing;
+	int tracing = global_tracing;
 	unsigned char *vtalloc;
 #endif
 #if USE_COMPUTED_GOTO
@@ -3537,37 +3544,18 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	};
 #endif
 
+	if (method_entry (context, frame,
 #if DEBUG_INTERP
-	debug_enter (frame, &tracing);
+		&tracing,
 #endif
-
-	MonoException *ex;
-
-	// FIXME Use method_entry here. But it assumes clause_args == NULL.
-
-	if (!frame->imethod->transformed) {
-#if DEBUG_INTERP
-		char *mn = mono_method_full_name (frame->imethod->method, TRUE);
-		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
-		g_free (mn);
-#endif
-		frame->ip = NULL;
-		ex = do_transform_method (frame, context);
+		&ex, clause_args)) {
 		if (ex)
 			THROW_EX (ex, NULL);
 		EXCEPTION_CHECKPOINT;
 	}
 
-	if (!clause_args) {
-		//frame->stack = (stackval*)g_alloca (frame->imethod->alloca_size);
-		alloc_stack_data (context, frame, frame->imethod->alloca_size);
-	} else {
-		if (clause_args->base_frame) {
-			//frame->stack = (stackval*)g_alloca (frame->imethod->alloca_size);
-			alloc_stack_data (context, frame, frame->imethod->alloca_size);
-			memcpy (frame->stack, clause_args->base_frame->stack, frame->imethod->alloca_size);
-		}
-	}
+	if (clause_args && clause_args->base_frame)
+		memcpy (frame->stack, clause_args->base_frame->stack, frame->imethod->alloca_size);
 
 	INIT_INTERP_STATE (frame, clause_args);
 
@@ -3809,9 +3797,13 @@ main_loop:
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
-			gboolean tracing;
+			int tracing;
 
-			if (method_entry (context, frame, &tracing, &ex)) {
+			if (method_entry (context, frame,
+#if DEBUG_INTERP
+				&tracing,
+#endif
+				&ex, NULL)) {
 				if (ex)
 					THROW_EX (ex, NULL);
 				EXCEPTION_CHECKPOINT;
@@ -3919,9 +3911,13 @@ main_loop:
 				// FIXME &retval looks wrong
 				frame = alloc_frame (context, &retval, frame, cmethod, sp, retval);
 
-				gboolean tracing;
+				int tracing;
 
-				if (method_entry (context, frame, &tracing, &ex)) {
+				if (method_entry (context, frame,
+#if DEBUG_INTERP
+					&tracing,
+#endif
+					&ex, NULL)) {
 					if (ex)
 						THROW_EX (ex, NULL);
 					EXCEPTION_CHECKPOINT;
@@ -4018,9 +4014,13 @@ call:;
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
-			gboolean tracing;
+			int tracing;
 
-			if (method_entry (context, frame, &tracing, &ex)) {
+			if (method_entry (context, frame,
+#if DEBUG_INTERP
+				&tracing,
+#endif
+				&ex, NULL)) {
 				if (ex)
 					THROW_EX (ex, NULL);
 				EXCEPTION_CHECKPOINT;
