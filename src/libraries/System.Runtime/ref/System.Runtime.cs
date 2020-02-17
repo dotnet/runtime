@@ -8871,8 +8871,8 @@ namespace System.Threading.Tasks
     }
     public partial class UnobservedTaskExceptionEventArgs : System.EventArgs
     {
-        public UnobservedTaskExceptionEventArgs(System.AggregateException? exception) { }
-        public System.AggregateException? Exception { get { throw null; } }
+        public UnobservedTaskExceptionEventArgs(System.AggregateException exception) { }
+        public System.AggregateException Exception { get { throw null; } }
         public bool Observed { get { throw null; } }
         public void SetObserved() { }
     }
