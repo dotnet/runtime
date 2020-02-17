@@ -11,7 +11,7 @@
     <GeneratorCommand Condition="'$(TargetsNetCoreApp)' == 'true'">"$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))" --fx-version $(ProductVersion)</GeneratorCommand>
     <GeneratorCommand Condition="'$(TargetsNetCoreApp)' != 'true'">"$(DotNetTool)"</GeneratorCommand>
     <GeneratorCommand Condition="'$(OS)' == 'Windows_NT'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
-    <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
+    <GeneratorCommand Condition="'$(OS)' != 'Windows_NT'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
   </PropertyGroup>
   <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
     <Compile Include=".\SGenTests.cs" />
