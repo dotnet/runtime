@@ -415,25 +415,9 @@ namespace System.Net.Sockets
                             // there was an error, we use the non-buffered execution path (this should be very rare)
                             context.HandleEvents(socketEvent.Events);
                         }
-                        else if (context.TryGetNextOperation(socketEvent.Events, out SocketAsyncContext.AsyncOperation nextOperation))
+                        else
                         {
-                            do
-                            {
-                                if (nextOperation.TryAsBatch(context, ref ioControlBlocks[batchedCount]))
-                                {
-                                    ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
-                                    batchedOperations[batchedCount++] = nextOperation;
-
-                                    nextOperation = nextOperation.Next;
-                                }
-                                else
-                                {
-                                    // todo: should we dispatch it to thread poll or execute on this thread??
-                                    // ((IThreadPoolWorkItem)nextOperation).Execute();
-                                    nextOperation.Dispatch();
-                                    break;
-                                }
-                            } while (nextOperation != null && batchedCount < batchedOperations.Length);
+                            context.HandleBatchEvents(socketEvent.Events, ioControlBlocks, batchedOperations, ref batchedCount);
                         }
                     }
                 }
@@ -443,7 +427,8 @@ namespace System.Net.Sockets
                     int result = Interop.Sys.IoSubmit(_aioContext, batchedCount, _aioBlocksPointers);
                     if (result != batchedCount)
                     {
-                        throw new InternalException("IoSubmit has failed"); // todo: provide sth in the future and|or implement a while loop
+                        Interop.Error lastError = Interop.Sys.GetLastError();
+                        throw new InternalException($"IoSubmit has failed with {lastError}, returned {result} instead {batchedCount}"); // todo: provide sth in the future and|or implement a while loop
                     }
 
                     // todo: perf: avoid the syscall by using a well known pattern that reads from the ring

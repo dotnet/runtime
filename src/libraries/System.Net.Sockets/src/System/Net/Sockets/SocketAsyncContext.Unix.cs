@@ -141,6 +141,8 @@ namespace System.Net.Sockets
                 set { CallbackOrEvent = value; }
             }
 
+            public bool IsSync => CallbackOrEvent is ManualResetEventSlim;
+
             public AsyncOperation(SocketAsyncContext context)
             {
                 AssociatedContext = context;
@@ -168,18 +170,7 @@ namespace System.Net.Sockets
             }
 
             public bool TrySetRunning()
-            {
-                State oldState = (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting);
-                if (oldState == State.Cancelled)
-                {
-                    // This operation has already been cancelled, and had its completion processed.
-                    // Simply return false to indicate no further processing is needed.
-                    return false;
-                }
-
-                Debug.Assert(oldState == (int)State.Waiting);
-                return true;
-            }
+                => (State)Interlocked.CompareExchange(ref _state, (int)State.Running, (int)State.Waiting) == State.Waiting;
 
             public void SetComplete()
             {
@@ -313,9 +304,13 @@ namespace System.Net.Sockets
 
             public abstract void InvokeCallback(bool allowPooling);
 
-            internal virtual bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
+            internal virtual bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
 
-            internal virtual bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock) => throw new InvalidOperationException();
+            internal virtual bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            {
+                Debug.Fail("Expected to be implemented only by types overriding TryAsBatch");
+                throw new InvalidOperationException();
+            }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
             public void Trace(string message, [CallerMemberName] string memberName = null)
@@ -395,9 +390,9 @@ namespace System.Net.Sockets
                 cb(bt, sa, sal, SocketFlags.None, ec);
             }
 
-            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override unsafe bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
-                if (!TrySetRunning())
+                if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
@@ -478,9 +473,9 @@ namespace System.Net.Sockets
                 return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, Offset + Count), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
             }
 
-            internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
-                if (!TrySetRunning())
+                if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
@@ -577,9 +572,9 @@ namespace System.Net.Sockets
                 cb(bt, sa, sal, rf, ec);
             }
 
-            internal override unsafe bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override unsafe bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
-                if (!TrySetRunning())
+                if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
@@ -593,7 +588,6 @@ namespace System.Net.Sockets
                 ioControlBlock.AioBuf = (ulong)PinHandle.Pointer;
                 ioControlBlock.AioOffset = 0;
                 ioControlBlock.AioNbytes = (ulong)Buffer.Length;
-                ioControlBlock.AioReqprio = 0;
 
                 return true;
             }
@@ -655,9 +649,9 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context) =>
                 SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
 
-            internal override bool TryAsBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
+            internal override bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock)
             {
-                if (!TrySetRunning())
+                if (IsSync || !TrySetRunning())
                 {
                     return false;
                 }
@@ -1029,6 +1023,53 @@ namespace System.Net.Sockets
                 }
             }
 
+            internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
+            {
+                AsyncOperation nextOperation;
+                using (Lock())
+                {
+                    switch (_state)
+                    {
+                        case QueueState.Ready:
+                            Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
+                            _sequenceNumber++;
+                            return;
+
+                        case QueueState.Waiting:
+                            Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
+                            _state = QueueState.Processing;
+                            nextOperation = _tail.Next;
+
+                            while (batchedCount < ioControlBlocks.Length && nextOperation != null && nextOperation.TryBatch(context, ref ioControlBlocks[batchedCount]))
+                            {
+                                ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
+                                batchedOperations[batchedCount++] = nextOperation;
+
+                                nextOperation = nextOperation.Next;
+                            }
+                            break;
+
+                        case QueueState.Processing:
+                            Debug.Assert(_tail != null, "State == Processing but queue is empty!");
+                            _sequenceNumber++;
+                            return;
+
+                        case QueueState.Stopped:
+                            Debug.Assert(_tail == null);
+                            return;
+
+                        default:
+                            Environment.FailFast("unexpected queue state");
+                            return;
+                    }
+
+                    // we can't batch more (batchedCount < ioControlBlocks.Length)
+                    // or nextOperation.TryAsBatch failed
+                    // so we dispatch outside of lock
+                    nextOperation?.Dispatch();
+                }
+            }
+
             // Called on the epoll thread whenever we receive an epoll notification.
             public void HandleEvent(SocketAsyncContext context)
             {
@@ -1185,6 +1226,7 @@ namespace System.Net.Sockets
                     if (_state == QueueState.Stopped)
                     {
                         Debug.Assert(_tail == null);
+                        return;
                     }
                     else
                     {
@@ -2173,22 +2215,19 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool TryGetNextOperation(Interop.Sys.SocketEvents events, out AsyncOperation nextOperation)
+        public void HandleBatchEvents(Interop.Sys.SocketEvents events, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
         {
-            Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "Should never be used for the error case");
+            Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "This method must not be used for handling errors!");
 
-            if ((events & Interop.Sys.SocketEvents.Read) != 0 && _receiveQueue.TryGetNextOperation(this, out nextOperation))
+            if ((events & Interop.Sys.SocketEvents.Read) != 0)
             {
-                return true;
+                _receiveQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, ref batchedCount);
             }
 
-            if ((events & Interop.Sys.SocketEvents.Write) != 0 && _sendQueue.TryGetNextOperation(this, out nextOperation))
+            if ((events & Interop.Sys.SocketEvents.Write) != 0)
             {
-                return true;
+                _sendQueue.BatchOrDispatch(this, ioControlBlocks, batchedOperations, ref batchedCount);
             }
-
-            nextOperation = default;
-            return false;
         }
 
         //
