@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -10,16 +10,16 @@ namespace System.Net.Sockets
     // AcceptOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
     internal sealed partial class AcceptOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        private Socket _acceptSocket;
+        private Socket? _acceptSocket;
         private int _addressBufferLength;
 
         // This method will be called by us when the IO completes synchronously and
         // by the ThreadPool when the IO completes asynchronously. (only called on WinNT)
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             SocketError errorCode = (SocketError)ErrorCode;
 
-            Internals.SocketAddress remoteSocketAddress = null;
+            Internals.SocketAddress? remoteSocketAddress = null;
             if (errorCode == SocketError.Success)
             {
                 _numBytes = numBytes;
@@ -40,9 +40,10 @@ namespace System.Net.Sockets
                     safeHandle.DangerousAddRef(ref refAdded);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
+                    byte[] buffer = _buffer!;
                     _listenSocket.GetAcceptExSockaddrs(
-                        Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0),
-                        _buffer.Length - (_addressBufferLength * 2),
+                        Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0),
+                        buffer.Length - (_addressBufferLength * 2),
                         _addressBufferLength,
                         _addressBufferLength,
                         out localAddr,
@@ -53,7 +54,7 @@ namespace System.Net.Sockets
                     Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
 
                     errorCode = Interop.Winsock.setsockopt(
-                        _acceptSocket.SafeHandle,
+                        _acceptSocket!.SafeHandle,
                         SocketOptionLevel.Socket,
                         SocketOptionName.UpdateAcceptContext,
                         ref handle,
@@ -86,7 +87,7 @@ namespace System.Net.Sockets
                 return null;
             }
 
-            return _listenSocket.UpdateAcceptSocket(_acceptSocket, _listenSocket._rightEndPoint.Create(remoteSocketAddress));
+            return _listenSocket.UpdateAcceptSocket(_acceptSocket!, _listenSocket._rightEndPoint.Create(remoteSocketAddress!));
         }
 
         // SetUnmanagedStructures
@@ -112,13 +113,14 @@ namespace System.Net.Sockets
             // may fire erroneously.
             Debug.Assert(NetEventSource.IsEnabled);
 
+            byte[] buffer = _buffer!;
             if (size > -1)
             {
-                NetEventSource.DumpBuffer(this, _buffer, 0, Math.Min((int)size, _buffer.Length));
+                NetEventSource.DumpBuffer(this, buffer, 0, Math.Min((int)size, buffer.Length));
             }
             else
             {
-                NetEventSource.DumpBuffer(this, _buffer);
+                NetEventSource.DumpBuffer(this, buffer);
             }
         }
 

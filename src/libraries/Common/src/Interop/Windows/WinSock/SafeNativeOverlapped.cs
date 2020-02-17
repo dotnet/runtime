@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -12,7 +12,7 @@ namespace System.Net.Sockets
 {
     internal sealed class SafeNativeOverlapped : SafeHandle
     {
-        private readonly SafeSocketHandle _socketHandle;
+        private readonly SafeSocketHandle? _socketHandle;
 
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)

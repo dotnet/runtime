@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 namespace System.Net.Sockets
 {
     // ConnectOverlappedAsyncResult - used to take care of storage for async Socket BeginConnect call.
     internal sealed partial class ConnectOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
         // This method is called by base.CompletionPortCallback base.OverlappedCallback as part of IO completion
-        internal override object PostCompletion(int numBytes)
+        internal override object? PostCompletion(int numBytes)
         {
             SocketError errorCode = (SocketError)ErrorCode;
             Socket socket = (Socket)AsyncObject;

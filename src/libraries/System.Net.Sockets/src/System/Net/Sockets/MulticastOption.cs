@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 namespace System.Net.Sockets
 {
     // Contains option values for IP multicast packets.
     public class MulticastOption
     {
-        private IPAddress _group;
-        private IPAddress _localAddress;
+        private IPAddress? _group;
+        private IPAddress? _localAddress;
         private int _ifIndex;
 
         // Creates a new instance of the MulticastOption class with the specified IP address
@@ -59,7 +59,7 @@ namespace System.Net.Sockets
         }
 
         // Sets the IP address of a multicast group.
-        public IPAddress Group
+        public IPAddress? Group
         {
             get
             {
@@ -72,7 +72,7 @@ namespace System.Net.Sockets
         }
 
         // Sets the local address of a multicast group.
-        public IPAddress LocalAddress
+        public IPAddress? LocalAddress
         {
             get
             {
@@ -124,7 +124,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(ifindex));
             }
 
-            Group = group;
+            _group = group;
             InterfaceIndex = ifindex;
         }
 
@@ -137,7 +137,7 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(group));
             }
 
-            Group = group;
+            _group = group;
             InterfaceIndex = 0;
         }
 

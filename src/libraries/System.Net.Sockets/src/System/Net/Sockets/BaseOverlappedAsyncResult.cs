@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 namespace System.Net.Sockets
 {
     // BaseOverlappedAsyncResult
@@ -17,7 +17,7 @@ namespace System.Net.Sockets
         internal int _numBytes;
 
         // PostCompletion returns the result object to be set before the user's callback is invoked.
-        internal virtual object PostCompletion(int numBytes)
+        internal virtual object? PostCompletion(int numBytes)
         {
             _numBytes = numBytes;
             return s_resultObjectSentinel; // return sentinel rather than boxing numBytes
