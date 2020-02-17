@@ -18,15 +18,6 @@
 #include <mono/utils/mono-forward-internal.h>
 #include <mono/utils/mach-support.h>
 
-// FIXME: Make this more visible.
-#if __cplusplus
-#define MONO_INLINE inline
-#elif _MSC_VER
-#define MONO_INLINE __inline
-#else
-#define MONO_INLINE static inline
-#endif
-
 /* TLS entries used by the runtime */
 // This ordering is mimiced in MONO_JIT_ICALLS (alphabetical).
 typedef enum {
@@ -67,7 +58,7 @@ g_static_assert (TLS_KEY_DOMAIN == 0);
 
 // TlsGetValue always writes 0 to LastError. Which can cause problems. This never changes LastError.
 //
-MONO_INLINE
+static inline
 void*
 mono_native_tls_get_value (unsigned index)
 {
@@ -88,19 +79,19 @@ mono_native_tls_get_value (unsigned index)
 #define MonoNativeTlsKey pthread_key_t
 #define mono_native_tls_get_value pthread_getspecific
 
-MONO_INLINE int
+static inline int
 mono_native_tls_alloc (MonoNativeTlsKey *key, void *destructor)
 {
 	return pthread_key_create (key, (void (*)(void*)) destructor) == 0;
 }
 
-MONO_INLINE void
+static inline void
 mono_native_tls_free (MonoNativeTlsKey key)
 {
 	pthread_key_delete (key);
 }
 
-MONO_INLINE int
+static inline int
 mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 {
 	return !pthread_setspecific (key, value);
