@@ -50,7 +50,7 @@ namespace System.Net.Http
             _boundary = boundary;
 
             string quotedBoundary = boundary;
-            if (!quotedBoundary.StartsWith("\"", StringComparison.Ordinal))
+            if (!quotedBoundary.StartsWith('\"'))
             {
                 quotedBoundary = "\"" + quotedBoundary + "\"";
             }
@@ -81,7 +81,7 @@ namespace System.Net.Http
                     SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
             }
             // Cannot end with space.
-            if (boundary.EndsWith(" ", StringComparison.Ordinal))
+            if (boundary.EndsWith(' '))
             {
                 throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }

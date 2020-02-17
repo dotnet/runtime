@@ -65,7 +65,22 @@ void bzero (void *to, size_t count) { memset (to, 0, count); }
 
 #endif
 
-static AllocCodeMemoryCb *alloc_code_mem_cb;
+static MonoNativeTlsKey current_cfg_tls_id;
+
+static unsigned char*
+alloc_code (LLVMValueRef function, int size)
+{
+	MonoCompile *cfg;
+
+	cfg = (MonoCompile*)mono_native_tls_get_value (current_cfg_tls_id);
+
+	if (cfg) {
+		// FIXME: dynamic
+		return (unsigned char*)mono_domain_code_reserve (cfg->domain, size);
+	} else {
+		return (unsigned char*)mono_domain_code_reserve (mono_domain_get (), size);
+	}
+}
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
 {
@@ -118,7 +133,7 @@ MonoJitMemoryManager::allocateCodeSection(uintptr_t Size,
 										  unsigned SectionID,
 										  StringRef SectionName)
 {
-	uint8_t *mem = alloc_code_mem_cb (NULL, Size);
+	uint8_t *mem = alloc_code (NULL, Size);
 	PendingCodeMem.push_back (sys::MemoryBlock ((void *)mem, Size));
 	return mem;
 }
@@ -253,11 +268,6 @@ struct MonoLLVMJIT {
 		return (gpointer)bodyaddr.get ();
 	}
 };
-
-static void
-init_mono_llvm_jit ()
-{
-}
 
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine)
@@ -420,15 +430,10 @@ private:
 
 static MonoJitMemoryManager *mono_mm;
 
-static void
-init_mono_llvm_jit ()
-{
-	mono_mm = new MonoJitMemoryManager ();
-}
-
 static MonoLLVMJIT *
 make_mono_llvm_jit (TargetMachine *target_machine)
 {
+	mono_mm = new MonoJitMemoryManager ();
 	return new MonoLLVMJIT(target_machine, mono_mm);
 }
 
@@ -436,10 +441,12 @@ make_mono_llvm_jit (TargetMachine *target_machine)
 
 static MonoLLVMJIT *jit;
 
-MonoEERef
-mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+void
+mono_llvm_jit_init ()
 {
-	alloc_code_mem_cb = alloc_cb;
+	if (jit != nullptr) return;
+
+	mono_native_tls_alloc (&current_cfg_tls_id, NULL);
 
 	InitializeNativeTarget ();
 	InitializeNativeTargetAsmPrinter();
@@ -464,9 +471,17 @@ mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb,
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
-	init_mono_llvm_jit ();
 	jit = make_mono_llvm_jit (TM);
+}
 
+void
+mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
+	mono_native_tls_set_value (current_cfg_tls_id, cfg);
+}
+
+MonoEERef
+mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
+{
 	return NULL;
 }
 
@@ -494,8 +509,17 @@ mono_llvm_set_unhandled_exception_handler (void)
 {
 }
 
+void
+mono_llvm_jit_init ()
+{
+}
+
+void
+mono_llvm_jit_set_tls_cfg (MonoCompile *cfg) {
+}
+
 MonoEERef
-mono_llvm_create_ee (AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, LLVMExecutionEngineRef *ee)
+mono_llvm_create_ee (LLVMExecutionEngineRef *ee)
 {
 	g_error ("LLVM JIT not supported on this platform.");
 	return NULL;

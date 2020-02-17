@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization
             if (writing)
             {
                 // Comparer used here to always do a Reference Equality comparison on serialization which is where we use the objects as the TKey in our dictionary.
-                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualsEqualityComparer<object>.Comparer);
+                _objectToReferenceIdMap = new Dictionary<object, string>(ReferenceEqualityComparer.Instance);
                 _referenceIdToObjectMap = null;
             }
             else
@@ -36,19 +36,16 @@ namespace System.Text.Json.Serialization
             }
         }
 
-
         /// <summary>
         /// Adds an entry to the bag of references using the specified id and value.
         /// This method gets called when an $id metadata property from a JSON object is read.
         /// </summary>
         /// <param name="referenceId">The identifier of the respective JSON object or array.</param>
         /// <param name="value">The value of the respective CLR reference type object that results from parsing the JSON object.</param>
-        public void AddReferenceOnDeserialize(string referenceId, object value)
+        /// <returns>True if the value was successfully added, false otherwise.</returns>
+        public bool AddReferenceOnDeserialize(string referenceId, object value)
         {
-            if (!JsonHelpers.TryAdd(_referenceIdToObjectMap!, referenceId, value))
-            {
-                ThrowHelper.ThrowJsonException_MetadataDuplicateIdFound(referenceId);
-            }
+            return JsonHelpers.TryAdd(_referenceIdToObjectMap!, referenceId, value);
         }
 
         /// <summary>
@@ -61,16 +58,14 @@ namespace System.Text.Json.Serialization
         /// <returns></returns>
         public bool TryGetOrAddReferenceOnSerialize(object value, out string referenceId)
         {
-            if (!_objectToReferenceIdMap!.TryGetValue(value, out referenceId!))
+            bool result = _objectToReferenceIdMap!.TryGetValue(value, out referenceId!);
+            if (!result)
             {
                 _referenceCount++;
                 referenceId = _referenceCount.ToString();
                 _objectToReferenceIdMap.Add(value, referenceId);
-
-                return false;
             }
-
-            return true;
+            return result;
         }
 
         /// <summary>

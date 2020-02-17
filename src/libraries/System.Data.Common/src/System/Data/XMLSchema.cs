@@ -1161,7 +1161,7 @@ namespace System.Data
             bool attribute = false;
             string colName = field;
 
-            if (field.StartsWith("@", StringComparison.Ordinal))
+            if (field.StartsWith('@'))
             {
                 attribute = true;
                 colName = field.Substring(1);

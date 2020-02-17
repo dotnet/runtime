@@ -504,9 +504,6 @@ EXTERN Volatile<LONG> g_fForbidEnterEE;
 GVAL_DECL(bool, g_fProcessDetach);
 EXTERN bool g_fManagedAttach;
 EXTERN bool g_fNoExceptions;
-#ifdef FEATURE_COMINTEROP
-EXTERN bool g_fShutDownCOM;
-#endif // FEATURE_COMINTEROP
 
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.

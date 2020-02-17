@@ -55,7 +55,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     }
 
     [Flags]
-    internal enum QUIC_RECEIVE_FLAG : byte
+    internal enum QUIC_RECEIVE_FLAG : uint
     {
         NONE = 0,
         ZERO_RTT = 0x1,
@@ -133,12 +133,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         IDEAL_SEND_BUFFER = 2
     }
 
-    internal enum QUIC_LISTENER_EVENT : byte
+    internal enum QUIC_LISTENER_EVENT : uint
     {
         NEW_CONNECTION = 0
     }
 
-    internal enum QUIC_CONNECTION_EVENT : byte
+    internal enum QUIC_CONNECTION_EVENT : uint
     {
         CONNECTED = 0,
         SHUTDOWN_INITIATED_BY_TRANSPORT = 1,
@@ -152,7 +152,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         IDEAL_PROCESSOR_CHANGED = 9,
     }
 
-    internal enum QUIC_STREAM_EVENT : byte
+    internal enum QUIC_STREAM_EVENT : uint
     {
         START_COMPLETE = 0,
         RECEIVE = 1,

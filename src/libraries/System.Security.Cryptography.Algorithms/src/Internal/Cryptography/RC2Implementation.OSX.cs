@@ -13,7 +13,7 @@ namespace Internal.Cryptography
             PaddingMode paddingMode,
             byte[] key,
             int effectiveKeyLength,
-            byte[] iv,
+            byte[]? iv,
             int blockSize,
             bool encrypting)
         {

@@ -499,7 +499,7 @@ int32_t SystemNative_GetNameInfo(const uint8_t* address,
                              (uint32_t)hostLength,
                              (char*)service,
                              (uint32_t)serviceLength,
-                             nativeFlags);
+                             (int)nativeFlags);
     }
     else
     {
@@ -512,7 +512,7 @@ int32_t SystemNative_GetNameInfo(const uint8_t* address,
                              (uint32_t)hostLength,
                              (char*)service,
                              (uint32_t)serviceLength,
-                             nativeFlags);
+                             (int)nativeFlags);
     }
 
     return ConvertGetAddrInfoAndGetNameInfoErrorsToPal(result);
@@ -1493,11 +1493,7 @@ int32_t SystemNative_Bind(intptr_t socket, int32_t protocolType, uint8_t* socket
     int err = bind(
         fd,
         (struct sockaddr*)socketAddress,
-#if BIND_ADDRLEN_UNSIGNED
         (socklen_t)socketAddressLen);
-#else
-        socketAddressLen);
-#endif
 
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }

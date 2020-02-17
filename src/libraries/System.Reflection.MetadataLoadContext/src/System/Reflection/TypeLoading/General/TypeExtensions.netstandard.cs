@@ -12,7 +12,7 @@ namespace System.Reflection.TypeLoading
         // On NetStandard, have to do with slower emulations.
 
         public static bool IsSignatureType(this Type type) => false;
-        public static bool IsSZArray(this Type type) => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]");
+        public static bool IsSZArray(this Type type) => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]", StringComparison.Ordinal);
         public static bool IsVariableBoundArray(this Type type) => type.IsArray && !type.IsSZArray();
         public static bool IsGenericMethodParameter(this Type type) => type.IsGenericParameter && type.DeclaringMethod != null;
 

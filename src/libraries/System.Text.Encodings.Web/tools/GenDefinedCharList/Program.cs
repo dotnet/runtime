@@ -22,8 +22,8 @@ namespace GenDefinedCharList
 
             // The input file should be UnicodeData.txt from the UCD corresponding to the
             // version of the Unicode spec we're consuming.
-            // More info: http://www.unicode.org/reports/tr44/tr44-14.html#UCD_Files
-            // Latest UnicodeData.txt: http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
+            // More info: https://www.unicode.org/reports/tr44/tr44-14.html#UCD_Files
+            // Latest UnicodeData.txt: https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 
             const uint MAX_UNICODE_CHAR = 0x10FFFF; // Unicode range is U+0000 .. U+10FFFF
             bool[] definedChars = new bool[MAX_UNICODE_CHAR + 1];
@@ -227,7 +227,7 @@ namespace GenDefinedCharList
         }
 
         // Represents a range of Unicode code points which are all members of a single category.
-        // More info: http://www.unicode.org/faq/blocks_ranges.html
+        // More info: https://www.unicode.org/faq/blocks_ranges.html
         private class UnicodeRange
         {
             public uint FirstCodePoint;

@@ -6638,6 +6638,10 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
+#ifndef TARGET_ARM64
+EXTERN_C void JIT_StackProbe_End();
+#endif // TARGET_ARM64
+
 #ifdef FEATURE_EH_FUNCLETS
 
 #ifndef TARGET_X86
@@ -6703,6 +6707,9 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
+#if !defined(TARGET_ARM64)
+    CHECK_RANGE(JIT_StackProbe)
+#endif // !TARGET_ARM64
 #else
 #ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
@@ -6720,7 +6727,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
 
 // Returns TRUE if caller should resume execution.
 BOOL
-AdjustContextForWriteBarrier(
+AdjustContextForJITHelpers(
         EXCEPTION_RECORD *pExceptionRecord,
         CONTEXT *pContext)
 {
@@ -6739,7 +6746,7 @@ AdjustContextForWriteBarrier(
 
 #ifdef FEATURE_DATABREAKPOINT
 
-    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
+    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger()
     // This is called only when a data breakpoint is hitm which could be inside a JIT write barrier helper and required
     // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we
     // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true
@@ -6792,6 +6799,19 @@ AdjustContextForWriteBarrier(
         // put ESP back to what it was before the call.
         SetSP(pContext, PCODE((BYTE*)GetSP(pContext) + sizeof(void*)));
     }
+
+    if ((f_IP >= (void *) JIT_StackProbe) && (f_IP <= (void *) JIT_StackProbe_End)) 
+    {
+        TADDR ebp = GetFP(pContext);
+        void* callsite = (void *)*dac_cast<PTR_PCODE>(ebp + 4);
+        pExceptionRecord->ExceptionAddress = callsite;
+        SetIP(pContext, (PCODE)callsite);
+
+        // Restore EBP / ESP back to what it was before the call.
+        SetFP(pContext, *dac_cast<PTR_PCODE>(ebp));
+        SetSP(pContext, ebp + 8);
+    }
+
     return FALSE;
 #elif defined(FEATURE_EH_FUNCLETS) // TARGET_X86 && !TARGET_UNIX
     void* f_IP = dac_cast<PTR_VOID>(GetIP(pContext));
@@ -6860,7 +6880,7 @@ AdjustContextForWriteBarrier(
 
     return FALSE;
 #else // FEATURE_EH_FUNCLETS
-    PORTABILITY_ASSERT("AdjustContextForWriteBarrier");
+    PORTABILITY_ASSERT("AdjustContextForJITHelpers");
     return FALSE;
 #endif // ELSE
 }
@@ -7467,9 +7487,9 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
     {
         if (IsWellFormedAV(pExceptionRecord))
         {
-            if (AdjustContextForWriteBarrier(pExceptionRecord, pContext))
+            if (AdjustContextForJITHelpers(pExceptionRecord, pContext))
             {
-                // On x86, AdjustContextForWriteBarrier simply backs up AV's
+                // On x86, AdjustContextForJITHelpers simply backs up AV's
                 // in write barrier helpers into the calling frame, so that
                 // the subsequent logic here sees a managed fault.
                 //

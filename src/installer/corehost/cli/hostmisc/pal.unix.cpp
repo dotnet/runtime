@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <fnmatch.h>
 #include <ctime>
+#include <pwd.h>
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
@@ -62,14 +63,14 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
     int fd = open(path.c_str(), O_RDONLY, (S_IRUSR | S_IRGRP | S_IROTH));
     if (fd == -1)
     {
-        trace::warning(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);
+        trace::error(_X("Failed to map file. open(%s) failed with error %d"), path.c_str(), errno);
         return nullptr;
     }
 
     struct stat buf;
     if (fstat(fd, &buf) != 0)
     {
-        trace::warning(_X("Failed to map file. fstat(%s) failed with error %d"), path.c_str(), errno);
+        trace::error(_X("Failed to map file. fstat(%s) failed with error %d"), path.c_str(), errno);
         close(fd);
         return nullptr;
     }
@@ -79,7 +80,7 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t& length)
 
     if(address == nullptr)
     {
-        trace::warning(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
+        trace::error(_X("Failed to map file. mmap(%s) failed with error %d"), path.c_str(), errno);
         close(fd);
         return nullptr;
     }
@@ -306,7 +307,7 @@ bool is_read_write_able_directory(pal::string_t& dir)
 bool pal::get_temp_directory(pal::string_t& tmp_dir)
 {
     // First, check for the POSIX standard environment variable
-    if (pal::getenv(_X("TMPDIR"), &tmp_dir))
+    if (getenv(_X("TMPDIR"), &tmp_dir))
     {
         return is_read_write_able_directory(tmp_dir);
     }
@@ -329,6 +330,55 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     }
 
     return false;
+}
+
+bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
+{
+    if (!get_temp_directory(extraction_dir))
+    {
+        return false;
+    }
+
+    append_path(&extraction_dir, _X(".net"));
+    pal::string_t dotnetdir(extraction_dir);
+
+    // getuid() is the real user ID, and the call has no defined errors.
+    struct passwd* passwd = getpwuid(getuid());
+    if (passwd == nullptr || passwd->pw_name == nullptr)
+    {
+        return false;
+    }
+
+    append_path(&extraction_dir, passwd->pw_name);
+
+    if (is_read_write_able_directory(extraction_dir))
+    {
+        return true;
+    }
+
+    // Create $TMPDIR/.net accessible to everyone
+    if (::mkdir(dotnetdir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) == 0)
+    {
+        // In the above mkdir() system call, some permissions are strangely dropped!
+        // Linux drops S_IWO and Mac drops S_IWG | S_IWO.
+        // So these are again explicitly set by calling chmod()
+        if (chmod(dotnetdir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+        {
+            return false;
+        }
+    }
+    else if (errno != EEXIST)
+    {
+        return false;
+    }
+
+    // Create $TMPDIR/.net/username accessible only to the user
+    if (::mkdir(extraction_dir.c_str(), S_IRWXU | S_ISVTX) != 0 && errno != EEXIST)
+    {
+        return false;
+    }
+
+    return is_read_write_able_directory(extraction_dir);
 }
 
 bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)

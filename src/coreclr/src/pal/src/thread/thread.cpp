@@ -2808,7 +2808,7 @@ PAL_InjectActivation(
         palError = InjectActivationInternal(pTargetThread);
     }
 
-    if (palError == NO_ERROR)
+    if (palError != NO_ERROR)
     {
         pCurrentThread->SetLastError(palError);
     }

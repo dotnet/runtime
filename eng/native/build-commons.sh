@@ -27,7 +27,7 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
     elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
@@ -213,8 +213,13 @@ case "$CPUName" in
         ;;
 
     armv7l)
-        __BuildArch=arm
-        __HostArch=arm
+        if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+            __BuildArch=armel
+            __HostArch=armel
+        else
+            __BuildArch=arm
+            __HostArch=arm
+        fi
         ;;
 
     i686)

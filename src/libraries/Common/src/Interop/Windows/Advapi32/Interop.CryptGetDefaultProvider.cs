@@ -21,7 +21,7 @@ internal partial class Interop
             int dwProvType,
             IntPtr pdwReserved,
             GetDefaultProviderFlags dwFlags,
-            StringBuilder pszProvName,
+            StringBuilder? pszProvName,
             ref int pcbProvName);
     }
 }
