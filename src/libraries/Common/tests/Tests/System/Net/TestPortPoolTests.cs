@@ -19,7 +19,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Test.Common
 {
-
     [Collection(nameof(DisableParallelExecution))]
     public class TestPortPoolTests
     {
