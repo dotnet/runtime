@@ -9,9 +9,6 @@
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>
-    <ILLinkTasksDir>$([MSBuild]::NormalizeDirectory('$(PkgILLink_Tasks)', 'tools'))</ILLinkTasksDir>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' == 'core'">$(ILLinkTasksDir)netcoreapp3.0/ILLink.Tasks.dll</ILLinkTasksPath>
-    <ILLinkTasksPath Condition="'$(ILLinkTasksPath)' == '' and '$(MSBuildRuntimeType)' != 'core'">$(ILLinkTasksDir)$(NetFrameworkCurrent)/ILLink.Tasks.dll</ILLinkTasksPath>
     <ILLinkTrimAssemblyPath>$(IntermediateOutputPath)$(TargetName)$(TargetExt)</ILLinkTrimAssemblyPath>
     <ILLinkTrimAssemblySymbols>$(IntermediateOutputPath)$(TargetName).pdb</ILLinkTrimAssemblySymbols>
     <ILLinkTrimInputPath>$(IntermediateOutputPath)PreTrim/</ILLinkTrimInputPath>
@@ -62,7 +59,7 @@
        Examines the "input assembly" for IL that is unreachable from public API and trims that,
        rewriting the assembly to an "output assembly"
   -->
-  <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
+  <UsingTask TaskName="ILLink" Condition="'$(LinkTaskDllPath)' != ''" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <PropertyGroup>
       <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
