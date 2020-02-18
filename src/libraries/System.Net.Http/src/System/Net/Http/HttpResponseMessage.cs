@@ -175,7 +175,7 @@ namespace System.Net.Http
                         SR.net_http_message_not_success_statuscode,
                         (int)_statusCode,
                         ReasonPhrase),
-                    null,
+                    inner: null,
                     _statusCode);
             }
 
