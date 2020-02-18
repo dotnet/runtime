@@ -415,14 +415,7 @@ CrashInfo::GetDSOInfo()
     int phnum = m_auxvValues[AT_PHNUM];
     assert(m_auxvValues[AT_PHENT] == sizeof(Phdr));
     assert(phnum != PN_XNUM);
-
-    if (!PopulateELFInfo(phdrAddr, phnum)) {
-        return false;
-    }
-    if (!EnumerateLinkMapEntries()) {
-        return false;
-    }
-    return true;
+    return EnumerateElfInfo(phdrAddr, phnum); 
 }
 
 //
@@ -443,13 +436,13 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
             // necessary is in the core dump.
-            if (PopulateELFInfo(baseAddress)) {
+            if (PopulateForSymbolLookup(baseAddress)) {
                 uint64_t symbolOffset;
                 TryLookupSymbol("g_dacTable", &symbolOffset);
             }
         }
     }
-    EnumerateProgramHeaders(baseAddress, nullptr);
+    EnumerateProgramHeaders(baseAddress);
 }
 
 //
