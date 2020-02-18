@@ -16,8 +16,6 @@
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <!-- TODO: Remove when nullability changes are finalized: https://github.com/dotnet/runtime/pull/32090 -->
-    <MicrosoftNetCompilersToolsetVersion>3.5.0-beta2-20074-05</MicrosoftNetCompilersToolsetVersion>
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
