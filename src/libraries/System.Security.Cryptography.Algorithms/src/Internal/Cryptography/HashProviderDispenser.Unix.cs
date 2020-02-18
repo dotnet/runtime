@@ -86,6 +86,27 @@ namespace Internal.Cryptography
                 return result;
             }
 
+            public override bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+            {
+                if (destination.Length < _hashSize)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                SafeEvpMdCtxHandle copy = Interop.Crypto.EvpMdCtxCopyEx(_ctx);
+                Interop.Crypto.CheckValidOpenSslHandle(copy);
+                uint length = (uint)destination.Length;
+                Check(Interop.Crypto.EvpDigestFinalEx(copy, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+                bytesWritten = (int)length;
+
+                // Destroy the copy
+                copy.Close();
+
+                return true;
+            }
+
             public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
             {
                 if (destination.Length < _hashSize)
@@ -145,6 +166,28 @@ namespace Internal.Cryptography
                 Debug.Assert(success);
                 Debug.Assert(hash.Length == bytesWritten);
                 return hash;
+            }
+
+            public override bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+            {
+                if (destination.Length < _hashSize)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                SafeHmacCtxHandle copy = Interop.Crypto.HmacCopy(_hmacCtx);
+                Interop.Crypto.CheckValidOpenSslHandle(copy);
+
+                int length = destination.Length;
+                Check(Interop.Crypto.HmacFinal(copy, ref MemoryMarshal.GetReference(destination), ref length));
+                Debug.Assert(length == _hashSize);
+                bytesWritten = (int)length;
+
+                // Destroy the copy
+                copy.Close();
+
+                return true;
             }
 
             public override unsafe bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)

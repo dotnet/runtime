@@ -51,6 +51,14 @@ Direct shim to EVP_DigestFinal_ex.
 DLLEXPORT int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s);
 
 /*
+Function
+EvpMdCtxCopyEx
+
+Direct shim to EVP_MD_CTX_copy_ex.
+*/
+DLLEXPORT EVP_MD_CTX* CrptoNative_EvpMdCtxCopyEx(EVP_MD_CTX* ctx);
+
+/*
 Function:
 EvpMdSize
 

@@ -31,6 +31,8 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CrptoNative_EvpMdCtxCopyEx")]
+        internal static extern SafeEvpMdCtxHandle EvpMdCtxCopyEx(SafeEvpMdCtxHandle ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMd5")]
         internal static extern IntPtr EvpMd5();

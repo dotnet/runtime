@@ -118,6 +118,11 @@ namespace Internal.Cryptography
                 return output;
             }
 
+            public override bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
             {
                 if (destination.Length < HashSizeInBytes)
@@ -188,6 +193,11 @@ namespace Internal.Cryptography
                     Debug.Assert(ret == 0, $"DigestUpdate return value {ret} was not 0 or 1");
                     throw new CryptographicException();
                 }
+            }
+
+            public override bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+            {
+                throw new PlatformNotSupportedException();
             }
 
             public override byte[] FinalizeHashAndReset()

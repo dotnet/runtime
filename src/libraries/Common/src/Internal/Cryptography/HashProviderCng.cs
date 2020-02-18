@@ -90,6 +90,38 @@ namespace Internal.Cryptography
             return hash;
         }
 
+        public override bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < _hashSize)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            Debug.Assert(_hHash != null);
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptDuplicateHash(_hHash, out SafeBCryptHashHandle copy, IntPtr.Zero, 0, 0);
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+
+            try
+            {
+                ntStatus = Interop.BCrypt.BCryptFinishHash(copy, destination, _hashSize, 0);
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+
+                bytesWritten = _hashSize;
+                return true;
+            }
+            finally
+            {
+                copy.Dispose();
+            }
+        }
+
         public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length < _hashSize)

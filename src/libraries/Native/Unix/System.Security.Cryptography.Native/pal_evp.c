@@ -57,6 +57,23 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
     return ret;
 }
 
+EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(EVP_MD_CTX* ctx)
+{
+    EVP_MD_CTX* newCtx = EVP_MD_CTX_new();
+    if (newCtx == null)
+    {
+        // Allocation failed
+        return NULL;
+    }
+
+    int ret = EVP_MD_CTX_copy_ex(newCtx, ctx);
+    if (!ret)
+    {
+        EVP_MD_CTX_free(newCtx);
+    }
+    return newCtx;
+}
+
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
     return EVP_MD_size(md);

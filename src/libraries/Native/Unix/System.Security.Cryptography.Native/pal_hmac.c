@@ -38,6 +38,26 @@ HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_
     return ctx;
 }
 
+HMAC_CTX* CrptoNative_HmacCtxCopy(HMAC_CTX* ctx)
+{
+    HMAC_CTX* newCtx = HMAC_CTX_new();
+    if (newCtx == NULL)
+    {
+        // Allocation failed
+        return NULL;
+    }
+
+    int ret = HMAC_CTX_copy(newCtx, ctx);
+
+    if(!ret)
+    {
+        HMAC_CTX_free(newCtx);
+        return NULL;
+    }
+
+    return newCtx;
+}
+
 void CryptoNative_HmacDestroy(HMAC_CTX* ctx)
 {
     if (ctx != NULL)

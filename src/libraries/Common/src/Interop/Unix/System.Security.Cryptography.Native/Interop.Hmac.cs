@@ -19,6 +19,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
         internal static extern int HmacReset(SafeHmacCtxHandle ctx);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacCopy")]
+        internal static extern SafeHmacCtxHandle HmacCopy(SafeHmacCtxHandle ctx);
+
         internal static int HmacUpdate(SafeHmacCtxHandle ctx, ReadOnlySpan<byte> data, int len) =>
             HmacUpdate(ctx, ref MemoryMarshal.GetReference(data), len);
 

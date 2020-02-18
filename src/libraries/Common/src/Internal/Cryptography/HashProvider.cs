@@ -50,7 +50,7 @@ namespace Internal.Cryptography
         }
 
         // Compute the hash based on the appeneded data and doesn't reset the hash provider to allow for continued hashing
-        public virtual bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten) => throw new NotImplementedException(SR.Cryptography_HashAlorithmNoSupportForGetCurrent);
+        public abstract bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten);
 
         // Returns the length of the byte array returned by FinalizeHashAndReset.
         public abstract int HashSizeInBytes { get; }

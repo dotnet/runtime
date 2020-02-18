@@ -27,6 +27,17 @@ typedef struct hmac_ctx_st HMAC_CTX;
 DLLEXPORT HMAC_CTX* CryptoNative_HmacCreate(const uint8_t* key, int32_t keyLen, const EVP_MD* md);
 
 /**
+ * Copies an HMAC_CTX so that the current HMAC calculation can be forked
+ * 
+ * Implemented by:
+ *   1) Creating a new HMAC_CTX
+ *   2) Coping the state from the input HMAC_CTX
+ * 
+ *  Returns the new HMAC_CTX on success, nullptr on failure.
+ */
+DLLEXPORT HMAC_CTX* CrptoNative_HmacCtxCopy(HMAC_CTX* ctx);
+
+/**
  * Cleans up and deletes an HMAC_CTX instance created by HmacCreate.
  *
  * Implemented by:

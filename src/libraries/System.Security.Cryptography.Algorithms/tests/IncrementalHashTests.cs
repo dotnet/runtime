@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Test.Cryptography;
+using System.Linq;
 using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
@@ -13,6 +14,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         // Some arbitrarily chosen OID segments
         private static readonly byte[] s_hmacKey = { 2, 5, 29, 54, 1, 2, 84, 113, 54, 91, 1, 1, 2, 5, 29, 10, };
         private static readonly byte[] s_inputBytes = ByteUtils.RepeatByte(0xA5, 512);
+        private static readonly byte[] s_inputSecondBytes = ByteUtils.RepeatByte((byte)'T', 512);
+        private static readonly byte[] s_inputTotalBytes = s_inputBytes.Concat(s_inputSecondBytes).ToArray();
 
         public static IEnumerable<object[]> GetHashAlgorithms()
         {
@@ -76,6 +79,18 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
+        [MemberData(nameof(GetHashAlgorithms))]
+        public static void VerifyIncrementalCurrentHash(HashAlgorithm referenceAlgorithm, HashAlgorithmName hashAlgorithm)
+        {
+            using (referenceAlgorithm)
+            using (IncrementalHash incrementalHash = IncrementalHash.CreateHash(hashAlgorithm))
+            {
+                Assert.Equal(hashAlgorithm, incrementalHash.AlgorithmName);
+                VerifyIncrementalResult(referenceAlgorithm, incrementalHash);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(GetHMACs))]
         public static void VerifyIncrementalHMAC(HMAC referenceAlgorithm, HashAlgorithmName hashAlgorithm)
         {
@@ -86,6 +101,23 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
                 VerifyIncrementalResult(referenceAlgorithm, incrementalHash);
             }
+        }
+
+        private static void VerifyIncrementalCurrentResult(HashAlgorithm referenceAlgorithm, IncrementalHash incrementalHash)
+        {
+            byte[] referenceEarlyHash = referenceAlgorithm.ComputeHash(s_inputBytes);
+            byte[] referenceFinalHash = referenceAlgorithm.ComputeHash(s_inputTotalBytes);
+
+            incrementalHash.AppendData(s_inputBytes);
+
+            byte[] currentEarlyHash = incrementalHash.GetCurrentHash();
+
+            incrementalHash.AppendData(s_inputSecondBytes);
+
+            byte[] currentFinalHash = incrementalHash.GetCurrentHash();
+
+            Assert.Equal(referenceEarlyHash, currentEarlyHash);
+            Assert.Equal(referenceFinalHash, currentFinalHash);
         }
 
         private static void VerifyIncrementalResult(HashAlgorithm referenceAlgorithm, IncrementalHash incrementalHash)
