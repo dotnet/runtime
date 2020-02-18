@@ -49,7 +49,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 MethodDesc[] inlinees = methodNode.InlinedMethods;
                 MethodDesc inliner = methodNode.Method;
-                MethodDesc inlinerDefinition = inliner.GetTypicalMethodDefinition();
+                EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetTypicalMethodDefinition();
+                if (inlinerDefinition.Module != _module)
+                {
+                    // Only encode inlining info for inliners within the active module
+                    continue;
+                }
 
                 foreach (MethodDesc inlinee in inlinees)
                 {

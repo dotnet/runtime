@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 typesHashtable.Append(unchecked((uint)hashCode), section.Place(new UnsignedConstant(((uint)MetadataTokens.GetRowNumber(defTypeInfo.Handle) << 1) | 0)));
             }
 
-            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes())
+            foreach (TypeInfo<ExportedTypeHandle> expTypeInfo in r2rManager.GetExportedTypes(_module))
             {
                 ExportedTypeHandle expTypeHandle = expTypeInfo.Handle;
                 int hashCode = 0;

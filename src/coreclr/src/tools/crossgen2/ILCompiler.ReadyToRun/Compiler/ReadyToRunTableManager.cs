@@ -86,15 +86,11 @@ namespace ILCompiler
             }
         }
 
-        public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes()
+        public IEnumerable<TypeInfo<ExportedTypeHandle>> GetExportedTypes(EcmaModule module)
         {
-            foreach (string inputFile in _typeSystemContext.InputFilePaths.Values)
+            foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
             {
-                EcmaModule module = _typeSystemContext.GetModuleFromPath(inputFile);
-                foreach (ExportedTypeHandle exportedTypeHandle in module.MetadataReader.ExportedTypes)
-                {
-                    yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
-                }
+                yield return new TypeInfo<ExportedTypeHandle>(module.MetadataReader, exportedTypeHandle);
             }
         }
     }
