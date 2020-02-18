@@ -309,7 +309,6 @@ namespace System.Net.Sockets
                 try
                 {
                     if (suppressFlow) ExecutionContext.SuppressFlow();
-
                     Task.Factory.StartNew(
                         s => ((SocketAsyncEngine)s).EventLoop(),
                         this,
@@ -428,7 +427,7 @@ namespace System.Net.Sockets
                     if (result != batchedCount)
                     {
                         Interop.Error lastError = Interop.Sys.GetLastError();
-                        throw new InternalException($"IoSubmit has failed with {lastError}, returned {result} instead {batchedCount}"); // todo: provide sth in the future and|or implement a while loop
+                        throw new InternalException($"IoSubmit has failed with {lastError}, returned {result} instead {batchedCount}"); // todo: implement a while loop
                     }
 
                     // todo: perf: avoid the syscall by using a well known pattern that reads from the ring
@@ -436,7 +435,7 @@ namespace System.Net.Sockets
                     if (result != batchedCount)
                     {
                         Interop.Error lastError = Interop.Sys.GetLastError();
-                        throw new InternalException($"IoGetEvents has failed with {lastError}, returned {result} instead {batchedCount}"); // todo: provide sth in the future and|or implement a while loop
+                        throw new InternalException($"IoGetEvents has failed with {lastError}, returned {result} instead {batchedCount}");
                     }
 
                     ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(_aioEvents, batchedCount);

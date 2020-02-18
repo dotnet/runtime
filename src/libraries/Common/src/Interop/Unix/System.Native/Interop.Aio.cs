@@ -115,12 +115,12 @@ internal static partial class Interop
         internal static unsafe extern int IoSetup(uint eventsCount, AioContext* context);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoDestroy", SetLastError = true)]
-        internal static unsafe extern int IoDestroy(AioContext context);
+        internal static extern int IoDestroy(AioContext context);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoSubmit", SetLastError = true)]
-        internal static unsafe extern int IoSubmit(AioContext context, long count, IoControlBlock** ioControlBlocks);
+        internal static unsafe extern int IoSubmit(AioContext context, long controlBlocksCount, IoControlBlock** ioControlBlocks);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoGetEvents", SetLastError = true)]
-        internal static unsafe extern int IoGetEvents(AioContext context, long minNr, long nr, IoEvent* ioEvents);
+        internal static unsafe extern int IoGetEvents(AioContext context, long minimumEventsCount, long maximumEventsCount, IoEvent* ioEvents);
     }
 }

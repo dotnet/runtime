@@ -318,6 +318,7 @@ namespace System.Net.Sockets
 
             protected bool CanRetry(SocketError error) => error == SocketError.TryAgain || error == SocketError.WouldBlock;
 
+            // todo: move this method somewhere else
             protected static SocketError Map(Interop.Error error)
             {
                 switch (error)
@@ -425,21 +426,21 @@ namespace System.Net.Sockets
 
         // These two abstract classes differentiate the operations that go in the
         // read queue vs the ones that go in the write queue.
-        internal abstract class ReadOperation : AsyncOperation, IThreadPoolWorkItem
+        private abstract class ReadOperation : AsyncOperation, IThreadPoolWorkItem
         {
             public ReadOperation(SocketAsyncContext context) : base(context) { }
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncReadOperation(this);
         }
 
-        internal abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
+        private abstract class WriteOperation : AsyncOperation, IThreadPoolWorkItem
         {
             public WriteOperation(SocketAsyncContext context) : base(context) { }
 
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
         }
 
-        internal abstract class SendOperation : WriteOperation
+        private abstract class SendOperation : WriteOperation
         {
             public SocketFlags Flags;
             public int BytesTransferred;
@@ -459,7 +460,7 @@ namespace System.Net.Sockets
                 ((Action<int, byte[], int, SocketFlags, SocketError>)CallbackOrEvent)(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
         }
 
-        internal sealed class BufferMemorySendOperation : SendOperation
+        private sealed class BufferMemorySendOperation : SendOperation
         {
             public Memory<byte> Buffer;
             internal MemoryHandle PinHandle;
@@ -537,7 +538,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed class BufferListSendOperation : SendOperation
+        private sealed class BufferListSendOperation : SendOperation
         {
             public IList<ArraySegment<byte>> Buffers;
             public int BufferIndex;
@@ -566,7 +567,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed unsafe class BufferPtrSendOperation : SendOperation
+        private sealed unsafe class BufferPtrSendOperation : SendOperation
         {
             public byte* BufferPtr;
 
@@ -623,7 +624,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal abstract class ReceiveOperation : ReadOperation
+        private abstract class ReceiveOperation : ReadOperation
         {
             public SocketFlags Flags;
             public SocketFlags ReceivedFlags;
@@ -643,7 +644,7 @@ namespace System.Net.Sockets
                     BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
         }
 
-        internal sealed class BufferMemoryReceiveOperation : ReceiveOperation
+        private sealed class BufferMemoryReceiveOperation : ReceiveOperation
         {
             public Memory<byte> Buffer;
             internal MemoryHandle PinHandle;
@@ -706,6 +707,8 @@ namespace System.Net.Sockets
 
             internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
+                PinHandle.Dispose();
+
                 if (ioControlBlock.Res < 0)
                 {
                     ErrorCode = Map((Interop.Error)(-ioControlBlock.Res));
@@ -731,7 +734,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed class BufferListReceiveOperation : ReceiveOperation
+        private sealed class BufferListReceiveOperation : ReceiveOperation
         {
             public IList<ArraySegment<byte>> Buffers;
 
@@ -758,7 +761,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed unsafe class BufferPtrReceiveOperation : ReceiveOperation
+        private sealed unsafe class BufferPtrReceiveOperation : ReceiveOperation
         {
             public byte* BufferPtr;
             public int Length;
@@ -811,7 +814,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed class ReceiveMessageFromOperation : ReadOperation
+        private sealed class ReceiveMessageFromOperation : ReadOperation
         {
             public Memory<byte> Buffer;
             public SocketFlags Flags;
@@ -840,7 +843,7 @@ namespace System.Net.Sockets
                     BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
-        internal sealed class AcceptOperation : ReadOperation
+        private sealed class AcceptOperation : ReadOperation
         {
             public IntPtr AcceptedFileDescriptor;
 
@@ -878,7 +881,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal sealed class ConnectOperation : WriteOperation
+        private sealed class ConnectOperation : WriteOperation
         {
             public ConnectOperation(SocketAsyncContext context) : base(context) { }
 
@@ -900,7 +903,7 @@ namespace System.Net.Sockets
                 ((Action<SocketError>)CallbackOrEvent)(ErrorCode);
         }
 
-        internal sealed class SendFileOperation : WriteOperation
+        private sealed class SendFileOperation : WriteOperation
         {
             public SafeFileHandle FileHandle;
             public long Offset;
@@ -1109,8 +1112,10 @@ namespace System.Net.Sockets
                 }
             }
 
-            private bool TryGetNextOperation(SocketAsyncContext context, out AsyncOperation op)
+            // Called on the epoll thread whenever we receive an epoll notification.
+            public void HandleEvent(SocketAsyncContext context)
             {
+                AsyncOperation op;
                 using (Lock())
                 {
                     Trace(context, $"Enter");
@@ -1121,34 +1126,34 @@ namespace System.Net.Sockets
                             Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (previously ready)");
-                            op = default;
-                            return false;
+                            return;
 
                         case QueueState.Waiting:
                             Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
                             _state = QueueState.Processing;
                             op = _tail.Next;
-                            return true;
+                            // Break out and release lock
+                            break;
 
                         case QueueState.Processing:
                             Debug.Assert(_tail != null, "State == Processing but queue is empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (currently processing)");
-                            op = default;
-                            return false;
+                            return;
 
                         case QueueState.Stopped:
                             Debug.Assert(_tail == null);
                             Trace(context, $"Exit (stopped)");
-                            op = default;
-                            return false;
+                            return;
 
                         default:
                             Environment.FailFast("unexpected queue state");
-                            op = default;
-                            return false;
+                            return;
                     }
                 }
+
+                // Dispatch the op so we can try to process it.
+                op.Dispatch();
             }
 
             internal void BatchOrDispatch(SocketAsyncContext context, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
@@ -1206,16 +1211,6 @@ namespace System.Net.Sockets
                     // or nextOperation.TryAsBatch failed
                     // so we dispatch outside of lock
                     nextOperation?.Dispatch();
-                }
-            }
-
-            // Called on the epoll thread whenever we receive an epoll notification.
-            public void HandleEvent(SocketAsyncContext context)
-            {
-                if (TryGetNextOperation(context, out AsyncOperation op))
-                {
-                    // Dispatch the op so we can try to process it.
-                    op.Dispatch();
                 }
             }
 
