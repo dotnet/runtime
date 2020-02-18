@@ -381,8 +381,17 @@ namespace ILCompiler.Reflection.ReadyToRun
             return false;
         }
 
-        private MetadataReader GetSystemModuleMetadataReader() =>
-            _systemModuleReader ??= _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+        private MetadataReader GetSystemModuleMetadataReader()
+        {
+            if (_systemModuleReader == null)
+            {
+                if (_assemblyResolver != null)
+                {
+                    _systemModuleReader = _assemblyResolver.FindAssembly(SystemModuleName, Filename);
+                }
+            }
+            return _systemModuleReader;
+        }
 
         public MetadataReader GetGlobalMetadataReader()
         {
@@ -630,7 +639,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_composite)
                     {
                         // The only types that don't have module overrides on them in composite images are primitive types within the system module
-                        mdReader ??= GetSystemModuleMetadataReader();
+                        mdReader = GetSystemModuleMetadataReader();
                     }
                     owningType = decoder.ReadTypeSignatureNoEmit();
                 }
