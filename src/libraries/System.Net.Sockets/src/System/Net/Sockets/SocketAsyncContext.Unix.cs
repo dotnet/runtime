@@ -1168,13 +1168,23 @@ namespace System.Net.Sockets
                             _state = QueueState.Processing;
                             nextOperation = _tail.Next;
 
-                            while (batchedCount < ioControlBlocks.Length && nextOperation != null && nextOperation.TryBatch(context, ref ioControlBlocks[batchedCount]))
+                            while (nextOperation != null && batchedCount < ioControlBlocks.Length && nextOperation.TryBatch(context, ref ioControlBlocks[batchedCount]))
                             {
                                 ioControlBlocks[batchedCount].AioData = (ulong)batchedCount;
-                                batchedOperations[batchedCount++] = nextOperation;
+                                batchedOperations[batchedCount] = nextOperation;
 
-                                nextOperation = nextOperation.Next;
+                                batchedCount++;
                                 _batchedOperationsCount++;
+
+                                if (nextOperation == nextOperation.Next)
+                                {
+                                    // we have batched some operations and reached the end of the queue
+                                    return;
+                                }
+                                else
+                                {
+                                    nextOperation = nextOperation.Next;
+                                }
                             }
                             break;
 
@@ -1356,25 +1366,32 @@ namespace System.Net.Sockets
 
                     if (_state == QueueState.Stopped)
                     {
-                        return; // it was cancelled in the meantime
+                        Debug.Assert(_tail == null);
+                        return;
+                    }
+                    else
+                    {
+                        Debug.Assert(_state == QueueState.Processing, $"_state={_state} while processing queue!");
+                        Debug.Assert(_tail != null, "Unexpected empty queue while processing I/O");
+                        Debug.Assert(op == _tail.Next, "Operation is not at head of queue???");
                     }
 
                     if (op == _tail)
                     {
-                        _tail = _tail.Next;
+                        _tail = _tail == _tail.Next ? null : _tail.Next;
                     }
                     else
                     {
-                        var current = _tail;
+                        AsyncOperation current = _tail;
                         while (current != null)
                         {
                             if (current.Next == op)
                             {
-                                current.Next = op.Next;
+                                current.Next = op != op.Next ? op.Next : current;
                                 break;
                             }
 
-                            current = current.Next;
+                            current = current != current.Next ? current.Next : null;
                         }
                     }
 
@@ -2362,7 +2379,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
+        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, in Span<Interop.Sys.IoControlBlock> ioControlBlocks, in Span<AsyncOperation> batchedOperations, ref int batchedCount)
         {
             Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "This method must not be used for handling errors!");
 
