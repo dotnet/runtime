@@ -7745,7 +7745,12 @@ ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHa
 	} else {
 		char *msg = mono_string_handle_to_utf8 (message, error);
 		g_warning ("CLR: Managed code called FailFast, saying \"%s\"", msg);
+#ifndef DISABLE_CRASH_REPORTING
+		char *old_msg = mono_crash_save_failfast_msg (msg);
+		g_free (old_msg);
+#else
 		g_free (msg);
+#endif
 	}
 
 	if (!MONO_HANDLE_IS_NULL (exception)) {
