@@ -449,7 +449,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
             }
         }
     }
-    EnumerateProgramHeaders(baseAddress, nullptr);
+    EnumerateProgramHeaders(baseAddress);
 }
 
 //

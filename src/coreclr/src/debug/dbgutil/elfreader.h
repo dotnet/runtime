@@ -66,10 +66,9 @@ public:
     bool PopulateELFInfo(ElfW(Phdr)* phdrAddr, int phnum);
     bool TryLookupSymbol(std::string symbolName, uint64_t* symbolOffset);
 #ifdef HOST_UNIX
-     bool EnumerateLinkMapEntries();
+    bool EnumerateLinkMapEntries();
 #endif
-    bool EnumerateProgramHeaders(uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
-    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, ElfW(Dyn)** pdynamicAddr);
+    bool EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias = nullptr, ElfW(Dyn)** pdynamicAddr = nullptr);
 
 private:
     bool GetSymbol(int32_t index, ElfW(Sym)* symbol);
@@ -78,7 +77,8 @@ private:
     uint32_t Hash(const std::string& symbolName);
     bool GetChain(int index, int32_t* chain);
     bool GetStringAtIndex(int index, std::string& result);
-    bool EnumerateDynamicEntries(ElfW(Dyn)* dynamicAddr);
+    bool EnumerateDynamicEntries(uint64_t loadbias, ElfW(Dyn)* dynamicAddr);
+    bool EnumerateProgramHeaders(ElfW(Phdr)* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, ElfW(Dyn)** pdynamicAddr);
     virtual void VisitModule(uint64_t baseAddress, std::string& moduleName) { };
     virtual void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr) { };
     virtual bool ReadMemory(void* address, void* buffer, size_t size) = 0;

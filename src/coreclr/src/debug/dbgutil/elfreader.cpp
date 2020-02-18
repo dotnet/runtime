@@ -98,12 +98,13 @@ ElfReader::PopulateELFInfo(uint64_t baseAddress)
 {
     TRACE("PopulateELFInfo: base %" PRIA PRIx64 "\n", baseAddress);
     Elf_Dyn* dynamicAddr = nullptr;
+    uint64_t loadbias = 0;
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(baseAddress, &dynamicAddr)) {
+    if (!EnumerateProgramHeaders(baseAddress, &loadbias, &dynamicAddr)) {
         return false;
     }
-    return EnumerateDynamicEntries(dynamicAddr);
+    return EnumerateDynamicEntries(loadbias, dynamicAddr);
 }
 
 //
@@ -119,16 +120,17 @@ ElfReader::PopulateELFInfo(Elf_Phdr* phdrAddr, int phnum)
     }
     uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Elf_Ehdr);
     Elf_Dyn* dynamicAddr = nullptr;
+    uint64_t loadbias = 0;
 
     // Enumerate program headers searching for the PT_DYNAMIC header, etc.
-    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &dynamicAddr)) {
+    if (!EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, &loadbias, &dynamicAddr)) {
         return false;
     }
-    return EnumerateDynamicEntries(dynamicAddr);
+    return EnumerateDynamicEntries(loadbias, dynamicAddr);
 }
 
 bool
-ElfReader::EnumerateDynamicEntries(Elf_Dyn* dynamicAddr)
+ElfReader::EnumerateDynamicEntries(uint64_t loadbias, Elf_Dyn* dynamicAddr)
 {
     if (dynamicAddr == nullptr) {
         return false;
@@ -149,16 +151,16 @@ ElfReader::EnumerateDynamicEntries(Elf_Dyn* dynamicAddr)
             m_rdebugAddr = (void*)dyn.d_un.d_ptr;
         }
         else if (dyn.d_tag == DT_GNU_HASH) {
-            m_gnuHashTableAddr = (void*)dyn.d_un.d_ptr;
+            m_gnuHashTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRTAB) {
-            m_stringTableAddr = (void*)dyn.d_un.d_ptr;
+            m_stringTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         else if (dyn.d_tag == DT_STRSZ) {
             m_stringTableSize = (int)dyn.d_un.d_ptr;
         }
         else if (dyn.d_tag == DT_SYMTAB) {
-            m_symbolTableAddr = (void*)dyn.d_un.d_ptr;
+            m_symbolTableAddr = (void*)(dyn.d_un.d_ptr + loadbias);
         }
         dynamicAddr++;
     }
@@ -371,7 +373,7 @@ ElfReader::EnumerateLinkMapEntries()
 #endif // HOST_UNIX
 
 bool
-ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
 {
     Elf_Ehdr ehdr;
     if (!ReadMemory((void*)baseAddress, &ehdr, sizeof(ehdr))) {
@@ -400,17 +402,18 @@ ElfReader::EnumerateProgramHeaders(uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
     _ASSERTE(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
 
     Elf_Phdr* phdrAddr = reinterpret_cast<Elf_Phdr*>(baseAddress + ehdr.e_phoff);
-    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, pdynamicAddr);
+    return EnumerateProgramHeaders(phdrAddr, phnum, baseAddress, ploadbias, pdynamicAddr);
 }
 
 //
 // Enumerate and find the dynamic program header entry
 //
 bool
-ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, Elf_Dyn** pdynamicAddr)
+ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseAddress, uint64_t* ploadbias, Elf_Dyn** pdynamicAddr)
 {
     uint64_t loadbias = baseAddress;
 
+    // Calculate the load bias from the PT_LOAD program headers
     for (int i = 0; i < phnum; i++)
     {
         Elf_Phdr ph;
@@ -425,6 +428,11 @@ ElfReader::EnumerateProgramHeaders(Elf_Phdr* phdrAddr, int phnum, uint64_t baseA
         }
     }
 
+    if (ploadbias != nullptr) {
+        *ploadbias = loadbias;
+    }
+
+    // Enumerate all the program headers
     for (int i = 0; i < phnum; i++)
     {
         Elf_Phdr ph;
