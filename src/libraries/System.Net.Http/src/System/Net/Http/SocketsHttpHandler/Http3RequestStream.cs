@@ -534,7 +534,10 @@ namespace System.Net.Http
             if (request.HasHeaders)
             {
                 // H3 does not support Transfer-Encoding: chunked.
-                request.Headers.TransferEncodingChunked = false;
+                if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+                {
+                    request.Headers.TransferEncodingChunked = false;
+                }
 
                 BufferHeaderCollection(request.Headers);
             }
@@ -551,7 +554,10 @@ namespace System.Net.Http
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {
                 // Expect 100 Continue requires content.
-                request.Headers.ExpectContinue = null;
+                if (request.HasHeaders && request.Headers.ExpectContinue != null)
+                {
+                    request.Headers.ExpectContinue = null;
+                }
 
                 if (normalizedMethod.MustHaveRequestBody)
                 {
