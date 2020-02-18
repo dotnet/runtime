@@ -21,7 +21,7 @@ namespace System.Collections.Immutable
     /// </devremarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
-    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
+    public sealed partial class ImmutableSortedSet<T> : IImmutableSet<T>, ISortKeyCollection<T>, IReadOnlySet<T>, IReadOnlyList<T>, IList<T>, ISet<T>, IList, IStrongEnumerable<T, ImmutableSortedSet<T>.Enumerator>
     {
         /// <summary>
         /// This is the factor between the small collection's size and the large collection's size in a bulk operation,

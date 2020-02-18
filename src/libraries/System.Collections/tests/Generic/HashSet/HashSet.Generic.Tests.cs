@@ -420,10 +420,6 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new HashSet<T>(int.MinValue, comparer));
         }
 
-        #region IReadOnlySet<T>Tests
-
-        #endregion
-
         #region TryGetValue
 
         [Fact]

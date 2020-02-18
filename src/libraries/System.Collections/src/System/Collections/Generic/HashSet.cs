@@ -568,22 +568,6 @@ namespace System.Collections.Generic
         }
 
         #endregion
-        #region IReadOnlySetMethods
-        public bool IReadOnlySet<T>.Contains(T item) => this.Contains(item);
-
-        public bool IReadOnlySet<T>.IsProperSubsetOf(IEnumerable<T> other) => this.IsProperSubsetOf(other);
-
-        public bool IReadOnlySet<T>.IsProperSupersetOf(IEnumerable<T> other) => this.IsProperSupersetOf(other);
-
-        public bool IReadOnlySet<T>.IsSubsetOf(IEnumerable<T> other) => this.IsSupersetOf(other);
-
-        public bool IReadOnlySet<T>.IsSupersetOf(IEnumerable<T> other) => this.IsSupersetOf(other);
-
-        public bool IReadOnlySet<T>.Overlaps(IEnumerable<T> other) => this.Overlaps(other);
-
-        public bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => this.SetEquals(other);
-
-        #endregion
 
         #region HashSet methods
 

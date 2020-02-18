@@ -44,7 +44,7 @@ namespace System.Collections.Immutable
         System.Collections.Immutable.IImmutableQueue<T> Enqueue(T value);
         T Peek();
     }
-    public partial interface IImmutableSet<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
+    public partial interface IImmutableSet<T> : System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
         System.Collections.Immutable.IImmutableSet<T> Add(T value);
         System.Collections.Immutable.IImmutableSet<T> Clear();
@@ -910,7 +910,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Generic.IEnumerable<TSource> source, System.Collections.Generic.IComparer<TSource>? comparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedSet<TSource> ToImmutableSortedSet<TSource>(this System.Collections.Immutable.ImmutableSortedSet<TSource>.Builder builder) { throw null; }
     }
-    public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>
+    public sealed partial class ImmutableSortedSet<T> : System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableSet<T>
     {
         internal ImmutableSortedSet() { }
         public static readonly System.Collections.Immutable.ImmutableSortedSet<T> Empty;
