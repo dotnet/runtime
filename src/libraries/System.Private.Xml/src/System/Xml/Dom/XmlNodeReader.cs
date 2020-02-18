@@ -249,7 +249,7 @@ namespace System.Xml
                     {
                         strb.Append(decNodeAttributes[i].name + "=\"" + decNodeAttributes[i].value + "\"");
                         if (i != (_nDeclarationAttrCount - 1))
-                            strb.Append(" ");
+                            strb.Append(' ');
                     }
                     retValue = strb.ToString();
                 }

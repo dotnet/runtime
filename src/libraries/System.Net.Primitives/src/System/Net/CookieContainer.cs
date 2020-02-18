@@ -244,7 +244,7 @@ namespace System.Net
             {
                 if (cookie.Domain[0] == '.')
                 {
-                    uriSb.Append("0"); // URI cctor should consume this faked host.
+                    uriSb.Append('0'); // URI cctor should consume this faked host.
                 }
             }
             uriSb.Append(cookie.Domain);
@@ -253,7 +253,7 @@ namespace System.Net
             // Either keep Port as implicit or set it according to original cookie.
             if (cookie.PortList != null)
             {
-                uriSb.Append(":").Append(cookie.PortList[0]);
+                uriSb.Append(':').Append(cookie.PortList[0]);
             }
 
             // Path must be present, set to root by default.

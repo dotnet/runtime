@@ -845,7 +845,7 @@ namespace System
                         break;
                     case DateTimeKind.Utc:
                         // The 'Z' constant is a marker for a UTC date
-                        result.Append("Z");
+                        result.Append('Z');
                         return;
                     default:
                         // If the kind is unspecified, we output nothing here
