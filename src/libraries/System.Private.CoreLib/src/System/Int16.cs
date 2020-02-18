@@ -84,12 +84,12 @@ namespace System
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return Number.FormatInt16(m_value, format, provider);
+            return Number.FormatInt<int, Number.Int32Fmt>(m_value, 0x0000FFFF, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatInt16(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt<int, Number.Int32Fmt>(m_value, 0x0000FFFF, format, provider, destination, out charsWritten);
         }
 
         public static short Parse(string s)

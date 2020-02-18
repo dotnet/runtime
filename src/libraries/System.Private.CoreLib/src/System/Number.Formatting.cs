@@ -690,7 +690,7 @@ namespace System
         /// for formatting int, uint, long, and ulong. There is very little overhead after
         /// JIT optimization.
         /// </summary>
-        private interface IIntFmt<T>
+        internal interface IIntFmt<T>
         {
             string ToDecStr(T value, int digits, IFormatProvider? provider);
             bool TryToDecStr(T value, int digits, IFormatProvider? provider, Span<char> destination, out int charsWritten);
@@ -700,7 +700,7 @@ namespace System
             T HexMask(T value, T mask);
         }
 
-        private struct Int32Fmt : IIntFmt<int>
+        internal struct Int32Fmt : IIntFmt<int>
         {
             public string ToDecStr(int value, int digits, IFormatProvider? provider)
                 => Int32ToDecStr(value, digits, provider);
@@ -798,7 +798,7 @@ namespace System
             return (char)(fmt - ('X' - 'A' + 10));
         }
 
-        private static string FormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, string? format, IFormatProvider? provider)
+        internal static string FormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, string? format, IFormatProvider? provider)
             where TIntFmt : struct, IIntFmt<TInt>
         {
             // Fast path for default format
@@ -832,7 +832,7 @@ namespace System
             }
         }
 
-        private static bool TryFormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        internal static bool TryFormatInt<TInt, TIntFmt>(TInt value, TInt hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
             where TIntFmt : struct, IIntFmt<TInt>
         {
             // Fast path for default format
@@ -886,18 +886,6 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
         }
-
-        public static string FormatSByte(sbyte value, string? format, IFormatProvider? provider)
-            => FormatInt<int, Int32Fmt>(value, 0x000000FF, format, provider);
-
-        public static bool TryFormatSByte(sbyte value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<int, Int32Fmt>(value, 0x000000FF, format, provider, destination, out charsWritten);
-
-        public static string FormatInt16(short value, string? format, IFormatProvider? provider)
-            => FormatInt<int, Int32Fmt>(value, 0x0000FFFF, format, provider);
-
-        public static bool TryFormatInt16(short value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<int, Int32Fmt>(value, 0x0000FFFF, format, provider, destination, out charsWritten);
 
         public static string FormatInt32(int value, string? format, IFormatProvider? provider)
             => FormatInt<int, Int32Fmt>(value, ~0, format, provider);
