@@ -180,8 +180,7 @@ void EventPipe::EnableViaEnvironmentVariables()
                         configuration.GetProviderName(),
                         configuration.GetEnabledKeywordsMask(),
                         configuration.GetLevel(),
-                        nullptr
-                        // TODO: Add arguments here
+                        configuration.GetArgument()
                     );
                 }
 

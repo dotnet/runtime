@@ -258,6 +258,10 @@ public:
 
         auto levelComponent = GetNextComponentString(keywordsComponent.End + 1);
         _level = ParseLevel(levelComponent);
+
+        auto argumentComponent = GetNextComponentString(levelComponent.End + 1);
+        _argument = ParseArgument(argumentComponent);
+
         _isValid = true;
     }
 
@@ -279,6 +283,11 @@ public:
     UINT GetLevel() const
     {
         return _level;
+    }
+
+    LPCWSTR GetArgument() const
+    {
+        return _argument;
     }
 
 private:
@@ -340,9 +349,23 @@ private:
         return level;
     }
 
+    LPCWSTR ParseArgument(ComponentSpan const & component) const
+    {
+        auto argument = (WCHAR*)nullptr;
+        if ((component.End - component.Start) != 0)
+        {
+            auto const length = component.End - component.Start;
+            argument = new WCHAR[length + 1];
+            memset(argument, '\0', (length + 1) * sizeof(WCHAR));
+            wcsncpy(argument, component.Start, length);
+        }
+        return argument;
+    }
+
     LPCWSTR _provider;
     ULONGLONG _enabledKeywords;
     UINT _level;
+    LPCWSTR _argument;
     bool _isValid;
 };
 #endif // FEATURE_EVENT_TRACE
