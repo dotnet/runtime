@@ -8,9 +8,9 @@
     <MonoLLVMDir Condition="'$(MonoEnableLLVM)' == 'true' and '$(MonoLLVMDir)' == ''">$(MonoObjDir)llvm</MonoLLVMDir>
     <DotNetExec Condition="'$(OS)' == 'Windows_NT'">dotnet.exe</DotNetExec>
     <DotNetExec Condition="'$(DotNetExec)' == ''">dotnet</DotNetExec>
-    <LocalDotnetDir>..\..\.dotnet</LocalDotnetDir>
+    <LocalDotnetDir>$(RepoRoot).dotnet</LocalDotnetDir>
     <LocalDotnet>$(LocalDotnetDir)\$(DotNetExec)</LocalDotnet>
-    <LocalMonoDotnetDir>..\..\.dotnet-mono</LocalMonoDotnetDir>
+    <LocalMonoDotnetDir>$(RepoRoot).dotnet-mono</LocalMonoDotnetDir>
     <LocalMonoDotnet>$(LocalMonoDotnetDir)\$(DotNetExec)</LocalMonoDotnet>
     <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
     <ScriptExt Condition="'$(OS)' != 'Windows_NT'">.sh</ScriptExt>
@@ -25,16 +25,36 @@
   <Target Name="ConfigureMonoRuntimeUnix" Condition="'$(OS)' != 'Windows_NT'" Inputs="$(MonoProjectRoot)configure.ac" Outputs="$(MonoObjDir)config.h">
       <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <_MonoExtraCFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCFLAGS>
-        <_MonoExtraCXXFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer</_MonoExtraCXXFLAGS>
+        <_MonoExtraCXXFLAGS>-O0 -ggdb3 -fno-omit-frame-pointer -D_GLIBCXX_USE_CXX11_ABI=0</_MonoExtraCXXFLAGS>
         <_MonoConfigureParams>--enable-checked-build=private_types</_MonoConfigureParams>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <_MonoExtraCFLAGS>-O2 -g</_MonoExtraCFLAGS>
-        <_MonoExtraCXXFLAGS>-O2 -g</_MonoExtraCXXFLAGS>
+        <_MonoExtraCXXFLAGS>-O2 -g -D_GLIBCXX_USE_CXX11_ABI=0</_MonoExtraCXXFLAGS>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(TargetArchitecture)' == 'arm64' ">
+        <_MonoTuple>aarch64-linux-gnu</_MonoTuple>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(TargetArchitecture)' == 'arm' ">
+        <_MonoTuple>arm-linux-gnueabihf</_MonoTuple>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(TargetArchitecture)' == 'arm' Or '$(TargetArchitecture)' == 'arm64' ">
+        <_MonoCrossDir>$(ROOTFS_DIR)</_MonoCrossDir>
+        <_MonoExtraCFLAGS>$(_MonoExtraCFLAGS) --sysroot=$(_MonoCrossDir) --target=$(_MonoTuple)</_MonoExtraCFLAGS>
+        <_MonoExtraCXXFLAGS>$(_MonoExtraCXXFLAGS) --sysroot=$(_MonoCrossDir) --target=$(_MonoTuple)</_MonoExtraCXXFLAGS>
+        <_MonoExtraLDFLAGS>$(_MonoExtraLDFLAGS) --sysroot=$(_MonoCrossDir) --target=$(_MonoTuple)</_MonoExtraLDFLAGS>
+        <_MonoExtraCCLDFLAGS>$(_MonoExtraCCLDFLAGS) -XCClinker --target=$(_MonoTuple)</_MonoExtraCCLDFLAGS>
+        <_MonoConfigureParams>$(_MonoConfigureParams) --host=$(_MonoTuple) --target=$(_MonoTuple)</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) RANLIB=$(_MonoTuple)-ranlib</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) LD=$(_MonoTuple)-ld</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) AS=$(_MonoTuple)-as</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) AR=$(_MonoTuple)-ar</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) STRIP=$(_MonoTuple)-strip</_MonoConfigureParams>
     </PropertyGroup>
     <PropertyGroup>
         <_MonoConfigureParams Condition="'$(MonoEnableLLVM)' == 'true'">$(_MonoConfigureParams) --with-llvm=$(MonoLLVMDir) </_MonoConfigureParams>
-        <_MonoConfigureParams>$(_MonoConfigureParams) --enable-maintainer-mode --enable-compile-warnings --with-core=only CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)"</_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) --enable-maintainer-mode --enable-compile-warnings --with-core=only </_MonoConfigureParams>
+        <_MonoConfigureParams>$(_MonoConfigureParams) CFLAGS="$(_MonoExtraCFLAGS)" CXXFLAGS="$(_MonoExtraCXXFLAGS)" LDFLAGS="$(_MonoExtraLDFLAGS)" CCLDFLAGS="$(_MonoExtraCCLDFLAGS)"</_MonoConfigureParams>
     </PropertyGroup>
 
     <Message Text="Configuring Mono with '$(_MonoConfigureParams)'" Importance="High" />
@@ -85,6 +105,7 @@
           DestinationFiles="%(_MonoRuntimeArtifacts.Destination)"
           SkipUnchangedFiles="true" />
 
+    <Exec Condition="'$(TargetsOSX)' == 'true'" Command="install_name_tool -id @rpath/$(_CoreClrFileName) %(_MonoRuntimeArtifacts.Destination)" />
   </Target>
 
   <Target Name="Restore">
@@ -98,30 +119,42 @@
 
   <Target Name="Test" />
 
-  <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
-  <Target Name="PatchLocalMonoDotnet" DependsOnTargets="ValidateLocalDotnet">
+  <!-- Copy Mono runtime bits to $(Destination) -->
+  <Target Name="CopyMonoRuntimeFilesFromArtifactsToDestination">
     <ItemGroup>
-      <_LocalDotnetFiles Include="$(LocalDotnetDir)\**\*.*" />
       <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
     </ItemGroup>
+    <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
+    <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
+          DestinationFolder="$(Destination)"
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+
+  <Target Name="CloneLocalDotnet" DependsOnTargets="ValidateLocalDotnet">
+    <ItemGroup>
+      <_LocalDotnetFiles Include="$(LocalDotnetDir)\**\*.*" />
+    </ItemGroup>
     <!-- copy .dotnet to .dotnet-mono if it doesn't exist -->
     <Copy SourceFiles="@(_LocalDotnetFiles)"
           DestinationFolder="$(LocalMonoDotnetDir)\%(RecursiveDir)"
           SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])" />
+  </Target>
+
+  <!-- Copy Mono runtime bits to the local .dotnet-mono (clone of .dotnet) dir for local experiments (temp solution) -->
+  <Target Name="PatchLocalMonoDotnet" DependsOnTargets="CloneLocalDotnet">
+      <MSBuild Projects ="$(MSBuildProjectFullPath)"
+               Properties="Destination=$([System.IO.Directory]::GetDirectories('$(LocalMonoDotnetDir)\shared\Microsoft.NETCore.App')[0])"
+               Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Mono runtime bits to the coreclr's Core_Root in order to run runtime tests -->
   <Target Name="PatchCoreClrCoreRoot" DependsOnTargets="ValidateLocalDotnet">
-    <Error Condition="!Exists('$(CoreClrTestCoreRoot)')" Text="Core_Root ($(CoreClrTestCoreRoot)) doesn't exist. Have you built coreclr tests in $(CoreClrTestConfig) configuration?" />
-    <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
-    </ItemGroup>
-    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
-          DestinationFolder="$(CoreClrTestCoreRoot)" />
+    <PropertyGroup>
+      <Destination>$(CoreClrTestCoreRoot)</Destination>
+    </PropertyGroup>
+    <CallTarget Targets="CopyMonoRuntimeFilesFromArtifactsToDestination" />
   </Target>
 
   <!-- Copy Coreclr runtime bits back to Core_Root -->

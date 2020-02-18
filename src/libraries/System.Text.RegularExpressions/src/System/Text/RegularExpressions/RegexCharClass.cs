@@ -1110,24 +1110,13 @@ namespace System.Text.RegularExpressions
                 // Otherwise, compute it normally.
                 bool isInClass = CharInClass(ch, set);
 
-                // Determine which bits to write back to the array.
+                // Determine which bits to write back to the array and "or" the bits back in a thread-safe manner.
                 int bitsToSet = knownBit;
                 if (isInClass)
                 {
                     bitsToSet |= valueBit;
                 }
-
-                // "or" the bits back in a thread-safe manner.
-                while (true)
-                {
-                    int oldValue = Interlocked.CompareExchange(ref slot, current | bitsToSet, current);
-                    if (oldValue == current)
-                    {
-                        break;
-                    }
-
-                    current = oldValue;
-                }
+                Interlocked.Or(ref slot, bitsToSet);
 
                 // Return the computed value.
                 return isInClass;
@@ -1532,7 +1521,6 @@ namespace System.Text.RegularExpressions
         }
 
 #if DEBUG
-        public static readonly char[] Hex = new char[] { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
         public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
@@ -1677,7 +1665,7 @@ namespace System.Text.RegularExpressions
             while (shift > 0)
             {
                 shift -= 4;
-                sb.Append(Hex[(ch >> shift) & 0xF]);
+                sb.Append(HexConverter.ToCharLower(ch >> shift));
             }
 
             return sb.ToString();

@@ -82,14 +82,14 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
 
     if (file == INVALID_HANDLE_VALUE)
     {
-        trace::warning(_X("Failed to map file. CreateFileW(%s) failed with error %d"), path.c_str(), GetLastError());
+        trace::error(_X("Failed to map file. CreateFileW(%s) failed with error %d"), path.c_str(), GetLastError());
         return nullptr;
     }
 
     LARGE_INTEGER fileSize;
     if (GetFileSizeEx(file, &fileSize) == 0)
     {
-        trace::warning(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
+        trace::error(_X("Failed to map file. GetFileSizeEx(%s) failed with error %d"), path.c_str(), GetLastError());
         CloseHandle(file);
         return nullptr;
     }
@@ -99,19 +99,23 @@ void* pal::map_file_readonly(const pal::string_t& path, size_t &length)
 
     if (map == NULL)
     {
-        trace::warning(_X("Failed to map file. CreateFileMappingW(%s) failed with error %d"), path.c_str(), GetLastError());
+        trace::error(_X("Failed to map file. CreateFileMappingW(%s) failed with error %d"), path.c_str(), GetLastError());
         CloseHandle(file);
         return nullptr;
     }
 
     void *address = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
 
-    if (map == NULL)
+    if (address == NULL)
     {
-        trace::warning(_X("Failed to map file. MapViewOfFile(%s) failed with error %d"), path.c_str(), GetLastError());
-        CloseHandle(file);
-        return nullptr;
+        trace::error(_X("Failed to map file. MapViewOfFile(%s) failed with error %d"), path.c_str(), GetLastError());
     }
+
+    // The file-handle (file) and mapping object handle (map) can be safely closed
+    // once the file is mapped. The OS keeps the file open if there is an open mapping into the file.
+
+    CloseHandle(map);
+    CloseHandle(file);
 
     return address;
 }
@@ -560,8 +564,34 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     assert(len < max_len);
     tmp_dir.assign(temp_path);
 
-    return pal::realpath(&tmp_dir);
+    return realpath(&tmp_dir);
 }
+
+bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
+{
+    if (!get_temp_directory(extraction_dir))
+    {
+        return false;
+    }
+
+    append_path(&extraction_dir, _X(".net"));
+    // Windows Temp-Path is already user-private.
+
+    if (realpath(&extraction_dir))
+    {
+        return true;
+    }
+
+    // Create the %TEMP%\.net directory
+    if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
+        GetLastError() != ERROR_ALREADY_EXISTS)
+    {
+        return false;
+    }
+
+    return realpath(&extraction_dir);
+}
+
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {

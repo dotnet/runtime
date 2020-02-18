@@ -132,9 +132,6 @@
     <Compile Include="System\Dynamic\IInvokeOnGetBinder.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true'">
-    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
-      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
-    </Compile>
     <Compile Include="System\Linq\Expressions\Compiler\AssemblyGen.cs" />
     <Compile Include="System\Dynamic\Utils\Helpers.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\AnalyzedTree.cs" />

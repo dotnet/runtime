@@ -4606,6 +4606,65 @@ BOOL MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value;
 }
 
+
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, LPCWSTR result)
+{
+    if (GetStringLiteral == nullptr)
+        GetStringLiteral = new LightWeightMap<DLD, DD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+
+    key.A = (DWORDLONG)module;
+    key.B = (DWORD)metaTOK;
+
+    DWORD strBuf = (DWORD)-1;
+    if (result != nullptr)
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen(result) * 2) + 2));
+
+    DD value;
+    value.A = (DWORD)length;
+    value.B = (DWORD)strBuf;
+
+    GetStringLiteral->Add(key, value);
+}
+
+void MethodContext::dmpGetStringLiteral(DLD key, DD value)
+{
+    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
+        GetStringLiteral->GetBuffer(value.B), value.A);
+}
+
+LPCWSTR MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+{
+    if (GetStringLiteral == nullptr)
+    {
+        *length = -1;
+        return nullptr;
+    }
+
+    DLD key;
+    ZeroMemory(&key, sizeof(DLD)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
+                                   // out padding too
+
+    key.A = (DWORDLONG)module;
+    key.B = (DWORD)metaTOK;
+
+    int itemIndex = GetStringLiteral->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        *length = -1;
+        return nullptr;
+    }
+    else
+    {
+        DD result = GetStringLiteral->Get(key);
+        *length = (int)result.A;
+        return (LPCWSTR)GetStringLiteral->GetBuffer(itemIndex);
+    }
+}
+
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
 {
     if (GetHelperName == nullptr)

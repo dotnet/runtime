@@ -1214,7 +1214,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 // If it is a multi-reg struct return, don't change the oper to GT_LCL_FLD.
                 // That is, the IR will be of the form lclVar = call for multi-reg return
                 //
-                GenTreeLclVar* lcl = destAddr->AsOp()->gtOp1->AsLclVar();
+                GenTreeLclVar* lcl    = destAddr->AsOp()->gtOp1->AsLclVar();
+                unsigned       lclNum = lcl->GetLclNum();
+                LclVarDsc*     varDsc = lvaGetDesc(lclNum);
                 if (src->AsCall()->HasMultiRegRetVal())
                 {
                     // Mark the struct LclVar as used in a MultiReg return context
@@ -1222,13 +1224,13 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     // TODO-1stClassStructs: Eliminate this pessimization when we can more generally
                     // handle multireg returns.
                     lcl->gtFlags |= GTF_DONT_CSE;
-                    lvaTable[lcl->AsLclVarCommon()->GetLclNum()].lvIsMultiRegRet = true;
+                    varDsc->lvIsMultiRegRet = true;
                 }
                 else if (lcl->gtType != src->gtType)
                 {
                     // We change this to a GT_LCL_FLD (from a GT_ADDR of a GT_LCL_VAR)
                     lcl->ChangeOper(GT_LCL_FLD);
-                    fgLclFldAssign(lcl->AsLclVarCommon()->GetLclNum());
+                    fgLclFldAssign(lclNum);
                     lcl->gtType = src->gtType;
                     asgType     = src->gtType;
                 }
@@ -1238,7 +1240,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 #if defined(TARGET_ARM)
                 // TODO-Cleanup: This should have been taken care of in the above HasMultiRegRetVal() case,
                 // but that method has not been updadted to include ARM.
-                impMarkLclDstNotPromotable(lcl->AsLclVarCommon()->GetLclNum(), src, structHnd);
+                impMarkLclDstNotPromotable(lclNum, src, structHnd);
                 lcl->gtFlags |= GTF_DONT_CSE;
 #elif defined(UNIX_AMD64_ABI)
                 // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
@@ -1250,7 +1252,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 // TODO-Cleanup: Why is this needed here? This seems that it will set this even for
                 // non-multireg returns.
                 lcl->gtFlags |= GTF_DONT_CSE;
-                lvaTable[lcl->AsLclVarCommon()->GetLclNum()].lvIsMultiRegRet = true;
+                varDsc->lvIsMultiRegRet = true;
 #endif
             }
             else // we don't have a GT_ADDR of a GT_LCL_VAR
@@ -2059,7 +2061,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
                                    nullptr DEBUGARG("impRuntimeLookup slot"));
     }
 
-    GenTree* indOffTree = nullptr;
+    GenTree* indOffTree    = nullptr;
+    GenTree* lastIndOfTree = nullptr;
 
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
@@ -2084,6 +2087,15 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         if (pRuntimeLookup->offsets[i] != 0)
         {
+// The last indirection could be subject to a size check (dynamic dictionary expansion feature)
+#if 0  // Uncomment that block when you add sizeOffset field to pRuntimeLookup.
+            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != 0xFFFF)
+            {
+                lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
+            }
+#endif // 0
+
             slotPtrTree =
                 gtNewOperNode(GT_ADD, TYP_I_IMPL, slotPtrTree, gtNewIconNode(pRuntimeLookup->offsets[i], TYP_I_IMPL));
         }
@@ -2138,38 +2150,56 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark1"));
 
     // Extract the handle
-    GenTree* handle = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
-    handle->gtFlags |= GTF_IND_NONFAULTING;
-
-    GenTree* handleCopy = impCloneExpr(handle, &handle, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                       nullptr DEBUGARG("impRuntimeLookup typehandle"));
+    GenTree* handleForNullCheck = gtNewOperNode(GT_IND, TYP_I_IMPL, slotPtrTree);
+    handleForNullCheck->gtFlags |= GTF_IND_NONFAULTING;
 
     // Call to helper
     GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_TOKEN_HDL, compileTimeHandle);
 
     GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-    GenTree*          helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+    GenTreeCall*      helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
 
     // Check for null and possibly call helper
-    GenTree* relop = gtNewOperNode(GT_NE, TYP_INT, handle, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* nullCheck       = gtNewOperNode(GT_NE, TYP_INT, handleForNullCheck, gtNewIconNode(0, TYP_I_IMPL));
+    GenTree* handleForResult = gtCloneExpr(handleForNullCheck);
 
-    GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL,
-                                                       gtNewNothingNode(), // do nothing if nonnull
-                                                       helperCall);
+    GenTree* result = nullptr;
 
-    GenTree* qmark = gtNewQmarkNode(TYP_I_IMPL, relop, colon);
-
-    unsigned tmp;
-    if (handleCopy->IsLocal())
+#if 0  // Uncomment that block when you add sizeOffset field to pRuntimeLookup.
+    if (pRuntimeLookup->sizeOffset != 0xFFFF) // dynamic dictionary expansion feature
     {
-        tmp = handleCopy->AsLclVarCommon()->GetLclNum();
+        assert((lastIndOfTree != nullptr) && (pRuntimeLookup->indirections > 0));
+
+        // sizeValue = dictionary[pRuntimeLookup->sizeOffset]
+        GenTreeIntCon* sizeOffset      = gtNewIconNode(pRuntimeLookup->sizeOffset, TYP_I_IMPL);
+        GenTree*       sizeValueOffset = gtNewOperNode(GT_ADD, TYP_I_IMPL, lastIndOfTree, sizeOffset);
+        GenTree*       sizeValue       = gtNewOperNode(GT_IND, TYP_I_IMPL, sizeValueOffset);
+
+        // sizeCheck fails if sizeValue < pRuntimeLookup->offsets[i]
+        GenTree* offsetValue = gtNewIconNode(pRuntimeLookup->offsets[pRuntimeLookup->indirections - 1], TYP_I_IMPL);
+        GenTree* sizeCheck   = gtNewOperNode(GT_LE, TYP_INT, sizeValue, offsetValue);
+
+        // revert null check condition.
+        nullCheck->ChangeOperUnchecked(GT_EQ);
+
+        // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
+        // Add checks and the handle as call arguments, indirect call transformer will handle this.
+        helperCall->gtCallArgs = gtPrependNewCallArg(handleForResult, helperCall->gtCallArgs);
+        helperCall->gtCallArgs = gtPrependNewCallArg(sizeCheck, helperCall->gtCallArgs);
+        helperCall->gtCallArgs = gtPrependNewCallArg(nullCheck, helperCall->gtCallArgs);
+        result                 = helperCall;
+        addExpRuntimeLookupCandidate(helperCall);
     }
     else
+#endif // 0
     {
-        tmp = lvaGrabTemp(true DEBUGARG("spilling QMark1"));
+        GenTreeColon* colonNullCheck = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, handleForResult, helperCall);
+        result                       = gtNewQmarkNode(TYP_I_IMPL, nullCheck, colonNullCheck);
     }
 
-    impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
+    unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling Runtime Lookup tree"));
+
+    impAssignTempGen(tmp, result, (unsigned)CHECK_SPILL_NONE);
     return gtNewLclvNode(tmp, TYP_I_IMPL);
 }
 
@@ -2558,7 +2588,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 #if defined(JIT32_GCENCODER)
     const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
 #else
-    const bool forceInsertNewBlock                                           = compStressCompile(STRESS_CATCH_ARG, 5);
+    const bool forceInsertNewBlock      = compStressCompile(STRESS_CATCH_ARG, 5);
 #endif // defined(JIT32_GCENCODER)
 
     /* Spill GT_CATCH_ARG to a temp if there are jumps to the beginning of the handler */
@@ -3632,6 +3662,27 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             op1 = impPopStack().val;
             if (opts.OptimizationEnabled())
             {
+                if (op1->OperIs(GT_CNS_STR))
+                {
+                    // Optimize `ldstr + String::get_Length()` to CNS_INT
+                    // e.g. "Hello".Length => 5
+                    int     length = -1;
+                    LPCWSTR str    = info.compCompHnd->getStringLiteral(op1->AsStrCon()->gtScpHnd,
+                                                                     op1->AsStrCon()->gtSconCPX, &length);
+                    if (length >= 0)
+                    {
+                        retNode = gtNewIconNode(length);
+                        if (str != nullptr) // can be NULL for dynamic context
+                        {
+                            JITDUMP("Optimizing '\"%ws\".Length' to just '%d'\n", str, length);
+                        }
+                        else
+                        {
+                            JITDUMP("Optimizing 'CNS_STR.Length' to just '%d'\n", length);
+                        }
+                        break;
+                    }
+                }
                 GenTreeArrLen* arrLen = gtNewArrLen(TYP_INT, op1, OFFSETOF__CORINFO_String__stringLen, compCurBB);
                 op1                   = arrLen;
             }
@@ -13819,7 +13870,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             // and potentially exploitable.
                             lvaSetStruct(lclNum, resolvedToken.hClass, true /* unsafe value cls check */);
                         }
-                        if (compIsForInlining() || fgStructTempNeedsExplicitZeroInit(lvaTable + lclNum, block))
+
+                        bool bbInALoop =
+                            (compIsForInlining() && ((impInlineInfo->iciBlock->bbFlags & BBF_BACKWARD_JUMP) != 0)) ||
+                            ((block->bbFlags & BBF_BACKWARD_JUMP) != 0);
+                        bool bbIsReturn = (block->bbJumpKind == BBJ_RETURN) &&
+                                          (!compIsForInlining() || (impInlineInfo->iciBlock->bbJumpKind == BBJ_RETURN));
+                        if (fgVarNeedsExplicitZeroInit(lvaGetDesc(lclNum), bbInALoop, bbIsReturn))
                         {
                             // Append a tree to zero-out the temp
                             newObjThisPtr = gtNewLclvNode(lclNum, lvaTable[lclNum].TypeGet());
@@ -20841,6 +20898,12 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     }
 
     call->gtGuardedDevirtualizationCandidateInfo = pInfo;
+}
+
+void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)
+{
+    setMethodHasExpRuntimeLookup();
+    call->SetExpRuntimeLookup();
 }
 
 //------------------------------------------------------------------------

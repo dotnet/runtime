@@ -51,6 +51,9 @@
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
+    </Compile>
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs">
       <Link>Common\System\Collections\Generic\ValueListBuilder.cs</Link>
     </Compile>

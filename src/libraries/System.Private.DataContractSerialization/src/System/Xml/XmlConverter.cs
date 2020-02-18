@@ -1146,17 +1146,19 @@ namespace System.Xml
             }
             if (count == s.Length)
                 return s;
-            char[] chars = new char[count];
-            count = 0;
-            for (int i = 0; i < s.Length; i++)
+
+            return string.Create(count, s, (chars, s) =>
             {
-                char ch = s[i];
-                if (!IsWhitespace(ch))
+                int count = 0;
+                for (int i = 0; i < s.Length; i++)
                 {
-                    chars[count++] = ch;
+                    char ch = s[i];
+                    if (!IsWhitespace(ch))
+                    {
+                        chars[count++] = ch;
+                    }
                 }
-            }
-            return new string(chars);
+            });
         }
 
         private static string Trim(string s)

@@ -46,6 +46,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
+        [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
@@ -60,11 +61,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Theory]
+        [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);
 
         [Theory]
+        [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
         [MemberData(nameof(SerializableEqualityComparers_MemberData))]
         public void ValidateEqualityComparersAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, true);

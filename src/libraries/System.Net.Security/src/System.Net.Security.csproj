@@ -66,17 +66,20 @@
       <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <!-- System.Net common -->
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs">
+       <Link>Common\System\Net\ArrayBuffer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs">
       <Link>Common\System\Net\ExceptionCheck.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
     <!-- Common -->
     <Compile Include="$(CommonPath)System\NotImplemented.cs">
@@ -99,6 +102,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Net\SecurityStatusPal.cs">
       <Link>Common\System\Net\SecurityStatusPal.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\HexConverter.cs">
+      <Link>Common\System\HexConverter.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- This file depends on IANA registry. We do not want anyone's build to break after the update -->

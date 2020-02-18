@@ -13,9 +13,27 @@ namespace System.Net.Test.Common
 {
     public sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
+        public const long H3_NO_ERROR = 0x100;
+        public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;
+        public const long H3_INTERNAL_ERROR = 0x102;
+        public const long H3_STREAM_CREATION_ERROR = 0x103;
+        public const long H3_CLOSED_CRITICAL_STREAM = 0x104;
+        public const long H3_FRAME_UNEXPECTED = 0x105;
+        public const long H3_FRAME_ERROR = 0x106;
+        public const long H3_EXCESSIVE_LOAD = 0x107;
+        public const long H3_ID_ERROR = 0x108;
+        public const long H3_SETTINGS_ERROR = 0x109;
+        public const long H3_MISSING_SETTINGS = 0x10a;
+        public const long H3_REQUEST_REJECTED = 0x10b;
+        public const long H3_REQUEST_CANCELLED = 0x10c;
+        public const long H3_REQUEST_INCOMPLETE = 0x10d;
+        public const long H3_CONNECT_ERROR = 0x10f;
+        public const long H3_VERSION_FALLBACK = 0x110;
+
         private readonly QuicConnection _connection;
         private readonly Dictionary<int, Http3LoopbackStream> _openStreams = new Dictionary<int, Http3LoopbackStream>();
         private Http3LoopbackStream _currentStream;
+        private bool _closed;
 
         public Http3LoopbackConnection(QuicConnection connection)
         {
@@ -29,7 +47,18 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
+            if (!_closed)
+            {
+                CloseAsync(H3_INTERNAL_ERROR).GetAwaiter().GetResult();
+            }
+
             _connection.Dispose();
+        }
+
+        public async Task CloseAsync(long errorCode)
+        {
+            await _connection.CloseAsync(errorCode).ConfigureAwait(false);
+            _closed = true;
         }
 
         public Http3LoopbackStream OpenUnidirectionalStream()
@@ -73,7 +102,14 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true)
         {
-            Http3LoopbackStream stream = await AcceptStreamAsync().ConfigureAwait(false);
+            Http3LoopbackStream stream;
+
+            do
+            {
+                stream = await AcceptStreamAsync().ConfigureAwait(false);
+            }
+            while (!stream.CanWrite); // skip control stream.
+
             return await stream.ReadRequestDataAsync(readBody).ConfigureAwait(false);
         }
 
@@ -94,7 +130,7 @@ namespace System.Net.Test.Common
 
             if (isFinal)
             {
-                stream.ShutdownSend();
+                await stream.ShutdownSendAsync().ConfigureAwait(false);
                 stream.Dispose();
             }
         }
