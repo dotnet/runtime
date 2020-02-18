@@ -1011,8 +1011,6 @@ namespace System.Net.Http
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                ReadOnlyMemory<byte> remaining = buffer;
-
                 // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
@@ -1031,12 +1029,12 @@ namespace System.Net.Http
 
                 using (customCancellationSource)
                 {
-                    while (remaining.Length > 0)
+                    while (buffer.Length > 0)
                     {
-                        int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length, cancellationToken).ConfigureAwait(false);
+                        int sendSize = await _streamWindow.RequestCreditAsync(buffer.Length, cancellationToken).ConfigureAwait(false);
 
                         ReadOnlyMemory<byte> current;
-                        (current, remaining) = SplitBuffer(remaining, sendSize);
+                        (current, buffer) = SplitBuffer(buffer, sendSize);
 
                         await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
                     }
