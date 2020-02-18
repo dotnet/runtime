@@ -226,9 +226,8 @@ void DebuggerModuleTable::AddModule(DebuggerModule *pModule)
 }
 
 //-----------------------------------------------------------------------------
-// Remove a DebuggerModule  from the module table.
-// This occurs in response to AppDomain unload.
-// Note that this doesn't necessarily mean the EE Module is being unloaded (it may be shared)
+// Remove a DebuggerModule from the module table when it gets notified.
+// This occurs in response to the finalization of an unloaded AssemblyLoadContext.
 //-----------------------------------------------------------------------------
 void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
 {
