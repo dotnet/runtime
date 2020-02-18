@@ -134,7 +134,7 @@ namespace System.IO.Compression.Tests
         [InlineData(false)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/32316", TestRuntimes.Mono)]
-        public static void ZipArchiveEntry_AppContext_Switch_SuppresHeaderValidation(bool suppressValidation)
+        public static void ZipArchiveEntry_AppContext_Switch_SuppressHeaderValidation(bool suppressValidation)
         {
             RemoteExecutor.Invoke((suppressString) =>
             {
@@ -183,7 +183,10 @@ namespace System.IO.Compression.Tests
                     Assert.Equal(s_bufferSize, read);
                     foreach (byte b in buffer)
                     {
-                        Assert.Equal((byte)'0', b); // the file should be all "0"s 
+                        if (b != '0')
+                        {
+                            Assert.True(false, "The file should be all 0s");
+                        }
                     }
                 }
             }
