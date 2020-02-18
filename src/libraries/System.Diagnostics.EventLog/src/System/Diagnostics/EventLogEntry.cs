@@ -418,7 +418,7 @@ namespace System.Diagnostics
                     {
                         result.Append(@"\\");
                         result.Append(owner.MachineName);
-                        result.Append(@"\");
+                        result.Append('\\');
                         result.Append(fileNames[i][0]);
                         result.Append('$');
                         result.Append(fileNames[i], 2, fileNames[i].Length - 2);
