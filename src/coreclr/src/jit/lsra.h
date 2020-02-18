@@ -71,7 +71,7 @@ inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Get the set of callee-save registers of the given RegisterType
+// calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
 //
 inline regMaskTP calleeSaveRegs(RegisterType rt)
 {
@@ -79,7 +79,7 @@ inline regMaskTP calleeSaveRegs(RegisterType rt)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Get the set of callee-save registers of the given RegisterType
+// callerSaveRegs: Get the set of caller-save registers of the given RegisterType
 //
 inline regMaskTP callerSaveRegs(RegisterType rt)
 {

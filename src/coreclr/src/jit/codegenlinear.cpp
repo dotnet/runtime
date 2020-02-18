@@ -1883,7 +1883,7 @@ void CodeGen::genProduceReg(GenTree* tree)
 
             // The GTF_SPILL flag generally means that we need to spill this local.
             // The exception is the case of an EH var that is being "spilled"
-            // to the stack, indicated by aby an EH GT_LCL_VAR use that is marked GTF_SPILL
+            // to the stack, indicated by an EH GT_LCL_VAR use that is marked GTF_SPILL
             // (note that all EH lclVar defs are always "spilled", i.e. write-thru).
             // It is always valid on the stack, but the GTF_SPILL flag records the fact
             // that the register value is going dead.
