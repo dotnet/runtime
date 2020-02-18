@@ -18,7 +18,7 @@
     <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
-    <OSRid Condition="'$(OSRid)' == ''">win10</OSRid>
+    <OSRid Condition="'$(OSRid)' == ''">$(MonoOSGroup)</OSRid>
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
@@ -181,14 +181,14 @@
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)"
               Condition="'$(_isSupportedOSGroup)' == 'true'">
-      <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>
+      <Platform Condition="'$(ArchGroup)' == 'x64'">x64</Platform>
       <Platform Condition="'$(ArchGroup)' != 'x64'">$(ArchGroup)</Platform>
     </BuildRID>
   </ItemGroup>
 
   <ItemGroup>
     <_project Include="@(BuildRID)">
-      <Platform Condition="'%(Platform)' == ''">amd64</Platform>
+      <Platform Condition="'%(Platform)' == ''">x64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
       <AdditionalProperties>PackageTargetRuntime=%(Identity);Platform=%(Platform)</AdditionalProperties>
     </_project>

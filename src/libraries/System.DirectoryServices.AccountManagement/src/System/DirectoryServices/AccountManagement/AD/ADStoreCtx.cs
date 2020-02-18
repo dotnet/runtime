@@ -172,7 +172,7 @@ namespace System.DirectoryServices.AccountManagement
                 // It's probably a property that requires custom handling, such as IdentityClaim.
                 if (fromLdap != null)
                 {
-                    string ldapAttributeLower = ldapAttribute.ToLower(CultureInfo.InvariantCulture);
+                    string ldapAttributeLower = ldapAttribute.ToLowerInvariant();
 
                     if (mappingTableByLDAP[ldapAttributeLower] == null)
                         mappingTableByLDAP[ldapAttributeLower] = new ArrayList();
@@ -1049,22 +1049,22 @@ namespace System.DirectoryServices.AccountManagement
 
                 foreach (string ldapAttribute in ldapAttributes)
                 {
-                    ldapFilter.Append("(");
+                    ldapFilter.Append('(');
 
                     switch (matchType)
                     {
                         case MatchType.Equals:
                             ldapFilter.Append(ldapAttribute);
-                            ldapFilter.Append("=");
+                            ldapFilter.Append('=');
                             ldapFilter.Append(ldapValue);
                             break;
 
                         case MatchType.NotEquals:
                             ldapFilter.Append("!(");
                             ldapFilter.Append(ldapAttribute);
-                            ldapFilter.Append("=");
+                            ldapFilter.Append('=');
                             ldapFilter.Append(ldapValue);
-                            ldapFilter.Append(")");
+                            ldapFilter.Append(')');
                             break;
 
                         case MatchType.GreaterThanOrEquals:
@@ -1080,24 +1080,24 @@ namespace System.DirectoryServices.AccountManagement
                             break;
 
                         case MatchType.GreaterThan:
-                            ldapFilter.Append("&");
+                            ldapFilter.Append('&');
 
                             // Greater-than-or-equals (or less-than-or-equals))
-                            ldapFilter.Append("(");
+                            ldapFilter.Append('(');
                             ldapFilter.Append(ldapAttribute);
                             ldapFilter.Append(matchType == MatchType.GreaterThan ? ">=" : "<=");
                             ldapFilter.Append(ldapValue);
-                            ldapFilter.Append(")");
+                            ldapFilter.Append(')');
 
                             // And not-equal
                             ldapFilter.Append("(!(");
                             ldapFilter.Append(ldapAttribute);
-                            ldapFilter.Append("=");
+                            ldapFilter.Append('=');
                             ldapFilter.Append(ldapValue);
                             ldapFilter.Append("))");
 
                             // And exists (need to include because of tristate LDAP logic)
-                            ldapFilter.Append("(");
+                            ldapFilter.Append('(');
                             ldapFilter.Append(ldapAttribute);
                             ldapFilter.Append("=*)");
                             break;
@@ -1110,7 +1110,7 @@ namespace System.DirectoryServices.AccountManagement
                             break;
                     }
 
-                    ldapFilter.Append(")");
+                    ldapFilter.Append(')');
                 }
 
                 ldapFilter.Append("))");

@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -45,7 +44,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _sendHandle;
 
         // Used to check if StartAsync has been called.
-        private StartState _started;
+        private bool _started;
 
         private ReadState _readState;
         private long _readErrorCode = -1;
@@ -75,24 +74,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = nativeObjPtr;
 
+            _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
+            SetCallbackHandler();
+
             if (inbound)
             {
-                _started = StartState.Finished;
+                _started = true;
                 _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _canRead = true;
             }
             else
             {
-                _started = StartState.None;
                 _canWrite = true;
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
+                StartWrites();
             }
-
-            _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
-            _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
-            _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
-
-            SetCallbackHandler();
         }
 
         internal override bool CanRead => _canRead;
@@ -186,6 +184,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     throw new OperationCanceledException("Sending has already been aborted on the stream");
                 }
             }
+
             CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
@@ -204,13 +203,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
             });
 
-            // Implicit start on first write.
-            if (_started == StartState.None)
+            // Make sure start has completed
+            if (!_started)
             {
-                _started = StartState.Started;
-
-                // TODO can optimize this by not having this method be async.
-                await StartWritesAsync();
+                await _sendResettableCompletionSource.GetTypelessValueTask();
+                _started = true;
             }
 
             return registration;
@@ -636,8 +633,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (_sync)
             {
-                _started = StartState.Finished;
-
                 // Check send state before completing as send cancellation is shared between start and send.
                 if (_sendState == SendState.None)
                 {
@@ -988,14 +983,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private ValueTask<uint> StartWritesAsync()
+        private void StartWrites()
         {
+            Debug.Assert(!_started);
             uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
-            return _sendResettableCompletionSource.GetValueTask();
         }
 
         private void ReceiveComplete(int bufferLength)
@@ -1016,13 +1011,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new ObjectDisposedException(nameof(MsQuicStream));
             }
-        }
-
-        private enum StartState
-        {
-            None,
-            Started,
-            Finished
         }
 
         private enum ReadState

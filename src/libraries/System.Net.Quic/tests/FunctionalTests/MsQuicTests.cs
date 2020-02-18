@@ -321,6 +321,20 @@ namespace System.Net.Quic.Tests
             Assert.Equal(24, res);
         }
 
+        [Fact]
+        public async Task GetStreamIdWithoutStartWorks()
+        {
+            using QuicListener listener = CreateQuicListener();
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+            Assert.Equal(0, clientStream.StreamId);
+        }
+
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
         {
             using (QuicStream s1 = c1.OpenBidirectionalStream())

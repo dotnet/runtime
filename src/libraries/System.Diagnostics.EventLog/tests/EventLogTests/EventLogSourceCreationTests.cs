@@ -8,6 +8,7 @@ namespace System.Diagnostics.Tests
 {
     public class EventLogSourceCreationTests
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/32241")]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckSourceExistenceAndDeletion()
         {

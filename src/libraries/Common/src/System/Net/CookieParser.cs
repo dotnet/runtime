@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -39,7 +40,7 @@ namespace System.Net
     //
     // Used to split a single or multi-cookie (header) string into individual
     // tokens.
-    internal class CookieTokenizer
+    internal struct CookieTokenizer
     {
         private bool _eofCookie;
         private int _index;
@@ -54,7 +55,7 @@ namespace System.Net
         private int _cookieStartIndex;
         private int _cookieLength;
 
-        internal CookieTokenizer(string tokenStream)
+        internal CookieTokenizer(string tokenStream) : this()
         {
             _length = tokenStream.Length;
             _tokenStream = tokenStream;
@@ -506,14 +507,15 @@ namespace System.Net
     // CookieParser
     //
     // Takes a cookie header, makes cookies.
-    internal class CookieParser
+    internal struct CookieParser
     {
-        private readonly CookieTokenizer _tokenizer;
+        private CookieTokenizer _tokenizer;
         private Cookie _savedCookie;
 
         internal CookieParser(string cookieString)
         {
             _tokenizer = new CookieTokenizer(cookieString);
+            _savedCookie = null;
         }
 
 #if SYSTEM_NET_PRIMITIVES_DLL

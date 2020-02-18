@@ -94,8 +94,7 @@ mono_interp_objref (MonoObject **o)
 
 /*
  * Value types are represented on the eval stack as pointers to the
- * actual storage. The size field tells how much storage is allocated.
- * A value type can't be larger than 16 MB.
+ * actual storage. A value type cannot be larger than 16 MB.
  */
 typedef struct {
 	union {

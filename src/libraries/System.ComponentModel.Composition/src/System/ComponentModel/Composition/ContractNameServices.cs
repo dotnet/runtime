@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition
 
             WriteTypeWithNamespace(methodNameStringBuilder, method.ReturnType, formatGenericName);
 
-            methodNameStringBuilder.Append("(");
+            methodNameStringBuilder.Append('(');
 
             ParameterInfo[] parameters = method.GetParameters();
 
@@ -99,12 +99,12 @@ namespace System.ComponentModel.Composition
             {
                 if (i != 0)
                 {
-                    methodNameStringBuilder.Append(",");
+                    methodNameStringBuilder.Append(',');
                 }
 
                 WriteTypeWithNamespace(methodNameStringBuilder, parameters[i].ParameterType, formatGenericName);
             }
-            methodNameStringBuilder.Append(")");
+            methodNameStringBuilder.Append(')');
 
             return methodNameStringBuilder.ToString();
         }

@@ -635,7 +635,7 @@ namespace System.Security.Cryptography
             CryptographicOperations.ZeroMemory(rsaParameters.InverseQ);
         }
 
-        public override string KeyExchangeAlgorithm => "RSA";
+        public override string? KeyExchangeAlgorithm => "RSA";
         public override string SignatureAlgorithm => "RSA";
 
         private static Exception HashAlgorithmNameNullOrEmpty() =>

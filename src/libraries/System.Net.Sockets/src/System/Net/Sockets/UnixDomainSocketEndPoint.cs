@@ -12,20 +12,6 @@ namespace System.Net.Sockets
     {
         private const AddressFamily EndPointAddressFamily = AddressFamily.Unix;
 
-        private static readonly Encoding s_pathEncoding = Encoding.UTF8;
-        private static readonly Lazy<bool> s_udsSupported = new Lazy<bool>(() =>
-        {
-            try
-            {
-                new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified).Dispose();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        });
-
         private readonly string _path;
         private readonly byte[] _encodedPath;
 
@@ -39,7 +25,7 @@ namespace System.Net.Sockets
             // Pathname socket addresses should be null-terminated.
             // Linux abstract socket addresses start with a zero byte, they must not be null-terminated.
             bool isAbstract = IsAbstract(path);
-            int bufferLength = s_pathEncoding.GetByteCount(path);
+            int bufferLength = Encoding.UTF8.GetByteCount(path);
             if (!isAbstract)
             {
                 // for null terminator
@@ -55,10 +41,10 @@ namespace System.Net.Sockets
 
             _path = path;
             _encodedPath = new byte[bufferLength];
-            int bytesEncoded = s_pathEncoding.GetBytes(path, 0, path.Length, _encodedPath, 0);
+            int bytesEncoded = Encoding.UTF8.GetBytes(path, 0, path.Length, _encodedPath, 0);
             Debug.Assert(bufferLength - (isAbstract ? 0 : 1) == bytesEncoded);
 
-            if (!s_udsSupported.Value)
+            if (!Socket.OSSupportsUnixDomainSockets)
             {
                 throw new PlatformNotSupportedException();
             }
@@ -95,7 +81,7 @@ namespace System.Net.Sockets
                         length--;
                     }
                 }
-                _path = s_pathEncoding.GetString(_encodedPath, 0, length);
+                _path = Encoding.UTF8.GetString(_encodedPath, 0, length);
             }
             else
             {

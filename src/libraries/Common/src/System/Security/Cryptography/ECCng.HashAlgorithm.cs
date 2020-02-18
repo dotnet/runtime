@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         /// </summary>
         internal static Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM GetHashAlgorithmId(HashAlgorithmName? name)
         {
-            if (name.HasValue == false || string.IsNullOrEmpty(name!.Value.Name))
+            if (name is null || string.IsNullOrEmpty(name.Value.Name))
             {
                 return Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM.BCRYPT_NO_CURVE_GENERATION_ALG_ID;
             }

@@ -9,6 +9,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderAssemblyQualifiedName
     {
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [InlineData("TypeName", "ad df df")]
         [InlineData("TypeName", "assemblyname")]
         [InlineData("type name  ", "assembly name  ")]

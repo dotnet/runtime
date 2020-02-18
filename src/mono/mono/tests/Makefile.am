@@ -724,7 +724,8 @@ TESTS_CS_SRC=		\
 	bug-gh-9507.cs	\
 	async-generic-enum.cs \
 	null-blob-main.cs \
-	last-error.cs
+	last-error.cs \
+	bug-gh-17285.cs
 
 # some tests fail to compile on mcs
 if CSC_IS_ROSLYN
@@ -1108,6 +1109,12 @@ PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw
 
 # see https://github.com/mono/mono/issues/9739
 PLATFORM_DISABLED_TESTS += verbose.exe
+
+if ENABLE_CXX
+# see https://github.com/mono/mono/issues/18827
+PLATFORM_DISABLED_TESTS += bug-10127.exe
+endif
+
 endif
 
 

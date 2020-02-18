@@ -8,9 +8,11 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
+    // [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
     public class AllowNonPublicCompositionTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PublicFromPublic()
         {
             var container = ContainerFactory.Create();
@@ -25,6 +27,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PublicToSelf()
         {
             var container = ContainerFactory.Create();
@@ -38,6 +41,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PublicFromPrivate()
         {
             var container = ContainerFactory.Create();
@@ -52,6 +56,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PrivateFromPublic()
         {
             var container = ContainerFactory.Create();
@@ -66,6 +71,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PrivateToSelf()
         {
             var container = ContainerFactory.Create();
@@ -79,6 +85,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void PrivateData()
         {
             var container = ContainerFactory.Create();

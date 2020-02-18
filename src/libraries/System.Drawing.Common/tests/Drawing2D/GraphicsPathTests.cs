@@ -142,8 +142,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(FillMode.Alternate - 1)]
         [InlineData(FillMode.Winding + 1)]
         public void GraphicsPath_InvalidFillMode_ThrowsInvalidEnumArgumentException(FillMode fillMode)
@@ -419,8 +418,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(0, 0)]
         [InlineData(1, 0)]
         [InlineData(0, 1)]
@@ -1028,8 +1026,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(0, 0)]
         [InlineData(2, 0)]
         [InlineData(0, 2)]
@@ -1165,8 +1162,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void AddString_Point_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1180,8 +1176,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void AddString_Rectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1195,8 +1190,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void AddString_NegativeSize_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1237,8 +1231,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void AddString_EmptyString_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1252,8 +1245,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void AddString_StringNull_ThrowsNullReferenceException()
         {
             using (GraphicsPath gp = new GraphicsPath())

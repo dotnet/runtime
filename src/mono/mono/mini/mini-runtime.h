@@ -516,7 +516,7 @@ gboolean mono_jit_map_is_enabled (void);
 #else
 #define mono_enable_jit_map()
 #define mono_emit_jit_map(ji)
-#define mono_emit_jit_tramp(s,z,d)
+#define mono_emit_jit_tramp(s,z,d) do { } while (0) /* non-empty to avoid warning */
 #define mono_jit_map_is_enabled() (0)
 #endif
 

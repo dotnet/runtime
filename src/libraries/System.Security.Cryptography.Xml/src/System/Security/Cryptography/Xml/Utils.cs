@@ -329,7 +329,7 @@ namespace System.Security.Cryptography.Xml
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
-                int endId = idref.IndexOf(")", StringComparison.Ordinal);
+                int endId = idref.IndexOf(')');
                 if (endId < 0 || endId < startId + 3)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
@@ -348,7 +348,7 @@ namespace System.Security.Cryptography.Xml
             if (idref.StartsWith("xpointer(id(", StringComparison.Ordinal))
             {
                 int startId = idref.IndexOf("id(", StringComparison.Ordinal);
-                int endId = idref.IndexOf(")", StringComparison.Ordinal);
+                int endId = idref.IndexOf(')');
                 if (endId < 0 || endId < startId + 3)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidReference);
                 idref = idref.Substring(startId + 3, endId - startId - 3);
