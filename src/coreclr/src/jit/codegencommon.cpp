@@ -6306,22 +6306,18 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
 #endif // TARGET_ARM64
         noway_assert(uCntBytes == 0);
-
 #elif defined(TARGET_XARCH)
-// As we output multiple instructions for SIMD zeroing, we want to balance code size, with throughput
-// so cap max size at 5 * MAX SIMD length
+        // As we output multiple instructions for SIMD zeroing, we want to balance code size, with throughput
+        // so cap max size at 6 * MAX SIMD length
+        noway_assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 #ifdef TARGET_64BIT
         int initMaxSIMDSize =
-            5 * (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported
-                     ? YMM_REGSIZE_BYTES
-                     : compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported ? XMM_REGSIZE_BYTES : 0);
+            6 * (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES);
 #else  // !TARGET_64BIT
-        int initMaxSIMDSize = 5 * (compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported ? XMM_REGSIZE_BYTES : 0);
+        int initMaxSIMDSize = 6 * XMM_REGSIZE_BYTES;
 #endif // TARGET_64BIT
-
         if ((untrLclHi - untrLclLo) <= initMaxSIMDSize)
         {
-            noway_assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
             /*
                 Generate the following code:
                    xor      ecx, ecx
@@ -6334,44 +6330,60 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 
             // zero out the whole thing rounded up to a single stack slot size
             unsigned blkSize = roundUp((untrLclHi - untrLclLo), (unsigned)sizeof(int));
-
-            regNumber zeroReg = REG_NA;
-            if ((blkSize % XMM_REGSIZE_BYTES) != 0)
-            {
-                assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
-                                                                                           // incoming argument reg
-                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
-            }
-
-            unsigned i    = 0;
-            emitter* emit = GetEmitter();
-// Grab a non-argument, non-callee saved reg
+            unsigned i       = 0;
+            emitter* emit    = GetEmitter();
+// Grab a non-argument, non-callee saved XMM reg
 #ifdef UNIX_AMD64_ABI
             // System V x64 first temp reg is xmm8
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
-#else  // !UNIX_AMD64_ABI
+#else
             // Windows first temp reg is xmm4
             regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
 #endif // UNIX_AMD64_ABI
-            regNumber varNum      = genFramePointerReg();
+            regNumber frameReg    = genFramePointerReg();
+            regNumber zeroReg     = REG_NA;
 #ifdef TARGET_64BIT
-            if (blkSize >= XMM_REGSIZE_BYTES &&
-                (blkSize < YMM_REGSIZE_BYTES || compiler->getSIMDSupportLevel() < SIMD_AVX2_Supported))
+            // Need at least 2x YMM for alignment cut over; however due to alignment 2x is more instructions
+            // so use a higer cut over point.
+            unsigned ymmCutOver = YMM_REGSIZE_BYTES * 3;
+            bool     AV2Support = compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported;
+
+            if (blkSize >= XMM_REGSIZE_BYTES && (blkSize < ymmCutOver || !AV2Support))
             {
                 emit->emitIns_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg);
             }
             else if (blkSize >= YMM_REGSIZE_BYTES)
             {
-                noway_assert(compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported);
+                noway_assert(AV2Support);
                 emit->emitIns_R_R(INS_xorps, EA_32BYTE, zeroSIMDReg, zeroSIMDReg);
             }
 
-            if (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported)
+            if (blkSize >= ymmCutOver && AV2Support)
             {
-                for (unsigned regSize = YMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
+                // We need to 32 byte align the YMM stores as there is a signifcant penality
+                // if they cross a page boundary (and a minor one if they cross a cache line)
+                assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
+                                                                                           // incoming argument reg
+                // Get block start
+                emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, initReg, frameReg, untrLclLo);
+                // Zero first 32 bytes (may overlap with next 32 byte alignment)
+                emit->emitIns_AR_R(INS_movdqu, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, untrLclLo);
+                emit->emitIns_AR_R(INS_movdqu, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
+                                   untrLclLo + XMM_REGSIZE_BYTES);
+                // Get next offset for next 32 byte alignment
+                // Add 32 to hit or go over the next alignment
+                emit->emitIns_R_I(INS_add, EA_PTRSIZE, initReg, 32);
+                // Clear all the unaligned bits
+                emit->emitIns_R_I(INS_and, EA_PTRSIZE, initReg, -32);
+                // Now do the aligned YMM clears, we do one less so last two are XMM for alignment
+                noway_assert(blkSize > YMM_REGSIZE_BYTES * 2);
+                unsigned ymmBlkSize = blkSize - YMM_REGSIZE_BYTES;
+                for (unsigned regSize = YMM_REGSIZE_BYTES; i + regSize <= ymmBlkSize; i += regSize)
                 {
-                    emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, varNum, untrLclLo + i);
+                    emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, initReg, i);
                 }
+
+                noway_assert(i > YMM_REGSIZE_BYTES);
             }
 #else  // !TARGET_64BIT
             if (blkSize >= XMM_REGSIZE_BYTES)
@@ -6379,22 +6391,28 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 emit->emitIns_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg);
             }
 #endif // TARGET_64BIT
+            if ((blkSize % XMM_REGSIZE_BYTES) != 0)
+            {
+                assert((genRegMask(initReg) & intRegState.rsCalleeRegArgMaskLiveIn) == 0); // initReg is not a live
+                                                                                           // incoming argument reg
+                zeroReg = genGetZeroReg(initReg, pInitRegZeroed);
+            }
             for (unsigned regSize = XMM_REGSIZE_BYTES; i + regSize <= blkSize; i += regSize)
             {
-                emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, varNum, untrLclLo + i);
+                emit->emitIns_AR_R(INS_movdqu, EA_ATTR(regSize), zeroSIMDReg, frameReg, untrLclLo + i);
             }
 
             for (; i + REGSIZE_BYTES <= blkSize; i += REGSIZE_BYTES)
             {
                 noway_assert((blkSize % XMM_REGSIZE_BYTES) != 0);
-                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, varNum, untrLclLo + i);
+                emit->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, zeroReg, frameReg, untrLclLo + i);
             }
 #ifdef TARGET_64BIT
             assert(i == blkSize || (i + sizeof(int) == blkSize));
             if (i != blkSize)
             {
                 noway_assert((blkSize % XMM_REGSIZE_BYTES) != 0);
-                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, varNum, untrLclLo + i);
+                emit->emitIns_AR_R(ins_Store(TYP_INT), EA_4BYTE, zeroReg, frameReg, untrLclLo + i);
                 i += sizeof(int);
             }
 #endif // TARGET_64BIT
@@ -6410,7 +6428,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                     xor     eax, eax
                     rep     stosd
              */
-
+            unsigned blkSize = (untrLclHi - untrLclLo);
+            noway_assert(blkSize > XMM_REGSIZE_BYTES * 2);
             noway_assert(regSet.rsRegsModified(RBM_EDI));
 #ifdef UNIX_AMD64_ABI
             // For register arguments we may have to save ECX and RDI on Amd64 System V OSes
@@ -6436,13 +6455,47 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 regSet.verifyRegUsed(REG_ESI);
             }
 #endif // !UNIX_AMD64_ABI
-
             noway_assert((intRegState.rsCalleeRegArgMaskLiveIn & RBM_EAX) == 0);
 
-            GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, genFramePointerReg(), untrLclLo);
+            emitter*  emit     = GetEmitter();
+            regNumber frameReg = genFramePointerReg();
+#ifdef TARGET_64BIT
+// We need to 32 byte align the rep stosd as there is a penality if it is not 32 byte aligned
+// Grab a non-argument, non-callee saved XMM reg
+#ifdef UNIX_AMD64_ABI
+            // System V x64 first temp reg is xmm8
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM8);
+#else  // !UNIX_AMD64_ABI
+            // Windows first temp reg is xmm4
+            regNumber zeroSIMDReg = genRegNumFromMask(RBM_XMM4);
+#endif // UNIX_AMD64_ABI
+            // Zero xmm reg
+            emit->emitIns_R_R(INS_xorps, EA_16BYTE, zeroSIMDReg, zeroSIMDReg);
+            // Get block start
+            emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, frameReg, untrLclLo);
+            // Zero first 32 bytes (may overlap with next 32 byte alignment)
+            emit->emitIns_AR_R(INS_movdqu, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg, untrLclLo);
+            emit->emitIns_AR_R(INS_movdqu, EA_ATTR(XMM_REGSIZE_BYTES), zeroSIMDReg, frameReg,
+                               untrLclLo + XMM_REGSIZE_BYTES);
+            // Stash current block start
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_ECX, REG_EDI);
+            // Add 32 to hit or go over the next alignment
+            emit->emitIns_R_I(INS_add, EA_PTRSIZE, REG_EDI, 32);
+            // Clear all the unaligned bits, RDI now contains the aligned address
+            emit->emitIns_R_I(INS_and, EA_PTRSIZE, REG_EDI, -32);
+            // Copy the aligned address
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_EAX, REG_EDI);
+            // Subtract the unaligned address from aligned to get amount to subtract from count
+            emit->emitIns_R_R(INS_sub, EA_PTRSIZE, REG_EAX, REG_ECX);
+            // Output count of bytes to clear
+            inst_RV_IV(INS_mov, REG_ECX, blkSize / sizeof(int), EA_4BYTE);
+            // Subtract the unaligned already cleared
+            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_ECX, REG_EAX);
+#else  // !TARGET_64BIT
+            emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, frameReg, untrLclLo);
+#endif // TARGET_64BIT
             regSet.verifyRegUsed(REG_EDI);
 
-            inst_RV_IV(INS_mov, REG_ECX, (untrLclHi - untrLclLo) / sizeof(int), EA_4BYTE);
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
             instGen(INS_r_stosd);
 
