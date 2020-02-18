@@ -24,15 +24,9 @@ typedef struct {
 
 typedef struct {
 	short op_index;
-#ifdef __cplusplus
-	MonoStackType big_stack_type : 16;
-	MonoStackType small_stack_type : 16;
-	MonoStackType stack_type : 16;
-#else
-	short big_stack_type;
-	short small_stack_type;
-	short stack_type;
-#endif
+	MonoStackType big_stack_type;
+	MonoStackType small_stack_type;
+	MonoStackType stack_type;
 	short conv_4_to_8;
 	short conv_8_to_4;
 	short move;
@@ -41,7 +35,6 @@ typedef struct {
 	short store_op;
 	short compare_op;
 } MagicTypeInfo;
-
 
 #if TARGET_SIZEOF_VOID_P == 8
 #define OP_PT_ADD OP_LADD
@@ -175,7 +168,7 @@ emit_widen (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
 		MONO_INST_NEW (cfg, ins, info->conv_4_to_8);
 	ins->sreg1 = sreg;
 	ins->type = info->big_stack_type;
-	ins->dreg = alloc_dreg (cfg, info->big_stack_type); 
+	ins->dreg = alloc_dreg (cfg, info->big_stack_type);
 	MONO_ADD_INS (cfg->cbb, ins);
 	return mono_decompose_opcode (cfg, ins);
 }
