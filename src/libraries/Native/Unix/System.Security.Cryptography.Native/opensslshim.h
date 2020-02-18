@@ -334,6 +334,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_des_ede3) \
     REQUIRED_FUNCTION(EVP_des_ede3_cbc) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
@@ -369,6 +370,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(HMAC_CTX_new) \
     REQUIRED_FUNCTION(HMAC_Final) \
     REQUIRED_FUNCTION(HMAC_Init_ex) \
+    REQUIRED_FUNCTION(HMAC_CTX_copy) \
     REQUIRED_FUNCTION(HMAC_Update) \
     REQUIRED_FUNCTION(i2d_ASN1_INTEGER) \
     REQUIRED_FUNCTION(i2d_ASN1_TYPE) \
@@ -722,6 +724,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_des_ede3 EVP_des_ede3_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
@@ -755,6 +758,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define HMAC_CTX_free HMAC_CTX_free_ptr
 #define HMAC_CTX_init HMAC_CTX_init_ptr
 #define HMAC_CTX_new HMAC_CTX_new_ptr
+#define HMAC_CTX_copy HMAC_CTX_copy_ptr
 #define HMAC_Final HMAC_Final_ptr
 #define HMAC_Init_ex HMAC_Init_ex_ptr
 #define HMAC_Update HMAC_Update_ptr
