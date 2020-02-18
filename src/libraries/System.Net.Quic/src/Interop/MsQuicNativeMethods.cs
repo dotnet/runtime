@@ -304,7 +304,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal ulong TotalBufferLength;
             internal QuicBuffer* Buffers;
             internal uint BufferCount;
-            internal byte Flags;
+            internal uint Flags;
         }
 
         [StructLayout(LayoutKind.Explicit)]
@@ -321,22 +321,25 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataPeerSendAbort
         {
-            internal long ErrorCode;
+            [FieldOffset(0)]
+            internal ulong ErrorCode;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataPeerRecvAbort
         {
-            internal long ErrorCode;
+            [FieldOffset(0)]
+            internal ulong ErrorCode;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataSendShutdownComplete
         {
-            internal bool Graceful;
+            [FieldOffset(0)]
+            internal byte Graceful;
         }
 
         [StructLayout(LayoutKind.Explicit)]

@@ -101,6 +101,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             get
             {
+                ThrowIfDisposed();
+
                 if (_streamId == -1)
                 {
                     _streamId = GetStreamId();
@@ -390,6 +392,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void Shutdown()
         {
+            ThrowIfDisposed();
+
             MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
         }
 
@@ -613,7 +617,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _sendState = SendState.Aborted;
-                _sendErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+                _sendErrorCode = (long)evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)
@@ -726,7 +730,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _readState = ReadState.Aborted;
-                _readErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+                _readErrorCode = (long)evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)

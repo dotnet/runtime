@@ -67,11 +67,10 @@ namespace System.Net.Quic.Tests
                 select new object[] { readSize, writeSize };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32049")]
         [Fact]
         public async Task Read_StreamAborted_Throws()
         {
-            const int ExpectedErrorCode = 1234;
+            const int ExpectedErrorCode = 0xfffffff;
 
             await Task.Run(async () =>
             {
@@ -94,7 +93,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).TimeoutAfter(millisecondsTimeout: 5_000);
+            }).TimeoutAfter(millisecondsTimeout: 500_000);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]
