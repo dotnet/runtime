@@ -164,7 +164,9 @@ namespace System.Net.Http
 
                 // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
                 // and similiar situations where we need to cancel the request body (see Cancel method).
-                _requestBodyCancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token;
+                _requestBodyCancellationToken = cancellationToken.CanBeCanceled ?
+                    CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token).Token :
+                    _requestBodyCancellationSource.Token;
 
                 try
                 {
