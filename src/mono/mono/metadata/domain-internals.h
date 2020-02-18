@@ -423,7 +423,7 @@ struct _MonoDomain {
 	/* Protects the three hashes above */
 	mono_mutex_t   finalizable_objects_hash_lock;
 	/* Used when accessing 'domain_assemblies' */
-	mono_mutex_t    assemblies_lock;
+	MonoCoopMutex  assemblies_lock;
 
 	GHashTable	   *generic_virtual_cases;
 
@@ -483,8 +483,18 @@ typedef struct  {
 	const AssemblyVersionSet version_sets [5];
 } MonoRuntimeInfo;
 
-#define mono_domain_assemblies_lock(domain) mono_locks_os_acquire(&(domain)->assemblies_lock, DomainAssembliesLock)
-#define mono_domain_assemblies_unlock(domain) mono_locks_os_release(&(domain)->assemblies_lock, DomainAssembliesLock)
+static inline void
+mono_domain_assemblies_lock (MonoDomain *domain)
+{
+	mono_locks_coop_acquire (&domain->assemblies_lock, DomainAssembliesLock);
+}
+
+static inline void
+mono_domain_assemblies_unlock (MonoDomain *domain)
+{
+	mono_locks_coop_release (&domain->assemblies_lock, DomainAssembliesLock);
+}
+
 #define mono_domain_jit_code_hash_lock(domain) mono_locks_os_acquire(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 #define mono_domain_jit_code_hash_unlock(domain) mono_locks_os_release(&(domain)->jit_code_hash_lock, DomainJitCodeHashLock)
 
