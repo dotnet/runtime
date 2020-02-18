@@ -60,7 +60,7 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
 EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(EVP_MD_CTX* ctx)
 {
     EVP_MD_CTX* newCtx = EVP_MD_CTX_new();
-    if (newCtx == null)
+    if (newCtx == NULL)
     {
         // Allocation failed
         return NULL;
