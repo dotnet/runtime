@@ -126,7 +126,6 @@ void EventPipe::EnableViaEnvironmentVariables()
         auto configToParse = eventpipeConfig;
         bool enableDefaultConfig = false;
 
-        // TODO: The behavior should be the same as existing code - enable with default provider configuration 
         if (configToParse == nullptr || *configToParse == L'\0')
         {
             enableDefaultConfig = true;
@@ -154,10 +153,10 @@ void EventPipe::EnableViaEnvironmentVariables()
         if (enableDefaultConfig)
         {
             // TODO: Enable SampleProfiler once we can mutate a EventPipe session post-creation.
-            pProviders = new EventPipeProviderConfiguration[2];
+            cnt = 2;
+            pProviders = new EventPipeProviderConfiguration[cnt];
             pProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x4c14fccbd, 5, nullptr);
             pProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimePrivate"), 0x4002000b, 5, nullptr);
-            cnt = 2;
         }
         else
         {
