@@ -7189,7 +7189,7 @@ interp_parse_options (const char *options)
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
  */
 static void
-interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
+interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
 {
 	ThreadContext *context;
 
@@ -7205,7 +7205,7 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
 	if (ei)
-		*(MonoException**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
 	context->handler_ip = (const guint16*)handler_ip;
 }
 
