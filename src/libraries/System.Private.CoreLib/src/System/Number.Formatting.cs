@@ -703,9 +703,17 @@ namespace System
         internal struct Int32Fmt : IIntFmt<int>
         {
             public string ToDecStr(int value, int digits, IFormatProvider? provider)
-                => Int32ToDecStr(value, digits, provider);
+            {
+                return value >= 0 ?
+                    UInt32ToDecStr((uint)value, digits) :
+                    NegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+            }
             public bool TryToDecStr(int value, int digits, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-                => TryInt32ToDecStr(value, digits, provider, destination, out charsWritten);
+            {
+                return value >= 0 ?
+                    TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
+                    TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+            }
 
             public string ToHexStr(int value, char hexBase, int digits)
                 => Int32ToHexStr(value, hexBase, digits);
@@ -748,9 +756,17 @@ namespace System
         private struct Int64Fmt : IIntFmt<long>
         {
             public string ToDecStr(long value, int digits, IFormatProvider? provider)
-                => Int64ToDecStr(value, digits, provider);
+            {
+                return value >= 0 ?
+                    UInt64ToDecStr((ulong)value, digits) :
+                    NegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
+            }
             public bool TryToDecStr(long value, int digits, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-                => TryInt64ToDecStr(value, digits, provider, destination, out charsWritten);
+            {
+                return value >= 0 ?
+                    TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
+                    TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+            }
 
             public string ToHexStr(long value, char hexBase, int digits)
                 => Int64ToHexStr(value, hexBase, digits);
@@ -943,18 +959,11 @@ namespace System
             number.CheckConsistency();
         }
 
-        public static string Int32ToDecStr(int value, int digits, IFormatProvider? provider)
+        public static string Int32ToDecStr(int value)
         {
             return value >= 0 ?
-                UInt32ToDecStr((uint)value, digits) :
-                NegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
-        }
-
-        private static bool TryInt32ToDecStr(int value, int digits, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-        {
-            return value >= 0 ?
-                TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
-                TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                UInt32ToDecStr((uint)value, -1) :
+                NegativeInt32ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
         private static unsafe string NegativeInt32ToDecStr(int value, int digits, string sNegative)
@@ -1190,18 +1199,11 @@ namespace System
             number.CheckConsistency();
         }
 
-        public static string Int64ToDecStr(long value, int digits, IFormatProvider? provider)
+        public static string Int64ToDecStr(long value)
         {
             return value >= 0 ?
-                UInt64ToDecStr((ulong)value, digits) :
-                NegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign);
-        }
-
-        private static bool TryInt64ToDecStr(long value, int digits, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-        {
-            return value >= 0 ?
-                TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
-                TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                UInt64ToDecStr((ulong)value, -1) :
+                NegativeInt64ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
         }
 
         private static unsafe string NegativeInt64ToDecStr(long input, int digits, string sNegative)

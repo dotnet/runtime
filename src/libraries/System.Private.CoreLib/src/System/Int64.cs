@@ -76,7 +76,7 @@ namespace System
 
         public override string ToString()
         {
-            return Number.Int64ToDecStr(m_value, digits: -1, provider: null);
+            return Number.Int64ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)

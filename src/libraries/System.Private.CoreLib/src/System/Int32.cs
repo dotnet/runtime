@@ -79,7 +79,7 @@ namespace System
 
         public override string ToString()
         {
-            return Number.Int32ToDecStr(m_value, digits: -1, provider: null);
+            return Number.Int32ToDecStr(m_value);
         }
 
         public string ToString(string? format)
