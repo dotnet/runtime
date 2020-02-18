@@ -281,7 +281,7 @@ uint32_t
 ElfReader::Hash(const std::string& symbolName)
 {
     uint32_t h = 5381;
-    for (int i = 0; i < symbolName.length(); i++)
+    for (unsigned int i = 0; i < symbolName.length(); i++)
     {
         h = (h << 5) + h + symbolName[i];
     }
