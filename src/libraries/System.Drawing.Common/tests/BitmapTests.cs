@@ -71,16 +71,14 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_NullFilePath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Bitmap((string)null));
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Bitmap((string)null, false));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData("", "path")]
         [InlineData("\0", "path")]
         [InlineData("NoSuchPath", null)]
@@ -159,8 +157,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null, false));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void Ctor_InvalidBytesInStream_ThrowsArgumentException()
         {
             using (var stream = new MemoryStream(new byte[0]))
@@ -266,8 +263,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Bitmap(1, height, 0, PixelFormat.Format16bppArgb1555, IntPtr.Zero));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.Undefined - 1)]
         [InlineData(PixelFormat.Undefined)]
         [InlineData(PixelFormat.Gdi - 1)]
@@ -614,8 +610,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void GetPixel_InvalidX_ThrowsArgumentOutOfRangeException(int x)
@@ -626,8 +621,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void GetPixel_InvalidY_ThrowsArgumentOutOfRangeException(int y)
@@ -809,6 +803,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetHicon());
         }
 
+        // This test causes an AV on Linux
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHicon_InvalidHandle_ThrowsArgumentException()
@@ -968,8 +963,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void MakeTransparent_Icon_ThrowsInvalidOperationException()
         {
             using (var bitmap = new Bitmap(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
@@ -1004,8 +998,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void SetPixel_InvalidX_ThrowsArgumentOutOfRangeException(int x)
@@ -1016,8 +1009,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1)]
         [InlineData(1)]
         public void SetPixel_InvalidY_ThrowsArgumentOutOfRangeException(int y)
@@ -1157,7 +1149,8 @@ namespace System.Drawing.Tests
             Do_LockBits_Invoke_Success(bitmap, rectangle, lockMode, pixelFormat, expectedStride, expectedReserved);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        // This test causes an AV on Unix
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/40224", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(LockBits_NotUnix_TestData))]
         public void LockBits_Invoke_Success_NotUnix(Bitmap bitmap, Rectangle rectangle, ImageLockMode lockMode, PixelFormat pixelFormat, int expectedStride, int expectedReserved)
@@ -1207,8 +1200,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(-1, 0, 1, 1)]
         [InlineData(2, 0, 1, 1)]
         [InlineData(0, -1, 1, 1)]
@@ -1232,8 +1224,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.DontCare)]
         [InlineData(PixelFormat.Max)]
         [InlineData(PixelFormat.Indexed)]
@@ -1347,8 +1338,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         [InlineData(PixelFormat.Indexed)]
         [InlineData(PixelFormat.Gdi)]
         public void UnlockBits_InvalidPixelFormat_Nop(PixelFormat format)
@@ -1371,8 +1361,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void UnlockBits_NotLocked_ThrowsExternalException()
         {
             using (var bitmap = new Bitmap(1, 1))
@@ -1381,8 +1370,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsWindowsOrAtLeastLibgdiplus6)]
         public void UnlockBits_AlreadyUnlocked_ThrowsExternalException()
         {
             using (var bitmap = new Bitmap(1, 1))

@@ -717,13 +717,13 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(byte[] incoming, int offset, int count)
+        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer)
         {
             if (NetEventSource.IsEnabled)
                 NetEventSource.Enter(this);
 
             byte[] nextmsg = null;
-            SecurityStatusPal status = GenerateToken(incoming, offset, count, ref nextmsg);
+            SecurityStatusPal status = GenerateToken(incomingBuffer, ref nextmsg);
 
             if (!_sslAuthenticationOptions.IsServer && status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
             {
@@ -731,7 +731,7 @@ namespace System.Net.Security
                     NetEventSource.Info(this, "NextMessage() returned SecurityStatusPal.CredentialsNeeded");
 
                 SetRefreshCredentialNeeded();
-                status = GenerateToken(incoming, offset, count, ref nextmsg);
+                status = GenerateToken(incomingBuffer, ref nextmsg);
             }
 
             ProtocolToken token = new ProtocolToken(nextmsg, status);
@@ -763,27 +763,14 @@ namespace System.Net.Security
             Return:
                 status - error information
         --*/
-        private SecurityStatusPal GenerateToken(byte[] input, int offset, int count, ref byte[] output)
+        private SecurityStatusPal GenerateToken(ReadOnlySpan<byte> inputBuffer, ref byte[] output)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"_refreshCredentialNeeded = {_refreshCredentialNeeded}");
-
-            if (offset < 0 || offset > (input == null ? 0 : input.Length))
-            {
-                NetEventSource.Fail(this, "Argument 'offset' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0 || count > (input == null ? 0 : input.Length - offset))
-            {
-                NetEventSource.Fail(this, "Argument 'count' out of range.");
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
 
             byte[] result = Array.Empty<byte>();
             SecurityStatusPal status = default;
             bool cachedCreds = false;
             byte[] thumbPrint = null;
-            ReadOnlySpan<byte> inputBuffer = new ReadOnlySpan<byte>(input, offset, count);
 
             //
             // Looping through ASC or ISC with potentially cached credential that could have been
@@ -1155,7 +1142,7 @@ namespace System.Net.Security
             byte[] nextmsg = null;
 
             SecurityStatusPal status;
-            status = GenerateToken(null, 0, 0, ref nextmsg);
+            status = GenerateToken(default, ref nextmsg);
 
             ProtocolToken token = new ProtocolToken(nextmsg, status);
 

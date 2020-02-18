@@ -8,7 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-	public static class Interlocked
+	public static partial class Interlocked
 	{
 		[Intrinsic]
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]

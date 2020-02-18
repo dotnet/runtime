@@ -31,9 +31,10 @@ namespace System.Net.Http
         private readonly HttpAuthority _authority;
         private readonly byte[] _altUsedEncodedHeader;
         private QuicConnection _connection;
+        private Task _connectionClosedTask;
 
         // Keep a collection of requests around so we can process GOAWAY.
-        private readonly Dictionary<long, Http3RequestStream> _activeRequests = new Dictionary<long, Http3RequestStream>();
+        private readonly Dictionary<QuicStream, Http3RequestStream> _activeRequests = new Dictionary<QuicStream, Http3RequestStream>();
 
         // Set when GOAWAY is being processed, when aborting, or when disposing.
         private long _lastProcessedStreamId = -1;
@@ -133,64 +134,115 @@ namespace System.Net.Http
 
             if (_connection != null)
             {
-                _connection.CloseAsync((long)Http3ErrorCode.NoError).GetAwaiter().GetResult(); // TODO: async...
-                _connection.Dispose();
+                // Close the QuicConnection in the background.
+
+                if (_connectionClosedTask == null)
+                {
+                    _connectionClosedTask = _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
+                }
+
+                QuicConnection connection = _connection;
                 _connection = null;
+
+                _ = _connectionClosedTask.ContinueWith(closeTask =>
+                {
+                    if (closeTask.IsFaulted && NetEventSource.IsEnabled)
+                    {
+                        Trace($"{nameof(QuicConnection)} failed to close: {closeTask.Exception.InnerException}");
+                    }
+
+                    try
+                    {
+                        connection.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
+                    }
+                }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
-        public override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Task waitTask = WaitForAvailableRequestStreamAsync(cancellationToken);
+            // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
 
-            return waitTask.IsCompletedSuccessfully
-                ? SendWithoutWaitingAsync(request, cancellationToken)
-                : WaitThenSendAsync(waitTask, request, cancellationToken);
-        }
+            TaskCompletionSourceWithCancellation<bool> waitForAvailableStreamTcs = null;
 
-        private async Task<HttpResponseMessage> WaitThenSendAsync(Task taskToWaitFor, HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            await taskToWaitFor.ConfigureAwait(false);
-            return await SendWithoutWaitingAsync(request, cancellationToken).ConfigureAwait(false);
-        }
+            lock (SyncObj)
+            {
+                long remaining = _requestStreamsRemaining;
 
-        private Task<HttpResponseMessage> SendWithoutWaitingAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
+                if (remaining > 0)
+                {
+                    _requestStreamsRemaining = remaining - 1;
+                }
+                else
+                {
+                    waitForAvailableStreamTcs = new TaskCompletionSourceWithCancellation<bool>();
+                    _waitingRequests.Enqueue(waitForAvailableStreamTcs);
+                }
+            }
+
+            if (waitForAvailableStreamTcs != null)
+            {
+                await waitForAvailableStreamTcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            // Allocate an active request
+
             QuicStream quicStream = null;
-            Http3RequestStream stream;
+            Http3RequestStream requestStream = null;
 
             try
             {
-                // TODO: do less work in this lock, try to get rid of goto.
                 lock (SyncObj)
                 {
-                    if (_connection == null)
+                    if (_connection != null)
                     {
-                        goto retryRequest;
+                        quicStream = _connection.OpenBidirectionalStream();
+                        requestStream = new Http3RequestStream(request, this, quicStream);
+                        _activeRequests.Add(quicStream, requestStream);
                     }
-
-                    quicStream = _connection.OpenBidirectionalStream();
-                    if (_lastProcessedStreamId != -1 && quicStream.StreamId > _lastProcessedStreamId)
-                    {
-                        goto retryRequest;
-                    }
-
-                    stream = new Http3RequestStream(request, this, quicStream);
-                    _activeRequests.Add(quicStream.StreamId, stream);
                 }
 
-                return stream.SendAsync(cancellationToken);
+                if (quicStream == null)
+                {
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                }
+
+                // 0-byte write to force QUIC to allocate a stream ID.
+                await quicStream.WriteAsync(Array.Empty<byte>(), cancellationToken).ConfigureAwait(false);
+                requestStream.StreamId = quicStream.StreamId;
+
+                bool goAway;
+                lock (SyncObj)
+                {
+                    goAway = _lastProcessedStreamId != -1 && requestStream.StreamId > _lastProcessedStreamId;
+                }
+
+                if (goAway)
+                {
+                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
+                }
+
+                Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
+
+                // null out requestStream to avoid disposing in finally block. It is now in charge of disposing itself.
+                requestStream = null;
+
+                return await responseTask.ConfigureAwait(false);
             }
             catch (QuicConnectionAbortedException ex)
             {
                 // This will happen if we aborted _connection somewhere.
                 Abort(ex);
+                throw new HttpRequestException(SR.Format(SR.net_http_http3_connection_error, ex.ErrorCode), ex, RequestRetryType.RetryOnSameOrNextProxy);
             }
-
-        retryRequest:
-            // We lost a race between GOAWAY/abort and our pool sending the request to this connection.
-            quicStream?.Dispose();
-            return Task.FromException<HttpResponseMessage>(new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy));
+            finally
+            {
+                requestStream?.Dispose();
+            }
         }
 
         /// <summary>
@@ -292,7 +344,10 @@ namespace System.Net.Http
                 }
 
                 // Abort the connection. This will cause all of our streams to abort on their next I/O.
-                _connection?.CloseAsync((long)connectionResetErrorCode).GetAwaiter().GetResult(); // TODO: async...
+                if (_connection != null && _connectionClosedTask == null)
+                {
+                    _connectionClosedTask = _connection.CloseAsync((long)connectionResetErrorCode).AsTask();
+                }
 
                 CancelWaiters();
                 CheckForShutdown();
@@ -324,9 +379,9 @@ namespace System.Net.Http
 
                 _lastProcessedStreamId = lastProcessedStreamId;
 
-                foreach (KeyValuePair<long, Http3RequestStream> request in _activeRequests)
+                foreach (KeyValuePair<QuicStream, Http3RequestStream> request in _activeRequests)
                 {
-                    if (request.Key > lastProcessedStreamId)
+                    if (request.Value.StreamId > lastProcessedStreamId)
                     {
                         streamsToGoAway.Add(request.Value);
                     }
@@ -343,11 +398,11 @@ namespace System.Net.Http
             }
         }
 
-        public void RemoveStream(long streamId)
+        public void RemoveStream(QuicStream stream)
         {
             lock (SyncObj)
             {
-                bool removed = _activeRequests.Remove(streamId);
+                bool removed = _activeRequests.Remove(stream);
                 Debug.Assert(removed == true);
 
                 if (ShuttingDown)

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace Microsoft.Win32.SafeHandles
@@ -608,7 +608,7 @@ namespace System
         public CLSCompliantAttribute(bool isCompliant) { }
         public bool IsCompliant { get { throw null; } }
     }
-    public delegate int Comparison<in T>(T x, T y);
+    public delegate int Comparison<in T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
     public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.Runtime.Serialization.ISerializable
     {
@@ -4216,10 +4216,10 @@ namespace System.Diagnostics
         public static void Close() { }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message) { }
+        public static void Fail(string? message) => throw null; 
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Fail(string? message, string? detailMessage) { }
+        public static void Fail(string? message, string? detailMessage) => throw null; 
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Flush() { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
@@ -7450,9 +7450,9 @@ namespace System.Runtime.ExceptionServices
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
         public static System.Exception SetCurrentStackTrace(System.Exception source) { throw null; }
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public void Throw() { }
+        public void Throw() => throw null;
         [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
-        public static void Throw(System.Exception source) { }
+        public static void Throw(System.Exception source) => throw null; 
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
     {
@@ -8871,8 +8871,8 @@ namespace System.Threading.Tasks
     }
     public partial class UnobservedTaskExceptionEventArgs : System.EventArgs
     {
-        public UnobservedTaskExceptionEventArgs(System.AggregateException? exception) { }
-        public System.AggregateException? Exception { get { throw null; } }
+        public UnobservedTaskExceptionEventArgs(System.AggregateException exception) { }
+        public System.AggregateException Exception { get { throw null; } }
         public bool Observed { get { throw null; } }
         public void SetObserved() { }
     }

@@ -3446,7 +3446,11 @@ g_error_xsx (const char *format, int x1, const char *s, int x2)
 #endif
 
 static MONO_ALWAYS_INLINE gboolean
-method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing, MonoException **out_ex)
+method_entry (ThreadContext *context, InterpFrame *frame,
+#if DEBUG_INTERP
+	int *out_tracing,
+#endif
+	MonoException **out_ex, FrameClauseArgs *clause_args)
 {
 	gboolean slow = FALSE;
 
@@ -3470,7 +3474,9 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 		}
 	}
 
-	alloc_stack_data (context, frame, frame->imethod->alloca_size);
+	if (!clause_args || clause_args->base_frame)
+		alloc_stack_data (context, frame, frame->imethod->alloca_size);
+
 	return slow;
 }
 
@@ -3515,6 +3521,7 @@ static MONO_NEVER_INLINE void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpMethod *cmethod;
+	MonoException *ex;
 	gboolean is_void;
 	stackval *retval;
 
@@ -3527,7 +3534,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 	InterpFrame *child_frame;
 #if DEBUG_INTERP
-	gint tracing = global_tracing;
+	int tracing = global_tracing;
 	unsigned char *vtalloc;
 #endif
 #if USE_COMPUTED_GOTO
@@ -3537,37 +3544,18 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	};
 #endif
 
+	if (method_entry (context, frame,
 #if DEBUG_INTERP
-	debug_enter (frame, &tracing);
+		&tracing,
 #endif
-
-	MonoException *ex;
-
-	// FIXME Use method_entry here. But it assumes clause_args == NULL.
-
-	if (!frame->imethod->transformed) {
-#if DEBUG_INTERP
-		char *mn = mono_method_full_name (frame->imethod->method, TRUE);
-		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
-		g_free (mn);
-#endif
-		frame->ip = NULL;
-		ex = do_transform_method (frame, context);
+		&ex, clause_args)) {
 		if (ex)
 			THROW_EX (ex, NULL);
 		EXCEPTION_CHECKPOINT;
 	}
 
-	if (!clause_args) {
-		//frame->stack = (stackval*)g_alloca (frame->imethod->alloca_size);
-		alloc_stack_data (context, frame, frame->imethod->alloca_size);
-	} else {
-		if (clause_args->base_frame) {
-			//frame->stack = (stackval*)g_alloca (frame->imethod->alloca_size);
-			alloc_stack_data (context, frame, frame->imethod->alloca_size);
-			memcpy (frame->stack, clause_args->base_frame->stack, frame->imethod->alloca_size);
-		}
-	}
+	if (clause_args && clause_args->base_frame)
+		memcpy (frame->stack, clause_args->base_frame->stack, frame->imethod->alloca_size);
 
 	INIT_INTERP_STATE (frame, clause_args);
 
@@ -3771,10 +3759,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			InterpMethod *imethod;
-			stackval *retval;
-			// FIXME This assumes a grow-down stack.
-			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
 			frame->ip = ip;
 
@@ -3782,9 +3766,9 @@ main_loop:
 			ip += 2;
 			--sp;
 
-			imethod = (InterpMethod*)sp->data.p;
-			if (imethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				imethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (imethod->method, FALSE, FALSE), error);
+			cmethod = (InterpMethod*)sp->data.p;
+			if (cmethod->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
+				cmethod = mono_interp_get_imethod (frame->imethod->domain, mono_marshal_get_native_wrapper (cmethod->method, FALSE, FALSE), error);
 				mono_interp_error_cleanup (error); /* FIXME: don't swallow the error */
 			}
 
@@ -3806,23 +3790,7 @@ main_loop:
 				}
 			}
 
-			/* Non-recursive call */
-			SAVE_INTERP_STATE (frame);
-
-			frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
-
-			gboolean tracing;
-
-			if (method_entry (context, frame, &tracing, &ex)) {
-				if (ex)
-					THROW_EX (ex, NULL);
-				EXCEPTION_CHECKPOINT;
-			}
-
-			clause_args = NULL;
-			INIT_INTERP_STATE (frame, clause_args);
-
-			MINT_IN_BREAK;
+			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			gpointer target_ip = sp [-1].data.p;
@@ -3840,7 +3808,6 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
-			stackval *retval;
 			MonoMethodSignature* csignature;
 
 			frame->ip = ip;
@@ -3876,15 +3843,13 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLVIRT_FAST)
 		MINT_IN_CASE(MINT_VCALLVIRT_FAST) {
-			stackval *retval;
 			MonoObject *this_arg;
-			InterpMethod *imethod;
 			is_void = *ip == MINT_VCALLVIRT_FAST;
 			int slot;
 
 			frame->ip = ip;
 
-			imethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			slot = (gint16)ip [2];
 			ip += 3;
 			sp->data.p = vt_sp;
@@ -3892,51 +3857,39 @@ main_loop:
 			retval = is_void ? NULL : sp;
 
 			/* decrement by the actual number of args */
-			sp -= imethod->param_count + imethod->hasthis;
+			sp -= cmethod->param_count + cmethod->hasthis;
 
 			this_arg = (MonoObject*)sp->data.p;
 
-			imethod = get_virtual_method_fast (imethod, this_arg->vtable, slot);
-			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (imethod->method->klass)) {
+			cmethod = get_virtual_method_fast (cmethod, this_arg->vtable, slot);
+			if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
 				sp [0].data.p = unboxed;
 			}
 
-			InterpMethodCodeType code_type = imethod->code_type;
+			InterpMethodCodeType code_type = cmethod->code_type;
 
 			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
 			          code_type == IMETHOD_CODE_INTERP ||
 			          code_type == IMETHOD_CODE_COMPILED);
 
 			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
-				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
-				if (mono_interp_jit_call_supported (imethod->method, sig))
+				MonoMethodSignature *sig = mono_method_signature_internal (cmethod->method);
+				if (mono_interp_jit_call_supported (cmethod->method, sig))
 					code_type = IMETHOD_CODE_COMPILED;
 				else
 					code_type = IMETHOD_CODE_INTERP;
-				imethod->code_type = code_type;
+				cmethod->code_type = code_type;
 			}
 
 			if (code_type == IMETHOD_CODE_INTERP) {
-				SAVE_INTERP_STATE (frame);
 
-				// FIXME &retval looks wrong
-				frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+				goto call;
 
-				gboolean tracing;
-
-				if (method_entry (context, frame, &tracing, &ex)) {
-					if (ex)
-						THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-
-				clause_args = NULL;
-				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
-				do_jit_call (sp, vt_sp, context, frame, imethod, error);
+				do_jit_call (sp, vt_sp, context, frame, cmethod, error);
 				if (!is_ok (error)) {
 					MonoException *ex = mono_error_convert_to_exception (error);
 					THROW_EX (ex, ip);
@@ -3944,7 +3897,7 @@ main_loop:
 
 				CHECK_RESUME_STATE (context);
 
-				if (imethod->rtype->type != MONO_TYPE_VOID)
+				if (cmethod->rtype->type != MONO_TYPE_VOID)
 					sp++;
 			}
 
@@ -4023,9 +3976,14 @@ call:;
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
-			gboolean tracing;
-
-			if (method_entry (context, frame, &tracing, &ex)) {
+#if DEBUG_INTERP
+			int tracing;
+#endif
+			if (method_entry (context, frame,
+#if DEBUG_INTERP
+				&tracing,
+#endif
+				&ex, NULL)) {
 				if (ex)
 					THROW_EX (ex, NULL);
 				EXCEPTION_CHECKPOINT;
@@ -4083,7 +4041,6 @@ call:;
 #ifndef ENABLE_NETCORE
 			MonoMethod *target_method = (MonoMethod*) frame->imethod->data_items [ip [1]];
 			MonoMethodSignature *sig = (MonoMethodSignature*) frame->imethod->data_items [ip [2]];
-			stackval *retval;
 
 			sp->data.p = vt_sp;
 			retval = sp;
@@ -7164,8 +7121,13 @@ exit_frame:
 
 	g_assert (frame->imethod);
 
-	if (clause_args && clause_args->base_frame)
-		memcpy (clause_args->base_frame->stack, frame->stack, frame->imethod->alloca_size);
+	if (clause_args && clause_args->base_frame) {
+		// We finished executing a filter. The execution stack of the base frame
+		// should remain unmodified, but we need to update the local space.
+		char *locals_base = (char*)clause_args->base_frame->stack + frame->imethod->stack_size + frame->imethod->vt_stack_size;
+
+		memcpy (locals_base, locals, frame->imethod->locals_size);
+	}
 
 	if (!clause_args && frame->parent && frame->parent->state.ip) {
 		/* Return to the main loop after a non-recursive interpreter call */

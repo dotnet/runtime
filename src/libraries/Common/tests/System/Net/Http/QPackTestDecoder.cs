@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Net.Test.Common
 {
-    public static class QPackDecoder
+    public static class QPackTestDecoder
     {
         public static (int bytesConsumed, int requiredInsertCount, int deltaBase) DecodePrefix(ReadOnlySpan<byte> buffer)
         {
@@ -18,84 +18,63 @@ namespace System.Net.Test.Common
 
             return (2, 0, 0);
         }
+
         public static (int bytesConsumed, HttpHeaderData) DecodeHeader(ReadOnlySpan<byte> buffer)
         {
-            int firstByte = buffer[0];
-
-            // Indexed Header Field, dynamic.
-            if ((firstByte & 0b1100_0000) == 0b1000_0000)
+            switch (BitOperations.LeadingZeroCount(buffer[0]) - 24) // byte 'b' is extended to uint, so will have 24 extra 0s.
             {
-                throw new Exception("QPack dynamic table is not yet supported.");
-            }
-
-            // Indexed Header Field, static.
-            if ((firstByte & 0b1100_0000) == 0b1100_0000)
-            {
-                (int bytesConsumed, int staticIndex) = DecodeInteger(buffer, 0b1100_0000);
-
-                var staticHeader = s_staticTable[staticIndex];
-                var header = new HttpHeaderData(staticHeader.Name, staticHeader.Value, raw: buffer.Slice(0, bytesConsumed).ToArray());
-
-                return (bytesConsumed, header);
-            }
-
-            // Indexed Header Field With Post-Base Index
-            if ((firstByte & 0b1111_0000) == 0b0001_0000)
-            {
-                throw new Exception("QPack dynamic table is not yet supported.");
-            }
-
-            // Literal Header Field With Name Reference
-            if ((firstByte & 0b1100_0000) == 0b0100_0000)
-            {
-                if ((firstByte & 0b0001_0000) != 0)
+                case 0: // Indexed Header Field
                 {
-                    throw new Exception("QPack dynamic table is not yet supported.");
+                    if ((buffer[0] & 0b0100_0000) == 0) throw new Exception("QPack dynamic table is not yet supported.");
+
+                    (int bytesConsumed, int staticIndex) = DecodeInteger(buffer, 0b0011_1111);
+
+                    var staticHeader = s_staticTable[staticIndex];
+                    var header = new HttpHeaderData(staticHeader.Name, staticHeader.Value, raw: buffer.Slice(0, bytesConsumed).ToArray());
+
+                    return (bytesConsumed, header);
                 }
+                case 1: // Literal Header Field With Name Reference
+                {
+                    if ((buffer[0] & 0b0001_0000) == 0) throw new Exception("QPack dynamic table is not yet supported.");
 
-                (int nameLength, int staticIndex) = DecodeInteger(buffer, 0b1111_0000);
-                (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b1000_0000);
+                    (int nameLength, int staticIndex) = DecodeInteger(buffer, 0b0000_1111);
+                    (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b0111_1111);
 
-                int headerLength = nameLength + valueLength;
-                var header = new HttpHeaderData(s_staticTable[staticIndex].Name, value, raw: buffer.Slice(0, headerLength).ToArray());
+                    int headerLength = nameLength + valueLength;
+                    var header = new HttpHeaderData(s_staticTable[staticIndex].Name, value, raw: buffer.Slice(0, headerLength).ToArray());
 
-                return (headerLength, header);
+                    return (headerLength, header);
+                }
+                case 2: // Literal Header Field Without Name Reference
+                {
+                    (int nameLength, string name) = DecodeString(buffer, 0b0000_0111);
+                    (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b0111_1111);
+
+                    int headerLength = nameLength + valueLength;
+                    var header = new HttpHeaderData(name, value, raw: buffer.Slice(0, headerLength).ToArray());
+
+                    return (headerLength, header);
+                }
+                case 3: // Indexed Header Field With Post-Base Index
+                default: // Literal Header Field With Post-Base Name Reference (at least 4 zeroes, maybe more)
+                    throw new Exception("QPack dynamic table is not yet supported.");
             }
-
-            // Literal Header Field With Post-Base Name Reference.
-            if ((firstByte & 0b1111_0000) == 0b0000_0000)
-            {
-                throw new Exception("QPack dynamic table is not yet supported.");
-            }
-
-            // Literal Header Field Without Name Reference.
-            if ((firstByte & 0b1110_0000) == 0b0010_0000)
-            {
-                (int nameLength, string name) = DecodeString(buffer, 0b1111_1000);
-                (int valueLength, string value) = DecodeString(buffer.Slice(nameLength), 0b1000_0000);
-
-                int headerLength = nameLength + valueLength;
-                var header = new HttpHeaderData(name, value, raw: buffer.Slice(0, headerLength).ToArray());
-
-                return (headerLength, header);
-            }
-
-            throw new Exception("Invalid QPack.");
         }
 
         private static (int bytesConsumed, string value) DecodeString(ReadOnlySpan<byte> buffer, byte prefixMask)
         {
-            bool huffman = (buffer[0] & (1 << BitOperations.TrailingZeroCount(prefixMask))) != 0;
+            bool huffman = (buffer[0] & (1 << BitOperations.TrailingZeroCount(~prefixMask))) != 0;
 
             if (huffman)
             {
                 throw new Exception("Huffman coding not yet supported.");
             }
 
-            (int nameLength, int stringLength) = DecodeInteger(buffer, prefixMask);
-            string value = Encoding.ASCII.GetString(buffer.Slice(nameLength));
+            (int varIntLength, int stringLength) = DecodeInteger(buffer, prefixMask);
+            string value = Encoding.ASCII.GetString(buffer.Slice(varIntLength, stringLength));
 
-            return (nameLength + stringLength, value);
+            return (varIntLength + stringLength, value);
         }
 
         public static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
@@ -106,13 +85,20 @@ namespace System.Net.Test.Common
                 return (1, value);
             }
 
-            byte b = headerBlock[1];
-            if ((b & 0b10000000) != 0)
-            {
-                throw new Exception("long integers currently not supported");
-            }
+            ulong extra = 0;
+            int length = 1;
+            byte b;
 
-            return (2, prefixMask + b);
+            do
+            {
+                b = headerBlock[length++];
+                extra = checked(extra << 7) | b;
+            }
+            while ((b & 0b10000000) != 0);
+
+            value = checked((int)(prefixMask + extra));
+
+            return (length, value);
         }
 
         private static readonly HttpHeaderData[] s_staticTable = new HttpHeaderData[]

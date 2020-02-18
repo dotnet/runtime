@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.0;net461;$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;netcoreapp3.0;net461;$(NetFrameworkCurrent)</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
     <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
@@ -154,7 +154,6 @@
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
-    <Compile Include="System\Text\Json\Serialization\ReferenceEqualsEqualityComparer.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionEmitMemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\ReflectionMemberAccessor.cs" />
@@ -228,6 +227,11 @@
     <Reference Include="System.ValueTuple" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetStandard)' == 'true' or '$(TargetsNetFx)' == 'true' or '$(TargetFramework)' == 'netcoreapp3.0'">
+    <Compile Include="$(CommonPath)System\Collections\Generic\ReferenceEqualityComparer.cs">
+      <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Collections" />

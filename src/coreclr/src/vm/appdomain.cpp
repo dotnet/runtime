@@ -6342,7 +6342,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 else
                 {
                     pLoadedPEAssembly = pDomainAssembly->GetFile();
-                    if (pLoadedPEAssembly->HasHostAssembly() != true)
+                    if (!pLoadedPEAssembly->HasHostAssembly())
                     {
                         // Reflection emitted assemblies will not have a domain assembly.
                         fFailLoad = true;
