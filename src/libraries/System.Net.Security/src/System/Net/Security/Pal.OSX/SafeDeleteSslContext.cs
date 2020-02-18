@@ -14,7 +14,7 @@ namespace System.Net
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
-        private const int InitialBufferSize = 4096 * 4;
+        private const int InitialBufferSize = 2048;
         private SafeSslHandle _sslContext;
         private Interop.AppleCrypto.SSLReadFunc _readCallback;
         private Interop.AppleCrypto.SSLWriteFunc _writeCallback;
@@ -160,7 +160,10 @@ namespace System.Net
 
         private unsafe int WriteToConnection(void* connection, byte* data, void** dataLength)
         {
-            int toWrite = (int)((ulong)*dataLength);
+            ulong length = (ulong)*dataLength;
+            Debug.Assert(length <= int.MaxValue);
+
+            int toWrite = (int)length;
             var inputBuffer = new ReadOnlySpan<byte>(data, toWrite);
 
             lock (_sslContext)
