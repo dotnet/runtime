@@ -79,24 +79,24 @@ namespace System
             return Number.Int64ToDecStr(m_value);
         }
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return Number.FormatInt64(m_value, null, provider);
-        }
-
         public string ToString(string? format)
         {
-            return Number.FormatInt64(m_value, format, null);
+            return ToString(format, null);
+        }
+
+        public string ToString(IFormatProvider? provider)
+        {
+            return ToString(null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return Number.FormatInt64(m_value, format, provider);
+            return Number.FormatInt<long, Number.Int64Fmt>(m_value, ~0L, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatInt64(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt<long, Number.Int64Fmt>(m_value, ~0L, format, provider, destination, out charsWritten);
         }
 
         public static long Parse(string s)

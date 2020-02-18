@@ -77,14 +77,14 @@ namespace System
             return Number.Int32ToDecStr(m_value);
         }
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return Number.FormatInt32(m_value, null, provider);
-        }
-
         public string ToString(string? format)
         {
             return ToString(format, null);
+        }
+
+        public string ToString(IFormatProvider? provider)
+        {
+            return ToString(null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)

@@ -730,7 +730,7 @@ namespace System
             }
         }
 
-        private struct UInt32Fmt : IIntFmt<uint>
+        internal struct UInt32Fmt : IIntFmt<uint>
         {
             public string ToDecStr(uint value, int digits, IFormatProvider? provider)
                 => UInt32ToDecStr(value, digits);
@@ -753,7 +753,7 @@ namespace System
             }
         }
 
-        private struct Int64Fmt : IIntFmt<long>
+        internal struct Int64Fmt : IIntFmt<long>
         {
             public string ToDecStr(long value, int digits, IFormatProvider? provider)
             {
@@ -784,7 +784,7 @@ namespace System
             }
         }
 
-        private struct UInt64Fmt : IIntFmt<ulong>
+        internal struct UInt64Fmt : IIntFmt<ulong>
         {
             public string ToDecStr(ulong value, int digits, IFormatProvider? provider)
                 => UInt64ToDecStr(value, digits);
@@ -902,31 +902,6 @@ namespace System
                 NumberToStringFormat(ref sb, ref number, format, info);
             }
         }
-
-        public static string FormatInt32(int value, string? format, IFormatProvider? provider)
-            => FormatInt<int, Int32Fmt>(value, ~0, format, provider);
-
-        public static bool TryFormatInt32(int value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<int, Int32Fmt>(value, ~0, format, provider, destination, out charsWritten);
-
-        public static string FormatUInt32(uint value, string? format, IFormatProvider? provider)
-            => FormatInt<uint, UInt32Fmt>(value, ~0U, format, provider);
-
-        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<uint, UInt32Fmt>(value, ~0U, format, provider, destination, out charsWritten);
-
-        public static string FormatInt64(long value, string? format, IFormatProvider? provider)
-            => FormatInt<long, Int64Fmt>(value, ~0L, format, provider);
-
-        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<long, Int64Fmt>(value, ~0L, format, provider, destination, out charsWritten);
-
-        public static string FormatUInt64(ulong value, string? format, IFormatProvider? provider)
-            => FormatInt<ulong, UInt64Fmt>(value, ~0UL, format, provider);
-
-        public static unsafe bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
-            => TryFormatInt<ulong, UInt64Fmt>(value, ~0UL, format, provider, destination, out charsWritten);
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called from only one location
         private static unsafe void Int32ToNumber(int value, ref NumberBuffer number)

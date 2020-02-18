@@ -71,24 +71,24 @@ namespace System
             return Number.UInt32ToDecStr(m_value, -1);
         }
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return Number.FormatUInt32(m_value, null, provider);
-        }
-
         public string ToString(string? format)
         {
-            return Number.FormatUInt32(m_value, format, null);
+            return ToString(format, null);
+        }
+
+        public string ToString(IFormatProvider? provider)
+        {
+            return ToString(null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return Number.FormatUInt32(m_value, format, provider);
+            return Number.FormatInt<uint, Number.UInt32Fmt>(m_value, ~0U, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatUInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt<uint, Number.UInt32Fmt>(m_value, ~0U, format, provider, destination, out charsWritten);
         }
 
         [CLSCompliant(false)]

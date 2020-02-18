@@ -84,22 +84,22 @@ namespace System
 
         public string ToString(string? format)
         {
-            return Number.FormatInt32(m_value, format, null);
+            return ToString(format, null);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.FormatInt32(m_value, null, provider);
+            return ToString(null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return Number.FormatInt32(m_value, format, provider);
+            return Number.FormatInt<int, Number.Int32Fmt>(m_value, ~0, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatInt32(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt<int, Number.Int32Fmt>(m_value, ~0, format, provider, destination, out charsWritten);
         }
 
         public static int Parse(string s)

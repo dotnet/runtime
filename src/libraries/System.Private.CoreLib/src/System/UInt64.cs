@@ -80,24 +80,24 @@ namespace System
             return Number.UInt64ToDecStr(m_value, -1);
         }
 
-        public string ToString(IFormatProvider? provider)
-        {
-            return Number.FormatUInt64(m_value, null, provider);
-        }
-
         public string ToString(string? format)
         {
-            return Number.FormatUInt64(m_value, format, null);
+            return ToString(format, null);
+        }
+
+        public string ToString(IFormatProvider? provider)
+        {
+            return ToString(null, provider);
         }
 
         public string ToString(string? format, IFormatProvider? provider)
         {
-            return Number.FormatUInt64(m_value, format, provider);
+            return Number.FormatInt<ulong, Number.UInt64Fmt>(m_value, ~0UL, format, provider);
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
-            return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
+            return Number.TryFormatInt<ulong, Number.UInt64Fmt>(m_value, ~0UL, format, provider, destination, out charsWritten);
         }
 
         [CLSCompliant(false)]
