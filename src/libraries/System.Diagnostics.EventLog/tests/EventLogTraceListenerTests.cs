@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using Xunit;
-using Microsoft.DotNet.XunitExtensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {

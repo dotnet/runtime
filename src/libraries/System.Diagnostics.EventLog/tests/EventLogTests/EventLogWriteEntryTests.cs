@@ -4,7 +4,7 @@
 
 using System.ComponentModel;
 using Xunit;
-using Microsoft.DotNet.XunitExtensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {

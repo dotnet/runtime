@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
 using System.Security.Principal;
 using Xunit;
-using Microsoft.DotNet.XunitExtensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {

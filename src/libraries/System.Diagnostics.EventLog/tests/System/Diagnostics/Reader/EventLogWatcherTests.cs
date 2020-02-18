@@ -5,7 +5,7 @@
 using System.Diagnostics.Eventing.Reader;
 using System.Threading;
 using Xunit;
-using Microsoft.DotNet.XunitExtensions;
+using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
 {
