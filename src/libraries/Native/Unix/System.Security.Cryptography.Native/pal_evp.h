@@ -56,7 +56,7 @@ EvpMdCtxCopyEx
 
 Direct shim to EVP_MD_CTX_copy_ex.
 */
-DLLEXPORT EVP_MD_CTX* CrptoNative_EvpMdCtxCopyEx(EVP_MD_CTX* ctx);
+DLLEXPORT EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(EVP_MD_CTX* ctx);
 
 /*
 Function:
