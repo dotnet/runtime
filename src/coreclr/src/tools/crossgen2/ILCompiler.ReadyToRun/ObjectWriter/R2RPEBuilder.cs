@@ -260,6 +260,7 @@ namespace ILCompiler.PEWriter
         /// Emit built sections into the R2R PE file.
         /// </summary>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
+        /// <param name="timeDateStamp">Timestamp to set in the PE header of the output R2R executable</param>
         public void Write(Stream outputStream, int timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
@@ -270,7 +271,7 @@ namespace ILCompiler.PEWriter
             UpdateSectionRVAs(outputStream);
             ApplyMachineOSOverride(outputStream);
 
-            CopyTimeStampFromInputImage(outputStream, timeDateStamp);
+            SetPEHeaderTimeStamp(outputStream, timeDateStamp);
 
             _written = true;
         }
@@ -389,11 +390,11 @@ namespace ILCompiler.PEWriter
         }
 
         /// <summary>
-        /// Copy over the timestamp from IL image for determinism.
+        /// Set PE header timestamp in the output R2R image to a given value.
         /// </summary>
         /// <param name="outputStream">Output stream representing the R2R PE executable</param>
         /// <param name="timeDateStamp">Timestamp to set in the R2R PE header</param>
-        private void CopyTimeStampFromInputImage(Stream outputStream, int timeDateStamp)
+        private void SetPEHeaderTimeStamp(Stream outputStream, int timeDateStamp)
         {
             byte[] patchedTimestamp = BitConverter.GetBytes(timeDateStamp);
             int seekSize =
@@ -571,18 +572,19 @@ namespace ILCompiler.PEWriter
         /// <param name="dllCharacteristics">Extra DLL characteristics to apply</param>
         /// <param name="subsystem">Targeting subsystem</param>
         /// <param name="target">Target architecture to set in the header</param>
-        public static PEHeaderBuilder Create(Characteristics characteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
+        public static PEHeaderBuilder Create(Characteristics imageCharacteristics, DllCharacteristics dllCharacteristics, Subsystem subsystem, TargetDetails target)
         {
             bool is64BitTarget = target.PointerSize == sizeof(long);
 
-            characteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
+            imageCharacteristics &= ~(Characteristics.Bit32Machine | Characteristics.LargeAddressAware);
+            imageCharacteristics |= (is64BitTarget ? Characteristics.LargeAddressAware : Characteristics.Bit32Machine);
 
             ulong imageBase = PE32HeaderConstants.ImageBase;
             if (target.IsWindows && is64BitTarget && (imageBase <= uint.MaxValue))
             {
                 // Base addresses below 4 GiB are reserved for WoW on x64 and disallowed on ARM64.
                 // If the input assembly was compiled for anycpu, its base address is 32-bit and we need to fix it.
-                imageBase = (characteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
+                imageBase = (imageCharacteristics & Characteristics.Dll) != 0 ? PE64HeaderConstants.DllImageBase : PE64HeaderConstants.ExeImageBase;
             }
 
             int fileAlignment = 0x200;
@@ -600,13 +602,10 @@ namespace ILCompiler.PEWriter
                 sectionAlignment = fileAlignment;
             }
 
-            dllCharacteristics &= (DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
-            dllCharacteristics |= DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible;
+            dllCharacteristics &= (DllCharacteristics.NxCompatible | DllCharacteristics.TerminalServerAware | DllCharacteristics.AppContainer);
 
-            if (!is64BitTarget)
-            {
-                dllCharacteristics |= DllCharacteristics.NoSeh;
-            }
+            // In Crossgen1, this is under a debug-specific condition 'if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NoASLRForNgen))'
+            dllCharacteristics |= DllCharacteristics.DynamicBase;
 
             if (is64BitTarget)
             {
@@ -631,7 +630,7 @@ namespace ILCompiler.PEWriter
                 minorSubsystemVersion: PEHeaderConstants.MinorSubsystemVersion,
                 subsystem: subsystem,
                 dllCharacteristics: dllCharacteristics,
-                imageCharacteristics: characteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfStackReserve : PE32HeaderConstants.SizeOfStackReserve),
                 sizeOfStackCommit: (is64BitTarget ? PE64HeaderConstants.SizeOfStackCommit : PE32HeaderConstants.SizeOfStackCommit),
                 sizeOfHeapReserve: (is64BitTarget ? PE64HeaderConstants.SizeOfHeapReserve : PE32HeaderConstants.SizeOfHeapReserve),

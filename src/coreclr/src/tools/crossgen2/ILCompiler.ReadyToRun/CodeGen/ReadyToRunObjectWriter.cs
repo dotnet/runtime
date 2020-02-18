@@ -110,10 +110,11 @@ namespace ILCompiler.DependencyAnalysis
                 if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
                     headerBuilder = PEHeaderProvider.Create(
-                        characteristics: Characteristics.ExecutableImage | Characteristics.Dll,
+                        imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll,
                         dllCharacteristics: default(DllCharacteristics),
                         Subsystem.Unknown,
                         _nodeFactory.Target);
+                    // TODO: generate a non-zero timestamp: https://github.com/dotnet/runtime/issues/32507
                     timeDateStamp = 0;
                     r2rHeaderExportSymbol = _nodeFactory.Header;
                 }
