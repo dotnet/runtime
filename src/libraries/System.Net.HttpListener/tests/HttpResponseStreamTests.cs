@@ -298,7 +298,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20201", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -326,7 +326,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20201", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -352,7 +352,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/20201", TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/21918", TestPlatforms.AnyUnix)]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -378,7 +378,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20246")] // CI hanging frequently
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21940")] // CI hanging frequently
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -416,7 +416,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20246")] // CI hanging frequently
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21940")] // CI hanging frequently
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -455,11 +455,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18188", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";
@@ -495,11 +495,11 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18188", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19534", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21022", platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21590", TestPlatforms.OSX)]
         public async Task Write_ContentToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
         {
             const string Text = "Some-String";

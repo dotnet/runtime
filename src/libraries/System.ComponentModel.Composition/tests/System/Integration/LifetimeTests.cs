@@ -934,7 +934,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void NonSharedPart_Simple_ShouldBeCollected()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartSimple));
@@ -951,7 +951,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ContainerDispose_SharedPart_ShouldCollectWholeObjectChain()
         {
             // Test only works properly with while using the real ConditionalWeakTable
@@ -980,7 +980,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void AddRemovePart_SharedPart_ShouldCollectOnlyRoot()
         {
             var container = GetContainer();
@@ -1017,7 +1017,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void AddRemovePart_NonSharedPart_ShouldCollectWholeObjectChain()
         {
             var container = GetContainer();
@@ -1052,7 +1052,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ContainerDispose_NonSharedPart_ShouldCollectWholeObjectChain()
         {
             // Test only works properly with while using the real ConditionalWeakTable
@@ -1081,7 +1081,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void NonSharedImporter_ReleaseReference_ShouldCollectWholeChain()
         {
             var container = GetContainer();
@@ -1111,7 +1111,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ChildContainerDispose_NonSharedPart_ShouldOnlyCleanupChildAndSimpleNonShared()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -1140,7 +1140,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ChildContainerGetReleaseExport_NonSharedPart_ShouldCollectWholeObjectChain()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -1168,7 +1168,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void NonSharedPart_RecomposableImport_NoReference_ShouldBeCollected()
         {
             var catalog = new TypeCatalog(typeof(NonSharedPartRecomposable));
@@ -1198,7 +1198,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void ChildContainerAddRemovePart_NonSharedPart_ShouldCollectWholeObjectChain()
         {
             var child = CreateParentChildContainerWithNonSharedImporter();
@@ -1233,7 +1233,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void GetReleaseExport_SharedPart_ShouldCollectOnlyRoot()
         {
             var container = GetContainer();
@@ -1263,7 +1263,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void GetReleaseExport_NonSharedPart_ShouldCollectWholeObjectChain()
         {
             var container = GetContainer();

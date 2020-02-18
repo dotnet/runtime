@@ -67,7 +67,7 @@ namespace System.Drawing.Imaging.Tests
             imageAttr.Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)] // Causes a crash on libgdiplus.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)] // Causes a crash on libgdiplus.
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Success()
         {
@@ -521,7 +521,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetThreshold_Threshold_Success()
         {
@@ -536,7 +536,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_TestData))]
         public void SetThreshold_ThresholdType_Success(ColorAdjustType type)
@@ -553,7 +553,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [MemberData(nameof(ColorAdjustTypeI_TestData))]
         public void SetThreshold_ThresholdTypeI_Success(ColorAdjustType type)
         {
@@ -568,7 +568,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetThreshold_Disposed_ThrowsArgumentException()
         {
@@ -578,7 +578,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetThreshold(0.5f));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void SetThreshold_InvalidType_ThrowsArgumentException(ColorAdjustType type)
@@ -589,7 +589,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearThreshold_Success()
         {
@@ -605,7 +605,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_AllTypesAllowed_TestData))]
         public void ClearThreshold_ThresholdTypeI_Success(ColorAdjustType type)
@@ -622,7 +622,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearThreshold_Disposed_ThrowsArgumentException()
         {
@@ -632,7 +632,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearThreshold(ColorAdjustType.Default));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void ClearThreshold_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
@@ -643,7 +643,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetGamma_Gamma_Success()
         {
@@ -658,7 +658,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_TestData))]
         public void SetGamma_GammaType_Success(ColorAdjustType type)
@@ -674,7 +674,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustTypeI_TestData))]
         public void SetGamma_GammaTypeI_Success(ColorAdjustType type)
@@ -746,7 +746,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetNoOp_Success()
         {
@@ -763,7 +763,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_AllTypesAllowed_TestData))]
         public void SetNoOp_Type_Success(ColorAdjustType type)
@@ -820,7 +820,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_TestData))]
         public void ClearNoOp_Type_Success(ColorAdjustType type)
@@ -859,7 +859,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearNoOp_Disposed_ThrowsArgumentException()
         {
@@ -880,7 +880,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22309")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22784")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetColorKey_Success()
         {
@@ -896,7 +896,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22309")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22784")]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_TestData))]
         public void SetColorKey_Type_Success(ColorAdjustType type)
@@ -1012,7 +1012,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { ColorChannelFlag.ColorChannelY, Color.FromArgb(255, 100, 100, 100), Color.FromArgb(255, 207, 207, 207) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetOutputChannel_ColorChannelFlag_TestData))]
         public void SetOutputChannel_Flag_Success(ColorChannelFlag flag, Color actualColor, Color expectedColor)
@@ -1041,7 +1041,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { ColorChannelFlag.ColorChannelY, ColorAdjustType.Bitmap, Color.FromArgb(255, 100, 100, 100), Color.FromArgb(255, 207, 207, 207) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetOutputChannel_ColorChannelFlagType_TestData))]
         public void SetOutputChannel_FlagType_Success(ColorChannelFlag flag, ColorAdjustType type, Color actualColor, Color expectedColor)
@@ -1074,7 +1074,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { ColorChannelFlag.ColorChannelY, ColorAdjustType.Text, Color.FromArgb(255, 100, 100, 100) };
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetOutputChannel_ColorChannelFlagTypeI_TestData))]
         public void SetOutputChannel_FlagTypeI_Success(ColorChannelFlag flag, ColorAdjustType type, Color color)
@@ -1091,7 +1091,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannel_Disposed_ThrowsArgumentException()
         {
@@ -1102,7 +1102,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetOutputChannel(ColorChannelFlag.ColorChannelY, ColorAdjustType.Default));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void SetOutputChannel_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
@@ -1122,7 +1122,7 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { (ColorChannelFlag)int.MaxValue };
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SetOutputChannel_InvalidColorChannelFlags_TestData))]
         public void SetOutputChannel_InvalidFlags_ThrowsArgumentException(ColorChannelFlag flag)
@@ -1134,7 +1134,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearOutputChannel_Success()
         {
@@ -1151,7 +1151,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_AllTypesAllowed_TestData))]
         public void ClearOutputChannel_Type_Success(ColorAdjustType type)
@@ -1169,7 +1169,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearOutputChannel_Disposed_ThrowsArgumentException()
         {
@@ -1180,7 +1180,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannel(ColorAdjustType.Default));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void ClearOutputChannel_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
@@ -1191,7 +1191,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannelColorProfile_Name_Success()
         {
@@ -1207,7 +1207,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannelColorProfile_Disposed_ThrowsArgumentException()
         {
@@ -1230,7 +1230,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22309")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22784")]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannelColorProfile_InvalidPath_ThrowsArgumentException()
         {
@@ -1241,7 +1241,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannelColorProfile_InvalidPath_ThrowsOutOfMemoryException()
         {
@@ -1252,7 +1252,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetOutputChannelColorProfile_InvalidPath_ThrowsPathTooLongException()
         {
@@ -1264,7 +1264,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void SetOutputChannelColorProfile_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
@@ -1275,7 +1275,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearOutputChannelColorProfile_Success()
         {
@@ -1293,7 +1293,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_AllTypesAllowed_TestData))]
         public void ClearOutputChannelColorProfile_Type_Success(ColorAdjustType type)
@@ -1312,7 +1312,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearOutputChannelColorProfile_Disposed_ThrowsArgumentException()
         {
@@ -1323,7 +1323,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.ClearOutputChannelColorProfile(ColorAdjustType.Default));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void ClearOutputChannelColorProfile_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
@@ -1416,7 +1416,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetRemapTable_EmptyMap_ThrowsArgumentException()
         {
@@ -1426,7 +1426,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearRemapTable_Success()
         {
@@ -1442,7 +1442,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_AllTypesAllowed_TestData))]
         public void ClearRemapTable_Type_Success(ColorAdjustType type)
@@ -1490,7 +1490,7 @@ namespace System.Drawing.Imaging.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => imageAttr.SetWrapMode(WrapMode.Clamp, Color.Black, true));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetAdjustedPalette_Disposed_ThrowsArgumentException()
         {
@@ -1512,7 +1512,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
         public void GetAdjustedPalette_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)

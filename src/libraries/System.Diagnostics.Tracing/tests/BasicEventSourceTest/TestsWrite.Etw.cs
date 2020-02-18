@@ -15,7 +15,7 @@ namespace BasicEventSourceTests
         private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(AdminHelpers.IsProcessElevated);
         private static bool IsProcessElevated => s_isElevated.Value;
         private static bool IsProcessElevatedAndNotWindowsNanoServer =>
-            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
+            IsProcessElevated && PlatformDetection.IsNotWindowsNanoServer; // ActiveIssue: https://github.com/dotnet/runtime/issues/26197
 
         /// <summary>
         /// Tests the EventSource.Write[T] method (can only use the self-describing mechanism).
@@ -30,8 +30,8 @@ namespace BasicEventSourceTests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/27106")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25035")]
         [ConditionalFact(nameof(IsProcessElevated))]
         public void Test_Write_T_In_Manifest_Serialization_WithEtwListener()
         {

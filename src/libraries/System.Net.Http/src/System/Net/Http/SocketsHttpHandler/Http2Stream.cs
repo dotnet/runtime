@@ -1011,7 +1011,7 @@ namespace System.Net.Http
             {
                 ReadOnlyMemory<byte> remaining = buffer;
 
-                // Deal with [ActiveIssue("https://github.com/dotnet/corefx/issues/9071")]
+                // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
                 CancellationTokenSource customCancellationSource = null;
