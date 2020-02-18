@@ -121,7 +121,7 @@ namespace System
                 MethodInfo methodInfo = interopGlobalization.GetMethod("GetICUVersion", BindingFlags.NonPublic | BindingFlags.Static);
                 if (methodInfo != null)
                 {
-                    version = (int)methodInfo.Invoke(null, new object[] { });
+                    version = (int)methodInfo.Invoke(null, null);
                 }
             }
 
