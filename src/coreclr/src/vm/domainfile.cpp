@@ -38,7 +38,7 @@
 #endif // FEATURE_PERFMAP
 
 #ifndef DACCESS_COMPILE
-DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
+DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *loaderAllocator)
   : m_pDomain(pDomain),
     m_pFile(pFile),
     m_pOriginalFile(NULL),
@@ -50,7 +50,8 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
     m_bDisableActivationCheck(FALSE),
-    m_dwReasonForRejectingNativeImage(0)
+    m_dwReasonForRejectingNativeImage(0),
+    m_pLoaderAllocator(loaderAllocator)
 {
     CONTRACTL
     {
@@ -86,26 +87,6 @@ DomainFile::~DomainFile()
 }
 
 #endif //!DACCESS_COMPILE
-
-LoaderAllocator * DomainFile::GetLoaderAllocator()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    Assembly *pAssembly = GetDomainAssembly()->GetAssembly();
-    if ((pAssembly != NULL) && (pAssembly->IsCollectible()))
-    {
-        return pAssembly->GetLoaderAllocator();
-    }
-    else
-    {
-        return this->GetAppDomain()->GetLoaderAllocator();
-    }
-}
 
 #ifndef DACCESS_COMPILE
 
@@ -954,7 +935,7 @@ void DomainFile::EagerFixups()
         GetCurrentModule()->RunEagerFixups();
 #endif
 
-        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetImage();
+        PEImageLayout * pLayout = GetCurrentModule()->GetReadyToRunInfo()->GetComposite()->GetImage();
 
         TADDR base = dac_cast<TADDR>(pLayout->GetBase());
 
@@ -1151,13 +1132,12 @@ void DomainFile::InsertIntoDomainFileWithNativeImageList()
 //--------------------------------------------------------------------------------
 
 DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *pLoaderAllocator)
-  : DomainFile(pDomain, pFile),
+  : DomainFile(pDomain, pFile, pLoaderAllocator),
     m_pAssembly(NULL),
     m_debuggerFlags(DACF_NONE),
     m_fDebuggerUnloadStarted(FALSE),
     m_fCollectible(pLoaderAllocator->IsCollectible()),
     m_fHostAssemblyPublished(false),
-    m_pLoaderAllocator(pLoaderAllocator),
     m_NextDomainAssemblyInSameALC(NULL)
 {
     CONTRACTL
@@ -2358,6 +2338,155 @@ DomainAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     }
 }
 
-
 #endif // #ifdef DACCESS_COMPILE
 
+
+AssemblyNameIndex::AssemblyNameIndex(const SString& name, int32_t index)
+    : Name(name), Index(index)
+{
+    Name.Normalize();
+}
+
+#ifndef DACCESS_COMPILE
+
+DomainCompositeImage::DomainCompositeImage(
+    AppDomain *pDomain,
+    PEFile *pFile,
+    READYTORUN_HEADER *header,
+    LPCUTF8 compositeImageName,
+    uint8_t compositeImageNameLength,
+    LoaderAllocator *loaderAllocator,
+    AllocMemTracker& amTracker)
+  : DomainFile(pDomain, pFile, loaderAllocator)
+{
+    CONTRACTL
+    {
+        CONSTRUCTOR_CHECK;
+        STANDARD_VM_CHECK;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    LoaderHeap *pHeap = loaderAllocator->GetHighFrequencyHeap();
+    m_utf8SimpleName = compositeImageName;
+    m_utf8SimpleNameLength = compositeImageNameLength;
+    
+    m_readyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
+        ReadyToRunInfo(/*pModule*/ NULL, pFile->GetLoaded(), header, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
+    m_componentAssemblies = m_readyToRunInfo->GetComposite()->FindSection(ReadyToRunSectionType::ComponentAssemblies);
+    m_componentAssemblyCount = m_componentAssemblies->Size / sizeof(READYTORUN_COMPONENT_ASSEMBLIES_ENTRY);
+    
+    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+    m_manifestMetadata = pFile->GetOpenedILimage()->GetNativeMDImport();
+
+    HENUMInternal assemblyEnum;
+    HRESULT hr = m_manifestMetadata->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
+    mdAssemblyRef assemblyRef;
+    int assemblyIndex = 0;
+    while (m_manifestMetadata->EnumNext(&assemblyEnum, &assemblyRef))
+    {
+        LPCSTR assemblyName;
+        hr = m_manifestMetadata->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
+        m_assemblySimpleNameToIndexMap.Add(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(AssemblyNameIndex))))
+            AssemblyNameIndex(SString(SString::Ansi, assemblyName), assemblyIndex));
+        assemblyIndex++;
+    }
+}
+
+DomainCompositeImage::~DomainCompositeImage()
+{
+    CONTRACTL
+    {
+        DESTRUCTOR_CHECK;
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+}
+
+bool DomainCompositeImage::HasSimpleName(LPCUTF8 utf8SimpleName, uint32_t utf8Length) const
+{
+    return utf8Length == m_utf8SimpleNameLength && !memcmp(utf8SimpleName, m_utf8SimpleName, utf8Length);
+}
+
+DomainCompositeImage *DomainCompositeImage::Open(
+    AppDomain *pDomain,
+    PEFile *pFile,
+    LPCUTF8 compositeImageName,
+    uint8_t compositeImageNameLength,
+    LoaderAllocator *loaderAllocator)
+{
+    READYTORUN_HEADER *header = pFile->GetLoaded()->GetReadyToRunHeader();
+    if (header == NULL)
+    {
+        return NULL;
+    }
+    LoaderHeap *pHeap = loaderAllocator->GetHighFrequencyHeap();
+    AllocMemTracker amTracker;
+    DomainCompositeImage *result = new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(DomainCompositeImage))))
+        DomainCompositeImage(pDomain, pFile, header, compositeImageName, compositeImageNameLength, loaderAllocator, amTracker);
+    amTracker.SuppressRelease();
+    return result;
+}
+
+Assembly *DomainCompositeImage::LoadComponentAssembly(uint32_t rowid)
+{
+    AssemblySpec spec;
+    spec.InitializeSpec(TokenFromRid(rowid, mdtAssemblyRef), m_manifestMetadata, NULL);
+    return spec.LoadAssembly(FILE_LOADED);
+}
+
+PTR_READYTORUN_CORE_HEADER DomainCompositeImage::GetComponentAssemblyHeader(const SString& simpleName)
+{
+    simpleName.Normalize();
+    const AssemblyNameIndex *assemblyNameIndex = m_assemblySimpleNameToIndexMap.Lookup(simpleName);
+    if (assemblyNameIndex != NULL)
+    {
+        const byte *imageBase = (const byte *)GetFile()->GetLoaded()->GetBase();
+        const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *componentAssembly =
+            (const READYTORUN_COMPONENT_ASSEMBLIES_ENTRY *)&imageBase[m_componentAssemblies->VirtualAddress] + assemblyNameIndex->Index;
+        return (PTR_READYTORUN_CORE_HEADER)&imageBase[componentAssembly->ReadyToRunCoreHeader.VirtualAddress];
+    }
+    return NULL;
+}
+
+#ifdef FEATURE_PREJIT
+#ifndef DACCESS_COMPILE
+void DomainCompositeImage::FindNativeImage()
+{
+}
+#endif
+#endif // FEATURE_PREJIT
+
+void DomainCompositeImage::Begin()
+{
+    STANDARD_VM_CONTRACT;
+}
+
+void DomainCompositeImage::Allocate()
+{
+}
+
+void DomainCompositeImage::DeliverSyncEvents()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END;
+}
+
+void DomainCompositeImage::DeliverAsyncEvents()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        STANDARD_VM_CHECK;
+    }
+    CONTRACTL_END;
+}
+
+#endif

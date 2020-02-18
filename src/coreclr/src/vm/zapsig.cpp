@@ -632,25 +632,32 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     }
     else
     {
-        if (index < fromModule->GetAssemblyRefMax())
+        DomainCompositeImage *compositeImage = fromModule->GetCompositeImage();
+        uint32_t assemblyRefMax = (compositeImage != NULL ? 1 : fromModule->GetAssemblyRefMax());
+        if (index < assemblyRefMax)
         {
             pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
         }
         else
         {
-            index -= fromModule->GetAssemblyRefMax();
+            index -= assemblyRefMax;
 
             pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
             if(pAssembly == NULL)
             {
-                AssemblySpec spec;
-                spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
+                if (compositeImage != NULL)
+                {
+                    pAssembly = compositeImage->LoadComponentAssembly(index);
+                }
+                else
+                {
+                    AssemblySpec spec;
+                    spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
                                     fromModule->GetNativeAssemblyImport(),
                                     NULL);
-
-                pAssembly = spec.LoadAssembly(FILE_LOADED);
-
+                    pAssembly = spec.LoadAssembly(FILE_LOADED);
+                }
                 fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
             }
         }
@@ -677,16 +684,19 @@ Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
         pAssembly = fromModule->GetAssembly();
     else
     {
-        if (index < fromModule->GetAssemblyRefMax())
+        DomainCompositeImage *compositeImage = fromModule->GetCompositeImage();
+        uint32_t assemblyRefMax = (compositeImage != NULL ? 1 : fromModule->GetAssemblyRefMax());
+        if (index < assemblyRefMax)
         {
             tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
             pAssembly = fromModule->GetAssemblyIfLoaded(tkAssemblyRef);
         }
         else
         {
-            index -= fromModule->GetAssemblyRefMax();
+            index -= assemblyRefMax;
             tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
-            IMDInternalImport *  pMDImportOverride = fromModule->GetNativeAssemblyImport(FALSE);
+            IMDInternalImport *  pMDImportOverride = (compositeImage != NULL
+                ? compositeImage->GetManifestMetadata() : fromModule->GetNativeAssemblyImport(FALSE));
             if (pMDImportOverride != NULL)
             {
                 CHAR   szFullName[MAX_CLASS_NAME + 1];

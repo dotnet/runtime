@@ -2682,6 +2682,7 @@ AppDomain::AppDomain()
 
 #ifdef _DEBUG
     m_Assemblies.Debug_SetAppDomain(this);
+    m_CompositeImages.Debug_SetAppDomain(this);
 #endif // _DEBUG
 
 #ifdef FEATURE_COMINTEROP
@@ -3513,6 +3514,62 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
 }
 
 #endif // !DACCESS_COMPILE
+
+DomainCompositeImage *AppDomain::LoadCompositeImage(Module *componentModule, LPCUTF8 compositeImageName, int compositeImageNameLength)
+{
+    CONTRACTL
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+    LoadLockHolder lock(this);
+    PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
+
+    {
+        CrstHolder ch(GetAssemblyListLock());
+        int compositeImageCount = m_CompositeImages.GetCount_Unlocked();
+        for (int compositeImageIndex = 0; compositeImageIndex < compositeImageCount; compositeImageIndex++)
+        {
+            DomainCompositeImage *compositeImage = m_CompositeImages.Get_UnlockedNoReference(compositeImageIndex);
+            if (compositeImage->HasSimpleName(compositeImageName, compositeImageNameLength))
+            {
+                return (compositeImage->GetLoaderAllocator() == moduleLoaderAllocator ? compositeImage : NULL);
+            }
+        }
+    }
+    
+    SString path = componentModule->GetPath();
+    SString::Iterator lastPathSeparatorIter = path.End();
+    size_t pathDirLength = 0;
+    if (PEAssembly::FindLastPathSeparator(path, lastPathSeparatorIter))
+    {
+        pathDirLength = (lastPathSeparatorIter - path.Begin()) + 1;
+    }
+
+    SString compositeImageFileName(SString::Utf8, compositeImageName, compositeImageNameLength);
+    SString fullPath;
+    fullPath.Set(path, path.Begin(), (COUNT_T)pathDirLength);
+    fullPath += compositeImageFileName;
+
+    PTR_PEImage peImage = PEImage::OpenImage(fullPath);
+    PTR_PEFile peFile = PEFile::Open(peImage);
+
+    DomainCompositeImage *compositeImage = DomainCompositeImage::Open(this, peFile, compositeImageName, compositeImageNameLength, moduleLoaderAllocator);
+    if (compositeImage != NULL)
+    {
+        CrstHolder ch(GetAssemblyListLock());
+        m_CompositeImages.Append_Unlocked(compositeImage);
+        return compositeImage;
+    }
+#endif
+    
+    return NULL;
+}
 
 void AppDomain::LoadDomainFile(DomainFile *pFile,
                                FileLoadLevel targetLevel)

@@ -1850,6 +1850,152 @@ protected:
     // Conceptually a list of code:Assembly structures, protected by lock code:GetAssemblyListLock
     DomainAssemblyList m_Assemblies;
 
+    // Multi-thread safe access to the list of composite R2R images
+    class DomainCompositeImageList
+    {
+    private:
+        ArrayList m_array;
+#ifdef _DEBUG
+        AppDomain* dbg_m_pAppDomain;
+    public:
+        void Debug_SetAppDomain(AppDomain * pAppDomain)
+        {
+            dbg_m_pAppDomain = pAppDomain;
+        }
+#endif //_DEBUG
+    public:
+        bool IsEmpty(AppDomain* pAppDomain)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain == pAppDomain);
+
+            CrstHolder ch(pAppDomain->GetAssemblyListLock());
+            return (m_array.GetCount() == 0);
+        }
+
+        void Clear(AppDomain* pAppDomain)
+        {
+            CONTRACTL {
+                NOTHROW;
+                WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain == pAppDomain);
+
+            CrstHolder ch(pAppDomain->GetAssemblyListLock());
+            m_array.Clear();
+        }
+
+        DWORD GetCount(AppDomain* pAppDomain)
+        {
+            CONTRACTL {
+                NOTHROW;
+                WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain == pAppDomain);
+
+            CrstHolder ch(pAppDomain->GetAssemblyListLock());
+            return GetCount_Unlocked();
+        }
+
+        DWORD GetCount_Unlocked()
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            } CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
+#endif
+            // code:Append_Unlock guarantees that we do not have more than MAXDWORD items
+            return m_array.GetCount();
+        }
+
+        // Doesn't lock the assembly list (caller has to hold the lock already).
+        DomainCompositeImage* Get_UnlockedNoReference(DWORD index)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+                SUPPORTS_DAC;
+            } CONTRACTL_END;
+
+#ifndef DACCESS_COMPILE
+            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
+#endif
+            return dac_cast<PTR_DomainCompositeImage>(m_array.Get(index));
+        }
+
+#ifndef DACCESS_COMPILE
+        void Set(AppDomain* pAppDomain, DWORD index, DomainCompositeImage* pCompositeImage)
+        {
+            CONTRACTL {
+                NOTHROW;
+                WRAPPER(GC_TRIGGERS); // Triggers only in MODE_COOPERATIVE (by taking the lock)
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain == pAppDomain);
+
+            CrstHolder ch(pAppDomain->GetAssemblyListLock());
+            return Set_Unlocked(index, pCompositeImage);
+        }
+
+        void Set_Unlocked(DWORD index, DomainCompositeImage* pCompositeImage)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
+            m_array.Set(index, pCompositeImage);
+        }
+
+        HRESULT Append_Unlocked(DomainCompositeImage* pCompositeImage)
+        {
+            CONTRACTL {
+                NOTHROW;
+                GC_NOTRIGGER;
+                MODE_ANY;
+            } CONTRACTL_END;
+
+            _ASSERTE(dbg_m_pAppDomain->GetAssemblyListLock()->OwnedByCurrentThread());
+            return m_array.Append(pCompositeImage);
+        }
+
+#else //DACCESS_COMPILE
+        void
+        EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
+        {
+            SUPPORTS_DAC;
+
+            m_array.EnumMemoryRegions(flags);
+        }
+#endif // DACCESS_COMPILE
+
+        // Should be used only by code:AssemblyIterator::Create
+        ArrayList::Iterator GetArrayListIterator()
+        {
+            return m_array.Iterate();
+        }
+    };  // class DomainAssemblyList
+
+    // Conceptually a list of DomainCompositeImage structures, protected by lock AppDomain::GetAssemblyListLock
+    DomainCompositeImageList m_CompositeImages;
+
 public:
     // Note that this lock switches thread into GC_NOTRIGGER region as GC can take it too.
     CrstExplicitInit * GetAssemblyListLock()
@@ -2001,6 +2147,8 @@ public:
 
 
     CHECK CheckValidModule(Module *pModule);
+
+    DomainCompositeImage *LoadCompositeImage(Module *componentModule, const LPCUTF8 compositeImageName, int compositeImageNameLength);
 
     // private:
     void LoadSystemAssemblies();

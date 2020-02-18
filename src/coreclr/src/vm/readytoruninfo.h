@@ -20,15 +20,39 @@ typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
 class PrepareCodeConfig;
 
+typedef DPTR(class ReadyToRunCoreInfo) PTR_ReadyToRunCoreInfo;
+class ReadyToRunCoreInfo
+{
+private:
+    PTR_PEImageLayout               m_pLayout;
+    PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
+    
+public:
+    ReadyToRunCoreInfo();
+    ReadyToRunCoreInfo(PEImageLayout * pLayout, READYTORUN_CORE_HEADER * pCoreHeader);
+
+    PEImageLayout * GetLayout() const { return m_pLayout; }
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
+
+    PTR_PEImageLayout GetImage() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLayout;
+    }
+};
+
 typedef DPTR(class ReadyToRunInfo) PTR_ReadyToRunInfo;
 class ReadyToRunInfo
 {
     friend class ReadyToRunJitManager;
 
     PTR_Module                      m_pModule;
-
-    PTR_PEImageLayout               m_pLayout;
     PTR_READYTORUN_HEADER           m_pHeader;
+    bool                            m_isComponentAssembly;
+    DomainCompositeImage*           m_compositeImage;
+
+    ReadyToRunCoreInfo              m_component;
+    const ReadyToRunCoreInfo*       m_composite;
 
     PTR_RUNTIME_FUNCTION            m_pRuntimeFunctions;
     DWORD                           m_nRuntimeFunctions;
@@ -40,6 +64,7 @@ class ReadyToRunInfo
     NativeFormat::NativeArray       m_methodDefEntryPoints;
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
+
     NativeFormat::NativeHashtable   m_pMetaDataHashtable;
     NativeFormat::NativeCuckooFilter m_attributesPresence;
 
@@ -48,12 +73,17 @@ class ReadyToRunInfo
 
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
 
-    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, AllocMemTracker *pamTracker);
-
 public:
+    ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYTORUN_HEADER * pHeader, DomainCompositeImage * compositeImage, AllocMemTracker *pamTracker);
+
     static BOOL IsReadyToRunEnabled();
 
     static PTR_ReadyToRunInfo Initialize(Module * pModule, AllocMemTracker *pamTracker);
+
+    bool IsComponentAssembly() const { return m_isComponentAssembly; }
+    const ReadyToRunCoreInfo * GetComponent() const { return &m_component; }
+    const ReadyToRunCoreInfo * GetComposite() const { return m_composite; }
+    DomainCompositeImage * GetCompositeImage() const { return m_compositeImage; }
 
     PCODE GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups);
 
@@ -65,28 +95,20 @@ public:
     BOOL SkipTypeValidation()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
     }
 
     BOOL IsPartial()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_PARTIAL;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
     BOOL HasNonShareablePInvokeStubs()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pHeader->Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_NONSHARED_PINVOKE_STUBS;
     }
-
-    PTR_PEImageLayout GetImage()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLayout;
-    }
-
-    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type);
 
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
     {

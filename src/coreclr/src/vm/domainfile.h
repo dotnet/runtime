@@ -80,7 +80,11 @@ class DomainFile
     DomainFile() {LIMITED_METHOD_CONTRACT;};
 #endif
 
-    virtual LoaderAllocator *GetLoaderAllocator();
+    LoaderAllocator *GetLoaderAllocator()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pLoaderAllocator;
+    }
 
     PTR_AppDomain GetAppDomain()
     {
@@ -289,7 +293,7 @@ class DomainFile
     friend class Module;
     friend class FileLoadLock;
 
-    DomainFile(AppDomain *pDomain, PEFile *pFile);
+    DomainFile(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *loaderAllocator);
 
     BOOL DoIncrementalLoad(FileLoadLevel targetLevel);
     void ClearLoading() { LIMITED_METHOD_CONTRACT; m_loading = FALSE; }
@@ -344,6 +348,7 @@ class DomainFile
     PTR_Module                  m_pModule;
     FileLoadLevel               m_level;
     LOADERHANDLE                m_hExposedModuleObject;
+    PTR_LoaderAllocator         m_pLoaderAllocator;
 
     class ExInfo
     {
@@ -486,12 +491,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return PTR_PEAssembly(m_pFile);
-    }
-
-    LoaderAllocator *GetLoaderAllocator()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pLoaderAllocator;
     }
 
     // Finds only loaded hmods
@@ -733,7 +732,6 @@ private:
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fCollectible;
     Volatile<bool>                          m_fHostAssemblyPublished;
-    PTR_LoaderAllocator                     m_pLoaderAllocator;
     DomainAssembly*                         m_NextDomainAssemblyInSameALC;
 
   public:
@@ -755,7 +753,95 @@ private:
 
 typedef DomainAssembly::ModuleIterator DomainModuleIterator;
 
-// --------------------------------------------------------------------------------
-// DomainModule is a subclass of DomainFile which specifically represents a module.
-// --------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------
+// DomainCompositeImage is a subclass of DomainFile which specifically represents a composite R2R module.
+// ------------------------------------------------------------------------------------------------------
+
+struct AssemblyNameIndex
+{
+    SString Name;
+    int32_t Index;
+    
+    AssemblyNameIndex() : Index(-1) {}
+    AssemblyNameIndex(const SString& name, int32_t index);
+};
+
+class AssemblyNameIndexHashTraits : public NoRemoveSHashTraits< PtrSHashWithCleanupTraits<AssemblyNameIndex, const SString&> >
+{
+public:
+    static AssemblyNameIndex *Null() { return NULL; }
+    static bool IsNull(const AssemblyNameIndex *e) { return e == NULL; }
+
+    static const SString& GetKey(const AssemblyNameIndex *assemblyNameIndex) { return assemblyNameIndex->Name; }
+    static BOOL Equals(const SString& a, const SString& b) { return a.Equals(b); }
+    static count_t Hash(const SString& a) { return a.Hash(); }
+};
+
+class DomainCompositeImage : public DomainFile
+{
+public:
+private:
+    LPCUTF8 m_utf8SimpleName;
+    uint32_t m_utf8SimpleNameLength;
+    
+    NewHolder<ReadyToRunInfo> m_readyToRunInfo;
+    IMDInternalImport *m_manifestMetadata;
+    
+    IMAGE_DATA_DIRECTORY *m_componentAssemblies;
+    uint32_t m_componentAssemblyCount;
+    SHash<AssemblyNameIndexHashTraits> m_assemblySimpleNameToIndexMap;
+
+private:
+    DomainCompositeImage(
+        AppDomain *pDomain,
+        PEFile *pFile,
+        READYTORUN_HEADER *header,
+        LPCUTF8 compositeImageName,
+        uint8_t compositeImageNameLength,
+        LoaderAllocator *loaderAllocator,
+        AllocMemTracker& amTracker);
+
+public:
+    ~DomainCompositeImage();
+
+public:
+    static DomainCompositeImage *Open(
+        AppDomain *pDomain,
+        PEFile *pFile,
+        LPCUTF8 compositeImageName,
+        uint8_t compositeImageNameLength,
+        LoaderAllocator *loaderAllocator);
+
+    bool HasSimpleName(LPCUTF8 utf8SimpleName, uint32_t utf8Length) const;
+
+    uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
+    const ReadyToRunInfo *GetReadyToRunInfo() const { return m_readyToRunInfo; }
+    IMDInternalImport *GetManifestMetadata() const { return m_manifestMetadata; }
+
+    Assembly *LoadComponentAssembly(uint32_t rowid);
+    
+    PTR_READYTORUN_CORE_HEADER GetComponentAssemblyHeader(const SString& assemblySimpleName);
+
+    BOOL IsAssembly()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return FALSE;
+    }
+
+#ifdef FEATURE_PREJIT
+#ifndef DACCESS_COMPILE
+    void FindNativeImage();
+#endif
+#endif // FEATURE_PREJIT
+
+#ifndef DACCESS_COMPILE
+    void Begin();
+    void Allocate();
+    void LoadSharers();
+    void DeliverSyncEvents();
+    void DeliverAsyncEvents();
+#endif
+};
+
+
 #endif  // _DOMAINFILE_H_

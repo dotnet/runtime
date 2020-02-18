@@ -445,7 +445,7 @@ void Module::InitializeForProfiling()
         if (m_methodProfileList != nullptr)
         {
             ReadyToRunInfo * pInfo = GetReadyToRunInfo();
-            PEImageLayout *  pImage = pInfo->GetImage();
+            PEImageLayout *  pImage = pInfo->GetComposite()->GetImage();
 
             // Enable profiling if the ZapBBInstr value says to
             m_nativeImageProfiling = GetAssembly()->IsInstrumented();
@@ -497,6 +497,19 @@ BOOL Module::IsPersistedObject(void *address)
 }
 #endif // FEATURE_PREJIT
 
+uint32_t Module::GetNativeMetadataAssemblyCount()
+{
+    DomainCompositeImage *compositeImage = GetCompositeImage();
+    if (compositeImage != NULL)
+    {
+        return compositeImage->GetComponentAssemblyCount();
+    }
+    else
+    {
+        return GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef);
+    }
+}
+
 void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly)
 {
     CONTRACTL
@@ -509,8 +522,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
 
     if (m_NativeMetadataAssemblyRefMap == NULL)
     {
-        IMDInternalImport* pImport = GetNativeAssemblyImport();
-        DWORD dwMaxRid = pImport->GetCountWithTokenKind(mdtAssemblyRef);
+        uint32_t dwMaxRid = GetNativeMetadataAssemblyCount();
         _ASSERTE(dwMaxRid > 0);
 
         S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(dwMaxRid);
@@ -525,7 +537,7 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
     }
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
-    _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
+    _ASSERTE(rid <= GetNativeMetadataAssemblyCount());
     m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
 }
 
@@ -4081,7 +4093,7 @@ PEImageLayout * Module::GetNativeOrReadyToRunImage()
 
 #ifdef FEATURE_READYTORUN
     if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetImage();
+        return GetReadyToRunInfo()->GetComposite()->GetImage();
 #endif
 
     return GetNativeImage();

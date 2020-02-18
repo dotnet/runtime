@@ -41,6 +41,7 @@
 #include "corcompile.h"
 
 #include "readytorun.h"
+typedef DPTR(struct READYTORUN_CORE_HEADER) PTR_READYTORUN_CORE_HEADER;
 typedef DPTR(struct READYTORUN_HEADER) PTR_READYTORUN_HEADER;
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -338,6 +339,7 @@ class PEDecoder
     TADDR GetVirtualSectionsTable(COUNT_T *pSize = NULL) const;
 #endif // FEATURE_PREJIT
 
+    BOOL IsComponentAssembly() const;
     BOOL HasReadyToRunHeader() const;
     READYTORUN_HEADER *GetReadyToRunHeader() const;
 
@@ -402,6 +404,7 @@ class PEDecoder
     IMAGE_COR20_HEADER *FindCorHeader() const;
     CORCOMPILE_HEADER *FindNativeHeader() const;
     READYTORUN_HEADER *FindReadyToRunHeader() const;
+    READYTORUN_HEADER *FindNativeReadyToRunHeader() const;
 
     // Flat mapping utilities
     RVA InternalAddressToRva(SIZE_T address) const;

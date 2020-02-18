@@ -2319,19 +2319,67 @@ READYTORUN_HEADER * PEDecoder::FindReadyToRunHeader() const
     }
     CONTRACTL_END;
 
-    IMAGE_DATA_DIRECTORY *pDir = &GetCorHeader()->ManagedNativeHeader;
-
-    if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
+    if (HasCorHeader())
     {
-        PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
-        if (pHeader->Signature == READYTORUN_SIGNATURE)
+        IMAGE_DATA_DIRECTORY* pDir = &GetCorHeader()->ManagedNativeHeader;
+
+        if (VAL32(pDir->Size) >= sizeof(READYTORUN_HEADER) && CheckDirectory(pDir))
         {
-            const_cast<PEDecoder *>(this)->m_pReadyToRunHeader = pHeader;
-            return pHeader;
+            PTR_READYTORUN_HEADER pHeader = PTR_READYTORUN_HEADER((TADDR)GetDirectoryData(pDir));
+            if (pHeader->Signature == READYTORUN_SIGNATURE)
+            {
+                const_cast<PEDecoder*>(this)->m_pReadyToRunHeader = pHeader;
+                return pHeader;
+            }
         }
+    }
+    
+    READYTORUN_HEADER *nativeReadyToRunHeader = FindNativeReadyToRunHeader();
+    if (nativeReadyToRunHeader != NULL)
+    {
+        return nativeReadyToRunHeader;
     }
 
     const_cast<PEDecoder *>(this)->m_flags |= FLAG_HAS_NO_READYTORUN_HEADER;
+    return NULL;
+}
+
+READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
+{
+#ifndef DACCESS_COMPILE
+    // Get the export directory entry
+    PIMAGE_DATA_DIRECTORY exportDirectoryEntry = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXPORT);
+    if (exportDirectoryEntry->VirtualAddress == 0 || exportDirectoryEntry->Size == 0)
+    {
+        return NULL;
+    }
+    
+    const byte *imageBase = (const byte *)GetBase();
+    const byte *exportDirectory = &imageBase[exportDirectoryEntry->VirtualAddress];
+    
+    // TODO: endianness?
+    // +0x18: number of name pointers
+    int namePointerCount = *(const int32_t *)&exportDirectory[0x18];
+    // +0x1C: export address table RVA
+    int addressTableRVA = *(const int32_t *)&exportDirectory[0x1C];
+    // +0x20: name pointer RVA
+    int namePointersRVA = *(const int32_t *)&exportDirectory[0x20];
+
+    for (int nameIndex = 0; nameIndex < namePointerCount; nameIndex++)
+    {
+        int namePointerRVA = *(int32_t *)&imageBase[namePointersRVA + sizeof(int32_t) * nameIndex];
+        if (namePointerRVA != 0)
+        {
+            const char *namePointer = (const char *)&imageBase[namePointerRVA];
+            if (!strcmp(namePointer, "RTR_HEADER"))
+            {
+                int headerRVA = *(int32_t *)&imageBase[addressTableRVA + sizeof(int32_t) * nameIndex];
+                return (READYTORUN_HEADER *)&imageBase[headerRVA];
+            }
+        }
+    }
+#endif
+
     return NULL;
 }
 
@@ -2857,7 +2905,7 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
         READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
 
         PTR_READYTORUN_SECTION pSections = dac_cast<PTR_READYTORUN_SECTION>(dac_cast<TADDR>(pHeader) + sizeof(READYTORUN_HEADER));
-        for (DWORD i = 0; i < pHeader->NumberOfSections; i++)
+        for (DWORD i = 0; i < pHeader->CoreHeader.NumberOfSections; i++)
         {
             // Verify that section types are sorted
             _ASSERTE(i == 0 || (pSections[i - 1].Type < pSections[i].Type));
