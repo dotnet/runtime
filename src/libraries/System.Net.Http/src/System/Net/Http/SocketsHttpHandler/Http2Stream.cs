@@ -1027,7 +1027,7 @@ namespace System.Net.Http
                     cancellationToken = customCancellationSource.Token;
                 }
 
-                using (customCancellationSource)
+                try
                 {
                     while (buffer.Length > 0)
                     {
@@ -1038,6 +1038,10 @@ namespace System.Net.Http
 
                         await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
                     }
+                }
+                finally
+                {
+                    customCancellationSource?.Dispose();
                 }
             }
 
