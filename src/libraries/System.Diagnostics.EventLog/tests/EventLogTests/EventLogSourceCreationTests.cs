@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Microsoft.DotNet.XunitExtensions;
 
 namespace System.Diagnostics.Tests
 {

@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Xunit;
+using Microsoft.DotNet.XunitExtensions;
 
 namespace System.Diagnostics.Tests
 {

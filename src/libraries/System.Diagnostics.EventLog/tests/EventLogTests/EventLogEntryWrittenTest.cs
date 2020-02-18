@@ -4,6 +4,7 @@
 
 using System.Threading;
 using Xunit;
+using Microsoft.DotNet.XunitExtensions;
 
 namespace System.Diagnostics.Tests
 {
