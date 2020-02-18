@@ -12,15 +12,6 @@ using Internal.Runtime.CompilerServices;
 
 #pragma warning disable 0809  //warning CS0809: Obsolete member 'Utf8Span.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
 
-#pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#if TARGET_64BIT
-using nint = System.Int64;
-using nuint = System.UInt64;
-#else
-using nint = System.Int32;
-using nuint = System.UInt32;
-#endif
-
 namespace System.Text
 {
     [StructLayout(LayoutKind.Auto)]
