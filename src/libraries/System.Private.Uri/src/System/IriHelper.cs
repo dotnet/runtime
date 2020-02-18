@@ -86,7 +86,7 @@ namespace System
         {
             if ((UriComponents.AbsoluteUri & component) == 0)
             {
-                return (component == 0) ? UriHelper.IsGenDelim(ch) : false;
+                return component == 0 && UriHelper.IsGenDelim(ch);
             }
 
             return UriHelper.RFC3986ReservedMarks.Contains(ch);
