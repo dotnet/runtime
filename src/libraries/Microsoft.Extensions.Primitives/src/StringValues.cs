@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Primitives
         /// <summary>
         /// Initializes a new instance of the <see cref="StringValues"/> structure using the specified string.
         /// </summary>
-        /// <param name="value">A string value.</param>
+        /// <param name="value">A string value or <c>null</c>.</param>
         public StringValues(string value)
         {
             _values = value;
