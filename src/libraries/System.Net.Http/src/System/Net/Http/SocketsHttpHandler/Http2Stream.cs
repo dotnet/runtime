@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -958,6 +959,42 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
+            public async Task CopyToAsync(HttpResponseMessage responseMessage, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    // Generallly the same logic as in ReadDataAsync, but wrapped in a loop where every read segment is written to the destination.
+                    while (true)
+                    {
+                        (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
+                        if (wait)
+                        {
+                            Debug.Assert(bytesRead == 0);
+                            await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                            (wait, bytesRead) = TryReadFromBuffer(buffer);
+                            Debug.Assert(!wait);
+                        }
+
+                        if (bytesRead != 0)
+                        {
+                            ExtendWindow(bytesRead);
+                            await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
+                            CopyTrailersToResponseMessage(responseMessage);
+                            return;
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
             private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
             {
                 if (_trailers != null && _trailers.Count > 0)
@@ -1170,6 +1207,16 @@ namespace System.Net.Http
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
+                }
+
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    Http2Stream http2Stream = _http2Stream;
+                    return
+                        http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
+                        cancellationToken.IsCancellationRequested ? Task.FromCanceled<int>(cancellationToken) :
+                        http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);

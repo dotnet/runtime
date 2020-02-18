@@ -973,7 +973,9 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
  * format must be a string literal, in order to be concatenated.
  * If this is too restrictive, g_error remains.
  */
-#if defined(_MSC_VER) && (_MSC_VER < 1910)
+#ifdef DISABLE_ASSERT_MESSAGES
+#define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (mono_assertion_message_disabled (__FILE__, __LINE__), 0))
+#elif defined(_MSC_VER) && (_MSC_VER < 1910)
 #define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, __VA_ARGS__), 0))
 #else
 #define g_assertf(x, format, ...) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #x, __func__, ##__VA_ARGS__), 0))

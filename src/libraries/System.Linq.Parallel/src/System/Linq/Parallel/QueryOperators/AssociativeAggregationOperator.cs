@@ -314,7 +314,7 @@ namespace System.Linq.Parallel
                 while (_source.MoveNext(ref input!, ref keyUnused))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        CancellationState.ThrowIfCanceled(_cancellationToken);
+                        _cancellationToken.ThrowIfCancellationRequested();;
                     hadNext = true;
                     accumulator = _reduceOperator._intermediateReduce(accumulator, input);
                 }

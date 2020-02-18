@@ -257,6 +257,6 @@ Other References
 ----------------
 
 [MarshalAs Attribute](http://msdn.microsoft.com/en-us/library/system.runtime.interopservices.marshalasattribute.aspx)  
-[GetLastError and managed code](http://blogs.msdn.com/b/adam_nathan/archive/2003/04/25/56643.aspx)  
+[GetLastError and managed code](https://docs.microsoft.com/en-us/archive/blogs/adam_nathan/getlasterror-and-managed-code)  
 [Copying and Pinning](https://msdn.microsoft.com/en-us/library/23acw07k.aspx)  
 [Marshalling between Managed and Unmanaged Code (MSDN Magazine January 2008)](http://download.microsoft.com/download/3/A/7/3A7FA450-1F33-41F7-9E6D-3AA95B5A6AEA/MSDNMagazineJanuary2008en-us.chm) *This is a .chm download*  

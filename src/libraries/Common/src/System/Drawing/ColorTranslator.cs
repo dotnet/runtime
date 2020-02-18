@@ -260,7 +260,7 @@ namespace System.Drawing
                     InitializeHtmlSysColorTable();
                 }
 
-                s_htmlSysColorTable!.TryGetValue(htmlColor.ToLower(CultureInfo.InvariantCulture), out c);
+                s_htmlSysColorTable!.TryGetValue(htmlColor.ToLowerInvariant(), out c);
             }
 
             // resort to type converter which will handle named colors

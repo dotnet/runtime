@@ -4615,6 +4615,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
+#ifdef TARGET_XARCH
+    // For x64/x86, align Tier1 methods to 32 byte boundaries if
+    // they are larger than 16 bytes and contain a loop.
+    //
+    if (emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1) && (emitTotalHotCodeSize > 16) && emitComp->fgHasLoops)
+    {
+        allocMemFlag = CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN;
+    }
+#endif
+
     if (emitConsDsc.align16)
     {
         allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlag | CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN);

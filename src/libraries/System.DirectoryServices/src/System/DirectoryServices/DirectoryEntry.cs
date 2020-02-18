@@ -999,7 +999,7 @@ namespace System.DirectoryServices
                 {
                     if (propertyNames[i] != null)
                     {
-                        string name = propertyNames[i].ToLower(CultureInfo.InvariantCulture);
+                        string name = propertyNames[i].ToLowerInvariant();
                         _propertyCollection.valueTable.Remove(name);
 
                         // also need to consider the range retrieval case

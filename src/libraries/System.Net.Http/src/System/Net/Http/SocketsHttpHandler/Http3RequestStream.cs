@@ -21,12 +21,13 @@ namespace System.Net.Http
     {
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
-        private readonly long _streamId;
+        private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
         private QuicStream _stream;
         private ArrayBuffer _sendBuffer;
         private readonly ReadOnlyMemory<byte>[] _gatheredSendBuffer = new ReadOnlyMemory<byte>[2];
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool> _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
+        private bool _disposed;
 
         private CancellationTokenSource _goawayCancellationSource;
         private CancellationToken _goawayCancellationToken;
@@ -52,12 +53,17 @@ namespace System.Net.Http
         // Keep track of how much is remaining in that frame.
         private long _requestContentLengthRemaining = 0;
 
+        public long StreamId
+        {
+            get => Volatile.Read(ref _streamId);
+            set => Volatile.Write(ref _streamId, value);
+        }
+
         public Http3RequestStream(HttpRequestMessage request, Http3Connection connection, QuicStream stream)
         {
             _request = request;
             _connection = connection;
             _stream = stream;
-            _streamId = stream.StreamId;
             _sendBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
             _recvBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
 
@@ -70,30 +76,29 @@ namespace System.Net.Http
 
         public void Dispose()
         {
-            if (_stream != null)
+            if (!_disposed)
             {
+                _disposed = true;
                 _stream.Dispose();
-                _stream = null;
-
                 DisposeSyncHelper();
             }
         }
 
         public async ValueTask DisposeAsync()
         {
-            if (_stream != null)
+            if (!_disposed)
             {
+                _disposed = true;
                 await _stream.DisposeAsync().ConfigureAwait(false);
-                _stream = null;
-
                 DisposeSyncHelper();
             }
         }
 
         private void DisposeSyncHelper()
         {
-            _connection.RemoveStream(_streamId);
+            _connection.RemoveStream(_stream);
             _connection = null;
+            _stream = null;
 
             _sendBuffer.Dispose();
             _recvBuffer.Dispose();
@@ -529,7 +534,10 @@ namespace System.Net.Http
             if (request.HasHeaders)
             {
                 // H3 does not support Transfer-Encoding: chunked.
-                request.Headers.TransferEncodingChunked = false;
+                if (request.HasHeaders && request.Headers.TransferEncodingChunked == true)
+                {
+                    request.Headers.TransferEncodingChunked = false;
+                }
 
                 BufferHeaderCollection(request.Headers);
             }
@@ -546,7 +554,10 @@ namespace System.Net.Http
             if (request.Content == null || request.Content.Headers.ContentLength == 0)
             {
                 // Expect 100 Continue requires content.
-                request.Headers.ExpectContinue = null;
+                if (request.HasHeaders && request.Headers.ExpectContinue != null)
+                {
+                    request.Headers.ExpectContinue = null;
+                }
 
                 if (normalizedMethod.MustHaveRequestBody)
                 {
@@ -780,13 +791,14 @@ namespace System.Net.Http
                     }
                     else
                     {
+                        if (NetEventSource.IsEnabled) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
                         throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
                     }
                 }
 
                 int processLength = (int)Math.Min(headersLength, _recvBuffer.ActiveLength);
 
-                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(processLength), this);
+                _headerDecoder.Decode(_recvBuffer.ActiveSpan.Slice(0, processLength), this);
                 _recvBuffer.Discard(processLength);
                 headersLength -= processLength;
             }
@@ -1129,7 +1141,7 @@ namespace System.Net.Http
         }
 
         public void Trace(string message, [CallerMemberName] string memberName = null) =>
-            _connection.Trace(_stream.StreamId, message, memberName);
+            _connection.Trace(StreamId, message, memberName);
 
         // TODO: it may be possible for Http3RequestStream to implement Stream directly and avoid this allocation.
         private sealed class Http3ReadStream : HttpBaseStream
@@ -1164,7 +1176,7 @@ namespace System.Net.Http
                     {
                         // We shouldn't be using a managed instance here, but don't have much choice -- we
                         // need to remove the stream from the connection's GOAWAY collection.
-                        _stream._connection.RemoveStream(_stream._streamId);
+                        _stream._connection.RemoveStream(_stream._stream);
                         _stream._connection = null;
                     }
 
@@ -1209,7 +1221,7 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
         }
 
@@ -1235,12 +1247,12 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                throw new NotImplementedException();
+                throw new NotSupportedException();
             }
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)

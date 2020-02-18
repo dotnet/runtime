@@ -11,8 +11,6 @@ namespace System.Security.Cryptography
 {
     internal sealed class RsaPaddingProcessor
     {
-        private static readonly byte[] s_eightZeros = new byte[8];
-
         private static readonly ConcurrentDictionary<HashAlgorithmName, RsaPaddingProcessor> s_lookup =
             new ConcurrentDictionary<HashAlgorithmName, RsaPaddingProcessor>();
 
@@ -29,6 +27,8 @@ namespace System.Security.Cryptography
         {
             return (int)(((uint)keySizeInBits + 7) / 8);
         }
+
+        private static ReadOnlySpan<byte> EightZeros => new byte[8]; // rely on C# compiler optimization to eliminate allocation
 
         internal int HashLength => _hLen;
 
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography
                 // 5. Let M' = an octet string of 8 zeros concat mHash concat salt
                 // 6. Let H = Hash(M')
 
-                hasher.AppendData(s_eightZeros);
+                hasher.AppendData(EightZeros);
                 hasher.AppendData(mHash);
                 hasher.AppendData(salt);
 
@@ -435,7 +435,7 @@ namespace System.Security.Cryptography
                     ReadOnlySpan<byte> salt = dbMask.Slice(dbMask.Length - sLen);
 
                     // 12/13. Let H' = Hash(eight zeros || mHash || salt)
-                    hasher.AppendData(s_eightZeros);
+                    hasher.AppendData(EightZeros);
                     hasher.AppendData(mHash);
                     hasher.AppendData(salt);
 

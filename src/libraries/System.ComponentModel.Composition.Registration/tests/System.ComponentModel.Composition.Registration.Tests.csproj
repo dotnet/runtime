@@ -3,6 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="InternalCalls.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderTests.cs" />
     <Compile Include="System\ComponentModel\Composition\Registration\ExportBuilderUnitTests.cs" />

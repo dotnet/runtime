@@ -3983,10 +3983,10 @@ static void CreateNDirectStubWorker(StubState*         pss,
         // For functions with value type class, managed and unmanaged calling convention differ
         fMarshalReturnValueFirst = HasRetBuffArgUnmanagedFixup(&msig);
 #elif defined(TARGET_ARM)
-        fMarshalReturnValueFirst = HasRetBuffArg(&msig);
+        fMarshalReturnValueFirst = (isInstanceMethod && isReturnTypeValueType) && HasRetBuffArg(&msig);
 #else
         // On Windows-X86, the native signature might need a return buffer when the managed doesn't (specifically when the native signature is a member function).
-        fMarshalReturnValueFirst = HasRetBuffArg(&msig) || (isInstanceMethod && isReturnTypeValueType);
+        fMarshalReturnValueFirst = (!SF_IsReverseStub(dwStubFlags) && HasRetBuffArg(&msig)) || (isInstanceMethod && isReturnTypeValueType);
 #endif // UNIX_X86_ABI
 #elif defined(TARGET_AMD64) || defined (TARGET_ARM64)
         fMarshalReturnValueFirst = isInstanceMethod && isReturnTypeValueType;
