@@ -185,7 +185,7 @@ namespace System.IO.Compression.Tests
                     {
                         if (b != '0')
                         {
-                            Assert.True(false, "The file should be all 0s");
+                            Assert.True(false, $"The file should be all '0's, but found '{(char)b}'");
                         }
                     }
                 }
