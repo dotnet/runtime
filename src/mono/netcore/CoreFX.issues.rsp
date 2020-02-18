@@ -1,18 +1,4 @@
 ####################################################################
-##  System.Utf8String.Experimental.Tests
-####################################################################
-
-# Experimental feature 
-# Will be removed and we can skip for now.
--nomethod System.Tests.MemoryTests.*
--nomethod System.Tests.Utf8StringTests.*
--nomethod System.Text.Tests.Utf8SpanTests.*
--nomethod System.Tests.Utf8ExtensionsTests.*
--nomethod System.Tests.Char8Tests.*
--nomethod System.Tests.ReflectionTests.*
--nomethod System.Net.Http.Tests.Utf8StringContentTests.*
-
-####################################################################
 ##  System.Text.RegularExpressions.Tests
 ####################################################################
 
