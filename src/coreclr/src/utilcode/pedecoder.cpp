@@ -2354,8 +2354,8 @@ READYTORUN_HEADER *PEDecoder::FindNativeReadyToRunHeader() const
         return NULL;
     }
     
-    const byte *imageBase = (const byte *)GetBase();
-    const byte *exportDirectory = &imageBase[exportDirectoryEntry->VirtualAddress];
+    const uint8_t *imageBase = (const uint8_t *)GetBase();
+    const uint8_t *exportDirectory = &imageBase[exportDirectoryEntry->VirtualAddress];
     
     // TODO: endianness?
     // +0x18: number of name pointers
