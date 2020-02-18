@@ -8534,7 +8534,7 @@ void Interpreter::Unbox()
                 CorElementType type1 = pMT1->GetInternalCorElementType();
                 CorElementType type2 = pMT2->GetInternalCorElementType();
 
-                // we allow enums and their primtive type to be interchangable
+                // we allow enums and their primitive type to be interchangable
                 if (type1 == type2)
                 {
                     if ((pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -8695,17 +8695,11 @@ void Interpreter::UnboxAny()
                 }
                 else
                 {
-                    CorElementType type1 = pMT1->GetInternalCorElementType();
-                    CorElementType type2 = pMT2->GetInternalCorElementType();
-
-                    // we allow enums and their primtive type to be interchangable
-                    if (type1 == type2)
-                    {
-                        if ((pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+                    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+                            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
                             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
-                        {
-                            res = OpStackGet<Object*>(tos)->UnBox();
-                        }
+                    {
+                        res = OpStackGet<Object*>(tos)->UnBox();
                     }
                 }
 

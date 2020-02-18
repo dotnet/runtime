@@ -24,6 +24,7 @@ namespace System.ComponentModel.Composition
     public class AdvancedValueComposition
     {
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void RepeatedContainerUse()
         {
             var container = ContainerFactory.Create();
@@ -41,6 +42,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void FunctionsFieldsAndProperties()
         {
             Consumer c;
@@ -55,6 +57,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void FunctionsFieldsAndProperties2()
         {
             Consumer c;
@@ -252,6 +255,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportIntoDerivationOfExportException()
         {
             var container = ContainerFactory.Create();
@@ -269,6 +273,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportIntoDerivationOfExportsException()
         {
             var container = ContainerFactory.Create();

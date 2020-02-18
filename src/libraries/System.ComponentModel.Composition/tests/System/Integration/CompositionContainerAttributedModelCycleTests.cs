@@ -30,6 +30,7 @@ namespace Tests.Integration
         //
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APrerequisiteDependsOnBPrerequisite_ShouldThrowComposition()
         {
             AssertCycle(typeof(APrerequisiteDependsOnBPrerequisite),
@@ -37,6 +38,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APrerequisiteDependsOnBPost_ShouldThrowComposition()
         {
             AssertCycle(typeof(APrerequisiteDependsOnBPost),
@@ -52,6 +54,7 @@ namespace Tests.Integration
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void APostDependsOnBPrerequisite_ShouldThrowComposition()
         {
             AssertCycle(typeof(APostDependsOnBPrerequisite),

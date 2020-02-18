@@ -839,7 +839,7 @@ namespace System.Xml.Serialization
                                 {
                                     if (shouldAppendWhitespace)
                                     {
-                                        sb.Append(" ");
+                                        sb.Append(' ');
                                     }
 
                                     sb.Append(stringValue);

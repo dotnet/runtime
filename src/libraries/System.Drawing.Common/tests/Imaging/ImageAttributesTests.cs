@@ -282,6 +282,7 @@ namespace System.Drawing.Imaging.Tests
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2337", TestRuntimes.Mono)]
         public void SetColorMatrix_InvalidFlags_ThrowsArgumentException(ColorMatrixFlag flag)
         {
             using (var imageAttr = new ImageAttributes())

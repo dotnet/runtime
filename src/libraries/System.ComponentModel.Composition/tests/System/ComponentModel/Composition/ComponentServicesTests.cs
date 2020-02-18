@@ -74,6 +74,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void NoResolverExceptionTest()
         {
             var container = ContainerFactory.Create();
