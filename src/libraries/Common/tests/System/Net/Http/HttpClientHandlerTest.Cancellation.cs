@@ -168,7 +168,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
                         await responseHeadersSent.Task.TimeoutAfter(timeout);
-                        await Task.Delay(1); // make it more likely that client will have started processing response body
+                        //await Task.Delay(1).TimeoutAfter(timeout); // make it more likely that client will have started processing response body
                         Cancel(mode, client, cts);
                         await getResponse.TimeoutAfter(timeout);
                     }).TimeoutAfter(timeout);
