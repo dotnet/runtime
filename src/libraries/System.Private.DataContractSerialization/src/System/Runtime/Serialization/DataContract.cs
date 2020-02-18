@@ -1524,12 +1524,12 @@ namespace System.Runtime.Serialization
                 {
                     Type genParam = genParams[i];
                     if (isTypeOpenGeneric)
-                        localName.Append("{").Append(i).Append("}");
+                        localName.Append('{').Append(i).Append('}');
                     else
                     {
                         XmlQualifiedName qname = DataContract.GetStableName(genParam);
                         localName.Append(qname.Name);
-                        namespaces.Append(" ").Append(qname.Namespace);
+                        namespaces.Append(' ').Append(qname.Namespace);
                         if (parametersFromBuiltInNamespaces)
                             parametersFromBuiltInNamespaces = IsBuiltInNamespace(qname.Namespace);
                     }
@@ -2244,7 +2244,7 @@ namespace System.Runtime.Serialization
         {
             StringBuilder namespaces = new StringBuilder();
             for (int j = 0; j < GetParameterCount(); j++)
-                namespaces.Append(" ").Append(GetStableName(j).Namespace);
+                namespaces.Append(' ').Append(GetStableName(j).Namespace);
             return namespaces.ToString();
         }
 

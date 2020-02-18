@@ -577,7 +577,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     if (i != 0)
                     {
-                        result.Append(".");
+                        result.Append('.');
                     }
                     result.Append(numberingFormat.FormatItem(numberlist[i]));
                 }
