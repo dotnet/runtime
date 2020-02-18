@@ -72,6 +72,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals(MethodBuilder builder, object obj, bool expected)
         {

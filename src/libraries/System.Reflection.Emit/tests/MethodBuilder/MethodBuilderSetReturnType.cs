@@ -133,6 +133,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void SetReturnType_NullReturnType_ReturnsVoid()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);

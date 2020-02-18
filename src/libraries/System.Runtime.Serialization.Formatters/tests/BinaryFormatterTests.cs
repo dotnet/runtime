@@ -62,6 +62,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [SkipOnCoreClr("Takes too long on Checked", RuntimeConfiguration.Checked)]
+        [ActiveIssue("https://github.com/mono/mono/issues/15115", TestRuntimes.Mono)]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);
