@@ -234,7 +234,6 @@
 -nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_NameAttributeAndSignatureSetSet
 -nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_NonGenericMethod
 -nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_GenericMethod
--nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum
 -nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum_DynamicUnderlyingType_Works
 -nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation
 -nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineType.DefineType
