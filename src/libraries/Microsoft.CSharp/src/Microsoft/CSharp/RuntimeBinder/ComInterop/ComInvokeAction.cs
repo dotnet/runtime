@@ -42,7 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 Expression.Throw(
                     Expression.New(
                         typeof(NotSupportedException).GetConstructor(new[] { typeof(string) }),
-                        Expression.Constant(Strings.CannotCall)
+                        Expression.Constant(SR.COMCannotPerformCall)
                     )
                 ),
                 target.Restrictions.Merge(BindingRestrictions.Combine(args))

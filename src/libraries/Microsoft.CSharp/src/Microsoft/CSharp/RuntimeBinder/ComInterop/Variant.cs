@@ -924,7 +924,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return typeof(Variant).GetProperty("AsVariant");
 
                 default:
-                    throw Error.VariantGetAccessorNYI(varType);
+                    throw new NotSupportedException();
             }
         }
 
@@ -971,7 +971,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                     return typeof(Variant).GetMethod("SetAsByrefVariantIndirect");
 
                 default:
-                    throw Error.VariantGetAccessorNYI(varType);
+                    throw new NotSupportedException();
             }
         }
 

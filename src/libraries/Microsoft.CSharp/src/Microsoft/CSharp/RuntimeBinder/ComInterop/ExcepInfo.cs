@@ -47,21 +47,6 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             return result;
         }
 
-        internal void Dummy()
-        {
-            wCode = 0;
-            wReserved = 0; wReserved++;
-            bstrSource = IntPtr.Zero;
-            bstrDescription = IntPtr.Zero;
-            bstrHelpFile = IntPtr.Zero;
-            dwHelpContext = 0;
-            pfnDeferredFillIn = IntPtr.Zero;
-            pvReserved = IntPtr.Zero;
-            scode = 0;
-
-            throw Error.MethodShouldNotBeCalled();
-        }
-
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2201:DoNotRaiseReservedExceptionTypes")]
         internal Exception GetException()
         {
