@@ -94,6 +94,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void RecordWrittenEventRaised()
         {
@@ -101,6 +102,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, eventCounter);
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void RecordWrittenEventRaiseDisable()
         {

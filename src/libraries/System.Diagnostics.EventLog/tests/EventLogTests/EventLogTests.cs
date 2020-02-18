@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void ClearLog()
         {
@@ -57,6 +58,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void DeleteLog()
         {
@@ -128,6 +130,7 @@ namespace System.Diagnostics.Tests
             Assert.Contains(eventLogCollection, eventlog => eventlog.Log.Equals("System"));
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void GetMaxKilobytes_Set()
         {
@@ -162,6 +165,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void OverflowAndRetention_Set()
         {
@@ -190,6 +194,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void Overflow_OverWriteOlderAndRetention_Set()
         {
@@ -248,6 +253,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void RegisterDisplayLogName()
         {
@@ -314,6 +320,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.DeleteEventSource("", ""));
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void LogDisplayNameDefault()
         {

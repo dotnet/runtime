@@ -87,6 +87,7 @@ namespace System.Diagnostics.Tests
                 listener.Close(); // shouldn't fail.
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteTest()
         {
@@ -113,7 +114,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/40224", TestPlatforms.Windows)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(TraceEventType.Information, EventLogEntryType.Information, ushort.MaxValue + 1, ushort.MaxValue)]
         [InlineData(TraceEventType.Error, EventLogEntryType.Error, ushort.MinValue - 1, ushort.MinValue)]
@@ -155,6 +156,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { new object[] { "one string + null", null } };
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [MemberData(nameof(GetTraceDataParams_MemberData))]
         public void TraceDataParamsData(object[] parameters)
@@ -195,7 +197,7 @@ namespace System.Diagnostics.Tests
             yield return new object[] { null, new object[] { "thanks, 00", "i like it...", 111 } };
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/40224", TestPlatforms.Windows)]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [MemberData(nameof(GetTraceEventFormat_MemberData))]
         public void TraceEventFormatAndParams(string format, object[] parameters)
@@ -251,6 +253,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void TraceWithFilters()
         {

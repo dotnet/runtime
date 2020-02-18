@@ -10,6 +10,7 @@ namespace System.Diagnostics.Tests
     {
         private const string message = "EntryCollectionMessage";
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CopyingEventLogEntryCollection()
         {
@@ -44,6 +45,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryEqualityWithNull()
         {
@@ -69,6 +71,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryEqualityAndIndex()
         {
@@ -99,6 +102,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Unreliable Win32 API call
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void CheckingEntryInEquality()
         {
