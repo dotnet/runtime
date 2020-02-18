@@ -417,7 +417,7 @@ namespace System.Net.Sockets
                         }
                         else
                         {
-                            context.HandleBatchEvents(socketEvent.Events, ioControlBlocks, batchedOperations, ref batchedCount);
+                            context.AddWaitingOperationsToBatch(socketEvent.Events, ioControlBlocks, batchedOperations, ref batchedCount);
                         }
                     }
                 }
@@ -432,15 +432,17 @@ namespace System.Net.Sockets
                     }
 
                     // todo: perf: avoid the syscall by using a well known pattern that reads from the ring
-                    if (Interop.Sys.IoGetEvents(_aioContext, batchedCount, batchedCount, _aioEvents) != batchedCount)
+                    result = Interop.Sys.IoGetEvents(_aioContext, batchedCount, batchedCount, _aioEvents);
+                    if (result != batchedCount)
                     {
-                        throw new InternalException("IoGetEvents has failed"); // todo: provide sth in the future and|or implement a while loop
+                        Interop.Error lastError = Interop.Sys.GetLastError();
+                        throw new InternalException($"IoGetEvents has failed with {lastError}, returned {result} instead {batchedCount}"); // todo: provide sth in the future and|or implement a while loop
                     }
 
                     ReadOnlySpan<Interop.Sys.IoEvent> events = new ReadOnlySpan<Interop.Sys.IoEvent>(_aioEvents, batchedCount);
                     for (int i = 0; i < events.Length; i++)
                     {
-                        batchedOperations[events[i].Data].HandleBatchResponse(in events[i]);
+                        batchedOperations[events[i].Data].HandleBatchEvent(in events[i]);
                     }
                 }
             }

@@ -143,6 +143,10 @@ namespace System.Net.Sockets
 
             public bool IsSync => CallbackOrEvent is ManualResetEventSlim;
 
+            public bool IsCompleted => Volatile.Read(ref _state) == (int)State.Complete;
+
+            public bool IsCancelled => Volatile.Read(ref _state) == (int)State.Cancelled;
+
             public AsyncOperation(SocketAsyncContext context)
             {
                 AssociatedContext = context;
@@ -306,10 +310,104 @@ namespace System.Net.Sockets
 
             internal virtual bool TryBatch(SocketAsyncContext context, ref Interop.Sys.IoControlBlock ioControlBlock) => false;
 
-            internal virtual bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal virtual void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
                 Debug.Fail("Expected to be implemented only by types overriding TryAsBatch");
                 throw new InvalidOperationException();
+            }
+
+            protected bool CanRetry(SocketError error) => error == SocketError.TryAgain || error == SocketError.WouldBlock;
+
+            protected static SocketError Map(Interop.Error error)
+            {
+                switch (error)
+                {
+                    case Interop.Error.EACCES:
+                        return SocketError.AccessDenied;
+                    case Interop.Error.EADDRINUSE:
+                        return SocketError.AddressAlreadyInUse;
+                    case Interop.Error.EADDRNOTAVAIL:
+                        return SocketError.AddressNotAvailable;
+                    case Interop.Error.EAFNOSUPPORT:
+                        return SocketError.AddressFamilyNotSupported;
+                    case Interop.Error.EAGAIN:
+                        return SocketError.WouldBlock;
+                    case Interop.Error.EALREADY:
+                        return SocketError.AlreadyInProgress;
+                    case Interop.Error.EBADF:
+                    case Interop.Error.ECANCELED:
+                        return SocketError.OperationAborted;
+                    case Interop.Error.ECONNABORTED:
+                        return SocketError.ConnectionAborted;
+                    case Interop.Error.ECONNREFUSED:
+                        return SocketError.ConnectionRefused;
+                    case Interop.Error.ECONNRESET:
+                        return SocketError.ConnectionReset;
+                    case Interop.Error.EDESTADDRREQ:
+                        return SocketError.DestinationAddressRequired;
+                    case Interop.Error.EFAULT:
+                        return SocketError.Fault;
+                    case Interop.Error.EHOSTDOWN:
+                        return SocketError.HostDown;
+                    case Interop.Error.ENXIO:
+                        return SocketError.HostNotFound;
+                    case Interop.Error.EHOSTUNREACH:
+                        return SocketError.HostUnreachable;
+                    case Interop.Error.EINPROGRESS:
+                        return SocketError.InProgress;
+                    case Interop.Error.EINTR:
+                        return SocketError.Interrupted;
+                    case Interop.Error.EINVAL:
+                        return SocketError.InvalidArgument;
+                    case Interop.Error.EISCONN:
+                        return SocketError.IsConnected;
+                    case Interop.Error.EMFILE:
+                        return SocketError.TooManyOpenSockets;
+                    case Interop.Error.EMSGSIZE:
+                        return SocketError.MessageSize;
+                    case Interop.Error.ENETDOWN:
+                        return SocketError.NetworkDown;
+                    case Interop.Error.ENETRESET:
+                        return SocketError.NetworkReset;
+                    case Interop.Error.ENETUNREACH:
+                        return SocketError.NetworkUnreachable;
+                    case Interop.Error.ENFILE:
+                        return SocketError.TooManyOpenSockets;
+                    case Interop.Error.ENOBUFS:
+                        return SocketError.NoBufferSpaceAvailable;
+                    case Interop.Error.ENODATA:
+                        return SocketError.NoData;
+                    case Interop.Error.ENOENT:
+                        return SocketError.AddressNotAvailable;
+                    case Interop.Error.ENOPROTOOPT:
+                        return SocketError.ProtocolOption;
+                    case Interop.Error.ENOTCONN:
+                        return SocketError.NotConnected;
+                    case Interop.Error.ENOTSOCK:
+                        return SocketError.NotSocket;
+                    case Interop.Error.ENOTSUP:
+                        return SocketError.OperationNotSupported;
+                    case Interop.Error.EPERM:
+                        return SocketError.AccessDenied;
+                    case Interop.Error.EPIPE:
+                        return SocketError.Shutdown;
+                    case Interop.Error.EPFNOSUPPORT:
+                        return SocketError.ProtocolFamilyNotSupported;
+                    case Interop.Error.EPROTONOSUPPORT:
+                        return SocketError.ProtocolNotSupported;
+                    case Interop.Error.EPROTOTYPE:
+                        return SocketError.ProtocolType;
+                    case Interop.Error.ESOCKTNOSUPPORT:
+                        return SocketError.SocketNotSupported;
+                    case Interop.Error.ESHUTDOWN:
+                        return SocketError.Disconnecting;
+                    case Interop.Error.SUCCESS:
+                        return SocketError.Success;
+                    case Interop.Error.ETIMEDOUT:
+                        return SocketError.TimedOut;
+                    default:
+                        throw new IndexOutOfRangeException($"Unexpected error: {error}");
+                }
             }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
@@ -408,27 +506,34 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
                 PinHandle.Dispose();
 
                 if (ioControlBlock.Res < 0)
                 {
-                    SetWaiting();
-                    ErrorCode = (SocketError)(-ioControlBlock.Res);
-                    return false;
+                    ErrorCode = Map((Interop.Error)(-ioControlBlock.Res));
+
+                    if (CanRetry(ErrorCode))
+                    {
+                        SetWaiting();
+                    }
+                    else
+                    {
+                        SetComplete();
+                    }
+                }
+                else
+                {
+                    BytesTransferred = (int)ioControlBlock.Res;
+                    Offset += (int)ioControlBlock.Res;
+                    Count -= (int)ioControlBlock.Res;
+                    ErrorCode = SocketError.Success;
+
+                    SetComplete();
                 }
 
-                BytesTransferred = (int)ioControlBlock.Res;
-                Offset += (int)ioControlBlock.Res;
-                Count -= (int)ioControlBlock.Res;
-                ErrorCode = SocketError.Success;
-
-                SetComplete();
-
                 AssociatedContext.ProcessBatchWriteOperation(this);
-
-                return true;
             }
         }
 
@@ -489,25 +594,32 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
-                    SetWaiting();
-                    ErrorCode = (SocketError)(-ioControlBlock.Res);
-                    return false;
+                    ErrorCode = Map((Interop.Error)(-ioControlBlock.Res));
+
+                    if (CanRetry(ErrorCode))
+                    {
+                        SetWaiting();
+                    }
+                    else
+                    {
+                        SetComplete();
+                    }
+                }
+                else
+                {
+                    BytesTransferred = (int)ioControlBlock.Res;
+                    Offset += (int)ioControlBlock.Res;
+                    Count -= (int)ioControlBlock.Res;
+                    ErrorCode = SocketError.Success;
+
+                    SetComplete();
                 }
 
-                BytesTransferred = (int)ioControlBlock.Res;
-                Offset += (int)ioControlBlock.Res;
-                Count -= (int)ioControlBlock.Res;
-                ErrorCode = SocketError.Success;
-
-                SetComplete();
-
                 AssociatedContext.ProcessBatchWriteOperation(this);
-
-                return true;
             }
         }
 
@@ -592,23 +704,30 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
-                    SetWaiting();
-                    ErrorCode = (SocketError)(-ioControlBlock.Res);
-                    return false;
+                    ErrorCode = Map((Interop.Error)(-ioControlBlock.Res));
+
+                    if (CanRetry(ErrorCode))
+                    {
+                        SetWaiting();
+                    }
+                    else
+                    {
+                        SetComplete();
+                    }
+                }
+                else
+                {
+                    BytesTransferred = (int)ioControlBlock.Res;
+                    ErrorCode = SocketError.Success;
+
+                    SetComplete();
                 }
 
-                BytesTransferred = (int)ioControlBlock.Res;
-                ErrorCode = SocketError.Success;
-
-                SetComplete();
-
                 AssociatedContext.ProcessBatchReadOperation(this);
-
-                return true;
             }
         }
 
@@ -665,23 +784,30 @@ namespace System.Net.Sockets
                 return true;
             }
 
-            internal override bool HandleBatchResponse(in Interop.Sys.IoEvent ioControlBlock)
+            internal override void HandleBatchEvent(in Interop.Sys.IoEvent ioControlBlock)
             {
                 if (ioControlBlock.Res < 0)
                 {
-                    SetWaiting();
-                    ErrorCode = (SocketError)(-ioControlBlock.Res);
-                    return false;
+                    ErrorCode = Map((Interop.Error)(-ioControlBlock.Res));
+
+                    if (CanRetry(ErrorCode))
+                    {
+                        SetWaiting();
+                    }
+                    else
+                    {
+                        SetComplete();
+                    }
+                }
+                else
+                {
+                    BytesTransferred = (int)ioControlBlock.Res;
+                    ErrorCode = SocketError.Success;
+
+                    SetComplete();
                 }
 
-                BytesTransferred = (int)ioControlBlock.Res;
-                ErrorCode = SocketError.Success;
-
-                SetComplete();
-
                 AssociatedContext.ProcessBatchReadOperation(this);
-
-                return true;
             }
         }
 
@@ -868,6 +994,7 @@ namespace System.Net.Sockets
                                             // If this happens, we MUST retry the operation, otherwise we risk
                                             // "losing" the notification and causing the operation to pend indefinitely.
             private AsyncOperation _tail;   // Queue of pending IO operations to process when data becomes available.
+            private int _batchedOperationsCount;
 
             // The _queueLock is used to ensure atomic access to the queue state above.
             // The lock is only ever held briefly, to read and/or update queue state, and
@@ -883,6 +1010,7 @@ namespace System.Net.Sockets
 
                 _state = QueueState.Ready;
                 _sequenceNumber = 0;
+                _batchedOperationsCount = 0;
             }
 
             // IsReady returns the current _sequenceNumber, which must be passed to StartAsyncOperation below.
@@ -981,7 +1109,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            internal bool TryGetNextOperation(SocketAsyncContext context, out AsyncOperation op)
+            private bool TryGetNextOperation(SocketAsyncContext context, out AsyncOperation op)
             {
                 using (Lock())
                 {
@@ -1046,6 +1174,7 @@ namespace System.Net.Sockets
                                 batchedOperations[batchedCount++] = nextOperation;
 
                                 nextOperation = nextOperation.Next;
+                                _batchedOperationsCount++;
                             }
                             break;
 
@@ -1223,34 +1352,52 @@ namespace System.Net.Sockets
             {
                 using (Lock())
                 {
+                    _batchedOperationsCount--;
+
                     if (_state == QueueState.Stopped)
                     {
-                        Debug.Assert(_tail == null);
-                        return;
+                        return; // it was cancelled in the meantime
+                    }
+
+                    if (op == _tail)
+                    {
+                        _tail = _tail.Next;
                     }
                     else
                     {
-                        Debug.Assert(_state == QueueState.Processing, $"_state={_state} while processing queue!");
-                        Debug.Assert(_tail.Next == op, "Queue modified while processing queue");
-
-                        if (op == _tail)
+                        var current = _tail;
+                        while (current != null)
                         {
-                            // No more operations to process
-                            _tail = null;
+                            if (current.Next == op)
+                            {
+                                current.Next = op.Next;
+                                break;
+                            }
+
+                            current = current.Next;
+                        }
+                    }
+
+                    if (_batchedOperationsCount == 0)
+                    {
+                        if (op.IsCompleted || op.IsCancelled)
+                        {
                             _state = QueueState.Ready;
                             _sequenceNumber++;
                         }
                         else
                         {
-                            // Pop current operation and advance to next
-                            _tail.Next = op.Next;
+                            _state = QueueState.Waiting;
                         }
                     }
                 }
 
-                // todo: propbably this is not the best place to call this stuff
-                op.CancellationRegistration.Dispose();
-                op.InvokeCallback(allowPooling: true);
+                // todo: probably this is not the best place to call this stuff
+                if (op.IsCompleted)
+                {
+                    op.CancellationRegistration.Dispose();
+                    op.InvokeCallback(allowPooling: true);
+                }
             }
 
             public void CancelAndContinueProcessing(TOperation op)
@@ -2215,7 +2362,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void HandleBatchEvents(Interop.Sys.SocketEvents events, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
+        public void AddWaitingOperationsToBatch(Interop.Sys.SocketEvents events, Span<Interop.Sys.IoControlBlock> ioControlBlocks, Span<AsyncOperation> batchedOperations, ref int batchedCount)
         {
             Debug.Assert((events & Interop.Sys.SocketEvents.Error) == 0, "This method must not be used for handling errors!");
 
