@@ -53,19 +53,12 @@ namespace System
         //
         internal static bool CheckIsReserved(char ch, UriComponents component)
         {
-            if ((component != UriComponents.Scheme) &&
-                    (component != UriComponents.UserInfo) &&
-                    (component != UriComponents.Host) &&
-                    (component != UriComponents.Port) &&
-                    (component != UriComponents.Path) &&
-                    (component != UriComponents.Query) &&
-                    (component != UriComponents.Fragment)
-                )
+            if ((UriComponents.AbsoluteUri & component) == 0)
             {
-                return (component == (UriComponents)0) ? UriHelper.IsGenDelim(ch) : false;
+                return component == 0 && UriHelper.IsGenDelim(ch);
             }
 
-            return UriHelper.RFC3986ReservedMarks.IndexOf(ch) >= 0;
+            return UriHelper.RFC3986ReservedMarks.Contains(ch);
         }
 
         //
