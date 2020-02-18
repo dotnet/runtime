@@ -1881,12 +1881,13 @@ void CodeGen::genProduceReg(GenTree* tree)
             LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
             assert(!varDsc->lvNormalizeOnStore() || (tree->TypeGet() == genActualType(varDsc->TypeGet())));
 
-            // The GTF_SPILL flag generally means that we need to spill this local.
-            // The exception is the case of an EH var that is being "spilled"
-            // to the stack, indicated by an EH GT_LCL_VAR use that is marked GTF_SPILL
-            // (note that all EH lclVar defs are always "spilled", i.e. write-thru).
-            // It is always valid on the stack, but the GTF_SPILL flag records the fact
-            // that the register value is going dead.
+            // If we reach here, we have a register candidate local that is marked with GTF_SPILL.
+            // This flag generally means that we need to spill this local.
+            // The exception is the case of a use of an EH var use that is being "spilled"
+            // to the stack, indicated by GTF_SPILL (note that all EH lclVar defs are always
+            // spilled, i.e. write-thru).
+            // An EH var use is always valid on the stack (so we don't need to actually spill it),
+            // but the GTF_SPILL flag records the fact that the register value is going dead.
             if (((tree->gtFlags & GTF_VAR_DEF) != 0) || !varDsc->lvLiveInOutOfHndlr)
             {
                 // Store local variable to its home location.
