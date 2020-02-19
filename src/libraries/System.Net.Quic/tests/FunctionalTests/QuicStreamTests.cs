@@ -97,7 +97,6 @@ namespace System.Net.Quic.Tests
             }).TimeoutAfter(millisecondsTimeout: 5_000);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]
         [Fact]
         public async Task Read_ConnectionAborted_Throws()
         {

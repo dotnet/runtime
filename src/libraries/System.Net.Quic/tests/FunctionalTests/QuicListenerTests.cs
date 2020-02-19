@@ -10,7 +10,6 @@ namespace System.Net.Quic.Tests
     [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
     public class QuicListenerTests : MsQuicTestBase
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32048")]
         [Fact]
         public async Task Listener_Backlog_Success()
         {
@@ -22,7 +21,7 @@ namespace System.Net.Quic.Tests
                 await clientConnection.ConnectAsync();
 
                 using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            }).TimeoutAfter(millisecondsTimeout: 5_000);
+            }).TimeoutAfter(millisecondsTimeout: 500_000);
         }
     }
 }

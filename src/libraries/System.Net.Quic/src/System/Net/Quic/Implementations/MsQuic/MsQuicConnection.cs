@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Security;
@@ -40,6 +41,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         private bool _connected;
         private MsQuicSecurityConfig _securityConfig;
         private long _abortErrorCode = -1;
+        private Task _securityConfigTask;
 
         // Queue for accepted streams
         private readonly Channel<MsQuicStream> _acceptQueue = Channel.CreateUnbounded<MsQuicStream>(new UnboundedChannelOptions()
@@ -49,7 +51,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         });
 
         // constructor for inbound connections
-        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, IntPtr nativeObjPtr)
+        public MsQuicConnection(IPEndPoint localEndPoint, IPEndPoint remoteEndPoint, IntPtr nativeObjPtr, X509Certificate cert, string certFilePath, string privateKeyFilePath)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             _localEndPoint = localEndPoint;
@@ -59,6 +61,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             SetCallbackHandler();
             SetIdleTimeout(TimeSpan.FromSeconds(120));
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+
+            // Don't create security configuration on msquic thread, start in the background and await when accepting connection.
+            _securityConfigTask = Task.Run(() => SetSecurityConfigForConnection(cert, certFilePath, privateKeyFilePath));
         }
 
         // constructor for outbound connections
@@ -86,11 +91,18 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        internal async ValueTask SetSecurityConfigForConnection(X509Certificate cert, string certFilePath, string privateKeyFilePath)
+        internal async Task SetSecurityConfigForConnection(X509Certificate cert, string certFilePath, string privateKeyFilePath)
         {
             _securityConfig = await MsQuicApi.Api.CreateSecurityConfig(cert, certFilePath, privateKeyFilePath);
             // TODO this isn't being set correctly
             MsQuicParameterHelpers.SetSecurityConfig(MsQuicApi.Api, _ptr, (uint)QUIC_PARAM_LEVEL.CONNECTION, (uint)QUIC_PARAM_CONN.SEC_CONFIG, _securityConfig.NativeObjPtr);
+        }
+
+        internal Task SecurityConfigCompleted()
+        {
+            // Should only be called from inbound connections
+            Debug.Assert(_securityConfigTask != null);
+            return _securityConfigTask;
         }
 
         internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndPoint.Address, _remoteEndPoint.Port);

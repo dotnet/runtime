@@ -77,9 +77,8 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw new QuicOperationAbortedException();
             }
 
-            await connection.SetSecurityConfigForConnection(_sslOptions.ServerCertificate,
-                _options.CertificateFilePath,
-                _options.PrivateKeyFilePath);
+            await connection.SecurityConfigCompleted().ConfigureAwait(false);
+
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             return connection;
@@ -160,11 +159,15 @@ namespace System.Net.Quic.Implementations.MsQuic
                             NewConnectionInfo connectionInfo = *(NewConnectionInfo*)evt.Data.NewConnection.Info;
                             IPEndPoint localEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.LocalAddress);
                             IPEndPoint remoteEndPoint = MsQuicAddressHelpers.INetToIPEndPoint(*(SOCKADDR_INET*)connectionInfo.RemoteAddress);
-                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint, remoteEndPoint, evt.Data.NewConnection.Connection);
+                            MsQuicConnection msQuicConnection = new MsQuicConnection(localEndPoint,
+                                remoteEndPoint,
+                                evt.Data.NewConnection.Connection,
+                                _sslOptions.ServerCertificate,
+                                _options.CertificateFilePath,
+                                _options.PrivateKeyFilePath);
+
                             _acceptConnectionQueue.Writer.TryWrite(msQuicConnection);
                         }
-                        // Always pend the new connection to wait for the security config to be resolved
-                        // TODO this doesn't need to be async always
                         return MsQuicStatusCodes.Pending;
                     default:
                         return MsQuicStatusCodes.InternalError;
