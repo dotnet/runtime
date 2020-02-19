@@ -41,8 +41,11 @@ namespace System.Net.Http
         }
 
         /// <summary>
-        /// The HTTP status code to be returned with the exception.
+        /// Gets the HTTP status code to be returned with the exception.
         /// </summary>
+        /// <value>
+        /// An HTTP status code if the exception represents a non-successful result, otherwise <c>null</c>.
+        /// </value>
         public HttpStatusCode? StatusCode { get; }
 
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
