@@ -4154,10 +4154,10 @@ void MethodContext::dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORIN
     printf("GetLocationOfThisType key ftn-%016llX, value %s", key,
            SpmiDumpHelper::DumpAgnostic_CORINFO_LOOKUP_KIND(value).c_str());
 }
-CORINFO_LOOKUP_KIND MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void MethodContext::repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     Agnostic_CORINFO_LOOKUP_KIND value = GetLocationOfThisType->Get((DWORDLONG)context);
-    return SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
+    *pLookupKind = SpmiRecordsHelper::RestoreCORINFO_LOOKUP_KIND(value);
 }
 
 void MethodContext::recGetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,

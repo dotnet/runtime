@@ -2379,10 +2379,8 @@ namespace Internal.JitInterface
             }
         }
 
-        private void getLocationOfThisType(out CORINFO_LOOKUP_KIND result, CORINFO_METHOD_STRUCT_* context)
+        private void getLocationOfThisType(CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND result)
         {
-            result = new CORINFO_LOOKUP_KIND();
-
             MethodDesc method = HandleToObject(context);
 
             if (method.IsSharedByGenericInstantiations)

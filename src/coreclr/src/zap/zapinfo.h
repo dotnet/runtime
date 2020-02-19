@@ -345,9 +345,7 @@ public:
                          BOOL                     fEmbedParent,
                          CORINFO_GENERICHANDLE_RESULT *pResult);
 
-    CORINFO_LOOKUP_KIND
-        getLocationOfThisType(CORINFO_METHOD_HANDLE context);
-
+    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 
     void * getHelperFtn (CorInfoHelpFunc   ftnNum,

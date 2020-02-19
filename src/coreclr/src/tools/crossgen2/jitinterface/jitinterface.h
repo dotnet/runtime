@@ -139,7 +139,7 @@ struct JitInterfaceCallbacks
     void* (* embedMethodHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
     void* (* embedFieldHandle)(void * thisHandle, CorInfoException** ppException, void* handle, void** ppIndirection);
     void (* embedGenericHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken, int fEmbedParent, void* pResult);
-    void (* getLocationOfThisType)(void * thisHandle, CorInfoException** ppException, CORINFO_LOOKUP_KIND* _return, void* context);
+    void (* getLocationOfThisType)(void * thisHandle, CorInfoException** ppException, void* context, void* pLookupKind);
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoException** ppException, void* method, void* pLookup);
     void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig, void** ppIndirection);
     bool (* canGetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoException** ppException, void* szMetaSig);
@@ -1302,7 +1302,14 @@ public:
             throw pException;
     }
 
-    virtual CORINFO_LOOKUP_KIND getLocationOfThisType(void* context);
+    virtual void getLocationOfThisType(void* context, void* pLookupKind)
+    {
+        CorInfoException* pException = nullptr;
+        _callbacks->getLocationOfThisType(_thisHandle, &pException, context, pLookupKind);
+        if (pException != nullptr)
+            throw pException;
+    }
+
     virtual void getAddressOfPInvokeTarget(void* method, void* pLookup)
     {
         CorInfoException* pException = nullptr;

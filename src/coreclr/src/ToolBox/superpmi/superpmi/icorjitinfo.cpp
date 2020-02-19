@@ -1346,10 +1346,10 @@ void MyICJI::embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND MyICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void MyICJI::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     jitInstance->mc->cr->AddCall("getLocationOfThisType");
-    return jitInstance->mc->repGetLocationOfThisType(context);
+    jitInstance->mc->repGetLocationOfThisType(context, pLookupKind);
 }
 
 // return address of fixup area for late-bound PInvoke calls.

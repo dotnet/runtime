@@ -2428,7 +2428,7 @@ CorInfoType CEEInfo::asCorInfoType (CORINFO_CLASS_HANDLE clsHnd)
 }
 
 
-CORINFO_LOOKUP_KIND CEEInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context)
+void CEEInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind)
 {
     CONTRACTL {
         THROWS;
@@ -2436,11 +2436,9 @@ CORINFO_LOOKUP_KIND CEEInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CORINFO_LOOKUP_KIND result;
-
     /* Initialize fields of result for debug build warning */
-    result.needsRuntimeLookup = false;
-    result.runtimeLookupKind  = CORINFO_LOOKUP_THISOBJ;
+    pLookupKind->needsRuntimeLookup = false;
+    pLookupKind->runtimeLookupKind  = CORINFO_LOOKUP_THISOBJ;
 
     JIT_TO_EE_TRANSITION();
 
@@ -2449,33 +2447,31 @@ CORINFO_LOOKUP_KIND CEEInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context
     // If the method table is not shared, then return CONST
     if (!pContextMD->GetMethodTable()->IsSharedByGenericInstantiations())
     {
-        result.needsRuntimeLookup = false;
+        pLookupKind->needsRuntimeLookup = false;
     }
     else
     {
-        result.needsRuntimeLookup = true;
+        pLookupKind->needsRuntimeLookup = true;
 
         // If we've got a vtable extra argument, go through that
         if (pContextMD->RequiresInstMethodTableArg())
         {
-            result.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
+            pLookupKind->runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
         }
         // If we've got an object, go through its vtable
         else if (pContextMD->AcquiresInstMethodTableFromThis())
         {
-            result.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
+            pLookupKind->runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
         }
         // Otherwise go through the method-desc argument
         else
         {
             _ASSERTE(pContextMD->RequiresInstMethodDescArg());
-            result.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
+            pLookupKind->runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
         }
     }
 
     EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 CORINFO_METHOD_HANDLE CEEInfo::GetDelegateCtor(

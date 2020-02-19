@@ -939,11 +939,11 @@ public:
     CORINFO_METHOD_HANDLE embedMethodHandle(CORINFO_METHOD_HANDLE handle,
                                             void **ppIndirection);
 
-	void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-		BOOL                     fEmbedParent,
-		CORINFO_GENERICHANDLE_RESULT *pResult);
+    void embedGenericHandle(CORINFO_RESOLVED_TOKEN * pResolvedToken,
+        BOOL                     fEmbedParent,
+        CORINFO_GENERICHANDLE_RESULT *pResult);
 
-    CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 
     void setOverride(ICorDynamicInfo *pOverride, CORINFO_METHOD_HANDLE currentMethod)

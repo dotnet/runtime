@@ -270,7 +270,7 @@ namespace Internal.JitInterface
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __embedGenericHandle(IntPtr _this, IntPtr* ppException, ref CORINFO_RESOLVED_TOKEN pResolvedToken, [MarshalAs(UnmanagedType.Bool)]bool fEmbedParent, ref CORINFO_GENERICHANDLE_RESULT pResult);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
-        delegate void __getLocationOfThisType(IntPtr _this, IntPtr* ppException, out CORINFO_LOOKUP_KIND _return, CORINFO_METHOD_STRUCT_* context);
+        delegate void __getLocationOfThisType(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND pLookupKind);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
         delegate void __getAddressOfPInvokeTarget(IntPtr _this, IntPtr* ppException, CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup);
         [UnmanagedFunctionPointerAttribute(default(CallingConvention))]
@@ -2127,17 +2127,16 @@ namespace Internal.JitInterface
             }
         }
 
-        static void _getLocationOfThisType(IntPtr thisHandle, IntPtr* ppException, out CORINFO_LOOKUP_KIND _return, CORINFO_METHOD_STRUCT_* context)
+        static void _getLocationOfThisType(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* context, ref CORINFO_LOOKUP_KIND pLookupKind)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getLocationOfThisType(out _return, context);
+                _this.getLocationOfThisType(context, ref pLookupKind);
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
-                _return = default(CORINFO_LOOKUP_KIND);
             }
         }
 

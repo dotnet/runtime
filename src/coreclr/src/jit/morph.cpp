@@ -15823,7 +15823,8 @@ GenTree* Compiler::fgInitThisClass()
 {
     noway_assert(!compIsForInlining());
 
-    CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+    CORINFO_LOOKUP_KIND kind;
+    info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
 
     if (!kind.needsRuntimeLookup)
     {

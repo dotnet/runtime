@@ -1013,7 +1013,7 @@ public:
 
     void recGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* result);
     void dmpGetLocationOfThisType(DWORDLONG key, const Agnostic_CORINFO_LOOKUP_KIND& value);
-    CORINFO_LOOKUP_KIND repGetLocationOfThisType(CORINFO_METHOD_HANDLE context);
+    void repGetLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
     void recGetDelegateCtor(CORINFO_METHOD_HANDLE methHnd,
                             CORINFO_CLASS_HANDLE  clsHnd,

@@ -7788,7 +7788,8 @@ GenTree* Compiler::fgGetCritSectOfStaticMethod()
 
     GenTree* tree = nullptr;
 
-    CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+    CORINFO_LOOKUP_KIND kind;
+    info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
 
     if (!kind.needsRuntimeLookup)
     {

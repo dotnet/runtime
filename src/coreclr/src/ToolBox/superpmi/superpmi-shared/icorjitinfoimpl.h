@@ -784,7 +784,7 @@ void embedGenericHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //      CORINFO_LOOKUP_THISOBJ     use vtable pointer of 'this' param
 //      CORINFO_LOOKUP_CLASSPARAM  use vtable hidden param
 //      CORINFO_LOOKUP_METHODPARAM use enclosing type of method-desc hidden param
-CORINFO_LOOKUP_KIND getLocationOfThisType(CORINFO_METHOD_HANDLE context);
+void getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
 
 // return the address of the PInvoke target. May be a fixup area in the
 // case of late-bound PInvoke calls.

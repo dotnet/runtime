@@ -6932,7 +6932,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         {
 #ifdef FEATURE_READYTORUN_COMPILER
             noway_assert(opts.IsReadyToRun());
-            CORINFO_LOOKUP_KIND kind = info.compCompHnd->getLocationOfThisType(info.compMethodHnd);
+            CORINFO_LOOKUP_KIND kind;
+            info.compCompHnd->getLocationOfThisType(info.compMethodHnd, &kind);
             assert(kind.needsRuntimeLookup);
 
             GenTree*          ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);

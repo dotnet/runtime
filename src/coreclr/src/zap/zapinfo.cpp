@@ -1592,10 +1592,9 @@ CORINFO_CLASS_HANDLE ZapInfo::getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN * pRes
     return m_pEEJitInfo->getTokenTypeAsHandle(pResolvedToken);
 }
 
-CORINFO_LOOKUP_KIND
-ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE   context)
+void ZapInfo::getLocationOfThisType(CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND * pLookupKind)
 {
-    return m_pEEJitInfo->getLocationOfThisType(context);
+    m_pEEJitInfo->getLocationOfThisType(context, pLookupKind);
 }
 
 void

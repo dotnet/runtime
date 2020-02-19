@@ -1273,13 +1273,13 @@ void WrapICorJitInfo::embedGenericHandle(
     API_LEAVE(embedGenericHandle);
 }
 
-CORINFO_LOOKUP_KIND WrapICorJitInfo::getLocationOfThisType(
-                CORINFO_METHOD_HANDLE context)
+void WrapICorJitInfo::getLocationOfThisType(
+                CORINFO_METHOD_HANDLE   context,
+                CORINFO_LOOKUP_KIND *   pLookupKind)
 {
     API_ENTER(getLocationOfThisType);
-    CORINFO_LOOKUP_KIND temp = wrapHnd->getLocationOfThisType(context);
+    wrapHnd->getLocationOfThisType(context, pLookupKind);
     API_LEAVE(getLocationOfThisType);
-    return temp;
 }
 
 void WrapICorJitInfo::getAddressOfPInvokeTarget(
