@@ -824,6 +824,66 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> MinAcross(Vector128<uint> value) => MinAcross(value);
 
             /// <summary>
+            /// uint8x16_t vpminq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: UMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> MinPairwise(Vector128<byte> left, Vector128<byte> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpminq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinPairwise(Vector128<double> left, Vector128<double> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpminq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: SMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> MinPairwise(Vector128<short> left, Vector128<short> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpminq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: SMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> MinPairwise(Vector128<int> left, Vector128<int> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpminq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: SMINP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> MinPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpminq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinPairwise(Vector128<float> left, Vector128<float> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpminq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: UMINP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> MinPairwise(Vector128<ushort> left, Vector128<ushort> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpminq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: UMINP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> MinPairwise(Vector128<uint> left, Vector128<uint> right) => MinPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmins_f32 (float32x2_t a)
+            ///   A64: FMINP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinPairwiseScalar(Vector64<float> value) => MinPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpminqd_f64 (float64x2_t a)
+            ///   A64: FMINP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinPairwiseScalar(Vector128<double> value) => MinPairwiseScalar(value);
+
+            /// <summary>
             /// float64x1_t vmin_f64 (float64x1_t a, float64x1_t b)
             ///   A64: FMIN Dd, Dn, Dm
             /// </summary>
@@ -3581,6 +3641,55 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpmin_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPMIN.U8 Dd, Dn, Dm
+        ///   A64: UMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> MinPairwise(Vector64<byte> left, Vector64<byte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpmin_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPMIN.S16 Dd, Dn, Dm
+        ///   A64: SMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> MinPairwise(Vector64<short> left, Vector64<short> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpmin_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPMIN.S32 Dd, Dn, Dm
+        ///   A64: SMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> MinPairwise(Vector64<int> left, Vector64<int> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpmin_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPMIN.S8 Dd, Dn, Dm
+        ///   A64: SMINP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> MinPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpmin_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPMIN.F32 Dd, Dn, Dm
+        ///   A64: FMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinPairwise(Vector64<float> left, Vector64<float> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpmin_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPMIN.U16 Dd, Dn, Dm
+        ///   A64: UMINP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> MinPairwise(Vector64<ushort> left, Vector64<ushort> right) => MinPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpmin_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPMIN.U32 Dd, Dn, Dm
+        ///   A64: UMINP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> MinPairwise(Vector64<uint> left, Vector64<uint> right) => MinPairwise(left, right);
 
         /// <summary>
         /// uint8x8_t vmul_u8 (uint8x8_t a, uint8x8_t b)
