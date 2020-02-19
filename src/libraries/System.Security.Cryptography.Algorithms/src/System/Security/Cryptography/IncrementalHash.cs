@@ -40,6 +40,9 @@ namespace System.Security.Cryptography
         /// </summary>
         public HashAlgorithmName AlgorithmName => _algorithmName;
 
+        /// <summary>
+        /// The length of the resultant hash in bytes
+        /// </summary>
         public int HashLengthInBytes
         {
             get
@@ -117,6 +120,12 @@ namespace System.Security.Cryptography
             }
         }
 
+        /// <summary>
+        /// Retrieve the hash or HMAC for the data accumulated from prior calls to
+        /// <see cref="AppendData(byte[])"/>, without modifying the current hash state.
+        /// </summary>
+        /// <returns>The computed hash or HMAC.</returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] GetCurrentHash()
         {
             byte[] returnArray = new byte[HashLengthInBytes];
@@ -124,6 +133,14 @@ namespace System.Security.Cryptography
             return returnArray;
         }
 
+        /// <summary>
+        /// Fills the provided span with the hash or HMAC with the data accumulated from prior
+        /// calls to <see cref="AppendData(ReadOnlySpan{byte})"/>, without modifying the current hash state.
+        /// </summary>
+        /// <param name="destination">The span to populate</param>
+        /// <returns>The number of bytes written to the span</returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The span is not large enough to hold the hash data</exception>
         public int GetCurrentHash(Span<byte> destination)
         {
             if (_disposed)
@@ -175,6 +192,14 @@ namespace System.Security.Cryptography
                 _hmac!.TryFinalizeHashAndReset(destination, out bytesWritten);
         }
 
+        /// <summary>
+        /// Fills the provided span with the hash or HMAC with the data accumulated from prior
+        /// calls to <see cref="AppendData(ReadOnlySpan{byte})"/>, and return to the state the object
+        /// was in at construction.
+        /// <param name="destination">The span to populate</param>
+        /// <returns>The number of bytes written to the span</returns>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The span is not large enough to hold the hash data</exception>
         public int GetHashAndReset(Span<byte> destination)
         {
             if (_disposed)
