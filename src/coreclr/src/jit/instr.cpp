@@ -662,6 +662,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
 #ifdef DEBUG
     // The tree must have a valid register value.
     assert(reg != REG_STK);
+
     bool isValidInReg = ((tree->gtFlags & GTF_SPILLED) == 0);
     if (!isValidInReg)
     {

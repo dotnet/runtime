@@ -1181,18 +1181,26 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 {
                     interval->preferCalleeSave = true;
                 }
-                regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
 
-                if (newPreferences != RBM_NONE)
+                // We are more conservative about allocating callee-saves registers to write-thru vars, since
+                // a call only requires reloading after (not spilling before). So we record (above) the fact
+                // that we'd prefer a callee-save register, but we don't update the preferences at this point.
+                // See the "heuristics for writeThru intervals" in 'buildIntervals()'.
+                if (!interval->isWriteThru || !isCallKill)
                 {
-                    interval->updateRegisterPreferences(newPreferences);
-                }
-                else
-                {
-                    // If there are no callee-saved registers, the call could kill all the registers.
-                    // This is a valid state, so in that case assert should not trigger. The RA will spill in order to
-                    // free a register later.
-                    assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                    regMaskTP newPreferences = allRegs(interval->registerType) & (~killMask);
+
+                    if (newPreferences != RBM_NONE)
+                    {
+                        interval->updateRegisterPreferences(newPreferences);
+                    }
+                    else
+                    {
+                        // If there are no callee-saved registers, the call could kill all the registers.
+                        // This is a valid state, so in that case assert should not trigger. The RA will spill in order
+                        // to free a register later.
+                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType)) == RBM_NONE);
+                    }
                 }
             }
         }
@@ -1791,6 +1799,31 @@ void LinearScan::insertZeroInitRefPositions()
             }
         }
     }
+
+    // We must also insert zero-inits for any finallyVars if they are refs or if compInitMem is true.
+    if (compiler->lvaEnregEHVars)
+    {
+        VarSetOps::Iter iter(compiler, finallyVars);
+        unsigned        varIndex = 0;
+        while (iter.NextElem(&varIndex))
+        {
+            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+            if (!varDsc->lvIsParam && isCandidateVar(varDsc))
+            {
+                JITDUMP("V%02u is a finally var:", compiler->lvaTrackedIndexToLclNum(varIndex));
+                Interval* interval = getIntervalForLocalVar(varIndex);
+                if (compiler->info.compInitMem || varTypeIsGC(varDsc->TypeGet()))
+                {
+                    JITDUMP(" creating ZeroInit\n");
+                    GenTree*     firstNode = getNonEmptyBlock(compiler->fgFirstBB)->firstNode();
+                    RefPosition* pos       = newRefPosition(interval, MinLocation, RefTypeZeroInit, firstNode,
+                                                      allRegs(interval->registerType));
+                    pos->setRegOptional(true);
+                    varDsc->lvMustInit = true;
+                }
+            }
+        }
+    }
 }
 
 #if defined(UNIX_AMD64_ABI)
@@ -2101,49 +2134,72 @@ void LinearScan::buildIntervals()
                 currentLoc = 1;
             }
 
-            // Any lclVars live-in to a block are resolution candidates.
-            VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
+            // Handle special cases for live-in.
+            // If this block hasEHBoundaryIn, then we will mark the recentRefPosition of each EH Var preemptively as
+            // spillAfter, since we don't want them to remain in registers.
+            // Otherwise, determine if we need any DummyDefs.
+            // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
+            // Note that it's possible to have uses of unitialized variables, in which case even the first
+            // block may require DummyDefs, which we are not currently adding - this means that these variables
+            // will always be considered to be in memory on entry (and reloaded when the use is encountered).
+            // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
+            // variables (which may actually be initialized along the dynamically executed paths, but not
+            // on all static paths), we wind up with excessive liveranges for some of these variables.
 
-            if (!blockInfo[block->bbNum].hasEHBoundaryIn)
+            if (blockInfo[block->bbNum].hasEHBoundaryIn)
             {
-                // Determine if we need any DummyDefs.
-                // We need DummyDefs for cases where "predBlock" isn't really a predecessor.
-                // Note that it's possible to have uses of unitialized variables, in which case even the first
-                // block may require DummyDefs, which we are not currently adding - this means that these variables
-                // will always be considered to be in memory on entry (and reloaded when the use is encountered).
-                // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
-                // variables (which may actually be initialized along the dynamically executed paths, but not
-                // on all static paths), we wind up with excessive liveranges for some of these variables.
-
-                VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
-                if (predBlock != nullptr)
+                VARSET_TP       liveInEHVars(VarSetOps::Intersection(compiler, currentLiveVars, exceptVars));
+                VarSetOps::Iter iter(compiler, liveInEHVars);
+                unsigned        varIndex = 0;
+                while (iter.NextElem(&varIndex))
                 {
-                    // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
-                    VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
-                }
-                bool needsDummyDefs = (!VarSetOps::IsEmpty(compiler, newLiveIn) && block != compiler->fgFirstBB);
-
-                // Create dummy def RefPositions
-
-                if (needsDummyDefs)
-                {
-                    // If we are using locations from a predecessor, we should never require DummyDefs.
-                    assert(!predBlockIsAllocated);
-
-                    JITDUMP("Creating dummy definitions\n");
-                    VarSetOps::Iter iter(compiler, newLiveIn);
-                    unsigned        varIndex = 0;
-                    while (iter.NextElem(&varIndex))
+                    Interval* interval = getIntervalForLocalVar(varIndex);
+                    if (interval->recentRefPosition != nullptr)
                     {
-                        // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
-                        LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-                        assert(isCandidateVar(varDsc));
-                        Interval*    interval = getIntervalForLocalVar(varIndex);
-                        RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
-                                                          allRegs(interval->registerType));
-                        pos->setRegOptional(true);
+                        JITDUMP("  Marking RP #%d of V%02u as spillAfter\n", interval->recentRefPosition->rpNum,
+                                interval->varNum);
+                        interval->recentRefPosition->spillAfter;
                     }
-                    JITDUMP("Finished creating dummy definitions\n\n");
+                }
+            }
+            else
+            {
+                // Any lclVars live-in on a non-EH boundary edge are resolution candidates.
+                VarSetOps::UnionD(compiler, resolutionCandidateVars, currentLiveVars);
+
+                if (block != compiler->fgFirstBB)
+                {
+                    VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, currentLiveVars));
+                    if (predBlock != nullptr)
+                    {
+                        // Compute set difference: newLiveIn = currentLiveVars - predBlock->bbLiveOut
+                        VarSetOps::DiffD(compiler, newLiveIn, predBlock->bbLiveOut);
+                    }
+                    // Don't create dummy defs for EH vars; we'll load them from the stack as/when needed.
+                    VarSetOps::DiffD(compiler, newLiveIn, exceptVars);
+
+                    // Create dummy def RefPositions
+
+                    if (!VarSetOps::IsEmpty(compiler, newLiveIn))
+                    {
+                        // If we are using locations from a predecessor, we should never require DummyDefs.
+                        assert(!predBlockIsAllocated);
+
+                        JITDUMP("Creating dummy definitions\n");
+                        VarSetOps::Iter iter(compiler, newLiveIn);
+                        unsigned        varIndex = 0;
+                        while (iter.NextElem(&varIndex))
+                        {
+                            // Add a dummyDef for any candidate vars that are in the "newLiveIn" set.
+                            LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                            assert(isCandidateVar(varDsc));
+                            Interval*    interval = getIntervalForLocalVar(varIndex);
+                            RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
+                                                              allRegs(interval->registerType));
+                            pos->setRegOptional(true);
+                        }
+                        JITDUMP("Finished creating dummy definitions\n\n");
+                    }
                 }
             }
         }
@@ -2156,6 +2212,23 @@ void LinearScan::buildIntervals()
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
         currentLoc += 2;
         JITDUMP("\n");
+
+        if (firstColdLoc == MaxLocation)
+        {
+            if (block->isRunRarely())
+            {
+                firstColdLoc = currentLoc;
+                JITDUMP("firstColdLoc = %d\n", firstColdLoc);
+            }
+        }
+        else
+        {
+            // TODO: We'd like to assert the following but we don't currently ensure that only
+            // "RunRarely" blocks are contiguous.
+            // (The funclets will generally be last, but we don't follow layout order, so we
+            // don't have to preserve that in the block sequence.)
+            // assert(block->isRunRarely());
+        }
 
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange.NonPhiNodes())
@@ -2211,85 +2284,80 @@ void LinearScan::buildIntervals()
 
         if (enregisterLocalVars)
         {
-            // We don't need exposed uses for an EH edge, because no lclVars will be kept in
-            // registers across such edges.
-            if (!blockInfo[block->bbNum].hasEHBoundaryOut)
+            // Insert exposed uses for a lclVar that is live-out of 'block' but not live-in to the
+            // next block, or any unvisited successors.
+            // This will address lclVars that are live on a backedge, as well as those that are kept
+            // live at a GT_JMP.
+            //
+            // Blocks ending with "jmp method" are marked as BBJ_HAS_JMP,
+            // and jmp call is represented using GT_JMP node which is a leaf node.
+            // Liveness phase keeps all the arguments of the method live till the end of
+            // block by adding them to liveout set of the block containing GT_JMP.
+            //
+            // The target of a GT_JMP implicitly uses all the current method arguments, however
+            // there are no actual references to them.  This can cause LSRA to assert, because
+            // the variables are live but it sees no references.  In order to correctly model the
+            // liveness of these arguments, we add dummy exposed uses, in the same manner as for
+            // backward branches.  This will happen automatically via expUseSet.
+            //
+            // Note that a block ending with GT_JMP has no successors and hence the variables
+            // for which dummy use ref positions are added are arguments of the method.
+
+            VARSET_TP expUseSet(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
+            VarSetOps::IntersectionD(compiler, expUseSet, registerCandidateVars);
+            BasicBlock* nextBlock = getNextBlock();
+            if (nextBlock != nullptr)
             {
-                // Insert exposed uses for a lclVar that is live-out of 'block' but not live-in to the
-                // next block, or any unvisited successors.
-                // This will address lclVars that are live on a backedge, as well as those that are kept
-                // live at a GT_JMP.
-                //
-                // Blocks ending with "jmp method" are marked as BBJ_HAS_JMP,
-                // and jmp call is represented using GT_JMP node which is a leaf node.
-                // Liveness phase keeps all the arguments of the method live till the end of
-                // block by adding them to liveout set of the block containing GT_JMP.
-                //
-                // The target of a GT_JMP implicitly uses all the current method arguments, however
-                // there are no actual references to them.  This can cause LSRA to assert, because
-                // the variables are live but it sees no references.  In order to correctly model the
-                // liveness of these arguments, we add dummy exposed uses, in the same manner as for
-                // backward branches.  This will happen automatically via expUseSet.
-                //
-                // Note that a block ending with GT_JMP has no successors and hence the variables
-                // for which dummy use ref positions are added are arguments of the method.
-
-                VARSET_TP expUseSet(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
-                VarSetOps::IntersectionD(compiler, expUseSet, registerCandidateVars);
-                BasicBlock* nextBlock = getNextBlock();
-                if (nextBlock != nullptr)
+                VarSetOps::DiffD(compiler, expUseSet, nextBlock->bbLiveIn);
+            }
+            for (BasicBlock* succ : block->GetAllSuccs(compiler))
+            {
+                if (VarSetOps::IsEmpty(compiler, expUseSet))
                 {
-                    VarSetOps::DiffD(compiler, expUseSet, nextBlock->bbLiveIn);
-                }
-                for (BasicBlock* succ : block->GetAllSuccs(compiler))
-                {
-                    if (VarSetOps::IsEmpty(compiler, expUseSet))
-                    {
-                        break;
-                    }
-
-                    if (isBlockVisited(succ))
-                    {
-                        continue;
-                    }
-                    VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
+                    break;
                 }
 
-                if (!VarSetOps::IsEmpty(compiler, expUseSet))
+                if (isBlockVisited(succ))
                 {
-                    JITDUMP("Exposed uses:");
-                    VarSetOps::Iter iter(compiler, expUseSet);
-                    unsigned        varIndex = 0;
-                    while (iter.NextElem(&varIndex))
-                    {
-                        LclVarDsc* varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
-                        assert(isCandidateVar(varDsc));
-                        Interval*    interval = getIntervalForLocalVar(varIndex);
-                        regMaskTP    regMask  = allRegs(interval->registerType);
-                        RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, regMask);
-                        pos->setRegOptional(true);
-                        JITDUMP(" V%02u", compiler->lvaTrackedIndexToLclNum(varIndex));
-                    }
-                    JITDUMP("\n");
+                    continue;
                 }
+                VarSetOps::DiffD(compiler, expUseSet, succ->bbLiveIn);
             }
 
-            // Clear the "last use" flag on any vars that are live-out from this block.
+            if (!VarSetOps::IsEmpty(compiler, expUseSet))
             {
-                VARSET_TP       bbLiveDefs(VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveOut));
-                VarSetOps::Iter iter(compiler, bbLiveDefs);
+                JITDUMP("Exposed uses:");
+                VarSetOps::Iter iter(compiler, expUseSet);
                 unsigned        varIndex = 0;
                 while (iter.NextElem(&varIndex))
                 {
-                    LclVarDsc* const varDsc = compiler->lvaGetDescByTrackedIndex(varIndex);
+                    unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
+                    LclVarDsc* varDsc = compiler->lvaTable + varNum;
                     assert(isCandidateVar(varDsc));
-                    RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
-                    // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
-                    // lies.
-                    if ((lastRP != nullptr) && (lastRP->bbNum == block->bbNum))
-                    {
-                        lastRP->lastUse = false;
-                    }
+                    Interval*    interval = getIntervalForLocalVar(varIndex);
+                    RefPosition* pos =
+                        newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
+                    pos->setRegOptional(true);
+                    JITDUMP(" V%02u", varNum);
+                }
+                JITDUMP("\n");
+            }
+
+            // Clear the "last use" flag on any vars that are live-out from this block.
+            VARSET_TP       bbLiveDefs(VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveOut));
+            VarSetOps::Iter iter(compiler, bbLiveDefs);
+            unsigned        varIndex = 0;
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
+                LclVarDsc* const varDsc = &compiler->lvaTable[varNum];
+                assert(isCandidateVar(varDsc));
+                RefPosition* const lastRP = getIntervalForLocalVar(varIndex)->lastRefPosition;
+                // We should be able to assert that lastRP is non-null if it is live-out, but sometimes liveness
+                // lies.
+                if ((lastRP != nullptr) && (lastRP->bbNum == block->bbNum))
+                {
+                    lastRP->lastUse = false;
                 }
             }
 
@@ -2325,6 +2393,62 @@ void LinearScan::buildIntervals()
                 RefPosition* pos =
                     newRefPosition(interval, currentLoc, RefTypeExpUse, nullptr, allRegs(interval->registerType));
                 pos->setRegOptional(true);
+            }
+        }
+        // Adjust heuristics for writeThru intervals.
+        if (compiler->compHndBBtabCount > 0)
+        {
+            VarSetOps::Iter iter(compiler, exceptVars);
+            unsigned        varIndex = 0;
+            while (iter.NextElem(&varIndex))
+            {
+                unsigned   varNum   = compiler->lvaTrackedToVarNum[varIndex];
+                LclVarDsc* varDsc   = compiler->lvaTable + varNum;
+                Interval*  interval = getIntervalForLocalVar(varIndex);
+                assert(interval->isWriteThru);
+                BasicBlock::weight_t weight = varDsc->lvRefCntWtd();
+
+                // We'd like to only allocate registers for EH vars that have enough uses
+                // to compensate for the additional registers being live (and for the possibility
+                // that we may have to insert an additional copy).
+                // However, we don't currently have that information available. Instead, we'll
+                // aggressively assume that these vars are defined once, at their first RefPosition.
+                //
+                RefPosition* firstRefPosition = interval->firstRefPosition;
+
+                // Incoming reg args are given an initial weight of 2 * BB_UNITY_WEIGHT
+                // (see lvaComputeRefCounts(); this may be reviewed/changed in future).
+                //
+                BasicBlock::weight_t initialWeight = (firstRefPosition->refType == RefTypeParamDef)
+                                                         ? (2 * BB_UNITY_WEIGHT)
+                                                         : blockInfo[firstRefPosition->bbNum].weight;
+                weight -= initialWeight;
+
+                // If the remaining weight is less than the initial weight, we'd like to allocate it only
+                // opportunistically, but we don't currently have a mechanism to do so.
+                // For now, we'll just avoid using callee-save registers if the weight is too low.
+                if (interval->preferCalleeSave)
+                {
+                    // The benefit of a callee-save register isn't as high as it would be for a normal arg.
+                    // We'll have at least the cost of saving & restoring the callee-save register,
+                    // so we won't break even until we have at least 4 * BB_UNITY_WEIGHT.
+                    // Given that we also don't have a good way to tell whether the variable is live
+                    // across a call in the non-EH code, we'll be extra conservative about this.
+                    // Note that for writeThru intervals we don't update the preferences to be only callee-save.
+                    unsigned calleeSaveCount =
+                        (varTypeIsFloating(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                    if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
+                    {
+                        // If this is relatively low weight, don't prefer callee-save at all.
+                        interval->preferCalleeSave = false;
+                    }
+                    else
+                    {
+                        // In other cases, we'll add in the callee-save regs to the preferences, but not clear
+                        // the non-callee-save regs . We also handle this case specially in tryAllocateFreeReg().
+                        interval->registerPreferences |= calleeSaveRegs(interval->registerType);
+                    }
+                }
             }
         }
 
@@ -3023,7 +3147,20 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
                 srcInterval->assignRelatedInterval(varDefInterval);
             }
         }
-        newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(storeLoc->TypeGet()));
+        RefPosition* def =
+            newRefPosition(varDefInterval, currentLoc + 1, RefTypeDef, storeLoc, allRegs(storeLoc->TypeGet()));
+        if (varDefInterval->isWriteThru)
+        {
+            // We always make write-thru defs reg-optional, as we can store them if they don't
+            // get a register.
+            def->regOptional = true;
+        }
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        if (varTypeNeedsPartialCalleeSave(varDefInterval->registerType))
+        {
+            varDefInterval->isPartiallySpilled = false;
+        }
+#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     }
 
     return srcCount;
