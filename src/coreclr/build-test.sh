@@ -5,6 +5,12 @@ build_test_wrappers()
     if [[ "$__BuildTestWrappers" -ne -0 ]]; then
         echo "${__MsgPrefix}Creating test wrappers..."
 
+        if [[ $__Mono -eq 1 ]]; then
+            export RuntimeName="mono"
+        else
+            export RuntimeName="coreclr"
+        fi
+
         __Exclude="${__ProjectDir}/tests/issues.targets"
         __BuildLogRootName="Tests_XunitWrapper"
 
@@ -547,6 +553,9 @@ handle_arguments_local() {
             __SkipGenerateLayout=1
             ;;
 
+        excludemonofailures|-excludemonofailures)
+            __Mono=1
+            ;;
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -677,7 +686,7 @@ else
     echo " -------------------------------------------------- "
     echo " Example runtest.sh command"
     echo ""
-    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin"
+    echo " ./tests/runtest.sh --coreOverlayDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir --testRootDir=$__TestBinDir --copyNativeTestBin $__BuildType"
     echo " -------------------------------------------------- "
     echo "To run single test use the following command:"
     echo "    bash ${__TestBinDir}/__TEST_PATH__/__TEST_NAME__.sh -coreroot=${CORE_ROOT}"
