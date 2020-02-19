@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Finds the first PEM-encoded data.
+        /// Attempts to find the first PEM-encoded data.
         /// </summary>
         /// <param name="pemData">
         /// A span containing the PEM encoded data.
@@ -144,19 +144,21 @@ namespace System.Security.Cryptography
 
         private static bool IsValidLabel(ReadOnlySpan<char> data)
         {
-            static bool IsLabelChar(char c) => c >= 0x21 && c <= 0x7e && c != '-';
+            static bool IsInRange(char c, char min) => (uint)(c - min) <= (uint)('\x7E' - min);
 
             if (data.Length == 0)
                 return true;
 
-            // First character of label must be a labelchar
-            if (!IsLabelChar(data[0]))
+            // First character of label must be a labelchar, which is a character
+            // in 0x21..0x7e (both inclusive), except hyphens.
+            char firstChar = data[0];
+            if (!IsInRange(firstChar, '\x21') || firstChar == '-')
                 return false;
 
             for (int index = 1; index < data.Length; index++)
             {
-                char c = data[index];
-                if (!IsLabelChar(c) && c != ' ' && c != '-')
+                // Characters after the first are permitted to be spaces and hyphens
+                if (!IsInRange(data[index], '\x20'))
                 {
                     return false;
                 }

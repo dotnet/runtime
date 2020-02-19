@@ -73,7 +73,6 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Equal(3, fields.DecodedDataLength);
         }
 
-
         [Fact]
         public static void TryFind_True_EolMixed()
         {
@@ -209,6 +208,14 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        public static void TryFind_True_LabelCharacterBoundaries()
+        {
+            string content = $"-----BEGIN !PANIC~~~-----\nAHHH\n-----END !PANIC~~~-----";
+            Assert.True(PemEncoding.TryFind(content, out PemFields fields));
+            Assert.Equal("!PANIC~~~", content[fields.Label]);
+        }
+
+        [Fact]
         public static void TryFind_True_MultiPem()
         {
             string content = @"
@@ -279,6 +286,8 @@ Zm9v
         [InlineData("\tOOPS")]
         [InlineData(" OOPS")]
         [InlineData("-OOPS")]
+        [InlineData("te\x7fst")]
+        [InlineData("te\x19st")]
         public static void TryFind_False_InvalidLabel(string label)
         {
             string content = $"-----BEGIN {label}-----\nZm9v\n-----END {label}-----";
