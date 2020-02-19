@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (HttpClient client = CreateHttpClient())
                     {
-                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                         requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                         await client.SendAsync(requestMessage);
@@ -155,7 +155,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (HttpClient client = CreateHttpClient())
                     {
-                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                         requestMessage.Headers.Add("Cookie", "A=1");
                         requestMessage.Headers.Add("Cookie", "B=2");
                         requestMessage.Headers.Add("Cookie", "C=3");
@@ -182,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
 
         private string GetCookieValue(HttpRequestData request)
         {
-            if (!LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version < HttpVersion.Version20)
             {
                 // HTTP/1.x must have only one value.
                 return request.GetSingleHeaderValue("Cookie");
@@ -217,7 +217,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
@@ -244,7 +244,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     requestMessage.Headers.Add("Cookie", "A=1");
                     requestMessage.Headers.Add("Cookie", "B=2");
 
@@ -532,7 +532,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // Issue https://github.com/dotnet/corefx/issues/26986
+                // Issue https://github.com/dotnet/runtime/issues/24979
                 // WinHttpHandler does not process the cookie.
                 return;
             }

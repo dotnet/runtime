@@ -249,4 +249,10 @@
   <data name="net_sockets_valuetaskmisuse" xml:space="preserve">
     <value>A ValueTask returned from an asynchronous socket operation was consumed concurrently. ValueTasks must only ever be awaited once. (Id: {0}).</value>
   </data>
+  <data name="net_sockets_invalid_socketinformation" xml:space="preserve">
+    <value>The specified value for the socket information is invalid.</value>
+  </data>
+  <data name="net_sockets_asyncoperations_notallowed" xml:space="preserve">
+    <value>Asynchronous operations are not allowed on this socket. The underlying OS handle might have been already bound to an IO completion port.</value>
+  </data>
 </root>

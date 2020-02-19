@@ -33,9 +33,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, CancellationMode.Token)]
         public async Task PostAsync_CancelDuringRequestContentSend_TaskCanceledQuickly(bool chunkedTransfer, CancellationMode mode)
         {
-            if (LoopbackServerFactory.IsHttp2 && chunkedTransfer)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && chunkedTransfer)
             {
-                // There is no chunked encoding in HTTP/2
+                // There is no chunked encoding in HTTP/2 and later
                 return;
             }
 
@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
 
                         var waitToSend = new TaskCompletionSource<bool>();
                         var contentSending = new TaskCompletionSource<bool>();
-                        var req = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                        var req = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                         req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
@@ -80,9 +80,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(OneBoolAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseHeadersReceived_TaskCanceledQuickly(bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.IsHttp2 && connectionClose)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && connectionClose)
             {
-                // There is no Connection header in HTTP/2
+                // There is no Connection header in HTTP/2 and later
                 return;
             }
 
@@ -107,7 +107,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
+                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
                         Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -126,13 +126,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/28805")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/25760")]
         [MemberData(nameof(TwoBoolsAndCancellationMode))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Buffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, CancellationMode mode)
         {
-            if (LoopbackServerFactory.IsHttp2 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
             {
-                // There is no chunked encoding or connection header in HTTP/2
+                // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
 
@@ -163,7 +163,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
+                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                         req.Headers.ConnectionClose = connectionClose;
 
                         Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
@@ -186,9 +186,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(ThreeBools))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
-            if (LoopbackServerFactory.IsHttp2 && (chunkedTransfer || connectionClose))
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && (chunkedTransfer || connectionClose))
             {
-                // There is no chunked encoding or connection header in HTTP/2
+                // There is no chunked encoding or connection header in HTTP/2 and later
                 return;
             }
 
@@ -215,7 +215,7 @@ namespace System.Net.Http.Functional.Tests
                         await clientFinished.Task;
                     });
 
-                    var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
+                    var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = UseVersion };
                     req.Headers.ConnectionClose = connectionClose;
                     Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
@@ -312,10 +312,10 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
                 // HTTP/2 does not use connection limits.
-                throw new SkipTestException("Not supported on HTTP/2");
+                throw new SkipTestException("Not supported on HTTP/2 and later");
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -499,7 +499,7 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     using (var invoker = new HttpMessageInvoker(CreateHttpClientHandler()))
-                    using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = VersionFromUseHttp2 })
+                    using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = UseVersion })
                     try
                     {
                         using (HttpResponseMessage resp = await invoker.SendAsync(req, cancellationTokenSource.Token))

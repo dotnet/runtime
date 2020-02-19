@@ -14,11 +14,14 @@ namespace System.Security.Cryptography
 
     public abstract class SHA256 : HashAlgorithm
     {
-        protected SHA256() { }
+        protected SHA256()
+        {
+            HashSizeValue = 256;
+        }
 
         public static new SHA256 Create() => new Implementation();
 
-        public static new SHA256 Create(string hashName) => (SHA256)CryptoConfig.CreateFromName(hashName);
+        public static new SHA256? Create(string hashName) => (SHA256?)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA256
         {

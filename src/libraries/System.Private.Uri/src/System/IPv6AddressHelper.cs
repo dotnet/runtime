@@ -11,8 +11,6 @@ namespace System
     // The idea is to stay with static helper methods and strings
     internal static partial class IPv6AddressHelper
     {
-        // methods
-
         internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string? scopeId)
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];

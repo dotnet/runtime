@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System
@@ -73,43 +73,6 @@ namespace System.IO
         public void Write(long position, ulong value) { }
         public void WriteArray<T>(long position, T[] array, int offset, int count) where T : struct { }
         public void Write<T>(long position, ref T structure) where T : struct { }
-    }
-    public partial class UnmanagedMemoryStream : System.IO.Stream
-    {
-        protected UnmanagedMemoryStream() { }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe UnmanagedMemoryStream(byte* pointer, long length) { }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
-        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length) { }
-        public UnmanagedMemoryStream(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
-        public override bool CanRead { get { throw null; } }
-        public override bool CanSeek { get { throw null; } }
-        public override bool CanWrite { get { throw null; } }
-        public long Capacity { get { throw null; } }
-        public override long Length { get { throw null; } }
-        public override long Position { get { throw null; } set { } }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe byte* PositionPointer { get { throw null; } set { } }
-        public override void CopyTo(System.Buffers.ReadOnlySpanAction<byte, object?> callback, object? state, int bufferSize) { }
-        protected override void Dispose(bool disposing) { }
-        public override void Flush() { }
-        public override System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.CLSCompliantAttribute(false)]
-        protected unsafe void Initialize(byte* pointer, long length, long capacity, System.IO.FileAccess access) { }
-        protected void Initialize(System.Runtime.InteropServices.SafeBuffer buffer, long offset, long length, System.IO.FileAccess access) { }
-        public override int Read(byte[] buffer, int offset, int count) { throw null; }
-        public override int Read(System.Span<byte> destination) { throw null; }
-        public override System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public override int ReadByte() { throw null; }
-        public override long Seek(long offset, System.IO.SeekOrigin loc) { throw null; }
-        public override void SetLength(long value) { }
-        public override void Write(byte[] buffer, int offset, int count) { }
-        public override void Write(System.ReadOnlySpan<byte> source) { }
-        public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public override System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public override void WriteByte(byte value) { }
     }
 }
 namespace System.Runtime.CompilerServices
@@ -786,29 +749,6 @@ namespace System.Runtime.InteropServices
         protected SafeArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SafeArrayTypeMismatchException(string? message) { }
         public SafeArrayTypeMismatchException(string? message, System.Exception? inner) { }
-    }
-    public abstract partial class SafeBuffer : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
-    {
-        protected SafeBuffer(bool ownsHandle) : base (default(bool)) { }
-        [System.CLSCompliantAttribute(false)]
-        public ulong ByteLength { get { throw null; } }
-        [System.CLSCompliantAttribute(false)]
-        public unsafe void AcquirePointer(ref byte* pointer) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize(uint numElements, uint sizeOfEachElement) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize(ulong numBytes) { }
-        [System.CLSCompliantAttribute(false)]
-        public void Initialize<T>(uint numElements) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public T Read<T>(ulong byteOffset) where T : struct { throw null; }
-        public void ReleasePointer() { }
-        [System.CLSCompliantAttribute(false)]
-        public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count) where T : struct { }
-        [System.CLSCompliantAttribute(false)]
-        public void Write<T>(ulong byteOffset, T value) where T : struct { }
     }
     public partial class SEHException : System.Runtime.InteropServices.ExternalException
     {

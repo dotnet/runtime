@@ -39,6 +39,8 @@
 #define MONO_APPDOMAIN_SETUP_CLASS_NAME "MonoDomainSetup"
 #endif
 
+G_BEGIN_DECLS
+
 /*
  * If this is set, the memory belonging to appdomains is not freed when a domain is
  * unloaded, and assemblies loaded by the appdomain are not unloaded either. This
@@ -680,6 +682,9 @@ mono_runtime_install_appctx_properties (void);
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
 
+void
+mono_domain_ensure_entry_assembly (MonoDomain *domain, MonoAssembly *assembly);
+
 MonoAssemblyLoadContext *
 mono_domain_default_alc (MonoDomain *domain);
 
@@ -698,5 +703,7 @@ mono_domain_ambient_alc (MonoDomain *domain)
 	 */
 	return mono_domain_default_alc (domain);
 }
+
+G_END_DECLS
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

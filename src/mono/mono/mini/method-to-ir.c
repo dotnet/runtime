@@ -1719,7 +1719,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 
 	const MonoJitICallId jit_icall_id = mono_get_tls_key_to_jit_icall_id (key);
 
-	if (cfg->compile_aot) {
+	if (cfg->compile_aot && !cfg->llvm_only) {
 		MonoInst *addr;
 		/*
 		 * tls getters are critical pieces of code and we don't want to resolve them
@@ -2175,7 +2175,7 @@ direct_icalls_enabled (MonoCompile *cfg, MonoMethod *method)
 	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
 		return FALSE;
 
-	if (method && mono_aot_direct_icalls_enabled_for_method (cfg, method))
+	if (method && cfg->compile_aot && mono_aot_direct_icalls_enabled_for_method (cfg, method))
 		return TRUE;
 
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
@@ -2893,6 +2893,7 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, inited_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, inited_bb);
 
+		cfg->cbb->out_of_line = TRUE;
 		mono_emit_jit_icall (cfg, mono_generic_class_init, &vtable_arg);
 
 		MONO_START_BB (cfg, inited_bb);
@@ -6291,6 +6292,28 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_save_args (cfg, sig, inline_args);
 	}
 
+	if (cfg->method == method && cfg->self_init && cfg->compile_aot && !COMPILE_LLVM (cfg)) {
+		MonoMethod *wrapper;
+		MonoInst *args [2];
+		int idx;
+
+		/*
+		 * Emit code to initialize this method by calling the init wrapper emitted by LLVM.
+		 * This is not efficient right now, but its only used for the methods which fail
+		 * LLVM compilation.
+		 * FIXME: Optimize this
+		 */
+		g_assert (!cfg->gshared);
+		wrapper = mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD);
+		/* Emit this into the entry bb so it comes before the GC safe point which depends on an inited GOT */
+		cfg->cbb = cfg->bb_entry;
+		idx = mono_aot_get_method_index (cfg->method);
+		EMIT_NEW_ICONST (cfg, args [0], idx);
+		/* Dummy */
+		EMIT_NEW_ICONST (cfg, args [1], 0);
+		mono_emit_method_call (cfg, wrapper, args, NULL);
+	}
+
 	/* FIRST CODE BLOCK */
 	NEW_BBLOCK (cfg, tblock);
 	tblock->cil_code = ip;
@@ -6491,6 +6514,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				g_slist_free (class_inits);
 				class_inits = NULL;
 			}
+		}
+
+		/*
+		 * Methods with AggressiveInline flag could be inlined even if the class has a cctor.
+		 * This might create a branch so emit it in the first code bblock instead of into initlocals_bb.
+		 */
+		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method)) {
+			emit_class_init (cfg, method->klass);
 		}
 
 		if (skip_dead_blocks) {
@@ -11792,6 +11823,7 @@ op_to_op_src2_membase (MonoCompile *cfg, int load_opcode, int opcode)
 int
 mono_op_to_op_imm_noemul (int opcode)
 {
+MONO_DISABLE_WARNING(4065) // switch with default but no case
 	switch (opcode) {
 #if SIZEOF_REGISTER == 4 && !defined(MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS)
 	case OP_LSHR:
@@ -11813,6 +11845,7 @@ mono_op_to_op_imm_noemul (int opcode)
 	default:
 		return mono_op_to_op_imm (opcode);
 	}
+MONO_RESTORE_WARNING
 }
 
 /**

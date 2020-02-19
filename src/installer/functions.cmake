@@ -45,11 +45,11 @@ function(get_include_directories IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
     foreach(dir IN LISTS dirs)
 
-      if (CLR_CMAKE_PLATFORM_ARCH_ARM AND WIN32)
+      if (CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_WIN32)
         list(APPEND INC_DIRECTORIES /I${dir})
       else()
         list(APPEND INC_DIRECTORIES -I${dir})
-      endif(CLR_CMAKE_PLATFORM_ARCH_ARM AND WIN32)
+      endif(CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_WIN32)
 
     endforeach()
     set(${IncludeDirectories} ${INC_DIRECTORIES} PARENT_SCOPE)
@@ -85,7 +85,7 @@ function(preprocess_compile_asm)
   set(oneValueArgs OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
   cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
-  
+
   get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
   set (ASSEMBLED_OBJECTS "")
@@ -127,12 +127,12 @@ endfunction()
 function(get_include_directories_asm IncludeDirectories)
     get_directory_property(dirs INCLUDE_DIRECTORIES)
 
-    if (CLI_CMAKE_PLATFORM_ARCH_ARM AND WIN32)
+    if (CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_WIN32)
         list(APPEND INC_DIRECTORIES "-I ")
     endif()
 
     foreach(dir IN LISTS dirs)
-      if (CLI_CMAKE_PLATFORM_ARCH_ARM AND WIN32)
+      if (CLR_CMAKE_TARGET_ARCH_ARM AND CLR_CMAKE_TARGET_WIN32)
         list(APPEND INC_DIRECTORIES ${dir};)
       else()
         list(APPEND INC_DIRECTORIES -I${dir})

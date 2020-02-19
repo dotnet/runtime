@@ -29,8 +29,6 @@ namespace System.Net.Http.Headers
     //   object. E.g. the client receives a response with the following header: 'Via: 1.1 proxy, invalid'
     //   - HttpHeaders.GetValues() will return "1.1 proxy", "invalid"
     //   - HttpResponseHeaders.Via collection will only contain one ViaHeaderValue object with value "1.1 proxy"
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix",
-        Justification = "This is not a collection")]
     public abstract class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>>
     {
         private Dictionary<HeaderDescriptor, HeaderStoreItemInfo> _headerStore;

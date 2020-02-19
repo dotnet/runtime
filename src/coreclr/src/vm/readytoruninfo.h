@@ -86,7 +86,7 @@ public:
         return m_pLayout;
     }
 
-    IMAGE_DATA_DIRECTORY * FindSection(DWORD type);
+    IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type);
 
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T * pCount)
     {

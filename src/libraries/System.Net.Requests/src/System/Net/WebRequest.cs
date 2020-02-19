@@ -268,7 +268,7 @@ namespace System.Net
 
                     // Special case for when a partial host matching is requested, drop the added trailing slash
                     // IE: http://host could match host or host.domain
-                    if (!prefix.EndsWith("/", StringComparison.Ordinal)
+                    if (!prefix.EndsWith('/')
                         && tempUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped)
                             .Equals("/"))
                     {

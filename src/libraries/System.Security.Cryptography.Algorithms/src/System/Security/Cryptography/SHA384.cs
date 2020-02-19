@@ -14,11 +14,14 @@ namespace System.Security.Cryptography
 
     public abstract class SHA384 : HashAlgorithm
     {
-        protected SHA384() { }
+        protected SHA384()
+        {
+            HashSizeValue = 384;
+        }
 
         public static new SHA384 Create() => new Implementation();
 
-        public static new SHA384 Create(string hashName) => (SHA384)CryptoConfig.CreateFromName(hashName);
+        public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
 
         private sealed class Implementation : SHA384
         {

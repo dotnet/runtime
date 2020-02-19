@@ -20,24 +20,32 @@ namespace System.Net.Test.Common
         private Options _options;
         private Uri _uri;
 
-        // Use CreateServerAsync or similar to create
-        private LoopbackServer(Socket listenSocket, Options options)
+        public LoopbackServer(Options options = null)
         {
-            _listenSocket = listenSocket;
-            _options = options;
-
-            var localEndPoint = (IPEndPoint)listenSocket.LocalEndPoint;
-            string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
-                $"[{localEndPoint.Address}]" :
-                localEndPoint.Address.ToString();
-
-            string scheme = options.UseSsl ? "https" : "http";
-            if (options.WebSocketEndpoint)
+            _options = options ??= new Options();
+            try
             {
-                scheme = options.UseSsl ? "wss" : "ws";
-            }
+                _listenSocket = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                _listenSocket.Bind(new IPEndPoint(options.Address, 0));
+                _listenSocket.Listen(options.ListenBacklog);
 
-            _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
+                var localEndPoint = (IPEndPoint)_listenSocket.LocalEndPoint;
+                string host = options.Address.AddressFamily == AddressFamily.InterNetworkV6 ?
+                    $"[{localEndPoint.Address}]" :
+                    localEndPoint.Address.ToString();
+
+                string scheme = options.UseSsl ? "https" : "http";
+                if (options.WebSocketEndpoint)
+                {
+                    scheme = options.UseSsl ? "wss" : "ws";
+                }
+
+                _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
+            }
+            catch
+            {
+                _listenSocket.Dispose();
+            }
         }
 
         public override void Dispose()
@@ -50,38 +58,35 @@ namespace System.Net.Test.Common
         }
 
         public Socket ListenSocket => _listenSocket;
-        public Uri Uri => _uri;
+        public override Uri Address => _uri;
 
         public static async Task CreateServerAsync(Func<LoopbackServer, Task> funcAsync, Options options = null)
         {
-            options = options ?? new Options();
-
-            using (var listenSocket = new Socket(options.Address.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            using (var server = new LoopbackServer(options))
             {
-                listenSocket.Bind(new IPEndPoint(options.Address, 0));
-                listenSocket.Listen(options.ListenBacklog);
-
-                using (var server = new LoopbackServer(listenSocket, options))
-                {
-                    await funcAsync(server).ConfigureAwait(false);
-                }
+                await funcAsync(server).ConfigureAwait(false);
             }
         }
 
         public static Task CreateServerAsync(Func<LoopbackServer, Uri, Task> funcAsync, Options options = null)
         {
-            return CreateServerAsync(server => funcAsync(server, server.Uri), options);
+            return CreateServerAsync(server => funcAsync(server, server.Address), options);
         }
 
         public static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<LoopbackServer, Task> serverFunc, Options options = null)
         {
             return CreateServerAsync(async server =>
             {
-                Task clientTask = clientFunc(server.Uri);
+                Task clientTask = clientFunc(server.Address);
                 Task serverTask = serverFunc(server);
 
                 await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
             }, options);
+        }
+
+        public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
+        {
+            return await EstablishConnectionAsync();
         }
 
         public async Task<Connection> EstablishConnectionAsync()
@@ -378,18 +383,22 @@ namespace System.Net.Test.Common
         public class Options : GenericLoopbackOptions
         {
             public int ListenBacklog { get; set; } = 1;
-            public bool UseSsl { get; set; } = false;
-            public SslProtocols SslProtocols { get; set; } =
-#if !NETSTANDARD2_0
-                SslProtocols.Tls13 |
-#endif
-                SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }
             public string Domain { get; set; }
             public string Password { get; set; }
             public bool IsProxy { get; set; } = false;
+
+            public Options()
+            {
+                UseSsl = false;
+                SslProtocols =
+#if !NETSTANDARD2_0
+                SslProtocols.Tls13 |
+#endif
+                SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+            }
         }
 
         public sealed class Connection : GenericLoopbackConnection
@@ -664,7 +673,7 @@ namespace System.Net.Test.Common
                 {
                     if (requestData.GetHeaderValueCount("Content-Length") != 0)
                     {
-                        _contentLength = Int32.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
                     }
                     else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
                     {
@@ -868,18 +877,26 @@ namespace System.Net.Test.Common
     {
         public static readonly Http11LoopbackServerFactory Singleton = new Http11LoopbackServerFactory();
 
+        public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
+        {
+            return new LoopbackServer(CreateOptions(options));
+        }
+
         public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        {
+            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: CreateOptions(options));
+        }
+
+        private static LoopbackServer.Options CreateOptions(GenericLoopbackOptions options)
         {
             LoopbackServer.Options newOptions = new LoopbackServer.Options();
             if (options != null)
             {
                 newOptions.Address = options.Address;
             }
-
-            return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri), options: newOptions);
+            return newOptions;
         }
 
-        public override bool IsHttp11 => true;
-        public override bool IsHttp2 => false;
+        public override Version Version => HttpVersion.Version11;
     }
 }

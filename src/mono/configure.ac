@@ -4,7 +4,7 @@
 # This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
 # It should remain in the format they expect.
 #
-AC_INIT(mono, [6.11.0],
+AC_INIT(mono, [6.13.0],
         [https://github.com/mono/mono/issues/new])
 
 AC_CONFIG_SRCDIR([Makefile.am])
@@ -609,7 +609,7 @@ AC_CHECK_TOOL(CC, gcc, gcc)
 AC_PROG_CC
 AC_CHECK_TOOL(CXX, g++, g++)
 AC_PROG_CXX
-AM_PATH_PYTHON
+AM_PATH_PYTHON([3.2])
 AM_PROG_AS
 AC_PROG_INSTALL
 AC_PROG_AWK
@@ -677,7 +677,7 @@ AC_PROG_LD_GNU
 AC_CHECK_HEADERS(sys/filio.h sys/sockio.h netdb.h utime.h sys/utime.h semaphore.h sys/un.h linux/rtc.h sys/syscall.h sys/mkdev.h sys/uio.h sys/param.h sys/sysctl.h libproc.h sys/prctl.h copyfile.h gnu/lib-names.h)
 AC_CHECK_HEADERS(sys/param.h sys/socket.h sys/ipc.h sys/utsname.h alloca.h ucontext.h pwd.h sys/select.h netinet/tcp.h netinet/in.h unistd.h sys/types.h link.h asm/sigcontext.h sys/inotify.h arpa/inet.h complex.h unwind.h)
 
-# zlib/configure checks for unistd.h existance and defines HAVE_UNISTD_H on the compiler
+# zlib/configure checks for unistd.h existence and defines HAVE_UNISTD_H on the compiler
 # command line (not config.h) if it is present.
 AC_CHECK_HEADER(unistd.h,
     [HAVE_UNISTD_H=1
@@ -1208,6 +1208,7 @@ if test x$enable_monotouch = xyes; then
 fi
 
 AC_ARG_ENABLE(cxx, [  --enable-cxx   compile some code as C++])
+AM_CONDITIONAL(ENABLE_CXX, test x$enable_cxx = xyes)
 
 # mono/corefx/native has a lot of invalid C++98 in its headers
 # dotnet/corefx/native looks a lot better, i.e. 44e5bdafb8d989a220c9cf1b94f31a64a6e4f052
@@ -1362,7 +1363,9 @@ MONO_LLVM_PATH_OPTION=llvm-path="`pwd`/llvm/usr/bin"
 
 if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
-elif test x$with_runtime_preset = xnetcore; then
+fi
+
+if test x$with_runtime_preset = xnetcore; then
    # Keep in sync with winconfig.h netcore configuration.
    DISABLE_MCS_DOCS_default=yes
    BTLS_SUPPORTED=no
@@ -1756,7 +1759,7 @@ AM_CONDITIONAL(ENABLE_STATIC_GCC_LIBS, test "x$enable_static_gcc_libs" = "xyes")
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
      LIST is a comma-separated list from: aot, profiler, decimal, pinvoke, debug, appdomains, verifier, dllmap,
      reflection_emit, reflection_emit_save, large_code, logging, com, ssa, generics, attach, jit, interpreter, simd, soft_debug, perfcounters, normalization, desktop_loader, shared_perfcounters, remoting,
-	 security, lldb, mdb, assert_messages, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads.],
+	 security, lldb, mdb, assert_messages, config, cfgdir_config, cleanup, sgen_marksweep_conc, sgen_split_nursery, sgen_gc_bridge, sgen_debug_helpers, sockets, gac, threads, processes.],
 [
 	for feature in `echo "$enable_minimal" | sed -e "s/,/ /g"`; do
 		eval "mono_feature_disable_$feature='yes'"
@@ -1937,6 +1940,11 @@ if test "x$mono_feature_disable_cfgdir_config" = "xyes"; then
 	AC_MSG_NOTICE([Disabled config directories.])
 fi
 
+if test "x$mono_feature_disable_config" = "xyes"; then
+	AC_DEFINE(DISABLE_CONFIG, 1, [Disable .config file support.])
+	AC_MSG_NOTICE([Disabled .config file support.])
+fi
+
 if test "x$mono_feature_disable_cleanup" = "xyes"; then
 	AC_DEFINE(DISABLE_CLEANUP, 1, [Disable runtime cleanup.])
 	AC_MSG_NOTICE([Disabled runtime cleanup.])
@@ -1981,6 +1989,11 @@ fi
 if test "x$mono_feature_disable_threads" = "xyes"; then
 	AC_DEFINE(DISABLE_THREADS, 1, [Disable Threads])
 	AC_MSG_NOTICE([Disabled threading support])
+fi
+
+if test "x$mono_feature_disable_processes" = "xyes"; then
+	AC_DEFINE(DISABLE_PROCESSES, 1, [Disable process support])
+	AC_MSG_NOTICE([Disabled process support])
 fi
 
 AC_ARG_ENABLE(executables, [  --disable-executables disable the build of the runtime executables], enable_executables=$enableval, enable_executables=yes)
@@ -2937,6 +2950,23 @@ if test x$host_win32 = xno; then
 	fi
 
 	dnl ********************************
+	dnl *** Checks for sys_signame ***
+	dnl ********************************
+	AC_MSG_CHECKING(for sys_signame)
+		AC_TRY_LINK([
+		#include <signal.h>
+	], [
+		const char *signame = sys_signame[0];
+	], [
+		# Yes, we have it...
+		AC_MSG_RESULT(yes)
+		AC_DEFINE(HAVE_SYSSIGNAME, 1, [Have sys_signame])
+	], [
+		AC_MSG_RESULT(no)
+	])
+
+
+	dnl ********************************
 	dnl *** Checks for semaphore lib ***
 	dnl ********************************
 	# 'Real Time' functions on Solaris
@@ -2946,13 +2976,6 @@ if test x$host_win32 = xno; then
 
 	AC_SEARCH_LIBS(shm_open, pthread rt posix4) 
 	AC_CHECK_FUNCS(shm_open)
-
-	dnl ********************************
-	dnl ***  Checks for gettext lib  ***
-	dnl ********************************
-	# This is needed for some hackery for AIX;
-	# Mono itself doesn't use it, but DllMap includes it
-	AC_SEARCH_LIBS([gettext], [intl])
 
 	dnl ********************************
 	dnl *** Checks for timezone stuff **
@@ -4472,9 +4495,24 @@ case "$host" in
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 			TARGET=POWERPC64;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__ -D__mono_ppc64__"
-			if ! (echo $CC | grep -q -- 'clang'); then
-				CFLAGS="$CFLAGS -mminimal-toc"
-			fi
+			# mono#18554 - be more robust in testing for -mminimal-toc
+			AC_MSG_NOTICE([Checking for PowerPC ISA -mminimal-toc support])
+			AX_CHECK_COMPILE_FLAG(
+				[-mminimal-toc],
+				[CFLAGS="$CFLAGS -mminimal-toc"],
+				[CFLAGS="$CFLAGS"]
+			)
+			case "$host" in
+				powerpc*-*-freebsd*)
+					# We need to be aware if we are ELFv1 or v2 here
+					AC_MSG_NOTICE([Checking FreeBSD ELF version])
+					if ! ( echo | cc -dM -E - | awk '/_CALL_ELF/ {print $NF}'); then
+						AC_DEFINE([POWERPC_ELF], 1, [PowerPC ELFv1])
+					else
+						AC_DEFINE([POWERPC_ELFV2], 1, [PowerPC ELFv2])
+					fi
+					;;
+			esac
 		else
 			TARGET=POWERPC;
 			CPPFLAGS="$CPPFLAGS -D__mono_ppc__"
@@ -4486,6 +4524,10 @@ case "$host" in
 			BTLS_PLATFORM=powerpc
 			;;
 		  linux*)
+			BTLS_SUPPORTED=yes
+			BTLS_PLATFORM=powerpc
+			;;
+		  freebsd*)
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=powerpc
 			;;
@@ -6721,6 +6763,7 @@ AC_COMPILE_IFELSE(
 AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(CCLDFLAGS)
 AC_SUBST(ZLIB_CFLAGS)
 
 # Update all submodules recursively to ensure everything is checked out

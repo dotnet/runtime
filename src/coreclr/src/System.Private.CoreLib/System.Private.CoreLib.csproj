@@ -24,7 +24,7 @@
 
   <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
   <ItemGroup Label="Embedded Resources">
-    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Strings.resx">
+    <EmbeddedResource Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\Resources\Strings.resx">
       <GenerateSource>true</GenerateSource>
       <ClassName>System.SR</ClassName>
     </EmbeddedResource>
@@ -52,7 +52,7 @@
     <Nullable>enable</Nullable>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>CORECLR;NETCOREAPP</DefineConstants>
+    <DefineConstants>CORECLR;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -68,19 +68,19 @@
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DefineConstants>BIT64;AMD64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_64BIT;TARGET_AMD64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
-    <DefineConstants>BIT32;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
-    <DefineConstants>BIT32;ARM;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_32BIT;TARGET_ARM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <DefineConstants>BIT64;ARM64;$(DefineConstants)</DefineConstants>
+    <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
@@ -109,7 +109,6 @@
   <PropertyGroup>
     <!-- This is needed to embed build-time generated sources such as eventing and resource files to sourcelink PDBs. -->
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-    <CoreCompileDependsOn>$(CoreCompileDependsOn);AddUntrackedResourcesForSourceLink</CoreCompileDependsOn>
   </PropertyGroup>
 
   <!--
@@ -254,14 +253,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MemoryMarshal.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeLibrary.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyDependencyResolver.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\SR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
@@ -269,7 +266,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\StackCrawlMark.cs" />
@@ -449,6 +446,11 @@
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>
   </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
+    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+  </ItemGroup>
 
   <!-- Setup ILLink.targets -->
   <ItemGroup>
@@ -457,16 +459,7 @@
 
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
 
-  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
-  </Target>
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile"/>
 
-  <!-- This is working around dotnet/coreclr#26371 until dotnet/sourcelink#392 gets solved -->
-  <Target Name="AddUntrackedResourcesForSourceLink"
-          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
-          BeforeTargets="CoreCompile"
-          DependsOnTargets="SetEmbeddedFilesFromSourceControlManagerUntrackedFiles;_GenerateResxSource" >
-    <ItemGroup>
-      <EmbeddedFiles Include="@(GeneratedResxSource)" />
-    </ItemGroup>
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
 </Project>

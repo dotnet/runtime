@@ -303,7 +303,7 @@ namespace System.IO
 
                 using (DisableMediaInsertionPrompt.Create())
                 {
-                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
+                    handle = Interop.Kernel32.CreateFile(fullPath, (int)rights, share, &secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
                     ValidateFileHandle(handle, fullPath);
                 }
             }
@@ -322,7 +322,7 @@ namespace System.IO
                 // probably be consistent w/ every other directory.
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath).Length)
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath)!.Length)
                 {
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
                 }

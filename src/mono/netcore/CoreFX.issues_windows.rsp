@@ -27,7 +27,6 @@
 -nonamespace System.Security.Cryptography.Pkcs
 -nonamespace System.Runtime.InteropServices.WindowsRuntime
 -nonamespace System.Management.Tests
--nonamespace System.Data.SqlClient.Tests
 -nonamespace System.Threading.Overlapped.Tests
 -nonamespace System.ComponentModel.Composition
 -nonamespace BasicEventSourceTests

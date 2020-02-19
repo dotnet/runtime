@@ -3,14 +3,14 @@
 ; See the LICENSE file in the project root for more information.
 
 EXPORTS
-    OutOfProcessFunctionTableCallback
-    OutOfProcessFunctionTableCallbackEx
     DacDbiInterfaceInstance
 
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
+    OutOfProcessFunctionTableCallback
+    OutOfProcessFunctionTableCallbackEx
     OutOfProcessExceptionEventCallback
     OutOfProcessExceptionEventSignatureCallback
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
     OutOfProcessExceptionEventDebuggerLaunchCallback
 
     CLRDataCreateInstance

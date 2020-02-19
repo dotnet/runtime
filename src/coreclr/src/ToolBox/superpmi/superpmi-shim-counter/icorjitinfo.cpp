@@ -378,6 +378,15 @@ BOOL interceptor_ICJI::isValidStringRef(CORINFO_MODULE_HANDLE module, /* IN  */
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
+LPCWSTR interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,  /* IN  */
+                                           unsigned              metaTOK, /* IN  */
+                                           int*                  length   /* OUT */
+                                           )
+{
+    mcs->AddCall("getStringLiteral");
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+}
+
 BOOL interceptor_ICJI::shouldEnforceCallvirtRestriction(CORINFO_MODULE_HANDLE scope)
 {
     mcs->AddCall("shouldEnforceCallvirtRestriction");
@@ -1464,7 +1473,7 @@ InfoAccessType interceptor_ICJI::emptyStringLiteral(void** ppValue)
 }
 
 // (static fields only) given that 'field' refers to thread local store,
-// return the ID (TLS index), which is used to find the begining of the
+// return the ID (TLS index), which is used to find the beginning of the
 // TLS data area for the particular DLL 'field' is associated with.
 DWORD interceptor_ICJI::getFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {

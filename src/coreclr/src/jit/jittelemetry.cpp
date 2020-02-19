@@ -273,7 +273,7 @@ void JitTelemetry::NotifyNowayAssert(const char* filename, unsigned line)
     {
         codeSize  = comp->info.compILCodeSize;
         minOpts   = comp->opts.IsMinOptsSet() ? comp->opts.MinOpts() : -1;
-        lastPhase = PhaseNames[comp->previousCompletedPhase];
+        lastPhase = PhaseNames[comp->mostRecentlyActivePhase];
     }
 
     CacheCurrentMethodInfo();

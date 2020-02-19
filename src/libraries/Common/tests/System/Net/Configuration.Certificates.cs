@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Xunit;
@@ -23,6 +25,7 @@ namespace System.Net.Test.Common
             private static readonly X509Certificate2 s_noEKUCertificate;
             private static readonly X509Certificate2 s_selfSignedServerCertificate;
             private static readonly X509Certificate2 s_selfSignedClientCertificate;
+            private static X509Certificate2 s_selfSigned13ServerCertificate;
 
             static Certificates()
             {
@@ -69,6 +72,44 @@ namespace System.Net.Test.Common
             public static X509Certificate2 GetNoEKUCertificate() => new X509Certificate2(s_noEKUCertificate);
             public static X509Certificate2 GetSelfSignedServerCertificate() => new X509Certificate2(s_selfSignedServerCertificate);
             public static X509Certificate2 GetSelfSignedClientCertificate() => new X509Certificate2(s_selfSignedClientCertificate);
+
+            public static X509Certificate2 GetSelfSigned13ServerCertificate()
+            {
+                if (s_selfSigned13ServerCertificate == null)
+                {
+                    X509Certificate2 cert;
+
+                    using (ECDsa dsa = ECDsa.Create())
+                    {
+                        var certReq = new CertificateRequest("CN=testservereku.contoso.com", dsa, HashAlgorithmName.SHA256);
+                        certReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(false, false, 0, false));
+                        certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
+                        certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
+
+                        X509Certificate2 innerCert = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
+
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            using (innerCert)
+                            {
+                                cert = new X509Certificate2(innerCert.Export(X509ContentType.Pfx));
+                            }
+                        }
+                        else
+                        {
+                            cert = innerCert;
+                        }
+                    }
+
+                    if (Interlocked.CompareExchange(ref s_selfSigned13ServerCertificate, cert, null) != null)
+                    {
+                        // Lost a race to create.
+                        cert.Dispose();
+                    }
+                }
+
+                return new X509Certificate2(s_selfSigned13ServerCertificate);
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/26355")] // We aren't doing IDNA encoding properly
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24679")] // We aren't doing IDNA encoding properly
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalRequestHeaderValues_UsesIdnaEncoding_Success(string hostname)
@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = UseVersion };
                     request.Headers.Host = hostname;
                     request.Headers.Referrer = uri;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
@@ -87,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/26355")] // We aren't doing IDNA decoding properly
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24679")] // We aren't doing IDNA decoding properly
         [Theory]
         [MemberData(nameof(InternationalHostNames))]
         public async Task InternationalResponseHeaderValues_UsesIdnaDecoding_Success(string hostname)

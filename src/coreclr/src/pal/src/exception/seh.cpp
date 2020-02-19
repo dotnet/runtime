@@ -28,6 +28,7 @@ Abstract:
 #include "pal/process.h"
 #include "pal/malloc.hpp"
 #include "pal/signal.hpp"
+#include "pal/virtual.h"
 
 #if HAVE_MACH_EXCEPTIONS
 #include "machexception.h"
@@ -190,11 +191,11 @@ Parameters:
     PAL_SEHException* ex - the exception to throw.
 --*/
 extern "C"
-#ifdef _X86_
+#ifdef HOST_X86
 void __fastcall ThrowExceptionHelper(PAL_SEHException* ex)
-#else // _X86_
+#else // HOST_X86
 void ThrowExceptionHelper(PAL_SEHException* ex)
-#endif // !_X86_
+#endif // !HOST_X86
 {
     throw std::move(*ex);
 }
@@ -268,14 +269,16 @@ SEHProcessException(PAL_SEHException* exception)
                     // Check if the failed access has hit a stack guard page. In such case, it
                     // was a stack probe that detected that there is not enough stack left.
                     void* stackLimit = CPalThread::GetStackLimit();
-                    void* stackGuard = (void*)((size_t)stackLimit - getpagesize());
+                    void* stackOverflowBottom = (void*)((size_t)stackLimit - GetVirtualPageSize());
+                    // On some versions of glibc / platforms the stackLimit is an address of the guard page, on some
+                    // it is right above the guard page. 
+                    // So consider SIGSEGV in one page above and below stack limit to be stack overflow.
+                    void* stackOverflowTop = (void*)((size_t)stackLimit + GetVirtualPageSize());
                     void* violationAddr = (void*)exceptionRecord->ExceptionInformation[1];
-                    if ((violationAddr >= stackGuard) && (violationAddr < stackLimit))
+
+                    if ((violationAddr >= stackOverflowBottom) && (violationAddr < stackOverflowTop))
                     {
-                        // The exception happened in the page right below the stack limit,
-                        // so it is a stack overflow
-                        (void)write(STDERR_FILENO, StackOverflowMessage, sizeof(StackOverflowMessage) - 1);
-                        PROCAbort();
+                        exceptionRecord->ExceptionCode = EXCEPTION_STACK_OVERFLOW;
                     }
                 }
 

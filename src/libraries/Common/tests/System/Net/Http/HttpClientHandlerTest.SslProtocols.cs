@@ -154,7 +154,6 @@ namespace System.Net.Http.Functional.Tests
 
         // We have tests that validate with SslStream, but that's limited by what the current OS supports.
         // This tests provides additional validation against an external server.
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/26186")]
         [OuterLoop("Avoid www.ssllabs.com dependency in innerloop.")]
         [Theory]
         [MemberData(nameof(SupportedSSLVersionServers))]
@@ -251,7 +250,7 @@ namespace System.Net.Http.Functional.Tests
                 // Native WinHTTP sometimes uses multiple TCP connections to try other TLS protocols when
                 // getting TLS protocol failures as part of its TLS fallback algorithm. The loopback server
                 // doesn't expect this and stops listening for more connections. This causes unexpected test
-                // failures. See dotnet/corefx https://github.com/dotnet/corefx/issues/8538.
+                // failures. See https://github.com/dotnet/runtime/issues/17287.
                 return;
             }
 

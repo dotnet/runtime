@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -17,7 +17,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public readonly MethodGCInfoNode GCInfoNode;
 
         private readonly MethodDesc _method;
-        public SignatureContext SignatureContext { get; }
 
         private ObjectData _methodCode;
         private FrameInfo[] _frameInfos;
@@ -27,13 +26,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private NativeVarInfo[] _debugVarInfos;
         private DebugEHClauseInfo[] _debugEHClauseInfos;
         private List<ISymbolNode> _fixups;
+        private MethodDesc[] _inlinedMethods;
 
-        public MethodWithGCInfo(MethodDesc methodDesc, SignatureContext signatureContext)
+        public MethodWithGCInfo(MethodDesc methodDesc)
         {
             GCInfoNode = new MethodGCInfoNode(this);
             _fixups = new List<ISymbolNode>();
             _method = methodDesc;
-            SignatureContext = signatureContext;
         }
 
         public void SetCode(ObjectData data)
@@ -219,7 +218,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         protected override string GetName(NodeFactory factory)
         {
             Utf8StringBuilder sb = new Utf8StringBuilder();
+            sb.Append("MethodWithGCInfo(");
             AppendMangledName(factory.NameMangler, sb);
+            sb.Append(")");
             return sb.ToString();
         }
 
@@ -236,6 +237,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public FrameInfo[] FrameInfos => _frameInfos;
         public byte[] GCInfo => _gcInfo;
         public ObjectData EHInfo => _ehInfo;
+        public MethodDesc[] InlinedMethods => _inlinedMethods;
 
         public void InitializeFrameInfos(FrameInfo[] frameInfos)
         {
@@ -290,11 +292,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
             MethodWithGCInfo otherNode = (MethodWithGCInfo)other;
-            int result = comparer.Compare(_method, otherNode._method);
-            if (result != 0)
-                return result;
+            return comparer.Compare(_method, otherNode._method);
+        }
 
-            return SignatureContext.CompareTo(otherNode.SignatureContext, comparer);
+        public void InitializeInliningInfo(MethodDesc[] inlinedMethods)
+        {
+            Debug.Assert(_inlinedMethods == null);
+            _inlinedMethods = inlinedMethods;
         }
 
         public int Offset => 0;

@@ -153,11 +153,11 @@ namespace System.Text.Encodings.Web.Tests
                 else if (value == (uint)'&') { writer.Write("&amp;"); }
                 else if (value == (uint)'<') { writer.Write("&lt;"); }
                 else if (value == (uint)'>') { writer.Write("&gt;"); }
-                else { WriteEncodedScalarAsNumericEntity(ref writer, value); }
+                else { WriteEncodedScalarAsNumericEntity(ref writer, (int)value); }
             }
 
             // Writes a scalar value as an HTML-encoded numeric entity.
-            private static void WriteEncodedScalarAsNumericEntity(ref Writer writer, uint value)
+            private static void WriteEncodedScalarAsNumericEntity(ref Writer writer, int value)
             {
                 // We're building the characters up in reverse
                 char* chars = stackalloc char[8 /* "FFFFFFFF" */];
@@ -166,7 +166,7 @@ namespace System.Text.Encodings.Web.Tests
                 {
                     Debug.Assert(numCharsWritten < 8, "Couldn't have written 8 characters out by this point.");
                     // Pop off the last nibble
-                    chars[numCharsWritten++] = HexUtil.UInt32LsbToHexDigit(value & 0xFU);
+                    chars[numCharsWritten++] = HexConverter.ToCharLower(value);
                     value >>= 4;
                 } while (value != 0);
 
@@ -325,8 +325,8 @@ namespace System.Text.Encodings.Web.Tests
 
             // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
             // See ECMA-262, Sec. 7.8.4, and ECMA-404, Sec. 9
-            // http://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
-            // http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
+            // https://www.ecma-international.org/ecma-262/5.1/#sec-7.8.4
+            // https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
             protected override void WriteEncodedScalar(ref Writer writer, uint value)
             {
                 // ECMA-262 allows encoding U+000B as "\v", but ECMA-404 does not.
@@ -343,17 +343,17 @@ namespace System.Text.Encodings.Web.Tests
                 else if (value == (uint)'\r') { writer.Write(@"\r"); }
                 else if (value == (uint)'/') { writer.Write(@"\/"); }
                 else if (value == (uint)'\\') { writer.Write(@"\\"); }
-                else { WriteEncodedScalarAsNumericEntity(ref writer, value); }
+                else { WriteEncodedScalarAsNumericEntity(ref writer, (int)value); }
             }
 
             // Writes a scalar value as an JavaScript-escaped character (or sequence of characters).
-            private static void WriteEncodedScalarAsNumericEntity(ref Writer writer, uint value)
+            private static void WriteEncodedScalarAsNumericEntity(ref Writer writer, int value)
             {
-                if (UnicodeHelpers.IsSupplementaryCodePoint((int)value))
+                if (UnicodeHelpers.IsSupplementaryCodePoint(value))
                 {
                     // Convert this back to UTF-16 and write out both characters.
                     char leadingSurrogate, trailingSurrogate;
-                    UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue((int)value, out leadingSurrogate, out trailingSurrogate);
+                    UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue(value, out leadingSurrogate, out trailingSurrogate);
                     WriteEncodedSingleCharacter(ref writer, leadingSurrogate);
                     WriteEncodedSingleCharacter(ref writer, trailingSurrogate);
                 }
@@ -365,17 +365,17 @@ namespace System.Text.Encodings.Web.Tests
             }
 
             // Writes an encoded scalar value (in the BMP) as a JavaScript-escaped character.
-            private static void WriteEncodedSingleCharacter(ref Writer writer, uint value)
+            private static void WriteEncodedSingleCharacter(ref Writer writer, int value)
             {
-                Debug.Assert(!UnicodeHelpers.IsSupplementaryCodePoint((int)value), "The incoming value should've been in the BMP.");
+                Debug.Assert(!UnicodeHelpers.IsSupplementaryCodePoint(value), "The incoming value should've been in the BMP.");
 
                 // Encode this as 6 chars "\uFFFF".
                 writer.Write('\\');
                 writer.Write('u');
-                writer.Write(HexUtil.UInt32LsbToHexDigit(value >> 12));
-                writer.Write(HexUtil.UInt32LsbToHexDigit((value >> 8) & 0xFU));
-                writer.Write(HexUtil.UInt32LsbToHexDigit((value >> 4) & 0xFU));
-                writer.Write(HexUtil.UInt32LsbToHexDigit(value & 0xFU));
+                writer.Write(HexConverter.ToCharLower(value >> 12));
+                writer.Write(HexConverter.ToCharLower(value >> 8));
+                writer.Write(HexConverter.ToCharLower(value >> 4));
+                writer.Write(HexConverter.ToCharLower(value));
             }
         }
     }
@@ -581,11 +581,9 @@ namespace System.Text.Encodings.Web.Tests
                 uint asUtf8 = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue(value);
                 do
                 {
-                    char highNibble, lowNibble;
-                    HexUtil.ByteToHexDigits((byte)asUtf8, out highNibble, out lowNibble);
                     writer.Write('%');
-                    writer.Write(highNibble);
-                    writer.Write(lowNibble);
+                    writer.Write(HexConverter.ToCharLower((int)(asUtf8 >> 4)));
+                    writer.Write(HexConverter.ToCharLower((int)asUtf8));
                 } while ((asUtf8 >>= 8) != 0);
             }
         }

@@ -14,11 +14,14 @@ namespace System.Security.Cryptography
 
     public abstract class MD5 : HashAlgorithm
     {
-        protected MD5() { }
+        protected MD5()
+        {
+            HashSizeValue = 128;
+        }
 
         public static new MD5 Create() => new Implementation();
 
-        public static new MD5 Create(string algName) => (MD5)CryptoConfig.CreateFromName(algName);
+        public static new MD5? Create(string algName) => (MD5?)CryptoConfig.CreateFromName(algName);
 
         private sealed class Implementation : MD5
         {

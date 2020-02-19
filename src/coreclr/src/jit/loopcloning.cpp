@@ -18,6 +18,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
+//      bb      Basic block of the new tree
 //
 // Return Values:
 //      Returns the gen tree representation for arrLen or MD Array node as defined by
@@ -27,7 +28,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //      This tree produces GT_INDEX node, the caller is supposed to morph it appropriately
 //      so it can be codegen'ed.
 //
-GenTree* LC_Array::ToGenTree(Compiler* comp)
+GenTree* LC_Array::ToGenTree(Compiler* comp, BasicBlock* bb)
 {
     // If jagged array
     if (type == Jagged)
@@ -43,7 +44,7 @@ GenTree* LC_Array::ToGenTree(Compiler* comp)
         // If asked for arrlen invoke arr length operator.
         if (oper == ArrLen)
         {
-            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length);
+            GenTree* arrLen = comp->gtNewArrLen(TYP_INT, arr, OFFSETOF__CORINFO_Array__length, bb);
             return arrLen;
         }
         else
@@ -65,12 +66,13 @@ GenTree* LC_Array::ToGenTree(Compiler* comp)
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
+//      bb      Basic block of the new tree
 //
 // Return Values:
 //      Returns the gen tree representation for either a constant or a variable or an arrLen operation
 //      defined by the "type" member
 //
-GenTree* LC_Ident::ToGenTree(Compiler* comp)
+GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
 {
     // Convert to GenTree nodes.
     switch (type)
@@ -81,7 +83,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp)
         case Var:
             return comp->gtNewLclvNode(constant, comp->lvaTable[constant].lvType);
         case ArrLen:
-            return arrLen.ToGenTree(comp);
+            return arrLen.ToGenTree(comp, bb);
         case Null:
             return comp->gtNewIconNode(0, TYP_REF);
         default:
@@ -96,18 +98,19 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp)
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
+//      bb      Basic block of the new tree
 //
 // Return Values:
 //      Returns the gen tree representation for either a constant or a variable or an arrLen operation
 //      defined by the "type" member
 //
-GenTree* LC_Expr::ToGenTree(Compiler* comp)
+GenTree* LC_Expr::ToGenTree(Compiler* comp, BasicBlock* bb)
 {
     // Convert to GenTree nodes.
     switch (type)
     {
         case Ident:
-            return ident.ToGenTree(comp);
+            return ident.ToGenTree(comp, bb);
         default:
             assert(!"Could not convert LC_Expr to GenTree");
             unreached();
@@ -120,14 +123,15 @@ GenTree* LC_Expr::ToGenTree(Compiler* comp)
 //
 // Arguments:
 //      comp    Compiler instance to allocate trees
+//      bb      Basic block of the new tree
 //
 // Return Values:
 //      Returns the gen tree representation for the conditional operator on lhs and rhs trees
 //
-GenTree* LC_Condition::ToGenTree(Compiler* comp)
+GenTree* LC_Condition::ToGenTree(Compiler* comp, BasicBlock* bb)
 {
-    GenTree* op1Tree = op1.ToGenTree(comp);
-    GenTree* op2Tree = op2.ToGenTree(comp);
+    GenTree* op1Tree = op1.ToGenTree(comp, bb);
+    GenTree* op2Tree = op2.ToGenTree(comp, bb);
     assert(genTypeSize(genActualType(op1Tree->TypeGet())) == genTypeSize(genActualType(op2Tree->TypeGet())));
     return comp->gtNewOperNode(oper, TYP_INT, op1Tree, op2Tree);
 }
@@ -676,11 +680,11 @@ void LoopCloneContext::CondToStmtInBlock(Compiler*                          comp
     noway_assert(conds.Size() > 0);
 
     // Get the first condition.
-    GenTree* cond = conds[0].ToGenTree(comp);
+    GenTree* cond = conds[0].ToGenTree(comp, block);
     for (unsigned i = 1; i < conds.Size(); ++i)
     {
         // Append all conditions using AND operator.
-        cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp));
+        cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, block));
     }
 
     // Add "cond == 0" node

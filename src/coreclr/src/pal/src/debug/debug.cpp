@@ -20,7 +20,7 @@ Revision History:
 
 --*/
 
-#ifndef BIT64
+#ifndef HOST_64BIT
 #undef _LARGEFILE64_SOURCE
 #undef _FILE_OFFSET_BITS
 #endif

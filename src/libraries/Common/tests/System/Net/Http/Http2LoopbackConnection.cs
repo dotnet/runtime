@@ -315,18 +315,7 @@ namespace System.Net.Test.Common
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
         {
-            int value = headerBlock[0] & prefixMask;
-            if (value != prefixMask)
-            {
-                return (1, value);
-            }
-
-            byte b = headerBlock[1];
-            if ((b & 0b10000000) != 0)
-            {
-                throw new Exception("long integers currently not supported");
-            }
-            return (2, prefixMask + b);
+            return QPackTestDecoder.DecodeInteger(headerBlock, prefixMask);
         }
 
         private static (int bytesConsumed, string value) DecodeString(ReadOnlySpan<byte> headerBlock)

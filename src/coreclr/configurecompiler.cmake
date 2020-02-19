@@ -8,193 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cmake_policy(SET CMP0083 NEW)
 
-include(CheckPIESupported)
 include(CheckCXXCompilerFlag)
-
-
-# All code we build should be compiled as position independent
-check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT_OUTPUT LANGUAGES CXX)
-if(NOT MSVC AND NOT CMAKE_CXX_LINK_PIE_SUPPORTED)
-  message(WARNING "PIE is not supported at link time: ${PIE_SUPPORT_OUTPUT}.\n"
-                  "PIE link options will not be passed to linker.")
-endif()
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-#----------------------------------------
-# Detect and set platform variable names
-#     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
-#     - for windows we use the passed in parameter to CMAKE to determine build arch
-#----------------------------------------
-if(CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(CLR_CMAKE_HOST_UNIX 1)
-    if(CLR_CROSS_COMPONENTS_BUILD)
-        # CMAKE_HOST_SYSTEM_PROCESSOR returns the value of `uname -p` on host.
-        if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL amd64)
-            if(CLR_CMAKE_TARGET_ARCH STREQUAL "arm" OR CLR_CMAKE_TARGET_ARCH STREQUAL "armel")
-                if(CMAKE_CROSSCOMPILING)
-                    set(CLR_CMAKE_HOST_UNIX_X86 1)
-                else()
-                    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-                endif()
-            else()
-                set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-            endif()
-        elseif(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL i686)
-            set(CLR_CMAKE_HOST_UNIX_X86 1)
-        else()
-            clr_unknown_arch()
-        endif()
-    else()
-        # CMAKE_SYSTEM_PROCESSOR returns the value of `uname -p` on target.
-        # For the AMD/Intel 64bit architecture two different strings are common.
-        # Linux and Darwin identify it as "x86_64" while FreeBSD and netbsd uses the
-        # "amd64" string. Accept either of the two here.
-        if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
-            set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
-            set(CLR_CMAKE_HOST_UNIX_ARM 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm)
-            set(CLR_CMAKE_HOST_UNIX_ARM 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
-            set(CLR_CMAKE_HOST_UNIX_ARM64 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
-            set(CLR_CMAKE_HOST_UNIX_X86 1)
-        else()
-            clr_unknown_arch()
-        endif()
-    endif()
-    set(CLR_CMAKE_HOST_LINUX 1)
-
-    # Detect Linux ID
-    set(LINUX_ID_FILE "/etc/os-release")
-    if(CMAKE_CROSSCOMPILING)
-        set(LINUX_ID_FILE "${CMAKE_SYSROOT}${LINUX_ID_FILE}")
-    endif()
-
-    execute_process(
-        COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
-        OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    if(DEFINED CLR_CMAKE_LINUX_ID)
-        if(CLR_CMAKE_LINUX_ID STREQUAL tizen)
-            set(CLR_CMAKE_TARGET_TIZEN_LINUX 1)
-        elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
-            set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
-        endif()
-    endif(DEFINED CLR_CMAKE_LINUX_ID)
-endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
-
-if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_DARWIN 1)
-  set(CMAKE_ASM_COMPILE_OBJECT "${CMAKE_C_COMPILER} <FLAGS> <DEFINES> <INCLUDES> -o <OBJECT> -c <SOURCE>")
-endif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-
-if(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_FREEBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL FreeBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_OPENBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL OpenBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-  set(CLR_CMAKE_HOST_NETBSD 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL NetBSD)
-
-if(CMAKE_SYSTEM_NAME STREQUAL SunOS)
-  set(CLR_CMAKE_HOST_UNIX 1)
-  EXECUTE_PROCESS(
-    COMMAND isainfo -n
-    OUTPUT_VARIABLE SUNOS_NATIVE_INSTRUCTION_SET
-    )
-  if(SUNOS_NATIVE_INSTRUCTION_SET MATCHES "amd64")
-    set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-    set(CMAKE_SYSTEM_PROCESSOR "amd64")
-  else()
-    clr_unknown_arch()
-  endif()
-  set(CLR_CMAKE_HOST_SUNOS 1)
-endif(CMAKE_SYSTEM_NAME STREQUAL SunOS)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
-
-#--------------------------------------------
-# This repo builds two set of binaries
-# 1. binaries which execute on target arch machine
-#        - for such binaries host architecture & target architecture are same
-#        - eg. coreclr.dll
-# 2. binaries which execute on host machine but target another architecture
-#        - host architecture is different from target architecture
-#        - eg. crossgen.exe - runs on x64 machine and generates nis targeting arm64
-#        - for complete list of such binaries refer to file crosscomponents.cmake
-#-------------------------------------------------------------
-# Set HOST architecture variables
-if(CLR_CMAKE_HOST_UNIX_ARM)
-    set(CLR_CMAKE_HOST_ARCH_ARM 1)
-    set(CLR_CMAKE_HOST_ARCH "arm")
-elseif(CLR_CMAKE_HOST_UNIX_ARM64)
-    set(CLR_CMAKE_HOST_ARCH_ARM64 1)
-    set(CLR_CMAKE_HOST_ARCH "arm64")
-elseif(CLR_CMAKE_HOST_UNIX_AMD64)
-    set(CLR_CMAKE_HOST_ARCH_AMD64 1)
-    set(CLR_CMAKE_HOST_ARCH "x64")
-elseif(CLR_CMAKE_HOST_UNIX_X86)
-    set(CLR_CMAKE_HOST_ARCH_I386 1)
-    set(CLR_CMAKE_HOST_ARCH "x86")
-elseif(WIN32)
-    # CLR_CMAKE_HOST_ARCH is passed in as param to cmake
-    if (CLR_CMAKE_HOST_ARCH STREQUAL x64)
-        set(CLR_CMAKE_HOST_ARCH_AMD64 1)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL x86)
-        set(CLR_CMAKE_HOST_ARCH_I386 1)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm)
-        set(CLR_CMAKE_HOST_ARCH_ARM 1)
-    elseif(CLR_CMAKE_HOST_ARCH STREQUAL arm64)
-        set(CLR_CMAKE_HOST_ARCH_ARM64 1)
-    else()
-        clr_unknown_arch()
-    endif()
-endif()
-
-# Set TARGET architecture variables
-# Target arch will be a cmake param (optional) for both windows as well as non-windows build
-# if target arch is not specified then host & target are same
-if(NOT DEFINED CLR_CMAKE_TARGET_ARCH OR CLR_CMAKE_TARGET_ARCH STREQUAL "" )
-  set(CLR_CMAKE_TARGET_ARCH ${CLR_CMAKE_HOST_ARCH})
-endif()
-
-# Set target architecture variables
-if (CLR_CMAKE_TARGET_ARCH STREQUAL x64)
-    set(CLR_CMAKE_TARGET_ARCH_AMD64 1)
-  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL x86)
-    set(CLR_CMAKE_TARGET_ARCH_I386 1)
-  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm64)
-    set(CLR_CMAKE_TARGET_ARCH_ARM64 1)
-  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL arm)
-    set(CLR_CMAKE_TARGET_ARCH_ARM 1)
-  elseif(CLR_CMAKE_TARGET_ARCH STREQUAL armel)
-    set(CLR_CMAKE_TARGET_ARCH_ARM 1)
-    set(ARM_SOFTFP 1)
-  else()
-    clr_unknown_arch()
-endif()
-
-# check if host & target arch combination are valid
-if(NOT(CLR_CMAKE_TARGET_ARCH STREQUAL CLR_CMAKE_HOST_ARCH))
-    if(NOT((CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM64) OR (CLR_CMAKE_HOST_ARCH_I386 AND CLR_CMAKE_TARGET_ARCH_ARM) OR (CLR_CMAKE_HOST_ARCH_AMD64 AND CLR_CMAKE_TARGET_ARCH_ARM)))
-        message(FATAL_ERROR "Invalid host and target arch combination")
-    endif()
-endif()
 
 #-----------------------------------------------------
 # Initialize Cmake compiler flags and other variables
@@ -372,15 +189,15 @@ endif(CLR_CMAKE_HOST_FREEBSD)
 # Definitions (for platform)
 #-----------------------------------
 if (CLR_CMAKE_HOST_ARCH_AMD64)
-  add_definitions(-D_AMD64_)
-  add_definitions(-DBIT64)
+  add_definitions(-DHOST_AMD64)
+  add_definitions(-DHOST_64BIT)
 elseif (CLR_CMAKE_HOST_ARCH_I386)
-  add_definitions(-D_X86_)
+  add_definitions(-DHOST_X86)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
-  add_definitions(-D_ARM_)
+  add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
-  add_definitions(-D_ARM64_)
-  add_definitions(-DBIT64)
+  add_definitions(-DHOST_ARM64)
+  add_definitions(-DHOST_64BIT)
 else ()
   clr_unknown_arch()
 endif ()
@@ -402,7 +219,7 @@ if (CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_UNIX)
-  add_definitions(-DPLATFORM_UNIX)
+  add_definitions(-DHOST_UNIX)
 
   if(CLR_CMAKE_HOST_DARWIN)
     message("Detected OSX x86_64")
@@ -417,24 +234,30 @@ if (CLR_CMAKE_HOST_UNIX)
   endif(CLR_CMAKE_HOST_NETBSD)
 endif(CLR_CMAKE_HOST_UNIX)
 
-if (WIN32)
-  add_definitions(-DPLATFORM_WINDOWS)
+if (CLR_CMAKE_HOST_WIN32)
+  add_definitions(-DHOST_WINDOWS)
 
   # Define the CRT lib references that link into Desktop imports
   set(STATIC_MT_CRT_LIB  "libcmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-endif(WIN32)
+endif(CLR_CMAKE_HOST_WIN32)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
+    add_definitions(-DTARGET_AMD64)
+    add_definitions(-DTARGET_64BIT)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM64)
     set(ARCH_SOURCES_DIR arm64)
+    add_definitions(-DTARGET_ARM64)
+    add_definitions(-DTARGET_64BIT)
 elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
+    add_definitions(-DTARGET_ARM)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_SOURCES_DIR i386)
+    add_definitions(-DTARGET_X86)
 else ()
     clr_unknown_arch()
 endif ()
@@ -464,9 +287,6 @@ if (CLR_CMAKE_HOST_UNIX)
       add_compile_options(-fstack-protector-strong)
     endif()
   endif(CLR_CMAKE_HOST_DARWIN)
-
-  # Contracts are disabled on UNIX.
-  add_definitions(-DDISABLE_CONTRACTS)
 
   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
     # All warnings that are not explicitly disabled are reported as errors
@@ -507,6 +327,7 @@ if (CLR_CMAKE_HOST_UNIX)
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
   else()
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
     add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-unknown-pragmas)
     check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
@@ -529,6 +350,26 @@ if (CLR_CMAKE_HOST_UNIX)
     add_link_options(${MACOS_VERSION_MIN_FLAGS})
   endif(CLR_CMAKE_HOST_DARWIN)
 endif(CLR_CMAKE_HOST_UNIX)
+
+if(CLR_CMAKE_TARGET_UNIX)
+  add_definitions(-DTARGET_UNIX)
+  # Contracts are disabled on UNIX.
+  add_definitions(-DDISABLE_CONTRACTS)
+  if(CLR_CMAKE_TARGET_DARWIN)
+    add_definitions(-DTARGET_DARWIN)
+  endif(CLR_CMAKE_TARGET_DARWIN)
+  if(CLR_CMAKE_TARGET_FREEBSD)
+    add_definitions(-DTARGET_FREEBSD)
+  endif(CLR_CMAKE_TARGET_FREEBSD)
+  if(CLR_CMAKE_TARGET_LINUX)
+    add_definitions(-DTARGET_LINUX)
+  endif(CLR_CMAKE_TARGET_LINUX)
+  if(CLR_CMAKE_TARGET_NETBSD)
+    add_definitions(-DTARGET_NETBSD)
+  endif(CLR_CMAKE_TARGET_NETBSD)
+else(CLR_CMAKE_TARGET_UNIX)
+  add_definitions(-DTARGET_WINDOWS)
+endif(CLR_CMAKE_TARGET_UNIX)
 
 if(CLR_CMAKE_HOST_UNIX_ARM)
    if (NOT DEFINED CLR_ARM_FPU_TYPE)

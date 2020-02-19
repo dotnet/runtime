@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.False(proxy.Disposed);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/32809")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
@@ -111,14 +111,14 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public void Proxy_UseEnvironmentVariableToSetSystemProxy_RequestGoesThruProxy()
         {
-            RemoteExecutor.Invoke(async (useHttp2String) =>
+            RemoteExecutor.Invoke(async (useVersionString) =>
             {
                 var options = new LoopbackProxyServer.Options { AddViaRequestHeader = true };
                 using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
                 {
                     Environment.SetEnvironmentVariable("http_proxy", proxyServer.Uri.AbsoluteUri.ToString());
 
-                    using (HttpClient client = CreateHttpClient(useHttp2String))
+                    using (HttpClient client = CreateHttpClient(useVersionString))
                     using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -126,10 +126,10 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Contains(proxyServer.ViaHeader, body);
                     }
                 }
-            }, UseHttp2.ToString()).Dispose();
+            }, UseVersion.ToString()).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/32809")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1507")]
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -220,7 +220,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

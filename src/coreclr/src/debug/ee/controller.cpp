@@ -1388,7 +1388,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
         }
     }
 // TODO: : determine if this is needed for AMD64
-#if defined(_TARGET_X86_) //REVISIT_TODO what is this?!
+#if defined(TARGET_X86) //REVISIT_TODO what is this?!
     else
     {
         DWORD oldProt;
@@ -1415,7 +1415,7 @@ bool DebuggerController::ApplyPatch(DebuggerControllerPatch *patch)
             return false;
         }
     }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
     return true;
 }
@@ -1504,7 +1504,7 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         // !!! IL patch logic assumes reference encoding
         //
 // TODO: : determine if this is needed for AMD64
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
         _ASSERTE(*(unsigned short*)(patch->address+1) == CEE_BREAK);
 
         *(unsigned short *) (patch->address+1)
@@ -1552,7 +1552,7 @@ void DebuggerController::UnapplyPatchAt(DebuggerControllerPatch *patch,
         // !!! IL patch logic assumes reference encoding
         //
 // TODO: : determine if this is needed for AMD64
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         _ASSERTE(*(unsigned short*)(address+1) == CEE_BREAK);
 
         *(unsigned short *) (address+1)
@@ -1626,7 +1626,7 @@ PRD_TYPE DebuggerController::GetPatchedOpcode(CORDB_ADDRESS_TYPE *address)
 // <REVISIT_TODO>
 // TODO: : determine if this is needed for AMD64
 // </REVISIT_TODO>
-#ifdef _TARGET_X86_ //what is this?!
+#ifdef TARGET_X86 //what is this?!
         else
         {
             //
@@ -1635,7 +1635,7 @@ PRD_TYPE DebuggerController::GetPatchedOpcode(CORDB_ADDRESS_TYPE *address)
 
             opcode = *(unsigned short*)(address+1);
         }
-#endif //_TARGET_X86_
+#endif //TARGET_X86
 
     }
 
@@ -2253,7 +2253,7 @@ bool DebuggerController::ModuleHasPatches( Module* pModule )
 //
 static bool _AddrIsJITHelper(PCODE addr)
 {
-#if !defined(BIT64) && !defined(FEATURE_PAL)
+#if !defined(HOST_64BIT) && !defined(TARGET_UNIX)
     // Is the address in the runtime dll (clr.dll or coreclr.dll) at all? (All helpers are in
     // that dll)
     if (g_runtimeLoadedBaseAddress <= addr &&
@@ -2285,9 +2285,9 @@ static bool _AddrIsJITHelper(PCODE addr)
              "_ANIM: address within runtime dll, but not a helper function "
              "0x%08x\n", addr));
     }
-#else // !defined(BIT64) && !defined(FEATURE_PAL)
+#else // !defined(HOST_64BIT) && !defined(TARGET_UNIX)
     // TODO: Figure out what we want to do here
-#endif // !defined(BIT64) && !defined(FEATURE_PAL)
+#endif // !defined(HOST_64BIT) && !defined(TARGET_UNIX)
 
     return false;
 }
@@ -4372,7 +4372,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
     NativeWalker::DecodeInstructionForPatchSkip(patchBypass, &(m_instrAttrib));
 
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
 
 
     // The code below handles RIP-relative addressing on AMD64.  the original implementation made the assumption that
@@ -4415,7 +4415,7 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
             }
         }
     }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #endif // !FEATURE_EMULATE_SINGLESTEP
 
@@ -4464,14 +4464,14 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
         ControllerLockHolder lockController;
         g_pEEInterface->MarkThreadForDebugStepping(thread, true);
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         WORD opcode2 = 0;
 
         if (Is32BitInstruction(patch->opcode))
         {
             opcode2 = CORDbgGetInstruction((CORDB_ADDRESS_TYPE *)(((DWORD)patch->address) + 2));
         }
-#endif // _TARGET_ARM_
+#endif // TARGET_ARM
 
         thread->BypassWithSingleStep(patch->address, patch->opcode ARM_ARG(opcode2));
         m_singleStep = true;
@@ -4479,9 +4479,9 @@ DebuggerPatchSkip::DebuggerPatchSkip(Thread *thread,
 
 #else // FEATURE_EMULATE_SINGLESTEP
 
-#ifdef _TARGET_ARM64_
+#ifdef TARGET_ARM64
     patchBypass = NativeWalker::SetupOrSimulateInstructionForPatchSkip(context, m_pSharedPatchBypassBuffer, (const BYTE *)patch->address, patch->opcode);
-#endif //_TARGET_ARM64_
+#endif //TARGET_ARM64
 
     //set eip to point to buffer...
     SetIP(context, (PCODE)patchBypass);
@@ -4686,7 +4686,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 
     LOG((LF_CORDB,LL_INFO10000, "DPS::TEH: doing the patch-skip thing\n"));
 
-#if defined(_TARGET_ARM64_) && !defined(FEATURE_EMULATE_SINGLESTEP)
+#if defined(TARGET_ARM64) && !defined(FEATURE_EMULATE_SINGLESTEP)
 
     if (!IsSingleStep(exception->ExceptionCode))
     {
@@ -4719,7 +4719,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
     if (m_instrAttrib.m_fIsCall && IsSingleStep(exception->ExceptionCode))
     {
         // Fixup return address on stack
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         SIZE_T *sp = (SIZE_T *) GetSP(context);
 
         LOG((LF_CORDB, LL_INFO10000,
@@ -4741,7 +4741,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
 
         if (IsSingleStep(exception->ExceptionCode))
         {
-#ifndef FEATURE_PAL
+#ifndef TARGET_UNIX
             // Check if the current IP is anywhere near the exception dispatcher logic.
             // If it is, ignore the exception, as the real exception is coming next.
             static FARPROC pExcepDispProc = NULL;
@@ -4776,7 +4776,7 @@ TP_RESULT DebuggerPatchSkip::TriggerExceptionHook(Thread *thread, CONTEXT * cont
                     return (TPR_IGNORE_AND_STOP);
                 }
             }
-#endif // FEATURE_PAL
+#endif // TARGET_UNIX
 
             // If the IP is close to the skip patch start, or if we were skipping over a call, then assume the IP needs
             // adjusting.
@@ -4863,7 +4863,7 @@ bool DebuggerPatchSkip::TriggerSingleStep(Thread *thread, const BYTE *ip)
             return false;
         }
     }
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
     // Dev11 91932: for RIP-relative writes we need to copy the value that was written in our buffer to the actual address
     _ASSERTE(m_pSharedPatchBypassBuffer);
     if (m_pSharedPatchBypassBuffer->RipTargetFixup)
@@ -5736,7 +5736,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
         return false;
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     LOG((LF_CORDB,LL_INFO1000, "GetJitInfo for pc = 0x%x (addr of "
         "that value:0x%x)\n", (const BYTE*)(GetControlPC(&info->m_activeFrame.registers)),
         info->m_activeFrame.registers.PCTAddr));
@@ -6174,7 +6174,7 @@ void DebuggerStepper::TrapStepOut(ControllerStackInfo *info, bool fForceTraditio
         // There should always be a frame for the parent method.
         _ASSERTE(info->HasReturnFrame());
 
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
         while (info->HasReturnFrame() && info->m_activeFrame.md != info->GetReturnFrame().md)
         {
             StackTraceTicket ticket(info);
@@ -8499,7 +8499,7 @@ DebuggerFuncEvalComplete::DebuggerFuncEvalComplete(Thread *thread,
                                                    void *dest)
   : DebuggerController(thread, NULL)
 {
-#ifdef _TARGET_ARM_
+#ifdef TARGET_ARM
     m_pDE = reinterpret_cast<DebuggerEvalBreakpointInfoSegment*>(((DWORD)dest) & ~THUMB_CODE)->m_associatedDebuggerEval;
 #else
     m_pDE = reinterpret_cast<DebuggerEvalBreakpointInfoSegment*>(dest)->m_associatedDebuggerEval;
@@ -8523,10 +8523,10 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
     // Restore the thread's context to what it was before we hijacked it for this func eval.
     CONTEXT *pCtx = GetManagedLiveCtx(thread);
 #ifdef FEATURE_DATABREAKPOINT
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
         #error Not supported
-#endif // FEATURE_PAL
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // TARGET_UNIX
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     // If a data breakpoint is set while we hit a breakpoint inside a FuncEval, this will make sure the data breakpoint stays
     m_pDE->m_context.Dr0 = pCtx->Dr0;
     m_pDE->m_context.Dr1 = pCtx->Dr1;
@@ -8936,19 +8936,19 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 
     bool hitDataBp = false;
     bool result = false;
-#ifdef FEATURE_PAL
+#ifdef TARGET_UNIX
     #error Not supported
-#endif // FEATURE_PAL
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // TARGET_UNIX
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     PDR6 pdr6 = (PDR6)&(pContext->Dr6);
 
     if (pdr6->B0 || pdr6->B1 || pdr6->B2 || pdr6->B3)
     {
         hitDataBp = true;
     }
-#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#else // defined(TARGET_X86) || defined(TARGET_AMD64)
     #error Not supported
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
     if (hitDataBp)
     {
         if (g_pDebugger->IsThreadAtSafePlace(thread))
@@ -8961,7 +8961,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
             CONTEXT contextToAdjust;
             BOOL adjustedContext = FALSE;
             memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
-            adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);
+            adjustedContext = g_pEEInterface->AdjustContextForJITHelpersForDebugger(&contextToAdjust);
             if (adjustedContext)
             {
                 LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));

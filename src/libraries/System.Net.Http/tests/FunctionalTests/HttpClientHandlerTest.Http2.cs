@@ -20,7 +20,7 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
-        protected override bool UseHttp2 => true;
+        protected override Version UseVersion => HttpVersion.Version20;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 
@@ -209,7 +209,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/35466")]
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(SettingId.MaxFrameSize, 16383, ProtocolErrors.PROTOCOL_ERROR)]
         [InlineData(SettingId.MaxFrameSize, 162777216, ProtocolErrors.PROTOCOL_ERROR)]
@@ -1771,7 +1770,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2Connection_Should_Wrap_HttpContent_InvalidOperationException()
         {
-            // test for https://github.com/dotnet/corefx/issues/39295
+            // test for https://github.com/dotnet/runtime/issues/30187
             var throwingContent = new ThrowingContent(() => new InvalidOperationException());
 
             var tcs = new TaskCompletionSource<bool>();
@@ -1799,7 +1798,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2Connection_Should_Not_Wrap_HttpContent_CustomException()
         {
             // Assert existing HttpConnection behaviour in which custom HttpContent exception types are surfaced as-is
-            // c.f. https://github.com/dotnet/corefx/issues/39295#issuecomment-510569836
+            // c.f. https://github.com/dotnet/runtime/issues/30187#issuecomment-510569836
 
             var throwingContent = new ThrowingContent(() => new CustomException());
 

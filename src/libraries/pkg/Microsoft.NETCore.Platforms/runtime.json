@@ -554,6 +554,74 @@
         "linux-x64"
       ]
     },
+    "ios": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "ios-arm64": {
+      "#import": [
+        "ios",
+        "unix-arm64"
+      ]
+    },
+    "ios-x64": {
+      "#import": [
+        "ios",
+        "unix-x64"
+      ]
+    },
+    "ios.11": {
+      "#import": [
+        "ios"
+      ]
+    },
+    "ios.11-arm64": {
+      "#import": [
+        "ios.11",
+        "ios-arm64"
+      ]
+    },
+    "ios.11-x64": {
+      "#import": [
+        "ios.11",
+        "ios-x64"
+      ]
+    },
+    "ios.12": {
+      "#import": [
+        "ios.11"
+      ]
+    },
+    "ios.12-arm64": {
+      "#import": [
+        "ios.12",
+        "ios.11-arm64"
+      ]
+    },
+    "ios.12-x64": {
+      "#import": [
+        "ios.12",
+        "ios.11-x64"
+      ]
+    },
+    "ios.13": {
+      "#import": [
+        "ios.12"
+      ]
+    },
+    "ios.13-arm64": {
+      "#import": [
+        "ios.13",
+        "ios.12-arm64"
+      ]
+    },
+    "ios.13-x64": {
+      "#import": [
+        "ios.13",
+        "ios.12-x64"
+      ]
+    },
     "linux": {
       "#import": [
         "unix"
@@ -1344,6 +1412,125 @@
       "#import": [
         "tizen.5.0.0",
         "tizen.4.0.0-x86"
+      ]
+    },
+    "tizen.5.5.0": {
+      "#import": [
+        "tizen.5.0.0"
+      ]
+    },
+    "tizen.5.5.0-armel": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-armel"
+      ]
+    },
+    "tizen.5.5.0-x86": {
+      "#import": [
+        "tizen.5.5.0",
+        "tizen.5.0.0-x86"
+      ]
+    },
+    "tizen.6.0.0": {
+      "#import": [
+        "tizen.5.5.0"
+      ]
+    },
+    "tizen.6.0.0-armel": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-armel"
+      ]
+    },
+    "tizen.6.0.0-x86": {
+      "#import": [
+        "tizen.6.0.0",
+        "tizen.5.5.0-x86"
+      ]
+    },
+    "tvos": {
+      "#import": [
+        "unix"
+      ]
+    },
+    "tvos-arm64": {
+      "#import": [
+        "tvos",
+        "unix-arm64"
+      ]
+    },
+    "tvos-x64": {
+      "#import": [
+        "tvos",
+        "unix-x64"
+      ]
+    },
+    "tvos.10": {
+      "#import": [
+        "tvos"
+      ]
+    },
+    "tvos.10-arm64": {
+      "#import": [
+        "tvos.10",
+        "tvos-arm64"
+      ]
+    },
+    "tvos.10-x64": {
+      "#import": [
+        "tvos.10",
+        "tvos-x64"
+      ]
+    },
+    "tvos.11": {
+      "#import": [
+        "tvos.10"
+      ]
+    },
+    "tvos.11-arm64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-arm64"
+      ]
+    },
+    "tvos.11-x64": {
+      "#import": [
+        "tvos.11",
+        "tvos.10-x64"
+      ]
+    },
+    "tvos.12": {
+      "#import": [
+        "tvos.11"
+      ]
+    },
+    "tvos.12-arm64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-arm64"
+      ]
+    },
+    "tvos.12-x64": {
+      "#import": [
+        "tvos.12",
+        "tvos.11-x64"
+      ]
+    },
+    "tvos.13": {
+      "#import": [
+        "tvos.12"
+      ]
+    },
+    "tvos.13-arm64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-arm64"
+      ]
+    },
+    "tvos.13-x64": {
+      "#import": [
+        "tvos.13",
+        "tvos.12-x64"
       ]
     },
     "ubuntu": {

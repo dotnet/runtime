@@ -94,8 +94,7 @@ mono_interp_objref (MonoObject **o)
 
 /*
  * Value types are represented on the eval stack as pointers to the
- * actual storage. The size field tells how much storage is allocated.
- * A value type can't be larger than 16 MB.
+ * actual storage. A value type cannot be larger than 16 MB.
  */
 typedef struct {
 	union {
@@ -122,6 +121,13 @@ typedef struct _InterpFrame InterpFrame;
 
 typedef void (*MonoFuncV) (void);
 typedef void (*MonoPIFunc) (void *callme, void *margs);
+
+
+typedef enum {
+	IMETHOD_CODE_INTERP,
+	IMETHOD_CODE_COMPILED,
+	IMETHOD_CODE_UNKNOWN
+} InterpMethodCodeType;
 
 /* 
  * Structure representing a method transformed for the interpreter 
@@ -163,6 +169,7 @@ typedef struct _InterpMethod
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
 	MonoProfilerCallInstrumentationFlags prof_flags;
+	InterpMethodCodeType code_type;
 #ifdef ENABLE_EXPERIMENT_TIERED
 	MiniTieredCounter tiered_counter;
 #endif
@@ -176,10 +183,14 @@ struct _StackFragment {
 };
 
 typedef struct {
-	StackFragment *first, *last, *current;
+	StackFragment *first, *current;
 	/* For GC sync */
 	int inited;
 } FrameStack;
+
+
+/* Arguments that are passed when invoking only a finally/filter clause from the frame */
+typedef struct FrameClauseArgs FrameClauseArgs;
 
 /* State of the interpreter main loop */
 typedef struct {
@@ -187,7 +198,8 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	gpointer clause_args;
+	FrameClauseArgs *clause_args;
+	gboolean is_void : 1;
 } InterpState;
 
 struct _InterpFrame {
@@ -260,6 +272,9 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 
 void
 mono_interp_print_code (InterpMethod *imethod);
+
+gboolean
+mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 
 static inline int
 mint_type(MonoType *type_)

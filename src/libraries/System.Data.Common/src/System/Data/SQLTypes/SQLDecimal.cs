@@ -486,7 +486,8 @@ namespace System.Data.SqlTypes
             // m_data1 = *pInt++; // lo part
             // m_data2 = *pInt++; // mid part
 
-            int[] bits = decimal.GetBits(value);
+            Span<int> bits = stackalloc int[4];
+            decimal.GetBits(value, bits);
             uint sgnscl;
 
             unchecked
@@ -777,7 +778,7 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        private SqlDecimal(uint[] rglData, byte bLen, byte bPrec, byte bScale, bool fPositive)
+        private SqlDecimal(ReadOnlySpan<uint> rglData, byte bLen, byte bPrec, byte bScale, bool fPositive)
         {
             CheckValidPrecScale(bPrec, bScale);
             Debug.Assert(rglData.Length >= 4);
@@ -924,11 +925,11 @@ namespace System.Data.SqlTypes
             AssertValid();
 
             // Make local copy of data to avoid modifying input.
-            uint[] rgulNumeric = new uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rgulNumeric = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
             int culLen = _bLen;
-            char[] pszTmp = new char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
-                                                                     //the decimal digits, from the
-                                                                     //lowest significant to highest significant
+            Span<char> pszTmp = stackalloc char[s_NUMERIC_MAX_PRECISION + 1];   //Local Character buffer to hold
+            pszTmp.Clear();                                                     //the decimal digits, from the
+                                                                                //lowest significant to highest significant
 
             int iDigits = 0; //Number of significant digits
             uint ulRem; //Remainder of a division by x_ulBase10, i.e.,least significant digit
@@ -1263,8 +1264,8 @@ namespace System.Data.SqlTypes
             culOp1 = x._bLen;
             culOp2 = y._bLen;
 
-            uint[] rglData1 = new uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            uint[] rglData2 = new uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
+            Span<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
 
             if (fOpSignPos)
             {
@@ -1312,7 +1313,7 @@ namespace System.Data.SqlTypes
                 if (x.LAbsCmp(y) < 0)
                 {
                     fResSignPos = !fResSignPos;
-                    uint[] rguiTemp = rglData2;
+                    Span<uint> rguiTemp = rglData2;
                     rglData2 = rglData1;
                     rglData1 = rguiTemp;
                     culOp1 = culOp2;
@@ -1449,13 +1450,14 @@ namespace System.Data.SqlTypes
 
             // II) Perform multiplication
 
-            uint[] rglData1 = new uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            uint[] rglData2 = new uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
+            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
 
             //Local buffer to hold the result of multiplication.
             //Longer than CReNumeBuf because full precision of multiplication is carried out
             const int x_culNumeMultRes = 9;       // Maximum # UI4s in result buffer in multiplication
-            uint[] rgulRes = new uint[x_culNumeMultRes]; //new [] are already initialized to zero
+            Span<uint> rgulRes = stackalloc uint[x_culNumeMultRes]; //new [] are already initialized to zero
+            rgulRes.Clear(); // but spans in core libraries are not for performance reasons so clear it
             int culRes;             // # of UI4s in result
             int idRes = 0;
 
@@ -1682,12 +1684,14 @@ namespace System.Data.SqlTypes
 
             // Step2: Actual Computation
 
-            uint[] rgulData1 = new uint[4] { x._data1, x._data2, x._data3, x._data4 };
-            uint[] rgulData2 = new uint[4] { y._data1, y._data2, y._data3, y._data4 };
+            Span<uint> rgulData1 = stackalloc uint[4] { x._data1, x._data2, x._data3, x._data4 };
+            Span<uint> rgulData2 = stackalloc uint[4] { y._data1, y._data2, y._data3, y._data4 };
 
             // Buffers for arbitrary precision divide
-            uint[] rgulR = new uint[s_cNumeMax + 1];
-            uint[] rgulQ = new uint[s_cNumeMax];
+            Span<uint> rgulR = stackalloc uint[s_cNumeMax + 1];
+            Span<uint> rgulQ = stackalloc uint[s_cNumeMax];
+            rgulR.Clear();
+            rgulQ.Clear();
             // # of ULONGs in result
             int culQ, culR;
 
@@ -1788,7 +1792,7 @@ namespace System.Data.SqlTypes
             Debug.Assert(CLenFromPrec(_bPrec) >= _bLen, "CLenFromPrec(m_bPrec) >= m_bLen", "In AssertValid");
             Debug.Assert(_bLen <= s_cNumeMax, "m_bLen <= x_cNumeMax", "In AssertValid");
 
-            uint[] rglData = new uint[4] { _data1, _data2, _data3, _data4 };
+            ReadOnlySpan<uint> rglData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
 
             // highest UI4 is non-0 unless value "zero"
             if (rglData[_bLen - 1] == 0)
@@ -1828,7 +1832,7 @@ namespace System.Data.SqlTypes
                 }
         */
         // Set all extra uints to zero
-        private static void ZeroToMaxLen(uint[] rgulData, int cUI4sCur)
+        private static void ZeroToMaxLen(Span<uint> rgulData, int cUI4sCur)
         {
             Debug.Assert(rgulData.Length == s_cNumeMax, "rgulData.Length == x_cNumeMax", "Invalid array length");
 
@@ -1877,7 +1881,7 @@ namespace System.Data.SqlTypes
         // The array in Shiloh. Listed here for comparison.
         //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
         //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
-        private static readonly byte[] s_rgCLenFromPrec = new byte[]
+        private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
             2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
@@ -1888,7 +1892,7 @@ namespace System.Data.SqlTypes
         {
             Debug.Assert(bPrec <= MaxPrecision && bPrec > 0, "bPrec <= MaxPrecision && bPrec > 0",
                            "Invalid numeric precision");
-            return s_rgCLenFromPrec[bPrec - 1];
+            return RgCLenFromPrec[bPrec - 1];
         }
 
         // check whether is zero
@@ -1905,7 +1909,7 @@ namespace System.Data.SqlTypes
              (_data3 == 0x5a86c47aL) && (_data2 >= 0x098a2240L));
         }
 
-        private bool FGt10_38(uint[] rglData)
+        private bool FGt10_38(Span<uint> rglData)
         {
             Debug.Assert(rglData.Length == 4, "rglData.Length == 4", "Wrong array length: " + rglData.Length.ToString(CultureInfo.InvariantCulture));
 
@@ -2062,7 +2066,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                uint[] rgulU = new uint[4] { _data1, _data2, _data3, _data4 };
+                Span<uint> rgulU = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
                 Prec = 0;
                 do
                 {
@@ -2093,7 +2097,7 @@ namespace System.Data.SqlTypes
             int iData;                  // which UI4 in this we are on
             int iDataMax = _bLen; // # of UI4s in this
 
-            uint[] rguiData = new uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
 
             // Add, starting at the LS UI4 until out of UI4s or no carry
             iData = 0;
@@ -2138,7 +2142,7 @@ namespace System.Data.SqlTypes
             ulong dwlNextAccum = 0;   // accumulation past dwlAccum
             int iData;              // which UI4 in *This we are on.
 
-            uint[] rguiData = new uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
 
             for (iData = 0; iData < iDataMax; iData++)
             {
@@ -2198,7 +2202,7 @@ namespace System.Data.SqlTypes
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
 
             // Copy into array, so that we can iterate through the data
-            uint[] rguiData = new uint[4] { _data1, _data2, _data3, _data4 };
+            Span<uint> rguiData = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
 
             // Start from the MS UI4 of quotient, divide by divisor, placing result
             //        in quotient and carrying the remainder.
@@ -2408,8 +2412,8 @@ namespace System.Data.SqlTypes
             if (culOp != culThis)
                 return (culThis > culOp) ? 1 : -1;
 
-            uint[] rglData1 = new uint[4] { _data1, _data2, _data3, _data4 };
-            uint[] rglData2 = new uint[4] { snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4 };
+            ReadOnlySpan<uint> rglData1 = stackalloc uint[4] { _data1, _data2, _data3, _data4 };
+            ReadOnlySpan<uint> rglData2 = stackalloc uint[4] { snumOp._data1, snumOp._data2, snumOp._data3, snumOp._data4 };
 
             // Loop through numeric value checking each byte for differences.
             iData = culOp - 1;
@@ -2430,9 +2434,9 @@ namespace System.Data.SqlTypes
         // Move multi-precision number
         private static void MpMove
         (
-        uint[] rgulS,      // In    | Source number
+        ReadOnlySpan<uint> rgulS,      // In    | Source number
         int ciulS,      // In    | # of digits in S
-        uint[] rgulD,      // Out    | Destination number
+        Span<uint> rgulD,      // Out    | Destination number
         out int ciulD       // Out    | # of digits in D
         )
         {
@@ -2448,7 +2452,7 @@ namespace System.Data.SqlTypes
         // Set multi-precision number to one super-digit
         private static void MpSet
         (
-        uint[] rgulD,      // Out    | Number
+        Span<uint> rgulD,      // Out    | Number
         out int ciulD,      // Out    | # of digits in D
         uint iulN        // In    | ULONG to set
         )
@@ -2460,7 +2464,7 @@ namespace System.Data.SqlTypes
         // Normalize multi-precision number - remove leading zeroes
         private static void MpNormalize
         (
-        uint[] rgulU,      // In   | Number
+        ReadOnlySpan<uint> rgulU,      // In   | Number
         ref int ciulU       // InOut| # of digits
         )
         {
@@ -2473,7 +2477,7 @@ namespace System.Data.SqlTypes
         // Length can increase
         private static void MpMul1
         (
-        uint[] piulD,      // InOut| D
+        Span<uint> piulD,      // InOut| D
         ref int ciulD,      // InOut| # of digits in D
         uint iulX        // In    | X
         )
@@ -2505,7 +2509,7 @@ namespace System.Data.SqlTypes
         // Length of U can decrease
         private static void MpDiv1
         (
-        uint[] rgulU,      // InOut| U
+        Span<uint> rgulU,      // InOut| U
         ref int ciulU,      // InOut| # of digits in U
         uint iulD,       // In    | D
         out uint iulR        // Out    | R
@@ -2567,13 +2571,13 @@ namespace System.Data.SqlTypes
         //
         private static void MpDiv
         (
-        uint[] rgulU,      // In    | U
+        ReadOnlySpan<uint> rgulU,      // In    | U
         int ciulU,      // In    | # of digits in U
-        uint[] rgulD,      // In    | D
+        Span<uint> rgulD,      // InOut    | D
         int ciulD,      // In    | # of digits in D
-        uint[] rgulQ,      // Out    | Q
+        Span<uint> rgulQ,      // Out    | Q
         out int ciulQ,      // Out    | # of digits in Q
-        uint[] rgulR,      // Out    | R
+        Span<uint> rgulR,      // Out    | R
         out int ciulR       // Out    | # of digits in R
         )
         {
@@ -2998,7 +3002,7 @@ namespace System.Data.SqlTypes
         }
 
         // Store data back from rguiData[] to m_data*
-        private void StoreFromWorkingArray(uint[] rguiData)
+        private void StoreFromWorkingArray(ReadOnlySpan<uint> rguiData)
         {
             Debug.Assert(rguiData.Length == 4);
             _data1 = rguiData[0];
@@ -3254,10 +3258,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object value)
         {
-            if (value is SqlDecimal)
+            if (value is SqlDecimal i)
             {
-                SqlDecimal i = (SqlDecimal)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value.GetType(), typeof(SqlDecimal));

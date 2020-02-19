@@ -19,7 +19,7 @@
 bool Compiler::optDoEarlyPropForFunc()
 {
     bool propArrayLen  = (optMethodFlags & OMF_HAS_NEWARRAY) && (optMethodFlags & OMF_HAS_ARRAYREF);
-    bool propGetType   = (optMethodFlags & OMF_HAS_NEWOBJ) && (optMethodFlags & OMF_HAS_VTABLEREF);
+    bool propGetType   = (optMethodFlags & (OMF_HAS_NEWOBJ | OMF_HAS_NEWARRAY)) && (optMethodFlags & OMF_HAS_VTABLEREF);
     bool propNullCheck = (optMethodFlags & OMF_HAS_NULLCHECK) != 0;
     return propArrayLen || propGetType || propNullCheck;
 }
@@ -64,11 +64,12 @@ bool Compiler::gtIsVtableRef(GenTree* tree)
 //
 // Arguments:
 //    tree           - The array allocation helper call.
+//    block          - tree's basic block.
 //
 // Return Value:
 //    Return the array length node.
 
-GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
+GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
 {
     assert(tree != nullptr);
 
@@ -83,6 +84,10 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
                 call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
             {
+#ifdef DEBUG
+                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
+                                    block);
+#endif
                 // This is an array allocation site. Grab the array length node.
                 return gtArgEntryByArgNum(call, 1)->GetNode();
             }
@@ -98,11 +103,12 @@ GenTree* Compiler::getArrayLengthFromAllocation(GenTree* tree)
 //
 // Arguments:
 //    tree           - The object allocation helper call.
+//    block          - tree's basic block.
 //
 // Return Value:
 //    Return the object type handle node.
 
-GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
+GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block))
 {
     assert(tree != nullptr);
 
@@ -112,16 +118,32 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
 
         if (call->gtCallType == CT_HELPER)
         {
-            if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWFAST) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_FINALIZE) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_VC) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
-                call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8))
+            bool hasNewObj = call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWFAST) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_FINALIZE) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_VC) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE);
+
+            bool hasNewArr = call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_DIRECT) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_OBJ) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_VC) ||
+                             call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_NEWARR_1_ALIGN8);
+
+#ifdef DEBUG
+            if (hasNewObj)
+            {
+                optCheckFlagsAreSet(OMF_HAS_NEWOBJ, "OMF_HAS_NEWOBJ", BBF_HAS_NEWOBJ, "BBF_HAS_NEWOBJ", tree, block);
+            }
+
+            if (hasNewArr)
+            {
+                optCheckFlagsAreSet(OMF_HAS_NEWARRAY, "OMF_HAS_NEWARRAY", BBF_HAS_NEWARRAY, "BBF_HAS_NEWARRAY", tree,
+                                    block);
+            }
+#endif // DEBUG
+
+            if (hasNewObj || hasNewArr)
             {
                 // This is an object allocation site. Return the runtime type handle node.
                 fgArgTabEntry* argTabEntry = gtArgEntryByArgNum(call, 0);
@@ -132,6 +154,42 @@ GenTree* Compiler::getObjectHandleNodeFromAllocation(GenTree* tree)
 
     return nullptr;
 }
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// optCheckFlagsAreSet: Check that the method flag and the basic block flag are set.
+//
+// Arguments:
+//    methodFlag           - The method flag to check.
+//    methodFlagStr        - String representation of the method flag.
+//    bbFlag               - The basic block flag to check.
+//    bbFlagStr            - String representation of the basic block flag.
+//    tree                 - Tree that makes the flags required.
+//    basicBlock           - The basic block to check the flag on.
+
+void Compiler::optCheckFlagsAreSet(unsigned    methodFlag,
+                                   const char* methodFlagStr,
+                                   unsigned    bbFlag,
+                                   const char* bbFlagStr,
+                                   GenTree*    tree,
+                                   BasicBlock* basicBlock)
+{
+    if ((optMethodFlags & methodFlag) == 0)
+    {
+        printf("%s is not set on optMethodFlags but is required because of the following tree\n", methodFlagStr);
+        gtDispTree(tree);
+        assert(false);
+    }
+
+    if ((basicBlock->bbFlags & bbFlag) == 0)
+    {
+        printf("%s is not set on " FMT_BB " but is required because of the following tree \n", bbFlagStr,
+               compCurBB->bbNum);
+        gtDispTree(tree);
+        assert(false);
+    }
+}
+#endif
 
 //------------------------------------------------------------------------------------------
 // optEarlyProp: The entry point of the early value propagation.
@@ -165,21 +223,23 @@ void Compiler::optEarlyProp()
     {
         printf("*************** In optEarlyProp()\n");
     }
-#endif
-
-    assert(fgSsaPassesCompleted == 1);
-
+#else
     if (!optDoEarlyPropForFunc())
     {
         return;
     }
+#endif
+
+    assert(fgSsaPassesCompleted == 1);
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+#ifndef DEBUG
         if (!optDoEarlyPropForBlock(block))
         {
             continue;
         }
+#endif
 
         compCurBB = block;
 
@@ -210,6 +270,8 @@ void Compiler::optEarlyProp()
             // Update the evaluation order and the statement info if the stmt has been rewritten.
             if (isRewritten)
             {
+                // Make sure the transformation happens in debug, check, and release build.
+                assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(block));
                 gtSetStmtInfo(stmt);
                 fgSetStmtSeq(stmt);
             }
@@ -283,10 +345,24 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
     }
 
     if (!objectRefPtr->OperIsScalarLocal() || !lvaInSsa(objectRefPtr->AsLclVarCommon()->GetLclNum()))
-
     {
         return nullptr;
     }
+#ifdef DEBUG
+    else
+    {
+        if (propKind == optPropKind::OPK_ARRAYLEN)
+        {
+            optCheckFlagsAreSet(OMF_HAS_ARRAYREF, "OMF_HAS_ARRAYREF", BBF_HAS_IDX_LEN, "BBF_HAS_IDX_LEN", tree,
+                                compCurBB);
+        }
+        else
+        {
+            optCheckFlagsAreSet(OMF_HAS_VTABLEREF, "OMF_HAS_VTABLEREF", BBF_HAS_VTABREF, "BBF_HAS_VTABREF", tree,
+                                compCurBB);
+        }
+    }
+#endif
 
     unsigned lclNum    = objectRefPtr->AsLclVarCommon()->GetLclNum();
     unsigned ssaNum    = objectRefPtr->AsLclVarCommon()->GetSsaNum();
@@ -430,7 +506,8 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
     }
 
     // Track along the use-def chain to get the array length
-    GenTreeOp* ssaDefAsg = lvaTable[lclNum].GetPerSsaData(ssaNum)->GetAssignment();
+    LclSsaVarDsc* ssaVarDsc = lvaTable[lclNum].GetPerSsaData(ssaNum);
+    GenTreeOp*    ssaDefAsg = ssaVarDsc->GetAssignment();
 
     if (ssaDefAsg == nullptr)
     {
@@ -456,7 +533,7 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
         {
             if (valueKind == optPropKind::OPK_ARRAYLEN)
             {
-                value = getArrayLengthFromAllocation(treeRhs);
+                value = getArrayLengthFromAllocation(treeRhs DEBUGARG(ssaVarDsc->GetBlock()));
                 if (value != nullptr)
                 {
                     if (!value->IsCnsIntOrI())
@@ -468,14 +545,10 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
             }
             else if (valueKind == optPropKind::OPK_OBJ_GETTYPE)
             {
-                value = getObjectHandleNodeFromAllocation(treeRhs);
+                value = getObjectHandleNodeFromAllocation(treeRhs DEBUGARG(ssaVarDsc->GetBlock()));
                 if (value != nullptr)
                 {
-                    if (!value->IsCnsIntOrI())
-                    {
-                        // Leave out non-constant-sized array
-                        value = nullptr;
-                    }
+                    assert(value->IsCnsIntOrI());
                 }
             }
         }
@@ -500,10 +573,18 @@ GenTree* Compiler::optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropK
 
 void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap)
 {
+#ifdef DEBUG
+    if (tree->OperGet() == GT_NULLCHECK)
+    {
+        optCheckFlagsAreSet(OMF_HAS_NULLCHECK, "OMF_HAS_NULLCHECK", BBF_HAS_NULLCHECK, "BBF_HAS_NULLCHECK", tree,
+                            compCurBB);
+    }
+#else
     if ((compCurBB->bbFlags & BBF_HAS_NULLCHECK) == 0)
     {
         return;
     }
+#endif
 
     GenTree*   nullCheckTree   = optFindNullCheckToFold(tree, nullCheckMap);
     GenTree*   nullCheckParent = nullptr;
@@ -511,6 +592,9 @@ void Compiler::optFoldNullCheck(GenTree* tree, LocalNumberToNullCheckTreeMap* nu
     if ((nullCheckTree != nullptr) && optIsNullCheckFoldingLegal(tree, nullCheckTree, &nullCheckParent, &nullCheckStmt))
     {
 #ifdef DEBUG
+        // Make sure the transformation happens in debug, check, and release build.
+        assert(optDoEarlyPropForFunc() && optDoEarlyPropForBlock(compCurBB) &&
+               (compCurBB->bbFlags & BBF_HAS_NULLCHECK) != 0);
         if (verbose)
         {
             printf("optEarlyProp Marking a null check for removal\n");

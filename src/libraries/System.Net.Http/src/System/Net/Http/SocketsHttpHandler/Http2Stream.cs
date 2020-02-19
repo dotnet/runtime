@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -396,6 +397,18 @@ namespace System.Net.Http
 
             public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
 
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index)
+            {
+                // TODO: https://github.com/dotnet/runtime/issues/1505
+                Debug.Fail("Currently unused by HPACK, this should never be called.");
+            }
+
+            void IHttpHeadersHandler.OnStaticIndexedHeader(int index, ReadOnlySpan<byte> value)
+            {
+                // TODO: https://github.com/dotnet/runtime/issues/1505
+                Debug.Fail("Currently unused by HPACK, this should never be called.");
+            }
+
             public void OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 if (NetEventSource.IsEnabled) Trace($"{Encoding.ASCII.GetString(name)}: {Encoding.ASCII.GetString(value)}");
@@ -406,8 +419,6 @@ namespace System.Net.Http
                 {
                     throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
-
-                // TODO https://github.com/dotnet/runtime/issues/1505: Optimize HPACK static table decoding
 
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
@@ -435,16 +446,7 @@ namespace System.Net.Http
                                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
                             }
 
-                            byte status1, status2, status3;
-                            if (value.Length != 3 ||
-                                !IsDigit(status1 = value[0]) ||
-                                !IsDigit(status2 = value[1]) ||
-                                !IsDigit(status3 = value[2]))
-                            {
-                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
-                            }
-
-                            int statusValue = (100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
+                            int statusValue = ParseStatusCode(value);
                             _response = new HttpResponseMessage()
                             {
                                 Version = HttpVersion.Version20,
@@ -957,6 +959,42 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
+            public async Task CopyToAsync(HttpResponseMessage responseMessage, Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                try
+                {
+                    // Generallly the same logic as in ReadDataAsync, but wrapped in a loop where every read segment is written to the destination.
+                    while (true)
+                    {
+                        (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
+                        if (wait)
+                        {
+                            Debug.Assert(bytesRead == 0);
+                            await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                            (wait, bytesRead) = TryReadFromBuffer(buffer);
+                            Debug.Assert(!wait);
+                        }
+
+                        if (bytesRead != 0)
+                        {
+                            ExtendWindow(bytesRead);
+                            await destination.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesRead), cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // We've hit EOF.  Pull in from the Http2Stream any trailers that were temporarily stored there.
+                            CopyTrailersToResponseMessage(responseMessage);
+                            return;
+                        }
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+
             private void CopyTrailersToResponseMessage(HttpResponseMessage responseMessage)
             {
                 if (_trailers != null && _trailers.Count > 0)
@@ -973,7 +1011,7 @@ namespace System.Net.Http
             {
                 ReadOnlyMemory<byte> remaining = buffer;
 
-                // Deal with [ActiveIssue("https://github.com/dotnet/corefx/issues/9071")]
+                // Deal with [ActiveIssue("https://github.com/dotnet/runtime/issues/17492")]
                 // Custom HttpContent classes do not get passed the cancellationToken.
                 // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
                 CancellationTokenSource customCancellationSource = null;
@@ -1169,6 +1207,16 @@ namespace System.Net.Http
                     }
 
                     return http2Stream.ReadDataAsync(destination, _responseMessage, cancellationToken);
+                }
+
+                public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+                {
+                    StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+                    Http2Stream http2Stream = _http2Stream;
+                    return
+                        http2Stream is null ? Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream)))) :
+                        cancellationToken.IsCancellationRequested ? Task.FromCanceled<int>(cancellationToken) :
+                        http2Stream.CopyToAsync(_responseMessage, destination, bufferSize, cancellationToken);
                 }
 
                 public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);

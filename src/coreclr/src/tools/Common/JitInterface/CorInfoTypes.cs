@@ -764,6 +764,8 @@ namespace Internal.JitInterface
         CORJIT_ALLOCMEM_DEFAULT_CODE_ALIGN = 0x00000000, // The code will be use the normal alignment
         CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN = 0x00000001, // The code will be 16-byte aligned
         CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
+        CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
+        CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
     }
 
     public enum CorJitFuncKind
@@ -1150,20 +1152,6 @@ namespace Internal.JitInterface
         // SystemVClassificationTypeX87             = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeX87Up           = Unused, // Not supported by the CLR.
         // SystemVClassificationTypeComplexX87      = Unused, // Not supported by the CLR.
-
-        // Internal flags - never returned outside of the classification implementation.
-
-        // This value represents a very special type with two eightbytes.
-        // First ByRef, second Integer (platform int).
-        // The VM has a special Elem type for this type - ELEMENT_TYPE_TYPEDBYREF.
-        // This is the classification counterpart for that element type. It is used to detect
-        // the special TypedReference type and specialize its classification.
-        // This type is represented as a struct with two fields. The classification needs to do
-        // special handling of it since the source/methadata type of the fieds is IntPtr.
-        // The VM changes the first to ByRef. The second is left as IntPtr (TYP_I_IMPL really). The classification needs to match this and
-        // special handling is warranted (similar thing is done in the getGCLayout function for this type).
-        SystemVClassificationTypeTypedReference     = 8,
-        SystemVClassificationTypeMAX                = 9
     };
 
     public struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
@@ -1358,7 +1346,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_RELATIVE_CODE_RELOCS = 41, // JIT should generate PC-relative address computations instead of EE relocation records
         CORJIT_FLAG_NO_INLINING = 42, // JIT should not inline any called method into this method
 
-#region ARM64
+#region TARGET_ARM64
         CORJIT_FLAG_HAS_ARM64_AES           = 43, // ID_AA64ISAR0_EL1.AES is 1 or better
         CORJIT_FLAG_HAS_ARM64_ATOMICS       = 44, // ID_AA64ISAR0_EL1.Atomic is 2 or better
         CORJIT_FLAG_HAS_ARM64_CRC32         = 45, // ID_AA64ISAR0_EL1.CRC32 is 1 or better

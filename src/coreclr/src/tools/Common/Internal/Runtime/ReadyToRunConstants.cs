@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -7,12 +7,14 @@ using System;
 namespace Internal.ReadyToRunConstants
 {
     [Flags]
-    public enum ReadyToRunFlag
+    public enum ReadyToRunFlags
     {
         READYTORUN_FLAG_PlatformNeutralSource = 0x00000001,     // Set if the original IL assembly was platform-neutral
         READYTORUN_FLAG_SkipTypeValidation = 0x00000002,        // Set of methods with native code was determined using profile data
         READYTORUN_FLAG_Partial = 0x00000004,
-        READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008      // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+        READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
+        READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
+        READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
     }
 
     /// <summary>

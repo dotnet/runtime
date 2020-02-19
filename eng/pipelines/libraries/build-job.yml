@@ -3,7 +3,8 @@ parameters:
   osGroup: ''
   osSubgroup: ''
   archType: ''
-  framework: netcoreapp
+  crossrootfsDir: ''
+  framework: ''
   isOfficialBuild: false
   isOfficialAllConfigurations: false
 
@@ -31,6 +32,7 @@ jobs:
       osGroup:  ${{ parameters.osGroup }}
       osSubgroup:  ${{ parameters.osSubgroup }}
       archType:  ${{ parameters.archType }}
+      crossrootfsDir: ${{ parameters.crossrootfsDir }}
       framework:  ${{ parameters.framework }}
       isOfficialBuild: ${{ parameters.isOfficialBuild }}
       isOfficialAllConfigurations: ${{ parameters.isOfficialAllConfigurations }}
@@ -65,23 +67,9 @@ jobs:
         - ${{ parameters.variables }}
 
       steps:
-        # TODO: (Consolidation) Fix internal tool restore and re-enable. https://github.com/dotnet/runtime/issues/1024
-        # - ${{ if eq(parameters.isOfficialBuild, true) }}:
-        #   - task: DotNetCoreCLI@2
-        #     displayName: Restore internal tools
-        #     condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
-        #     inputs:
-        #       command: restore
-        #       feedsToUse: config
-        #       projects: 'eng/common/internal/Tools.csproj'
-        #       nugetConfigPath: 'eng/internal/NuGet.config'
-        #       restoreDirectory: '$(Build.SourcesDirectory)\.packages'
-        #       verbosityRestore: 'normal'
-        #       externalFeedCredentials: 'dotnet-core-internal-tooling'
-
         - ${{ if eq(parameters.osGroup, 'OSX') }}:
           - script: |
-              brew install pkgconfig icu4c openssl autoconf automake libtool pkg-config python3
+              brew install pkgconfig icu4c openssl
               brew link --force icu4c
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
               ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
@@ -97,7 +85,12 @@ jobs:
               ./emsdk activate --embedded ${EMSCRIPTEN_VERSION}-upstream
             displayName: Install Emscripten
 
-        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg)
+        - ${{ if eq(parameters.isOfficialBuild, true) }}:
+          - template: /eng/pipelines/common/restore-internal-tools.yml
+            parameters:
+              installDotnet: true
+
+        - script: $(_buildScript) -restore $(_buildArguments) $(_skipTestRestoreArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/Restore.binlog
           displayName: Restore
 
         - script: $(_buildScript)
@@ -127,8 +120,8 @@ jobs:
           - task: CopyFiles@2
             displayName: Prepare shared framework runtime folder to publish
             inputs:
-              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime # The hardcoded target framework should be removed when we drop the support for versionless targetframeworks from ci.
-              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg/netcoreapp5.0/runtime
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/bin/pkg
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/bin/pkg
 
           - task: CopyFiles@2
             displayName: Prepare docs folder to publish
@@ -160,6 +153,13 @@ jobs:
             inputs:
               sourceFolder: $(Build.SourcesDirectory)/artifacts/packages
               targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/packages
+            condition: and(succeeded(), eq(variables['_librariesBuildProducedPackages'], true))
+
+          - task: CopyFiles@2
+            displayName: Prepare tmp assets to publish
+            inputs:
+              sourceFolder: $(Build.SourcesDirectory)/artifacts/tmp
+              targetFolder: $(Build.ArtifactStagingDirectory)/artifacts/tmp
 
           - template: /eng/pipelines/common/upload-artifact-step.yml
             parameters:
@@ -191,3 +191,5 @@ jobs:
               testScope: ${{ parameters.testScope }}
               creator: dotnet-bot
               helixToken: ''
+              testRunNamePrefixSuffix: $(_testRunNamePrefixSuffix)
+              extraHelixArguments: $(_extraHelixArguments)

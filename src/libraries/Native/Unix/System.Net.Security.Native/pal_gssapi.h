@@ -56,30 +56,30 @@ typedef struct
 /*
 Shims the gss_release_buffer method.
 */
-DLLEXPORT void NetSecurityNative_ReleaseGssBuffer(void* buffer, uint64_t length);
+PALEXPORT void NetSecurityNative_ReleaseGssBuffer(void* buffer, uint64_t length);
 
 /*
 Shims the gss_display_status method for minor status (status_type = GSS_C_MECH_CODE).
 */
-DLLEXPORT uint32_t
+PALEXPORT uint32_t
 NetSecurityNative_DisplayMinorStatus(uint32_t* minorStatus, uint32_t statusValue, PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_display_status method for major status (status_type = GSS_C_GSS_CODE).
 */
-DLLEXPORT uint32_t
+PALEXPORT uint32_t
 NetSecurityNative_DisplayMajorStatus(uint32_t* minorStatus, uint32_t statusValue, PAL_GssBuffer* outBuffer);
 
 /*
 Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
 */
-DLLEXPORT uint32_t
+PALEXPORT uint32_t
 NetSecurityNative_ImportUserName(uint32_t* minorStatus, char* inputName, uint32_t inputNameLen, GssName** outputName);
 
 /*
 Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
 */
-DLLEXPORT uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
                                                          char* inputName,
                                                          uint32_t inputNameLen,
                                                          GssName** outputName);
@@ -87,28 +87,28 @@ DLLEXPORT uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
 /*
 Shims the gss_release_name method.
 */
-DLLEXPORT uint32_t NetSecurityNative_ReleaseName(uint32_t* minorStatus, GssName** inputName);
+PALEXPORT uint32_t NetSecurityNative_ReleaseName(uint32_t* minorStatus, GssName** inputName);
 
 /*
 Shims the gss_acquire_cred method with GSS_C_ACCEPT.
 */
-DLLEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus, GssCredId** outputCredHandle);
+PALEXPORT uint32_t NetSecurityNative_AcquireAcceptorCred(uint32_t* minorStatus, GssCredId** outputCredHandle);
 
 /*
 Shims the gss_acquire_cred method with SPNEGO oids with  GSS_C_INITIATE.
 */
-DLLEXPORT uint32_t
+PALEXPORT uint32_t
 NetSecurityNative_InitiateCredSpNego(uint32_t* minorStatus, GssName* desiredName, GssCredId** outputCredHandle);
 
 /*
 Shims the gss_release_cred method.
 */
-DLLEXPORT uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredId** credHandle);
+PALEXPORT uint32_t NetSecurityNative_ReleaseCred(uint32_t* minorStatus, GssCredId** credHandle);
 
 /*
 Shims the gss_init_sec_context method with SPNEGO oids.
 */
-DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     GssCredId* claimantCredHandle,
                                                     GssCtxId** contextHandle,
                                                     uint32_t isNtlm,
@@ -120,7 +120,7 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     uint32_t* retFlags,
                                                     int32_t* isNtlmUsed);
 
-DLLEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
                                                       GssCredId* claimantCredHandle,
                                                       GssCtxId** contextHandle,
                                                       uint32_t isNtlm,
@@ -137,7 +137,7 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 /*
 Shims the gss_accept_sec_context method.
 */
-DLLEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                                       GssCredId* acceptorCredHandle,
                                                       GssCtxId** contextHandle,
                                                       uint8_t* inputBytes,
@@ -150,12 +150,12 @@ DLLEXPORT uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
 
 Shims the gss_delete_sec_context method.
 */
-DLLEXPORT uint32_t NetSecurityNative_DeleteSecContext(uint32_t* minorStatus, GssCtxId** contextHandle);
+PALEXPORT uint32_t NetSecurityNative_DeleteSecContext(uint32_t* minorStatus, GssCtxId** contextHandle);
 
 /*
 Shims the gss_wrap method.
 */
-DLLEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
                                           GssCtxId* contextHandle,
                                           int32_t isEncrypt,
                                           uint8_t* inputBytes,
@@ -166,7 +166,7 @@ DLLEXPORT uint32_t NetSecurityNative_Wrap(uint32_t* minorStatus,
 /*
 Shims the gss_unwrap method.
 */
-DLLEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
                                             GssCtxId* contextHandle,
                                             uint8_t* inputBytes,
                                             int32_t offset,
@@ -176,7 +176,7 @@ DLLEXPORT uint32_t NetSecurityNative_Unwrap(uint32_t* minorStatus,
 /*
 Shims the gss_acquire_cred_with_password method with GSS_C_INITIATE.
 */
-DLLEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorStatus,
                                                               int32_t isNtlm,
                                                               GssName* desiredName,
                                                               char* password,
@@ -186,11 +186,11 @@ DLLEXPORT uint32_t NetSecurityNative_InitiateCredWithPassword(uint32_t* minorSta
 /*
 Shims the gss_indicate_mechs method to detect if NTLM mech is installed.
 */
-DLLEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);
+PALEXPORT uint32_t NetSecurityNative_IsNtlmInstalled(void);
 
 /*
 Shims gss_inquire_context and gss_display_name to get the remote user principal name.
 */
-DLLEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
+PALEXPORT uint32_t NetSecurityNative_GetUser(uint32_t* minorStatus,
                                              GssCtxId* contextHandle,
                                              PAL_GssBuffer* outBuffer);

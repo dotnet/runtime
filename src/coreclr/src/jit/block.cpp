@@ -72,8 +72,7 @@ EHSuccessorIterPosition::EHSuccessorIterPosition(Compiler* comp, BasicBlock* blo
     // can occur within it, so clear m_curTry if it's non-null.
     if (m_curTry != nullptr)
     {
-        BasicBlock* beforeBlock = block->bbPrev;
-        if (beforeBlock != nullptr && beforeBlock->isBBCallAlwaysPair())
+        if (block->isBBCallAlwaysPairTail())
         {
             m_curTry = nullptr;
         }
@@ -176,17 +175,15 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
 
         // Now add all blocks handled by this handler (except for second blocks of BBJ_CALLFINALLY/BBJ_ALWAYS pairs;
         // these cannot cause transfer to the handler...)
-        BasicBlock* prevBB = nullptr;
-
         // TODO-Throughput: It would be nice if we could iterate just over the blocks in the try, via
         // something like:
         //   for (BasicBlock* bb = ehblk->ebdTryBeg; bb != ehblk->ebdTryLast->bbNext; bb = bb->bbNext)
         //     (plus adding in any filter blocks outside the try whose exceptions are handled here).
         // That doesn't work, however: funclets have caused us to sometimes split the body of a try into
         // more than one sequence of contiguous blocks.  We need to find a better way to do this.
-        for (BasicBlock *bb = fgFirstBB; bb != nullptr; prevBB = bb, bb = bb->bbNext)
+        for (BasicBlock* bb = fgFirstBB; bb != nullptr; bb = bb->bbNext)
         {
-            if (bbInExnFlowRegions(tryIndex, bb) && (prevBB == nullptr || !prevBB->isBBCallAlwaysPair()))
+            if (bbInExnFlowRegions(tryIndex, bb) && !bb->isBBCallAlwaysPairTail())
             {
                 res = new (this, CMK_FlowList) flowList(bb, res);
 
@@ -337,12 +334,12 @@ void BasicBlock::dspFlags()
     {
         printf("nullcheck ");
     }
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_FINALLY_TARGET)
     {
         printf("ftarget ");
     }
-#endif // defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (bbFlags & BBF_BACKWARD_JUMP)
     {
         printf("bwd ");
@@ -1379,7 +1376,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 }
 
 //------------------------------------------------------------------------
-// isBBCallAlwaysPair: Determine if this is hte first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pari
+// isBBCallAlwaysPair: Determine if this is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
 
 // Return Value:
 //    True iff "this" is the first block of a BBJ_CALLFINALLY/BBJ_ALWAYS pair
@@ -1400,13 +1397,13 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
 //
 bool BasicBlock::isBBCallAlwaysPair()
 {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     if (this->bbJumpKind == BBJ_CALLFINALLY)
 #else
     if ((this->bbJumpKind == BBJ_CALLFINALLY) && !(this->bbFlags & BBF_RETLESS_CALL))
 #endif
     {
-#if defined(FEATURE_EH_FUNCLETS) && defined(_TARGET_ARM_)
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         // On ARM, there are no retless BBJ_CALLFINALLY.
         assert(!(this->bbFlags & BBF_RETLESS_CALL));
 #endif

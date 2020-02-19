@@ -68,12 +68,8 @@ jobs:
       eq(parameters.isOfficialBuild, true),
       ne(parameters.crossrootfsDir, '')) }}
 
-  # TODO: (Consolidation) Enable test signing during PR validation. https://github.com/dotnet/runtime/issues/1026
-  #
-  # CoreCLR only produces the UCRT redist file in Release config. When the redist file isn't
-  # present, signing fails. For now, only sign in official builds which only run Release mode.
   - name: SignType
-    value: ''
+    value: test
 
   # Set up non-PR build from internal project
   - ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -183,6 +179,8 @@ jobs:
       # lowercase for RID format. (Detection normally converts, but we're preventing it.)
       - name: OutputRidArg
         value: /p:OutputRid=linux-musl-${{ parameters.archType }}
+      - name: _PortableBuild
+        value: true
 
     - name: BuildArguments
       value: >-
@@ -316,7 +314,7 @@ jobs:
         parameters.archType,
         parameters.liveRuntimeBuildConfig) }}
   - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_netcoreapp_${{ format('{0}{1}_{2}_{3}',
+    - libraries_build_${{ format('{0}{1}_{2}_{3}',
         parameters.osGroup,
         parameters.osSubgroup,
         parameters.archType,
@@ -326,7 +324,7 @@ jobs:
   - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
     - ${{ each platform in parameters.platforms }}:
       - ${{ parameters.runtimeFlavor }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-      - libraries_build_netcoreapp_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
 
   steps:
 

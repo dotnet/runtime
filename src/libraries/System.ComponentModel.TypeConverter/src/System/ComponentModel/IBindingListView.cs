@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel
 {
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public interface IBindingListView : IBindingList
     {
         void ApplySort(ListSortDescriptionCollection sorts);

@@ -537,6 +537,15 @@ move_stack (TransformData *td, int start, int amount)
 		memmove (td->stack + start + amount, td->stack + start, to_move * sizeof (StackInfo));
 }
 
+static void
+simulate_runtime_stack_increase (TransformData *td, int amount)
+{
+	const int sp_height = td->sp - td->stack + amount;
+
+	if (sp_height > td->max_stack_height)
+		td->max_stack_height = sp_height;
+}
+
 #define PUSH_VT(td, size) \
 	do { \
 		(td)->vt_sp += ALIGN_TO ((size), MINT_VT_ALIGNMENT); \
@@ -716,8 +725,8 @@ get_data_item_index (TransformData *td, void *ptr)
 	return index;
 }
 
-static gboolean
-jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
+gboolean
+mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 {
 	GSList *l;
 
@@ -732,6 +741,8 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	if (method->is_inflated)
 		return FALSE;
 	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
 	if (mono_aot_only && m_class_get_image (method->klass)->aot_module && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
@@ -2191,8 +2202,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			interp_add_ins (td, MINT_LDIND_I);
 			td->last_ins->data [0] = csignature->param_count;
 		} else if (target_method->klass == mono_defaults.object_class || target_method->klass == m_class_get_parent (mono_defaults.enum_class) || target_method->klass == mono_defaults.enum_class) {
-			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
-				/* managed pointer on the stack, we need to deref that puppy */
+			/*
+			 * Constrained expects a managed pointer that normally needs dereferencing.
+			 * For value types that have their storage on the vtstack, a managed pointer
+			 * to it is identical to the internal pointer that is passed on the stack
+			 * when using the value type, not needing any dereferencing.
+			 */
+			g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+			if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 				/* Always load the entire stackval, to handle also the case where the enum has long storage */
 				interp_add_ins (td, MINT_LDIND_I8);
 				td->last_ins->data [0] = csignature->param_count;
@@ -2207,7 +2224,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				 * but that type doesn't override the method we're
 				 * calling, so we need to box `this'.
 				 */
-				if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
+				g_assert ((td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP);
+				if (mint_type (m_class_get_byval_arg (constrained_class)) != MINT_TYPE_VT) {
 					/* managed pointer on the stack, we need to deref that puppy */
 					/* Always load the entire stackval, to handle also the case where the enum has long storage */
 					interp_add_ins (td, MINT_LDIND_I8);
@@ -2376,7 +2394,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			td->last_ins->data [1] = get_data_item_index (td, mono_method_signature_internal (target_method));
 		}
 #endif
-	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
+	} else if (!calli && !is_virtual && mono_interp_jit_call_supported (target_method, csignature)) {
 		interp_add_ins (td, MINT_JIT_CALL);
 		td->last_ins->data [0] = get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, error));
 		mono_error_assert_ok (error);
@@ -3289,7 +3307,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			g_free (name);
 		}
 
-		if (header->num_locals && header->init_locals)
+		/*
+		 * We initialize the locals regardless of the presence of the init_locals
+		 * flag. Locals holding references need to be zeroed so we don't risk
+		 * crashing the GC if they end up being stored in an object.
+		 *
+		 * FIXME
+		 * Track values of locals over multiple basic blocks. This would enable
+		 * us to kill the MINT_INITLOCALS instruction if all locals are initialized
+		 * before use. We also don't need this instruction if the init locals flag
+		 * is not set and there are no locals holding references.
+		 */
+		if (header->num_locals)
 			interp_add_ins (td, MINT_INITLOCALS);
 
 		guint16 enter_profiling = 0;
@@ -4508,11 +4537,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 								break;
 							}
 						}
-						// If inlining failed we need to restore the stack
+						// If inlining failed, restore the stack.
+						// At runtime, interp.c newobj_fast uses an extra stack element
+						// after the parameters to store `o` across the non-recursive call
+						// where GC will see it.
+						// move_stack with the last parameter negative does not reduce max_stack.
 						move_stack (td, (td->sp - td->stack) - csignature->param_count, -2);
 						// Set the method to be executed as part of newobj instruction
 						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					} else {
+						// Runtime (interp_exec_method_full in interp.c) inserts extra stack to hold return value, before call.
+						simulate_runtime_stack_increase (td, 1);
+
 						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
 							interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
 						else
@@ -5391,6 +5427,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_un = *td->ip == CEE_CONV_OVF_I1_UN;
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, is_un ? MINT_CONV_OVF_I1_UN_R4 : MINT_CONV_OVF_I1_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, is_un ? MINT_CONV_OVF_I1_UN_R8 : MINT_CONV_OVF_I1_R8);
 				break;
@@ -5411,6 +5450,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_CONV_OVF_U1_UN:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, MINT_CONV_OVF_U1_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, MINT_CONV_OVF_U1_R8);
 				break;
@@ -5431,6 +5473,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_un = *td->ip == CEE_CONV_OVF_I2_UN;
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, is_un ? MINT_CONV_OVF_I2_UN_R4 : MINT_CONV_OVF_I2_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, is_un ? MINT_CONV_OVF_I2_UN_R8 : MINT_CONV_OVF_I2_R8);
 				break;
@@ -5451,6 +5496,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_CONV_OVF_U2:
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
+			case STACK_TYPE_R4:
+				interp_add_ins (td, MINT_CONV_OVF_U2_R4);
+				break;
 			case STACK_TYPE_R8:
 				interp_add_ins (td, MINT_CONV_OVF_U2_R8);
 				break;
@@ -6908,7 +6956,7 @@ retry:
 					if (replace_op) {
 						int stored_local = prev_ins->data [0];
 						sp->ins = NULL;
-						if (sp->val.type == STACK_VALUE_NONE) {
+						if (sp->val.type == STACK_VALUE_NONE && !(td->locals [stored_local].flags & INTERP_LOCAL_FLAG_INDIRECT)) {
 							// We know what local is on the stack now. Track it
 							sp->val.type = STACK_VALUE_LOCAL;
 							sp->val.local = stored_local;
@@ -6928,11 +6976,12 @@ retry:
 					}
 				}
 			} else if (locals [loaded_local].type == STACK_VALUE_LOCAL) {
-				g_assert (locals [loaded_local].type == STACK_VALUE_LOCAL);
 				g_assert (!(td->locals [loaded_local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				// do copy propagation of the original source
 				mono_interp_stats.copy_propagations++;
 				local_ref_count [loaded_local]--;
+				// We can't propagate a local that has its address taken
+				g_assert (!(td->locals [locals [loaded_local].local].flags & INTERP_LOCAL_FLAG_INDIRECT));
 				ins->data [0] = locals [loaded_local].local;
 				local_ref_count [ins->data [0]]++;
 				if (td->verbose_level) {
@@ -7625,6 +7674,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	mono_os_mutex_unlock (&calc_section);
 
 	mono_domain_lock (domain);
+	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
+		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));
+		mono_runtime_print_stats ();
+	}
 	if (!g_hash_table_lookup (domain_jit_info (domain)->seq_points, imethod->method))
 		g_hash_table_insert (domain_jit_info (domain)->seq_points, imethod->method, imethod->jinfo->seq_points);
 	mono_domain_unlock (domain);

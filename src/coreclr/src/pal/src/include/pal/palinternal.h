@@ -339,7 +339,7 @@ function_name() to call the system's implementation
 #undef va_arg
 #endif
 
-#if !defined(_MSC_VER) && defined(BIT64)
+#if !defined(_MSC_VER) && defined(HOST_64BIT)
 #undef _BitScanForward64
 #undef _BitScanReverse64
 #endif
@@ -532,10 +532,10 @@ function_name() to call the system's implementation
 #undef towupper
 #undef wvsnprintf
 
-#ifdef _AMD64_
+#ifdef HOST_AMD64
 #undef _mm_getcsr
 #undef _mm_setcsr
-#endif // _AMD64_
+#endif // HOST_AMD64
 
 #undef min
 #undef max

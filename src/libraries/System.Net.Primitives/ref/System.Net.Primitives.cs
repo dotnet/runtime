@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net
@@ -203,6 +203,7 @@ namespace System.Net
         public static readonly System.Version Version10;
         public static readonly System.Version Version11;
         public static readonly System.Version Version20;
+        public static readonly System.Version Version30;
     }
     public partial interface ICredentials
     {

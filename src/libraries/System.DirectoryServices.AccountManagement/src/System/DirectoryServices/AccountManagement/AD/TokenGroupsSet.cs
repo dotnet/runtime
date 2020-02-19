@@ -56,7 +56,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     SidBindingString.Append("<SID=");
                     SidBindingString.Append(Utils.SecurityIdentifierToLdapHexBindingString(_currentSID));
-                    SidBindingString.Append(">");
+                    SidBindingString.Append('>');
 
                     DirectoryEntry currentDE = SDSUtils.BuildDirectoryEntry(
                                                 BuildPathFromDN(SidBindingString.ToString()),

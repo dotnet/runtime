@@ -479,9 +479,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Host header is not supported on HTTP/2.");
+                throw new SkipTestException("Host header is not supported on HTTP/2 and later.");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl= useSsl };
@@ -546,7 +546,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
-            using (HttpClient client = CreateHttpClient(UseHttp2.ToString()))
+            using (HttpClient client = CreateHttpClient(UseVersion.ToString()))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -717,8 +717,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // [ActiveIssue("https://github.com/dotnet/corefx/issues/39136")]
-                return;
+                return; // see https://github.com/dotnet/runtime/issues/30115#issuecomment-508330958
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -748,7 +747,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     byte[] contentArray = Encoding.ASCII.GetBytes(content);
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray), Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray), Version = UseVersion };
 
                     request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
                     request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
@@ -872,9 +871,9 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("X-Underscore_Name", requestData.GetSingleHeaderValue("X-Underscore_Name"));
                     Assert.Equal("End", requestData.GetSingleHeaderValue("X-End"));
 
-                    if (LoopbackServerFactory.IsHttp2)
+                    if (LoopbackServerFactory.Version >= HttpVersion.Version20)
                     {
-                        // HTTP/2 forbids  certain headers or values.
+                        // HTTP/2 and later forbids certain headers or values.
                         Assert.Equal("trailers", requestData.GetSingleHeaderValue("TE"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Upgrade"));
                         Assert.Equal(0, requestData.GetHeaderValueCount("Proxy-Connection"));
@@ -905,9 +904,9 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly_MemberData))]
         public async Task GetAsync_ManyDifferentResponseHeaders_ParsedCorrectly(string newline, string fold, bool dribble)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Folding is not supported on HTTP/2.");
+                throw new SkipTestException("Folding is not supported on HTTP/2 and later.");
             }
 
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
@@ -1036,9 +1035,9 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2.");
+                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
             }
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -1166,7 +1165,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
-            var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = VersionFromUseHttp2 };
+            var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = UseVersion };
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
             {
@@ -1260,14 +1259,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(null)]
         public async Task ReadAsStreamAsync_HandlerProducesWellBehavedResponseStream(bool? chunked)
         {
-            if (LoopbackServerFactory.IsHttp2 && chunked == true)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20 && chunked == true)
             {
-                throw new SkipTestException("Chunking is not supported on HTTP/2.");
+                throw new SkipTestException("Chunking is not supported on HTTP/2 and later.");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
                 {
@@ -1399,7 +1398,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = UseVersion };
 
                     using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync())
@@ -1894,7 +1893,7 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = CreateHttpClientHandler())
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
                     HttpResponseMessage response = await client.SendAsync(initialMessage);
@@ -1951,7 +1950,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     // No ExpectContinue header.
                     initialMessage.Headers.ExpectContinue = false;
@@ -1990,7 +1989,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
                     HttpResponseMessage response = await client.SendAsync(initialMessage);
@@ -2030,7 +2029,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = UseVersion };
                     initialMessage.Content = new StringContent(RequestString);
                     initialMessage.Headers.ExpectContinue = true;
                     using (HttpResponseMessage response = await client.SendAsync(initialMessage))
@@ -2069,9 +2068,9 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                throw new SkipTestException("Upgrade is not supported on HTTP/2");
+                throw new SkipTestException("Upgrade is not supported on HTTP/2 and later");
             }
 
             var clientFinished = new TaskCompletionSource<bool>();
@@ -2217,7 +2216,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/31104", TestPlatforms.AnyUnix)]
         public async Task PostAsync_ReuseRequestContent_Success(Configuration.Http.RemoteServer remoteServer)
         {
             const string ContentString = "This is the content string.";
@@ -2240,9 +2238,9 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpStatusCode.MethodNotAllowed, "")]
         public async Task GetAsync_CallMethod_ExpectedStatusLine(HttpStatusCode statusCode, string reasonPhrase)
         {
-            if (LoopbackServerFactory.IsHttp2)
+            if (LoopbackServerFactory.Version >= HttpVersion.Version20)
             {
-                // Custom messages are not supported on HTTP2.
+                // Custom messages are not supported on HTTP2 and later.
                 return;
             }
 
@@ -2272,7 +2270,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    serverUri) { Version = VersionFromUseHttp2 };
+                    serverUri) { Version = UseVersion };
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -2292,7 +2290,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    serverUri) { Version = VersionFromUseHttp2 };
+                    serverUri) { Version = UseVersion };
                 request.Content = new StringContent(ExpectedContent);
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -2323,7 +2321,7 @@ namespace System.Net.Http.Functional.Tests
                 var content = new MemoryStream();
                 content.Write(byteContent, 0, byteContent.Length);
                 content.Position = startingPosition;
-                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer) { Content = new StreamContent(content), Version = VersionFromUseHttp2 };
+                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer) { Content = new StreamContent(content), Version = UseVersion };
 
                 for (int iter = 0; iter < 2; iter++)
                 {
@@ -2358,7 +2356,7 @@ namespace System.Net.Http.Functional.Tests
                     serverUri)
                 {
                     Content = new StringContent(ExpectedContent),
-                    Version = VersionFromUseHttp2
+                    Version = UseVersion
                 };
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
@@ -2367,7 +2365,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE'
                         // verb and a request body. The usual response from a server is "400 Bad Request".
-                        // See here for more info: https://github.com/dotnet/corefx/issues/9023
+                        // See here for more info: https://github.com/dotnet/runtime/issues/17475
                         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
                     }
                     else
@@ -2543,7 +2541,7 @@ namespace System.Net.Http.Functional.Tests
         }
 #endregion
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
             string invalidUri = $"http://{Configuration.Sockets.InvalidHost}";

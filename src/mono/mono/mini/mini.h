@@ -861,6 +861,8 @@ enum {
 	MONO_INST_LMF = 32,
 	/* On loads, the source address points to a constant value */
 	MONO_INST_INVARIANT_LOAD = 64,
+	/* On stores, the destination is the stack */
+	MONO_INST_STACK_STORE = 64,
 	/* On variables, the variable needs GC tracking */
 	MONO_INST_GC_TRACK = 128,
 	/*
@@ -1226,6 +1228,8 @@ typedef enum {
 	JIT_FLAG_INTERP = (1 << 9),
 	/* Allow AOT to use all current CPU instructions */
 	JIT_FLAG_USE_CURRENT_CPU = (1 << 10),
+	/* Generate code to self-init the method for AOT */
+	JIT_FLAG_SELF_INIT = (1 << 11)
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1441,6 +1445,7 @@ typedef struct {
 	guint            llvm_only : 1;
 	guint            interp : 1;
 	guint            use_current_cpu : 1;
+	guint            self_init : 1;
 	guint            domainvar_inited : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;
@@ -2677,7 +2682,7 @@ mono_method_is_generic_impl (MonoMethod *method);
 gboolean
 mono_method_is_generic_sharable (MonoMethod *method, gboolean allow_type_vars);
 
-gboolean
+MONO_LLVM_INTERNAL gboolean
 mono_method_is_generic_sharable_full (MonoMethod *method, gboolean allow_type_vars, gboolean allow_partial, gboolean allow_gsharedvt);
 
 gboolean
@@ -2720,7 +2725,7 @@ MONO_LLVM_INTERNAL MonoType* mini_get_underlying_type (MonoType *type);
 MonoType* mini_type_get_underlying_type (MonoType *type);
 MonoClass* mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context);
 MonoMethod* mini_get_shared_method_to_register (MonoMethod *method);
-MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
+MONO_LLVM_INTERNAL MonoMethod* mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, MonoError *error);
 MonoType* mini_get_shared_gparam (MonoType *t, MonoType *constraint);
 int mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry);
 
@@ -2851,7 +2856,9 @@ typedef enum {
 	MONO_CPU_X86_FMA_COMBINED         = MONO_CPU_X86_AVX_COMBINED   | MONO_CPU_X86_POPCNT | MONO_CPU_X86_FMA,
 	MONO_CPU_X86_FULL_SSEAVX_COMBINED = MONO_CPU_X86_FMA_COMBINED   | MONO_CPU_X86_AVX2,
 #endif
+#ifdef TARGET_WASM
 	MONO_CPU_WASM_SIMD = 1 << 1,
+#endif
 } MonoCPUFeatures;
 
 G_ENUM_FUNCTIONS (MonoCPUFeatures)

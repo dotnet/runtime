@@ -11,7 +11,6 @@ namespace System.Collections.Immutable
     /// <summary>
     /// A set of initialization methods for instances of <see cref="ImmutableStack{T}"/>.
     /// </summary>
-    [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     public static class ImmutableStack
     {
         /// <summary>
@@ -87,7 +86,6 @@ namespace System.Collections.Immutable
         /// A stack; never <c>null</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Thrown when the stack is empty.</exception>
-        [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "1#")]
         [Pure]
         public static IImmutableStack<T> Pop<T>(this IImmutableStack<T> stack, out T value)
         {

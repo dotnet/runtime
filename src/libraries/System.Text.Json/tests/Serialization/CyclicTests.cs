@@ -45,7 +45,8 @@ namespace System.Text.Json.Serialization.Tests
                 JsonException ex = Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
 
                 // Exception should contain the path and MaxDepth.
-                string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", depth));
+                // Since the last Parent property is null, the serializer moves onto the Children property.
+                string expectedPath = "$" + string.Concat(Enumerable.Repeat(".Parent", depth - 1));
                 Assert.Contains(expectedPath, ex.Path);
                 Assert.Contains(depth.ToString(), ex.ToString());
             }

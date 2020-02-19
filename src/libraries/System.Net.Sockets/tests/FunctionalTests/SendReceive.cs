@@ -44,7 +44,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/16945")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1712")]
         [OuterLoop]
         [Theory]
         [MemberData(nameof(Loopbacks))]
@@ -864,7 +864,7 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
             {
-                (Socket client, Socket server) = CreateConnectedSocketPair();
+                (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (client)
                 using (server)
                 using (var b = new Barrier(2))
@@ -902,7 +902,7 @@ namespace System.Net.Sockets.Tests
 
             for (int i = 0; i < 20; i++) // run multiple times to attempt to force various interleavings
             {
-                (Socket client, Socket server) = CreateConnectedSocketPair();
+                (Socket client, Socket server) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (client)
                 using (server)
                 using (var b = new Barrier(2))
@@ -931,21 +931,6 @@ namespace System.Net.Sockets.Tests
                             error.ToString());
                     }
                 }
-            }
-        }
-
-        protected static (Socket, Socket) CreateConnectedSocketPair()
-        {
-            using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-                listener.Listen(1);
-
-                Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                client.Connect(listener.LocalEndPoint);
-                Socket server = listener.Accept();
-
-                return (client, server);
             }
         }
 
@@ -1017,7 +1002,7 @@ namespace System.Net.Sockets.Tests
             int msDelay = 100;
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
                 {
                     Task socketOperation;
@@ -1116,7 +1101,7 @@ namespace System.Net.Sockets.Tests
             byte[] receiveBuffer = new byte[1024];
             await RetryHelper.ExecuteAsync(async () =>
             {
-                (Socket socket1, Socket socket2) = CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket1)
                 using (socket2)
                 {
@@ -1211,7 +1196,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public void SendIovMaxUdp_SuccessOrMessageSize()
         {
             // sending more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1252,7 +1237,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         public async Task ReceiveIovMaxUdp_SuccessOrMessageSize()
         {
             // receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
@@ -1324,7 +1309,7 @@ namespace System.Net.Sockets.Tests
             await receiveTask;
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(~TestPlatforms.Windows)] // All data is sent, even when very large (100M).
         public void SocketSendWouldBlock_ReturnsBytesSent()
         {
@@ -1353,7 +1338,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/corefx/issues/11057")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task Socket_ReceiveFlags_Success()
         {
@@ -1588,7 +1573,7 @@ namespace System.Net.Sockets.Tests
                 ThreadPool.SetMaxThreads(Environment.ProcessorCount, completionPortThreads);
 
                 // Create twice that many socket pairs, for good measure.
-                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => CreateConnectedSocketPair()).ToArray();
+                (Socket, Socket)[] socketPairs = Enumerable.Range(0, Environment.ProcessorCount * 2).Select(_ => SocketTestExtensions.CreateConnectedSocketPair()).ToArray();
                 try
                 {
                     // Ensure that on Unix all of the first socket in each pair are configured for sync-over-async.
@@ -1770,7 +1755,53 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task BlockingAsyncContinuations_OperationsStillCompleteSuccessfully()
+        {
+            if (UsesSync) return;
+
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                await client.ConnectAsync(listener.LocalEndPoint);
+                using (Socket server = await listener.AcceptAsync())
+                {
+                    await Task.Run(async delegate // escape the xunit sync context / task scheduler
+                    {
+                        const int SendDelayMs = 100;
+
+                        Task sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        await client.ReceiveAsync(new byte[1], SocketFlags.None);
+                        sendTask.GetAwaiter().GetResult(); // should have already completed
+
+                        // We may now be executing here as part of the continuation invoked synchronously
+                        // when the client ReceiveAsync task was completed. Validate that if socket callbacks block
+                        // (undesirably), other operations on that socket can still be processed.
+                        var mre = new ManualResetEventSlim();
+                        sendTask = Task.Delay(SendDelayMs)
+                            .ContinueWith(_ => server.SendAsync(new byte[1], SocketFlags.None))
+                            .Unwrap();
+                        Task receiveTask = client
+                            .ReceiveAsync(new byte[1], SocketFlags.None)
+                            .ContinueWith(t => { mre.Set(); return t; }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default)
+                            .Unwrap();
+                        mre.Wait(); // block waiting for other operations on this socket to complete
+
+                        sendTask.GetAwaiter().GetResult();
+                        await sendTask;
+                        await receiveTask;
+                    });
+                }
+            }
+        }
     }
+
     public sealed class SendReceiveMemoryNativeTask : SendReceive<SocketHelperMemoryNativeTask>
     {
         public SendReceiveMemoryNativeTask(ITestOutputHelper output) : base(output) { }

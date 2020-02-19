@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -16,14 +17,14 @@ namespace System.Net.NetworkInformation
         private const string s_ipv4PingFile = "ping";
         private const string s_ipv6PingFile = "ping6";
 
-        private static readonly string s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
-        private static readonly string s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
+        private static readonly string? s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
+        private static readonly string? s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
         private static readonly bool s_isBSD = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         private static readonly Lazy<bool> s_isBusybox = new Lazy<bool>(() => IsBusyboxPing(s_discoveredPing4UtilityPath));
 
         // We don't want to pick up an arbitrary or malicious ping
         // command, so that's why we do the path probing ourselves.
-        private static string GetPingUtilityPath(bool ipv4)
+        private static string? GetPingUtilityPath(bool ipv4)
         {
             string fileName = ipv4 ? s_ipv4PingFile : s_ipv6PingFile;
             foreach (string folder in s_binFolders)
@@ -39,14 +40,17 @@ namespace System.Net.NetworkInformation
         }
 
         // Check if found ping is symlink to busybox like alpine /bin/ping -> /bin/busybox
-        private static unsafe bool IsBusyboxPing(string pingBinary)
+        private static unsafe bool IsBusyboxPing(string? pingBinary)
         {
-            string linkedName = Interop.Sys.ReadLink(pingBinary);
-
-            // If pingBinary is not link linkedName will be null
-            if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+            if (pingBinary != null)
             {
-                return true;
+                string? linkedName = Interop.Sys.ReadLink(pingBinary);
+
+                // If pingBinary is not link linkedName will be null
+                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -57,12 +61,12 @@ namespace System.Net.NetworkInformation
         /// <summary>
         /// The location of the IPv4 ping utility on the current machine.
         /// </summary>
-        public static string Ping4UtilityPath { get { return s_discoveredPing4UtilityPath; } }
+        public static string? Ping4UtilityPath { get { return s_discoveredPing4UtilityPath; } }
 
         /// <summary>
         /// The location of the IPv6 ping utility on the current machine.
         /// </summary>
-        public static string Ping6UtilityPath { get { return s_discoveredPing6UtilityPath; } }
+        public static string? Ping6UtilityPath { get { return s_discoveredPing6UtilityPath; } }
 
         /// <summary>
         /// Constructs command line arguments appropriate for the ping or ping6 utility.
@@ -150,10 +154,10 @@ namespace System.Net.NetworkInformation
         {
             int timeIndex = pingOutput.IndexOf("time=", StringComparison.Ordinal);
             int afterTime = timeIndex + "time=".Length;
-            int msIndex = pingOutput.IndexOf("ms", afterTime);
+            int msIndex = pingOutput.IndexOf("ms", afterTime, StringComparison.Ordinal);
             int numLength = msIndex - afterTime - 1;
-            string timeSubstring = pingOutput.Substring(afterTime, numLength);
-            double parsedRtt = double.Parse(timeSubstring, CultureInfo.InvariantCulture);
+            ReadOnlySpan<char> timeSubstring = pingOutput.AsSpan(afterTime, numLength);
+            double parsedRtt = double.Parse(timeSubstring, provider: CultureInfo.InvariantCulture);
             return (long)Math.Round(parsedRtt);
         }
     }

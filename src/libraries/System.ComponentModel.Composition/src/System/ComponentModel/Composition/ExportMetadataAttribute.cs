@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition
         ///     An <see cref="object"/> containing the metadata value. This can be
         ///     <see langword="null"/>.
         /// </param>
-        public ExportMetadataAttribute(string name, object value)
+        public ExportMetadataAttribute(string? name, object? value)
         {
             Name = name ?? string.Empty;
             Value = value;
@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition
         /// <value>
         ///     An <see cref="object"/> containing the metadata value.
         /// </value>
-        public object Value
+        public object? Value
         {
             get;
             private set;

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
-// Changes to this file must follow the http://aka.ms/api-review process.
+// Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
 namespace System.Net.Mail
@@ -112,6 +112,9 @@ namespace System.Net.Mail
         public string User { get { throw null; } }
         public override bool Equals(object value) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool TryCreate(string address, out MailAddress result) { throw null; }
+        public static bool TryCreate(string address, string displayName, out MailAddress result) { throw null; }
+        public static bool TryCreate(string address, string displayName, System.Text.Encoding displayNameEncoding, out MailAddress result) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial class MailAddressCollection : System.Collections.ObjectModel.Collection<System.Net.Mail.MailAddress>

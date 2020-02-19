@@ -379,7 +379,7 @@ namespace Microsoft.VisualBasic
         {
             b.Append("&Global.Microsoft.VisualBasic.ChrW(");
             b.Append(((int)value).ToString(CultureInfo.InvariantCulture));
-            b.Append(")");
+            b.Append(')');
         }
 
         protected override void ProcessCompilerOutputLine(CompilerResults results, string line)

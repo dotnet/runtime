@@ -4,11 +4,13 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Xunit;
 using Xunit.Sdk;
 
 namespace System.Text.RegularExpressions.Tests
 {
+    [OuterLoop]
     public class RegexCharacterSetTests
     {
         [Theory]
@@ -55,7 +57,7 @@ namespace System.Text.RegularExpressions.Tests
             bool hasBracket = set.Contains("[");
             if (hasBracket)
             {
-                ValidateSet(set, options, new HashSet<char>(expectedIncluded), null);
+                ValidateSet(set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
             }
             else
             {
@@ -68,7 +70,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[^1234-[3456]]", RegexOptions.None, new[] { '1', '2', '3', '4', '5', '6' })]
         public void SetExclusionsExpected(string set, RegexOptions options, char[] expectedExcluded)
         {
-            ValidateSet(set, options, null, new HashSet<char>(expectedExcluded));
+            ValidateSet(set, options, null, new HashSet<char>(expectedExcluded), validateEveryChar: true);
         }
 
         [Theory]
@@ -115,12 +117,12 @@ namespace System.Text.RegularExpressions.Tests
             ValidateSet(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
             ValidateSet(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
             ValidateSet(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set);
+            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
 
             ValidateSet(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
             ValidateSet(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
             ValidateSet(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null);
+            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
         }
 
         [Fact]
@@ -128,7 +130,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             ValidateSet(@"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
             ValidateSet(@"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
-            ValidateSet(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' });
+            ValidateSet(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true);
         }
 
         [Fact]
@@ -136,11 +138,11 @@ namespace System.Text.RegularExpressions.Tests
         {
             ValidateSet(".", RegexOptions.None, null, new HashSet<char>() { '\n' });
             ValidateSet(".", RegexOptions.IgnoreCase, null, new HashSet<char>() { '\n' });
-            ValidateSet(".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' });
+            ValidateSet(".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' }, validateEveryChar: true);
 
             ValidateSet(".", RegexOptions.Singleline, null, new HashSet<char>());
             ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase, null, new HashSet<char>());
-            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>());
+            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>(), validateEveryChar: true);
         }
 
         [Fact]
@@ -166,7 +168,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\p{S}", new[] { UnicodeCategory.CurrencySymbol, UnicodeCategory.MathSymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherSymbol })]
         [InlineData(@"\p{Lu}\p{Zl}", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LineSeparator })]
         [InlineData(@"\w", new[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.OtherLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.NonSpacingMark, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.ConnectorPunctuation })]
-
         public void UnicodeCategoryInclusionsExpected(string set, UnicodeCategory[] categories)
         {
             var categoryInclusions = ComputeIncludedSet(c => Array.IndexOf(categories, char.GetUnicodeCategory(c)) >= 0);
@@ -294,6 +295,54 @@ namespace System.Text.RegularExpressions.Tests
             ValidateSet($"[^{set}]", RegexOptions.None, null, included);
         }
 
+        [Theory]
+        [InlineData("Cc", UnicodeCategory.Control)]
+        [InlineData("Cf", UnicodeCategory.Format)]
+        [InlineData("Cn", UnicodeCategory.OtherNotAssigned)]
+        [InlineData("Co", UnicodeCategory.PrivateUse)]
+        [InlineData("Cs", UnicodeCategory.Surrogate)]
+        [InlineData("Ll", UnicodeCategory.LowercaseLetter)]
+        [InlineData("Lm", UnicodeCategory.ModifierLetter)]
+        [InlineData("Lo", UnicodeCategory.OtherLetter)]
+        [InlineData("Lt", UnicodeCategory.TitlecaseLetter)]
+        [InlineData("Lu", UnicodeCategory.UppercaseLetter)]
+        [InlineData("Mc", UnicodeCategory.SpacingCombiningMark)]
+        [InlineData("Me", UnicodeCategory.EnclosingMark)]
+        [InlineData("Mn", UnicodeCategory.NonSpacingMark)]
+        [InlineData("Nd", UnicodeCategory.DecimalDigitNumber)]
+        [InlineData("Nl", UnicodeCategory.LetterNumber)]
+        [InlineData("No", UnicodeCategory.OtherNumber)]
+        [InlineData("Pc", UnicodeCategory.ConnectorPunctuation)]
+        [InlineData("Pd", UnicodeCategory.DashPunctuation)]
+        [InlineData("Pe", UnicodeCategory.ClosePunctuation)]
+        [InlineData("Po", UnicodeCategory.OtherPunctuation)]
+        [InlineData("Ps", UnicodeCategory.OpenPunctuation)]
+        [InlineData("Pf", UnicodeCategory.FinalQuotePunctuation)]
+        [InlineData("Pi", UnicodeCategory.InitialQuotePunctuation)]
+        [InlineData("Sc", UnicodeCategory.CurrencySymbol)]
+        [InlineData("Sk", UnicodeCategory.ModifierSymbol)]
+        [InlineData("Sm", UnicodeCategory.MathSymbol)]
+        [InlineData("So", UnicodeCategory.OtherSymbol)]
+        [InlineData("Zl", UnicodeCategory.LineSeparator)]
+        [InlineData("Zp", UnicodeCategory.ParagraphSeparator)]
+        [InlineData("Zs", UnicodeCategory.SpaceSeparator)]
+        public void UnicodeCategoriesInclusionsExpected(string generalCategory, UnicodeCategory unicodeCategory)
+        {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            {
+                Regex r;
+                char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
+                int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
+                int expectedNotInCategory = allChars.Length - expectedInCategory;
+
+                r = new Regex(@$"\p{{{generalCategory}}}");
+                Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
+
+                r = new Regex(@$"\P{{{generalCategory}}}");
+                Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
+            }
+        }
+
         private static HashSet<char> ComputeIncludedSet(Func<char, bool> func)
         {
             var included = new HashSet<char>();
@@ -316,25 +365,55 @@ namespace System.Text.RegularExpressions.Tests
         public void ValidateValidateSet()
         {
             Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null));
+            Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null, validateEveryChar: true));
+
             Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
+            Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
         }
 
-        private static void ValidateSet(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded)
+        private static void ValidateSet(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)
         {
             Assert.True((included != null) ^ (excluded != null));
+
             foreach (RegexOptions compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
             {
                 var r = new Regex(regex, options | compiled);
-                for (int i = 0; i <= char.MaxValue; i++)
+
+                if (validateEveryChar)
                 {
-                    bool actual = r.IsMatch(((char)i).ToString());
-                    bool expected = included != null ? included.Contains((char)i) : !excluded.Contains((char)i);
-                    if (actual != expected)
+                    for (int i = 0; i <= char.MaxValue; i++)
                     {
-                        throw new XunitException($"Set=\"{regex}\", Options=\"{options}\", {i.ToString("X4")} => '{(char)i}' returned {actual}");
+                        bool actual = r.IsMatch(((char)i).ToString());
+                        bool expected = included != null ? included.Contains((char)i) : !excluded.Contains((char)i);
+                        if (actual != expected)
+                        {
+                            Fail(i);
+                        }
+                    }
+                }
+                else if (included != null)
+                {
+                    foreach (char c in included)
+                    {
+                        if (!r.IsMatch(c.ToString()))
+                        {
+                            Fail(c);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (char c in excluded)
+                    {
+                        if (r.IsMatch(c.ToString()))
+                        {
+                            Fail(c);
+                        }
                     }
                 }
             }
+
+            void Fail(int c) => throw new XunitException($"Set=\"{regex}\", Options=\"{options}\", {c:X4} => '{(char)c}'");
         }
     }
 }

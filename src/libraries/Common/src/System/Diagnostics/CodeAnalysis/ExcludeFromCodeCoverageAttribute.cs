@@ -5,7 +5,7 @@
 namespace System.Diagnostics.CodeAnalysis
 {
     [AttributeUsageAttribute(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event, Inherited = false, AllowMultiple = false)]
-#if SYSTEM_DIAGNOSTICS_TOOLS
+#if SYSTEM_PRIVATE_CORELIB
     public
 #else
     internal

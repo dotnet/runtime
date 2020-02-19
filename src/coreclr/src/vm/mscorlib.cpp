@@ -67,7 +67,6 @@
 #include "variant.h"
 #include "oavariant.h"
 #include "mngstdinterfaces.h"
-#include "extensibleclassfactory.h"
 #endif // FEATURE_COMINTEROP
 
 #include "stubhelpers.h"
@@ -368,14 +367,13 @@ const MscorlibFieldDescription c_rgMscorlibFieldDescriptions[] =
 };
 const USHORT c_nMscorlibFieldDescriptions = NumItems(c_rgMscorlibFieldDescriptions) + 1;
 
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 // ECalls
 //
+
+// ECalls defined by libraries-native shims
+EXTERN_C const LPVOID gPalGlobalizationNative[];
 
 // When compiling crossgen, we only need the target version of the ecall tables
 #if !defined(CROSSGEN_COMPILE) || defined(CROSSGEN_MSCORLIB)

@@ -1,6 +1,6 @@
 ﻿<Project InitialTargets="AddPackageDownload" Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <Import Project="$(PkgDir)baseline/baseline.props" />

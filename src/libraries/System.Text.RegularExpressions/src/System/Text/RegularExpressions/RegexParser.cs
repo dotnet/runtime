@@ -642,7 +642,21 @@ namespace System.Text.RegularExpressions
                         case '-':
                             if (!scanOnly)
                             {
-                                charClass!.AddRange(ch, ch);
+                                if (inRange)
+                                {
+                                    if (chPrev > ch)
+                                    {
+                                        throw MakeException(RegexParseError.ReversedCharRange, SR.ReversedCharRange);
+                                    }
+
+                                    charClass!.AddRange(chPrev, ch);
+                                    inRange = false;
+                                    chPrev = '\0';
+                                }
+                                else
+                                {
+                                    charClass!.AddRange(ch, ch);
+                                }
                             }
                             continue;
 
@@ -1736,7 +1750,7 @@ namespace System.Text.RegularExpressions
             ch switch
             {
                 'b' => UseOptionE() ? RegexNode.ECMABoundary : RegexNode.Boundary,
-                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.Nonboundary,
+                'B' => UseOptionE() ? RegexNode.NonECMABoundary : RegexNode.NonBoundary,
                 'A' => RegexNode.Beginning,
                 'G' => RegexNode.Start,
                 'Z' => RegexNode.EndZ,

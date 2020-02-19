@@ -499,7 +499,6 @@ namespace System.Net.Tests
             Assert.Equal(int.MaxValue, request.Timeout);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22627")]
         [Fact]
         public async Task Timeout_SetTenMillisecondsOnLoopback_ThrowsWebException()
         {
@@ -1149,7 +1148,6 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "no exception thrown on mono")]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -1263,7 +1261,7 @@ namespace System.Net.Tests
                 }
             }, async server =>
             {
-                string host = server.Uri.Host + ":" + server.Uri.Port;
+                string host = server.Address.Host + ":" + server.Address.Port;
                 HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Host", host) });
                 string serverReceivedHost = requestData.GetSingleHeaderValue("Host");
                 Assert.Equal(host, serverReceivedHost);
@@ -1450,7 +1448,7 @@ namespace System.Net.Tests
             Assert.NotNull(request.Proxy);
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/42323")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31380")]
         [OuterLoop("Uses external server")]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
         [Fact]
@@ -1715,8 +1713,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19083")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "https://github.com/dotnet/corefx/issues/19083")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21418")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1738,7 +1735,6 @@ namespace System.Net.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "ResponseCallback not called after Abort on mono")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {
@@ -1757,7 +1753,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18800")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21291")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {

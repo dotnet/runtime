@@ -35,7 +35,7 @@ namespace System.Net.Test.Common
 
         public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
-        public Uri Address
+        public override Uri Address
         {
             get
             {
@@ -92,9 +92,14 @@ namespace System.Net.Test.Common
             return connection;
         }
 
+        public override async Task<GenericLoopbackConnection> EstablishGenericConnectionAsync()
+        {
+            return await EstablishConnectionAsync();
+        }
+
         public async Task<Http2LoopbackConnection> EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync().ConfigureAwait(false);
+            (Http2LoopbackConnection connection, _) = await EstablishConnectionGetSettingsAsync(settingsEntries).ConfigureAwait(false);
             return connection;
         }
 
@@ -191,8 +196,12 @@ namespace System.Net.Test.Common
     public class Http2Options : GenericLoopbackOptions
     {
         public int ListenBacklog { get; set; } = 1;
-        public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
-        public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls12;
+
+        public Http2Options()
+        {
+            UseSsl = PlatformDetection.SupportsAlpn && !Capability.Http2ForceUnencryptedLoopback();
+            SslProtocols = SslProtocols.Tls12;
+        }
     }
 
     public sealed class Http2LoopbackServerFactory : LoopbackServerFactory
@@ -207,22 +216,28 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
             Http2Options http2Options = new Http2Options();
             if (options != null)
             {
                 http2Options.Address = options.Address;
+                http2Options.UseSsl = options.UseSsl;
+                http2Options.SslProtocols = options.SslProtocols;
             }
 
-            using (var server = Http2LoopbackServer.CreateServer(http2Options))
+            return Http2LoopbackServer.CreateServer(http2Options);
+        }
+
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000, GenericLoopbackOptions options = null)
+        {
+            using (var server = CreateServer(options))
             {
                 await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
             }
         }
 
-        public override bool IsHttp11 => false;
-        public override bool IsHttp2 => true;
+        public override Version Version => HttpVersion.Version20;
     }
 
     public enum ProtocolErrors

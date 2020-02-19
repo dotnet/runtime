@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -45,13 +44,15 @@ namespace System.Net.Quic.Implementations.MsQuic
         private GCHandle _sendHandle;
 
         // Used to check if StartAsync has been called.
-        private StartState _started;
+        private bool _started;
 
         private ReadState _readState;
+        private long _readErrorCode = -1;
 
         private ShutdownWriteState _shutdownState;
 
         private SendState _sendState;
+        private long _sendErrorCode = -1;
 
         // Used by the class to indicate that the stream is m_Readable.
         private readonly bool _canRead;
@@ -73,24 +74,23 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             _ptr = nativeObjPtr;
 
+            _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
+            _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
+            SetCallbackHandler();
+
             if (inbound)
             {
-                _started = StartState.Finished;
+                _started = true;
                 _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
                 _canRead = true;
             }
             else
             {
-                _started = StartState.None;
                 _canWrite = true;
                 _canRead = !flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
+                StartWrites();
             }
-
-            _sendResettableCompletionSource = new ResettableCompletionSource<uint>();
-            _receiveResettableCompletionSource = new ResettableCompletionSource<uint>();
-            _shutdownWriteResettableCompletionSource = new ResettableCompletionSource<uint>();
-
-            SetCallbackHandler();
         }
 
         internal override bool CanRead => _canRead;
@@ -101,6 +101,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             get
             {
+                ThrowIfDisposed();
+
                 if (_streamId == -1)
                 {
                     _streamId = GetStreamId();
@@ -184,6 +186,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     throw new OperationCanceledException("Sending has already been aborted on the stream");
                 }
             }
+
             CancellationTokenRegistration registration = cancellationToken.Register(() =>
             {
                 bool shouldComplete = false;
@@ -198,17 +201,15 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _sendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled"));
+                    _sendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled", cancellationToken));
                 }
             });
 
-            // Implicit start on first write.
-            if (_started == StartState.None)
+            // Make sure start has completed
+            if (!_started)
             {
-                _started = StartState.Started;
-
-                // TODO can optimize this by not having this method be async.
-                await StartWritesAsync();
+                await _sendResettableCompletionSource.GetTypelessValueTask();
+                _started = true;
             }
 
             return registration;
@@ -245,7 +246,11 @@ namespace System.Net.Quic.Implementations.MsQuic
                 }
                 else if (_readState == ReadState.Aborted)
                 {
-                    throw new IOException("Reading has been aborted by the peer.");
+                    throw _readErrorCode switch
+                    {
+                        -1 => new QuicOperationAbortedException(),
+                        long err => new QuicStreamAbortedException(err)
+                    };
                 }
             }
 
@@ -264,7 +269,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _receiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled"));
+                    _receiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled", cancellationToken));
                 }
             });
 
@@ -283,8 +288,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                     QuicBuffer nativeBuffer = sourceBuffers[i];
                     int length = Math.Min((int)nativeBuffer.Length, slicedBuffer.Length);
                     new Span<byte>(nativeBuffer.Buffer, length).CopyTo(slicedBuffer);
-                    if (length < slicedBuffer.Length)
+                    if (length < nativeBuffer.Length)
                     {
+                        // The buffer passed in was larger that the received data, return
                         return;
                     }
                     slicedBuffer = slicedBuffer.Slice(length);
@@ -297,6 +303,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 if (_readState == ReadState.IndividualReadComplete)
                 {
+                    _receiveQuicBuffers.Clear();
                     ReceiveComplete(actual);
                     EnableReceive();
                     _readState = ReadState.None;
@@ -374,7 +381,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
+                    _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled", cancellationToken));
                 }
             });
 
@@ -385,6 +392,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void Shutdown()
         {
+            ThrowIfDisposed();
+
             MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
         }
 
@@ -400,6 +409,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             ThrowIfDisposed();
 
+            // TODO: optimize this.
             WriteAsync(buffer.ToArray()).GetAwaiter().GetResult();
         }
 
@@ -485,14 +495,14 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         internal static uint NativeCallbackHandler(
-           IntPtr stream,
-           IntPtr context,
-           StreamEvent connectionEventStruct)
+            IntPtr stream,
+            IntPtr context,
+            ref StreamEvent streamEvent)
         {
             var handle = GCHandle.FromIntPtr(context);
             var quicStream = (MsQuicStream)handle.Target;
 
-            return quicStream.HandleEvent(ref connectionEventStruct);
+            return quicStream.HandleEvent(ref streamEvent);
         }
 
         private uint HandleEvent(ref StreamEvent evt)
@@ -530,14 +540,13 @@ namespace System.Net.Quic.Implementations.MsQuic
                     // Peer has told us to abort the reading side of the stream.
                     case QUIC_STREAM_EVENT.PEER_SEND_ABORTED:
                         {
-                            status = HandleEventPeerSendAborted();
+                            status = HandleEventPeerSendAborted(ref evt);
                         }
                         break;
                     // Peer has stopped receiving data, don't send anymore.
-                    // Potentially throw when WriteAsync/FlushAsync.
                     case QUIC_STREAM_EVENT.PEER_RECEIVE_ABORTED:
                         {
-                            status = HandleEventPeerRecvAbort();
+                            status = HandleEventPeerRecvAborted(ref evt);
                         }
                         break;
                     // Occurs when shutdown is completed for the send side.
@@ -596,9 +605,26 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Pending;
         }
 
-        private uint HandleEventPeerRecvAbort()
+        private uint HandleEventPeerRecvAborted(ref StreamEvent evt)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+
+            bool shouldComplete = false;
+            lock (_sync)
+            {
+                if (_sendState == SendState.None)
+                {
+                    shouldComplete = true;
+                }
+                _sendState = SendState.Aborted;
+                _sendErrorCode = evt.Data.PeerSendAbort.ErrorCode;
+            }
+
+            if (shouldComplete)
+            {
+                _sendResettableCompletionSource.CompleteException(new QuicStreamAbortedException(_sendErrorCode));
+            }
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
 
             return MsQuicStatusCodes.Success;
@@ -611,8 +637,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool shouldComplete = false;
             lock (_sync)
             {
-                _started = StartState.Finished;
-
                 // Check send state before completing as send cancellation is shared between start and send.
                 if (_sendState == SendState.None)
                 {
@@ -694,7 +718,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             return MsQuicStatusCodes.Success;
         }
 
-        private uint HandleEventPeerSendAborted()
+        private uint HandleEventPeerSendAborted(ref StreamEvent evt)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -706,11 +730,12 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _readState = ReadState.Aborted;
+                _readErrorCode = evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)
             {
-                _receiveResettableCompletionSource.CompleteException(new IOException("Reading has been aborted by the peer."));
+                _receiveResettableCompletionSource.CompleteException(new QuicStreamAbortedException(_readErrorCode));
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
@@ -962,14 +987,14 @@ namespace System.Net.Quic.Implementations.MsQuic
             return _sendResettableCompletionSource.GetTypelessValueTask();
         }
 
-        private ValueTask<uint> StartWritesAsync()
+        private void StartWrites()
         {
+            Debug.Assert(!_started);
             uint status = MsQuicApi.Api.StreamStartDelegate(
               _ptr,
               (uint)QUIC_STREAM_START_FLAG.ASYNC);
 
             QuicExceptionHelpers.ThrowIfFailed(status, "Could not start stream.");
-            return _sendResettableCompletionSource.GetValueTask();
         }
 
         private void ReceiveComplete(int bufferLength)
@@ -990,13 +1015,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new ObjectDisposedException(nameof(MsQuicStream));
             }
-        }
-
-        private enum StartState
-        {
-            None,
-            Started,
-            Finished
         }
 
         private enum ReadState

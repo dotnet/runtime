@@ -39,7 +39,7 @@ int __cdecl main(int argc, char *argv[]) {
 /*
 **  Run only on 64 bit platforms
 */
-#if defined(BIT64)
+#if defined(HOST_64BIT)
 
     TheReturn = InterlockedExchange64(&TheValue,NewValue);
   
@@ -63,7 +63,7 @@ int __cdecl main(int argc, char *argv[]) {
              START_VALUE,TheReturn);
     }
 
-#endif  // BIT64
+#endif  // HOST_64BIT
     PAL_Terminate();
     return PASS; 
 } 

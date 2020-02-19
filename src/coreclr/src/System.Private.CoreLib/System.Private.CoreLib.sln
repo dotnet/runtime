@@ -1,4 +1,3 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.28902.138
@@ -9,6 +8,7 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "System.Private.CoreLib.Shar
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{3da06c3a-2e7b-4cb7-80ed-9b12916013f9}*SharedItemsImports = 5
 		..\..\..\libraries\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems*{845c8b26-350b-4e63-bd11-2c8150444e28}*SharedItemsImports = 13
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

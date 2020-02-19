@@ -9,7 +9,7 @@
           AfterTargets="Restore">
 
     <ItemGroup>
-      <DocFile Include="$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/xmldocs/netcoreapp/**/*.xml"/>
+      <DocFile Include="$(NuGetPackageRoot)$(MicrosoftPrivateIntellisensePackage)/$(MicrosoftPrivateIntellisenseVersion)/IntellisenseFiles/netcoreapp/**/*.xml"/>
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
         <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>

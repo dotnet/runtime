@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -32,7 +33,7 @@ namespace System.Reflection.TypeLoading
 
         private static readonly Version s_Version0000 = new Version(0, 0, 0, 0);
 
-        public RoAssemblyName(string name, Version version, string cultureName, byte[] publicKeyToken, AssemblyNameFlags flags)
+        public RoAssemblyName(string? name, Version? version, string? cultureName, byte[]? publicKeyToken, AssemblyNameFlags flags)
         {
             // We forcefully normalize the representation so that Equality is dependable and fast.
             Debug.Assert(name != null);
@@ -49,8 +50,9 @@ namespace System.Reflection.TypeLoading
         // Equality - this compares every bit of data in the RuntimeAssemblyName which is acceptable for use as keys in a cache
         // where semantic duplication is permissible. This method is *not* meant to define ref->def binding rules or
         // assembly binding unification rules.
-        public bool Equals(RoAssemblyName other)
+        public bool Equals(RoAssemblyName? other)
         {
+            Debug.Assert(other is object);
             if (Name != other.Name)
                 return false;
             if (Version != other.Version)
@@ -65,7 +67,7 @@ namespace System.Reflection.TypeLoading
             return true;
         }
 
-        public sealed override bool Equals(object obj) => obj is RoAssemblyName other && Equals(other);
+        public sealed override bool Equals(object? obj) => obj is RoAssemblyName other && Equals(other);
         public sealed override int GetHashCode() => Name.GetHashCode();
         public sealed override string ToString() => FullName;
 

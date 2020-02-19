@@ -179,13 +179,6 @@ typedef struct MonoDebugOptions {
 	gboolean lldb;
 
 	/*
-	 * With LLVM codegen, this option will cause methods to be called indirectly through the
-	 * PLT (As they are in other FullAOT modes, without LLVM). 
-	 *
-	 * Enable this to debug problems with direct calls in llvm
-	 */
-	gboolean llvm_disable_self_init;
-	/*
 	 * Prevent LLVM from inlining any methods
 	 */
 	gboolean llvm_disable_inlining;
@@ -256,8 +249,17 @@ typedef struct MonoDebugOptions {
 	 */
 	gboolean aot_skip_set;
 	int aot_skip;
-} MonoDebugOptions;
 
+	/*
+	 * Treat exceptions which reach the topmost runtime invoke as unhandled when
+	 * embedding.
+	 */
+	gboolean top_runtime_invoke_unhandled;
+
+#ifdef ENABLE_NETCORE
+	gboolean enabled;
+#endif
+} MonoDebugOptions;
 
 /*
  * We need to store the image which the token refers to along with the token,
@@ -362,14 +364,18 @@ extern gboolean mono_compile_aot;
 extern gboolean mono_aot_only;
 extern gboolean mono_llvm_only;
 extern MonoAotMode mono_aot_mode;
+MONO_BEGIN_DECLS
 MONO_API_DATA const char *mono_build_date;
+MONO_END_DECLS
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
+MONO_BEGIN_DECLS
 MONO_API_DATA gboolean mono_use_llvm;
 MONO_API_DATA gboolean mono_use_fast_math;
 MONO_API_DATA gboolean mono_use_interpreter;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_enabled;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_disabled;
+MONO_END_DECLS
 extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;
@@ -380,6 +386,7 @@ extern GList* mono_aot_paths;
 extern MonoDebugOptions mini_debug_options;
 extern GSList *mono_interp_only_classes;
 extern char *sdb_options;
+extern MonoMethodDesc *mono_stats_method_desc;
 
 /*
 This struct describes what execution engine feature to use.
@@ -422,6 +429,7 @@ MONO_API void        mono_parse_env_options         (int *ref_argc, char **ref_a
 MONO_API char       *mono_parse_options_from        (const char *options, int *ref_argc, char **ref_argv []);
 MONO_API int         mono_regression_test_step      (int verbose_level, const char *image, const char *method_name);
 
+void                   mono_runtime_print_stats      (void);
 
 void                   mono_interp_stub_init         (void);
 void                   mini_install_interp_callbacks (const MonoEECallbacks *cbs);
@@ -505,7 +513,7 @@ gboolean mono_jit_map_is_enabled (void);
 #else
 #define mono_enable_jit_map()
 #define mono_emit_jit_map(ji)
-#define mono_emit_jit_tramp(s,z,d)
+#define mono_emit_jit_tramp(s,z,d) do { } while (0) /* non-empty to avoid warning */
 #define mono_jit_map_is_enabled() (0)
 #endif
 
@@ -564,7 +572,7 @@ mono_is_addr_implicit_null_check (void *addr);
 #endif
 
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigfpe_signal_handler) ;
-void MONO_SIG_HANDLER_SIGNATURE (mono_sigill_signal_handler) ;
+void MONO_SIG_HANDLER_SIGNATURE (mono_crashing_signal_handler) ;
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigsegv_signal_handler);
 void MONO_SIG_HANDLER_SIGNATURE (mono_sigint_signal_handler) ;
 gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);

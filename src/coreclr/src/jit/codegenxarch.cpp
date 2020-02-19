@@ -16,7 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma warning(disable : 4310) // cast truncates constant value - happens for (int8_t)0xb1
 #endif
 
-#ifdef _TARGET_XARCH_
+#ifdef TARGET_XARCH
 #include "emit.h"
 #include "codegen.h"
 #include "lower.h"
@@ -72,7 +72,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
         noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         if ((int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
@@ -161,13 +161,13 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // ... all other cases.
         else
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // For x64, structs that are not returned in registers are always
             // returned in implicit RetBuf. If we reached here, we should not have
             // a RetBuf and the return type should not be a struct.
             assert(compiler->info.compRetBuffArg == BAD_VAR_NUM);
             assert(!varTypeIsStruct(compiler->info.compRetNativeType));
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
             // For x86 Windows we can't make such assertions since we generate code for returning of
             // the RetBuf in REG_INTRET only when the ProfilerHook is enabled. Otherwise
@@ -198,13 +198,13 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     }
     else
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // It doesn't matter which register we pick, since we're going to save and restore it
         // around the check.
         // TODO-CQ: Can we optimize the choice of register to avoid doing the push/pop sometimes?
         regGSCheck     = REG_EAX;
         regMaskGSCheck = RBM_EAX;
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
         // Tail calls from methods that need GS check:  We need to preserve registers while
         // emitting GS cookie check for a tail prefixed call or a jmp. To emit GS cookie
         // check, we might need a register. This won't be an issue for jmp calls for the
@@ -235,7 +235,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // address and hence it can neither be a VSD call nor PInvoke calli with cookie
         // parameter.  Therefore, in case of jmp calls it is safe to use R11.
         regGSCheck = REG_R11;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
     }
 
     regMaskTP byrefPushedRegs = RBM_NONE;
@@ -244,7 +244,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     if (compiler->gsGlobalSecurityCookieAddr == nullptr)
     {
-#if defined(_TARGET_AMD64_)
+#if defined(TARGET_AMD64)
         // If GS cookie value fits within 32-bits we can use 'cmp mem64, imm32'.
         // Otherwise, load the value into a reg and use 'cmp mem64, reg64'.
         if ((int)compiler->gsGlobalSecurityCookieVal != (ssize_t)compiler->gsGlobalSecurityCookieVal)
@@ -253,7 +253,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
             GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
         }
         else
-#endif // defined(_TARGET_AMD64_)
+#endif // defined(TARGET_AMD64)
         {
             assert((int)compiler->gsGlobalSecurityCookieVal == (ssize_t)compiler->gsGlobalSecurityCookieVal);
             GetEmitter()->emitIns_S_I(INS_cmp, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
@@ -682,7 +682,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
     genProduceReg(treeNode);
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 //------------------------------------------------------------------------
 // genCodeForLongUMod: Generate code for a tree of the form
 //                     `(umod (gt_long x y) (const int))`
@@ -765,7 +765,7 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     }
     genProduceReg(node);
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //------------------------------------------------------------------------
 // genCodeForDivMod: Generate code for a DIV or MOD operation.
@@ -779,13 +779,13 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 
     GenTree* dividend = treeNode->gtOp1;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (varTypeIsLong(dividend->TypeGet()))
     {
         genCodeForLongUMod(treeNode);
         return;
     }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     GenTree*   divisor    = treeNode->gtOp2;
     genTreeOps oper       = treeNode->OperGet();
@@ -873,7 +873,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     else
     {
         isValidOper |= treeNode->OperIs(GT_AND, GT_OR, GT_XOR);
-#ifndef _TARGET_64BIT_
+#ifndef TARGET_64BIT
         isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI);
 #endif
     }
@@ -995,7 +995,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     if (treeNode->gtOverflowEx())
     {
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI);
 #else
         assert(oper == GT_ADD || oper == GT_SUB);
@@ -1352,7 +1352,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 #endif
 }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 
 //------------------------------------------------------------------------
 // genFloatReturn: Generates code for float return statement for x86.
@@ -1399,7 +1399,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
         regSet.tmpRlsTemp(t);
     }
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT/GT_TEST_EQ/GT_TEST_NE/GT_CMP node.
@@ -1576,7 +1576,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 {
     regNumber targetReg;
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     if (treeNode->TypeGet() == TYP_LONG)
     {
         // All long enregistered nodes will have been decomposed into their
@@ -1584,7 +1584,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         targetReg = REG_NA;
     }
     else
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
     {
         targetReg = treeNode->GetRegNum();
     }
@@ -1653,9 +1653,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CNS_INT:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             assert(!treeNode->IsIconHandle(GTF_ICON_TLS_HDL));
-#endif // _TARGET_X86_
+#endif // TARGET_X86
             __fallthrough;
 
         case GT_CNS_DBL:
@@ -1693,12 +1693,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             __fallthrough;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
         case GT_ADD:
         case GT_SUB:
@@ -1722,53 +1722,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForShift(treeNode);
             break;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 
         case GT_LSH_HI:
         case GT_RSH_LO:
             genCodeForShiftLong(treeNode);
             break;
 
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
             break;
 
         case GT_BITCAST:
-        {
-            GenTree* const op1 = treeNode->AsOp()->gtOp1;
-            genConsumeReg(op1);
-
-            const bool srcFltReg = varTypeIsFloating(op1) || varTypeIsSIMD(op1);
-            const bool dstFltReg = varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode);
-            if (srcFltReg != dstFltReg)
-            {
-                instruction ins;
-                regNumber   fltReg;
-                regNumber   intReg;
-                if (dstFltReg)
-                {
-                    ins    = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
-                    fltReg = treeNode->GetRegNum();
-                    intReg = op1->GetRegNum();
-                }
-                else
-                {
-                    ins    = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
-                    intReg = treeNode->GetRegNum();
-                    fltReg = op1->GetRegNum();
-                }
-                inst_RV_RV(ins, fltReg, intReg, treeNode->TypeGet());
-            }
-            else if (treeNode->GetRegNum() != op1->GetRegNum())
-            {
-                inst_RV_RV(ins_Copy(treeNode->TypeGet()), treeNode->GetRegNum(), op1->GetRegNum(), treeNode->TypeGet());
-            }
-
-            genProduceReg(treeNode);
+            genCodeForBitCast(treeNode->AsOp());
             break;
-        }
 
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
@@ -1810,7 +1779,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_MULHI:
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         case GT_MUL_LONG:
 #endif
             genCodeForMulHi(treeNode->AsOp());
@@ -2028,7 +1997,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genProduceReg(treeNode);
             break;
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         case GT_LONG:
             assert(treeNode->isUsedFromReg());
             genConsumeRegs(treeNode);
@@ -2181,7 +2150,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 
         varDsc->SetRegNum(REG_STK);
     }
-#elif defined(_TARGET_X86_)
+#elif defined(TARGET_X86)
     // Longs are returned in two return registers on x86.
     assert(varTypeIsLong(treeNode));
 
@@ -2226,9 +2195,9 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
     }
 
     varDsc->SetRegNum(REG_STK);
-#else  // !UNIX_AMD64_ABI && !_TARGET_X86_
+#else  // !UNIX_AMD64_ABI && !TARGET_X86
     assert(!"Unreached");
-#endif // !UNIX_AMD64_ABI && !_TARGET_X86_
+#endif // !UNIX_AMD64_ABI && !TARGET_X86
 }
 
 //------------------------------------------------------------------------
@@ -2290,7 +2259,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         // Frame size >= 0x3000
         assert(frameSize >= compiler->getVeryLargeFrameSize());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         int spOffset = -(int)frameSize;
 
         if (compiler->info.compPublishStubParam)
@@ -2315,7 +2284,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         {
             GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
         }
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
         static_assert_no_msg((RBM_STACK_PROBE_HELPER_ARG & (RBM_SECRET_STUB_PARAM | RBM_DEFAULT_HELPER_CALL_TARGET)) ==
                              RBM_NONE);
 
@@ -2334,7 +2303,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         static_assert_no_msg((RBM_STACK_PROBE_HELPER_TRASH & RBM_STACK_PROBE_HELPER_ARG) == RBM_NONE);
 
         GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
         if (initReg == REG_STACK_PROBE_HELPER_ARG)
         {
@@ -2382,7 +2351,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     // function that does a probe, which will in turn call this function.
     assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (regTmp != REG_NA)
     {
         // For x86, some cases don't want to use "sub ESP" because we don't want the emitter to track the adjustment
@@ -2395,7 +2364,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
         inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
     }
     else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     {
         inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
     }
@@ -2705,11 +2674,11 @@ void CodeGen::genLclHeap(GenTree* tree)
         bool initMemOrLargeAlloc =
             compiler->info.compInitMem || (amount >= compiler->eeGetPageSize()); // must be >= not >
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         bool needRegCntRegister = true;
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
         bool needRegCntRegister = initMemOrLargeAlloc;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
         if (needRegCntRegister)
         {
@@ -2865,7 +2834,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 
     switch (storeBlkNode->gtBlkOpKind)
     {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
         case GenTreeBlk::BlkOpKindHelper:
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
             if (isCopyBlk)
@@ -2877,7 +2846,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                 genCodeForInitBlkHelper(storeBlkNode);
             }
             break;
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
         case GenTreeBlk::BlkOpKindRepInstr:
 #ifndef JIT32_GCENCODER
             assert(!storeBlkNode->gtBlkOpGcUnsafe);
@@ -3025,7 +2994,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             emit->emitIns_R_R(INS_mov_i2xmm, EA_PTRSIZE, srcXmmReg, srcIntReg);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             // For x86, we need one more to convert it from 8 bytes to 16 bytes.
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
 #endif
@@ -3069,7 +3038,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //------------------------------------------------------------------------
 // genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
 //
@@ -3088,7 +3057,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
 // Generate code for a load from some address + offset
@@ -3331,11 +3300,11 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
 //
 unsigned CodeGen::genMove8IfNeeded(unsigned size, regNumber longTmpReg, GenTree* srcAddr, unsigned offset)
 {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     instruction longMovIns = INS_movq;
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
     instruction longMovIns = INS_mov;
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
     if ((size & 8) != 0)
     {
         genCodeForLoadOffset(longMovIns, EA_8BYTE, longTmpReg, srcAddr, offset);
@@ -3474,7 +3443,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     regNumber xmmTmpReg  = REG_NA;
     regNumber intTmpReg  = REG_NA;
     regNumber longTmpReg = REG_NA;
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     // On x86 we use an XMM register for both 16 and 8-byte chunks, but if it's
     // less than 16 bytes, we will just be using pushes
     if (size >= 8)
@@ -3486,7 +3455,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     {
         intTmpReg = putArgNode->GetSingleTempReg(RBM_ALLINT);
     }
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
     // On x64 we use an XMM register only for 16-byte chunks.
     if (size >= XMM_REGSIZE_BYTES)
     {
@@ -3497,16 +3466,16 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
         intTmpReg  = putArgNode->GetSingleTempReg(RBM_ALLINT);
         longTmpReg = intTmpReg;
     }
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 
     // If the size of this struct is larger than 16 bytes
     // let's use SSE2 to be able to do 16 byte at a time
     // loads and stores.
     if (size >= XMM_REGSIZE_BYTES)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         assert(!m_pushStkArg);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         size_t slots = size / XMM_REGSIZE_BYTES;
 
         assert(putArgNode->gtGetOp1()->isContained());
@@ -3530,7 +3499,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     // Fill the remainder (15 bytes or less) if there's one.
     if ((size & 0xf) != 0)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (m_pushStkArg)
         {
             // This case is currently supported only for the case where the total size is
@@ -3546,7 +3515,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
             pushedBytes += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, 0);
         }
         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         {
             offset += genMove8IfNeeded(size, longTmpReg, src->AsOp()->gtOp1, offset);
             offset += genMove4IfNeeded(size, intTmpReg, src->AsOp()->gtOp1, offset);
@@ -3783,7 +3752,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     gcInfo.gcMarkRegSetNpt(RBM_RDI);
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 //----------------------------------------------------------------------------------
 // genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
 //
@@ -3802,7 +3771,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 // generate code do a switch statement based on a table of ip-relative offsets
 void CodeGen::genTableBasedSwitch(GenTree* treeNode)
@@ -4307,7 +4276,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_XOR:
             ins = INS_xor;
             break;
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         case GT_ADD_LO:
             ins = INS_add;
             break;
@@ -4326,7 +4295,7 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_RSH_LO:
             ins = INS_shrd;
             break;
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
         default:
             unreached();
             break;
@@ -4397,7 +4366,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     genProduceReg(tree);
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 //------------------------------------------------------------------------
 // genCodeForShiftLong: Generates the code sequence for a GenTree node that
 // represents a three operand bit shift or rotate operation (<<Hi, >>Lo).
@@ -4588,21 +4557,22 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
     // lcl_vars are not defs
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
 
-    bool isRegCandidate = compiler->lvaTable[tree->GetLclNum()].lvIsRegCandidate();
+    LclVarDsc* varDsc         = compiler->lvaGetDesc(tree);
+    bool       isRegCandidate = varDsc->lvIsRegCandidate();
 
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
     if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#if defined(FEATURE_SIMD) && defined(TARGET_X86)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
         if (tree->TypeGet() == TYP_SIMD12)
         {
             genLoadLclTypeSIMD12(tree);
             return;
         }
-#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#endif // defined(FEATURE_SIMD) && defined(TARGET_X86)
 
         GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(tree->GetLclNum())),
                                   emitTypeSize(tree), tree->GetRegNum(), tree->GetLclNum(), 0);
@@ -4621,8 +4591,9 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_STORE_LCL_FLD));
 
     var_types targetType = tree->TypeGet();
+    GenTree*  op1        = tree->gtGetOp1();
+
     noway_assert(targetType != TYP_STRUCT);
-    assert(!varTypeIsFloating(targetType) || (targetType == tree->gtOp1->TypeGet()));
 
 #ifdef FEATURE_SIMD
     // storing of TYP_SIMD12 (i.e. Vector3) field
@@ -4633,7 +4604,9 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     }
 #endif // FEATURE_SIMD
 
-    GenTree* op1 = tree->gtGetOp1();
+    assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1));
+    assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
+
     genConsumeRegs(op1);
     GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
 
@@ -4674,13 +4647,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         // Ensure that lclVar nodes are typed correctly.
         assert(!varDsc->lvNormalizeOnStore() || (targetType == genActualType(varDsc->TypeGet())));
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
         if (targetType == TYP_LONG)
         {
             genStoreLongLclVar(tree);
             return;
         }
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_SIMD
         // storing of TYP_SIMD12 (i.e. Vector3) field
@@ -4704,7 +4677,24 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
         genConsumeRegs(op1);
 
-        if (targetReg == REG_NA)
+        if (op1->OperIs(GT_BITCAST) && op1->isContained())
+        {
+            GenTree*  bitCastSrc = op1->gtGetOp1();
+            var_types srcType    = bitCastSrc->TypeGet();
+            noway_assert(!bitCastSrc->isContained());
+            if (targetReg == REG_NA)
+            {
+                emit->emitIns_S_R(ins_Store(srcType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                  emitTypeSize(targetType), bitCastSrc->GetRegNum(), lclNum, 0);
+                genUpdateLife(tree);
+                varDsc->SetRegNum(REG_STK);
+            }
+            else
+            {
+                genBitCast(targetType, targetReg, srcType, bitCastSrc->GetRegNum());
+            }
+        }
+        else if (targetReg == REG_NA)
         {
             // stack store
             emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
@@ -4775,14 +4765,14 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     assert(varTypeIsIntegral(index->TypeGet()));
 
     regNumber tmpReg = REG_NA;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     tmpReg = node->GetSingleTempReg();
 #endif
 
     // Generate the bounds check if necessary.
     if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
         // is a native int on a 64-bit platform, we will need to widen the array length and then compare.
         if (index->TypeGet() == TYP_I_IMPL)
@@ -4791,7 +4781,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
         }
         else
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
         {
             GetEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
         }
@@ -4799,14 +4789,14 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
     }
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
     if (index->TypeGet() != TYP_I_IMPL)
     {
         // LEA needs 64-bit operands so we need to widen the index if it's TYP_INT.
         GetEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, tmpReg, indexReg);
         indexReg = tmpReg;
     }
-#endif // _TARGET_64BIT_
+#endif // TARGET_64BIT
 
     // Compute the address of the array element.
     unsigned scale = node->gtElemSize;
@@ -4821,13 +4811,13 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             break;
 
         default:
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             // IMUL treats its immediate operand as signed so scale can't be larger than INT32_MAX.
             // The VM doesn't allow such large array elements but let's be sure.
             noway_assert(scale <= INT32_MAX);
-#else  // !_TARGET_64BIT_
+#else  // !TARGET_64BIT
             tmpReg              = node->GetSingleTempReg();
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
             GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
                                       static_cast<ssize_t>(scale));
@@ -5028,7 +5018,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree*  addr       = tree->Addr();
     var_types targetType = tree->TypeGet();
 
-    assert(!varTypeIsFloating(targetType) || (targetType == data->TypeGet()));
+    assert(!varTypeIsFloating(targetType) || (genTypeSize(targetType) == genTypeSize(data->TypeGet())));
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -5234,7 +5224,7 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
 {
     assert(writeBarrierForm != GCInfo::WBF_NoBarrier);
 
-#if defined(_TARGET_X86_) && NOGC_WRITE_BARRIERS
+#if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
     if (!genUseOptimizedWriteBarriers(writeBarrierForm))
     {
         return false;
@@ -5307,9 +5297,9 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
                       EA_PTRSIZE); // retSize
 
     return true;
-#else  // !defined(_TARGET_X86_) || !NOGC_WRITE_BARRIERS
+#else  // !defined(TARGET_X86) || !NOGC_WRITE_BARRIERS
     return false;
-#endif // !defined(_TARGET_X86_) || !NOGC_WRITE_BARRIERS
+#endif // !defined(TARGET_X86) || !NOGC_WRITE_BARRIERS
 }
 
 // Produce code for a GT_CALL node
@@ -5401,7 +5391,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // FEATURE_VARARG
     }
 
-#if defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
+#if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
     // for each putarg_stk:
     ssize_t stackArgBytes = 0;
@@ -5422,19 +5412,19 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             {
                 GenTreeObj* obj      = source->AsObj();
                 unsigned    argBytes = roundUp(obj->GetLayout()->GetSize(), TARGET_POINTER_SIZE);
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 // If we have an OBJ, we must have created a copy if the original arg was not a
                 // local and was not a multiple of TARGET_POINTER_SIZE.
                 // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
                 assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                 assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
         }
     }
-#endif // defined(_TARGET_X86_) || defined(UNIX_AMD64_ABI)
+#endif // defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -5520,7 +5510,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         }
     }
 
-#if defined(DEBUG) && defined(_TARGET_X86_)
+#if defined(DEBUG) && defined(TARGET_X86)
     // Store the stack pointer so we can check it after the call.
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
@@ -5529,7 +5519,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                      compiler->lvaTable[compiler->lvaCallSpCheck].lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
     }
-#endif // defined(DEBUG) && defined(_TARGET_X86_)
+#endif // defined(DEBUG) && defined(TARGET_X86)
 
     bool            fPossibleSyncHelperCall = false;
     CorInfoHelpFunc helperNum               = CORINFO_HELP_UNDEF;
@@ -5543,7 +5533,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         (void)compiler->genCallSite2ILOffsetMap->Lookup(call, &ilOffset);
     }
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     bool fCallerPop = call->CallerPop();
 
 #ifdef UNIX_X86_ABI
@@ -5569,7 +5559,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         argSizeForEmitter = -stackArgBytes;
     }
-#endif // defined(_TARGET_X86_)
+#endif // defined(TARGET_X86)
 
     // When it's a PInvoke call and the call type is USER function, we issue VZEROUPPER here
     // if the function contains 256bit AVX instructions, this is to avoid AVX-256 to Legacy SSE
@@ -5592,7 +5582,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     if (target != nullptr)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
         {
             // On x86, we need to generate a very specific pattern for indirect VSD calls:
@@ -5759,7 +5749,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     var_types returnType = call->TypeGet();
     if (returnType != TYP_VOID)
     {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         if (varTypeIsFloating(returnType))
         {
             // Spill the value from the fp stack.
@@ -5770,7 +5760,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             call->gtFlags &= ~GTF_SPILL;
         }
         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         {
             regNumber returnReg;
 
@@ -5810,7 +5800,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
             else
             {
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
                 if (call->IsHelperCall(compiler, CORINFO_HELP_INIT_PINVOKE_FRAME))
                 {
                     // The x86 CORINFO_HELP_INIT_PINVOKE_FRAME helper uses a custom calling convention that returns with
@@ -5819,7 +5809,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     returnReg = REG_PINVOKE_TCB;
                 }
                 else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
                     if (varTypeIsFloating(returnType))
                 {
                     returnReg = REG_FLOATRET;
@@ -5846,7 +5836,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         gcInfo.gcMarkRegSetNpt(RBM_INTRET);
     }
 
-#if defined(DEBUG) && defined(_TARGET_X86_)
+#if defined(DEBUG) && defined(TARGET_X86)
     if (compiler->opts.compStackCheckOnCall && call->gtCallType == CT_USER_FUNC)
     {
         noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
@@ -5871,7 +5861,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         instGen(INS_BREAKPOINT);
         genDefineTempLabel(sp_check);
     }
-#endif // defined(DEBUG) && defined(_TARGET_X86_)
+#endif // defined(DEBUG) && defined(TARGET_X86)
 
 #if !defined(FEATURE_EH_FUNCLETS)
     //-------------------------------------------------------------------------
@@ -5905,7 +5895,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     unsigned stackAdjustBias = 0;
 
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
     // Is the caller supposed to pop the arguments?
     if (fCallerPop && (stackArgBytes != 0))
     {
@@ -5913,7 +5903,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
 
     SubtractStackLevel(stackArgBytes);
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
     genRemoveAlignmentAfterCall(call, stackAdjustBias);
 }
@@ -6123,7 +6113,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             }
         }
 
-#if FEATURE_VARARG && defined(_TARGET_AMD64_)
+#if FEATURE_VARARG && defined(TARGET_AMD64)
         // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg
         // register. This is due to the AMD64 ABI which requires floating point values passed to varargs functions to
         // be passed in both integer and floating point registers. It doesn't apply to x86, which passes floating point
@@ -6156,7 +6146,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 #endif // FEATURE_VARARG
     }
 
-#if FEATURE_VARARG && defined(_TARGET_AMD64_)
+#if FEATURE_VARARG && defined(TARGET_AMD64)
     // Jmp call to a vararg method - if the method has fewer than 4 fixed arguments,
     // load the remaining arg registers (both int and float) from the corresponding
     // shadow stack slots.  This is for the reason that we don't know the number and type
@@ -6322,7 +6312,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
         // contained so it doesn't handle other kind of operands. It could do more but on x86 that results
         // in additional register constrains and that may be worse than wasting 3 bytes on an immediate.
         if (
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             (!op1->isUsedFromReg() || isByteReg(op1->GetRegNum())) &&
 #endif
             (op2->IsCnsIntOrI() && genSmallTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
@@ -6392,7 +6382,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     }
 }
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
 //------------------------------------------------------------------------
 // genLongToIntCast: Generate code for long to int casts on x86.
 //
@@ -6496,7 +6486,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             break;
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         case GenIntCastDesc::CHECK_UINT_RANGE:
         {
             // We need to check if the value is not greater than 0xFFFFFFFF but this value
@@ -6589,7 +6579,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
                 ins     = INS_movsx;
                 insSize = desc.ExtendSrcSize();
                 break;
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
             case GenIntCastDesc::ZERO_EXTEND_INT:
                 // We can skip emitting this zero extending move if the previous instruction zero extended implicitly
                 if ((srcReg == dstReg) && compiler->opts.OptimizationEnabled())
@@ -6713,10 +6703,10 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     var_types srcType = op1->TypeGet();
     assert(!varTypeIsFloating(srcType) && varTypeIsFloating(dstType));
 
-#if !defined(_TARGET_64BIT_)
+#if !defined(TARGET_64BIT)
     // We expect morph to replace long to float/double casts with helper calls
     noway_assert(!varTypeIsLong(srcType));
-#endif // !defined(_TARGET_64BIT_)
+#endif // !defined(TARGET_64BIT)
 
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
     // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
@@ -6904,7 +6894,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 
     genConsumeReg(op1);
 
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
 
     // Copy the floating-point value to an integer register. If we copied a float to a long, then
     // right-shift the value so the high 32 bits of the floating-point value sit in the low 32
@@ -6930,7 +6920,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
         inst_RV_RV(ins_Copy(targetType), targetReg, op1->GetRegNum(), targetType);
     }
 
-#else // !_TARGET_64BIT_
+#else // !TARGET_64BIT
 
     // If the target type is TYP_DOUBLE, we want to extract the high 32 bits into the register.
     // There is no easy way to do this. To not require an extra register, we'll use shuffles
@@ -6954,7 +6944,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
     //    je <throw block>
     //    shufps targetReg, targetReg, 0xB1    // ZWXY => WZYX
     //
-    // For TYP_FLOAT, it's the same as _TARGET_64BIT_:
+    // For TYP_FLOAT, it's the same as TARGET_64BIT:
     //    mov_xmm2i tmpReg, targetReg          // tmpReg <= low 32 bits
     //    and tmpReg, <mask>
     //    cmp tmpReg, <mask>
@@ -7001,12 +6991,12 @@ void CodeGen::genCkfinite(GenTree* treeNode)
         inst_RV_RV_IV(INS_shufps, EA_16BYTE, targetReg, targetReg, (int8_t)0xb1);
     }
 
-#endif // !_TARGET_64BIT_
+#endif // !TARGET_64BIT
 
     genProduceReg(treeNode);
 }
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 int CodeGenInterface::genSPtoFPdelta() const
 {
     int delta;
@@ -7113,7 +7103,7 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
     assert(callerSPtoSPdelta <= 0);
     return callerSPtoSPdelta;
 }
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 //-----------------------------------------------------------------------------------------
 // genSSE2BitwiseOp - generate SSE2 code for the given oper as "Operand BitWiseOp BitMask"
@@ -7435,6 +7425,84 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
     genProduceReg(treeNode);
 }
 
+//----------------------------------------------------------------------
+// genBitCast - Generate the instruction to move a value between register files
+//
+// Arguments
+//    targetType - the destination type
+//    targetReg  - the destination register
+//    srcType    - the source type
+//    srcReg     - the source register
+//
+void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
+{
+    const bool srcFltReg = varTypeIsFloating(srcType) || varTypeIsSIMD(srcType);
+    assert(srcFltReg == genIsValidFloatReg(srcReg));
+    const bool dstFltReg = varTypeIsFloating(targetType) || varTypeIsSIMD(targetType);
+    assert(dstFltReg == genIsValidFloatReg(targetReg));
+    if (srcFltReg != dstFltReg)
+    {
+        instruction ins;
+        regNumber   fltReg;
+        regNumber   intReg;
+        if (dstFltReg)
+        {
+            ins    = ins_CopyIntToFloat(srcType, targetType);
+            fltReg = targetReg;
+            intReg = srcReg;
+        }
+        else
+        {
+            ins    = ins_CopyFloatToInt(srcType, targetType);
+            intReg = targetReg;
+            fltReg = srcReg;
+        }
+        inst_RV_RV(ins, fltReg, intReg, targetType);
+    }
+    else if (targetReg != srcReg)
+    {
+        inst_RV_RV(ins_Copy(targetType), targetReg, srcReg, targetType);
+    }
+}
+
+//----------------------------------------------------------------------
+// genCodeForBitCast - Generate code for a GT_BITCAST that is not contained
+//
+// Arguments
+//    treeNode - the GT_BITCAST for which we're generating code
+//
+void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
+{
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = treeNode->TypeGet();
+    GenTree*  op1        = treeNode->gtGetOp1();
+    genConsumeRegs(op1);
+
+    if (op1->isContained())
+    {
+        assert(op1->IsLocal() || op1->isIndir());
+        if (genIsRegCandidateLocal(op1))
+        {
+            unsigned lclNum = op1->AsLclVar()->GetLclNum();
+            GetEmitter()->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lclNum)),
+                                      emitTypeSize(treeNode), targetReg, lclNum, 0);
+        }
+        else
+        {
+            op1->gtType = treeNode->TypeGet();
+            op1->SetRegNum(targetReg);
+            op1->ClearContained();
+            JITDUMP("Changing type of BITCAST source to load directly.");
+            genCodeForTreeNode(op1);
+        }
+    }
+    else
+    {
+        genBitCast(targetType, targetReg, op1->TypeGet(), op1->GetRegNum());
+    }
+    genProduceReg(treeNode);
+}
+
 //-------------------------------------------------------------------------- //
 // getBaseVarForPutArgStk - returns the baseVarNum for passing a stack arg.
 //
@@ -7565,7 +7633,7 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
 //
 void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 {
-#if defined(_TARGET_X86_)
+#if defined(TARGET_X86)
 #if defined(UNIX_X86_ABI)
     // Put back the stack pointer if there was any padding for stack alignment
     unsigned padStkAlign  = call->fgArgInfo->GetStkAlign();
@@ -7583,12 +7651,12 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
         genAdjustSP(bias);
     }
 #endif // !UNIX_X86_ABI_
-#else  // _TARGET_X86_
+#else  // TARGET_X86
     assert(bias == 0);
-#endif // !_TARGET_X86
+#endif // !TARGET_X86
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //---------------------------------------------------------------------
 // genAdjustStackForPutArgStk:
@@ -7885,7 +7953,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         AddStackLevel(currentOffset);
     }
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 //---------------------------------------------------------------------
 // genPutArgStk - generate code for passing an arg on the stack.
@@ -7902,7 +7970,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
     GenTree*  data       = putArgStk->gtOp1;
     var_types targetType = genActualType(data->TypeGet());
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
     genAlignStackBeforeCall(putArgStk);
 
@@ -7942,7 +8010,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         genConsumeReg(data);
         genPushReg(targetType, data->GetRegNum());
     }
-#else // !_TARGET_X86_
+#else // !TARGET_X86
     {
         unsigned baseVarNum = getBaseVarForPutArgStk(putArgStk);
 
@@ -7989,7 +8057,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
                                       argOffset);
         }
     }
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 }
 
 //---------------------------------------------------------------------
@@ -8024,7 +8092,7 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 // genPushReg: Push a register value onto the stack and adjust the stack level
 //
 // Arguments:
@@ -8064,7 +8132,7 @@ void CodeGen::genPushReg(var_types type, regNumber srcReg)
     }
     AddStackLevel(size);
 }
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
 #if defined(FEATURE_PUT_STRUCT_ARG_STK)
 // genStoreRegToStackArg: Store a register value into the stack argument area
@@ -8112,14 +8180,14 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         }
         else
 #endif // FEATURE_SIMD
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
             if (type == TYP_LONG)
         {
             assert(genIsValidFloatReg(srcReg));
             ins = INS_movq;
         }
         else
-#endif // _TARGET_X86_
+#endif // TARGET_X86
         {
             assert((varTypeIsFloating(type) && genIsValidFloatReg(srcReg)) ||
                    (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
@@ -8129,7 +8197,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
         size = genTypeSize(type);
     }
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
     if (m_pushStkArg)
     {
         genPushReg(type, srcReg);
@@ -8138,10 +8206,10 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
     {
         GetEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
     }
-#else  // !_TARGET_X86_
+#else  // !TARGET_X86
     assert(m_stkArgVarNum != BAD_VAR_NUM);
     GetEmitter()->emitIns_S_R(ins, attr, srcReg, m_stkArgVarNum, m_stkArgOffset + offset);
-#endif // !_TARGET_X86_
+#endif // !TARGET_X86
 }
 
 //---------------------------------------------------------------------
@@ -8162,13 +8230,13 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
     GenTree*  source     = putArgStk->gtGetOp1();
     var_types targetType = source->TypeGet();
 
-#if defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+#if defined(TARGET_X86) && defined(FEATURE_SIMD)
     if (putArgStk->isSIMD12())
     {
         genPutArgStkSIMD12(putArgStk);
         return;
     }
-#endif // defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+#endif // defined(TARGET_X86) && defined(FEATURE_SIMD)
 
     if (varTypeIsSIMD(targetType))
     {
@@ -8204,7 +8272,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
         // On x86, any struct that has contains GC references must be stored to the stack using `push` instructions so
         // that the emitter properly detects the need to update the method's GC information.
         //
@@ -8250,7 +8318,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             }
             AddStackLevel(TARGET_POINTER_SIZE);
         }
-#else // !defined(_TARGET_X86_)
+#else // !defined(TARGET_X86)
 
         // Consume these registers.
         // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
@@ -8323,7 +8391,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
         }
 
         assert(numGCSlotsCopied == layout->GetGCPtrCount());
-#endif // _TARGET_X86_
+#endif // TARGET_X86
     }
 }
 #endif // defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -8588,7 +8656,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
         else
         {
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
             // If this indirect address cannot be encoded as 32-bit offset relative to PC or Zero,
             // load it into REG_HELPER_CALL_TARGET and use register indirect addressing mode to
             // make the call.
@@ -8648,7 +8716,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 // After adding a unit test, and verifying it works, put it under this #ifdef, so we don't see it run every time.
 //#define ALL_XARCH_EMITTER_UNIT_TESTS
 
-#if defined(DEBUG) && defined(LATE_DISASM) && defined(_TARGET_AMD64_)
+#if defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
 void CodeGen::genAmd64EmitterUnitTests()
 {
     if (!verbose)
@@ -8748,11 +8816,11 @@ void CodeGen::genAmd64EmitterUnitTests()
     printf("*************** End of genAmd64EmitterUnitTests()\n");
 }
 
-#endif // defined(DEBUG) && defined(LATE_DISASM) && defined(_TARGET_AMD64_)
+#endif // defined(DEBUG) && defined(LATE_DISASM) && defined(TARGET_AMD64)
 
 #ifdef PROFILING_SUPPORTED
 
-#ifdef _TARGET_X86_
+#ifdef TARGET_X86
 
 //-----------------------------------------------------------------------------------
 // genProfilingEnterCallback: Generate the profiling function enter callback.
@@ -8916,9 +8984,9 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     SetStackLevel(saveStackLvl2);
 }
 
-#endif // _TARGET_X86_
+#endif // TARGET_X86
 
-#ifdef _TARGET_AMD64_
+#ifdef TARGET_AMD64
 
 //-----------------------------------------------------------------------------------
 // genProfilingEnterCallback: Generate the profiling function enter callback.
@@ -9259,8 +9327,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 #endif // !defined(UNIX_AMD64_ABI)
 }
 
-#endif // _TARGET_AMD64_
+#endif // TARGET_AMD64
 
 #endif // PROFILING_SUPPORTED
 
-#endif // _TARGET_XARCH_
+#endif // TARGET_XARCH

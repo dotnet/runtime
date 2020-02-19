@@ -1,5 +1,5 @@
-remove_definitions(-D_TARGET_AMD64_)
-add_definitions(-D_TARGET_ARM64_)
+remove_definitions(-DTARGET_AMD64)
+add_definitions(-DTARGET_ARM64)
 
 add_library_clr(gcinfo_arm64
     STATIC

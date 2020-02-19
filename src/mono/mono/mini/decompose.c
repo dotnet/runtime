@@ -1287,7 +1287,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 					dreg = alloc_preg (cfg);
 					EMIT_NEW_BIALU_IMM (cfg, dest, OP_ADD_IMM, dreg, ins->inst_destbasereg, ins->inst_offset);
-					mini_emit_memory_copy (cfg, dest, src, src_var->klass, src_var->backend.is_pinvoke, 0);
+					mini_emit_memory_copy (cfg, dest, src, src_var->klass, src_var->backend.is_pinvoke, ins->flags);
 					break;
 				}
 				case OP_LOADV_MEMBASE: {

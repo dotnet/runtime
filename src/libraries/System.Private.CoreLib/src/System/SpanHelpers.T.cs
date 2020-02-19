@@ -53,7 +53,7 @@ namespace System
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -122,7 +122,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -186,7 +186,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -210,7 +210,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -290,7 +290,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -314,7 +314,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
             {
                 while ((length - index) >= 8)
                 {
@@ -393,7 +393,7 @@ namespace System
             }
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return index;
         Found1:
             return index + 1;
@@ -474,7 +474,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || (object)value != null)
             {
                 while (length >= 8)
                 {
@@ -533,7 +533,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -556,7 +556,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {
@@ -636,7 +636,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -659,7 +659,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
                 while (length >= 8)
                 {
@@ -739,7 +739,7 @@ namespace System
 
             return -1;
 
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return length;
         Found1:
             return length + 1;
@@ -862,7 +862,7 @@ namespace System
         Equal:
             return true;
 
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return false;
         }
 

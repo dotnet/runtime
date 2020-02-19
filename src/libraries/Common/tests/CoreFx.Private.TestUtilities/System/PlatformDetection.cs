@@ -33,32 +33,40 @@ namespace System
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
         public static bool Is32BitProcess => IntPtr.Size == 4;
 
+        // Please make sure that you have the libgdiplus dependency installed.
+        // For details, see https://docs.microsoft.com/dotnet/core/install/dependencies?pivots=os-macos&tabs=netcore31#libgdiplus
         public static bool IsDrawingSupported
         {
             get
             {
 #if NETCOREAPP
-                if (IsWindows)
+                if (!IsWindows)
                 {
-#endif
-                    return IsNotWindowsNanoServer && IsNotWindowsServerCore;
-#if NETCOREAPP
-                }
-                else if (IsOSX)
-                {
-                    return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
-                }
-                else
-                {
-                   return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+                    if (IsOSX)
+                    {
+                        return NativeLibrary.TryLoad("libgdiplus.dylib", out _);
+                    }
+                    else
+                    {
+                       return NativeLibrary.TryLoad("libgdiplus.so", out _) || NativeLibrary.TryLoad("libgdiplus.so.0", out _);
+                    }
                 }
 #endif
+
+                return IsNotWindowsNanoServer && IsNotWindowsServerCore;
+
             }
         }
 
         public static bool IsInContainer => GetIsInContainer();
         public static bool SupportsSsl3 => GetSsl3Support();
+
+#if NETCOREAPP
+        public static bool IsReflectionEmitSupported = RuntimeFeature.IsDynamicCodeSupported;
+#else
         public static bool IsReflectionEmitSupported = true;
+#endif
+
         public static bool IsInvokingStaticConstructorsSupported => true;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
@@ -96,7 +104,7 @@ namespace System
 
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
-        // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/corefx/issues/33016
+        // OSX - SecureTransport doesn't expose alpn APIs. TODO https://github.com/dotnet/runtime/issues/27727
         public static bool SupportsAlpn => (IsWindows && !IsWindows7) ||
             ((!IsOSX && !IsWindows) &&
             (OpenSslVersion.Major >= 1 && (OpenSslVersion.Minor >= 1 || OpenSslVersion.Build >= 2)));

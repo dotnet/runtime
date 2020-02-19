@@ -3752,7 +3752,6 @@ namespace System.IO.Packaging.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/39075")]
         [Fact]
         [OuterLoop]
         public void VeryLargePart()

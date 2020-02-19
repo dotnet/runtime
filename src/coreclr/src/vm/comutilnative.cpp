@@ -625,7 +625,7 @@ void QCALLTYPE Buffer::Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
 
-#if defined(_X86_) || defined(_AMD64_)
+#if defined(HOST_X86) || defined(HOST_AMD64)
     if (length > 0x100)
     {
         // memset ends up calling rep stosb if the hardware claims to support it efficiently. rep stosb is up to 2x slower
@@ -846,7 +846,7 @@ FCIMPL0(UINT64, GCInterface::GetSegmentSize)
 FCIMPLEND
 
 /*================================CollectionCount=================================
-**Action: Returns the number of collections for this generation since the begining of the life of the process
+**Action: Returns the number of collections for this generation since the beginning of the life of the process
 **Returns: The collection count.
 **Arguments: args->generation -- The generation
 **Exceptions: Argument exception if args->generation is < 0 or > GetMaxGeneration();
@@ -1033,7 +1033,7 @@ FCIMPL0(INT64, GCInterface::GetAllocatedBytesForCurrentThread)
     INT64 currentAllocated = 0;
     Thread *pThread = GetThread();
     gc_alloc_context* ac = pThread->GetAllocContext();
-    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_loh - (ac->alloc_limit - ac->alloc_ptr);
+    currentAllocated = ac->alloc_bytes + ac->alloc_bytes_uoh - (ac->alloc_limit - ac->alloc_ptr);
 
     return currentAllocated;
 }
@@ -1073,7 +1073,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
 
     if (!precise)
     {
-#ifdef _TARGET_64BIT_
+#ifdef TARGET_64BIT
         uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
 #else
         // As it could be noticed we read 64bit values that may be concurrently updated.
@@ -1343,11 +1343,11 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     }
 }
 
-#ifdef BIT64
+#ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
-#else // BIT64
+#else // HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 3 * 1024 * 1024;        // 3 MB
-#endif // BIT64
+#endif // HOST_64BIT
 
 const unsigned MAX_MEMORYPRESSURE_RATIO = 10;                      // 40 MB or 30 MB
 
@@ -1645,22 +1645,6 @@ FCIMPL3(INT32, COMInterlocked::CompareExchange, INT32* location, INT32 value, IN
     }
 
     return FastInterlockCompareExchange((LONG*)location, value, comparand);
-}
-FCIMPLEND
-
-FCIMPL4(INT32, COMInterlocked::CompareExchangeReliableResult, INT32* location, INT32 value, INT32 comparand, CLR_BOOL* succeeded)
-{
-    FCALL_CONTRACT;
-
-    if( NULL == location) {
-        FCThrow(kNullReferenceException);
-    }
-
-    INT32 result = FastInterlockCompareExchange((LONG*)location, value, comparand);
-    if (result == comparand)
-        *succeeded = true;
-
-    return result;
 }
 FCIMPLEND
 

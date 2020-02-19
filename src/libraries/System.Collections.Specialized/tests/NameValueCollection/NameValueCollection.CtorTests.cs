@@ -68,6 +68,7 @@ namespace System.Collections.Specialized.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/14858", TestRuntimes.Mono)]
         public void Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new NameValueCollection(-1));
