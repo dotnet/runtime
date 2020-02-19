@@ -619,7 +619,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfObject_37569()
+        public static void DictionaryOfObject()
         {
             // https://github.com/dotnet/runtime/issues/29504
             Dictionary<string, object> dictionary = new Dictionary<string, object>
