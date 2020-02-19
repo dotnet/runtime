@@ -371,14 +371,18 @@ extern gboolean mono_compile_aot;
 extern gboolean mono_aot_only;
 extern gboolean mono_llvm_only;
 extern MonoAotMode mono_aot_mode;
+MONO_BEGIN_DECLS
 MONO_API_DATA const char *mono_build_date;
+MONO_END_DECLS
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
+MONO_BEGIN_DECLS
 MONO_API_DATA gboolean mono_use_llvm;
 MONO_API_DATA gboolean mono_use_fast_math;
 MONO_API_DATA gboolean mono_use_interpreter;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_enabled;
 MONO_API_DATA MonoCPUFeatures mono_cpu_features_disabled;
+MONO_END_DECLS
 extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;
