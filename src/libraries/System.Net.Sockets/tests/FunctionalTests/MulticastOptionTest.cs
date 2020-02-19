@@ -26,7 +26,7 @@ namespace System.Net.Sockets.Tests
             var option = new MulticastOption(IPAddress.Any);
             Assert.Same(IPAddress.Any, option.Group);
 
-            Assert.Throws<ArgumentNullException>("value", () => option.Group = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => option.Group = null);
 
             option.Group = IPAddress.Broadcast;
             Assert.Same(IPAddress.Broadcast, option.Group);

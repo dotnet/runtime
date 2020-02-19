@@ -42,10 +42,8 @@ namespace System.Net.Sockets
             return !(packetInformation1 == packetInformation2);
         }
 
-        public override bool Equals(object comparand)
-        {
-            return comparand is IPPacketInformation other && this == other;
-        }
+        public override bool Equals(object comparand) =>
+            comparand is IPPacketInformation other && this == other;
 
         public override int GetHashCode()
         {
