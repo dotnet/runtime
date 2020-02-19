@@ -729,6 +729,8 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
 
         if (varDsc->lvIsInReg())
         {
+            // If this variable is going live in a register, it is no longer live on the stack,
+            // unless it is an EH var, which always remains live on the stack.
             if (!varDsc->lvLiveInOutOfHndlr)
             {
 #ifdef DEBUG
@@ -750,9 +752,9 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
                 codeGen->gcInfo.gcRegByrefSetCur |= regMask;
             }
         }
-        // This isn't in a register, so update the gcVarPtrSetCur
         else if (lvaIsGCTracked(varDsc))
         {
+            // This isn't in a register, so update the gcVarPtrSetCur to show that it's live on the stack.
             VarSetOps::AddElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming live\n", varNum);
         }
@@ -3916,7 +3918,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #endif // USING_SCOPE_INFO
         }
 
-        // Mark the argument as processed.
+        // Mark the argument as processed, and set it as no longer live in srcRegNum,
+        // unless it is a writeThru var, in which case we home it to the stack, but
+        // don't mark it as processed until below.
         if (!regArgTab[argNum].writeThru)
         {
             regArgTab[argNum].processed = true;
