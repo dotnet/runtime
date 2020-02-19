@@ -151,8 +151,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		protected Guid GetMvid (NPath assemblyPath)
 		{
-			using (var assembly = AssemblyDefinition.ReadAssembly (assemblyPath))
-			{
+			using (var assembly = AssemblyDefinition.ReadAssembly (assemblyPath)) {
 				return assembly.MainModule.Mvid;
 			}
 		}
@@ -164,8 +163,7 @@ namespace Mono.Linker.Tests.TestCases
 
 		protected LinkedTestCaseResult Run (TestCase testCase)
 		{
-			TestRunner runner;
-			return Run (testCase, out runner);
+			return Run (testCase, out _);
 		}
 		
 		protected virtual LinkedTestCaseResult Run (TestCase testCase, out TestRunner runner)

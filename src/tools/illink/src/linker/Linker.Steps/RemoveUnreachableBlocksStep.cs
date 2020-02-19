@@ -546,8 +546,7 @@ namespace Mono.Linker.Steps
 			//
 			int GetInstructionIndex (Instruction instruction)
 			{
-				int idx;
-				if (mapping.TryGetValue (instruction, out idx))
+				if (mapping.TryGetValue (instruction, out int idx))
 					return idx;
 
 				idx = FoldedInstructions.IndexOf (instruction);
@@ -976,10 +975,7 @@ namespace Mono.Linker.Steps
 						body_variables.RemoveAt (index);
 					} else {
 						var objectType = BCL.FindPredefinedType ("System", "Object", context);
-						if (objectType == null)
-							throw new NotSupportedException ("Missing predefined 'System.Object' type");
-
-						body_variables [index].VariableType = objectType;
+						body_variables [index].VariableType = objectType ?? throw new NotSupportedException ("Missing predefined 'System.Object' type");
 					}
 				}
 			}
@@ -995,20 +991,15 @@ namespace Mono.Linker.Steps
 
 			static Instruction CreateVariableLoadingInstruction (VariableDefinition variable)
 			{
-				switch (variable.Index) {
-				case 0:
-					return Instruction.Create (OpCodes.Ldloc_0);
-				case 1:
-					return Instruction.Create (OpCodes.Ldloc_1);
-				case 2:
-					return Instruction.Create (OpCodes.Ldloc_2);
-				case 3:
-					return Instruction.Create (OpCodes.Ldloc_3);
-				default:
-					return variable.Index < 256 ?
-						Instruction.Create (OpCodes.Ldloc_S, variable) :
-						Instruction.Create (OpCodes.Ldloc, variable);
-				}
+				return variable.Index switch {
+					0 => Instruction.Create (OpCodes.Ldloc_0),
+					1 => Instruction.Create (OpCodes.Ldloc_1),
+					2 => Instruction.Create (OpCodes.Ldloc_2),
+					3 => Instruction.Create (OpCodes.Ldloc_3),
+					_ => variable.Index < 256 ?
+						Instruction.Create(OpCodes.Ldloc_S, variable) :
+						Instruction.Create(OpCodes.Ldloc, variable),
+				};
 			}
 
 			VariableDefinition GetVariableReference (Instruction instruction)

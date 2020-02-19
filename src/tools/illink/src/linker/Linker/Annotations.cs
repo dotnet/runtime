@@ -91,8 +91,7 @@ namespace Mono.Linker {
 
 		public AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
-			AssemblyAction action;
-			if (assembly_actions.TryGetValue (assembly, out action))
+			if (assembly_actions.TryGetValue (assembly, out AssemblyAction action))
 				return action;
 
 			throw new InvalidOperationException($"No action for the assembly {assembly.Name} defined");
@@ -100,8 +99,7 @@ namespace Mono.Linker {
 
 		public MethodAction GetAction (MethodDefinition method)
 		{
-			MethodAction action;
-			if (method_actions.TryGetValue (method, out action))
+			if (method_actions.TryGetValue (method, out MethodAction action))
 				return action;
 
 			return MethodAction.Nothing;
@@ -224,8 +222,7 @@ namespace Mono.Linker {
 
 		public void SetPreserve (TypeDefinition type, TypePreserve preserve)
 		{
-			TypePreserve existing;
-			if (preserved_types.TryGetValue (type, out existing))
+			if (preserved_types.TryGetValue (type, out TypePreserve existing))
 				preserved_types [type] = ChoosePreserveActionWhichPreservesTheMost (existing, preserve);
 			else
 				preserved_types.Add (type, preserve);
@@ -254,8 +251,7 @@ namespace Mono.Linker {
 
 		public TypePreserve GetPreserve (TypeDefinition type)
 		{
-			TypePreserve preserve;
-			if (preserved_types.TryGetValue (type, out preserve))
+			if (preserved_types.TryGetValue (type, out TypePreserve preserve))
 				return preserve;
 
 			throw new NotSupportedException ($"No type preserve information for `{type}`");
@@ -278,8 +274,7 @@ namespace Mono.Linker {
 
 		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)
 		{
-			HashSet<string> resources;
-			if (resources_to_remove.TryGetValue (assembly, out resources))
+			if (resources_to_remove.TryGetValue (assembly, out HashSet<string> resources))
 				return resources;
 
 			return null;
@@ -287,10 +282,8 @@ namespace Mono.Linker {
 
 		public void AddResourceToRemove (AssemblyDefinition assembly, string name)
 		{
-			HashSet<string> resources;
-			if (!resources_to_remove.TryGetValue (assembly, out resources)) {
+			if (!resources_to_remove.TryGetValue (assembly, out HashSet<string> resources))
 				resources = resources_to_remove [assembly] = new HashSet<string> ();
-			}
 
 			resources.Add (name);
 		}
@@ -318,8 +311,7 @@ namespace Mono.Linker {
 
 		public List<OverrideInformation> GetOverrides (MethodDefinition method)
 		{
-			List<OverrideInformation> overrides;
-			if (override_methods.TryGetValue (method, out overrides))
+			if (override_methods.TryGetValue (method, out List<OverrideInformation> overrides))
 				return overrides;
 
 			return null;
@@ -338,8 +330,7 @@ namespace Mono.Linker {
 
 		public List<MethodDefinition> GetBaseMethods (MethodDefinition method)
 		{
-			List<MethodDefinition> bases;
-			if (base_methods.TryGetValue (method, out bases))
+			if (base_methods.TryGetValue (method, out List<MethodDefinition> bases))
 				return bases;
 
 			return null;
@@ -367,8 +358,7 @@ namespace Mono.Linker {
 
 		List<MethodDefinition> GetPreservedMethods (IMemberDefinition definition)
 		{
-			List<MethodDefinition> preserved;
-			if (preserved_methods.TryGetValue (definition, out preserved))
+			if (preserved_methods.TryGetValue (definition, out List<MethodDefinition> preserved))
 				return preserved;
 
 			return null;
@@ -392,8 +382,7 @@ namespace Mono.Linker {
 
 		public void CloseSymbolReader (AssemblyDefinition assembly)
 		{
-			ISymbolReader symbolReader;
-			if (!symbol_readers.TryGetValue (assembly, out symbolReader))
+			if (!symbol_readers.TryGetValue (assembly, out ISymbolReader symbolReader))
 				return;
 
 			symbol_readers.Remove (assembly);
@@ -402,8 +391,7 @@ namespace Mono.Linker {
 
 		public Dictionary<IMetadataTokenProvider, object> GetCustomAnnotations (object key)
 		{
-			Dictionary<IMetadataTokenProvider, object> slots;
-			if (custom_annotations.TryGetValue (key, out slots))
+			if (custom_annotations.TryGetValue (key, out Dictionary<IMetadataTokenProvider, object> slots))
 				return slots;
 
 			slots = new Dictionary<IMetadataTokenProvider, object> ();
@@ -442,8 +430,7 @@ namespace Mono.Linker {
 			if (!derived.IsInterface)
 				throw new ArgumentException ($"{nameof (derived)} must be an interface");
 
-			List<TypeDefinition> derivedInterfaces;
-			if (!derived_interfaces.TryGetValue (@base, out derivedInterfaces))
+			if (!derived_interfaces.TryGetValue (@base, out List<TypeDefinition> derivedInterfaces))
 				derived_interfaces [@base] = derivedInterfaces = new List<TypeDefinition> ();
 			
 			derivedInterfaces.Add(derived);
@@ -454,8 +441,7 @@ namespace Mono.Linker {
 			if (!@interface.IsInterface)
 				throw new ArgumentException ($"{nameof (@interface)} must be an interface");
 			
-			List<TypeDefinition> derivedInterfaces;
-			if (derived_interfaces.TryGetValue (@interface, out derivedInterfaces))
+			if (derived_interfaces.TryGetValue (@interface, out List<TypeDefinition> derivedInterfaces))
 				return derivedInterfaces;
 
 			return null;

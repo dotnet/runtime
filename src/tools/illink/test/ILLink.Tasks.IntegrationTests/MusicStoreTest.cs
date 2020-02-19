@@ -12,24 +12,24 @@ namespace ILLink.Tests
 	{
 		public static List<string> rootFiles = new List<string> { "MusicStoreReflection.xml" };
 
-		private static string gitRepo = "http://github.com/aspnet/JitBench";
+		private static readonly string gitRepo = "http://github.com/aspnet/JitBench";
 
 		// Revision can also be a branch name. We generally
 		// want to ensure that we are able to link the latest
 		// MusicStore from the dev branch.
-		private static string gitRevision = "ac314bd68294ae0f91bd16df20cf5ebd4b8ef5b5";
+		private static readonly string gitRevision = "ac314bd68294ae0f91bd16df20cf5ebd4b8ef5b5";
 
 		// The version of Microsoft.NETCore.App that
 		// musicstore will run on (and deploy with, for
 		// self-contained deployments).
-		private static string runtimeVersion = "3.0.0-preview-27324-5";
+		private static readonly string runtimeVersion = "3.0.0-preview-27324-5";
 
 		// The version of the SDK used to build and link
 		// musicstore, if a specific version is desired.
-		private static string sdkVersion = "2.2.0-preview1-007525";
+		private static readonly string sdkVersion = "2.2.0-preview1-007525";
 
 		// The version of Microsoft.AspNetCore.All to publish with.
-		private static string aspNetVersion = "2.1.0-preview1-27654";
+		private static readonly string aspNetVersion = "2.1.0-preview1-27654";
 
 		public static Dictionary<string, string> versionPublishArgs;
 		public static Dictionary<string, string> VersionPublishArgs
@@ -38,9 +38,10 @@ namespace ILLink.Tests
 				if (versionPublishArgs != null) {
 					return versionPublishArgs;
 				}
-				versionPublishArgs = new Dictionary<string, string>();
-				versionPublishArgs.Add("JITBENCH_FRAMEWORK_VERSION", runtimeVersion);
-				versionPublishArgs.Add("JITBENCH_ASPNET_VERSION", aspNetVersion);
+				versionPublishArgs = new Dictionary<string, string> {
+					{ "JITBENCH_FRAMEWORK_VERSION", runtimeVersion },
+					{ "JITBENCH_ASPNET_VERSION", aspNetVersion }
+				};
 				return versionPublishArgs;
 			}
 		}
@@ -195,8 +196,7 @@ namespace ILLink.Tests
 
 	public class MusicStoreTest : IntegrationTestBase, IClassFixture<MusicStoreFixture>
 	{
-
-		MusicStoreFixture fixture;
+		readonly MusicStoreFixture fixture;
 
 		public MusicStoreTest(MusicStoreFixture fixture, ITestOutputHelper output) : base(output) {
 			this.fixture = fixture;
@@ -216,8 +216,9 @@ namespace ILLink.Tests
 		//[Fact] // https://github.com/aspnet/JitBench/issues/96
 		public void RunMusicStorePortable()
 		{
-			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>(MusicStoreFixture.VersionPublishArgs);
-			extraPublishArgs.Add("PublishWithAspNetCoreTargetManifest", "false");
+			Dictionary<string, string> extraPublishArgs = new Dictionary<string, string>(MusicStoreFixture.VersionPublishArgs) {
+				{ "PublishWithAspNetCoreTargetManifest", "false" }
+			};
 			string target = BuildAndLink(MusicStoreFixture.csproj, null, extraPublishArgs, selfContained: false);
 			CheckOutput(target, selfContained: false);
 		}

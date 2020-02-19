@@ -10,7 +10,7 @@ namespace ILLink.Tests
 
 	public class CommandHelper
 	{
-		private ILogger logger;
+		private readonly ILogger logger;
 
 		public CommandHelper(ILogger logger)
 		{
@@ -20,17 +20,17 @@ namespace ILLink.Tests
 		public int Dotnet(string args, string workingDir, string additionalPath = null)
 		{
 			return RunCommand(Path.GetFullPath(TestContext.DotnetToolPath), args,
-				workingDir, additionalPath, out string commandOutput);
+				workingDir, additionalPath, out _);
 		}
 
 		public int RunCommand(string command, string args, int timeout = Int32.MaxValue)
 		{
-			return RunCommand(command, args, null, null, out string commandOutput, timeout);
+			return RunCommand(command, args, null, null, out _, timeout);
 		}
 
 		public int RunCommand(string command, string args, string workingDir)
 		{
-			return RunCommand(command, args, workingDir, null, out string commandOutput);
+			return RunCommand(command, args, workingDir, null, out _);
 		}
 
 		public int RunCommand(string command, string args, string workingDir, string additionalPath,
@@ -50,7 +50,7 @@ namespace ILLink.Tests
 	{
 		private readonly ILogger logger;
 
-		private string command;
+		private readonly string command;
 		private string args;
 		private string workingDir;
 		private string additionalPath;
@@ -94,7 +94,7 @@ namespace ILLink.Tests
 
 		public int Run()
 		{
-			return Run(out string commandOutputUnused);
+			return Run(out _);
 		}
 
 		public int Run(out string commandOutput)
@@ -127,8 +127,9 @@ namespace ILLink.Tests
 				string path = psi.Environment["PATH"];
 				psi.Environment["PATH"] = path + ";" + additionalPath;
 			}
-			var process = new Process();
-			process.StartInfo = psi;
+			var process = new Process {
+				StartInfo = psi
+			};
 
 			// dotnet sets some environment variables that
 			// may cause problems in the child process.
@@ -145,25 +146,24 @@ namespace ILLink.Tests
 			}
 
 			StringBuilder processOutput = new StringBuilder();
-			DataReceivedEventHandler handler = (sender, e) => {
+			void handler(object sender, DataReceivedEventArgs e) {
 				processOutput.Append(e.Data);
 				processOutput.AppendLine();
-			};
+			}
 			StringBuilder processError = new StringBuilder();
-			DataReceivedEventHandler ehandler = (sender, e) => {
+			void ehandler(object sender, DataReceivedEventArgs e) {
 				processError.Append(e.Data);
 				processError.AppendLine();
-			};
+			}
 			process.OutputDataReceived += handler;
 			process.ErrorDataReceived += ehandler;
 
 			// terminate process if output contains specified string
 			if (!String.IsNullOrEmpty(terminatingOutput)) {
-				DataReceivedEventHandler terminatingOutputHandler = (sender, e) => {
-					if (!String.IsNullOrEmpty(e.Data) && e.Data.Contains(terminatingOutput)) {
+				void terminatingOutputHandler(object sender, DataReceivedEventArgs e) {
+					if (!String.IsNullOrEmpty(e.Data) && e.Data.Contains(terminatingOutput))
 						process.Kill();
-					}
-				};
+				}
 				process.OutputDataReceived += terminatingOutputHandler;
 			}
 

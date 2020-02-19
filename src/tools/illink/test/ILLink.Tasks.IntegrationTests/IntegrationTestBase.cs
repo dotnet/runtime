@@ -19,7 +19,7 @@ namespace ILLink.Tests
 	/// </summary>
 	public class ProjectFixture
 	{
-		private FixtureLogger logger;
+		private readonly FixtureLogger logger;
 		protected CommandHelper CommandHelper;
 
 		protected void LogMessage (string message)
@@ -73,7 +73,6 @@ namespace ILLink.Tests
 					new XElement(ns + "PackageReference",
 						new XAttribute("Include", TestContext.TasksPackageName),
 						new XAttribute("Version", TestContext.TasksPackageVersion))));
-				added= true;
 			}
 
 			using (var fs = new FileStream(csproj, FileMode.Create)) {
@@ -99,26 +98,6 @@ namespace ILLink.Tests
 			var resourceStream = assembly.GetManifestResourceStream(resourceName);
 			resourceStream.CopyTo(File.Create(destination));
 		}
-
-		static void AddLinkerRoots(string csproj, List<string> rootFiles)
-		{
-			var xdoc = XDocument.Load(csproj);
-			var ns = xdoc.Root.GetDefaultNamespace();
-
-			var rootsItemGroup = new XElement(ns+"ItemGroup");
-			foreach (var rootFile in rootFiles) {
-				rootsItemGroup.Add(new XElement(ns+"LinkerRootFiles",
-					new XAttribute("Include", rootFile)));
-			}
-
-			var propertyGroup = xdoc.Root.Elements(ns + "PropertyGroup").First();
-			propertyGroup.AddAfterSelf(rootsItemGroup);
-
-			using (var fs = new FileStream(csproj, FileMode.Create)) {
-				xdoc.Save(fs);
-			}
-		}
-
 	}
 
 	/// <summary>

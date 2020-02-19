@@ -15,24 +15,19 @@ namespace Mono.Linker
 			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
 				return null;
 
-			var sentinelType = type as SentinelType;
-			if (sentinelType != null)
+			if (type is SentinelType sentinelType)
 				return sentinelType.ElementType.GetInflatedBaseType ();
 
-			var pinnedType = type as PinnedType;
-			if (pinnedType != null)
+			if (type is PinnedType pinnedType)
 				return pinnedType.ElementType.GetInflatedBaseType ();
 
-			var requiredModifierType = type as RequiredModifierType;
-			if (requiredModifierType != null)
+			if (type is RequiredModifierType requiredModifierType)
 				return requiredModifierType.ElementType.GetInflatedBaseType ();
 
-			var genericInstance = type as GenericInstanceType;
-			if (genericInstance != null) {
+			if (type is GenericInstanceType genericInstance) {
 				var baseType = type.Resolve ()?.BaseType;
-				var baseTypeGenericInstance = baseType as GenericInstanceType;
 
-				if (baseTypeGenericInstance != null)
+				if (baseType is GenericInstanceType)
 					return InflateGenericType (genericInstance, baseType);
 
 				return baseType;
@@ -48,8 +43,7 @@ namespace Mono.Linker
 			if (typeDef?.HasInterfaces != true)
 				yield break;
 
-			var genericInstance = typeRef as GenericInstanceType;
-			if (genericInstance != null) {
+			if (typeRef is GenericInstanceType genericInstance) {
 				foreach (var interfaceImpl in typeDef.Interfaces)
 					yield return InflateGenericType (genericInstance, interfaceImpl.InterfaceType);
 			} else {
@@ -60,8 +54,7 @@ namespace Mono.Linker
 
 		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate)
 		{
-			var arrayType = typeToInflate as ArrayType;
-			if (arrayType != null) {
+			if (typeToInflate is ArrayType arrayType) {
 				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType);
 
 				if (inflatedElementType != arrayType.ElementType)
@@ -70,12 +63,10 @@ namespace Mono.Linker
 				return arrayType;
 			}
 
-			var genericInst = typeToInflate as GenericInstanceType;
-			if (genericInst != null)
+			if (typeToInflate is GenericInstanceType genericInst)
 				return MakeGenericType (genericInstanceProvider, genericInst);
 
-			var genericParameter = typeToInflate as GenericParameter;
-			if (genericParameter != null) {
+			if (typeToInflate is GenericParameter genericParameter) {
 				if (genericParameter.Owner is MethodReference)
 					return genericParameter;
 
@@ -84,10 +75,10 @@ namespace Mono.Linker
 				return genericInstanceProvider.GenericArguments [parameter.Position];
 			}
 
-			var functionPointerType = typeToInflate as FunctionPointerType;
-			if (functionPointerType != null) {
-				var result = new FunctionPointerType ();
-				result.ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType);
+			if (typeToInflate is FunctionPointerType functionPointerType) {
+				var result = new FunctionPointerType {
+					ReturnType = InflateGenericType (genericInstanceProvider, functionPointerType.ReturnType)
+				};
 
 				for (int i = 0; i < functionPointerType.Parameters.Count; i++) {
 					var inflatedParameterType = InflateGenericType(genericInstanceProvider, functionPointerType.Parameters [i].ParameterType);
@@ -97,8 +88,7 @@ namespace Mono.Linker
 				return result;
 			}
 
-			var modifierType = typeToInflate as IModifierType;
-			if (modifierType != null) {
+			if (typeToInflate is IModifierType modifierType) {
 				var modifier = InflateGenericType (genericInstanceProvider, modifierType.ModifierType);
 				var elementType = InflateGenericType (genericInstanceProvider, modifierType.ElementType);
 
@@ -109,8 +99,7 @@ namespace Mono.Linker
 				return new RequiredModifierType (modifier, elementType);
 			}
 
-			var pinnedType = typeToInflate as PinnedType;
-			if (pinnedType != null) {
+			if (typeToInflate is PinnedType pinnedType) {
 				var elementType = InflateGenericType (genericInstanceProvider, pinnedType.ElementType);
 
 				if (elementType != pinnedType.ElementType)
@@ -119,8 +108,7 @@ namespace Mono.Linker
 				return pinnedType;
 			}
 
-			var pointerType = typeToInflate as PointerType;
-			if (pointerType != null) {
+			if (typeToInflate is PointerType pointerType) {
 				var elementType = InflateGenericType (genericInstanceProvider, pointerType.ElementType);
 
 				if (elementType != pointerType.ElementType)
@@ -129,8 +117,7 @@ namespace Mono.Linker
 				return pointerType;
 			}
 
-			var byReferenceType = typeToInflate as ByReferenceType;
-			if (byReferenceType != null) {
+			if (typeToInflate is ByReferenceType byReferenceType) {
 				var elementType = InflateGenericType (genericInstanceProvider, byReferenceType.ElementType);
 
 				if (elementType != byReferenceType.ElementType)
@@ -139,8 +126,7 @@ namespace Mono.Linker
 				return byReferenceType;
 			}
 
-			var sentinelType = typeToInflate as SentinelType;
-			if (sentinelType != null) {
+			if (typeToInflate is SentinelType sentinelType) {
 				var elementType = InflateGenericType (genericInstanceProvider, sentinelType.ElementType);
 
 				if (elementType != sentinelType.ElementType)
@@ -170,8 +156,7 @@ namespace Mono.Linker
 			if (typeDef?.HasMethods != true)
 				yield break;
 
-			var genericInstanceType = type as GenericInstanceType;
-			if (genericInstanceType != null) {
+			if (type is GenericInstanceType genericInstanceType) {
 				foreach (var methodDef in typeDef.Methods)
 					yield return MakeMethodReferenceForGenericInstanceType (genericInstanceType, methodDef);
 			} else {

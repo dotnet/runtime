@@ -42,10 +42,10 @@ namespace Mono.Linker {
 
 	public class LinkContext : IDisposable {
 
-		Pipeline _pipeline;
+		readonly Pipeline _pipeline;
 		AssemblyAction _coreAction;
 		AssemblyAction _userAction;
-		Dictionary<string, AssemblyAction> _actions;
+		readonly Dictionary<string, AssemblyAction> _actions;
 		string _outputDirectory;
 		readonly Dictionary<string, string> _parameters;
 		bool _linkSymbols;
@@ -53,13 +53,13 @@ namespace Mono.Linker {
 		bool _keepMembersForDebugger;
 		bool _ignoreUnresolved;
 
-		AssemblyResolver _resolver;
+		readonly AssemblyResolver _resolver;
 
-		ReaderParameters _readerParameters;
+		readonly ReaderParameters _readerParameters;
 		ISymbolReaderProvider _symbolReaderProvider;
 		ISymbolWriterProvider _symbolWriterProvider;
 
-		AnnotationStore _annotations;
+		readonly AnnotationStore _annotations;
 
 		public Pipeline Pipeline {
 			get { return _pipeline; }
@@ -203,8 +203,7 @@ namespace Mono.Linker {
 		public void AddSubstitutionFile (string file)
 		{
 			if (Substitutions == null) {
-				Substitutions = new List<string> ();
-				Substitutions.Add (file);
+				Substitutions = new List<string> { file };
 				return;
 			}
 
@@ -321,8 +320,8 @@ namespace Mono.Linker {
 		static AssemblyNameReference GetReference (IMetadataScope scope)
 		{
 			AssemblyNameReference reference;
-			if (scope is ModuleDefinition) {
-				AssemblyDefinition asm = ((ModuleDefinition) scope).Assembly;
+			if (scope is ModuleDefinition moduleDefinition) {
+				AssemblyDefinition asm = moduleDefinition.Assembly;
 				reference = asm.Name;
 			} else
 				reference = (AssemblyNameReference) scope;
@@ -342,11 +341,9 @@ namespace Mono.Linker {
 
 		protected void SetDefaultAction (AssemblyDefinition assembly)
 		{
-			AssemblyAction action;
-
 			AssemblyNameDefinition name = assembly.Name;
 
-			if (_actions.TryGetValue (name.Name, out action)) {
+			if (_actions.TryGetValue (name.Name, out AssemblyAction action)) {
 			} else if (IsCore (name)) {
 				action = _coreAction;
 			} else {
@@ -398,8 +395,7 @@ namespace Mono.Linker {
 
 		public string GetParameter (string key)
 		{
-			string val = null;
-			_parameters.TryGetValue (key, out val);
+			_parameters.TryGetValue (key, out string val);
 			return val;
 		}
 

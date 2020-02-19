@@ -316,15 +316,11 @@ namespace Mono.Linker.Tests.Extensions
 
 		static char Slash(SlashMode slashMode)
 		{
-			switch (slashMode)
-			{
-				case SlashMode.Backward:
-					return '\\';
-				case SlashMode.Forward:
-					return '/';
-				default:
-					return Path.DirectorySeparatorChar;
-			}
+			return slashMode switch {
+				SlashMode.Backward => '\\',
+				SlashMode.Forward => '/',
+				_ => Path.DirectorySeparatorChar,
+			};
 		}
 
 		public override bool Equals(Object obj)
@@ -333,8 +329,7 @@ namespace Mono.Linker.Tests.Extensions
 				return false;
 
 			// If parameter cannot be cast to Point return false.
-			var p = obj as NPath;
-			if ((Object)p == null)
+			if (!(obj is NPath p))
 				return false;
 
 			return Equals(p);
@@ -365,7 +360,7 @@ namespace Mono.Linker.Tests.Extensions
 				return true;
 
 			// If one is null, but not both, return false.
-			if (((object)a == null) || ((object)b == null))
+			if ((a is null) || (b is null))
 				return false;
 
 			// Return true if the fields match:

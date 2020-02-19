@@ -253,7 +253,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							case nameof (RemovedForwarderAttribute):
 								if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
 									Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
-							
+
 								break;
 							case nameof (KeptResourceInAssemblyAttribute):
 								VerifyKeptResourceInAssembly (checkAttrInAssembly);
@@ -651,7 +651,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				}
 			}
 
-			string DependencyToString(TestDependencyRecorder.Dependency dependency)
+			static string DependencyToString(TestDependencyRecorder.Dependency dependency)
 			{
 				return $"{dependency.Source} -> {dependency.Target} Marked: {dependency.Marked}";
 			}
@@ -687,7 +687,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								.Select (p => "\t" + RecognizedReflectionAccessPatternToString (p)));
 
 							Assert.Fail (
-								$"Expected to find recognized reflection access pattern '{expectedSourceMethod.ToString()}: Call to {expectedReflectionMethod} accessed {expectedAccessedItem}'{Environment.NewLine}" +
+								$"Expected to find recognized reflection access pattern '{expectedSourceMethod}: Call to {expectedReflectionMethod} accessed {expectedAccessedItem}'{Environment.NewLine}" +
 								$"Potential patterns matching the source method: {Environment.NewLine}{sourceMethodCandidates}{Environment.NewLine}" +
 								$"Potential patterns matching the reflection method: {Environment.NewLine}{reflectionMethodCandidates}{Environment.NewLine}" +
 								$"If there's no matches, try to specify just a part of the source method or reflection method name and rerun the test to get potential matches.");
@@ -813,8 +813,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (string assemblyName, object typeOrTypeName)
 		{
-			var attributeValueAsTypeReference = typeOrTypeName as TypeReference;
-			if (attributeValueAsTypeReference != null)
+			if (typeOrTypeName is TypeReference attributeValueAsTypeReference)
 				return attributeValueAsTypeReference.Resolve ();
 
 			var assembly = ResolveOriginalsAssembly (assemblyName);
@@ -833,8 +832,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var typeWithRemoveInAssembly in original.AllDefinedTypes ()) {
 				foreach (var attr in typeWithRemoveInAssembly.CustomAttributes.Where (IsTypeInOtherAssemblyAssertion)) {
 					var assemblyName = (string) attr.ConstructorArguments [0].Value;
-					List<CustomAttribute> checksForAssembly;
-					if (!checks.TryGetValue (assemblyName, out checksForAssembly))
+					if (!checks.TryGetValue (assemblyName, out List<CustomAttribute> checksForAssembly))
 						checks [assemblyName] = checksForAssembly = new List<CustomAttribute> ();
 
 					checksForAssembly.Add (attr);

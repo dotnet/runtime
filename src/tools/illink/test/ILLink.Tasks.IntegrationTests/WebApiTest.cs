@@ -66,7 +66,7 @@ namespace ILLink.Tests
 
 	public class WebApiTest : IntegrationTestBase, IClassFixture<WebApiFixture>
 	{
-		private WebApiFixture fixture;
+		private readonly WebApiFixture fixture;
 
 		public WebApiTest(WebApiFixture fixture, ITestOutputHelper output) : base(output)
 		{
@@ -90,7 +90,7 @@ namespace ILLink.Tests
 		void CheckOutput(string target, bool selfContained = false)
 		{
 			string terminatingOutput = "Application started. Press Ctrl+C to shut down.";
-			int ret = RunApp(target, out string commandOutput, 60000, terminatingOutput, selfContained: selfContained);
+			RunApp(target, out string commandOutput, 60000, terminatingOutput, selfContained: selfContained);
 			Assert.Contains("Now listening on: http://localhost:5000", commandOutput);
 			Assert.Contains(terminatingOutput, commandOutput);
 		}

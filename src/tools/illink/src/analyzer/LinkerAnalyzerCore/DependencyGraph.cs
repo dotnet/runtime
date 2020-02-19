@@ -32,7 +32,7 @@ namespace LinkerAnalyzer.Core
 	{
 		protected List<VertexData> vertices = new List<VertexData> ();
 		public List<VertexData> Types = new List<VertexData> ();
-		Dictionary<string, int> indexes = new Dictionary<string, int> ();
+		readonly Dictionary<string, int> indexes = new Dictionary<string, int> ();
 		protected Dictionary<string, int> counts = new Dictionary<string, int> ();
 		internal SpaceAnalyzer SpaceAnalyzer { get; set; }
 

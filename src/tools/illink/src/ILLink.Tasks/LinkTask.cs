@@ -74,7 +74,7 @@ namespace ILLink.Tasks
 		public bool DumpDependencies { get; set; }
 
 
-		private static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
+		private readonly static string DotNetHostPathEnvironmentName = "DOTNET_HOST_PATH";
 
 		private string _dotnetPath;
 

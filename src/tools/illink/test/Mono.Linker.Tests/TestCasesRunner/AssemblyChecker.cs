@@ -13,9 +13,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		readonly AssemblyDefinition originalAssembly, linkedAssembly;
 
 		HashSet<string> linkedMembers;
-		HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
-		HashSet<string> verifiedEventMethods = new HashSet<string>();
-		HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
+		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
+		readonly HashSet<string> verifiedEventMethods = new HashSet<string>();
+		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
 		{
@@ -43,8 +43,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			var membersToAssert = originalAssembly.MainModule.Types;
 			foreach (var originalMember in membersToAssert) {
-				var td = originalMember as TypeDefinition;
-				if (td != null) {
+				if (originalMember is TypeDefinition td) {
 					if (td.Name == "<Module>") {
 						linkedMembers.Remove (td.Name);
 						continue;

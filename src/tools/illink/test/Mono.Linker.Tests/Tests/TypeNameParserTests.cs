@@ -6,7 +6,7 @@ namespace Mono.Linker.Tests {
 		[Test]
 		public void TryParseTypeAssemblyQualifiedName_Null ()
 		{
-			Assert.That (TypeNameParser.TryParseTypeAssemblyQualifiedName (null, out string typeName, out string assemblyName), Is.False);
+			Assert.That (TypeNameParser.TryParseTypeAssemblyQualifiedName (null, out _, out _), Is.False);
 		}
 		
 		[Test]

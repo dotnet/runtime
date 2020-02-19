@@ -4,7 +4,7 @@
 	public class LinkerDriver {
 		protected class TestDriver : Driver
 		{
-			LinkerCustomizations _customization;
+			readonly LinkerCustomizations _customization;
 
 			public TestDriver(Queue<string> args, LinkerCustomizations customizations) : base(args)
 			{
