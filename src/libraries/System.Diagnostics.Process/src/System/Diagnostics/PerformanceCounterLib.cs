@@ -74,7 +74,7 @@ namespace System.Diagnostics
             return PerformanceCounterLib.s_libraryTable.GetOrAdd((machineName, lcidString), (key) => new PerformanceCounterLib(key.machineName, key.lcidString));
         }
 
-        internal byte[] GetPerformanceData(string item)
+        internal byte[]? GetPerformanceData(string item)
         {
             if (_performanceMonitor == null)
             {
