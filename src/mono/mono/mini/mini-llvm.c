@@ -101,7 +101,6 @@ typedef struct {
 	gboolean has_jitted_code;
 	gboolean static_link;
 	gboolean llvm_only;
-	gboolean llvm_disable_self_init;
 	gboolean interp;
 	GHashTable *idx_to_lmethod;
 	GHashTable *idx_to_unbox_tramp;
@@ -3745,7 +3744,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	/* Initialize the method if needed */
-	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
+	if (cfg->compile_aot) {
 		/* Emit a location for the initialization code */
 		ctx->init_bb = gen_bb (ctx, "INIT_BB");
 		ctx->inited_bb = gen_bb (ctx, "INITED_BB");
@@ -9039,7 +9038,7 @@ after_codegen_1:
 	}
 
 	/* Initialize the method if needed */
-	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
+	if (cfg->compile_aot) {
 		// FIXME: Add more shared got entries
 		ctx->builder = create_builder (ctx);
 		LLVMPositionBuilderAtEnd (ctx->builder, ctx->init_bb);
@@ -9998,7 +9997,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	gboolean static_link = (flags & LLVM_MODULE_FLAG_STATIC) ? 1 : 0;
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
-	gboolean llvm_disable_self_init = mini_get_debug_options ()->llvm_disable_self_init;
 
 	/* Delete previous module */
 	g_hash_table_destroy (module->plt_entries);
@@ -10018,7 +10016,6 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->emit_dwarf = emit_dwarf;
 	module->static_link = static_link;
 	module->llvm_only = llvm_only;
-	module->llvm_disable_self_init = llvm_disable_self_init && !llvm_only; // llvm_only implies !llvm_disable_self_init
 	module->interp = interp;
 	/* The first few entries are reserved */
 	module->max_got_offset = initial_got_size;
@@ -10156,9 +10153,6 @@ mono_llvm_fixup_aot_module (void)
 {
 	MonoLLVMModule *module = &aot_module;
 	MonoMethod *method;
-
-	if (module->llvm_disable_self_init)
-		return;
 
 	/*
 	 * Replace GOT entries for directly callable methods with the methods themselves.
@@ -10571,7 +10565,7 @@ typedef struct {
 static void
 mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod *call_method, LLVMValueRef *args, int num_params)
 {
-	if (!ctx->module->llvm_disable_self_init && mono_aot_can_specialize (call_method)) {
+	if (mono_aot_can_specialize (call_method)) {
 		int num_passed = LLVMGetNumArgOperands (lcall);
 		g_assert (num_params <= num_passed);
 
@@ -10805,7 +10799,7 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 				if (lmethod && LLVMTypeOf (callee) == LLVMTypeOf (lmethod)) {
 					mono_llvm_replace_uses_of (callee, lmethod);
 
-					if (!module->llvm_disable_self_init && mono_aot_can_specialize (ji->data.method))
+					if (mono_aot_can_specialize (ji->data.method))
 						g_hash_table_insert (specializable, lmethod, ji->data.method);
 					mono_aot_mark_unused_llvm_plt_entry (ji);
 				}
