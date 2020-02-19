@@ -93,27 +93,27 @@ namespace Internal.Cryptography.Pal.Windows
 
         public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
         {
-            return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: true)!; // It seems we can add 'where T : AsymmetricAlgorithm' and return nullable
         }
 
         public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
         {
-            return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
+            return GetPrivateKey<T>(certificate, silent, preferNCrypt: false)!;
         }
 
-        private T GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
+        private T? GetPrivateKey<T>(X509Certificate2 certificate, bool silent, bool preferNCrypt) where T : AsymmetricAlgorithm
         {
             if (!certificate.HasPrivateKey)
             {
                 return null;
             }
 
-            SafeProvOrNCryptKeyHandle handle = GetCertificatePrivateKey(
+            SafeProvOrNCryptKeyHandle? handle = GetCertificatePrivateKey(
                 certificate,
                 silent,
                 preferNCrypt,
                 out CryptKeySpec keySpec,
-                out Exception exception);
+                out Exception? exception);
 
             using (handle)
             {
@@ -180,12 +180,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        internal static SafeProvOrNCryptKeyHandle GetCertificatePrivateKey(
+        internal static SafeProvOrNCryptKeyHandle? GetCertificatePrivateKey(
             X509Certificate2 cert,
             bool silent,
             bool preferNCrypt,
             out CryptKeySpec keySpec,
-            out Exception exception)
+            out Exception? exception)
         {
             CryptAcquireCertificatePrivateKeyFlags flags =
                 CryptAcquireCertificatePrivateKeyFlags.CRYPT_ACQUIRE_USE_PROV_INFO_FLAG

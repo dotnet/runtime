@@ -17,19 +17,19 @@ namespace Internal.Cryptography.Pal.Windows
 {
     internal sealed partial class DecryptorPalWindows : DecryptorPal
     {
-        public unsafe sealed override ContentInfo TryDecrypt(
+        public unsafe sealed override ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
-            X509Certificate2 cert,
-            AsymmetricAlgorithm privateKey,
+            X509Certificate2? cert,
+            AsymmetricAlgorithm? privateKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
-            out Exception exception)
+            out Exception? exception)
         {
             Debug.Assert((cert != null) ^ (privateKey != null));
 
             if (privateKey != null)
             {
-                RSA key = privateKey as RSA;
+                RSA? key = privateKey as RSA;
 
                 if (key == null)
                 {
@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal.Windows
                 }
 
                 ContentInfo contentInfo = _hCryptMsg.GetContentInfo();
-                byte[] cek = AnyOS.ManagedPkcsPal.ManagedKeyTransPal.DecryptCekCore(
+                byte[]? cek = AnyOS.ManagedPkcsPal.ManagedKeyTransPal.DecryptCekCore(
                     cert,
                     key,
                     recipientInfo.EncryptedKey,
@@ -57,8 +57,8 @@ namespace Internal.Cryptography.Pal.Windows
                         }
 
                         return AnyOS.ManagedPkcsPal.ManagedDecryptorPal.TryDecryptCore(
-                            cek,
-                            contentInfo.ContentType.Value,
+                            cek!,
+                            contentInfo.ContentType.Value!,
                             contentInfo.Content,
                             _contentEncryptionAlgorithm,
                             out exception);
@@ -89,7 +89,7 @@ namespace Internal.Cryptography.Pal.Windows
             // because wrapping an NCrypt wrapper over CAPI keys unconditionally causes some legacy features
             // (such as RC4 support) to break.
             const bool PreferNCrypt = false;
-            using (SafeProvOrNCryptKeyHandle hKey = PkcsPalWindows.GetCertificatePrivateKey(cert, Silent, PreferNCrypt, out _, out exception))
+            using (SafeProvOrNCryptKeyHandle? hKey = PkcsPalWindows.GetCertificatePrivateKey(cert, Silent, PreferNCrypt, out _, out exception))
             {
                 if (hKey == null)
                     return null;
@@ -120,7 +120,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private static Exception TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
+        private static Exception? TryGetKeySpecForCertificate(X509Certificate2 cert, out CryptKeySpec keySpec)
         {
             using (SafeCertContextHandle hCertContext = cert.CreateCertContextHandle())
             {
@@ -163,7 +163,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private Exception TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
+        private Exception? TryDecryptTrans(KeyTransRecipientInfo recipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec)
         {
             KeyTransRecipientInfoPalWindows pal = (KeyTransRecipientInfoPalWindows)(recipientInfo.Pal);
 
@@ -180,12 +180,12 @@ namespace Internal.Cryptography.Pal.Windows
             return null;
         }
 
-        private Exception TryDecryptAgree(KeyAgreeRecipientInfo keyAgreeRecipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec, X509Certificate2Collection originatorCerts, X509Certificate2Collection extraStore)
+        private Exception? TryDecryptAgree(KeyAgreeRecipientInfo keyAgreeRecipientInfo, SafeProvOrNCryptKeyHandle hKey, CryptKeySpec keySpec, X509Certificate2Collection originatorCerts, X509Certificate2Collection extraStore)
         {
             unsafe
             {
                 KeyAgreeRecipientInfoPalWindows pal = (KeyAgreeRecipientInfoPalWindows)(keyAgreeRecipientInfo.Pal);
-                return pal.WithCmsgCmsRecipientInfo<Exception>(
+                return pal.WithCmsgCmsRecipientInfo<Exception?>(
                     delegate (CMSG_KEY_AGREE_RECIPIENT_INFO* pKeyAgreeRecipientInfo)
                     {
                         CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara = default(CMSG_CTRL_KEY_AGREE_DECRYPT_PARA);
@@ -206,7 +206,7 @@ namespace Internal.Cryptography.Pal.Windows
                                     candidateCerts.AddRange(originatorCerts);
                                     candidateCerts.AddRange(extraStore);
                                     SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
-                                    X509Certificate2 originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
+                                    X509Certificate2? originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
                                     if (originatorCert == null)
                                         return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
                                     using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
@@ -233,7 +233,7 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        private Exception TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
+        private Exception? TryExecuteDecryptAgree(ref CMSG_CTRL_KEY_AGREE_DECRYPT_PARA decryptPara)
         {
             if (!Interop.Crypt32.CryptMsgControl(_hCryptMsg, 0, MsgControlType.CMSG_CTRL_KEY_AGREE_DECRYPT, ref decryptPara))
             {
