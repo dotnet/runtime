@@ -289,8 +289,8 @@
     </Compile>
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
-    <Compile Include="MSQuicTestBase.cs" />
-    <Compile Include="MSQuicTests.cs" />
+    <Compile Include="MsQuicTestBase.cs" />
+    <Compile Include="MsQuicTests.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
