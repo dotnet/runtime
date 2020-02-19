@@ -62,8 +62,8 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            const int PostebStackBufferSize = 256;
-            Span<char> postebStackBuffer = stackalloc char[PostebStackBufferSize];
+            const int postebStackBufferSize = 256;
+            Span<char> postebStackBuffer = stackalloc char[postebStackBufferSize];
             int areaOffset = 0;
             int preebIndex;
             ReadOnlySpan<char> pemArea = pemData;
@@ -97,15 +97,12 @@ namespace System.Security.Cryptography
                 // label, so move from there.
                 if (!IsValidLabel(label))
                 {
-                    Debug.Assert(labelEndingIndex > 0);
-                    areaOffset += labelEndingIndex;
-                    pemArea = pemArea[labelEndingIndex..];
-                    continue;
+                    goto next_after_label;
                 }
 
                 Range labelRange = (areaOffset + labelStartIndex)..(areaOffset + labelEndingIndex);
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
-                Span<char> postebBuffer = postebLength > PostebStackBufferSize ? new char[postebLength] : postebStackBuffer;
+                Span<char> postebBuffer = postebLength > postebStackBufferSize ? new char[postebLength] : postebStackBuffer;
                 PostEBPrefix.AsSpan().CopyTo(postebBuffer);
                 label.CopyTo(postebBuffer[PostEBPrefix.Length..]);
                 Ending.AsSpan().CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
@@ -114,10 +111,7 @@ namespace System.Security.Cryptography
 
                 if (postebStartIndex < 0)
                 {
-                    Debug.Assert(labelEndingIndex > 0);
-                    areaOffset += labelEndingIndex;
-                    pemArea = pemArea[labelEndingIndex..];
-                    continue;
+                    goto next_after_label;
                 }
 
                 int contentEndIndex = postebStartIndex + contentStartIndex;
@@ -126,10 +120,7 @@ namespace System.Security.Cryptography
                 if (pemEndIndex < pemArea.Length - 1 &&
                     !char.IsWhiteSpace(pemArea[pemEndIndex]))
                 {
-                    Debug.Assert(labelEndingIndex > 0);
-                    areaOffset += labelEndingIndex;
-                    pemArea = pemArea[labelEndingIndex..];
-                    continue;
+                    goto next_after_label;
                 }
 
                 Range contentRange = (areaOffset + contentStartIndex)..(areaOffset + contentEndIndex);
@@ -149,6 +140,11 @@ namespace System.Security.Cryptography
                 Range base64range = (contentStartIndex + base64start + areaOffset)..(contentEndIndex + base64end + areaOffset);
                 fields = new PemFields(labelRange, base64range, pemRange, decodedSize);
                 return true;
+
+                next_after_label:
+                Debug.Assert(labelEndingIndex > 0);
+                areaOffset += labelEndingIndex;
+                pemArea = pemArea[labelEndingIndex..];
             }
 
             fields = default;
