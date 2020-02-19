@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -15,8 +15,8 @@ namespace System.Net.Sockets
     public class TcpClient : IDisposable
     {
         private AddressFamily _family;
-        private Socket _clientSocket;
-        private NetworkStream _dataStream;
+        private Socket _clientSocket = null!; // initialized by helper called from ctor
+        private NetworkStream? _dataStream;
         private volatile int _disposed;
         private bool _active;
 
@@ -114,7 +114,7 @@ namespace System.Net.Sockets
         // Used by the class to provide the underlying network socket.
         public Socket Client
         {
-            get { return Disposed ? null : _clientSocket; }
+            get { return Disposed ? null! : _clientSocket; }
             set
             {
                 _clientSocket = value;
@@ -166,7 +166,7 @@ namespace System.Net.Sockets
             //       DNS when trying to connect. Use of AddressList[0] is
             //       bad form.
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
-            ExceptionDispatchInfo lastex = null;
+            ExceptionDispatchInfo? lastex = null;
 
             try
             {
@@ -183,7 +183,7 @@ namespace System.Net.Sockets
                             {
                                 var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                                 // Use of Interlocked.Exchanged ensures _clientSocket is written before Disposed is read.
-                                Interlocked.Exchange(ref _clientSocket, socket);
+                                Interlocked.Exchange(ref _clientSocket!, socket);
                                 if (Disposed)
                                 {
                                     // Dispose the socket so it throws ObjectDisposedException when we Connect.
@@ -196,7 +196,7 @@ namespace System.Net.Sockets
                                 }
                                 catch
                                 {
-                                    _clientSocket = null;
+                                    _clientSocket = null!;
                                     throw;
                                 }
                             }
@@ -286,23 +286,23 @@ namespace System.Net.Sockets
 
         public Task ConnectAsync(IPAddress address, int port) =>
             Task.Factory.FromAsync(
-                (targetAddess, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddess, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetAddess, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddess, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 address, port, state: this);
 
         public Task ConnectAsync(string host, int port) =>
             Task.Factory.FromAsync(
-                (targetHost, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetHost, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetHost, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetHost, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 host, port, state: this);
 
         public Task ConnectAsync(IPAddress[] addresses, int port) =>
             Task.Factory.FromAsync(
-                (targetAddresses, targetPort, callback, state) => ((TcpClient)state).BeginConnect(targetAddresses, targetPort, callback, state),
-                asyncResult => ((TcpClient)asyncResult.AsyncState).EndConnect(asyncResult),
+                (targetAddresses, targetPort, callback, state) => ((TcpClient)state!).BeginConnect(targetAddresses, targetPort, callback, state),
+                asyncResult => ((TcpClient)asyncResult.AsyncState!).EndConnect(asyncResult),
                 addresses, port, state: this);
 
-        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
 
@@ -312,7 +312,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, (string)host);
 
@@ -322,7 +322,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
 
@@ -374,7 +374,7 @@ namespace System.Net.Sockets
             {
                 if (disposing)
                 {
-                    IDisposable dataStream = _dataStream;
+                    IDisposable? dataStream = _dataStream;
                     if (dataStream != null)
                     {
                         dataStream.Dispose();

@@ -1993,7 +1993,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve result
-        public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback callback, object state)
+        public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state)
         {
             // Validate input parameters.
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, remoteEP);
@@ -2040,7 +2040,7 @@ namespace System.Net.Sockets
 
 
 
-        internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback callback, object state, bool flowContext = false)
+        internal IAsyncResult UnsafeBeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state, bool flowContext = false)
         {
             if (CanUseConnectEx(remoteEP))
             {
@@ -2059,7 +2059,7 @@ namespace System.Net.Sockets
             return asyncResult;
         }
 
-        public IAsyncResult BeginConnect(string host, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(string host, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, host);
             ThrowIfDisposed();
@@ -2117,7 +2117,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress address, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, address);
             ThrowIfDisposed();
@@ -2148,7 +2148,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback requestCallback, object state)
+        public IAsyncResult BeginConnect(IPAddress[] addresses, int port, AsyncCallback? requestCallback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, addresses);
             ThrowIfDisposed();
