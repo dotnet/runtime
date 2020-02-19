@@ -70,7 +70,7 @@ namespace System.Security.Cryptography
                 int preebIndex = line.IndexOf(Preeb);
 
                 if (preebIndex == -1 ||
-                    (preebIndex > 0 && !line[..preebIndex].IsWhiteSpace())) // can only be preceeded by whitespace
+                    (preebIndex > 0 && !line[..preebIndex].IsWhiteSpace())) // can only be preceeded by white space
                 {
                     continue;
                 }
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
                 // in lax decoding a posteb may appear on the same line as the preeb.
                 // start on the current line. We do not need to check that this posteb
                 // comes after the preeb because the preeb's prior content has already
-                // been validated to be whitespace.
+                // been validated to be white space.
                 do
                 {
                     ReadOnlySpan<char> postebLine = pemData[postebLineRange];

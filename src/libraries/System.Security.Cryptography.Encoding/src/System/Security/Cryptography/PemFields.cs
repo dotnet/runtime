@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <value>
         /// A <see cref="System.Range" /> marking the locating of the base64 data,
-        /// excluding leading and trailing whitespace.
+        /// excluding leading and trailing white space.
         /// </value>
         public Range Base64Data { get; }
 
