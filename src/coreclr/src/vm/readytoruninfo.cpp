@@ -695,7 +695,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
     }
 
     // For format version 3.1 and later, there is an optional attributes section
-    IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_composite->FindSection(ReadyToRunSectionType::AttributePresence);
+    IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);
     if (attributesPresenceDataInfoDir != NULL)
     {
         NativeCuckooFilter newFilter(

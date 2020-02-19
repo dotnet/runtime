@@ -2370,6 +2370,7 @@ DomainCompositeImage::DomainCompositeImage(
     LoaderHeap *pHeap = loaderAllocator->GetHighFrequencyHeap();
     m_utf8SimpleName = compositeImageName;
     m_utf8SimpleNameLength = compositeImageNameLength;
+    m_runEagerFixups = true;
     
     m_readyToRunInfo.Assign(new (amTracker.Track(pHeap->AllocMem((S_SIZE_T)sizeof(ReadyToRunInfo))))
         ReadyToRunInfo(/*pModule*/ NULL, pFile->GetLoaded(), header, /*compositeImage*/ NULL, &amTracker), /*takeOwnership*/ TRUE);
@@ -2409,6 +2410,13 @@ DomainCompositeImage::~DomainCompositeImage()
 bool DomainCompositeImage::HasSimpleName(LPCUTF8 utf8SimpleName, uint32_t utf8Length) const
 {
     return utf8Length == m_utf8SimpleNameLength && !memcmp(utf8SimpleName, m_utf8SimpleName, utf8Length);
+}
+
+bool DomainCompositeImage::TestAndClearRunEagerFixups()
+{
+    bool runEagerFixups = m_runEagerFixups;
+    m_runEagerFixups = false;
+    return runEagerFixups;
 }
 
 DomainCompositeImage *DomainCompositeImage::Open(
@@ -2453,11 +2461,9 @@ PTR_READYTORUN_CORE_HEADER DomainCompositeImage::GetComponentAssemblyHeader(cons
 }
 
 #ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
 void DomainCompositeImage::FindNativeImage()
 {
 }
-#endif
 #endif // FEATURE_PREJIT
 
 void DomainCompositeImage::Begin()

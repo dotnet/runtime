@@ -783,6 +783,7 @@ public:
 private:
     LPCUTF8 m_utf8SimpleName;
     uint32_t m_utf8SimpleNameLength;
+    bool m_runEagerFixups;
     
     NewHolder<ReadyToRunInfo> m_readyToRunInfo;
     IMDInternalImport *m_manifestMetadata;
@@ -814,6 +815,8 @@ public:
 
     bool HasSimpleName(LPCUTF8 utf8SimpleName, uint32_t utf8Length) const;
 
+    bool TestAndClearRunEagerFixups();
+
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
     const ReadyToRunInfo *GetReadyToRunInfo() const { return m_readyToRunInfo; }
     IMDInternalImport *GetManifestMetadata() const { return m_manifestMetadata; }
@@ -842,6 +845,5 @@ public:
     void DeliverAsyncEvents();
 #endif
 };
-
 
 #endif  // _DOMAINFILE_H_

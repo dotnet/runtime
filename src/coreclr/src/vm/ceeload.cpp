@@ -10515,6 +10515,12 @@ void Module::RunEagerFixups()
     // TODO: Verify that eager fixup dependency graphs can contain no cycles
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
+    DomainCompositeImage *compositeImage = GetCompositeImage();
+    if (compositeImage != NULL && !compositeImage->TestAndClearRunEagerFixups())
+    {
+        return;
+    }
+
     PEImageLayout *pNativeImage = GetNativeOrReadyToRunImage();
 
     for (COUNT_T iSection = 0; iSection < nSections; iSection++)
