@@ -25,7 +25,7 @@ Anyone with write access can merge a pull request manually or by setting the [au
 * The PR has been approved by at least one reviewer and any other objections are addressed.
     * You can request another review from the original reviewer.
 * The PR successfully builds and passes all tests in the Continuous Integration (CI) system.
-    * Depending on your change, you may need to re-run validation. See (rerunning validation)[#rerunning-validation] below.
+    * Depending on your change, you may need to re-run validation. See [rerunning validation](#rerunning-validation) below.
 
 Please always **squash** the pull request unless there are special circumstances. Do so, even if the PR contains only one commit. It creates a simpler history than a Merge Commit. "Special circumstances" are rare, and typically mean that there are a series of cleanly separated changes that will be too hard to understand if squashed together, or for some reason we want to preserve the ability to bisect them.
 
@@ -48,7 +48,7 @@ Validation may fail for several reasons
     * Add a comment `/azp run runtime`
     * Or, click on "re-run all checks" in the GitHub Checks tab
     * Or, simply close and reopen the PR.
-* If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the (unrelated failure)[#unrelated-failure] section below.
+* If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the [unrelated failure](#unrelated-failure) section below.
 * Whoever merges the PR should be satisfied that the failure is unrelated, is not introduced by the change, and that we are appropriately tracking it.
 
 ### Option 3: The state of the master branch HEAD is bad.
@@ -60,15 +60,16 @@ Validation may fail for several reasons
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.
   * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
 
-## Unrelated failure
+## What to do if you determine the failure is unrelated
 
-In case CI indicates failures which are **highly unlikely** to be caused by changes in the PR, the following actions should be taken:
+If you have determined the failure is definitely not caused by changes in your PR, please do this:
 
-* An existing issue in the repository should be searched for. Usually the test method's or the test assembly's name (in case of a crash) are good parameters.
-* If there's an existing issue, a comment should be placed that includes a) the link to the build, b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`) and c) the Error message and Stack trace. This is necessary as retention policies are in place that recycle _old_ builds. In case the issue is already closed, it should be reopened and labels should be updated to reflect the current failure state. 
-* If there's no existing issue, an issue should be created with the same information outlined above.
-* In a follow-up Pull Request, the failing test(s) should be disabled with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and the tracking issue should be labeled as `disabled-test`.
-* A comment should be placed in the original Pull Request that links to the created or updated issues.
+* Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method's or the test assembly's name (in case of a crash) are good search parameters.
+  * If there's an existing issue, add a comment with a) the link to the build, b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`) and c) the Error message and Stack trace. This is necessary as retention policies are in place that recycle _old_ builds.
+    * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
+  * If there's no existing issue, create an issue with the same information listed above.
+  * Update the original pull request with a comment linking to the new or existing issue.
+* In a follow-up Pull Request, disable the failing test(s) with the corresponding issue link, e.g. `[ActiveIssue(x)]`, and update the tracking issue with the label `disabled-test`.
 
 There are plenty of possible bugs, e.g. race conditions, where a failure might highlight a real problem and it won't manifest again on a retry. Therefore these steps should be followed for every iteration of the PR build, e.g. before retrying/rebuilding.
 
