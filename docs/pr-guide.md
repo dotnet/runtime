@@ -31,7 +31,7 @@ Please always **squash** the pull request unless there are special circumstances
 
 ## Rerunning Validation
 
-Validation may fail for several reasons
+Validation may fail for several reasons:
 
 ### Option 1: You have a defect in your PR
 
@@ -75,7 +75,7 @@ If you have determined the failure is definitely not caused by changes in your P
   * If there's an existing issue, add a comment with
     * a) the link to the build
     * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
-    * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle _old_ builds.)
+    * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle old builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
   * If there's no existing issue, create an issue with the same information listed above.
