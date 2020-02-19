@@ -199,7 +199,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _sendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled"));
+                    _sendResettableCompletionSource.CompleteException(new OperationCanceledException("Write was canceled", cancellationToken));
                 }
             });
 
@@ -267,7 +267,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _receiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled"));
+                    _receiveResettableCompletionSource.CompleteException(new OperationCanceledException("Read was canceled", cancellationToken));
                 }
             });
 
@@ -379,7 +379,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
                 if (shouldComplete)
                 {
-                    _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled"));
+                    _shutdownWriteResettableCompletionSource.CompleteException(new OperationCanceledException("Shutdown was canceled", cancellationToken));
                 }
             });
 
