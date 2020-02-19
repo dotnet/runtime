@@ -179,7 +179,6 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            AttributePresenceFilterNode attributePresenceFilterNode,
             ReadyToRunFlags flags)
         {
             TypeSystemContext = context;
@@ -189,7 +188,6 @@ namespace ILCompiler.DependencyAnalysis
             MetadataManager = new ReadyToRunTableManager(context);
             CopiedCorHeaderNode = corHeaderNode;
             DebugDirectoryNode = debugDirectoryNode;
-            AttributePresenceFilter = attributePresenceFilterNode;
             Resolver = new ModuleTokenResolver(compilationModuleGroup, TypeSystemContext);
             Header = new GlobalHeaderNode(Target, flags);
             if (!win32Resources.IsEmpty)
@@ -360,8 +358,6 @@ namespace ILCompiler.DependencyAnalysis
         public ISymbolNode FilterFuncletPersonalityRoutine;
 
         public DebugInfoTableNode DebugInfoTable;
-
-        public AttributePresenceFilterNode AttributePresenceFilter;
 
         public ImportSectionNode EagerImports;
 
@@ -588,6 +584,16 @@ namespace ILCompiler.DependencyAnalysis
 
                 InliningInfoNode inliningInfoTable = new InliningInfoNode(Target, inputModule);
                 tableHeader.Add(Internal.Runtime.ReadyToRunSectionType.InliningInfo2, inliningInfoTable, inliningInfoTable);
+
+                // Core library attributes are checked FAR more often than other dlls
+                // attributes, so produce a highly efficient table for determining if they are
+                // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
+                // as useful at this time.
+                if (inputModule == TypeSystemContext.SystemModule)
+                {
+                    AttributePresenceFilterNode attributePresenceTable = new AttributePresenceFilterNode(inputModule);
+                    Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, attributePresenceTable, attributePresenceTable);
+                }
             }
 
             InstanceEntryPointTable = new InstanceEntryPointTableNode(this);
@@ -598,15 +604,6 @@ namespace ILCompiler.DependencyAnalysis
 
             DebugInfoTable = new DebugInfoTableNode(Target);
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DebugInfo, DebugInfoTable, DebugInfoTable);
-
-            // Core library attributes are checked FAR more often than other dlls
-            // attributes, so produce a highly efficient table for determining if they are
-            // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
-            // as useful at this time.
-            if (this.AttributePresenceFilter != null)
-            {
-                Header.Add(Internal.Runtime.ReadyToRunSectionType.AttributePresence, AttributePresenceFilter, AttributePresenceFilter);
-            }
 
             EagerImports = new ImportSectionNode(
                 "EagerImports",

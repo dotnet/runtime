@@ -269,7 +269,6 @@ namespace ILCompiler
                 copiedCorHeader,
                 debugDirectory,
                 win32Resources: new Win32Resources.ResourceData(inputModule),
-                attributePresenceFilterNode: null,
                 Internal.ReadyToRunConstants.ReadyToRunFlags.READYTORUN_FLAG_Component);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());

@@ -113,18 +113,8 @@ namespace ILCompiler
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
             IEnumerable<EcmaModule> inputModules = _compilationGroup.CompilationModuleSet;
             CopiedCorHeaderNode corHeaderNode = (_compilationGroup.IsCompositeBuildMode ? null : new CopiedCorHeaderNode(inputModules.First()));
-            AttributePresenceFilterNode attributePresenceFilterNode = null;
             // TODO: proper support for multiple input files
             DebugDirectoryNode debugDirectoryNode = new DebugDirectoryNode(inputModules.First());
-
-            // Core library attributes are checked FAR more often than other dlls
-            // attributes, so produce a highly efficient table for determining if they are
-            // present. Other assemblies *MAY* benefit from this feature, but it doesn't show
-            // as useful at this time.
-            if (inputModules.Contains(_context.SystemModule))
-            {
-                 attributePresenceFilterNode = new AttributePresenceFilterNode((EcmaModule)_context.SystemModule);
-            }
 
             // Produce a ResourceData where the IBC PROFILE_DATA entry has been filtered out
             // TODO: proper support for multiple input files
@@ -158,7 +148,6 @@ namespace ILCompiler
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                attributePresenceFilterNode,
                 flags);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
