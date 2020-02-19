@@ -108,7 +108,6 @@ CORINFO_JUST_MY_CODE_HANDLE**,ref CORINFO_JUST_MY_CODE_HANDLE_*,void**
 ICorJitInfo::BlockCounts**,ref BlockCounts*,void**
 
 ; Enums
-CorInfoCanSkipVerificationResult,,int
 CorInfoClassId,,int
 CorInfoHelperTailCallSpecialHandling,,int
 CorInfoHelpFunc,,int
@@ -116,7 +115,6 @@ CorInfoInitClassResult,,int
 CorInfoInlineTypeCheck,,int
 CorInfoInlineTypeCheckSource,,int
 CorInfoInline,,int
-CorInfoInstantiationVerification,,int
 CorInfoIntrinsics,,int
 CorInfoIsAccessAllowedResult,,int
 CorInfoMethodRuntimeFlags,,int
@@ -191,7 +189,6 @@ FUNCTIONS
     void findSig(        CORINFO_MODULE_HANDLE       module,        unsigned                    sigTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO           *sig        );
     void findCallSiteSig(        CORINFO_MODULE_HANDLE       module,unsigned                    methTOK,        CORINFO_CONTEXT_HANDLE      context,        CORINFO_SIG_INFO   *sig)
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
-    CorInfoCanSkipVerificationResult canSkipVerification(CORINFO_MODULE_HANDLE module)
     BOOL isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     BOOL isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     LPCWSTR getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)

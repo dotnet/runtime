@@ -40,7 +40,6 @@ struct JitInterfaceCallbacks
     void (* findSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned sigTOK, void* context, void* sig);
     void (* findCallSiteSig)(void * thisHandle, CorInfoException** ppException, void* module, unsigned methTOK, void* context, void* sig);
     void* (* getTokenTypeAsHandle)(void * thisHandle, CorInfoException** ppException, void* pResolvedToken);
-    int (* canSkipVerification)(void * thisHandle, CorInfoException** ppException, void* module);
     int (* isValidToken)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
     int (* isValidStringRef)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK);
     const wchar_t* (* getStringLiteral)(void * thisHandle, CorInfoException** ppException, void* module, unsigned metaTOK, int* length);
@@ -445,15 +444,6 @@ public:
     {
         CorInfoException* pException = nullptr;
         void* _ret = _callbacks->getTokenTypeAsHandle(_thisHandle, &pException, pResolvedToken);
-        if (pException != nullptr)
-            throw pException;
-        return _ret;
-    }
-
-    virtual int canSkipVerification(void* module)
-    {
-        CorInfoException* pException = nullptr;
-        int _ret = _callbacks->canSkipVerification(_thisHandle, &pException, module);
         if (pException != nullptr)
             throw pException;
         return _ret;
