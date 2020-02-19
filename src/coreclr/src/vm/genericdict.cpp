@@ -785,15 +785,16 @@ DWORD Dictionary::GetDictionarySlotsSizeForType(MethodTable* pMT)
     return *(DWORD*)pSizeSlot;
 }
 
-DWORD Dictionary::GetDictionarySlotsSizeForMethod(InstantiatedMethodDesc* pIMD)
+DWORD Dictionary::GetDictionarySlotsSizeForMethod(MethodDesc* pMD)
 {
     CONTRACTL
     {
-        PRECONDITION(pIMD->IMD_GetMethodDictionary() != NULL);
+        PRECONDITION(pMD->AsInstantiatedMethodDesc()->IMD_GetMethodDictionary() != NULL);
         PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
+    InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
     TADDR* pDictionarySlots = (TADDR*)pIMD->IMD_GetMethodDictionary();
     TADDR* pSizeSlot = pDictionarySlots + pIMD->GetNumGenericMethodArgs();
     return *(DWORD*)pSizeSlot;
@@ -817,7 +818,7 @@ Dictionary* Dictionary::GetMethodDictionaryWithSizeCheck(MethodDesc* pMD)
     InstantiatedMethodDesc* pIMD = pMD->AsInstantiatedMethodDesc();
     _ASSERTE(pDictLayout != NULL && pDictLayout->GetMaxSlots() > 0);
 
-    DWORD currentDictLayoutSize = GetDictionarySlotsSizeForMethod(pIMD);
+    DWORD currentDictLayoutSize = GetDictionarySlotsSizeForMethod(pMD);
     DWORD expectedDictLayoutSize = DictionaryLayout::GetDictionarySizeFromLayout(pMD->GetNumGenericMethodArgs(), pDictLayout);
     if (currentDictLayoutSize != expectedDictLayoutSize)
     {
