@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 namespace System.Net.Sockets
 {
     /// <summary>
@@ -69,7 +69,7 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="obj">The object to compare with this instance</param>
         /// <returns>true if obj is an instance of <see cref="UdpReceiveResult"/> and equals the value of the instance; otherwise, false</returns>
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is UdpReceiveResult other && Equals(other);
 
         /// <summary>

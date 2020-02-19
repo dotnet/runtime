@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-
+#nullable enable
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -82,7 +82,7 @@ namespace System.Net
         /// <param name="buffer">The buffer to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, [CallerMemberName] string? memberName = null)
         {
             DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
         }
@@ -94,7 +94,7 @@ namespace System.Net
         /// <param name="count">The number of bytes to log.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string memberName = null)
+        public static void DumpBuffer(object thisOrContextObject, Memory<byte> buffer, int offset, int count, [CallerMemberName] string? memberName = null)
         {
             if (IsEnabled)
             {
@@ -106,7 +106,7 @@ namespace System.Net
 
                 buffer = buffer.Slice(offset, Math.Min(count, MaxDumpSize));
                 byte[] slice = MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> arraySegment) && arraySegment.Offset == 0 && arraySegment.Count == buffer.Length ?
-                    arraySegment.Array :
+                    arraySegment.Array! :
                     buffer.ToArray();
 
                 Log.DumpBuffer(IdOf(thisOrContextObject), memberName, slice);
