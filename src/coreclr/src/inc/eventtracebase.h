@@ -65,153 +65,6 @@ enum EtwThreadFlags
     kEtwThreadFlagThreadPoolWorker =  0x00000004,
 };
 
-#if defined(FEATURE_PERFTRACING)
-class XplatEventLoggerConfiguration
-{
-public:
-    XplatEventLoggerConfiguration() = default;
-
-    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration const & other) = delete;
-    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other)
-    {
-        _provider = std::move(other._provider);
-        _isValid = other._isValid;
-        _enabledKeywords = other._enabledKeywords;
-        _level = other._level;
-    }
-
-    ~XplatEventLoggerConfiguration()
-    {
-        _provider = nullptr;
-    }
-
-    void Parse(LPWSTR configString)
-    {
-        auto providerComponent = GetNextComponentString(configString);
-        _provider = ParseProviderName(providerComponent);
-        if (_provider == nullptr)
-        {
-            _isValid = false;
-            return;
-        }
-
-        auto keywordsComponent = GetNextComponentString(providerComponent.End + 1);
-        _enabledKeywords = ParseEnabledKeywordsMask(keywordsComponent);
-
-        auto levelComponent = GetNextComponentString(keywordsComponent.End + 1);
-        _level = ParseLevel(levelComponent);
-
-        auto argumentComponent = GetNextComponentString(levelComponent.End + 1);
-        _argument = ParseArgument(argumentComponent);
-
-        _isValid = true;
-    }
-
-    bool IsValid() const
-    {
-        return _isValid;
-    }
-
-    LPCWSTR GetProviderName() const
-    {
-        return _provider;
-    }
-
-    ULONGLONG GetEnabledKeywordsMask() const
-    {
-        return _enabledKeywords;
-    }
-
-    UINT GetLevel() const
-    {
-        return _level;
-    }
-
-    LPCWSTR GetArgument() const
-    {
-        return _argument;
-    }
-
-private:
-    struct ComponentSpan
-    {
-    public:
-        ComponentSpan(LPCWSTR start, LPCWSTR end)
-        : Start(start), End(end)
-        {
-        }
-
-        LPCWSTR Start;
-        LPCWSTR End;
-    };
-
-    ComponentSpan GetNextComponentString(LPCWSTR start) const
-    {
-        static WCHAR ComponentDelimiter = W(':');
-
-        auto end = wcschr(start, ComponentDelimiter);
-        if (end == nullptr)
-        {
-            end = start + wcslen(start);
-        }
-
-        return ComponentSpan(start, end);
-    }
-
-    LPCWSTR ParseProviderName(ComponentSpan const & component) const
-    {
-        auto providerName = (WCHAR*)nullptr;
-        if ((component.End - component.Start) != 0)
-        {
-            auto const length = component.End - component.Start;
-            providerName = new WCHAR[length + 1];
-            memset(providerName, '\0', (length + 1) * sizeof(WCHAR));
-            wcsncpy(providerName, component.Start, length);
-        }
-        return providerName;
-    }
-
-    ULONGLONG ParseEnabledKeywordsMask(ComponentSpan const & component) const
-    {
-        auto enabledKeywordsMask = (ULONGLONG)(-1);
-        if ((component.End - component.Start) != 0)
-        {
-            enabledKeywordsMask = _wcstoui64(component.Start, nullptr, 16);
-        }
-        return enabledKeywordsMask;
-    }
-
-    UINT ParseLevel(ComponentSpan const & component) const
-    {
-        auto level = 5; // Verbose
-        if ((component.End - component.Start) != 0)
-        {
-            level = _wtoi(component.Start);
-        }
-        return level;
-    }
-
-    LPCWSTR ParseArgument(ComponentSpan const & component) const
-    {
-        auto argument = (WCHAR*)nullptr;
-        if ((component.End - component.Start) != 0)
-        {
-            auto const length = component.End - component.Start;
-            argument = new WCHAR[length + 1];
-            wcsncpy(argument, component.Start, length);
-            argument[length] = '\0';
-        }
-        return argument;
-    }
-
-    LPCWSTR _provider;
-    ULONGLONG _enabledKeywords;
-    UINT _level;
-    LPCWSTR _argument;
-    bool _isValid;
-};
-#endif // FEATURE_PERFTRACING
-
 
 #ifndef FEATURE_REDHAWK
 
@@ -397,6 +250,156 @@ extern UINT32 g_nClrInstanceId;
 #include "clrproviders.h"
 #include "clrconfig.h"
 
+#endif // defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+
+#if defined(FEATURE_PERFTRACING)
+class XplatEventLoggerConfiguration
+{
+public:
+    XplatEventLoggerConfiguration() = default;
+
+    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration const & other) = delete;
+    XplatEventLoggerConfiguration(XplatEventLoggerConfiguration && other)
+    {
+        _provider = std::move(other._provider);
+        _isValid = other._isValid;
+        _enabledKeywords = other._enabledKeywords;
+        _level = other._level;
+    }
+
+    ~XplatEventLoggerConfiguration()
+    {
+        _provider = nullptr;
+    }
+
+    void Parse(LPWSTR configString)
+    {
+        auto providerComponent = GetNextComponentString(configString);
+        _provider = ParseProviderName(providerComponent);
+        if (_provider == nullptr)
+        {
+            _isValid = false;
+            return;
+        }
+
+        auto keywordsComponent = GetNextComponentString(providerComponent.End + 1);
+        _enabledKeywords = ParseEnabledKeywordsMask(keywordsComponent);
+
+        auto levelComponent = GetNextComponentString(keywordsComponent.End + 1);
+        _level = ParseLevel(levelComponent);
+
+        auto argumentComponent = GetNextComponentString(levelComponent.End + 1);
+        _argument = ParseArgument(argumentComponent);
+
+        _isValid = true;
+    }
+
+    bool IsValid() const
+    {
+        return _isValid;
+    }
+
+    LPCWSTR GetProviderName() const
+    {
+        return _provider;
+    }
+
+    uint64_t GetEnabledKeywordsMask() const
+    {
+        return _enabledKeywords;
+    }
+
+    uint32_t GetLevel() const
+    {
+        return _level;
+    }
+
+    LPCWSTR GetArgument() const
+    {
+        return _argument;
+    }
+
+private:
+    struct ComponentSpan
+    {
+    public:
+        ComponentSpan(LPCWSTR start, LPCWSTR end)
+        : Start(start), End(end)
+        {
+        }
+
+        LPCWSTR Start;
+        LPCWSTR End;
+    };
+
+    ComponentSpan GetNextComponentString(LPCWSTR start) const
+    {
+        const WCHAR ComponentDelimiter = W(':');
+        const WCHAR * end = wcschr(start, ComponentDelimiter);
+        if (end == nullptr)
+        {
+            end = start + wcslen(start);
+        }
+
+        return ComponentSpan(start, end);
+    }
+
+    LPCWSTR ParseProviderName(ComponentSpan const & component) const
+    {
+        auto providerName = (WCHAR*)nullptr;
+        if ((component.End - component.Start) != 0)
+        {
+            auto const length = component.End - component.Start;
+            providerName = new WCHAR[length + 1];
+            wcsncpy(providerName, component.Start, length);
+            providerName[length] = '\0';
+        }
+        return providerName;
+    }
+
+    uint64_t ParseEnabledKeywordsMask(ComponentSpan const & component) const
+    {
+        auto enabledKeywordsMask = (uint64_t)(-1);
+        if ((component.End - component.Start) != 0)
+        {
+            enabledKeywordsMask = _wcstoui64(component.Start, nullptr, 16);
+        }
+        return enabledKeywordsMask;
+    }
+
+    uint32_t ParseLevel(ComponentSpan const & component) const
+    {
+        int level = 5; // Verbose
+        if ((component.End - component.Start) != 0)
+        {
+            level = _wtoi(component.Start);
+        }
+        return level;
+    }
+
+    LPCWSTR ParseArgument(ComponentSpan const & component) const
+    {
+        auto argument = (WCHAR*)nullptr;
+        if ((component.End - component.Start) != 0)
+        {
+            int64_t length = component.End - component.Start;
+            argument = new WCHAR[length + 1];
+            wcsncpy(argument, component.Start, length);
+            argument[length] = '\0';
+        }
+        return argument;
+    }
+
+    LPCWSTR _provider;
+    uint64_t _enabledKeywords;
+    uint32_t _level;
+    LPCWSTR _argument;
+    bool _isValid;
+};
+#endif // FEATURE_PERFTRACING
+
+#if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+
 
 class XplatEventLoggerController
 {
@@ -517,7 +520,7 @@ public:
         }
         while (configToParse != nullptr)
         {
-            static WCHAR comma = W(',');
+            const WCHAR comma = W(',');
             auto end = wcschr(configToParse, comma);
             configuration.Parse(configToParse);
             XplatEventLoggerController::UpdateProviderContext(configuration);
