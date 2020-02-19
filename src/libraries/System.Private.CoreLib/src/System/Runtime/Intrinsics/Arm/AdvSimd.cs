@@ -866,6 +866,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> MinNumber(Vector128<double> left, Vector128<double> right) => MinNumber(left, right);
 
             /// <summary>
+            /// float32x2_t vpminnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMINNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwise(Vector64<float> left, Vector64<float> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumberPairwise(Vector128<double> left, Vector128<double> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpminnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMINNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MinNumberPairwise(Vector128<float> left, Vector128<float> right) => MinNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpminnms_f32 (float32x2_t a)
+            ///   A64: FMINNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MinNumberPairwiseScalar(Vector64<float> value) => MinNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpminnmqd_f64 (float64x2_t a)
+            ///   A64: FMINNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MinNumberPairwiseScalar(Vector128<double> value) => MinNumberPairwiseScalar(value);
+
+            /// <summary>
             /// uint8x16_t vpminq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: UMINP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
