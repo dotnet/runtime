@@ -40,7 +40,14 @@ namespace System.Security.Cryptography
         /// </summary>
         public HashAlgorithmName AlgorithmName => _algorithmName;
 
-        public int HashLengthInBytes { get => _hash != null ? _hash.HashSizeInBytes : _hmac!.HashSizeInBits >> 3; }
+        public int HashLengthInBytes
+        {
+            get
+            {
+                if (_disposed) throw new ObjectDisposedException(typeof(IncrementalHash).Name);
+                return _hash != null ? _hash.HashSizeInBytes : _hmac!.HashSizeInBits >> 3;
+            }
+        }
 
         /// <summary>
         /// Append the entire contents of <paramref name="data"/> to the data already processed in the hash or HMAC.

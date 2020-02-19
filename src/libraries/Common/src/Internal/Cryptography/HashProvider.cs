@@ -38,7 +38,7 @@ namespace Internal.Cryptography
 
         public abstract bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten);
 
-        // Compute the hash based on the appeneded data and doesn't reset the hash provider to allow for continued hashing
+        // Compute the hash based on the appended data and doesn't reset the hash provider to allow for continued hashing
         public virtual int GetCurrentHash(Span<byte> destination)
         {
             if (destination.Length < HashSizeInBytes)
@@ -49,7 +49,7 @@ namespace Internal.Cryptography
             return bytesWritten;
         }
 
-        // Compute the hash based on the appeneded data and doesn't reset the hash provider to allow for continued hashing
+        // Compute the hash based on the appended data and doesn't reset the hash provider to allow for continued hashing
         public abstract bool TryGetCurrentHash(Span<byte> destination, out int bytesWritten);
 
         // Returns the length of the byte array returned by FinalizeHashAndReset.
