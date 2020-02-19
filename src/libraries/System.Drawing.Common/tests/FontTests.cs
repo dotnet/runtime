@@ -323,7 +323,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FamilyNamePrefixedWithAtSign_StripsSign()
         {
@@ -382,7 +382,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Font(family, 10, FontStyle.Italic, GraphicsUnit.Display, 10, gdiVerticalFont: true));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(0)]
@@ -445,7 +445,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_DisposedFont_ThrowsArgumentException()
         {
@@ -464,7 +464,7 @@ namespace System.Drawing.Tests
             var font = new Font(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true);
 
             yield return new object[] { font, font, true };
-            // [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
             if (PlatformDetection.IsWindows)
             {
                 yield return new object[] { font.Clone(), new Font(family, 10, FontStyle.Bold, GraphicsUnit.Inch, 10, gdiVerticalFont: true), false };
@@ -503,14 +503,14 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHdc_ZeroHdc_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Font.FromHdc(IntPtr.Zero));
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHdc_GraphicsHdc_ThrowsArgumentException()
         {
@@ -529,7 +529,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHfont_Zero_ThrowsArgumentException()
         {
@@ -561,7 +561,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(-1, -0.1571995)]
@@ -619,7 +619,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(FontStyle.Bold, int.MinValue, 0)]
         [InlineData(FontStyle.Bold, -2147483099, 0)]
@@ -657,7 +657,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromLogFont_NullLogFont_ThrowsArgumentNullException()
         {
@@ -685,7 +685,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromLogFont_InvalidLogFont_ThrowsArgumentException()
         {
@@ -706,7 +706,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromLogFont_UnblittableStruct()
         {
@@ -809,7 +809,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(TextRenderingHint.SystemDefault)]
         [InlineData(TextRenderingHint.AntiAlias)]
@@ -904,7 +904,7 @@ namespace System.Drawing.Tests
             public string lfFaceName;
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToHfont_SimpleFont_Roundtrips()
         {
@@ -920,7 +920,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20884", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToHfont_ComplicatedFont_DoesNotRoundtrip()
         {

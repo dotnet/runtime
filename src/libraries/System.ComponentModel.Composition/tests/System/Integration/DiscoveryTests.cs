@@ -835,7 +835,7 @@ namespace Tests.Integration
         public class FooWithInterfaceWithMultipleFoos : IFoo3 { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240")]
         public void InheritedExport_InterfaceHiearchy()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(FooWithInterfaceWithMultipleFoos));

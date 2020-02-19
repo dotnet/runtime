@@ -993,8 +993,8 @@ namespace System.Net.Http
                     {
                         // Some of the payload is in our receive buffer, so copy it.
 
-                        int copyLen = (int)Math.Min(buffer.Length, _recvBuffer.ActiveLength);
-                        _recvBuffer.ActiveSpan.Slice(copyLen).CopyTo(buffer);
+                        int copyLen = (int)Math.Min(buffer.Length, Math.Min(_responseDataPayloadRemaining, _recvBuffer.ActiveLength));
+                        _recvBuffer.ActiveSpan.Slice(0, copyLen).CopyTo(buffer);
 
                         totalBytesRead += copyLen;
                         _responseDataPayloadRemaining -= copyLen;
@@ -1007,6 +1007,11 @@ namespace System.Net.Http
 
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = _stream.Read(buffer.Slice(0, copyLen));
+
+                        if (bytesRead == 0)
+                        {
+                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                        }
 
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;
@@ -1045,8 +1050,8 @@ namespace System.Net.Http
                     {
                         // Some of the payload is in our receive buffer, so copy it.
 
-                        int copyLen = (int)Math.Min(buffer.Length, _recvBuffer.ActiveLength);
-                        _recvBuffer.ActiveSpan.Slice(copyLen).CopyTo(buffer.Span);
+                        int copyLen = (int)Math.Min(buffer.Length, Math.Min(_responseDataPayloadRemaining, _recvBuffer.ActiveLength));
+                        _recvBuffer.ActiveSpan.Slice(0, copyLen).CopyTo(buffer.Span);
 
                         totalBytesRead += copyLen;
                         _responseDataPayloadRemaining -= copyLen;
@@ -1059,6 +1064,11 @@ namespace System.Net.Http
 
                         int copyLen = (int)Math.Min(buffer.Length, _responseDataPayloadRemaining);
                         int bytesRead = await _stream.ReadAsync(buffer.Slice(0, copyLen), cancellationToken).ConfigureAwait(false);
+
+                        if (bytesRead == 0)
+                        {
+                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                        }
 
                         totalBytesRead += bytesRead;
                         _responseDataPayloadRemaining -= bytesRead;

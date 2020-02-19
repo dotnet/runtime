@@ -78,7 +78,7 @@ namespace System.Net
         }
 #endif
 
-        // These PreserveDependency attributes are a workaround for https://github.com/dotnet/corefx/issues/13607.
+        // These PreserveDependency attributes are a workaround for https://github.com/dotnet/runtime/issues/19348.
         // HttpListener uses the non-public ToServerString, which isn't used by anything else in this assembly,
         // and which accesses other internals and can't be moved to HttpListener (at least not without incurring
         // functional differences).  However, once we do our initial System.Net.Primitives build and ToServerString
@@ -95,7 +95,7 @@ namespace System.Net
         {
         }
 
-        [PreserveDependency("ToServerString")] // Workaround for https://github.com/dotnet/corefx/issues/13607
+        [PreserveDependency("ToServerString")] // Workaround for https://github.com/dotnet/runtime/issues/19348
         public Cookie(string name, string value)
         {
             Name = name;

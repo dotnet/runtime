@@ -23,7 +23,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -37,7 +37,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
             Listener listener = new EventListenerListener(true);
@@ -49,7 +49,7 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -64,7 +64,7 @@ namespace BasicEventSourceTests
         /// instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18806", TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
             Listener listener = new EventListenerListener(true);

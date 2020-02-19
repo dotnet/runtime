@@ -401,7 +401,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/34666")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/28449")]
         [Theory]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)

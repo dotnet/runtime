@@ -7,15 +7,15 @@
 #include "pal_compiler.h"
 #include "pal_types.h"
 
-DLLEXPORT const char* SystemNative_GetUnixName(void);
+PALEXPORT const char* SystemNative_GetUnixName(void);
 
-DLLEXPORT char* SystemNative_GetUnixRelease(void);
+PALEXPORT char* SystemNative_GetUnixRelease(void);
 
-DLLEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
+PALEXPORT int32_t SystemNative_GetUnixVersion(char* version, int* capacity);
 
-DLLEXPORT int32_t SystemNative_GetOSArchitecture(void);
+PALEXPORT int32_t SystemNative_GetOSArchitecture(void);
 
-DLLEXPORT int32_t SystemNative_GetProcessArchitecture(void);
+PALEXPORT int32_t SystemNative_GetProcessArchitecture(void);
 
 enum 
 {

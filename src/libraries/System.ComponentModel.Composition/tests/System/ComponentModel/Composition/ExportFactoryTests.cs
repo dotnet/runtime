@@ -393,7 +393,7 @@ namespace Tests.Integration
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/25498", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/24240", TestPlatforms.AnyUnix)] // System.Reflection.ReflectionTypeLoadException : Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.
         public void ExportFactory_SimpleDispose()
         {
             var catalog = new AssemblyCatalog(Assembly.GetExecutingAssembly());

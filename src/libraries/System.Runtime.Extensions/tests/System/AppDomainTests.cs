@@ -85,7 +85,7 @@ namespace System.Tests
             }).Dispose();
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/12716")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/18984")]
         [PlatformSpecific(~TestPlatforms.OSX)] // Unhandled exception on a separate process causes xunit to crash on osx
         [Fact]
         public void UnhandledException_Called()
@@ -571,7 +571,7 @@ namespace System.Tests
 
                 Type t = Type.GetType("AssemblyResolveTestApp.Class1, AssemblyResolveTestApp", true);
                 Assert.NotNull(t);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
@@ -601,7 +601,7 @@ namespace System.Tests
                 MethodInfo myMethodInfo = ptype.GetMethod("foo");
                 object ret = myMethodInfo.Invoke(null, null);
                 Assert.NotNull(ret);
-                // https://github.com/dotnet/corefx/issues/38361
+                // https://github.com/dotnet/runtime/issues/29817
                 // Assert.True(AssemblyResolveFlag);
             }).Dispose();
         }
@@ -939,7 +939,7 @@ namespace System.Tests
                     return null;
                 };
 
-                // The issue resolved by https://github.com/dotnet/coreclr/issues/24450, was only reproduced when there was a Resolving handler present
+                // The issue resolved by https://github.com/dotnet/coreclr/pull/24450, was only reproduced when there was a Resolving handler present
                 System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += resolvingHandler;
 
                 assembly.GetType("System.Tests.AGenericClass`1[[Bogus, BogusAssembly]]", false);
