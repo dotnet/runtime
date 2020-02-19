@@ -58,7 +58,10 @@ Validation may fail for several reasons
 ### Option 3: The state of the master branch HEAD is bad.
 
 * This is the very rare case where there was a build break in master, and you got unlucky. Hopefully the break has been fixed, and you want CI to rebase your change and rerun validation.
-* To do this, add a comment `/azp run runtime`, or click on "re-run all checks" in the GitHub Checks tab, or just close and reopen the PR.
+* To rebase and rerun all validation:
+  * Add a comment `/azp run runtime`
+  * Or, click on "re-run all checks" in the GitHub Checks tab
+  * Or, simply close and reopen the PR.
 
 ### Additional information:
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.
