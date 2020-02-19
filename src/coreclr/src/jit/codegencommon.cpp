@@ -6309,24 +6309,23 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
 #elif defined(TARGET_XARCH)
         // As we output multiple instructions for SIMD zeroing, we want to balance code size, with throughput
         // so cap max size at 6 * MAX SIMD length
-        noway_assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
+        assert(compiler->getSIMDSupportLevel() >= SIMD_SSE2_Supported);
 #ifdef TARGET_64BIT
         int initMaxSIMDSize =
             6 * (compiler->getSIMDSupportLevel() >= SIMD_AVX2_Supported ? YMM_REGSIZE_BYTES : XMM_REGSIZE_BYTES);
 #else  // !TARGET_64BIT
-        int initMaxSIMDSize = 6 * XMM_REGSIZE_BYTES;
+        int initMaxSIMDSize = 8 * XMM_REGSIZE_BYTES;
 #endif // TARGET_64BIT
         if ((untrLclHi - untrLclLo) <= initMaxSIMDSize)
         {
-            /*
-                Generate the following code:
-                   xor      ecx, ecx
-                   vxorps   ymm0, ymm0
-                   vmovdqu  ymmword ptr [ebp/esp-OFFS], ymm0
-                   ...
-                   vmovdqu  xmmword ptr [ebp/esp-OFFS], xmm0
-                   mov      qword ptr [ebp/esp-OFFS], rcx
-             */
+            // Generate the following code:
+            //
+            //   xor      rax, rax
+            //   vxorps   ymm0, ymm0
+            //   vmovdqu  ymmword ptr [ebp/esp-OFFS], ymm0
+            //   ...
+            //   vmovdqu  xmmword ptr [ebp/esp-OFFS], xmm0
+            //   mov      qword ptr [ebp/esp-OFFS], rax
 
             // zero out the whole thing rounded up to a single stack slot size
             unsigned blkSize = roundUp((untrLclHi - untrLclLo), (unsigned)sizeof(int));
@@ -6420,14 +6419,13 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
         }
         else
         {
-            /*
-                Generate the following code:
+            // Generate the following code:
+            //
+            //    lea     edi, [ebp/esp-OFFS]
+            //    mov     ecx, <size>
+            //    xor     eax, eax
+            //    rep     stosb
 
-                    lea     edi, [ebp/esp-OFFS]
-                    mov     ecx, <size>
-                    xor     eax, eax
-                    rep     stosd
-             */
             unsigned blkSize = (untrLclHi - untrLclLo);
             noway_assert(blkSize > XMM_REGSIZE_BYTES * 2);
             noway_assert(regSet.rsRegsModified(RBM_EDI));
@@ -6488,7 +6486,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Subtract the unaligned address from aligned to get amount to subtract from count
             emit->emitIns_R_R(INS_sub, EA_PTRSIZE, REG_EAX, REG_ECX);
             // Output count of bytes to clear
-            inst_RV_IV(INS_mov, REG_ECX, blkSize / sizeof(int), EA_4BYTE);
+            inst_RV_IV(INS_mov, REG_ECX, blkSize, EA_4BYTE);
             // Subtract the unaligned already cleared
             emit->emitIns_R_R(INS_sub, EA_PTRSIZE, REG_ECX, REG_EAX);
 #else  // !TARGET_64BIT
@@ -6497,7 +6495,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             regSet.verifyRegUsed(REG_EDI);
 
             instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EAX);
-            instGen(INS_r_stosd);
+            instGen(INS_r_stosb);
 
 #ifdef UNIX_AMD64_ABI
             // Move back the argument registers
