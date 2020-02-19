@@ -226,7 +226,7 @@ template <class T>
 void DoBounds(
     T trans, // transfer object.
     ULONG32                       cMap,
-    ICorDebugInfo::OffsetMapping *pMap
+    ICorDebugInfo::OffsetMapping2 *pMap
 )
 {
     CONTRACTL
@@ -250,7 +250,7 @@ void DoBounds(
     //DWORD dwLastMethodDsc = 0;
     for(DWORD i = 0; i < cMap; i++)
     {
-        ICorDebugInfo::OffsetMapping * pBound = &pMap[i];
+        ICorDebugInfo::OffsetMapping2 * pBound = &pMap[i];
 
         trans.DoEncodedSourceType(pBound->source);
 
@@ -397,7 +397,9 @@ void CompressDebugInfo::CompressBoundaries(
         pWriter->WriteEncodedU32(cMap);
 
         TransferWriter t(*pWriter);
-        DoBounds(t, cMap, pMap);
+        
+        _ASSERTE(sizeof(ICorDebugInfo::OffsetMapping) == sizeof(ICorDebugInfo::OffsetMapping2));
+        DoBounds(t, cMap, (ICorDebugInfo::OffsetMapping2 *)pMap);
 
         pWriter->Flush();
     }
@@ -537,6 +539,81 @@ PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
 
 #endif // DACCESS_COMPILE
 
+
+ICorDebugInfo::OffsetMapping * GetOldBounds(
+    IN FP_IDS_NEW fpNew,
+    IN void * pNewData,
+    UINT32                       * cMap,
+    ICorDebugInfo::OffsetMapping2 * oldPMap
+)
+{
+    UINT32 oldCMap = *cMap;
+    _ASSERTE(oldCMap > 0);
+    _ASSERTE(oldPMap != NULL);
+
+    // Count ICorDebugInfo::OffsetMapping that would exist
+    UINT32 cNumEntries = 0;
+    UINT32 inlineDepth = 0;
+    for(DWORD i = 0; i < oldCMap; i++)
+    {
+        ICorDebugInfo::OffsetMapping2 * pBound = &oldPMap[i];
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_OPEN) != 0)
+        {
+            inlineDepth += 1;
+        }
+
+        if (inlineDepth == 0)
+        {
+            cNumEntries++;
+        }
+
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_CLOSE) != 0)
+        {
+            _ASSERTE(inlineDepth > 0);
+            inlineDepth -= 1;
+        }
+    }
+    _ASSERTE(inlineDepth == 0);
+
+    *cMap = cNumEntries;
+
+    ICorDebugInfo::OffsetMapping * newPMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
+                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
+    
+    if (newPMap == NULL)
+    {
+        ThrowOutOfMemory();
+    }
+
+    // Cast and copy each entry
+    UINT32 newPMapIndex = 0;
+    for(DWORD i = 0; i < oldCMap; i++)
+    {
+        ICorDebugInfo::OffsetMapping2 * pBound = &oldPMap[i];
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_OPEN) != 0)
+        {
+            inlineDepth += 1;
+        }
+
+        if (inlineDepth == 0)
+        {
+            ICorDebugInfo::OffsetMapping * newPBound = &newPMap[newPMapIndex];
+            newPBound->source = pBound->source;
+            newPBound->nativeOffset = pBound->offset.nativeOffset;
+            newPBound->ilOffset = pBound->offset.ilOffset;
+            newPMapIndex++;
+        }
+
+        if ((pBound->source & ICorDebugInfo::SourceTypes::INLINE_CLOSE) != 0)
+        {
+            inlineDepth -= 1;
+        }
+    }
+
+    return newPMap;
+}
+
+
 //-----------------------------------------------------------------------------
 // Compression routines
 // DAC only needs to run the uncompression routines.
@@ -586,21 +663,24 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
         UINT32 cNumEntries = r.ReadEncodedU32();
         _ASSERTE(cNumEntries > 0);
 
-        if (pcMap != NULL)
-            *pcMap = cNumEntries;
-
         if (ppMap != NULL)
         {
-            ICorDebugInfo::OffsetMapping * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping *>
-                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping)));
+            ICorDebugInfo::OffsetMapping2 * pMap = reinterpret_cast<ICorDebugInfo::OffsetMapping2 *>
+                (fpNew(pNewData, cNumEntries * sizeof(ICorDebugInfo::OffsetMapping2)));
             if (pMap == NULL)
             {
                 ThrowOutOfMemory();
             }
-            *ppMap = pMap;
 
             // Main decompression routine.
             DoBounds(t, cNumEntries, pMap);
+            *ppMap = GetOldBounds(fpNew, pNewData, &cNumEntries, pMap);
+            delete pMap;
+        }
+        
+        if (pcMap != NULL)
+        {
+            *pcMap = cNumEntries;
         }
     }
 
@@ -632,6 +712,8 @@ void CompressDebugInfo::RestoreBoundariesAndVars(
         }
     }
 }
+
+
 
 #ifdef DACCESS_COMPILE
 void CompressDebugInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, PTR_BYTE pDebugInfo)

@@ -46,8 +46,9 @@ public:
         STACK_EMPTY                = 0x02, // The stack is empty here
         CALL_SITE                  = 0x04, // This is a call site.
         NATIVE_END_OFFSET_UNKNOWN  = 0x08, // Indicates a epilog endpoint
-        CALL_INSTRUCTION           = 0x10  // The actual instruction of a call.
-
+        CALL_INSTRUCTION           = 0x10,  // The actual instruction of a call.
+        INLINE_OPEN = 0x20,
+        INLINE_CLOSE = 0x40
     };
 
     struct OffsetMapping
@@ -59,6 +60,27 @@ public:
                                 // the stack isn't empty.  We can put regular breakpoints
                                 // there, though, so we need a way to discriminate
                                 // between offsets.
+    };
+
+    struct ILOffsetMapping
+    {
+        DWORD           nativeOffset;
+        DWORD           ilOffset;
+    };
+
+    struct MethodMapping
+    {
+        UINT64 method;
+    };
+
+    struct OffsetMapping2
+    {
+        union
+        {
+            MethodMapping method;
+            ILOffsetMapping offset;
+        };
+        SourceTypes     source;
     };
 
     /*------------------------------ Var-info -------------------------------*/
