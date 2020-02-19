@@ -2,6 +2,7 @@ DOTNET := $(shell bash init-tools.sh | tail -1)
 # DOTNET_MONO is a copy of DOTNET (local .dotnet) with Mono Runtime bits (see patch-mono-dotnet rule)
 DOTNET_MONO = ../../../.dotnet-mono/dotnet
 
+COREFX_TESTS_CONFIG=Release
 CORECLR_TESTS_CONFIG=Release
 MONO_RUNTIME_CONFIG=Release
 
@@ -12,6 +13,10 @@ endif
 
 ifeq ($(words $(wildcard ../../../artifacts/tests/coreclr/*.*.*)), 1)
 	CORECLR_TESTS_CONFIG := $(word 3,$(subst ., ,$(notdir $(wildcard ../../../artifacts/tests/coreclr/*.*.*))))
+endif
+
+ifeq ($(words $(wildcard ../../../artifacts/bin/testhost/*-*-*-*)), 1)
+	COREFX_TESTS_CONFIG := $(word 3,$(subst -, ,$(notdir $(wildcard ../../../artifacts/bin/testhost/*-*-*-*))))
 endif
 
 MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_RUNTIME_CONFIG) ../mono.proj
@@ -36,6 +41,9 @@ runtime:
 patch-mono-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
 
+patch-mono-dotnet-aot:
+	$(DOTNET) msbuild /t:PrecompileLocalMonoDotnetBcl $(MONO_PROJ)
+
 # copy mono runtime bits from artifacts to $(DST)
 copy-runtime-files-to:
 	$(DOTNET) msbuild /t:CopyMonoRuntimeFilesFromArtifactsToDestination /p:Destination=$(DST) $(MONO_PROJ)
@@ -53,6 +61,9 @@ run-tests-coreclr-all:
 # e.g. `make run-tests-corefx LibraryToTest=System.Runtime`
 run-tests-corefx:
 	$(DOTNET) msbuild /t:RunCoreFxTest /p:LibraryToTest=$(LibraryToTest) $(MONO_PROJ)
+
+tests-corefx-aot:
+	$(DOTNET) msbuild /t:PrecompileCoreFxTests $(MONO_PROJ)
 
 # run 'dotnet/performance' benchmarks
 # e.g. 'make run-benchmarks BenchmarksRepo=/prj/performance'
