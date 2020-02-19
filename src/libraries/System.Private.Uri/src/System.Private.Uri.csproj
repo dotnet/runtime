@@ -22,6 +22,7 @@
     <Compile Include="$(CommonPath)System\Net\IPv6AddressHelper.Common.cs"
              Link="System\IPv6AddressHelper.Common.cs" />
     <Compile Include="System\IriHelper.cs" />
+    <Compile Include="System\PercentEncodingHelper.cs" />
     <Compile Include="System\UncNameHelper.cs" />
     <Compile Include="System\Uri.cs" />
     <Compile Include="System\UriBuilder.cs" />
