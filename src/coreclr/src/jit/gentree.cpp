@@ -12906,10 +12906,11 @@ DONE_FOLD:
 }
 
 //------------------------------------------------------------------------
-// gtFoldBoxNullable -- optimize a boxed nullable feeding a compare
+// gtFoldBoxNullable -- optimize a boxed nullable feeding a compare to zero
 //
 // Arguments:
-//   tree - binop tree to potentially optimize
+//   tree - binop tree to potentially optimize, must be
+//          GT_GT, GT_EQ, or GT_NE
 //
 // Return value:
 //   Tree (possibly modified below the root).
@@ -12917,6 +12918,8 @@ DONE_FOLD:
 GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 {
     assert(tree->OperKind() & GTK_BINOP);
+    assert(tree->OperIs(GT_GT, GT_EQ, GT_NE));
+
     genTreeOps const oper = tree->OperGet();
 
     if ((oper == GT_GT) && !tree->IsUnsigned())
@@ -12944,18 +12947,19 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
         return tree;
     }
 
+    ssize_t const val = cons->AsIntConCommon()->IconValue();
+
+    if (val != 0)
+    {
+        return tree;
+    }
+
     if (!op->IsCall())
     {
         return tree;
     }
 
     GenTreeCall* const call = op->AsCall();
-    ssize_t const      val  = cons->AsIntConCommon()->IconValue();
-
-    if (val != 0)
-    {
-        return tree;
-    }
 
     if (!call->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
     {
