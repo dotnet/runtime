@@ -48,58 +48,54 @@ Below table shows the combined area owners on this repository:
 | area-Tracing-mono | @lambdageek | |
 | area-Performance-mono | @SamMonoRT | |
 | **System contract assemblies** | | |
-| area-System.AppContext | @safern @Anipik | |
-| area-System.Buffers | @layomia @JeremyKuhne @ahsonkhan | |
+| area-System.Buffers | @layomia @JeremyKuhne | |
 | area-System.CodeDom | @buyaa-n @krwq | |
-| area-System.Collections | @safern | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
-| area-System.ComponentModel | @maryamariyan @safern | |
+| area-System.Collections | @eiriktsarpalis @layomia | </ul>Excluded:<ul><li>System.Array -> System.Runtime</li></ul> |
+| area-System.ComponentModel | @JeremyKuhne @safern | |
+| area-System.ComponentModel.Composition | @maryamariyan @ViktorHofer | |
 | area-System.ComponentModel.DataAnnotations | @lajones @ajcvickers | |
 | area-System.Composition | @maryamariyan @ViktorHofer | |
 | area-System.Configuration | @maryamariyan @safern | |
-| area-System.Console | @wtgodbe | |
+| area-System.Console | @carlossanlop @eiriktsarpalis | |
 | area-System.Data | @ajcvickers @cheenamalhotra @david-engel | <ul><li>Odbc, OleDb - [@saurabh500](https://github.com/saurabh500)</li></ul> |
 | area-System.Data.SqlClient | @cheenamalhotra @david-engel @karinazhou @JRahnama | Archived component - limited churn/contributions (see https://devblogs.microsoft.com/dotnet/introducing-the-new-microsoftdatasqlclient/) |
-| area-System.Diagnostics | @tommcdon @wtgodbe @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
-| area-System.Diagnostics.Process | @wtgodbe @krwq | |
-| area-System.Diagnostics.Tracing | @noahfalk @tommcdon @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
+| area-System.Diagnostics | @tommcdon @krwq | <ul><li>System.Diagnostics.EventLog - [@Anipik](https://github.com/Anipik)</li></ul> |
+| area-System.Diagnostics.Process | @adsitnik @eiriktsarpalis | |
+| area-System.Diagnostics.Tracing | @noahfalk @tommcdon @tarekgh @Anipik | Packages:<ul><li>System.Diagnostics.DiagnosticSource</li><li>System.Diagnostics.PerformanceCounter - [@Anipik](https://github.com/Anipik)</li><li>System.Diagnostics.Tracing</li><li>System.Diagnostics.TraceSource - [@Anipik](https://github.com/Anipik)</li></ul><br/> |
 | area-System.DirectoryServices | @tquerec @josephisenhour | |
-| area-System.Drawing | @safern @maryamariyan | |
+| area-System.Drawing | @JeremyKuhne @safern | |
 | area-System.Dynamic.Runtime | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
-| area-System.Globalization | @krwq @tarekgh | |
-| area-System.IO | @JeremyKuhne @carlossanlop | |
-| area-System.IO.Compression | @carlossanlop @ahsonkhan @ViktorHofer | |
-| area-System.IO.Packaging | @JeremyKuhne @carlossanlop | |
+| area-System.Globalization | @safern @tarekgh @krwq | |
+| area-System.IO | @JeremyKuhne @carlossanlop @jozkee | |
+| area-System.IO.Compression | @carlossanlop @ericstj | <ul><li>Also includes System.IO.Packaging</li></ul> |
 | area-System.IO.Pipelines | @davidfowl @halter73 @jkotalik @anurse | |
-| area-System.Linq | @maryamariyan | |
+| area-System.Linq | @eiriktsarpalis | |
 | area-System.Linq.Expressions | @cston @333fred | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | area-System.Linq.Parallel | @tarekgh @kouvel | |
 | area-System.Management | @Anipik | WMI |
-| area-System.Memory | @ahsonkhan | |
-| area-System.Net | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | Included:<ul><li>System.Uri - [@wtgodbe](https://github.com/wtgodbe)</li></ul> |
-| area-System.Net.Http | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
-| area-System.Net.Security | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
-| area-System.Net.Sockets | @davidsh @wfurt @scalablecory @eiriktsarpalis @karelz | |
-| area-System.Numerics | @tannergooding @ViktorHofer | |
-| area-System.Numerics.Tensors | @tannergooding | |
+| area-System.Memory | @GrabYourPitchforks @adsitnik | |
+| area-System.Net | @dotnet/ncl | Included:<ul><li>System.Uri</li></ul> |
+| area-System.Net.Http | @dotnet/ncl | |
+| area-System.Net.Security | @dotnet/ncl | |
+| area-System.Net.Sockets | @dotnet/ncl | |
+| area-System.Numerics | @tannergooding @prgovind | |
+| area-System.Numerics.Tensors | @prgovind @eiriktsarpalis | |
 | area-System.Reflection | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Emit | @steveharter @GrabYourPitchforks | |
 | area-System.Reflection.Metadata | @tmat @nguerrera | |
-| area-System.Resources | @krwq @tarekgh | |
+| area-System.Resources | @buyaa-n @tarekgh @krwq | |
 | area-System.Runtime | @bartonjs @joperezr | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul> |
 | area-System.Runtime.Caching | @StephenMolloy @HongGit | |
-| area-System.Runtime.CompilerServices | @Anipik | |
-| area-System.Runtime.Extensions | @Anipik | |
+| area-System.Runtime.CompilerServices | @Anipik @steveharter | |
 | area-System.Runtime.InteropServices | @AaronRobinsonMSFT @jkoritzinsky | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
 | area-System.Runtime.Intrinsics | @tannergooding @CarolEidt @RussKeldorph | |
-| area-System.Security | @bartonjs @GrabYourPitchforks | |
-| area-System.Security.Cryptography.Xml | @bartonjs | |
-| area-System.ServiceModel | N/A | [dotnet/wcf](https://github.com/dotnet/wcf) (except System.ServiceModel.Syndication) |
+| area-System.Security | @bartonjs @GrabYourPitchforks @krwq | |
 | area-System.ServiceModel.Syndication | @StephenMolloy @HongGit | |
 | area-System.ServiceProcess | @Anipik | |
 | area-System.Text.Encoding | @layomia @krwq @tarekgh | |
 | area-System.Text.Encodings.Web | @GrabYourPitchforks @layomia @tarekgh | |
-| area-System.Text.Json | @ahsonkhan @steveharter | |
-| area-System.Text.RegularExpressions | @ViktorHofer @maryamariyan | |
+| area-System.Text.Json | @layomia @steveharter @jozkee | |
+| area-System.Text.RegularExpressions | @prgovi @eerhardt | |
 | area-System.Threading | @kouvel | |
 | area-System.Threading.Channels | @tarekgh @stephentoub | |
 | area-System.Threading.Tasks | @tarekgh @stephentoub | |
