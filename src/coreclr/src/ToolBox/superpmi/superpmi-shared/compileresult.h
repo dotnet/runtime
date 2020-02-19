@@ -192,7 +192,7 @@ public:
                      void**              orig_coldCodeBlock,
                      void**              orig_roDataBlock);
 
-    void recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping* pMap);
+    void recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping2* pMap);
     void dmpSetBoundaries(DWORD key, const Agnostic_SetBoundaries& value);
     bool repSetBoundaries(CORINFO_METHOD_HANDLE* ftn, ULONG32* cMap, ICorDebugInfo::OffsetMapping** pMap);
 

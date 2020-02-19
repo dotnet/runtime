@@ -337,7 +337,7 @@ class CEECompileInfo : public ICorCompileInfo
                        bool isDispatchCell);
 
     void CompressDebugInfo(
-                                    IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
+                                    IN ICorDebugInfo::OffsetMapping2 * pOffsetMapping,
                                     IN ULONG            iOffsetMapping,
                                     IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
                                     IN ULONG            iNativeVarInfo,

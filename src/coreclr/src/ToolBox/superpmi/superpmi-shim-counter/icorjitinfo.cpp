@@ -947,7 +947,7 @@ void interceptor_ICJI::getBoundaries(CORINFO_METHOD_HANDLE ftn,        // [IN] m
 // OffsetMapping is sorted in order of increasing native offset.
 void interceptor_ICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of interest
                                      ULONG32                       cMap, // [IN] size of pMap
-                                     ICorDebugInfo::OffsetMapping* pMap  // [IN] map including all points of interest.
+                                     ICorDebugInfo::OffsetMapping2* pMap  // [IN] map including all points of interest.
                                                                          //      jit allocated with allocateArray, EE
                                                                          //      frees
                                      )

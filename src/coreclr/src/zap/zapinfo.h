@@ -148,7 +148,7 @@ class ZapInfo
     // Debug information reported by the JIT compiler for the current method
     ICorDebugInfo::NativeVarInfo *m_pNativeVarInfo;
     ULONG32                     m_iNativeVarInfo;
-    ICorDebugInfo::OffsetMapping *m_pOffsetMapping;
+    ICorDebugInfo::OffsetMapping2 *m_pOffsetMapping;
     ULONG32                     m_iOffsetMapping;
 
     BYTE *                      m_pGCInfo;
@@ -479,7 +479,7 @@ public:
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int *cILOffsets,
                        DWORD **pILOffsets, ICorDebugInfo::BoundaryTypes *implicitBoundaries);
     void setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
-                       ICorDebugInfo::OffsetMapping *pMap);
+                       ICorDebugInfo::OffsetMapping2 *pMap);
     void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars,
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,

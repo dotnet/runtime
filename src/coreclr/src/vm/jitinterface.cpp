@@ -11102,7 +11102,7 @@ void CEEJitInfo::BackoutJitData(EEJitManager * jitMgr)
 /*********************************************************************/
 // Route jit information to the Jit Debug store.
 void CEEJitInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
-                               ICorDebugInfo::OffsetMapping *pMap)
+                               ICorDebugInfo::OffsetMapping2 *pMap)
 {
     CONTRACTL {
         THROWS;
@@ -14077,7 +14077,7 @@ DWORD CEEInfo::getExpectedTargetArchitecture()
 }
 
 void CEEInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
-                               ICorDebugInfo::OffsetMapping *pMap)
+                               ICorDebugInfo::OffsetMapping2 *pMap)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

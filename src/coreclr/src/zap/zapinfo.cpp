@@ -2953,7 +2953,7 @@ void ZapInfo::getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int *cILOffsets,
 }
 
 void ZapInfo::setBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap,
-                                           ICorDebugInfo::OffsetMapping *pMap)
+                                           ICorDebugInfo::OffsetMapping2 *pMap)
 {
     _ASSERTE(ftn == m_currentMethodHandle);
 

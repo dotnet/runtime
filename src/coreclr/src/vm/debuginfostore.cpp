@@ -377,7 +377,7 @@ void DoNativeVarInfo(
 
 void CompressDebugInfo::CompressBoundaries(
     IN ULONG32                       cMap,
-    IN ICorDebugInfo::OffsetMapping *pMap,
+    IN ICorDebugInfo::OffsetMapping2 *pMap,
     IN OUT NibbleWriter             *pWriter
 )
 {
@@ -398,8 +398,7 @@ void CompressDebugInfo::CompressBoundaries(
 
         TransferWriter t(*pWriter);
         
-        _ASSERTE(sizeof(ICorDebugInfo::OffsetMapping) == sizeof(ICorDebugInfo::OffsetMapping2));
-        DoBounds(t, cMap, (ICorDebugInfo::OffsetMapping2 *)pMap);
+        DoBounds(t, cMap, pMap);
 
         pWriter->Flush();
     }
@@ -456,7 +455,7 @@ void CompressDebugInfo::CompressVars(
 }
 
 PTR_BYTE CompressDebugInfo::CompressBoundariesAndVars(
-    IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
+    IN ICorDebugInfo::OffsetMapping2 * pOffsetMapping,
     IN ULONG            iOffsetMapping,
     IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
     IN ULONG            iNativeVarInfo,

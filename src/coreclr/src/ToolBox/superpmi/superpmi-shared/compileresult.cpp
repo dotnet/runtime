@@ -230,7 +230,7 @@ void CompileResult::repAllocMem(ULONG*              hotCodeSize,
 }
 
 // Note - Ownership of pMap is transfered with this call. In replay icorjitinfo we should free it.
-void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping* pMap)
+void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, ICorDebugInfo::OffsetMapping2* pMap)
 {
     if (SetBoundaries == nullptr)
         SetBoundaries = new LightWeightMap<DWORD, Agnostic_SetBoundaries>();
@@ -240,7 +240,7 @@ void CompileResult::recSetBoundaries(CORINFO_METHOD_HANDLE ftn, ULONG32 cMap, IC
     value.ftn  = (DWORDLONG)ftn;
     value.cMap = (DWORD)cMap;
     value.pMap_offset =
-        (DWORD)SetBoundaries->AddBuffer((const unsigned char*)pMap, sizeof(ICorDebugInfo::OffsetMapping) * cMap);
+        (DWORD)SetBoundaries->AddBuffer((const unsigned char*)pMap, sizeof(ICorDebugInfo::OffsetMapping2) * cMap);
 
     SetBoundaries->Add(0, value);
 }

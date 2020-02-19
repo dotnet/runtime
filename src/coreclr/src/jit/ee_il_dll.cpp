@@ -976,7 +976,7 @@ void Compiler::eeSetLIdone()
     // necessary but not sufficient condition that the 2 struct definitions overlap
     assert(sizeof(eeBoundaries[0]) == sizeof(ICorDebugInfo::OffsetMapping2));
 
-    info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount, (ICorDebugInfo::OffsetMapping *)eeBoundaries);
+    info.compCompHnd->setBoundaries(info.compMethodHnd, eeBoundariesCount, (ICorDebugInfo::OffsetMapping2 *)eeBoundaries);
 
     eeBoundaries = nullptr; // we give up ownership after setBoundaries();
 }

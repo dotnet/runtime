@@ -67,7 +67,7 @@ public:
     // Compress incoming data and write it to the provided NibbleWriter.
     static void CompressBoundaries(
         IN ULONG32                       cMap,
-        IN ICorDebugInfo::OffsetMapping *pMap,
+        IN ICorDebugInfo::OffsetMapping2 *pMap,
         IN OUT NibbleWriter * pWriter
     );
 
@@ -79,7 +79,7 @@ public:
 
     // Stores the result into SBuffer (used by NGen), or in LoaderHeap (used by JIT)
     static PTR_BYTE CompressBoundariesAndVars(
-        IN ICorDebugInfo::OffsetMapping * pOffsetMapping,
+        IN ICorDebugInfo::OffsetMapping2 * pOffsetMapping,
         IN ULONG            iOffsetMapping,
         IN ICorDebugInfo::NativeVarInfo * pNativeVarInfo,
         IN ULONG            iNativeVarInfo,

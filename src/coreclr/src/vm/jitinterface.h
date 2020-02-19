@@ -841,7 +841,7 @@ public:
                        unsigned int *cILOffsets, DWORD **pILOffsets,
                        ICorDebugInfo::BoundaryTypes *implictBoundaries);
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping2 *pMap);
     void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars,
                  ICorDebugInfo::ILVarInfo **vars, bool *extendOthers);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
@@ -1446,7 +1446,7 @@ public:
 
     // ICorDebugInfo stuff.
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
-                       ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap);
+                       ULONG32 cMap, ICorDebugInfo::OffsetMapping2 *pMap);
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
                  ICorDebugInfo::NativeVarInfo *vars);
     void CompressDebugInfo();
@@ -1507,7 +1507,7 @@ protected :
     size_t                  m_EHinfo_len;   // Cached copy of EHinfo_len so we can backout in BackoutJitData()
 
     ULONG32                 m_iOffsetMapping;
-    ICorDebugInfo::OffsetMapping * m_pOffsetMapping;
+    ICorDebugInfo::OffsetMapping2 * m_pOffsetMapping;
 
     ULONG32                 m_iNativeVarInfo;
     ICorDebugInfo::NativeVarInfo * m_pNativeVarInfo;
