@@ -101,6 +101,8 @@ namespace System.Net.Quic.Implementations.MsQuic
         {
             get
             {
+                ThrowIfDisposed();
+
                 if (_streamId == -1)
                 {
                     _streamId = GetStreamId();
@@ -390,6 +392,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override void Shutdown()
         {
+            ThrowIfDisposed();
+
             MsQuicApi.Api.StreamShutdownDelegate(_ptr, (uint)QUIC_STREAM_SHUTDOWN_FLAG.GRACEFUL, errorCode: 0);
         }
 
