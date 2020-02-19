@@ -4058,7 +4058,7 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/33317", TestPlatforms.OSX)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
     [Fact]
     public static void DCS_DeeplyLinkedData()
     {

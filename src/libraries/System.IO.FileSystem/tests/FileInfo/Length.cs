@@ -47,7 +47,7 @@ namespace System.IO.Tests
         // DirectoryNotFound exceptions, but in this particular case we ignored the actual
         // result and always gave FileNotFound.
         //
-        // https://github.com/dotnet/corefx/issues/19850
+        // https://github.com/dotnet/runtime/issues/21745
 
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void Length_MissingFile_ThrowsFileNotFound(char trailingChar)

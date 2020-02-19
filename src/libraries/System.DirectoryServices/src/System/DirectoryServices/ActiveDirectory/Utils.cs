@@ -754,7 +754,7 @@ namespace System.DirectoryServices.ActiveDirectory
             str.Append((int)SystemFlag.SystemFlagNtdsDomain);
             str.Append("))(");
             str.Append(PropertyManager.NCName);
-            str.Append("=");
+            str.Append('=');
             str.Append(Utils.GetEscapedFilterValue(partitionName));
             str.Append("))");
 
@@ -1306,32 +1306,32 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     foreach (string replicaLocation in replicaLocations)
                     {
-                        ntdsaFilter.Append("(");
+                        ntdsaFilter.Append('(');
                         ntdsaFilter.Append(PropertyManager.DistinguishedName);
-                        ntdsaFilter.Append("=");
+                        ntdsaFilter.Append('=');
                         ntdsaFilter.Append(Utils.GetEscapedFilterValue(replicaLocation));
-                        ntdsaFilter.Append(")");
+                        ntdsaFilter.Append(')');
 
-                        serverFilter.Append("(");
+                        serverFilter.Append('(');
                         serverFilter.Append(PropertyManager.DistinguishedName);
-                        serverFilter.Append("=");
+                        serverFilter.Append('=');
                         serverFilter.Append(Utils.GetEscapedFilterValue(Utils.GetPartialDN(replicaLocation, 1)));
-                        serverFilter.Append(")");
+                        serverFilter.Append(')');
                     }
 
                     foreach (string roReplicaLocation in roReplicaLocations)
                     {
-                        roNtdsaFilter.Append("(");
+                        roNtdsaFilter.Append('(');
                         roNtdsaFilter.Append(PropertyManager.DistinguishedName);
-                        roNtdsaFilter.Append("=");
+                        roNtdsaFilter.Append('=');
                         roNtdsaFilter.Append(Utils.GetEscapedFilterValue(roReplicaLocation));
-                        roNtdsaFilter.Append(")");
+                        roNtdsaFilter.Append(')');
 
-                        roServerFilter.Append("(");
+                        roServerFilter.Append('(');
                         roServerFilter.Append(PropertyManager.DistinguishedName);
-                        roServerFilter.Append("=");
+                        roServerFilter.Append('=');
                         roServerFilter.Append(Utils.GetEscapedFilterValue(Utils.GetPartialDN(roReplicaLocation, 1)));
-                        roServerFilter.Append(")");
+                        roServerFilter.Append(')');
                     }
                 }
                 catch (COMException e)
@@ -1608,16 +1608,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
                             foreach (string name in ntdsaNamesForRangeRetrieval)
                             {
-                                str.Append("(");
+                                str.Append('(');
                                 str.Append(PropertyManager.NCName);
-                                str.Append("=");
+                                str.Append('=');
                                 str.Append(Utils.GetEscapedFilterValue(name));
-                                str.Append(")");
+                                str.Append(')');
                             }
 
                             if (ntdsaNamesForRangeRetrieval.Count > 1)
                             {
-                                str.Append(")");
+                                str.Append(')');
                             }
 
                             // Clear it for the next round of range retrieval

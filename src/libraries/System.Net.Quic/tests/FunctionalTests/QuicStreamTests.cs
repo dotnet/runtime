@@ -67,11 +67,10 @@ namespace System.Net.Quic.Tests
                 select new object[] { readSize, writeSize };
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32049")]
         [Fact]
         public async Task Read_StreamAborted_Throws()
         {
-            const int ExpectedErrorCode = 1234;
+            const int ExpectedErrorCode = 0xfffffff;
 
             await Task.Run(async () =>
             {

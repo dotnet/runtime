@@ -341,6 +341,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/mono/mono/issues/15069", TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs_GenericTypeParameters()
         {
             Type theT = typeof(GenericTestClass<>).GetTypeInfo().GenericTypeParameters[0];
@@ -462,6 +463,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31648", TestRuntimes.Mono)]
         public static void HasSameMetadataDefinitionAs__CornerCase_HasElementTypes()
         {
             // HasSameMetadataDefinitionAs on an array/byref/pointer type is uninteresting (they'll never be an actual member of a type)

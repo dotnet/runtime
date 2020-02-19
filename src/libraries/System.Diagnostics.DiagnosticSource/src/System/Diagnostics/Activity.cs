@@ -1079,14 +1079,14 @@ namespace System.Diagnostics
 
             if (!Utf8Parser.TryParse(idData.Slice(0, 16), out span[0], out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }
 
             if (!Utf8Parser.TryParse(idData.Slice(16, 16), out span[1], out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }
@@ -1263,7 +1263,7 @@ namespace System.Diagnostics
 
             if (!Utf8Parser.TryParse(idData, out ulong id, out _, 'x'))
             {
-                // Invalid Id, use random https://github.com/dotnet/corefx/issues/38486
+                // Invalid Id, use random https://github.com/dotnet/runtime/issues/29859
                 _hexString = CreateRandom()._hexString;
                 return;
             }

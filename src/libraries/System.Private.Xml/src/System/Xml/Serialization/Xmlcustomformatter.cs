@@ -188,7 +188,7 @@ namespace System.Xml.Serialization
                 if ((ids[i] & originalValue) == ids[i])
                 {
                     if (sb.Length != 0)
-                        sb.Append(" ");
+                        sb.Append(' ');
                     sb.Append(vals[i]);
                     val &= ~ids[i];
                 }

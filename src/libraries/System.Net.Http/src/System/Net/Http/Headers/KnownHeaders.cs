@@ -30,10 +30,10 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AltSvc = new KnownHeader("Alt-Svc", HttpHeaderType.Response, AltSvcHeaderParser.Parser, http3StaticTableIndex: H3StaticTable.AltSvcClear);
         public static readonly KnownHeader AltUsed = new KnownHeader("Alt-Used", HttpHeaderType.Request, parser: null);
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, H2StaticTable.Authorization, H3StaticTable.Authorization);
-        public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General | HttpHeaderType.NonTrailing, CacheControlHeaderParser.Parser, null, H2StaticTable.CacheControl, H3StaticTable.CacheControlMaxAge0);
+        public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General | HttpHeaderType.NonTrailing, CacheControlHeaderParser.Parser, new string[] { "must-revalidate", "no-cache", "no-store", "no-transform", "private", "proxy-revalidate", "public" }, H2StaticTable.CacheControl, H3StaticTable.CacheControlMaxAge0);
         public static readonly KnownHeader Connection = new KnownHeader("Connection", HttpHeaderType.General, GenericHeaderParser.TokenListParser, new string[] { "close" });
-        public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.ContentDispositionParser, null, H2StaticTable.ContentDisposition, H3StaticTable.ContentDisposition);
-        public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, new string[] { "gzip", "deflate" }, H2StaticTable.ContentEncoding, H3StaticTable.ContentEncodingBr);
+        public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.ContentDispositionParser, new string[] { "inline", "attachment" }, H2StaticTable.ContentDisposition, H3StaticTable.ContentDisposition);
+        public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", HttpHeaderType.Content | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser, new string[] { "gzip", "deflate", "br", "compress", "identity" }, H2StaticTable.ContentEncoding, H3StaticTable.ContentEncodingBr);
         public static readonly KnownHeader ContentLanguage = new KnownHeader("Content-Language", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, null, H2StaticTable.ContentLanguage);
         public static readonly KnownHeader ContentLength = new KnownHeader("Content-Length", HttpHeaderType.Content | HttpHeaderType.NonTrailing, Int64NumberHeaderParser.Parser, null, H2StaticTable.ContentLength, H3StaticTable.ContentLength0);
         public static readonly KnownHeader ContentLocation = new KnownHeader("Content-Location", HttpHeaderType.Content | HttpHeaderType.NonTrailing, UriHeaderParser.RelativeOrAbsoluteUriParser, null, H2StaticTable.ContentLocation);
@@ -61,7 +61,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader MaxForwards = new KnownHeader("Max-Forwards", HttpHeaderType.Request | HttpHeaderType.NonTrailing, Int32NumberHeaderParser.Parser, null, H2StaticTable.MaxForwards);
         public static readonly KnownHeader Origin = new KnownHeader("Origin", http3StaticTableIndex: H3StaticTable.Origin);
         public static readonly KnownHeader P3P = new KnownHeader("P3P");
-        public static readonly KnownHeader Pragma = new KnownHeader("Pragma", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueParser);
+        public static readonly KnownHeader Pragma = new KnownHeader("Pragma", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueNameValueParser, new string[] { "no-cache" });
         public static readonly KnownHeader ProxyAuthenticate = new KnownHeader("Proxy-Authenticate", HttpHeaderType.Response | HttpHeaderType.NonTrailing, GenericHeaderParser.MultipleValueAuthenticationParser, null, H2StaticTable.ProxyAuthenticate);
         public static readonly KnownHeader ProxyAuthorization = new KnownHeader("Proxy-Authorization", HttpHeaderType.Request | HttpHeaderType.NonTrailing, GenericHeaderParser.SingleValueAuthenticationParser, null, H2StaticTable.ProxyAuthorization);
         public static readonly KnownHeader ProxyConnection = new KnownHeader("Proxy-Connection");
@@ -80,10 +80,10 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader SetCookie = new KnownHeader("Set-Cookie", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null, H2StaticTable.SetCookie, H3StaticTable.SetCookie);
         public static readonly KnownHeader SetCookie2 = new KnownHeader("Set-Cookie2", HttpHeaderType.Custom | HttpHeaderType.NonTrailing, null, null);
         public static readonly KnownHeader StrictTransportSecurity = new KnownHeader("Strict-Transport-Security", H2StaticTable.StrictTransportSecurity, H3StaticTable.StrictTransportSecurityMaxAge31536000);
-        public static readonly KnownHeader TE = new KnownHeader("TE", HttpHeaderType.Request | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueWithQualityParser);
+        public static readonly KnownHeader TE = new KnownHeader("TE", HttpHeaderType.Request | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueWithQualityParser, new string[] { "trailers", "compress", "deflate", "gzip" });
         public static readonly KnownHeader TSV = new KnownHeader("TSV");
         public static readonly KnownHeader Trailer = new KnownHeader("Trailer", HttpHeaderType.General | HttpHeaderType.NonTrailing, GenericHeaderParser.TokenListParser);
-        public static readonly KnownHeader TransferEncoding = new KnownHeader("Transfer-Encoding", HttpHeaderType.General | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueParser, new string[] { "chunked" }, H2StaticTable.TransferEncoding);
+        public static readonly KnownHeader TransferEncoding = new KnownHeader("Transfer-Encoding", HttpHeaderType.General | HttpHeaderType.NonTrailing, TransferCodingHeaderParser.MultipleValueParser, new string[] { "chunked", "compress", "deflate", "gzip", "identity" }, H2StaticTable.TransferEncoding);
         public static readonly KnownHeader Upgrade = new KnownHeader("Upgrade", HttpHeaderType.General, GenericHeaderParser.MultipleValueProductParser);
         public static readonly KnownHeader UpgradeInsecureRequests = new KnownHeader("Upgrade-Insecure-Requests", http3StaticTableIndex: H3StaticTable.UpgradeInsecureRequests1);
         public static readonly KnownHeader UserAgent = new KnownHeader("User-Agent", HttpHeaderType.Request, ProductInfoHeaderParser.MultipleValueParser, null, H2StaticTable.UserAgent, H3StaticTable.UserAgent);

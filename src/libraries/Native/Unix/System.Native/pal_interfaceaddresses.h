@@ -53,10 +53,10 @@ typedef void (*IPv6AddressFound)(const char* interfaceName, IpAddressInfo* info,
 typedef void (*LinkLayerAddressFound)(const char* interfaceName, LinkLayerAddressInfo* llAddress);
 typedef void (*GatewayAddressFound)(IpAddressInfo* addressInfo);
 
-DLLEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
+PALEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
     IPv4AddressFound onIpv4Found, IPv6AddressFound onIpv6Found, LinkLayerAddressFound onLinkLayerFound);
-DLLEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
+PALEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
 
 #if HAVE_RT_MSGHDR
-DLLEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);
+PALEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);
 #endif

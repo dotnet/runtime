@@ -301,14 +301,6 @@ static gboolean interp_init_done = FALSE;
 
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
 
-static MONO_NEVER_INLINE void
-interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
-// This function makes WebAsssembly stacks clearer, so you can see which recursion
-// is occuring, in the absence of line numbers in the debugger.
-{
-	interp_exec_method_full (frame, context, NULL, error);
-}
-
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
@@ -3223,36 +3215,6 @@ mono_interp_leave (InterpFrame* child_frame)
 	return (MonoException*)tmp_sp.data.p;
 }
 
-static MONO_NEVER_INLINE void
-mono_interp_newobj_vt (
-	// Parameters are sorted by name and parameter list is minimized
-	// to reduce stack use in caller, on e.g. NT/AMD64 (up to 4 parameters
-	// use no stack in caller).
-	InterpFrame* child_frame,
-	ThreadContext* context,
-	MonoError* error)
-{
-	stackval* const sp = child_frame->stack_args;
-
-	stackval valuetype_this;
-
-	memset (&valuetype_this, 0, sizeof (stackval));
-	sp->data.p = &valuetype_this;
-
-	// FIXME remove recursion
-	//
-	// FIXME It is unfortunate to outline a recursive case as it
-	// increases its stack usage. We do this however as it conserves
-	// stack for all the other recursive cases.
-	interp_exec_method (child_frame, context, error);
-
-	CHECK_RESUME_STATE (context);
-
-	*sp = valuetype_this;
-resume:
-	;
-}
-
 static MONO_NEVER_INLINE MonoException*
 mono_interp_newobj (
 	// Parameters are sorted by name and parameter list is minimized
@@ -3759,8 +3721,6 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 			MonoMethodSignature *csignature;
-			// FIXME This assumes a grow-down stack.
-			gpointer native_stack_addr = frame->native_stack_addr ? (gpointer)((guint8*)frame->native_stack_addr - 1) : (gpointer)&retval;
 
 			frame->ip = ip;
 
@@ -3792,27 +3752,7 @@ main_loop:
 				}
 			}
 
-			/* Non-recursive call */
-			SAVE_INTERP_STATE (frame);
-
-			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
-
-			int tracing;
-
-			if (method_entry (context, frame,
-#if DEBUG_INTERP
-				&tracing,
-#endif
-				&ex, NULL)) {
-				if (ex)
-					THROW_EX (ex, NULL);
-				EXCEPTION_CHECKPOINT;
-			}
-
-			clause_args = NULL;
-			INIT_INTERP_STATE (frame, clause_args);
-
-			MINT_IN_BREAK;
+			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
 			gpointer target_ip = sp [-1].data.p;
@@ -3906,25 +3846,9 @@ main_loop:
 			}
 
 			if (code_type == IMETHOD_CODE_INTERP) {
-				SAVE_INTERP_STATE (frame);
 
-				// FIXME &retval looks wrong
-				frame = alloc_frame (context, &retval, frame, cmethod, sp, retval);
+				goto call;
 
-				int tracing;
-
-				if (method_entry (context, frame,
-#if DEBUG_INTERP
-					&tracing,
-#endif
-					&ex, NULL)) {
-					if (ex)
-						THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
-				}
-
-				clause_args = NULL;
-				INIT_INTERP_STATE (frame, clause_args);
 			} else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, cmethod, error);
@@ -4014,8 +3938,9 @@ call:;
 
 			frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
 
+#if DEBUG_INTERP
 			int tracing;
-
+#endif
 			if (method_entry (context, frame,
 #if DEBUG_INTERP
 				&tracing,
@@ -5116,51 +5041,49 @@ call:;
 			} else {
 				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 				frame->ip = ip - 4;
-				is_void = TRUE;
-				retval = NULL;
-				++sp; // Point sp at this, after return value.
-				goto call;
+				goto call_newobj;
 			}
 
 			MINT_IN_BREAK;
 		}
+
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
-			int dummy;
-			// This is split up to:
-			//  - conserve stack
-			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
+			cmethod = (InterpMethod*)frame->imethod->data_items [ip [1]];
 			guint16 const param_count = ip [2];
 
+			// Make room for extra parameter and result.
 			if (param_count) {
 				sp -= param_count;
-				memmove (sp + 1, sp, param_count * sizeof (stackval));
+				memmove (sp + 2, sp, param_count * sizeof (stackval));
 			}
-			child_frame->stack_args = sp;
+
 			gboolean const vtst = *ip == MINT_NEWOBJ_VTST_FAST;
 			if (vtst) {
 				memset (vt_sp, 0, ip [3]);
-				sp->data.p = vt_sp;
 				ip += 4;
-
-				// FIXME remove recursion
-				interp_exec_method_newobj_vtst_fast (child_frame, context, error);
-
-				CHECK_RESUME_STATE (context);
-				sp->data.p = vt_sp;
-
+				// Put extra parameter and result on stack, before other parameters,
+				// and point stack to extra parameter, after result.
+				// This pattern occurs for newobj_vt_fast and newobj_fast.
+				sp [1].data.p = vt_sp;
+				sp [0].data.p = vt_sp;
 			} else {
 				ip += 3;
-				// FIXME remove recursion
-				mono_interp_newobj_vt (child_frame, context, error);
-				CHECK_RESUME_STATE (context);
+				// Like newobj_fast, add valuetype_this parameter
+				// and result and point stack to this after result.
+				memset (sp, 0, sizeof (*sp));
+				sp [1].data.p = &sp [0].data; // valuetype_this == result
 			}
-			++sp;
-			MINT_IN_BREAK;
-		}
+			}
+			// call_newobj captures the pattern where the return value is placed
+			// on the stack before the call, instead of the call forming it.
+call_newobj:
+			++sp; // Point sp at added extra param, after return value.
+			is_void = TRUE;
+			retval = NULL;
+			goto call;
 
 		MINT_IN_CASE(MINT_NEWOBJ) {
 			int dummy;
@@ -7226,7 +7149,7 @@ interp_parse_options (const char *options)
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
  */
 static void
-interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
+interp_set_resume_state (MonoJitTlsData *jit_tls, MonoObject *ex, MonoJitExceptionInfo *ei, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
 {
 	ThreadContext *context;
 
@@ -7242,7 +7165,7 @@ interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExce
 	context->exc_gchandle = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 	/* Ditto */
 	if (ei)
-		*(MonoException**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
+		*(MonoObject**)(frame_locals (context->handler_frame) + ei->exvar_offset) = ex;
 	context->handler_ip = (const guint16*)handler_ip;
 }
 

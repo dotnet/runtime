@@ -12,6 +12,7 @@ namespace System.Runtime.CompilerServices
     /// The exception optionally contains an object representing the unmatched value.
     /// </summary>
     [Serializable]
+    [TypeForwardedFrom("System.Runtime.Extensions, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed class SwitchExpressionException : InvalidOperationException
     {
         public SwitchExpressionException()

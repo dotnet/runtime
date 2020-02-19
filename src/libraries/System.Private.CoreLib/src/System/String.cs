@@ -438,7 +438,7 @@ namespace System
             // the first char: value[0] if that is performed following the test
             // for the same test cost.
             // Ternary operator returning true/false prevents redundant asm generation:
-            // https://github.com/dotnet/coreclr/issues/914
+            // https://github.com/dotnet/runtime/issues/4207
             return (value == null || 0u >= (uint)value.Length) ? true : false;
         }
 

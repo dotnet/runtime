@@ -537,6 +537,15 @@ move_stack (TransformData *td, int start, int amount)
 		memmove (td->stack + start + amount, td->stack + start, to_move * sizeof (StackInfo));
 }
 
+static void
+simulate_runtime_stack_increase (TransformData *td, int amount)
+{
+	const int sp_height = td->sp - td->stack + amount;
+
+	if (sp_height > td->max_stack_height)
+		td->max_stack_height = sp_height;
+}
+
 #define PUSH_VT(td, size) \
 	do { \
 		(td)->vt_sp += ALIGN_TO ((size), MINT_VT_ALIGNMENT); \
@@ -4537,6 +4546,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						// Set the method to be executed as part of newobj instruction
 						newobj_fast->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
 					} else {
+						// Runtime (interp_exec_method_full in interp.c) inserts extra stack to hold return value, before call.
+						simulate_runtime_stack_increase (td, 1);
+
 						if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT)
 							interp_add_ins (td, MINT_NEWOBJ_VTST_FAST);
 						else

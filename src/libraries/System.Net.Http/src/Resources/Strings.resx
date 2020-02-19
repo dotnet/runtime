@@ -537,4 +537,7 @@
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
   </data>
+  <data name="net_http_request_timedout" xml:space="preserve">
+    <value>The request was canceled due to the configured HttpClient.Timeout of {0} seconds elapsing.</value>
+  </data>
 </root>

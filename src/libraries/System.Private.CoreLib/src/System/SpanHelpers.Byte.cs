@@ -406,7 +406,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -545,7 +545,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -785,7 +785,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -1035,7 +1035,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -1159,7 +1159,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -1289,7 +1289,7 @@ namespace System
                 }
             }
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return (int)(byte*)offset;
         Found1:
             return (int)(byte*)(offset + 1);
@@ -1387,7 +1387,7 @@ namespace System
 
         Equal:
             return true;
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        NotEqual: // Workaround for https://github.com/dotnet/runtime/issues/8795
             return false;
         }
 
@@ -1579,7 +1579,7 @@ namespace System
                 }
             }
 
-        BytewiseCheck:  // Workaround for https://github.com/dotnet/coreclr/issues/13549
+        BytewiseCheck:  // Workaround for https://github.com/dotnet/runtime/issues/8795
             while ((byte*)minLength > (byte*)offset)
             {
                 int result = Unsafe.AddByteOffset(ref first, offset).CompareTo(Unsafe.AddByteOffset(ref second, offset));
