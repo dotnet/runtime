@@ -20,21 +20,35 @@ namespace System.Security.Cryptography
         /// <summary>
         /// The location of the PEM, including the surrounding ecapsulation boundaries.
         /// </summary>
+        /// <value>
+        /// A <see cref="System.Range" /> marking the locating inside of the data where
+        /// the PEM was found.
+        /// </value>
         public Range Location { get; }
 
         /// <summary>
         /// The location of the label.
         /// </summary>
+        /// <value>
+        /// A <see cref="System.Range" /> marking the locating of the label.
+        /// </value>
         public Range Label { get; }
 
         /// <summary>
         /// The location of the base64 data inside of the PEM.
         /// </summary>
+        /// <value>
+        /// A <see cref="System.Range" /> marking the locating of the base64 data,
+        /// excluding leading and trailing whitespace.
+        /// </value>
         public Range Base64Data { get; }
 
         /// <summary>
-        /// The size of the decoded base-64, in bytes.
+        /// The size of the decoded base64, in bytes.
         /// </summary>
+        /// <value>
+        /// When decoded, the size of the base64 data in bytes.
+        /// </value>
         public int DecodedDataLength { get; }
     }
 }
