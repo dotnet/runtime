@@ -5297,10 +5297,10 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
                     if ((actualMethodAttribs & CORINFO_FLG_VIRTUAL) && ((actualMethodAttribs & CORINFO_FLG_FINAL) == 0))
                     {
                         VerifyOrReturn(tiActualObj.IsThisPtr() && lvaIsOriginalThisReadOnly() ||
-                                            verIsBoxedValueType(tiActualObj),
-                                        "The 'this' parameter to the call must be either the calling method's "
-                                        "'this' parameter or "
-                                        "a boxed value type.");
+                                           verIsBoxedValueType(tiActualObj),
+                                       "The 'this' parameter to the call must be either the calling method's "
+                                       "'this' parameter or "
+                                       "a boxed value type.");
                     }
                 }
 
@@ -5452,10 +5452,9 @@ DONE_ARGS:
 
         if (opcode == CEE_CALL && (mflags & CORINFO_FLG_VIRTUAL) && ((mflags & CORINFO_FLG_FINAL) == 0))
         {
-            VerifyOrReturn(
-                tiThis.IsThisPtr() && lvaIsOriginalThisReadOnly() || verIsBoxedValueType(tiThis),
-                "The 'this' parameter to the call must be either the calling method's 'this' parameter or "
-                "a boxed value type.");
+            VerifyOrReturn(tiThis.IsThisPtr() && lvaIsOriginalThisReadOnly() || verIsBoxedValueType(tiThis),
+                           "The 'this' parameter to the call must be either the calling method's 'this' parameter or "
+                           "a boxed value type.");
         }
     }
 
@@ -7207,11 +7206,8 @@ enum
  * to a supported tail call IL pattern.
  *
  */
-bool Compiler::impIsTailCallILPattern(bool        tailPrefixed,
-                                      OPCODE      curOpcode,
-                                      const BYTE* codeAddrOfNextOpcode,
-                                      const BYTE* codeEnd,
-                                      bool        isRecursive)
+bool Compiler::impIsTailCallILPattern(
+    bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive)
 {
     // Bail out if the current opcode is not a call.
     if (!impOpcodeIsCallOpcode(curOpcode))

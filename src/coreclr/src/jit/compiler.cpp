@@ -2583,7 +2583,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dspDiffable = compIsForInlining() ? impInlineInfo->InlinerCompiler->opts.dspDiffable : false;
 #endif
 
-    opts.altJit                = false;
+    opts.altJit = false;
 
 #if defined(LATE_DISASM) && !defined(DEBUG)
     // For non-debug builds with the late disassembler built in, we currently always do late disassembly
@@ -5327,7 +5327,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
         ULONG*                methodCodeSize;
         JitFlags*             compileFlags;
 
-        int                              result;
+        int result;
     } param;
     param.pThis          = this;
     param.classPtr       = classPtr;
@@ -5340,9 +5340,9 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
 
     setErrorTrap(compHnd, Param*, pParam, &param) // ERROR TRAP: Start normal block
     {
-        pParam->result = pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
-                                                          pParam->methodCodePtr, pParam->methodCodeSize,
-                                                          pParam->compileFlags);
+        pParam->result =
+            pParam->pThis->compCompileHelper(pParam->classPtr, pParam->compHnd, pParam->methodInfo,
+                                             pParam->methodCodePtr, pParam->methodCodeSize, pParam->compileFlags);
     }
     finallyErrorTrap() // ERROR TRAP: The following block handles errors
     {
@@ -5692,12 +5692,12 @@ unsigned getMethodBodyChecksum(__in_z char* code, int size)
 #endif
 }
 
-int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
-                                COMP_HANDLE                      compHnd,
-                                CORINFO_METHOD_INFO*             methodInfo,
-                                void**                           methodCodePtr,
-                                ULONG*                           methodCodeSize,
-                                JitFlags*                        compileFlags)
+int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
+                                COMP_HANDLE           compHnd,
+                                CORINFO_METHOD_INFO*  methodInfo,
+                                void**                methodCodePtr,
+                                ULONG*                methodCodeSize,
+                                JitFlags*             compileFlags)
 {
     CORINFO_METHOD_HANDLE methodHnd = info.compMethodHnd;
 

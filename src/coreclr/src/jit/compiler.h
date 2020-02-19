@@ -4113,11 +4113,8 @@ private:
                                       var_types            calleeRetType,
                                       CORINFO_CLASS_HANDLE calleeRetTypeClass);
 
-    bool impIsTailCallILPattern(bool        tailPrefixed,
-                                OPCODE      curOpcode,
-                                const BYTE* codeAddrOfNextOpcode,
-                                const BYTE* codeEnd,
-                                bool        isRecursive);
+    bool impIsTailCallILPattern(
+        bool tailPrefixed, OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, bool isRecursive);
 
     bool impIsImplicitTailCallCandidate(
         OPCODE curOpcode, const BYTE* codeAddrOfNextOpcode, const BYTE* codeEnd, int prefixFlags, bool isRecursive);
@@ -9031,12 +9028,12 @@ public:
                     ULONG*                methodCodeSize,
                     JitFlags*             compileFlags);
     void compCompileFinish();
-    int compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
-                          COMP_HANDLE                      compHnd,
-                          CORINFO_METHOD_INFO*             methodInfo,
-                          void**                           methodCodePtr,
-                          ULONG*                           methodCodeSize,
-                          JitFlags*                        compileFlag);
+    int compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
+                          COMP_HANDLE           compHnd,
+                          CORINFO_METHOD_INFO*  methodInfo,
+                          void**                methodCodePtr,
+                          ULONG*                methodCodeSize,
+                          JitFlags*             compileFlag);
 
     ArenaAllocator* compGetArenaAllocator();
 
