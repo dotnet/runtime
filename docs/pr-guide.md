@@ -33,15 +33,21 @@ Please always **squash** the pull request unless there are special circumstances
 
 Validation may fail for several reasons
 
-### Option 1: You have a defect in your PR?
+### Option 1: You have a defect in your PR
 
 * Simply push the fix to your PR branch, and validation will start over.
-### Option 2: There is a flaky test that is not related to your PR?
+
+### Option 2: There is a flaky test that is not related to your PR
 
 * Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) If the test fails when run again, it is almost surely a failure caused by your PR. However, there are occasions where unrelated failures occur. Perhaps you see the same failure in CI results for unrelated active PR's.
 * In this case, you want to re-run but not necessarily rebase on master.
-  * To rerun just the failed leg(s), click on any leg. Navigate through the Azure DevOps UI, find the "..." button and choose "Retry failed legs". Or, on the GitHub Checks tab choose "re-run failed checks" [[ does this work if you don't have commit permissions? ]]. This will not rebase your change.
-  * To rerun all validation, add a comment `/azp run runtime`, or click on "re-run all checks" in the GitHub Checks tab, or just close and reopen the PR.
+  * To rerun just the failed leg(s):
+    * Click on any leg. Navigate through the Azure DevOps UI, find the "..." button and choose "Retry failed legs"
+    * Or, on the GitHub Checks tab choose "re-run failed checks". This will not rebase your change.
+  * To rerun all validation:
+    * Add a comment `/azp run runtime`
+    * Or, click on "re-run all checks" in the GitHub Checks tab
+    * Or, simply close and reopen the PR.
 * If you have established that it is an unrelated failure, please ensure we have an active issue for it. See the (unrelated failure)[#unrelated-failure] section below.
 * Whoever merges the PR should be satisfied that the failure is unrelated, is not introduced by the change, and that we are appropriately tracking it.
 
