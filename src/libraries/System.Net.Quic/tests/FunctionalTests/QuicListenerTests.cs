@@ -21,7 +21,7 @@ namespace System.Net.Quic.Tests
                 await clientConnection.ConnectAsync();
 
                 using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            }).TimeoutAfter(millisecondsTimeout: 500_000);
+            }).TimeoutAfter(millisecondsTimeout: 5_000);
         }
     }
 }
