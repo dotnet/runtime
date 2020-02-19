@@ -194,7 +194,7 @@ namespace System.Data.OleDb
             );
     }
 
-    [Guid("0c733a93-2a1c-11ce-ade5-00aa0044773d")]
+    [Guid("0c733a5f-2a1c-11ce-ade5-00aa0044773d")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [ComImport]
     internal unsafe interface ITransactionLocal : ITransaction
