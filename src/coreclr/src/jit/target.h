@@ -835,7 +835,6 @@ typedef unsigned char   regNumberSmall;
   // The registers trashed by profiler enter/leave/tailcall hook
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_PROFILER_ENTER_TRASH     RBM_CALLEE_TRASH
-  #define RBM_PROFILER_LEAVE_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
   #define RBM_PROFILER_TAILCALL_TRASH  RBM_PROFILER_LEAVE_TRASH
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper.
@@ -846,9 +845,11 @@ typedef unsigned char   regNumberSmall;
   // The return registers could be any two from the set { RAX, RDX, XMM0, XMM1 }.
   // STOP_FOR_GC helper preserves all the 4 possible return registers.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET | RBM_FLOATRET_1 | RBM_INTRET_1))
 #else
   // See vm\amd64\asmhelpers.asm for more details.
   #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_PROFILER_LEAVE_TRASH  (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
 #endif
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
