@@ -275,6 +275,7 @@ void GCLog (const char *fmt, ... );
 //#define dprintf(l,x) {if ((l == 1) || (l == 2222)) {GCLog x;}}
 #define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
 //#define dprintf(l,x) {if (l == HEAP_BALANCE_LOG) {GCLog x;}}
+//#define dprintf(l,x) {if (l == HEAP_BALANCE_TEMP_LOG) {GCLog x;}}
 //#define dprintf(l,x) {if ((l==GTC_LOG) || (l <= 1)) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= print_level) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if (l==GTC_LOG) {printf ("\n");printf x ; fflush(stdout);}}

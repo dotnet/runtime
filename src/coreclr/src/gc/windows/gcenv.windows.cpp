@@ -766,7 +766,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
     void* pRetVal = nullptr;
 
@@ -783,7 +783,14 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
     SIZE_T largePageMinimum = GetLargePageMinimum();
     size = (size + (largePageMinimum - 1)) & ~(largePageMinimum - 1);
 
-    return ::VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        return ::VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+    }
+    else
+    {
+        return ::VirtualAllocExNuma(::GetCurrentProcess(), NULL, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE, node);
+    }
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.

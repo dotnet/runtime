@@ -290,7 +290,7 @@ public:
     //  size    - size of the virtual memory range
     // Return:
     //  Address of the allocated memory
-    static void* VirtualReserveAndCommitLargePages(size_t size);
+    static void* VirtualReserveAndCommitLargePages(size_t size, uint16_t node = NUMA_NODE_UNDEFINED);
 
     // Decomit virtual memory range.
     // Parameters:

@@ -373,7 +373,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
     LIMITED_METHOD_CONTRACT;
 
