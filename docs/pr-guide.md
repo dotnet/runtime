@@ -42,7 +42,7 @@ Validation may fail for several reasons
 * Your assumption should be that a failed test indicates a problem in your PR. (If we don't operate this way, chaos ensues.) If the test fails when run again, it is almost surely a failure caused by your PR. However, there are occasions where unrelated failures occur. Here's some ways to know:
   * Perhaps you see the same failure in CI results for unrelated active PR's.
   * It's a known issue listed in our [big tracking issue](https://github.com/dotnet/runtime/issues/702) or tagged `blocking-clean-ci` [(query here)](https://github.com/dotnet/runtime/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-ci+)
-  * Its otherwise beyond doubt that your code changes could not have caused this.
+  * Its otherwise beyond any reasonable doubt that your code changes could not have caused this.
   * If the tests pass on rerun, that may suggest it's not related.
 * In this situation, you want to re-run but not necessarily rebase on master.
   * To rerun just the failed leg(s):
@@ -72,9 +72,8 @@ If you have determined the failure is definitely not caused by changes in your P
   * If there's an existing issue, add a comment with
     * a) the link to the build
     * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
-    * c) the Error message and Stack trace. (This is necessary as retention policies are in place that recycle _old_ builds.)
+    * c) all console output including the error message and stack trace from the Azure DevOps tab (This is necessary as retention policies are in place that recycle _old_ builds.)
     * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
-    * e) all console output (from tab in Azure DevOps)
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
   * If there's no existing issue, create an issue with the same information listed above.
   * Update the original pull request with a comment linking to the new or existing issue.
