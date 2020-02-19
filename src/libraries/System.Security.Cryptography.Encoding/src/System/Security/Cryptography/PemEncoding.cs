@@ -11,9 +11,9 @@ namespace System.Security.Cryptography
     /// </summary>
     public static class PemEncoding
     {
-        private const string PreEBPrefix = "-----BEGIN ";
-        private const string PostEBPrefix = "-----END ";
-        private const string Ending = "-----";
+        private static readonly ReadOnlySpan<char> s_PreEBPrefix = "-----BEGIN ";
+        private static readonly ReadOnlySpan<char> s_PostEBPrefix = "-----END ";
+        private static readonly ReadOnlySpan<char> s_Ending = "-----";
         private const int EncodedLineLength = 64;
 
         /// <summary>
@@ -103,9 +103,9 @@ namespace System.Security.Cryptography
                 Range labelRange = (areaOffset + labelStartIndex)..(areaOffset + labelEndingIndex);
                 int postebLength = PostEBPrefix.Length + label.Length + Ending.Length;
                 Span<char> postebBuffer = postebLength > postebStackBufferSize ? new char[postebLength] : postebStackBuffer;
-                PostEBPrefix.AsSpan().CopyTo(postebBuffer);
+                PostEBPrefix.CopyTo(postebBuffer);
                 label.CopyTo(postebBuffer[PostEBPrefix.Length..]);
-                Ending.AsSpan().CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
+                Ending.CopyTo(postebBuffer[(PostEBPrefix.Length + label.Length)..]);
                 ReadOnlySpan<char> posteb = postebBuffer[..postebLength];
                 int postebStartIndex = pemArea[contentStartIndex..].IndexOf(posteb);
 

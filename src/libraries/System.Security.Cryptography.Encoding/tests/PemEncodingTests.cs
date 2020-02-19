@@ -29,6 +29,27 @@ namespace System.Security.Cryptography.Encoding.Tests
         }
 
         [Fact]
+        public static void TryFind_True_IncompletePreebPrefixed()
+        {
+            string content = "-----BEGIN FAIL -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            Assert.True(PemEncoding.TryFind(content, out _));
+        }
+
+        [Fact]
+        public static void TryFind_True_CompletePreebPrefixedDifferentLabel()
+        {
+            string content = "-----BEGIN FAIL----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            Assert.True(PemEncoding.TryFind(content, out _));
+        }
+
+        [Fact]
+        public static void TryFind_True_CompletePreebPrefixedSameLabel()
+        {
+            string content = "-----BEGIN TEST----- -----BEGIN TEST-----\nZm9v\n-----END TEST-----";
+            Assert.True(PemEncoding.TryFind(content, out _));
+        }
+
+        [Fact]
         public static void Find_LargeLabel()
         {
             string label = new string('A', 275);
@@ -312,6 +333,13 @@ Zm9v
         public static void TryFind_False_ContentOnPostEbLine()
         {
             string content = "-----BEGIN TEST-----\nZm9v\n-----END TEST-----boop";
+            Assert.False(PemEncoding.TryFind(content, out _));
+        }
+
+        [Fact]
+        public static void TryFind_False_MismatchedLabels()
+        {
+            string content = "-----BEGIN TEST-----\nZm9v\n-----END FAIL-----";
             Assert.False(PemEncoding.TryFind(content, out _));
         }
 
