@@ -685,6 +685,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> MaxNumber(Vector128<double> left, Vector128<double> right) => MaxNumber(left, right);
 
             /// <summary>
+            /// float32_t vmaxnmvq_f32 (float32x4_t a)
+            ///   A64: FMAXNMV Sd, Vn.4S
+            /// </summary>
+            public static Vector64<float> MaxNumberAcross(Vector128<float> value) => MaxNumberAcross(value);
+
+            /// <summary>
             /// float32x2_t vpmaxnm_f32 (float32x2_t a, float32x2_t b)
             ///   A64: FMAXNMP Vd.2S, Vn.2S, Vm.2S
             /// </summary>
