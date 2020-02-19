@@ -55,7 +55,7 @@ namespace System.Drawing
         /// <summary>
         /// Renders the buffer to the specified target graphics.
         /// </summary>
-        public void Render(Graphics target)
+        public void Render(Graphics? target)
         {
             if (target != null)
             {
