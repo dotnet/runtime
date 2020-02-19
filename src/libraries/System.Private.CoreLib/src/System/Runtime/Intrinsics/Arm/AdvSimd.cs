@@ -860,6 +860,12 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> MinAcross(Vector128<uint> value) => MinAcross(value);
 
             /// <summary>
+            /// float64x2_t vminnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMINNM Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MinNumber(Vector128<double> left, Vector128<double> right) => MinNumber(left, right);
+
+            /// <summary>
             /// uint8x16_t vpminq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: UMINP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
@@ -3705,6 +3711,34 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: UMIN Vd.4S, Vn.4S, Vm.4S
         /// </summary>
         public static Vector128<uint> Min(Vector128<uint> left, Vector128<uint> right) => Min(left, right);
+
+        /// <summary>
+        /// float32x2_t vminnm_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VMINNM.F32 Dd, Dn, Dm
+        ///   A64: FMINNM Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> MinNumber(Vector64<float> left, Vector64<float> right) => MinNumber(left, right);
+
+        /// <summary>
+        /// float32x4_t vminnmq_f32 (float32x4_t a, float32x4_t b)
+        ///   A32: VMINNM.F32 Qd, Qn, Qm
+        ///   A64: FMINNM Vd.4S, Vn.4S, Vm.4S
+        /// </summary>
+        public static Vector128<float> MinNumber(Vector128<float> left, Vector128<float> right) => MinNumber(left, right);
+
+        /// <summary>
+        /// float64x1_t vminnm_f64 (float64x1_t a, float64x1_t b)
+        ///   A32: VMINNM.F64 Dd, Dn, Dm
+        ///   A64: FMINNM Dd, Dn, Dm
+        /// </summary>
+        public static Vector64<double> MinNumberScalar(Vector64<double> left, Vector64<double> right) => MinNumberScalar(left, right);
+
+        /// <summary>
+        /// float32_t vminnms_f32 (float32_t a, float32_t b)
+        ///   A32: VMINNM.F32 Sd, Sn, Sm
+        ///   A64: FMINNM Sd, Sn, Sm
+        /// </summary>
+        public static Vector64<float> MinNumberScalar(Vector64<float> left, Vector64<float> right) => MinNumberScalar(left, right);
 
         /// <summary>
         /// uint8x8_t vpmin_u8 (uint8x8_t a, uint8x8_t b)
