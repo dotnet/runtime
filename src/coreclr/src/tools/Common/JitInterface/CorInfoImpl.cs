@@ -2075,7 +2075,7 @@ namespace Internal.JitInterface
 
         private void* allocateArray(UIntPtr cBytes)
         {
-            return (void*)Marshal.AllocHGlobal((IntPtr)cBytes);
+            return (void*)Marshal.AllocHGlobal((IntPtr)(void*)cBytes);
         }
 
         private void freeArray(void* array)
@@ -2189,8 +2189,6 @@ namespace Internal.JitInterface
 
             pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::m_firstParameter
             pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
-
-            pEEInfoOut.offsetOfObjArrayData = (uint)(2 * pointerSize);
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)(2 * pointerSize);
 

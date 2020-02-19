@@ -890,6 +890,8 @@ namespace Internal.JitInterface
         // Target ABI. Combined with target architecture and OS to determine
         // GC, EH, and unwind styles.
         public CORINFO_RUNTIME_ABI targetAbi;
+
+        public CORINFO_OS osType;
     }
 
     public enum CORINFO_THIS_TRANSFORM
