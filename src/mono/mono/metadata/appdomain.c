@@ -2660,9 +2660,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, name, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, name, "Invalid Image: %s", name);
 		else
-			mono_error_set_file_not_found (error, name, "Invalid Image");
+			mono_error_set_file_not_found (error, name, "Invalid Image: %s", name);
 		goto leave;
 	}
 
@@ -2701,9 +2701,9 @@ mono_alc_load_file (MonoAssemblyLoadContext *alc, MonoStringHandle fname, MonoAs
 	ass = mono_assembly_request_open (filename, &req, &status);
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
-			mono_error_set_bad_image_by_name (error, filename, "Invalid Image");
+			mono_error_set_bad_image_by_name (error, filename, "Invalid Image: %s", filename);
 		else
-			mono_error_set_file_not_found (error, filename, "Invalid Image");
+			mono_error_set_file_not_found (error, filename, "Invalid Image: %s", filename);
 	}
 
 leave:
