@@ -257,6 +257,90 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector64<uint> AddAcross(Vector128<uint> value) => AddAcross(value);
 
             /// <summary>
+            /// uint8x16_t vpaddq_u8 (uint8x16_t a, uint8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<byte> AddPairwise(Vector128<byte> left, Vector128<byte> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpaddq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> AddPairwise(Vector128<double> left, Vector128<double> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int16x8_t vpaddq_s16 (int16x8_t a, int16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<short> AddPairwise(Vector128<short> left, Vector128<short> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int32x4_t vpaddq_s32 (int32x4_t a, int32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<int> AddPairwise(Vector128<int> left, Vector128<int> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int64x2_t vpaddq_s64 (int64x2_t a, int64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<long> AddPairwise(Vector128<long> left, Vector128<long> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// int8x16_t vpaddq_s8 (int8x16_t a, int8x16_t b)
+            ///   A64: ADDP Vd.16B, Vn.16B, Vm.16B
+            /// </summary>
+            public static Vector128<sbyte> AddPairwise(Vector128<sbyte> left, Vector128<sbyte> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpaddq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> AddPairwise(Vector128<float> left, Vector128<float> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint16x8_t vpaddq_u16 (uint16x8_t a, uint16x8_t b)
+            ///   A64: ADDP Vd.8H, Vn.8H, Vm.8H
+            /// </summary>
+            public static Vector128<ushort> AddPairwise(Vector128<ushort> left, Vector128<ushort> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint32x4_t vpaddq_u32 (uint32x4_t a, uint32x4_t b)
+            ///   A64: ADDP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<uint> AddPairwise(Vector128<uint> left, Vector128<uint> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// uint64x2_t vpaddq_u64 (uint64x2_t a, uint64x2_t b)
+            ///   A64: ADDP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<ulong> AddPairwise(Vector128<ulong> left, Vector128<ulong> right) => AddPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpadds_f32 (float32x2_t a)
+            ///   A64: FADDP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> AddPairwiseScalar(Vector64<float> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpaddd_f64 (float64x2_t a)
+            ///   A64: FADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> AddPairwiseScalar(Vector128<double> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// int64_t vpaddd_s64 (int64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<long> AddPairwiseScalar(Vector128<long> value) => AddPairwiseScalar(value);
+
+            /// <summary>
+            /// uint64_t vpaddd_u64 (uint64x2_t a)
+            ///   A64: ADDP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<ulong> AddPairwiseScalar(Vector128<ulong> value) => AddPairwiseScalar(value);
+
+            /// <summary>
             /// uint64x2_t vceqq_f64 (float64x2_t a, float64x2_t b)
             ///   A64: FCMEQ Vd.2D, Vn.2D, Vm.2D
             /// </summary>
@@ -1725,6 +1809,55 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: ADD Vd.2D, Vn.2D, Vm.2D
         /// </summary>
         public static Vector128<ulong> Add(Vector128<ulong> left, Vector128<ulong> right) => Add(left, right);
+
+        /// <summary>
+        /// uint8x8_t vpadd_u8 (uint8x8_t a, uint8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<byte> AddPairwise(Vector64<byte> left, Vector64<byte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int16x4_t vpadd_s16 (int16x4_t a, int16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<short> AddPairwise(Vector64<short> left, Vector64<short> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int32x2_t vpadd_s32 (int32x2_t a, int32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<int> AddPairwise(Vector64<int> left, Vector64<int> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// int8x8_t vpadd_s8 (int8x8_t a, int8x8_t b)
+        ///   A32: VPADD.I8 Dd, Dn, Dm
+        ///   A64: ADDP Vd.8B, Vn.8B, Vm.8B
+        /// </summary>
+        public static Vector64<sbyte> AddPairwise(Vector64<sbyte> left, Vector64<sbyte> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// float32x2_t vpadd_f32 (float32x2_t a, float32x2_t b)
+        ///   A32: VPADD.F32 Dd, Dn, Dm
+        ///   A64: FADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<float> AddPairwise(Vector64<float> left, Vector64<float> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// uint16x4_t vpadd_u16 (uint16x4_t a, uint16x4_t b)
+        ///   A32: VPADD.I16 Dd, Dn, Dm
+        ///   A64: ADDP Vd.4H, Vn.4H, Vm.4H
+        /// </summary>
+        public static Vector64<ushort> AddPairwise(Vector64<ushort> left, Vector64<ushort> right) => AddPairwise(left, right);
+
+        /// <summary>
+        /// uint32x2_t vpadd_u32 (uint32x2_t a, uint32x2_t b)
+        ///   A32: VPADD.I32 Dd, Dn, Dm
+        ///   A64: ADDP Vd.2S, Vn.2S, Vm.2S
+        /// </summary>
+        public static Vector64<uint> AddPairwise(Vector64<uint> left, Vector64<uint> right) => AddPairwise(left, right);
 
         /// <summary>
         /// float64x1_t vadd_f64 (float64x1_t a, float64x1_t b)
