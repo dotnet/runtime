@@ -65,7 +65,6 @@ enum EtwThreadFlags
     kEtwThreadFlagThreadPoolWorker =  0x00000004,
 };
 
-
 #ifndef FEATURE_REDHAWK
 
 #if defined(FEATURE_EVENT_TRACE)
@@ -222,7 +221,6 @@ struct ProfilingScanContext;
 
 #include "etmdummy.h"
 #endif // FEATURE_EVENT_TRACE
-
 
 #ifndef FEATURE_REDHAWK
 
@@ -382,7 +380,7 @@ private:
         auto argument = (WCHAR*)nullptr;
         if ((component.End - component.Start) != 0)
         {
-            int64_t length = component.End - component.Start;
+            auto const length = component.End - component.Start;
             argument = new WCHAR[length + 1];
             wcsncpy(argument, component.Start, length);
             argument[length] = '\0';
@@ -399,7 +397,6 @@ private:
 #endif // FEATURE_PERFTRACING
 
 #if defined(HOST_UNIX) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
-
 
 class XplatEventLoggerController
 {
