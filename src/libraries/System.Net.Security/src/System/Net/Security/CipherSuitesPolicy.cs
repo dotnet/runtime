@@ -31,7 +31,7 @@ namespace System.Net.Security
             {
                 // This method is only useful only for diagnostic purposes so perf is not important
                 // We do not want users to be able to cast result to something they can modify
-                foreach (TlsCipherSuite cs in Pal.GetCipherSuites()!)
+                foreach (TlsCipherSuite cs in Pal.GetCipherSuites())
                 {
                     yield return cs;
                 }
