@@ -66,9 +66,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // a verification block should be inserted
 #define SEH_VERIFICATION_EXCEPTION 0xe0564552 // VER
 
-// Invalid offset marker value for dynamic dictionary expansions support
-#define EXPRUNTIMELOOKUP_INVALID_OFFSET 0xFFFF
-
 /*****************************************************************************
  *                  Forward declarations
  */

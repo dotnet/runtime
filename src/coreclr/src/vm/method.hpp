@@ -3483,10 +3483,6 @@ public:
         return ReadPointerMaybeNull(this, &InstantiatedMethodDesc::m_pPerInstInfo);
     }
 
-#ifndef DACCESS_COMPILE
-    DWORD GetDictionarySlotsSize();
-#endif
-
     PTR_Dictionary IMD_GetMethodDictionaryNonNull()
     {
         LIMITED_METHOD_DAC_CONTRACT;

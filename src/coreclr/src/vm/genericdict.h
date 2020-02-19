@@ -108,7 +108,7 @@ class DictionaryLayout
     friend class NativeImageDumper;
 #endif
 private:
-    // Number of non-type-argument slots in this bucket
+    // Current number of non-type-argument slots
     WORD m_numSlots;
 
     // Number of non-type-argument slots of the initial layout before any expansion
@@ -144,7 +144,7 @@ private:
     static PVOID CreateSignatureWithSlotData(SigBuilder* pSigBuilder, LoaderAllocator* pAllocator, WORD slot);
 
 public:
-    // Create an initial dictionary layout with a single bucket containing numSlots slots
+    // Create an initial dictionary layout containing numSlots slots
     static DictionaryLayout* Allocate(WORD numSlots, LoaderAllocator *pAllocator, AllocMemTracker *pamTracker);
 
     // Bytes used for this dictionary, which might be stored inline in
@@ -315,6 +315,9 @@ public:
                                BOOL nonExpansive);
 
 private:
+    static DWORD GetDictionarySlotsSizeForType(MethodTable* pMT);
+    static DWORD GetDictionarySlotsSizeForMethod(InstantiatedMethodDesc* pIMD);
+
     static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT);
     static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD);
 

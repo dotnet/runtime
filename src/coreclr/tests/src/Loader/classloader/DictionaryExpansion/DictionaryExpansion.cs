@@ -185,6 +185,9 @@ public class GenDerived3 : GenDerived2
 {
 }
 
+public class GenDerived4 : GenDerived3
+{
+}
 
 public class Test
 {
@@ -278,6 +281,8 @@ public class Test
     
     public static int Main()
     {
+        GenBase deriv4 = new GenDerived4();
+        
         for(int i = 5; i <= 25; i += 5)
         {
             // Test for generic classes
@@ -319,6 +324,11 @@ public class Test
                 }
             }
         }
+        
+        // After all expansions to existing dictionaries, use GenDerived4. GenDerived4 was allocated before any of its
+        // base type dictionaries were expanded.
+        Debugger.Break();
+        deriv4.VFunc();
 
         return 100;
     }

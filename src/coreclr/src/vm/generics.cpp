@@ -492,7 +492,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         pInstDest[iArg] = inst[iArg];
     }
 
-    if (cbInstAndDict != 0 && pOldMT->GetClass()->GetDictionaryLayout() != NULL && pOldMT->GetClass()->GetDictionaryLayout()->GetMaxSlots() > 0)
+    PTR_DictionaryLayout pLayout = pOldMT->GetClass()->GetDictionaryLayout();
+    if (pLayout != NULL && pLayout->GetMaxSlots() > 0)
     {
         ULONG_PTR* pDictionarySlots = (ULONG_PTR*)pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
         ULONG_PTR* pSizeSlot = pDictionarySlots + ntypars;

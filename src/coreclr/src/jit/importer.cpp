@@ -2083,7 +2083,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         if (pRuntimeLookup->offsets[i] != 0)
         {
             // The last indirection could be subject to a size check (dynamic dictionary expansion)
-            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != EXPRUNTIMELOOKUP_INVALID_OFFSET)
+            if (i == pRuntimeLookup->indirections - 1 && pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
             {
                 lastIndOfTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                              nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
@@ -2158,7 +2158,7 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
     GenTree* result = nullptr;
 
-    if (pRuntimeLookup->sizeOffset != EXPRUNTIMELOOKUP_INVALID_OFFSET)
+    if (pRuntimeLookup->sizeOffset != CORINFO_NO_SIZE_CHECK)
     {
         // Dynamic dictionary expansion support
 

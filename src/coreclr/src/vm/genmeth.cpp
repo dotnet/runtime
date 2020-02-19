@@ -1717,19 +1717,4 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
     return TRUE;
 }
 
-DWORD InstantiatedMethodDesc::GetDictionarySlotsSize()
-{
-    CONTRACTL
-    {
-        PRECONDITION(SystemDomain::SystemModule()->m_DictionaryCrst.OwnedByCurrentThread());
-    }
-    CONTRACTL_END
-
-    ULONG_PTR* pDictionarySlots = (ULONG_PTR*)IMD_GetMethodDictionary();
-    if (pDictionarySlots == NULL)
-        return 0;
-    ULONG_PTR* pSizeSlot = pDictionarySlots + m_wNumGenericArgs;
-    return (DWORD)(*pSizeSlot);
-}
-
 #endif // !DACCESS_COMPILE
