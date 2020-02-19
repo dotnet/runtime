@@ -617,7 +617,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _sendState = SendState.Aborted;
-                _sendErrorCode = (long)evt.Data.PeerSendAbort.ErrorCode;
+                _sendErrorCode = evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)
@@ -730,7 +730,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldComplete = true;
                 }
                 _readState = ReadState.Aborted;
-                _readErrorCode = (long)evt.Data.PeerSendAbort.ErrorCode;
+                _readErrorCode = evt.Data.PeerSendAbort.ErrorCode;
             }
 
             if (shouldComplete)

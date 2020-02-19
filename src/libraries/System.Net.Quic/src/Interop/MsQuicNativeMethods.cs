@@ -310,9 +310,9 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Explicit)]
         internal struct StreamEventDataSendComplete
         {
-            [FieldOffset(7)]
+            [FieldOffset(0)]
             internal byte Canceled;
-            [FieldOffset(8)]
+            [FieldOffset(1)]
             internal IntPtr ClientContext;
 
             internal bool IsCanceled()
@@ -321,24 +321,21 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
-        [StructLayout(LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerSendAbort
         {
-            [FieldOffset(0)]
-            internal ulong ErrorCode;
+            internal long ErrorCode;
         }
 
-        [StructLayout(LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataPeerRecvAbort
         {
-            [FieldOffset(0)]
-            internal ulong ErrorCode;
+            internal long ErrorCode;
         }
 
-        [StructLayout(LayoutKind.Explicit)]
+        [StructLayout(LayoutKind.Sequential)]
         internal struct StreamEventDataSendShutdownComplete
         {
-            [FieldOffset(0)]
             internal byte Graceful;
         }
 

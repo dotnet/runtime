@@ -93,7 +93,7 @@ namespace System.Net.Quic.Tests
                 byte[] buffer = new byte[100];
                 QuicStreamAbortedException ex = await Assert.ThrowsAsync<QuicStreamAbortedException>(() => serverStream.ReadAsync(buffer).AsTask());
                 Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-            }).TimeoutAfter(millisecondsTimeout: 500_000);
+            }).TimeoutAfter(millisecondsTimeout: 5_000);
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/32050")]
