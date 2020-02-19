@@ -68,8 +68,13 @@ Validation may fail for several reasons
 
 If you have determined the failure is definitely not caused by changes in your PR, please do this:
 
-* Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method's or the test assembly's name (in case of a crash) are good search parameters.
-  * If there's an existing issue, add a comment with a) the link to the build, b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`) and c) the Error message and Stack trace. This is necessary as retention policies are in place that recycle _old_ builds.
+* Search for an [existing issue](https://github.com/dotnet/runtime/issues). Usually the test method name or (if a crash/hang) the test assembly name are good search parameters.
+  * If there's an existing issue, add a comment with
+    * a) the link to the build
+    * b) the affected configuration (ie `netcoreapp-Windows_NT-Release-x64-Windows.81.Amd64.Open`)
+    * c) the Error message and Stack trace. (This is necessary as retention policies are in place that recycle _old_ builds.)
+    * d) if there's a dump file (see Attachments tab in Azure DevOps) include that
+    * e) all console output (from tab in Azure DevOps)
     * If the issue is already closed, reopen it and update the labels to reflect the current failure state.
   * If there's no existing issue, create an issue with the same information listed above.
   * Update the original pull request with a comment linking to the new or existing issue.
