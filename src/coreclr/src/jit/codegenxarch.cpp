@@ -3004,11 +3004,11 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(INS_movups, EA_ATTR(regSize), srcXmmReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(INS_movups, EA_ATTR(regSize), srcXmmReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
@@ -3203,21 +3203,21 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         {
             if (srcLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_R_S(INS_movdqu, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
+                emit->emitIns_R_S(INS_movups, EA_ATTR(regSize), tempReg, srcLclNum, srcOffset);
             }
             else
             {
-                emit->emitIns_R_ARX(INS_movdqu, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
+                emit->emitIns_R_ARX(INS_movups, EA_ATTR(regSize), tempReg, srcAddrBaseReg, srcAddrIndexReg,
                                     srcAddrIndexScale, srcOffset);
             }
 
             if (dstLclNum != BAD_VAR_NUM)
             {
-                emit->emitIns_S_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
+                emit->emitIns_S_R(INS_movups, EA_ATTR(regSize), tempReg, dstLclNum, dstOffset);
             }
             else
             {
-                emit->emitIns_ARX_R(INS_movdqu, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
+                emit->emitIns_ARX_R(INS_movups, EA_ATTR(regSize), tempReg, dstAddrBaseReg, dstAddrIndexReg,
                                     dstAddrIndexScale, dstOffset);
             }
         }
