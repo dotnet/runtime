@@ -25,15 +25,18 @@ MONO_PROJ=/p:CoreClrTestConfig=$(CORECLR_TESTS_CONFIG) /p:Configuration=$(MONO_R
 # build it with .dotnet first in order to be able to use LLVM only for the actual sample
 run-sample: patch-mono-dotnet
 	$(DOTNET) build -c Release sample/HelloWorld
-	MONO_ENV_OPTIONS="" COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS="--aot" COMPlus_DebugWriteToStdErr=1 \
 	$(DOTNET_MONO) sample/HelloWorld/bin/HelloWorld.dll
 
+# run sample using local .dotnet (coreclr)
 run-sample-coreclr:
 	$(DOTNET) run -c Debug -p sample/HelloWorld
 
+# build System.Private.CoreLib.dll
 bcl corelib:
 	$(DOTNET) msbuild /t:BuildCoreLib $(MONO_PROJ)
 
+# build runtime and copy to artifacts
 runtime:
 	$(DOTNET) msbuild /t:Build $(MONO_PROJ)
 
@@ -41,6 +44,7 @@ runtime:
 patch-mono-dotnet:
 	$(DOTNET) msbuild /t:PatchLocalMonoDotnet $(MONO_PROJ)
 
+# precompile (AOT) managed libs in .dotnet-mono
 patch-mono-dotnet-aot:
 	$(DOTNET) msbuild /t:PrecompileLocalMonoDotnetBcl $(MONO_PROJ)
 
@@ -62,6 +66,7 @@ run-tests-coreclr-all:
 run-tests-corefx:
 	$(DOTNET) msbuild /t:RunCoreFxTest /p:LibraryToTest=$(LibraryToTest) $(MONO_PROJ)
 
+# precompile (AOT) all CoreFX tests
 tests-corefx-aot:
 	$(DOTNET) msbuild /t:PrecompileCoreFxTests $(MONO_PROJ)
 
