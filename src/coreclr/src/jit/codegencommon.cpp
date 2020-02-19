@@ -6490,7 +6490,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             // Output count of bytes to clear
             inst_RV_IV(INS_mov, REG_ECX, blkSize / sizeof(int), EA_4BYTE);
             // Subtract the unaligned already cleared
-            emit->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_ECX, REG_EAX);
+            emit->emitIns_R_R(INS_sub, EA_PTRSIZE, REG_ECX, REG_EAX);
 #else  // !TARGET_64BIT
             emit->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_EDI, frameReg, untrLclLo);
 #endif // TARGET_64BIT
