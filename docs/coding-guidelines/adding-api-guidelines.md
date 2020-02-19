@@ -38,7 +38,7 @@ should be added to `netcoreapp5.0`. [More Information on TargetFrameworks](https
 **Update tests**
   - Add new `TargetFramework` to the ```TargetFrameworks```.
   - Add new test code following [conventions](project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
-  - To run just the new test targetFramework run `dotnet build <Library>.csproj /t:RebuildAndTest /p:TargetFramework=<TargetFramework>`. TargetFramework should be chosen only from supported TargetFrameworks.
+  - To run just the new test targetFramework run `dotnet build <Library>.csproj -f <TargetFramework> /t:RebuildAndTest`. TargetFramework should be chosen only from supported TargetFrameworks.
 
 ## Documentation
 
