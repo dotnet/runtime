@@ -42,6 +42,9 @@ namespace Mono.Tuner {
 
 			if (type.HasGenericParameters)
 				ProcessAttributeProviderCollection (type.GenericParameters);
+
+			if (type.HasInterfaces)
+				ProcessAttributeProviderCollection (type.Interfaces);
 		}
 
 		void ProcessAttributeProviderCollection (IList list)
