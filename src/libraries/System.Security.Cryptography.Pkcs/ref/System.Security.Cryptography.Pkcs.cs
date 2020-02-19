@@ -53,12 +53,9 @@ namespace System.Security.Cryptography.Pkcs
     public sealed partial class CmsRecipient
     {
         public CmsRecipient(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
-        public CmsRecipient(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
         public CmsRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
-        public CmsRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get { throw null; } }
         public System.Security.Cryptography.Pkcs.SubjectIdentifierType RecipientIdentifierType { get { throw null; } }
-        public System.Security.Cryptography.RSAEncryptionPadding? RSAEncryptionPadding { get { throw null; } }
     }
     public sealed partial class CmsRecipientCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
@@ -122,7 +119,6 @@ namespace System.Security.Cryptography.Pkcs
         public void Decode(byte[] encodedMessage) { }
         public void Decrypt() { }
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo) { }
-        public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.AsymmetricAlgorithm? privateKey) { }
         public void Decrypt(System.Security.Cryptography.Pkcs.RecipientInfo recipientInfo, System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
         public void Decrypt(System.Security.Cryptography.X509Certificates.X509Certificate2Collection extraStore) { }
         public byte[] Encode() { throw null; }

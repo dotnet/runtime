@@ -47,7 +47,6 @@ internal static partial class Interop
         internal static unsafe byte[] CryptEncodeObjectToByteArray(CryptDecodeObjectStructType lpszStructType, void* decoded)
         {
             int cb = 0;
-
             if (!CryptEncodeObject(MsgEncodingType.All, lpszStructType, decoded, null, ref cb))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
