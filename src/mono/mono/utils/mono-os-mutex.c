@@ -41,7 +41,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000 * 1000;
 
-	res = pthread_cond_timedwait_relative_np (cond, mutex, &ts);
+	res = pthread_cond_timedwait_relative_np (&cond->pcond, &mutex->pmutex, &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT)) {
 		g_print ("cond: %p mutex: %p\n", *(gpointer*)cond, *(gpointer*)mutex);
 		g_error ("%s: pthread_cond_timedwait_relative_np failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);

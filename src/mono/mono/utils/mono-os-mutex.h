@@ -34,24 +34,42 @@
 
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
+typedef struct mono_mutex_t mono_mutex_t;
+typedef struct mono_cond_t mono_cond_t;
+
 #if !defined(HOST_WIN32)
 
 #if !defined(CLOCK_MONOTONIC) || defined(HOST_DARWIN) || defined(HOST_ANDROID) || defined(HOST_WASM)
 #define BROKEN_CLOCK_SOURCE
 #endif
 
-typedef pthread_mutex_t mono_mutex_t;
-typedef pthread_cond_t mono_cond_t;
+// This form:
+//   typedef pthread_mutex_t mono_mutex_t;
+//   typedef pthread_cond_t mono_cond_t;
+// is not used, in order to avoid enabling
+// passing a mono_mutex directly to pthread or Win32.
+//
+struct mono_mutex_t {
+	pthread_mutex_t pmutex;
+};
+
+struct mono_cond_t {
+	pthread_cond_t pcond;
+};
 
 #ifndef DISABLE_THREADS
 
 static inline void
-mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
+mono_os_mutex_init_internal (pthread_mutex_t *mutex, int type)
 {
-	int res;
+	// FIXME Sometimes the initialization can be purely static,
+	// i.e. non-recursive on systems without PRIO_INHERIT + SETPROTOCOL.
+	//
+	// FIXME Skip attr if no setprotocol and default type.
+
 	pthread_mutexattr_t attr;
 
-	res = pthread_mutexattr_init (&attr);
+	int res = pthread_mutexattr_init (&attr);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
@@ -78,21 +96,19 @@ mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
 {
-	mono_os_mutex_init_type(mutex, PTHREAD_MUTEX_DEFAULT);
+	mono_os_mutex_init_internal (&mutex->pmutex, PTHREAD_MUTEX_DEFAULT);
 }
 
 static inline void
 mono_os_mutex_init_recursive (mono_mutex_t *mutex)
 {
-	mono_os_mutex_init_type(mutex, PTHREAD_MUTEX_RECURSIVE);
+	mono_os_mutex_init_internal (&mutex->pmutex, PTHREAD_MUTEX_RECURSIVE);
 }
 
 static inline void
 mono_os_mutex_destroy (mono_mutex_t *mutex)
 {
-	int res;
-
-	res = pthread_mutex_destroy (mutex);
+	const int res = pthread_mutex_destroy (&mutex->pmutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -100,9 +116,7 @@ mono_os_mutex_destroy (mono_mutex_t *mutex)
 static inline void
 mono_os_mutex_lock (mono_mutex_t *mutex)
 {
-	int res;
-
-	res = pthread_mutex_lock (mutex);
+	const int res = pthread_mutex_lock (&mutex->pmutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_lock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -110,31 +124,22 @@ mono_os_mutex_lock (mono_mutex_t *mutex)
 static inline int
 mono_os_mutex_trylock (mono_mutex_t *mutex)
 {
-	int res;
-
-	res = pthread_mutex_trylock (mutex);
+	const int res = pthread_mutex_trylock (&mutex->pmutex);
 	if (G_UNLIKELY (res != 0 && res != EBUSY))
 		g_error ("%s: pthread_mutex_trylock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-	return res != 0 ? -1 : 0;
+	return res ? 0 : -1;
 }
 
 static inline void
 mono_os_mutex_unlock (mono_mutex_t *mutex)
 {
-	int res;
-
-	res = pthread_mutex_unlock (mutex);
+	const int res = pthread_mutex_unlock (&mutex->pmutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutex_unlock failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
 
 #else /* DISABLE_THREADS */
-
-static inline void
-mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
-{
-}
 
 static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
@@ -170,8 +175,9 @@ mono_os_mutex_unlock (mono_mutex_t *mutex)
 #endif /* DISABLE_THREADS */
 
 static inline void
-mono_os_cond_init (mono_cond_t *cond)
+mono_os_cond_init (mono_cond_t *mcond)
 {
+	pthread_cond_t* const cond = &mcond->pcond;
 	int res;
 
 #ifdef BROKEN_CLOCK_SOURCE
@@ -204,9 +210,7 @@ mono_os_cond_init (mono_cond_t *cond)
 static inline void
 mono_os_cond_destroy (mono_cond_t *cond)
 {
-	int res;
-
-	res = pthread_cond_destroy (cond);
+	const int res = pthread_cond_destroy (&cond->pcond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -214,9 +218,7 @@ mono_os_cond_destroy (mono_cond_t *cond)
 static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
-	int res;
-
-	res = pthread_cond_wait (cond, mutex);
+	const int res = pthread_cond_wait (&cond->pcond, &mutex->pmutex);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_wait failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -227,9 +229,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 static inline void
 mono_os_cond_signal (mono_cond_t *cond)
 {
-	int res;
-
-	res = pthread_cond_signal (cond);
+	const int res = pthread_cond_signal (&cond->pcond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_signal failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -237,9 +237,7 @@ mono_os_cond_signal (mono_cond_t *cond)
 static inline void
 mono_os_cond_broadcast (mono_cond_t *cond)
 {
-	int res;
-
-	res = pthread_cond_broadcast (cond);
+	const int res = pthread_cond_broadcast (&cond->pcond);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_cond_broadcast failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 }
@@ -247,15 +245,17 @@ mono_os_cond_broadcast (mono_cond_t *cond)
 #else
 
 // FIXME mono_mutex_t and mono_mutex_recursive_t.
-typedef struct mono_mutex_t {
+struct mono_mutex_t {
 	union {
 		CRITICAL_SECTION critical_section;
 		SRWLOCK srwlock;
 	};
 	gboolean recursive;
-} mono_mutex_t;
+};
 
-typedef CONDITION_VARIABLE mono_cond_t;
+struct mono_cond_t {
+	CONDITION_VARIABLE condition_variable;
+};
 
 static inline void
 mono_os_mutex_init (mono_mutex_t *mutex)
@@ -309,7 +309,7 @@ mono_os_mutex_unlock (mono_mutex_t *mutex)
 static inline void
 mono_os_cond_init (mono_cond_t *cond)
 {
-	InitializeConditionVariable (cond);
+	InitializeConditionVariable (&cond->condition_variable);
 }
 
 static inline void
@@ -322,8 +322,8 @@ static inline void
 mono_os_cond_wait (mono_cond_t *cond, mono_mutex_t *mutex)
 {
 	const BOOL res = mutex->recursive ?
-		SleepConditionVariableCS (cond, &mutex->critical_section, INFINITE) :
-		SleepConditionVariableSRW (cond, &mutex->srwlock, INFINITE, 0);
+		SleepConditionVariableCS (&cond->condition_variable, &mutex->critical_section, INFINITE) :
+		SleepConditionVariableSRW (&cond->condition_variable, &mutex->srwlock, INFINITE, 0);
 
 	if (G_UNLIKELY (res == 0))
 		g_error ("%s: SleepConditionVariable failed with error %d", __func__, GetLastError ());
@@ -333,8 +333,8 @@ static inline int
 mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_ms)
 {
 	const BOOL res = mutex->recursive ?
-		SleepConditionVariableCS (cond, &mutex->critical_section, timeout_ms) :
-		SleepConditionVariableSRW (cond, &mutex->srwlock, timeout_ms, 0);
+		SleepConditionVariableCS (&cond->condition_variable, &mutex->critical_section, timeout_ms) :
+		SleepConditionVariableSRW (&cond->condition_variable, &mutex->srwlock, timeout_ms, 0);
 
 	if (G_UNLIKELY (res == 0 && GetLastError () != ERROR_TIMEOUT))
 		g_error ("%s: SleepConditionVariable failed with error %d", __func__, GetLastError ());
@@ -345,13 +345,13 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 static inline void
 mono_os_cond_signal (mono_cond_t *cond)
 {
-	WakeConditionVariable (cond);
+	WakeConditionVariable (&cond->condition_variable);
 }
 
 static inline void
 mono_os_cond_broadcast (mono_cond_t *cond)
 {
-	WakeAllConditionVariable (cond);
+	WakeAllConditionVariable (&cond->condition_variable);
 }
 
 #endif
