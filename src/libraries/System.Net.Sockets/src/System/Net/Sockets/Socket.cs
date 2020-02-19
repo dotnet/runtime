@@ -2801,7 +2801,7 @@ namespace System.Net.Sockets
         // Return Value:
         //
         //    IAsyncResult - Async result used to retrieve result
-        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginReceive(buffer, offset, size, socketFlags, out errorCode, callback, state);
@@ -2812,7 +2812,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(byte[] buffer, int offset, int size, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
@@ -2878,7 +2878,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, AsyncCallback? callback, object? state)
         {
             SocketError errorCode;
             IAsyncResult result = BeginReceive(buffers, socketFlags, out errorCode, callback, state);
@@ -2889,7 +2889,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback callback, object state)
+        public IAsyncResult BeginReceive(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags, out SocketError errorCode, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
