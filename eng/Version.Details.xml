@@ -1,44 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.20080.9">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.20080.9">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.20080.9">
-      <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
-    </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.3">
-      <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>cf64918877d98577363bb40d5eafac52beb80a79</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19563.3">
-      <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha1.19563.3">
-      <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
-    </Dependency>
-    <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha.1.19563.6">
-      <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
-    </Dependency>
-    <Dependency Name="System.Text.Json" Version="5.0.0-alpha.1.19563.6">
-      <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
-    </Dependency>
     <Dependency Name="NETStandard.Library" Version="2.2.0-prerelease.19564.1">
       <Uri>https://github.com/dotnet/standard</Uri>
       <Sha>cfe95a23647c7de1fe1a349343115bd7720d6949</Sha>
-    </Dependency>
-    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20117.1">
-      <Uri>https://github.com/mono/linker</Uri>
-      <Sha>72551f41d5925198262c1f3c2d06dfecd2596a4e</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
@@ -85,10 +49,6 @@
     <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="5.0.0-beta.20117.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>bd2a2b09716ddb54cb1e40f087beaaeeef859118</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Configuration" Version="5.0.0-beta.20112.7">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>951ea7430678b2682ff861fe1149b8a2f55887ca</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="5.0.0-beta.20117.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -181,6 +141,42 @@
     <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="6.0.1-alpha.1.20078.4">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>adeaa08e7bbc9aba5d67cb16c2b348be12deb000</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-alpha.1.20080.9">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NETCore.DotNetHost" Version="5.0.0-alpha.1.20080.9">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NETCore.DotNetHostPolicy" Version="5.0.0-alpha.1.20080.9">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>665983a01f9c604bc3f704f469acb8a08c619d8a</Sha>
+    </Dependency>
+    <Dependency Name="runtime.native.System.IO.Ports" Version="5.0.0-alpha.1.19563.3">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>cf64918877d98577363bb40d5eafac52beb80a79</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NETCore.ILAsm" Version="5.0.0-alpha1.19563.3">
+      <Uri>https://github.com/dotnet/coreclr</Uri>
+      <Sha>2c4fb3250989f014550882f5d165cdc36ebdbd08</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.NET.Sdk.IL" Version="5.0.0-alpha.1.20076.2">
+      <Uri>https://github.com/dotnet/runtime</Uri>
+      <Sha>e793fcc19797f407a1b7e98d5f81b04e25a551c3</Sha>
+    </Dependency>
+    <Dependency Name="System.Text.Encodings.Web" Version="5.0.0-alpha.1.19563.6">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
+    </Dependency>
+    <Dependency Name="System.Text.Json" Version="5.0.0-alpha.1.19563.6">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>5cee7c97d602f294e27c582d4dab81ec388f1d7b</Sha>
+    </Dependency>
+    <Dependency Name="ILLink.Tasks" Version="0.1.6-prerelease.20117.1">
+      <Uri>https://github.com/mono/linker</Uri>
+      <Sha>72551f41d5925198262c1f3c2d06dfecd2596a4e</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
