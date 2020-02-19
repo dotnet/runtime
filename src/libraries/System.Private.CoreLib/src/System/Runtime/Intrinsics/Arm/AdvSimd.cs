@@ -685,6 +685,36 @@ namespace System.Runtime.Intrinsics.Arm
             public static Vector128<double> MaxNumber(Vector128<double> left, Vector128<double> right) => MaxNumber(left, right);
 
             /// <summary>
+            /// float32x2_t vpmaxnm_f32 (float32x2_t a, float32x2_t b)
+            ///   A64: FMAXNMP Vd.2S, Vn.2S, Vm.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwise(Vector64<float> left, Vector64<float> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float64x2_t vpmaxnmq_f64 (float64x2_t a, float64x2_t b)
+            ///   A64: FMAXNMP Vd.2D, Vn.2D, Vm.2D
+            /// </summary>
+            public static Vector128<double> MaxNumberPairwise(Vector128<double> left, Vector128<double> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32x4_t vpmaxnmq_f32 (float32x4_t a, float32x4_t b)
+            ///   A64: FMAXNMP Vd.4S, Vn.4S, Vm.4S
+            /// </summary>
+            public static Vector128<float> MaxNumberPairwise(Vector128<float> left, Vector128<float> right) => MaxNumberPairwise(left, right);
+
+            /// <summary>
+            /// float32_t vpmaxnms_f32 (float32x2_t a)
+            ///   A64: FMAXNMP Sd, Vn.2S
+            /// </summary>
+            public static Vector64<float> MaxNumberPairwiseScalar(Vector64<float> value) => MaxNumberPairwiseScalar(value);
+
+            /// <summary>
+            /// float64_t vpmaxnmqd_f64 (float64x2_t a)
+            ///   A64: FMAXNMP Dd, Vn.2D
+            /// </summary>
+            public static Vector64<double> MaxNumberPairwiseScalar(Vector128<double> value) => MaxNumberPairwiseScalar(value);
+
+            /// <summary>
             /// uint8x16_t vpmaxq_u8 (uint8x16_t a, uint8x16_t b)
             ///   A64: UMAXP Vd.16B, Vn.16B, Vm.16B
             /// </summary>
