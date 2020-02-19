@@ -2199,7 +2199,7 @@ namespace System.Net.Sockets
             return result;
         }
 
-        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback callback, object state)
+        public IAsyncResult BeginDisconnect(bool reuseSocket, AsyncCallback? callback, object? state)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             ThrowIfDisposed();
@@ -5020,7 +5020,7 @@ namespace System.Net.Sockets
         partial void ValidateForMultiConnect(bool isMultiEndpoint);
 
         // Helper for SendFile implementations
-        private static FileStream OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
+        private static FileStream? OpenFile(string name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
 
         private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
         {
@@ -5069,7 +5069,7 @@ namespace System.Net.Sockets
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 
-        internal static void SocketListDangerousReleaseRefs(IList socketList, ref int refsAdded)
+        internal static void SocketListDangerousReleaseRefs(IList? socketList, ref int refsAdded)
         {
             if (socketList == null)
             {

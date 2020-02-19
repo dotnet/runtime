@@ -16,7 +16,7 @@ namespace System.Net.Sockets
         {
         }
 
-        internal void SetUnmanagedStructures(FileStream fileStream, byte[] preBuffer, byte[] postBuffer, bool doDisconnect)
+        internal void SetUnmanagedStructures(FileStream? fileStream, byte[] preBuffer, byte[] postBuffer, bool doDisconnect)
         {
             _fileStream = fileStream;
             _doDisconnect = doDisconnect;

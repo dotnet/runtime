@@ -235,7 +235,7 @@ namespace System.Net.Sockets
             return transmitPackets(socketHandle, packetArray, elementCount, sendSize, overlapped, flags);
         }
 
-        internal static void SocketListToFileDescriptorSet(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SocketListToFileDescriptorSet(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             int count;
             if (socketList == null || (count = socketList.Count) == 0)
@@ -262,7 +262,7 @@ namespace System.Net.Sockets
 
         // Transform the list socketList such that the only sockets left are those
         // with a file descriptor contained in the array "fileDescriptorArray".
-        internal static void SelectFileDescriptor(IList socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
+        internal static void SelectFileDescriptor(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             // Walk the list in order.
             //
@@ -364,7 +364,7 @@ namespace System.Net.Sockets
 
         private IAsyncResult BeginSendFileInternal(string fileName, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, object state)
         {
-            FileStream fileStream = OpenFile(fileName);
+            FileStream? fileStream = OpenFile(fileName);
 
             TransmitFileAsyncResult asyncResult = new TransmitFileAsyncResult(this, state, callback);
             asyncResult.StartPostingAsyncOp(false);
